@@ -24,7 +24,7 @@ import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
-import { SettingsConfiguration } from '../settingsConfiguration'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { NoopWatcher } from '../watchedFiles'
@@ -35,9 +35,10 @@ import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
+import { extensionSettingsPrefix } from '../constants'
 const localize = nls.loadMessageBundle()
 
-const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
+const STATE_NAME_SUPPRESS_YAML_PROMPT = 'suppressYamlExtPrompt'
 
 /**
  * Activate SAM-related functionality.
@@ -45,7 +46,7 @@ const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 export async function activate(ctx: ExtContext): Promise<void> {
     initializeSamCliContext({ settingsConfiguration: ctx.settings })
 
-    createYamlExtensionPrompt()
+    await createYamlExtensionPrompt()
 
     ctx.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
@@ -249,12 +250,16 @@ async function activateCodeLensProviders(
  * Will show once per extension activation at most (all prompting triggers are disposed of on first trigger)
  * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
  */
-function createYamlExtensionPrompt(): void {
-    const neverPromptAgain = ext.context.globalState.get<boolean>(STATE_NAME_SUPPRESS_YAML_PROMPT)
+async function createYamlExtensionPrompt(): Promise<void> {
+    const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
-    if (!neverPromptAgain && getIdeType() === IDE.vscode && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
+    if (
+        (await settingsConfig.shouldDisplayPrompt(STATE_NAME_SUPPRESS_YAML_PROMPT)) &&
+        getIdeType() === IDE.vscode &&
+        !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
+    ) {
         // Disposed immediately after showing one, so the user isn't prompted
         // more than once per session.
         const yamlPromptDisposables: vscode.Disposable[] = []
@@ -310,6 +315,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         for (const prompt of disposables) {
             prompt.dispose()
         }
+        const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
         const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
         const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
@@ -343,7 +349,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
                 }
                 break
             case permanentlySuppress:
-                ext.context.globalState.update(STATE_NAME_SUPPRESS_YAML_PROMPT, true)
+                settingsConfig.disablePrompt(STATE_NAME_SUPPRESS_YAML_PROMPT)
         }
     }
 }

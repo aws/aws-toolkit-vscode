@@ -183,6 +183,25 @@
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
+                },
+                "aws.suppressPrompts": {
+                    "type": "object",
+                    "description": "%AWS.configuration.description.suppressPrompts%",
+                    "default": {
+                        "suppressApprunnerNotifyPricing": false,
+                        "suppressYamlExtPrompt": false
+                    },
+                    "properties": {
+                        "suppressApprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "suppressYamlExtPrompt": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    "additionalProperties": false
                 }
             }
         },
