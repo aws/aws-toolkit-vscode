@@ -8,7 +8,7 @@ import com.intellij.testFramework.LightVirtualFile
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.resources.message
 
-open class DynamicResourceVirtualFile(fileName: String, val dynamicResourceType: String, fileContent: String) :
+sealed class DynamicResourceVirtualFile(fileName: String, val dynamicResourceType: String, fileContent: String) :
     LightVirtualFile(
         fileName,
         JsonFileType.INSTANCE,
@@ -22,7 +22,7 @@ class CreateDynamicResourceVirtualFile(val connectionSettings: ConnectionSetting
         InitialCreateDynamicResourceContent.initialContent
     )
 
-class ViewDynamicResourceVirtualFile(val dynamicResourceIdentifier: DynamicResourceIdentifier, fileContent: String) :
+class ViewEditableDynamicResourceVirtualFile(val dynamicResourceIdentifier: DynamicResourceIdentifier, fileContent: String) :
     DynamicResourceVirtualFile(
         DynamicResources.getResourceDisplayName(dynamicResourceIdentifier.resourceIdentifier),
         dynamicResourceIdentifier.resourceType,
