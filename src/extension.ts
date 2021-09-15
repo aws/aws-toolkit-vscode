@@ -156,12 +156,6 @@ export async function activate(context: vscode.ExtensionContext) {
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
         )
         context.subscriptions.push(
-            vscode.commands.registerCommand(
-                'aws.switchProfile',
-                async () => await ext.awsContextCommands.onCommandLogin()
-            )
-        )
-        context.subscriptions.push(
             vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
         )
 

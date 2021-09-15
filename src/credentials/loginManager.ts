@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { CONTEXT_KEY_ISCONNECTED } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
 import { recordAwsValidateCredentials, recordVscodeActiveRegions, Result } from '../shared/telemetry/telemetry'
@@ -67,9 +65,6 @@ export class LoginManager {
             })
 
             telemetryResult = 'Succeeded'
-
-            vscode.commands.executeCommand('setContext', CONTEXT_KEY_ISCONNECTED, true)
-
             return true
         } catch (err) {
             // TODO: don't hardcode logic using error message, have a 'type' field instead
@@ -105,6 +100,5 @@ export class LoginManager {
      */
     public async logout(): Promise<void> {
         await this.awsContext.setCredentials(undefined)
-        vscode.commands.executeCommand('setContext', CONTEXT_KEY_ISCONNECTED, false)
     }
 }
