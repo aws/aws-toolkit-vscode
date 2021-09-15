@@ -18,8 +18,6 @@ import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.getClient
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.DynamicresourceTelemetry
-import software.aws.toolkits.telemetry.Result
 import java.util.concurrent.ConcurrentHashMap
 
 internal class DynamicResourceUpdateManager(private val project: Project) {
@@ -47,7 +45,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
-                addDynamicResourcesTelemetry(Operation.DELETE, dynamicResourceIdentifier.resourceType, Result.Failed)
             }
         }
     }
@@ -132,7 +129,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
-                addDynamicResourcesTelemetry(resourceStateTracker.op.operation, resourceStateIdentifier.resourceType, Result.Failed)
                 null
             }
             if (progress != null) {
@@ -164,18 +160,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
             if (!resourceStateMonitor.isEmpty()) {
                 alarm.addRequest({ getProgress() }, 500)
             }
-        }
-    }
-
-    fun addDynamicResourcesTelemetry(
-        operation: Operation,
-        resourceType: String,
-        successState: Result
-    ) {
-        when (operation) {
-            Operation.CREATE -> DynamicresourceTelemetry.createResource(project, successState, resourceType)
-            Operation.UPDATE -> DynamicresourceTelemetry.updateResource(project, successState, resourceType)
-            Operation.DELETE -> DynamicresourceTelemetry.deleteResource(project, successState, resourceType)
         }
     }
 
