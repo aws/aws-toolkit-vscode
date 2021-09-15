@@ -31,7 +31,8 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 /* Test constants go here */
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
-const DEBUG_TIMEOUT: number = 120000
+// This is intentionally set below normal build times to test timeout behavior
+const DEBUG_TIMEOUT: number = 20000
 const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
 
