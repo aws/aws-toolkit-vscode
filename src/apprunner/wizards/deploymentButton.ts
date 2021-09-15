@@ -7,7 +7,8 @@ import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
-import { APPRUNNER_PRICING_URL } from '../../shared/constants'
+import { APPRUNNER_PRICING_URL, extensionSettingsPrefix } from '../../shared/constants'
+import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -31,10 +32,9 @@ function makeDeployButtons() {
     return [autoDeploymentsDisable, autoDeploymentsEnable]
 }
 
-function showDeploymentCostNotification(): void {
-    const shouldShow = ext.context.globalState.get('apprunner.deployments.notifyPricing', true)
-
-    if (shouldShow) {
+async function showDeploymentCostNotification(): Promise<void> {
+    const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    if (await settingsConfig.shouldDisplayPrompt('suppressApprunnerNotifyPricing')) {
         const notice = localize(
             'aws.apprunner.createService.priceNotice.message',
             'App Runner automatic deployments incur an additional cost.'
@@ -43,12 +43,12 @@ function showDeploymentCostNotification(): void {
         const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
         const pricingUri = vscode.Uri.parse(APPRUNNER_PRICING_URL)
 
-        vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(button => {
+        vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(async button => {
             if (button === viewPricing) {
                 vscode.env.openExternal(pricingUri)
-                showDeploymentCostNotification()
+                await showDeploymentCostNotification()
             } else if (button === dontShow) {
-                ext.context.globalState.update('apprunner.deployments.notifyPricing', false)
+                settingsConfig.disablePrompt('suppressApprunnerNotifyPricing')
             }
         })
     }

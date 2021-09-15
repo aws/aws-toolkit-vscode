@@ -56,4 +56,68 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             return false
         }
     }
+    /**
+     * Sets a prompt message as suppressed.
+     * @param promptName Name of prompt to suppress
+     */
+    public async disablePrompt(promptName: string): Promise<void> {
+        const setting = await this.getSuppressPromptSetting(promptName)
+        if (setting === undefined || setting[promptName]) {
+            return
+        }
+        setting[promptName] = true
+        await this.writeSetting('suppressPrompts', setting, vscode.ConfigurationTarget.Global)
+    }
+    /**
+     * Verifies if a prompt should be displayed again.
+     * @param promptName Name of the prompt
+     * @returns False when prompt has been suppressed
+     */
+    public async shouldDisplayPrompt(promptName: string): Promise<boolean> {
+        const promptSetting = await this.getSuppressPromptSetting(promptName)
+        if (promptSetting !== undefined && promptSetting[promptName]) {
+            return false
+        }
+        return true
+    }
+
+    /**
+     * Gets the 'aws.suppressPrompts' setting. This will reset the setting to default if it does not
+     * recieve an object or the prompt's value is not a boolean.
+     * @param promptName
+     * @returns The settings object
+     */
+    public async getSuppressPromptSetting(promptName: string): Promise<{ [prompt: string]: boolean } | undefined> {
+        try {
+            const setting = this.readSetting<{ [prompt: string]: boolean }>('suppressPrompts')
+            if (setting === undefined) {
+                return undefined
+            }
+
+            if (typeof setting !== 'object') {
+                getLogger().warn('Setting "aws.suppressPrompts" has an unexpected type. Resetting to default.')
+                // writing this setting to an empty object reverts the setting to its default
+                await this.writeSetting('suppressPrompts', {}, vscode.ConfigurationTarget.Global)
+                return undefined
+            }
+
+            if (!(promptName in setting)) {
+                getLogger().error(`Prompt not found in "aws.suppressPrompts": ${promptName}`)
+                return undefined
+            }
+
+            if (typeof setting[promptName] !== 'boolean') {
+                getLogger().warn(
+                    `Value for prompts in "aws.suppressPrompts" must be type boolean. Resetting prompt: ${promptName}`
+                )
+                setting[promptName] = false
+                await this.writeSetting('suppressPrompts', setting, vscode.ConfigurationTarget.Global)
+                return setting
+            }
+
+            return setting
+        } catch (e) {
+            getLogger().error('Failed to get the setting: suppressPrompts', e)
+        }
+    }
 }
