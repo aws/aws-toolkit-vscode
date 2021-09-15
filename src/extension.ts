@@ -72,7 +72,7 @@ import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsPr
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
-import { createCredentialsFileWatcher } from './shared/filesystemUtilities'
+import { createCredentialsFileWatcher } from './shared/credentials/credentialsFile'
 import { getConfigFilename, getCredentialsFilename } from './credentials/sharedCredentials'
 
 let localize: nls.LocalizeFunc

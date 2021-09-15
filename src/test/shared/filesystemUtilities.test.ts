@@ -7,19 +7,13 @@ import * as assert from 'assert'
 import * as os from 'os'
 import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
-import * as sinon from 'sinon'
 import {
-    createCredentialsFileWatcher,
     fileExists,
     getNonexistentFilename,
     isInDirectory,
     makeTemporaryToolkitFolder,
     tempDirPath,
 } from '../../shared/filesystemUtilities'
-import * as credentialsActivation from '../../credentials/activation'
-import { appendFileSync } from 'fs'
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
-import { LoginManager } from '../../credentials/loginManager'
 
 describe('filesystemUtilities', function () {
     const targetFilename = 'findThisFile12345.txt'
@@ -124,42 +118,5 @@ describe('filesystemUtilities', function () {
         } else {
             assert.ok(!isInDirectory('/foo/bar/baz/', '/FOO/BAR/BAZ/A.TXT'))
         }
-    })
-
-    describe.only('createCredentialsFileWatcher', function () {
-        let tempFolder: string
-        let credPath: string
-        let configPath: string
-        let sandbox: sinon.SinonSandbox
-        const fakeToolkitSettings = {} as any as SettingsConfiguration
-        const fakeLoginManager = {} as any as LoginManager
-        before(async function () {
-            tempFolder = await makeTemporaryToolkitFolder()
-            credPath = path.join(tempFolder, 'credentials')
-            configPath = path.join(tempFolder, 'config')
-            await writeFile(credPath, 'credentials file')
-            await writeFile(configPath, 'config file')
-        })
-
-        beforeEach(function () {
-            sandbox = sinon.createSandbox()
-        })
-
-        after(function () {
-            remove(tempFolder)
-        })
-
-        afterEach(function () {
-            sandbox.restore()
-        })
-
-        it('modify credentials file attemps login', async function () {
-            const loginStub = sandbox.stub(credentialsActivation, 'loginWithMostRecentCredentials')
-            createCredentialsFileWatcher(tempFolder, fakeToolkitSettings, fakeLoginManager)
-            appendFileSync(credPath, 'change added')
-            // timeout to allow change event to fire and this function is debounced because of a known watcher bug
-            await new Promise(resolve => setTimeout(resolve, 150))
-            assert.strictEqual(loginStub.callCount, 1)
-        })
     })
 })

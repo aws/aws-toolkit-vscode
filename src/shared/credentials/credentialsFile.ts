@@ -10,10 +10,15 @@
 // ***************************************************************************
 
 import { copy, writeFile } from 'fs-extra'
+import * as fs from 'fs'
+import * as _ from 'lodash'
 import { homedir } from 'os'
 import { join, sep } from 'path'
+import { loginWithMostRecentCredentials } from '../../credentials/activation'
+import { LoginManager } from '../../credentials/loginManager'
 import { EnvironmentVariables } from '../environmentVariables'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
+import { SettingsConfiguration } from '../settingsConfiguration'
 
 export interface SharedConfigInit {
     /**
@@ -159,4 +164,20 @@ function getHomeDir(): string {
     }
 
     return homedir()
+}
+
+export function createCredentialsFileWatcher(
+    filePath: fs.PathLike,
+    toolkitSettings: SettingsConfiguration,
+    loginManager: LoginManager
+): fs.FSWatcher {
+    // Debounce needed to handle a known bug with wathcers where multiple events fire from a single change
+    return fs.watch(
+        filePath,
+        _.debounce(async (eventType, filename) => {
+            if ((filename === 'credentials' || filename === 'config') && eventType === 'change') {
+                await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+            }
+        }, 100)
+    )
 }
