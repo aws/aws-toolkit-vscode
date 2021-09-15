@@ -53,6 +53,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     }
 
     fun updateResource(dynamicResourceIdentifier: DynamicResourceIdentifier, patchOperation: String) {
+        // implementation will change in the new DynamicResourceUpdateManager
         coroutineScope.launch {
             try {
                 val client = dynamicResourceIdentifier.connectionSettings.getClient<CloudFormationClient>()
@@ -71,7 +72,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
-                // addDynamicResourcesTelemetry(Operation.DELETE, dynamicResourceIdentifier.resourceType, Result.Failed)
             }
         }
     }

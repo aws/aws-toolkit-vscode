@@ -23,14 +23,18 @@ class SaveUpdatedResourceAction : AnAction() {
 
         val content = psiFile.text
         val patchOperations = JsonDiff.asJson(mapper.readTree(file.inputStream), mapper.readTree(content))
-        if(patchOperations.isEmpty) {
-            if(showYesNoDialog(psiFile.project, "No changes made, do you want to continue editing?", "Resource Model unchanged", Messages.getWarningIcon()) == Messages.NO){
+        if (patchOperations.isEmpty) {
+            if (showYesNoDialog(
+                    psiFile.project, message("dynamic_resources.update_resource_no_changes_made"),
+                    message("dynamic_resources.update_resource_no_changes_made_title"),
+                    Messages.getWarningIcon()
+                ) == Messages.NO
+            ) {
                 file.isWritable = false
             }
         } else {
             DynamicResourceUpdateManager.getInstance(psiFile.project).updateResource(file.dynamicResourceIdentifier, patchOperations.toPrettyString())
         }
-
     }
 
     override fun update(e: AnActionEvent) {
