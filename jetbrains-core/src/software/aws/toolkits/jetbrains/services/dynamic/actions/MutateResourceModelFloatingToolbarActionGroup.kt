@@ -14,7 +14,6 @@ class MutateResourceModelFloatingToolbarActionGroup : DefaultActionGroup() {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         e.presentation.isEnabledAndVisible = editor.isFileEditor() && e.getData(CommonDataKeys.PSI_FILE)?.virtualFile is DynamicResourceVirtualFile
-
     }
 
     private fun Editor.isFileEditor(): Boolean {
