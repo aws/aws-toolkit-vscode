@@ -53,7 +53,10 @@ export type ExtendedQuickPickOptions<T> = Omit<
     placeholderItem?: DataQuickPickItem<T>
     /** Item to show if there was an error loading items */
     errorItem?: DataQuickPickItem<T>
-    /** Appends 'Selected previously' to the last selected item's detail text (default: true) */
+    /**
+     * Appends 'Selected previously' to the last selected item's description text (default: true)
+     * This currently mutates the item as it is expected that callers regenerate items every prompt
+     */
     showSelectedPreviously?: boolean
 }
 
@@ -385,7 +388,9 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         }
 
         if (this.options.showSelectedPreviously) {
-            this.quickPick.activeItems.forEach(item => (item.detail = `${item.detail ?? ''} (${selectedPreviously})`))
+            this.quickPick.activeItems.forEach(
+                item => (item.description = `${item.description ?? ''} (${selectedPreviously})`)
+            )
             this.quickPick.items = [...this.quickPick.items]
         }
 

@@ -34,6 +34,13 @@ describe('CreateNewSamAppWizard', async function () {
         tester.template.assertShowSecond()
     })
 
+    it('prompts for location before name', function () {
+        tester.runtimeAndPackage.applyInput({ runtime: 'nodejs14.x', packageType: 'Zip' })
+        tester.template.applyInput('template')
+        tester.location.assertShowFirst()
+        tester.name.assertShowSecond()
+    })
+
     it('prompts for schema configuration if a schema template is selected', function () {
         tester.runtimeAndPackage.applyInput({ runtime: 'nodejs14.x', packageType: 'Zip' })
         tester.template.applyInput(eventBridgeStarterAppTemplate)

@@ -18,6 +18,7 @@ import {
 } from '../../../shared/ui/pickerPrompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
+import { selectedPreviously } from '../../../shared/localizedText'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -181,6 +182,13 @@ describe('QuickPickPrompter', function () {
     it('shows first item if last response does not exist', async function () {
         testPrompter.setLastResponse({ label: 'item4', data: 3 })
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
+    })
+
+    it('adds a message to the description when an item has been previously selected', async function () {
+        testPrompter = new QuickPickPrompter(picker, { showSelectedPreviously: true })
+        testPrompter.setLastResponse({ label: 'item1', data: 0 })
+        const description = ` (${selectedPreviously})`
+        assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })
 
     it('shows a placeholder if no items are loaded', async function () {
