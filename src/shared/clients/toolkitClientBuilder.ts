@@ -16,6 +16,7 @@ import { DefaultStepFunctionsClient, StepFunctionsClient } from './stepFunctions
 import { DefaultStsClient, StsClient } from './stsClient'
 import { DefaultSsmDocumentClient, SsmDocumentClient } from './ssmDocumentClient'
 import { DefaultS3Client, S3Client } from './s3Client'
+import { DefaultIotClient, IotClient } from './iotClient'
 import { RegionProvider } from '../regions/regionProvider'
 import { DEFAULT_PARTITION } from '../regions/regionUtilities'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -80,5 +81,9 @@ export class DefaultToolkitClientBuilder {
 
     public createAppRunnerClient(regionCode: string): AppRunnerClient {
         return new DefaultAppRunnerClient(regionCode)
+    }
+
+    public createIotClient(regionCode: string): IotClient {
+        return new DefaultIotClient(regionCode)
     }
 }
