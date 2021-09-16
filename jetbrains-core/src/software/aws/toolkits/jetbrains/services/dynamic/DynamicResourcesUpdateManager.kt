@@ -49,7 +49,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
-                DynamicresourceTelemetry.deleteResource(project, Result.Failed, dynamicResourceIdentifier.resourceType)
             }
         }
     }
@@ -73,7 +72,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     message("dynamic_resources.operation_status_notification_title", dynamicResourceType, message("dynamic_resources.create")),
                     project
                 )
-                DynamicresourceTelemetry.createResource(project, Result.Failed, dynamicResourceType)
             }
         }
     }

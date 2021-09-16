@@ -13,6 +13,7 @@ import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import java.util.concurrent.atomic.AtomicBoolean
 
+
 class DynamicResourceStateChangedNotificationHandler(private val project: Project) : DynamicResourceStateMutationHandler {
     private val refreshRequired = AtomicBoolean(false)
     override fun mutationStatusChanged(state: ResourceMutationState) {
@@ -30,6 +31,7 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 ),
                 project
             )
+
         } else if (state.status == OperationStatus.FAILED) {
             notifyError(
                 message(
