@@ -36,8 +36,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceIdentifier.resourceType)
                     it.identifier(dynamicResourceIdentifier.resourceIdentifier)
                 }.progressEvent()
-                pendingMutations.add(ResourceMutationState.fromEvent(dynamicResourceIdentifier.connectionSettings, progress))
-                startCheckingProgress()
+                startCheckingProgress(dynamicResourceIdentifier.connectionSettings, progress)
             } catch (e: Exception) {
                 e.notifyError(
                     message(
@@ -63,8 +62,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
                 }.progressEvent()
-                pendingMutations.add(ResourceMutationState.fromEvent(connectionSettings, progress))
-                startCheckingProgress()
+                startCheckingProgress(connectionSettings, progress)
             } catch (e: Exception) {
                 e.notifyError(
                     message("dynamic_resources.operation_status_notification_title", dynamicResourceType, message("dynamic_resources.create")),
@@ -74,7 +72,8 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         }
     }
 
-    private fun startCheckingProgress() {
+    private fun startCheckingProgress(connectionSettings: ConnectionSettings, progress: ProgressEvent) {
+        pendingMutations.add(ResourceMutationState.fromEvent(connectionSettings, progress))
         if (pendingMutations.size == 1) {
             alarm.addRequest({ getProgress() }, 0)
         }
