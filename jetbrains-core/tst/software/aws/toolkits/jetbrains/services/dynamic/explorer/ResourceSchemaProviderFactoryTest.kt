@@ -3,8 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
-import com.intellij.openapi.application.PathManager
-import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.runInEdtAndWait
 import com.jetbrains.jsonSchema.impl.inspections.JsonSchemaComplianceInspection
@@ -41,7 +39,6 @@ class ResourceSchemaProviderFactoryTest {
 
     @Test
     fun `Check whether schema is applied`() {
-        VfsRootAccess.allowRootAccess(disposableRule.disposable, PathManager.getSystemPath())
         val fixture = projectRule.fixture
         val jsonSchemaComplianceInspection = JsonSchemaComplianceInspection()
         val schema = "{\n" +
