@@ -84,34 +84,43 @@ describe('DefaultSettingsConfiguration', function () {
 
     describe('disablePrompt', async function () {
         let defaultSetting: any
-        const promptName = 'promptName'
-        before(async function () {
-            // This gets the default settings
+        const promptName = 'apprunnerNotifyPricing'
+        beforeEach(async function () {
+            // Force the default settings.
             await sut.writeSetting(PROMPT_SETTING_KEY, {}, vscode.ConfigurationTarget.Global)
             defaultSetting = sut.readSetting(PROMPT_SETTING_KEY)
         })
 
         const scenarios = [
             {
-                testValue: { promptName: true, other: false },
-                expected: { promptName: true, other: false },
+                testValue: { apprunnerNotifyPricing: true, other: false },
+                expected: { apprunnerNotifyPricing: true, other: false },
                 desc: 'stays suppressed',
             },
-            { testValue: { promptName: false }, expected: { promptName: true }, desc: 'suppresses prompt' },
-            { testValue: undefined, expected: undefined, desc: 'writes nothing if undefined' },
+            {
+                testValue: { apprunnerNotifyPricing: false },
+                expected: { apprunnerNotifyPricing: true },
+                desc: 'suppresses prompt',
+            },
         ]
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
                 await sut.writeSetting(PROMPT_SETTING_KEY, scenario.testValue, vscode.ConfigurationTarget.Global)
                 await sut.disablePrompt(promptName)
-                assert.deepStrictEqual(sut.readSetting(PROMPT_SETTING_KEY), { ...defaultSetting, ...scenario.expected })
+                const actual = sut.readSetting(PROMPT_SETTING_KEY)
+                const expected = { ...defaultSetting, ...scenario.expected }
+                assert.deepStrictEqual(actual, expected)
             })
+        })
+
+        it('validates', async function () {
+            await assert.rejects(sut.disablePrompt('invalidPrompt'))
         })
     })
 
-    describe('getSuppressPromptSetting & shouldDisplayPrompt', async function () {
+    describe('getSuppressPromptSetting, isPromptEnabled', async function () {
         let defaultSetting: any
-        const promptName = 'promptName'
+        const promptName = 'apprunnerNotifyPricing'
 
         before(async function () {
             await sut.writeSetting(PROMPT_SETTING_KEY, {}, vscode.ConfigurationTarget.Global)
@@ -120,15 +129,15 @@ describe('DefaultSettingsConfiguration', function () {
 
         const scenarios = [
             {
-                testValue: { promptName: false },
+                testValue: { apprunnerNotifyPricing: false },
                 expected: true,
-                promptAfter: { promptName: false },
+                promptAfter: { apprunnerNotifyPricing: false },
                 desc: 'true when not suppressed',
             },
             {
-                testValue: { promptName: true },
+                testValue: { apprunnerNotifyPricing: true },
                 expected: false,
-                promptAfter: { promptName: true },
+                promptAfter: { apprunnerNotifyPricing: true },
                 desc: 'false when suppressed',
             },
             {
@@ -138,9 +147,9 @@ describe('DefaultSettingsConfiguration', function () {
                 desc: 'true when not found',
             },
             {
-                testValue: { promptName: 7 },
+                testValue: { apprunnerNotifyPricing: 7 },
                 expected: true,
-                promptAfter: { promptName: false },
+                promptAfter: { apprunnerNotifyPricing: false },
                 desc: 'true when prompt has wrong type',
             },
             { testValue: 'badType', expected: true, promptAfter: {}, desc: 'reset setting if wrong type' },
@@ -149,13 +158,18 @@ describe('DefaultSettingsConfiguration', function () {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
                 await sut.writeSetting(PROMPT_SETTING_KEY, scenario.testValue, vscode.ConfigurationTarget.Global)
-                const result = await sut.shouldDisplayPrompt(promptName)
+                const result = await sut.isPromptEnabled(promptName)
                 assert.deepStrictEqual(result, scenario.expected)
                 assert.deepStrictEqual(sut.readSetting(PROMPT_SETTING_KEY), {
                     ...defaultSetting,
                     ...scenario.promptAfter,
                 })
             })
+        })
+
+        it('validates', async function () {
+            await assert.rejects(sut.isPromptEnabled('invalidPrompt'))
+            await assert.rejects(sut.getSuppressPromptSetting('invalidPrompt'))
         })
     })
 })
