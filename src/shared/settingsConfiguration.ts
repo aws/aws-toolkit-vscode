@@ -189,6 +189,10 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             getLogger().error(msg)
             return undefined
         }
+
+        if (ext.awsContext) {
+            ext.awsContext.setDeveloperMode(true)
+        }
         return val
     }
 }
