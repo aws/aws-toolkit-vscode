@@ -9,7 +9,6 @@ import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.Result
 
 class DynamicResourceStateChangedNotificationHandler(private val project: Project) : DynamicResourceStateMutationHandler {
 
@@ -32,11 +31,6 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 ),
                 project
             )
-            DynamicResourceUpdateManager(project).addDynamicResourcesTelemetry(
-                dynamicResourceMutationState.operation,
-                dynamicResourceIdentifier.resourceType,
-                Result.Succeeded
-            )
         } else if (dynamicResourceMutationState.operationStatus == OperationStatus.FAILED) {
             notifyError(
                 message(
@@ -51,11 +45,6 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                     message ?: ""
                 ),
                 project
-            )
-            DynamicResourceUpdateManager(project).addDynamicResourcesTelemetry(
-                dynamicResourceMutationState.operation,
-                dynamicResourceIdentifier.resourceType,
-                Result.Failed
             )
         }
     }
