@@ -181,6 +181,7 @@ with what features/services are supported.
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping"/>
 
         <projectService serviceImplementation = "software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager"/>
 
@@ -192,6 +193,8 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
+
+        <editorFloatingToolbarProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.ResourceModelFileFloatingToolbarProvider"/>
 
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
@@ -247,6 +250,7 @@ with what features/services are supported.
 
     <extensions defaultExtensionNs="JavaScript.JsonSchema">
         <ProviderFactory implementation="software.aws.toolkits.jetbrains.services.ecs.TaskSchemaProviderFactory"/>
+        <ProviderFactory implementation="software.aws.toolkits.jetbrains.services.dynamic.ResourceSchemaProviderFactory"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
@@ -378,12 +382,22 @@ with what features/services are supported.
                     class="software.aws.toolkits.jetbrains.services.cloudformation.actions.DeleteStackAction"/>
         </group>
 
+
+        <group id="aws.toolkit.explorer.dynamic.resource" popup="true" compact="false">
+            <action id="dynamic.resource.create" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCreateResourceAction"/>
+        </group>
+        
+        <group id="aws.toolkit.explorer.dynamic.mutate.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.MutateResourceModelFloatingToolbarActionGroup">
+            <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.BeginCreateResourceAction"/>
+        </group>
+
         <group id="aws.toolkit.explorer.dynamic.additional.resources" popup="true" compact="false">
             <action id="dynamic.add.resources"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceAddResourcesToExplorerAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.dynamic" popup="true" compact="false">
+
             <action id="dynamic.open"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>
             <action id="dynamic.copy.arn"

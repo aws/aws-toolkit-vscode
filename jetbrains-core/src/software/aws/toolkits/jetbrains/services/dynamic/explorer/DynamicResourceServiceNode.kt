@@ -22,16 +22,19 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
+import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
-    ResourceParentNode {
+    ResourceParentNode,
+    ResourceActionNode {
+
     override fun displayName(): String = resourceType
     override fun isAlwaysShowPlus(): Boolean = true
 
@@ -48,6 +51,8 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
         DynamicresourceTelemetry.listResource(project = nodeProject, success = false, resourceType = resourceType)
         throw e
     }
+
+    override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.resource"
 }
 
 class UnavailableDynamicResourceTypeNode(project: Project, resourceType: String) : AwsExplorerNode<String>(project, resourceType, null) {
@@ -96,14 +101,14 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                         content = message("dynamic_resources.fetch.fail.content", resource.identifier)
                     )
                     DynamicresourceTelemetry.getResource(nodeProject, success = false, resourceType = resource.type.fullName)
-
                     null
                 } ?: return
 
-                val file = DynamicResourceVirtualFile(
+                val file = ViewEditableDynamicResourceVirtualFile(
                     DynamicResourceIdentifier(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier),
                     model
                 )
+                DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
 
                 indicator.text = message("dynamic_resources.fetch.open")
                 WriteCommandAction.runWriteCommandAction(nodeProject) {
