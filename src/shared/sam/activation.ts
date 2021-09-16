@@ -38,8 +38,6 @@ import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 import { extensionSettingsPrefix } from '../constants'
 const localize = nls.loadMessageBundle()
 
-const STATE_NAME_SUPPRESS_YAML_PROMPT = 'suppressYamlExtPrompt'
-
 /**
  * Activate SAM-related functionality.
  */
@@ -256,7 +254,7 @@ async function createYamlExtensionPrompt(): Promise<void> {
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
     if (
-        (await settingsConfig.shouldDisplayPrompt(STATE_NAME_SUPPRESS_YAML_PROMPT)) &&
+        (await settingsConfig.isPromptEnabled('yamlExtPrompt')) &&
         getIdeType() === IDE.vscode &&
         !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
     ) {
@@ -349,7 +347,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
                 }
                 break
             case permanentlySuppress:
-                settingsConfig.disablePrompt(STATE_NAME_SUPPRESS_YAML_PROMPT)
+                settingsConfig.disablePrompt('yamlExtPrompt')
         }
     }
 }

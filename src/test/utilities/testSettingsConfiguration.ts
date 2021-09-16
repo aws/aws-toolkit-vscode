@@ -29,7 +29,7 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
         this._promptData[promptName] = true
     }
 
-    public async shouldDisplayPrompt(promptName: string): Promise<boolean> {
+    public async isPromptEnabled(promptName: string): Promise<boolean> {
         return this._promptData[promptName] !== true
     }
 
