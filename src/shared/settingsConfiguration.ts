@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from './logger'
 import * as packageJson from '../../package.json'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { ext } from './extensionGlobals'
 import { isCI } from './vscode/env'
+import * as logger from './logger'
 
 /**
  * Wraps the VSCode configuration API and provides Toolkit-related
@@ -16,7 +16,7 @@ import { isCI } from './vscode/env'
  */
 export type SettingsConfiguration = ClassToInterfaceType<DefaultSettingsConfiguration>
 
-export type AwsDevSetting = 'aws.developer.foo1' | 'aws.developer.foo2'
+export type AwsDevSetting = 'aws.forceCloud9' | 'aws.developer.foo1' | 'aws.developer.foo2'
 
 type JSPrimitiveTypeName =
     | 'undefined'
@@ -30,7 +30,10 @@ type JSPrimitiveTypeName =
     | 'object'
 
 export class DefaultSettingsConfiguration implements SettingsConfiguration {
-    public constructor(private readonly extensionSettingsPrefix: string = 'aws') {}
+    public constructor(
+        private readonly extensionSettingsPrefix: string = 'aws',
+        private readonly log: logger.Logger = logger.getLogger()
+    ) {}
     public readSetting<T>(settingKey: string): T | undefined
     public readSetting<T>(settingKey: string, defaultValue: T): T
 
@@ -67,7 +70,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             await settings.update(settingKey, value, target)
             return true
         } catch (e) {
-            getLogger().error('failed to set config: %O=%O, error: %O', settingKey, value, e)
+            this.log.error('failed to set config: %O=%O, error: %O', settingKey, value, e)
             return false
         }
     }
@@ -118,19 +121,19 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             }
 
             if (typeof setting !== 'object') {
-                getLogger().warn('Setting "aws.suppressPrompts" has an unexpected type. Resetting to default.')
+                this.log.warn('Setting "aws.suppressPrompts" has an unexpected type. Resetting to default.')
                 // writing this setting to an empty object reverts the setting to its default
                 await this.writeSetting('suppressPrompts', {}, vscode.ConfigurationTarget.Global)
                 return undefined
             }
 
             if (!(promptName in setting)) {
-                getLogger().error(`Prompt not found in "aws.suppressPrompts": ${promptName}`)
+                this.log.error(`Prompt not found in "aws.suppressPrompts": ${promptName}`)
                 return undefined
             }
 
             if (typeof setting[promptName] !== 'boolean') {
-                getLogger().warn(
+                this.log.warn(
                     `Value for prompts in "aws.suppressPrompts" must be type boolean. Resetting prompt: ${promptName}`
                 )
                 setting[promptName] = false
@@ -140,7 +143,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
 
             return setting
         } catch (e) {
-            getLogger().error('Failed to get the setting: suppressPrompts', e)
+            this.log.error('Failed to get the setting: suppressPrompts', e)
         }
     }
 
@@ -186,7 +189,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             if (!silent) {
                 throw Error(`AWS Toolkit: ${msg}`)
             }
-            getLogger().error(msg)
+            this.log.error(msg)
             return undefined
         }
 

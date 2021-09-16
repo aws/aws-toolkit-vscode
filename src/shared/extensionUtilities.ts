@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ext } from '../shared/extensionGlobals'
 import { readFileAsString } from './filesystemUtilities'
-import { getLogger } from './logger'
+import { getLogger, getNullLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { BaseTemplates } from './templates/baseTemplates'
@@ -45,11 +45,12 @@ export enum IDE {
 let computeRegion: string | undefined = NOT_INITIALIZED
 
 export function getIdeType(): IDE {
-    const settings = new DefaultSettingsConfiguration('aws')
+    // Use null logger to avoid circular dependency, getIdeType() is called early in startup.
+    const settings = new DefaultSettingsConfiguration('aws', getNullLogger())
     if (
         vscode.env.appName === CLOUD9_APPNAME ||
         vscode.env.appName === CLOUD9_CN_APPNAME ||
-        !!settings.readSetting<boolean>('forceCloud9', false)
+        !!settings.readDevSetting<boolean>('aws.forceCloud9', 'boolean', true)
     ) {
         return IDE.cloud9
     }
