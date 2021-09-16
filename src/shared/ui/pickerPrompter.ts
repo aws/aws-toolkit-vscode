@@ -325,7 +325,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
                 DataQuickPickItem<T>[],
                 DataQuickPickItem<T>[] | undefined
             >
-            while (true) {
+            // Any caching of the iterator should be handled externally; we will not keep track of
+            // where we left off when the prompt has been hidden
+            let hidden = false
+            const checkHidden = this.quickPick.onDidHide(() => (hidden = true))
+            while (!hidden) {
                 const { value, done } = await iterator.next()
                 if (value) {
                     this.appendItems(value)
@@ -334,6 +338,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
                     break
                 }
             }
+            checkHidden.dispose()
         } else if (items instanceof Promise) {
             this.appendItems(await items)
         } else {

@@ -114,11 +114,15 @@ describe('QuickPickPrompter', function () {
         { label: 'item2', data: 1 },
         { label: 'item3', data: 2 },
     ]
-    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue' | 'onDidTriggerButton'>
+    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue' | 'onDidTriggerButton' | 'onDidHide'>
     let testPrompter: QuickPickPrompter<number>
 
     beforeEach(function () {
-        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidTriggerButton'])
+        picker = exposeEmitters(vscode.window.createQuickPick(), [
+            'onDidChangeValue',
+            'onDidTriggerButton',
+            'onDidHide',
+        ])
         picker.items = testItems
         testPrompter = new QuickPickPrompter(picker)
     })
@@ -221,6 +225,27 @@ describe('QuickPickPrompter', function () {
 
         await testPrompter.clearAndLoadItems(generator())
         assert.strictEqual(picker.items.length, 3)
+    })
+
+    it('stops requesting from an AsyncIterable when hidden', async function () {
+        let unlock!: () => void
+        let lock = new Promise<void>(r => (unlock = r))
+        async function* generator() {
+            for (const item of testItems) {
+                await lock
+                yield [item]
+                lock = new Promise<void>(r => (unlock = r))
+            }
+        }
+
+        testPrompter.clearAndLoadItems(generator())
+        picker.fireOnDidHide()
+        unlock()
+        await new Promise(r => setImmediate(r))
+        assert.strictEqual(picker.items.length, 1)
+        unlock()
+        await new Promise(r => setImmediate(r))
+        assert.strictEqual(picker.items.length, 1)
     })
 })
 
