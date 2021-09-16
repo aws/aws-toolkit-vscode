@@ -57,9 +57,10 @@ export type ExtendedQuickPickOptions<T> = Omit<
      * Appends 'Selected previously' to the last selected item's description text (default: true)
      * This currently mutates the item as it is expected that callers regenerate items every prompt
      */
-    showSelectedPreviously?: boolean
+    addSelectedPreviouslyText?: boolean
 }
 
+/** See {@link ExtendedQuickPickOptions.placeholderItem placeholderItem} for setting a different placeholder */
 const DEFAULT_PLACEHOLDER_ITEM = {
     label: localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
     detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
@@ -69,7 +70,7 @@ const DEFAULT_PLACEHOLDER_ITEM = {
 
 export const DEFAULT_QUICKPICK_OPTIONS: ExtendedQuickPickOptions<any> = {
     ignoreFocusOut: true,
-    showSelectedPreviously: true,
+    addSelectedPreviouslyText: true,
     placeholderItem: DEFAULT_PLACEHOLDER_ITEM,
 }
 
@@ -392,7 +393,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === picked.label)
         }
 
-        if (this.options.showSelectedPreviously) {
+        if (this.options.addSelectedPreviouslyText) {
             this.quickPick.activeItems.forEach(
                 item => (item.description = `${item.description ?? ''} (${selectedPreviously})`)
             )
