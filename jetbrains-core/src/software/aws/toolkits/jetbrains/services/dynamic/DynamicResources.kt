@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.amazon.awssdk.services.cloudformation.model.Visibility
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
+import java.io.File
 
 object DynamicResources {
     private val mapper = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -38,6 +39,17 @@ object DynamicResources {
             Arn.fromString(identifier).resourceAsString()
         } else {
             identifier
+        }
+
+    fun getResourceSchema(resourceType: String): Resource.Cached<File> =
+        ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.schema.$resourceType") {
+            val schema = this.describeType {
+                it.type(RegistryType.RESOURCE)
+                it.typeName(resourceType)
+            }.schema()
+            val file = File("$resourceType.json")
+            file.writeText(schema)
+            file
         }
 
     fun listTypes(): Resource.Cached<List<String>> = ClientBackedCachedResource(

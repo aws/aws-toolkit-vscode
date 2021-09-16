@@ -13,7 +13,7 @@ import software.aws.toolkits.jetbrains.core.explorer.DeleteResourceDialog
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
+import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceNode
 import software.aws.toolkits.resources.message
 
@@ -31,7 +31,7 @@ class DynamicResourceDeleteResourceAction :
             )
             val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
             fileEditorManager.openFiles.forEach {
-                if (it is DynamicResourceVirtualFile && it.getResourceIdentifier() == dynamicResourceIdentifier) {
+                if (it is ViewEditableDynamicResourceVirtualFile && it.dynamicResourceIdentifier == dynamicResourceIdentifier) {
                     ApplicationManager.getApplication().invokeAndWait { fileEditorManager.closeFile(it) }
                 }
             }
