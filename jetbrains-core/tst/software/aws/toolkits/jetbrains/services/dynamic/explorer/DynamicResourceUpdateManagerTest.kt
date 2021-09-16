@@ -25,9 +25,9 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceMutationState
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceStateMutationHandler
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
+import software.aws.toolkits.jetbrains.services.dynamic.ResourceMutationState
 import software.aws.toolkits.jetbrains.services.dynamic.ResourceType
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -62,6 +62,7 @@ class DynamicResourceUpdateManagerTest {
                 DeleteResourceResponse.builder().progressEvent(
                     ProgressEvent.builder()
                         .requestToken("sampleToken")
+                        .typeName(resource.type.fullName)
                         .operation(Operation.DELETE)
                         .operationStatus(OperationStatus.IN_PROGRESS)
                         .build()
@@ -79,21 +80,18 @@ class DynamicResourceUpdateManagerTest {
             }
         }
 
-        class AfterResourceStateHasChanged : DynamicResourceStateMutationHandler {
-            init {
-                projectRule.project.messageBus.connect(projectRule.project).subscribe(DynamicResourceUpdateManager.DYNAMIC_RESOURCE_STATE_CHANGED, this)
-            }
-            override fun resourceStateChanged(
-                dynamicResourceIdentifier: DynamicResourceIdentifier,
-                dynamicResourceMutationState: DynamicResourceMutationState,
-                message: String?
-            ) {
-                testOperationStatus.add(dynamicResourceMutationState.operationStatus)
-            }
+        projectRule.project.messageBus.connect(projectRule.project)
+            .subscribe(
+                DynamicResourceUpdateManager.DYNAMIC_RESOURCE_STATE_CHANGED,
+                object : DynamicResourceStateMutationHandler {
+                    override fun mutationStatusChanged(state: ResourceMutationState) {
+                        testOperationStatus.add(state.status)
+                    }
 
-            override fun statusCheckComplete() {}
-        }
-        AfterResourceStateHasChanged()
+                    override fun statusCheckComplete() {}
+                }
+            )
+
         dynamicResourceUpdateManager.deleteResource(DynamicResourceIdentifier(connectionSettings, resource.type.fullName, resource.identifier))
         CountDownLatch(1).await(400, TimeUnit.MILLISECONDS)
         assertThat(testOperationStatus.size).isEqualTo(1)
@@ -110,6 +108,7 @@ class DynamicResourceUpdateManagerTest {
                 DeleteResourceResponse.builder().progressEvent(
                     ProgressEvent.builder()
                         .requestToken("sampleToken")
+                        .typeName(resource.type.fullName)
                         .operation(Operation.DELETE)
                         .operationStatus(OperationStatus.IN_PROGRESS)
                         .build()
@@ -127,23 +126,20 @@ class DynamicResourceUpdateManagerTest {
             }
         }
 
-        class AfterResourceStateHasChanged : DynamicResourceStateMutationHandler {
-            init {
-                projectRule.project.messageBus.connect(projectRule.project).subscribe(DynamicResourceUpdateManager.DYNAMIC_RESOURCE_STATE_CHANGED, this)
-            }
-            override fun resourceStateChanged(
-                dynamicResourceIdentifier: DynamicResourceIdentifier,
-                dynamicResourceMutationState: DynamicResourceMutationState,
-                message: String?
-            ) {
-                testOperationStatus.add(dynamicResourceMutationState.operationStatus)
-            }
+        projectRule.project.messageBus.connect(projectRule.project)
+            .subscribe(
+                DynamicResourceUpdateManager.DYNAMIC_RESOURCE_STATE_CHANGED,
+                object : DynamicResourceStateMutationHandler {
 
-            override fun statusCheckComplete() {
-                testOperationStatus.add(OperationStatus.SUCCESS)
-            }
-        }
-        AfterResourceStateHasChanged()
+                    override fun mutationStatusChanged(state: ResourceMutationState) {
+                        testOperationStatus.add(state.status)
+                    }
+
+                    override fun statusCheckComplete() {
+                        testOperationStatus.add(OperationStatus.SUCCESS)
+                    }
+                }
+            )
         dynamicResourceUpdateManager.deleteResource(DynamicResourceIdentifier(connectionSettings, resource.type.fullName, resource.identifier))
         CountDownLatch(1).await(400, TimeUnit.MILLISECONDS)
         assertThat(testOperationStatus.size).isEqualTo(1)

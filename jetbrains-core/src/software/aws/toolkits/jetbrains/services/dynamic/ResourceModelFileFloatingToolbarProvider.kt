@@ -17,6 +17,6 @@ class ResourceModelFileFloatingToolbarProvider : AbstractFloatingToolbarProvider
     }
 
     companion object {
-        private const val RESOURCE_MODEL_ACTION_GROUP = "aws.toolkit.explorer.dynamic.mutate.resource.file"
+        const val RESOURCE_MODEL_ACTION_GROUP = "aws.toolkit.explorer.dynamic.mutate.resource.file"
     }
 }
