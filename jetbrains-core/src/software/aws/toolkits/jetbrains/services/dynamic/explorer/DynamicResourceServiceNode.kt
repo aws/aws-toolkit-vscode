@@ -71,7 +71,9 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
 
     override fun statusText(): String? {
         val state = DynamicResourceUpdateManager.getInstance(nodeProject)
-            .getUpdateStatus(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier)?.takeIf { !it.status.isTerminal() }
+            .getUpdateStatus(DynamicResourceIdentifier(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier))?.takeIf {
+                !it.status.isTerminal()
+            }
             ?: return null
         return "${state.operation} ${state.status}"
     }

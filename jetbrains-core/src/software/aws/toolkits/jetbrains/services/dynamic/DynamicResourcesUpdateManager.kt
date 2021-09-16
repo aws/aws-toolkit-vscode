@@ -18,8 +18,6 @@ import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.getClient
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.DynamicresourceTelemetry
-import software.aws.toolkits.telemetry.Result
 import java.util.concurrent.ConcurrentLinkedQueue
 
 internal class DynamicResourceUpdateManager(private val project: Project) {
@@ -78,12 +76,16 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
 
     private fun startCheckingProgress() {
         if (pendingMutations.size == 1) {
-            getProgress()
+            alarm.addRequest({ getProgress() }, 0)
         }
     }
 
-    fun getUpdateStatus(connectionSettings: ConnectionSettings, resourceType: String, resourceIdentifier: String): ResourceMutationState? =
-        pendingMutations.find { it.connectionSettings == connectionSettings && it.resourceType == resourceType && it.resourceIdentifier == resourceIdentifier }
+    fun getUpdateStatus(dynamicResourceIdentifier: DynamicResourceIdentifier): ResourceMutationState? =
+        pendingMutations.find {
+            it.connectionSettings == dynamicResourceIdentifier.connectionSettings &&
+                it.resourceType == dynamicResourceIdentifier.resourceType &&
+                it.resourceIdentifier == dynamicResourceIdentifier.resourceIdentifier
+        }
 
     private fun getProgress() {
         var size = pendingMutations.size
