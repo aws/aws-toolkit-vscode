@@ -189,7 +189,7 @@ describe('QuickPickPrompter', function () {
     })
 
     it('adds a message to the description when an item has been previously selected', async function () {
-        testPrompter = new QuickPickPrompter(picker, { showSelectedPreviously: true })
+        testPrompter = new QuickPickPrompter(picker, { addSelectedPreviouslyText: true })
         testPrompter.setLastResponse({ label: 'item1', data: 0 })
         const description = ` (${selectedPreviously})`
         assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
