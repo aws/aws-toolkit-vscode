@@ -227,11 +227,7 @@ async function cleanLogFiles(logPath: string, logMaxBytes: number): Promise<void
             getLogger().error('cleanLogFiles: fs.stat() failed on file: %0', logFullPath, e)
         }
         if (logSize > LOG_MAX_BYTES) {
-            if (log === getLogPath()) {
-                getLogger().warn('logs: Log file for this session has exceeded the size limit.')
-            } else {
-                oversizedFiles.push(log)
-            }
+            oversizedFiles.push(log)
         }
         dirSize += logSize
     }
