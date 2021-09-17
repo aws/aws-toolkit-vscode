@@ -4,7 +4,7 @@ Resources:
         Properties:
             CodeUri: .
             Handler: src/subfolder/app.handlerTwoFoldersDeep
-            Runtime: nodejs10.x
+            Runtime: nodejs14.x
         Environment:
             Variables:
                 SAMPLE1: 'value 1 from template.yaml'
