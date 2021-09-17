@@ -13,13 +13,13 @@ const STABLE = 'stable'
 const MINIMUM = 'minimum'
 
 /**
- * Downloads and unzips a copy of VS Code to run tests against.
+ * Downloads and extracts a copy of VSCode to run tests against.
  *
  * Prints the result of `code --version`.
  *
- * Test suites can set up an experimental instance of VS Code however they want.
+ * Test suites can set up an experimental instance of VSCode however they want.
  * This method provides the common use-case, pulling down the latest version (aka 'stable').
- * The VS Code version under test can be altered by setting the environment variable
+ * The VSCode version under test can be altered by setting the environment variable
  * VSCODE_TEST_VERSION prior to running the tests.
  */
 export async function setupVSCodeTestInstance(): Promise<string> {
@@ -30,16 +30,20 @@ export async function setupVSCodeTestInstance(): Promise<string> {
         vsCodeVersion = getMinVsCodeVersion()
     }
 
-    console.log(`Setting up VS Code test instance, version: ${vsCodeVersion}`)
-    const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion)
-    console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
-    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--version']))
+    console.log(`Setting up VSCode test instance, version: ${vsCodeVersion}`)
+    // Sample vscode executable path:
+    //      C:\codebuild\tmp\…\.vscode-test\vscode-insiders\Code - Insiders.exe
+    // Sample vscode CLI path:
+    //      C:\codebuild\tmp\…\.vscode-test\vscode-insiders\bin\code-insiders.cmd
+    const vscodePath = await downloadAndUnzipVSCode(vsCodeVersion)
+    console.log(`VSCode test instance: ${vscodePath}`)
+    console.log(await invokeVSCodeCli(vscodePath, ['--version']))
 
-    return vsCodeExecutablePath
+    return vscodePath
 }
 
-export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<Buffer> {
-    const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
+export async function invokeVSCodeCli(vscodeExePath: string, args: string[]): Promise<Buffer> {
+    const cli = resolveCliPathFromVSCodeExecutablePath(vscodeExePath)
 
     const cmdArgs = [...args]
 
@@ -49,21 +53,27 @@ export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string
         cmdArgs.push('--user-data-dir', process.env.AWS_TOOLKIT_TEST_USER_DIR)
     }
 
-    console.log(`Invoking vscode CLI command:\n    "${vsCodeCliPath}" ${JSON.stringify(cmdArgs)}`)
-    const spawnResult = child_process.spawnSync(vsCodeCliPath, cmdArgs, {
-        encoding: 'utf-8',
-        stdio: 'pipe',
-    })
+    console.log(`Invoking VSCode CLI:\n    "${cli}" ${JSON.stringify(cmdArgs)}`)
+    try {
+        const spawnResult = child_process.spawnSync(cli, cmdArgs, {
+            encoding: 'utf-8',
+            stdio: 'pipe',
+            shell: false,
+        })
 
-    if (spawnResult.status !== 0) {
-        throw new Error(`VS Code CLI command failed (exit-code: ${spawnResult.status}): ${vsCodeCliPath} ${cmdArgs}`)
+        if (spawnResult.status !== 0) {
+            throw new Error(`vscode CLI failed (exit-code: ${JSON.stringify(spawnResult)}): ${cli} ${cmdArgs}`)
+        }
+
+        if (spawnResult.error) {
+            throw spawnResult.error
+        }
+
+        return spawnResult.stdout
+    } catch (e) {
+        console.log(`error: invokeVSCodeCli() failed:\n${e}`)
+        throw e
     }
-
-    if (spawnResult.error) {
-        throw spawnResult.error
-    }
-
-    return spawnResult.stdout
 }
 
 export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
