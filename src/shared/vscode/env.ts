@@ -31,3 +31,10 @@ class DefaultEnv implements Env {
         return vscode.env.clipboard
     }
 }
+
+/**
+ * Returns true if the current build is running on CI (build server).
+ */
+export function isCI(): boolean {
+    return undefined !== process.env['CODEBUILD_BUILD_ID']
+}

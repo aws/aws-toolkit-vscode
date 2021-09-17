@@ -4,18 +4,53 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from './logger'
 import * as packageJson from '../../package.json'
+import { ClassToInterfaceType } from './utilities/tsUtils'
+import { ext } from './extensionGlobals'
+import { isCI } from './vscode/env'
+import * as logger from './logger'
 
 /**
  * Wraps the VSCode configuration API and provides Toolkit-related
  * configuration functions.
  */
-export interface SettingsConfiguration {
-    readSetting<T>(settingKey: string): T | undefined
-    readSetting<T>(settingKey: string, defaultValue: T): T
+export type SettingsConfiguration = ClassToInterfaceType<DefaultSettingsConfiguration>
 
-    // array values are serialized as a comma-delimited string
+export type AwsDevSetting = 'aws.forceCloud9' | 'aws.developer.foo1' | 'aws.developer.foo2'
+
+type JSPrimitiveTypeName =
+    | 'undefined'
+    | 'object'
+    | 'boolean'
+    | 'number'
+    | 'bigint'
+    | 'string'
+    | 'symbol'
+    | 'function'
+    | 'object'
+
+export class DefaultSettingsConfiguration implements SettingsConfiguration {
+    public constructor(
+        private readonly extensionSettingsPrefix: string = 'aws',
+        private readonly log: logger.Logger = logger.getLogger()
+    ) {}
+    public readSetting<T>(settingKey: string): T | undefined
+    public readSetting<T>(settingKey: string, defaultValue: T): T
+
+    /**
+     * Reads a vscode setting.
+     */
+    public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
+        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix)
+
+        if (!settings) {
+            return defaultValue
+        }
+
+        const val = settings.get<T>(settingKey)
+        return val ?? defaultValue
+    }
+
     /**
      * Sets a config value.
      *
@@ -29,31 +64,13 @@ export interface SettingsConfiguration {
      *
      * @returns true on success, else false
      */
-    writeSetting<T>(settingKey: string, value: T | undefined, target: vscode.ConfigurationTarget): Promise<boolean>
-}
-
-// default configuration settings handler for production release
-export class DefaultSettingsConfiguration implements SettingsConfiguration {
-    public constructor(public readonly extensionSettingsPrefix: string) {}
-
-    public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
-        const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix)
-
-        if (!settings) {
-            return defaultValue
-        }
-
-        const val = settings.get<T>(settingKey)
-        return val ?? defaultValue
-    }
-
     public async writeSetting<T>(settingKey: string, value: T, target: vscode.ConfigurationTarget): Promise<boolean> {
         try {
             const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix)
             await settings.update(settingKey, value, target)
             return true
         } catch (e) {
-            getLogger().error('failed to set config: %O=%O, error: %O', settingKey, value, e)
+            this.log.error('failed to set config: %O=%O, error: %O', settingKey, value, e)
             return false
         }
     }
@@ -104,19 +121,19 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             }
 
             if (typeof setting !== 'object') {
-                getLogger().warn('Setting "aws.suppressPrompts" has an unexpected type. Resetting to default.')
+                this.log.warn('Setting "aws.suppressPrompts" has an unexpected type. Resetting to default.')
                 // writing this setting to an empty object reverts the setting to its default
                 await this.writeSetting('suppressPrompts', {}, vscode.ConfigurationTarget.Global)
                 return undefined
             }
 
             if (!(promptName in setting)) {
-                getLogger().error(`Prompt not found in "aws.suppressPrompts": ${promptName}`)
+                this.log.error(`Prompt not found in "aws.suppressPrompts": ${promptName}`)
                 return undefined
             }
 
             if (typeof setting[promptName] !== 'boolean') {
-                getLogger().warn(
+                this.log.warn(
                     `Value for prompts in "aws.suppressPrompts" must be type boolean. Resetting prompt: ${promptName}`
                 )
                 setting[promptName] = false
@@ -126,7 +143,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
 
             return setting
         } catch (e) {
-            getLogger().error('Failed to get the setting: suppressPrompts', e)
+            this.log.error('Failed to get the setting: suppressPrompts', e)
         }
     }
 
@@ -138,5 +155,47 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         if (!(m as any)[name]) {
             throw Error(`config: unknown aws.suppressPrompts item: "${name}"`)
         }
+    }
+
+    public readDevSetting<T>(key: AwsDevSetting): string
+    public readDevSetting<T>(key: AwsDevSetting, type: JSPrimitiveTypeName, silent: boolean): T | undefined
+
+    /**
+     * Gets the value of a developer only setting.
+     *
+     * TODO: show a dialog if this is used, and/or make a UI change (such as
+     * changing the AWS Explorer color) so that it's obvious that Toolkit is in
+     * "Developer mode". Throw an error in CI.
+     */
+    public readDevSetting<T>(
+        key: AwsDevSetting,
+        type: JSPrimitiveTypeName = 'string',
+        silent: boolean = false
+    ): T | undefined {
+        const config = vscode.workspace.getConfiguration()
+        const val = config.get<T>(key)
+        if (val === undefined) {
+            const msg = `settings: readDevSetting(): setting "${key}": not found`
+            if (!silent && !isCI()) {
+                throw Error(`AWS Toolkit: ${msg}`)
+            }
+            // Do not log; the common case is that a developer setting does _not_ exist.
+            return undefined
+        }
+
+        const actualType = typeof val
+        if (actualType !== type) {
+            const msg = `settings: readDevSetting(): setting "${key}": got ${actualType}, expected ${type}`
+            if (!silent) {
+                throw Error(`AWS Toolkit: ${msg}`)
+            }
+            this.log.error(msg)
+            return undefined
+        }
+
+        if (ext.awsContext) {
+            ext.awsContext.setDeveloperMode(true)
+        }
+        return val
     }
 }
