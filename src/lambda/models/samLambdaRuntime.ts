@@ -134,7 +134,7 @@ function handleDeprecatedRuntime(runtime: Runtime) {
         .showErrorMessage(
             localize(
                 'AWS.samcli.deprecatedRuntime',
-                'Runtime {0} has been deprecated. Please update to a currently-supported runtime.',
+                'Runtime {0} has been deprecated. Update to a currently-supported runtime.',
                 runtime
             ),
             moreInfo
@@ -144,7 +144,7 @@ function handleDeprecatedRuntime(runtime: Runtime) {
                 vscode.env.openExternal(vscode.Uri.parse(supportedLambdaRuntimesUrl))
             }
         })
-    throw new Error(`Runtime ${runtime} is deprecated, see ${supportedLambdaRuntimesUrl} for more details.`)
+    throw new Error(`Runtime ${runtime} is deprecated, see: ${supportedLambdaRuntimesUrl}`)
 }
 
 /**
