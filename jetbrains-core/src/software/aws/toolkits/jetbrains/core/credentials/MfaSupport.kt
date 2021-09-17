@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 
 interface MfaRequiredInteractiveCredentials : InteractiveCredential {

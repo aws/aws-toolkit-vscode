@@ -8,8 +8,8 @@ import com.intellij.openapi.project.DumbAware
 import icons.AwsIcons
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.apprunner.AppRunnerServiceNode
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
@@ -22,7 +22,7 @@ class ViewSystemLogsAction :
     SingleResourceNodeAction<AppRunnerServiceNode>(message("apprunner.view_service_log_streams"), null, AwsIcons.Resources.CloudWatch.LOGS),
     DumbAware {
     override fun actionPerformed(selected: AppRunnerServiceNode, e: AnActionEvent) {
-        val scope = applicationThreadPoolScope(selected.nodeProject)
+        val scope = projectCoroutineScope(selected.nodeProject)
         scope.launch {
             try {
                 viewLogGroup(selected, "service")
@@ -37,7 +37,7 @@ class ViewApplicationLogsAction :
     SingleResourceNodeAction<AppRunnerServiceNode>(message("apprunner.view_application_log_streams"), null, AwsIcons.Resources.CloudWatch.LOGS),
     DumbAware {
     override fun actionPerformed(selected: AppRunnerServiceNode, e: AnActionEvent) {
-        val scope = applicationThreadPoolScope(selected.nodeProject)
+        val scope = projectCoroutineScope(selected.nodeProject)
         scope.launch {
             try {
                 viewLogGroup(selected, "application")

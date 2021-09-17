@@ -14,10 +14,10 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
@@ -28,7 +28,7 @@ class QueryResultsTable(
     fields: List<String>,
     queryId: String
 ) : Disposable {
-    private val coroutineScope = ApplicationThreadPoolScope("QueryResultsTable", this)
+    private val coroutineScope = disposableCoroutineScope(this)
     private val client = let {
         val (credentials, region) = connectionSettings
         AwsClientManager.getInstance().getClient<CloudWatchLogsClient>(credentials, region)

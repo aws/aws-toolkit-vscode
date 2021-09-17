@@ -11,7 +11,7 @@ import software.aws.toolkits.core.credentials.sso.Authorization
 import software.aws.toolkits.core.credentials.sso.DiskCache
 import software.aws.toolkits.core.credentials.sso.SsoCache
 import software.aws.toolkits.core.credentials.sso.SsoLoginCallback
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 

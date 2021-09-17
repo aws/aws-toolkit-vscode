@@ -9,9 +9,9 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.launch
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.profiles.DEFAULT_PROFILE_ID
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 
 data class ConnectionSettingsState(
     var activeProfile: String? = null,
@@ -24,7 +24,7 @@ data class ConnectionSettingsState(
 class DefaultAwsConnectionManager(project: Project) :
     AwsConnectionManager(project),
     PersistentStateComponent<ConnectionSettingsState> {
-    private val coroutineScope = ApplicationThreadPoolScope("DefaultAwsConnectionManager", this)
+    private val coroutineScope = disposableCoroutineScope(this)
 
     override fun getState(): ConnectionSettingsState = ConnectionSettingsState(
         activeProfile = selectedCredentialIdentifier?.id,

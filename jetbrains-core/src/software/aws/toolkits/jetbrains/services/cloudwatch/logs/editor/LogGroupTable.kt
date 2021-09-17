@@ -22,12 +22,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogGroupActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogGroupSearchActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ExportActionGroup
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.ui.bottomReached
 import software.aws.toolkits.resources.message
 import java.awt.event.KeyAdapter
@@ -42,7 +42,7 @@ class LogGroupTable(
     private val logGroup: String,
     type: TableType
 ) : Disposable {
-    private val coroutineScope = ApplicationThreadPoolScope("LogGroupTable", this)
+    private val coroutineScope = disposableCoroutineScope(this)
     val component: JComponent
     val channel: Channel<CloudWatchLogsActor.Message>
     private val groupTable: TableView<LogStream>

@@ -126,7 +126,9 @@ with what features/services are supported.
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.ProjectLevelCoroutineScopeTracker"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.coroutines.PluginCoroutineScopeTracker"/>
+
         <!-- Credential Management -->
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultRemoteResourceResolverProvider"/>
