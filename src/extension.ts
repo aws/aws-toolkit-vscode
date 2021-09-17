@@ -100,6 +100,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const endpointsProvider = makeEndpointsProvider()
 
         const awsContext = new DefaultAwsContext(context)
+        ext.awsContext = awsContext
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
