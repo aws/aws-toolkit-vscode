@@ -2,7 +2,7 @@
  * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { S3 } from 'aws-sdk'
+import { ECS, S3 } from 'aws-sdk'
 import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
 import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -300,22 +300,34 @@ export class MockEcsClient implements EcsClient {
     public readonly listClusters: (nextToken?: string) => Promise<EcsResourceAndToken>
     public readonly listServices: (cluster: string, nextToken?: string) => Promise<EcsResourceAndToken>
     public readonly listContainerNames: (taskDefinition: string) => Promise<string[]>
+    public readonly listTasks: (cluster: string, serviceName: string) => Promise<string[]>
+    public readonly describeTasks: (cluster: string, tasks: string[]) => Promise<ECS.Task[]>
+    public readonly describeServices: (cluster: string, services: string[]) => Promise<ECS.Service[]>
 
     public constructor({
         regionCode = '',
         listClusters = async () => ({ resource: [], nextToken: undefined }),
         listServices = async () => ({ resource: [], nextToken: undefined }),
         listContainerNames = async () => [],
+        listTasks = async () => [],
+        describeTasks = async () => [],
+        describeServices = async () => [],
     }: {
         regionCode?: string
         listClusters?(): Promise<EcsResourceAndToken>
         listServices?(): Promise<EcsResourceAndToken>
         listContainerNames?(): Promise<string[]>
+        listTasks?(): Promise<string[]>
+        describeTasks?(): Promise<ECS.Task[]>
+        describeServices?(): Promise<ECS.Service[]>
     }) {
         this.regionCode = regionCode
         this.listClusters = listClusters
         this.listServices = listServices
         this.listContainerNames = listContainerNames
+        this.listTasks = listTasks
+        this.describeTasks = describeTasks
+        this.describeServices = describeServices
     }
 }
 

@@ -37,7 +37,7 @@ enum OnDefaultRegionMissingOperation {
 class DefaultRegionMissingPromptItems {
     public static readonly add: string = localizedText.yes
     public static readonly alwaysAdd: string = localize(
-        'AWS.message.prompt.defaultRegionHidden.alwaysAdd',
+        'AWS.message.prompt.yesDontAskAgain',
         "Yes, and don't ask again"
     )
     public static readonly ignore: string = localizedText.no

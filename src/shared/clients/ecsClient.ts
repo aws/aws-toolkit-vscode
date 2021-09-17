@@ -49,11 +49,9 @@ export class DefaultEcsClient {
             return { resource: [] }
         }
         try {
-            const serviceResponse = await sdkClient
-                .describeServices({ services: serviceArnList.serviceArns!, cluster: cluster })
-                .promise()
+            const services = await this.describeServices(cluster, serviceArnList.serviceArns!)
             const response: EcsResourceAndToken = {
-                resource: serviceResponse.services!,
+                resource: services,
                 nextToken: serviceArnList.nextToken,
             }
             return response
@@ -75,6 +73,39 @@ export class DefaultEcsClient {
             getLogger().error('ecs: Failed to list containers for task definition %s: %O', taskDefinition, error)
             throw error
         }
+    }
+
+    public async listTasks(cluster: string, serviceName: string): Promise<string[]> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.ListTasksRequest = { cluster: cluster, serviceName: serviceName }
+        try {
+            const listTasksResponse = await sdkClient.listTasks(params).promise()
+            return listTasksResponse.taskArns ?? []
+        } catch (error) {
+            getLogger().error(
+                `ecs: Failed to get tasks for Cluster "${cluster}" and Service "${serviceName}": ${error} `
+            )
+            throw error
+        }
+    }
+
+    public async describeTasks(cluster: string, tasks: string[]): Promise<ECS.Task[]> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.DescribeTasksRequest = { cluster, tasks }
+        try {
+            const describedTasks = await sdkClient.describeTasks(params).promise()
+            return describedTasks.tasks ?? []
+        } catch (error) {
+            getLogger().error(error)
+            throw error
+        }
+    }
+
+    public async describeServices(cluster: string, services: string[]): Promise<ECS.Service[]> {
+        const sdkClient = await this.createSdkClient()
+        return (await sdkClient.describeServices({ cluster, services }).promise()).services ?? []
     }
 
     protected async createSdkClient(): Promise<ECS> {

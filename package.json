@@ -180,6 +180,11 @@
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
+                },
+                "aws.ecs.warnRunCommand": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.ecs.warnRunCommand%",
+                    "default": true
                 }
             }
         },
@@ -1099,6 +1104,11 @@
                     "command": "aws.ssmDocument.deleteDocument",
                     "group": "3@2",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                },
+                {
+                    "command": "aws.command.runCommandInContainer",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
                 }
             ]
         },
@@ -1742,6 +1752,16 @@
             {
                 "command": "aws.toggleSamCodeLenses",
                 "title": "%AWS.command.toggleSamCodeLenses%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.command.runCommandInContainer",
+                "title": "%AWS.command.runCommandInContainer%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
