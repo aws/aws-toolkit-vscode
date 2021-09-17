@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.util.Disposer
 import com.intellij.ui.CheckBoxList
 import com.intellij.ui.FilterComponent
 import com.intellij.ui.ListSpeedSearch
@@ -21,7 +20,7 @@ import javax.swing.JCheckBox
 import javax.swing.ListSelectionModel
 
 class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dynamic_resources_configurable.title")) {
-    private val coroutineScope by lazy {  ApplicationThreadPoolScope("DynamicResourcesConfigurable", disposable!!) }
+    private val coroutineScope by lazy { ApplicationThreadPoolScope("DynamicResourcesConfigurable", disposable!!) }
     private val checklistModel = DefaultListModel<JCheckBox>()
     private val checklist = CheckBoxList<String>(checklistModel)
     private val changeSet = mutableSetOf<Int>()
