@@ -9,10 +9,10 @@ import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import com.intellij.util.messages.Topic
 import kotlinx.coroutines.launch
-import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.amazon.awssdk.services.cloudformation.model.Operation
-import software.amazon.awssdk.services.cloudformation.model.OperationStatus
-import software.amazon.awssdk.services.cloudformation.model.ProgressEvent
+import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
+import software.amazon.awssdk.services.cloudcontrol.model.Operation
+import software.amazon.awssdk.services.cloudcontrol.model.OperationStatus
+import software.amazon.awssdk.services.cloudcontrol.model.ProgressEvent
 import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.getClient
@@ -31,7 +31,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     fun deleteResource(dynamicResourceIdentifier: DynamicResourceIdentifier) {
         coroutineScope.launch {
             try {
-                val client = dynamicResourceIdentifier.connectionSettings.getClient<CloudFormationClient>()
+                val client = dynamicResourceIdentifier.connectionSettings.getClient<CloudControlClient>()
                 val progress = client.deleteResource {
                     it.typeName(dynamicResourceIdentifier.resourceType)
                     it.identifier(dynamicResourceIdentifier.resourceIdentifier)
@@ -57,7 +57,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     fun createResource(connectionSettings: ConnectionSettings, dynamicResourceType: String, desiredState: String) {
         coroutineScope.launch {
             try {
-                val client = connectionSettings.getClient<CloudFormationClient>()
+                val client = connectionSettings.getClient<CloudControlClient>()
                 val progress = client.createResource {
                     it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
@@ -72,7 +72,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         }
     }
 
-    private fun startCheckingProgress(connectionSettings: ConnectionSettings, progress: ProgressEvent) {
+    private fun startCheckingProgress(connectionSettings: ConnectionSettings, progress: software.amazon.awssdk.services.cloudcontrol.model.ProgressEvent) {
         pendingMutations.add(ResourceMutationState.fromEvent(connectionSettings, progress))
         if (pendingMutations.size == 1) {
             alarm.addRequest({ getProgress() }, 0)
@@ -92,7 +92,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         while (size > 0) {
             val mutation = pendingMutations.remove()
             if (!mutation.status.isTerminal()) {
-                val client = mutation.connectionSettings.getClient<CloudFormationClient>()
+                val client = mutation.connectionSettings.getClient<CloudControlClient>()
                 val progress = try {
                     client.getResourceRequestStatus { it.requestToken(mutation.token) }
                 } catch (e: Exception) {
