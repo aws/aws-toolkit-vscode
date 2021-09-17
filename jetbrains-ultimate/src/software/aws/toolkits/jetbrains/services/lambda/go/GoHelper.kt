@@ -19,7 +19,7 @@ import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.steps.SamRunnerStep
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
@@ -65,7 +65,7 @@ object GoDebugHelper {
             val processHandler = process.processHandler
             val socketAddress = InetSocketAddress(debugHost, debugPorts.first())
 
-            val scope = applicationThreadPoolScope(session.project)
+            val scope = projectCoroutineScope(session.project)
             processHandler.addProcessListener(
                 object : ProcessAdapter() {
                     override fun startNotified(event: ProcessEvent) {

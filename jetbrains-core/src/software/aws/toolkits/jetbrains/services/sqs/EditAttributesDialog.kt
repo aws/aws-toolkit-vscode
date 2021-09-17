@@ -14,8 +14,8 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SqsException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -28,7 +28,7 @@ class EditAttributesDialog(
     private val queue: Queue,
     private val attributes: Map<QueueAttributeName, String>
 ) : DialogWrapper(project) {
-    private val coroutineScope = applicationThreadPoolScope(project)
+    private val coroutineScope = projectCoroutineScope(project)
     val view = EditAttributesPanel()
 
     init {

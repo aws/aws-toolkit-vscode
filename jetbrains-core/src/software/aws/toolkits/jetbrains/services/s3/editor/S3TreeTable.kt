@@ -21,9 +21,9 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.s3.objectActions.uploadObjects
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -46,7 +46,7 @@ class S3TreeTable(
     val bucket: S3VirtualBucket,
     private val project: Project
 ) : TreeTable(treeTableModel) {
-    private val coroutineScope = applicationThreadPoolScope(project)
+    private val coroutineScope = projectCoroutineScope(project)
     private val edt = getCoroutineUiContext()
 
     private val dropTargetListener = object : DropTargetAdapter() {

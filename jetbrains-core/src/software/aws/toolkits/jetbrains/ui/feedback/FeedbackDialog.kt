@@ -15,16 +15,16 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.FeedbackTelemetry
 import software.aws.toolkits.telemetry.Result
 
 class FeedbackDialog(private val project: Project) : DialogWrapper(project) {
-    private val coroutineScope = applicationThreadPoolScope(project)
+    private val coroutineScope = projectCoroutineScope(project)
     val panel = SubmitFeedbackPanel()
 
     init {

@@ -20,7 +20,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.resolveDebuggerSupport
@@ -29,7 +30,6 @@ import software.aws.toolkits.jetbrains.services.lambda.steps.GetPorts.Companion.
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -100,7 +100,7 @@ class AttachDebugger(
                 throw ExecutionException(e)
             }
         }
-        val scope = applicationThreadPoolScope(context.project)
+        val scope = projectCoroutineScope(context.project)
         // Make sure the session is always cleaned up
         scope.launch {
             while (!context.isCompleted()) {

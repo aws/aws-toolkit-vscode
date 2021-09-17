@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.lambda.upload.createSqsPollerPolicy
 import software.aws.toolkits.jetbrains.ui.ConfirmPolicyPanel
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
@@ -29,7 +29,7 @@ class ConfirmIamPolicyDialog(
     private val queue: Queue,
     parent: Component? = null
 ) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
-    private val coroutineScope = applicationThreadPoolScope(project)
+    private val coroutineScope = projectCoroutineScope(project)
     private val rolePolicy: String by lazy { createSqsPollerPolicy(queue.arn) }
     private val policyName: String by lazy { "AWSLambdaSQSPollerExecutionRole-$functionName-${queue.queueName}-${queue.region.id}" }
     val view = ConfirmPolicyPanel(project, message("sqs.confirm.iam.warning.text"))
