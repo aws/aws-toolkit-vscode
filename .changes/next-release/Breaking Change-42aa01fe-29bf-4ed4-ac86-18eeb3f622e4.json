@@ -1,0 +1,4 @@
+{
+	"type": "Breaking Change",
+	"description": "DEPRECATION:  `python2.7` and `nodejs10.x` runtimes (cannot update in Lambda)"
+}
