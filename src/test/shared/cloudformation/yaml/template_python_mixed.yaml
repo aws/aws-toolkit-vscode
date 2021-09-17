@@ -17,26 +17,26 @@ Resources:
     HelloWorldFunction2:
         Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
         Properties:
-            CodeUri: hello_world2/
-            Handler: app.lambda_handler2
-            Runtime: python2.7
+            CodeUri: hello_world38/
+            Handler: app.lambda_handler38
+            Runtime: python3.8
             Events:
                 HelloWorld:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
                     Properties:
-                        Path: /hello2
+                        Path: /hello28
                         Method: get
     HelloWorldFunction3:
         Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
         Properties:
-            CodeUri: hello_world3/
-            Handler: app.lambda_handler3
-            Runtime: python3.6
+            CodeUri: hello_world39/
+            Handler: app.lambda_handler39
+            Runtime: python3.9
             Events:
                 HelloWorld:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
                     Properties:
-                        Path: /hello3
+                        Path: /hello39
                         Method: get
 
 Outputs:
