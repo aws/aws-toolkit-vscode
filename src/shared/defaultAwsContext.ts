@@ -25,6 +25,7 @@ export class DefaultAwsContext implements AwsContext {
     private readonly explorerRegions: string[]
 
     private currentCredentials: AwsContextCredentials | undefined
+    private developerMode: boolean | undefined
 
     public constructor(public context: vscode.ExtensionContext) {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
@@ -39,7 +40,23 @@ export class DefaultAwsContext implements AwsContext {
      * Passing in undefined represents that there are no active credentials.
      */
     public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
+        if (JSON.stringify(this.currentCredentials) === JSON.stringify(credentials)) {
+            // Do nothing. Besides performance, this avoids infinite loops.
+            return
+        }
         this.currentCredentials = credentials
+        this.emitEvent()
+    }
+
+    /**
+     * Sets "developer mode" when a Toolkit developer setting is active.
+     */
+    public async setDeveloperMode(enable: boolean): Promise<void> {
+        if (this.developerMode === enable) {
+            // Do nothing. Besides performance, this avoids infinite loops.
+            return
+        }
+        this.developerMode = enable
         this.emitEvent()
     }
 
@@ -105,9 +122,11 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     private emitEvent() {
+        // TODO(jmkeyes): skip this if the state did not actually change.
         this._onDidChangeContext.fire({
             profileName: this.currentCredentials?.credentialsId,
             accountId: this.currentCredentials?.accountId,
+            developerMode: this.developerMode,
         })
     }
 }
