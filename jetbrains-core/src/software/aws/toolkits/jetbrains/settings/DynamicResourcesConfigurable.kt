@@ -21,7 +21,7 @@ import javax.swing.JCheckBox
 import javax.swing.ListSelectionModel
 
 class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dynamic_resources_configurable.title")) {
-    private val coroutineScope = ApplicationThreadPoolScope("DynamicResourcesConfigurable", Disposer.newDisposable())
+    private val coroutineScope by lazy {  ApplicationThreadPoolScope("DynamicResourcesConfigurable", disposable!!) }
     private val checklistModel = DefaultListModel<JCheckBox>()
     private val checklist = CheckBoxList<String>(checklistModel)
     private val changeSet = mutableSetOf<Int>()
