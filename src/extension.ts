@@ -41,7 +41,7 @@ import {
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
-import { activate as activateLogger } from './shared/logger/activation'
+import { activate as activateLogger, watchLogFile } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
@@ -254,6 +254,9 @@ export async function activate(context: vscode.ExtensionContext) {
         showWelcomeMessage(context)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
+
+        const logWatcher = watchLogFile()
+        context.subscriptions.push({ dispose: () => logWatcher.close() })
 
         ext.telemetry.assertPassiveTelemetry(ext.didReload())
     } catch (error) {

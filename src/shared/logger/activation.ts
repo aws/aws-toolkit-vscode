@@ -8,6 +8,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs-extra'
+import * as _ from 'lodash'
 import { Logger, LogLevel, getLogger } from '.'
 import { extensionSettingsPrefix } from '../constants'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
@@ -226,7 +227,11 @@ async function cleanLogFiles(logPath: string, logMaxBytes: number): Promise<void
             getLogger().error('cleanLogFiles: fs.stat() failed on file: %0', logFullPath, e)
         }
         if (logSize > LOG_MAX_BYTES) {
-            oversizedFiles.push(log)
+            if (log === getLogPath()) {
+                getLogger().warn('logs: Log file for this session has exceeded the size limit.')
+            } else {
+                oversizedFiles.push(log)
+            }
         }
         dirSize += logSize
     }
@@ -259,4 +264,17 @@ async function deleteOldLogFiles(logPath: string, files: string[], keepLatest: n
             `Log folder contains more than 100 logs or is over 100MB. Deleted the ${files.length} oldest files`
         )
     }
+}
+
+export function watchLogFile(): fs.FSWatcher {
+    return fs.watch(
+        getLogPath(),
+        _.debounce((eventType, filename) => {
+            if (eventType === 'rename') {
+                vscode.window.showWarningMessage(
+                    localize('AWS.log.logFileNotFound', 'The log file for this session has been moved or deleted.')
+                )
+            }
+        }, 100)
+    )
 }
