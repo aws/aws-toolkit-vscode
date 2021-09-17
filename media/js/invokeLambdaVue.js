@@ -1,9 +1,8 @@
 console.log('Loaded!')
-;(function() {
+;(function () {
     const vscode = acquireVsCodeApi()
-    const app = new Vue({
-        el: '#app',
-        data: {
+    const app = Vue.createApp({
+        data: () => ({
             selectedSampleRequest: {},
             sampleText: '',
             error: null,
@@ -11,43 +10,34 @@ console.log('Loaded!')
             statusCode: '',
             logs: '',
             showResponse: false,
-            isLoading: false
-        },
+            isLoading: false,
+            selectedFile: '',
+        }),
         mounted() {
-            this.$nextTick(function() {
+            this.$nextTick(function () {
                 window.addEventListener('message', this.handleMessageReceived)
             })
         },
         methods: {
-            newSelection: function() {
+            newSelection: function () {
                 vscode.postMessage({
                     command: 'sampleRequestSelected',
-                    value: this.selectedSampleRequest
+                    value: this.selectedSampleRequest,
                 })
             },
-            processFile: function($event) {
-                console.log($event)
-                console.log($event.target)
-                const inputFile = $event.target
-                const self = this
-                if ('files' in inputFile && inputFile.files.length > 0) {
-                    const reader = new FileReader()
-                    reader.onload = event => {
-                        console.log(event.target.result)
-                        self.sampleText = ''
-                        self.sampleText = event.target.result
-                    } // desired file content
-                    reader.onerror = error => reject(error)
-                    reader.readAsText(inputFile.files[0])
-                }
+            promptForFileLocation: function () {
+                vscode.postMessage({
+                    command: 'promptForFile',
+                })
             },
-            handleMessageReceived: function(e) {
+            handleMessageReceived: function (e) {
                 const message = event.data
                 console.log(message.command)
                 console.log(message.sample)
                 switch (message.command) {
                     case 'loadedSample':
                         this.loadSampleText(message.sample)
+                        this.selectedFile = message.selectedFile
                         break
                     case 'invokedLambda':
                         this.showResponse = true
@@ -72,17 +62,18 @@ console.log('Loaded!')
                         break
                 }
             },
-            loadSampleText: function(txt) {
+            loadSampleText: function (txt) {
                 this.sampleText = txt
             },
-            sendInput: function() {
+            sendInput: function () {
                 console.log(this.sampleText)
                 this.isLoading = true
                 vscode.postMessage({
                     command: 'invokeLambda',
-                    value: this.sampleText
+                    value: this.sampleText,
                 })
-            }
-        }
+            },
+        },
     })
+    app.mount('#app')
 })()

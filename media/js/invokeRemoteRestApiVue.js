@@ -1,9 +1,8 @@
 console.log('Loaded!')
-;(function() {
+;(function () {
     const vscode = acquireVsCodeApi()
-    const app = new Vue({
-        el: '#app',
-        data: {
+    const app = Vue.createApp({
+        data: () => ({
             selectedApiResource: '',
             selectedMethod: '',
             methods: [],
@@ -15,14 +14,14 @@ console.log('Loaded!')
                 noApiResource: 'noApiResource',
                 noMethod: 'noMethod',
             },
-        },
+        }),
         mounted() {
-            this.$nextTick(function() {
+            this.$nextTick(function () {
                 window.addEventListener('message', this.handleMessageReceived)
             })
         },
         methods: {
-            handleMessageReceived: function(e) {
+            handleMessageReceived: function (e) {
                 const message = event.data
                 console.log(message.command)
                 switch (message.command) {
@@ -43,13 +42,13 @@ console.log('Loaded!')
                         break
                 }
             },
-            setApiResource: function() {
+            setApiResource: function () {
                 vscode.postMessage({
                     command: 'apiResourceSelected',
                     value: this.selectedApiResource,
                 })
             },
-            sendInput: function() {
+            sendInput: function () {
                 this.errors = []
                 if (!this.selectedApiResource) {
                     this.errors.push(this.localizedMessages.noApiResource)
@@ -72,4 +71,5 @@ console.log('Loaded!')
             },
         },
     })
+    app.mount('#app')
 })()

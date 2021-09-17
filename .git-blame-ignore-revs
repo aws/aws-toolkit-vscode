@@ -1,0 +1,5 @@
+# To use this file (requires git 2.23):
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style
+e003b28a7cef217b809d7dc2e54f38f15d1b3920

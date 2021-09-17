@@ -5,8 +5,9 @@
 
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
-import * as os from 'os'
 import * as path from 'path'
+
+const repoRoot = path.dirname(__dirname)
 
 /**
  * This script uses the AWS JS SDK to generate service clients where the client definition is contained within
@@ -19,23 +20,16 @@ interface ServiceClientDefinition {
 }
 
 async function generateServiceClients(serviceClientDefinitions: ServiceClientDefinition[]): Promise<void> {
-    const tempJsSdkPath = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk-generate'))
+    const tempJsSdkPath = path.join(repoRoot, 'node_modules', '.zzz-awssdk2')
     console.log(`Temp JS SDK Repo location: ${tempJsSdkPath}`)
     console.log('Serivce Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
 
-    try {
-        await cloneJsSdk(tempJsSdkPath)
+    await cloneJsSdk(tempJsSdkPath)
+    await insertServiceClientsIntoJsSdk(tempJsSdkPath, serviceClientDefinitions)
+    await runTypingsGenerator(tempJsSdkPath)
+    await integrateServiceClients(tempJsSdkPath, serviceClientDefinitions)
 
-        await insertServiceClientsIntoJsSdk(tempJsSdkPath, serviceClientDefinitions)
-
-        await runTypingsGenerator(tempJsSdkPath)
-
-        await integrateServiceClients(tempJsSdkPath, serviceClientDefinitions)
-
-        console.log('Done generating service client(s)')
-    } finally {
-        await fs.remove(tempJsSdkPath)
-    }
+    console.log('Done generating service client(s)')
 }
 
 /** When cloning aws-sdk-js, we want to pull the version actually used in package-lock.json. */
@@ -46,27 +40,41 @@ function getJsSdkVersion(): string {
     return packageLock['dependencies']['aws-sdk']['version']
 }
 
-async function cloneJsSdk(destinationPath: string): Promise<void> {
-    console.log('Cloning AWS JS SDK...')
-
+async function cloneJsSdk(dir: string): Promise<void> {
     // Output stderr while it clones so it doesn't look frozen
     return new Promise<void>((resolve, reject) => {
-        const sdkVersion = `v${getJsSdkVersion()}`
-        console.log(`Using tag: ${sdkVersion}`)
-        const exec = child_process.execFile(
-            'git',
-            ['clone', '-b', sdkVersion, '--depth', '1', 'https://github.com/aws/aws-sdk-js.git', destinationPath],
-            {
-                encoding: 'utf8',
-            }
-        )
+        const tag = `v${getJsSdkVersion()}`
 
-        exec.stderr?.on('data', (data: any) => {
+        const gitHead = child_process.spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'])
+
+        const alreadyCloned = gitHead.status !== undefined && gitHead.status === 0
+        const msg = `${alreadyCloned ? 'Updating' : 'Cloning'} AWS JS SDK...
+    tag: ${tag}
+    git: status=${gitHead.status} output=${gitHead.output.toString()}`
+        console.log(msg)
+
+        const gitArgs = alreadyCloned
+            ? // Local repo exists already: just update it and checkout the tag.
+              // Fetch only the tag we need.
+              //      git fetch origin tag v2.950.0 --no-tags
+              ['-C', dir, 'fetch', 'origin', 'tag', tag, '--no-tags']
+            : // Local repo does not exist: clone it.
+              ['clone', '-b', tag, '--depth', '1', 'https://github.com/aws/aws-sdk-js.git', dir]
+
+        const gitCmd = child_process.execFile('git', gitArgs, { encoding: 'utf8' })
+
+        gitCmd.stderr?.on('data', (data: any) => {
             console.log(data)
         })
+        gitCmd.once('close', (code, signal) => {
+            gitCmd.stdout?.removeAllListeners()
 
-        exec.once('close', (code, signal) => {
-            exec.stdout?.removeAllListeners()
+            // Only needed for the "update" case, but harmless for "clone".
+            const gitCheckout = child_process.spawnSync('git', ['-C', dir, 'checkout', '--force', tag])
+            if (gitCheckout.status !== undefined && gitCheckout.status !== 0) {
+                console.log(`error: git: status=${gitCheckout.status} output=${gitCheckout.output.toString()}`)
+            }
+
             resolve()
         })
     })

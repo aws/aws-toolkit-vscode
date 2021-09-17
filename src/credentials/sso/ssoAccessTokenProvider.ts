@@ -105,13 +105,14 @@ export class SsoAccessTokenProvider {
                 }
                 return accessToken
             } catch (err) {
-                if (err.name === 'SlowDownException') {
+                const error = err as { name: string }
+                if (error.name === 'SlowDownException') {
                     retryInterval += BACKOFF_DELAY_MS
-                } else if (err.name === 'AuthorizationPendingException') {
+                } else if (error.name === 'AuthorizationPendingException') {
                     // Do nothing, try again after the interval.
-                } else if (err.name === 'ExpiredTokenException') {
+                } else if (error.name === 'ExpiredTokenException') {
                     throw Error(deviceCodeExpiredMsg)
-                } else if (err.name === 'TimeoutException') {
+                } else if (error.name === 'TimeoutException') {
                     retryInterval *= 2
                 } else {
                     throw err
@@ -135,16 +136,15 @@ export class SsoAccessTokenProvider {
             startUrl: this.ssoUrl,
         }
         try {
-            const authorizationResponse = await this.ssoOidcClient
-                .startDeviceAuthorization(authorizationParams)
+            const authorizationResponse = await this.ssoOidcClient.startDeviceAuthorization(authorizationParams)
             const openedPortalLink = await openSsoPortalLink(authorizationResponse)
             if (!openedPortalLink) {
                 throw Error(`User has canceled SSO login`)
             }
             return authorizationResponse
         } catch (err) {
-            getLogger().error(err)
-            if (err.code === 'InvalidClientException') {
+            getLogger().error(err as Error) // TODO: remove log? we are rethrowing
+            if ((err as { code: string }).code === 'InvalidClientException') {
                 this.cache.invalidateClientRegistration(this.ssoRegion)
             }
             throw err
