@@ -13,11 +13,14 @@ import { ext } from '../../../shared/extensionGlobals'
 describe('getAccountId', function () {
     let sandbox: sinon.SinonSandbox
 
-    const credentials: AWS.Credentials = ({} as any) as AWS.Credentials
+    const credentials: AWS.Credentials = {} as any as AWS.Credentials
 
     const stsClient: StsClient = {
         regionCode: 'abc',
         getCallerIdentity: () => {
+            throw new Error('This test was not initialized')
+        },
+        assumeRole: () => {
             throw new Error('This test was not initialized')
         },
     }
@@ -34,7 +37,7 @@ describe('getAccountId', function () {
 
         createStsClientStub = sandbox.stub(clientBuilder, 'createStsClient').returns(stsClient)
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
 
     afterEach(async function () {

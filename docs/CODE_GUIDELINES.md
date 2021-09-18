@@ -89,6 +89,10 @@ that is a net cost.
     spawns a process that fails, the caller should get an exception, callback, or
     return value indicating that some descendant in the call-chain failed, with
     the failure reason.
+-   Handle errors by acting on them. Code should only catch errors if they are
+    able to react to them in some way. This could be showing an error message,
+    attaching metadata to the error, or retrying the failed action. Do not just
+    log and rethrow the error without additional context as to where the error occured.
 -   Refactoring tools allow us to avoid "premature abstraction". Avoid wrappers
     until the need is clear and obvious.
 

@@ -9,7 +9,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { S3Node } from '../explorer/s3Nodes'
-import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { validateBucketName } from '../util'
 
 /**
@@ -47,7 +47,7 @@ export async function createBucketCommand(
         telemetry.recordS3CreateBucket({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create bucket ${bucketName}: %O`, e)
-        showErrorWithLogs(
+        showViewLogsMessage(
             localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', bucketName),
             window
         )

@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as AWS from '@aws-sdk/types'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { Region } from '../../shared/regions/endpoints'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -68,6 +69,8 @@ export class FakeAwsContext implements AwsContext {
     public constructor(params?: FakeAwsContextParams) {
         this.awsContextCredentials = params?.contextCredentials
     }
+
+    public async setDeveloperMode(enable: boolean): Promise<void> {}
 
     public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
         this.awsContextCredentials = credentials

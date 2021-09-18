@@ -12,6 +12,7 @@ interface WebviewParams<TRequest, TResponse> {
     name: string
     webviewJs: string
     context: vscode.ExtensionContext
+    /** Initial calls are posted whenever the webview is regenerated (e.g. the webview was moved to another panel) */
     initialCalls?: TResponse[]
     persistSessions?: boolean
     persistWithoutFocus?: boolean
@@ -83,19 +84,18 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
-        <!-- how do we not require unsafe eval? -->
         <meta
             http-equiv="Content-Security-Policy"
             content=
                 "default-src 'none';
                 img-src ${view.webview.cspSource} https:;
-                script-src ${view.webview.cspSource} 'unsafe-eval';
-                style-src ${view.webview.cspSource};
+                script-src ${view.webview.cspSource};
+                style-src ${view.webview.cspSource} 'unsafe-inline';
                 font-src 'self' data:;"
         >
     </head>
     <body>
-        <div id="vueApp"></div>
+        <div id="vue-app"></div>
         <!-- Dependencies -->
         ${scripts}
         ${stylesheets}
@@ -105,11 +105,11 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
 </html>`
 
     if (params.initialCalls) {
-        // TODO: workaround for cloud9 webviews, remove after cloud9 issue is fixed.
-        if (isCloud9()) {
-            await new Promise(resolve => setTimeout(resolve, 500))
-        }
-        for (const call of params.initialCalls) view.webview.postMessage(call)
+        view.webview.onDidReceiveMessage((message: any) => {
+            if (message.command === 'initialized') {
+                for (const call of params.initialCalls!) view.webview.postMessage(call)
+            }
+        })
     }
 
     view.webview.onDidReceiveMessage(

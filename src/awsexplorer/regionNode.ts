@@ -20,6 +20,8 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
+import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
+import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 
 /**
  * An AWS Explorer node representing a region.
@@ -51,6 +53,11 @@ export class RegionNode extends AWSTreeNodeBase {
         const partitionId = regionProvider.getPartitionId(this.regionCode) ?? DEFAULT_PARTITION
         const serviceCandidates = [
             { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) },
+            {
+                serviceId: 'apprunner',
+                createFn: () =>
+                    new AppRunnerNode(this.regionCode, ext.toolkitClientBuilder.createAppRunnerClient(this.regionCode)),
+            },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
@@ -74,7 +81,16 @@ export class RegionNode extends AWSTreeNodeBase {
         }
     }
 
+    private tryClearChildren(): void {
+        this.childNodes.forEach(cn => {
+            if ('clearChildren' in cn) {
+                ;(cn as AWSTreeNodeBase & LoadMoreNode).clearChildren()
+            }
+        })
+    }
+
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        this.tryClearChildren()
         return this.childNodes
     }
 

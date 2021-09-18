@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as AWS from '@aws-sdk/types'
 import * as telemetry from '../../shared/telemetry/telemetry.gen'
 
 const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
@@ -27,9 +28,7 @@ export interface CredentialsId {
  * @param credentials  Value to be formatted.
  */
 export function asString(credentials: CredentialsId): string {
-    return [credentials.credentialSource, credentials.credentialTypeId].join(
-        CREDENTIALS_PROVIDER_ID_SEPARATOR
-    )
+    return [credentials.credentialSource, credentials.credentialTypeId].join(CREDENTIALS_PROVIDER_ID_SEPARATOR)
 }
 
 export function fromString(credentials: string): CredentialsId {
@@ -54,7 +53,6 @@ export function isEqual(idA: CredentialsId, idB: CredentialsId): boolean {
     return idA.credentialSource === idB.credentialSource && idA.credentialTypeId === idB.credentialTypeId
 }
 
-
 /**
  * Credentials source type, broadly describes the kind of thing that supplied the credentials.
  *
@@ -69,17 +67,18 @@ export function isEqual(idA: CredentialsId, idB: CredentialsId): boolean {
  *
  * Compare the similar concept `telemetry.CredentialSourceId`.
  */
-export type CredentialsProviderType = typeof credentialsProviderType[number];
-export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env'] as const;
+export type CredentialsProviderType = typeof credentialsProviderType[number]
+export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env'] as const
 
 /**
  * Lossy map of CredentialsProviderType to telemetry.CredentialSourceId
  */
 export function credentialsProviderToTelemetryType(o: CredentialsProviderType): telemetry.CredentialSourceId {
-    switch(o) {
+    switch (o) {
         case 'ec2':
-        case 'ecs':
             return 'ec2'
+        case 'ecs':
+            return 'ecs'
         case 'env':
             return 'envVars'
         case 'profile':

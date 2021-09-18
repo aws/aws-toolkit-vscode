@@ -11,7 +11,7 @@ import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
-import { registerSamInvokeVueCommand } from './vue/samInvoke'
+import { registerSamInvokeVueCommand } from './vue/samInvokeBackend'
 import { ExtContext } from '../shared/extensions'
 
 /**

@@ -9,7 +9,7 @@ import { recordEcrDeleteTags } from '../../shared/telemetry/telemetry'
 import { EcrTagNode } from '../explorer/ecrTagNode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showConfirmationMessage, showErrorWithLogs } from '../../shared/utilities/messages'
+import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 
 export async function deleteTag(
     node: EcrTagNode,
@@ -52,7 +52,7 @@ export async function deleteTag(
         recordEcrDeleteTags({ result: 'Succeeded', value: 1 })
     } catch (e) {
         getLogger().error(`Failed to delete tag ${node.tag} from repository ${node.repository.repositoryName}: %O`, e)
-        showErrorWithLogs(
+        showViewLogsMessage(
             localize(
                 'AWS.ecr.deleteTag.failure',
                 'Failed to delete tag {0} from repository {1}',

@@ -106,6 +106,7 @@ export class DefaultEcsClient {
             throw error
         }
     }
+
     public async describeTasks(cluster: string, tasks: string[]): Promise<ECS.Task[]> {
         const sdkClient = await this.createSdkClient()
 
@@ -114,7 +115,7 @@ export class DefaultEcsClient {
             const describedTasks = await sdkClient.describeTasks(params).promise()
             return describedTasks.tasks ?? []
         } catch (error) {
-            getLogger().error(error)
+            getLogger().error(error as Error)
             throw error
         }
     }

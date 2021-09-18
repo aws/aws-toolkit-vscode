@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { applyPrimitives } from '../utilities/collectionUtils'
-import { WIZARD_BACK } from '../wizards/wizard'
+import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult } from './prompter'
 
@@ -35,6 +35,7 @@ export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
 export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
     const inputBox = vscode.window.createInputBox() as InputBox
     applyPrimitives(inputBox, { ...DEFAULT_INPUTBOX_OPTIONS, ...options })
+    inputBox.buttons = options?.buttons ?? []
 
     const prompter = new InputBoxPrompter(inputBox)
 
@@ -100,7 +101,7 @@ export class InputBoxPrompter extends Prompter<string> {
                     resolve(this.inputBox.value)
                 }
             })
-            this.inputBox.onDidHide(() => resolve(undefined))
+            this.inputBox.onDidHide(() => resolve(WIZARD_EXIT))
             this.inputBox.onDidTriggerButton(button => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(WIZARD_BACK)
@@ -112,8 +113,16 @@ export class InputBoxPrompter extends Prompter<string> {
                 }
             })
             this.inputBox.show()
-        }).finally(() => this.inputBox.dispose())
+        }).finally(() => {
+            // TODO: remove the .hide() call when Cloud9 implements dispose
+            this.inputBox.hide()
+            this.inputBox.dispose()
+        })
 
         return await promptPromise
+    }
+
+    public setStepEstimator(estimator: StepEstimator<string>): void {
+        // TODO: implement this
     }
 }

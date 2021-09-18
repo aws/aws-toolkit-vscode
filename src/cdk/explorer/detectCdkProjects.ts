@@ -79,7 +79,7 @@ async function* detectCdkProjectsInFolder(folder: string): AsyncIterableIterator
         await access(cdkJsonPath)
         yield vscode.Uri.file(cdkJsonPath)
     } catch (err) {
-        if (err.code !== 'ENOENT') {
+        if ((err as { code: string }).code !== 'ENOENT') {
             // Permissions issue?
             getLogger().debug(`Error detecting CDK apps in ${folder}: %O`, err as Error)
         }

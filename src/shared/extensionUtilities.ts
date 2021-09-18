@@ -49,7 +49,7 @@ export function getIdeType(): IDE {
     if (
         vscode.env.appName === CLOUD9_APPNAME ||
         vscode.env.appName === CLOUD9_CN_APPNAME ||
-        !!settings.readSetting<boolean>('forceCloud9', false)
+        !!settings.readDevSetting<boolean>('aws.forceCloud9', 'boolean', true)
     ) {
         return IDE.cloud9
     }

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
-import { CloudFormation, updateYamlSchemasArray } from './cloudformation'
+import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
@@ -14,7 +14,6 @@ import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
 import { getLogger } from '../logger'
-import { WorkspaceConfiguration } from '../vscode/workspace'
 
 export interface TemplateDatum {
     path: string
@@ -22,9 +21,6 @@ export interface TemplateDatum {
 }
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
-    public constructor(private readonly config?: WorkspaceConfiguration) {
-        super()
-    }
     protected name: string = 'CloudFormationTemplateRegistry'
     protected async load(path: string): Promise<CloudFormation.Template | undefined> {
         // P0: Assume all template.yaml/yml files are CFN templates and assign correct JSON schema.
@@ -34,7 +30,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         try {
             template = await CloudFormation.load(path)
         } catch (e) {
-            await updateYamlSchemasArray(path, 'none', { config: this.config, skipExtensionLoad: !!this.config })
+            ext.schemaService.registerMapping({ path, schema: 'none' })
             return undefined
         }
 
@@ -43,24 +39,24 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                await updateYamlSchemasArray(path, 'sam', { config: this.config, skipExtensionLoad: !!this.config })
+                ext.schemaService.registerMapping({ path, schema: 'sam' })
             } else {
                 // apply cfn schema
-                await updateYamlSchemasArray(path, 'cfn', { config: this.config, skipExtensionLoad: !!this.config })
+                ext.schemaService.registerMapping({ path, schema: 'cfn' })
             }
 
             return template
         }
 
-        await updateYamlSchemasArray(path, 'none', { config: this.config, skipExtensionLoad: !!this.config })
+        ext.schemaService.registerMapping({ path, schema: 'none' })
         return undefined
     }
 
     // handles delete case
     public async remove(path: string | vscode.Uri): Promise<void> {
-        await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none', {
-            config: this.config,
-            skipExtensionLoad: !!this.config,
+        ext.schemaService.registerMapping({
+            path: typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
+            schema: 'none',
         })
         await super.remove(path)
     }
