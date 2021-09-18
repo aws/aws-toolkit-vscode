@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
+import { StepEstimator } from '../../../shared/wizards/wizard'
 
 export class SimplePrompter<T> extends Prompter<T> {
     constructor(private readonly input: T | PromptResult<T>) {
@@ -14,6 +15,7 @@ export class SimplePrompter<T> extends Prompter<T> {
         return this.input
     }
     public setSteps(current: number, total: number): void {}
+    public setStepEstimator(estimator: StepEstimator<T>): void {}
     public set lastResponse(response: any) {}
     public get lastResponse(): any {
         return undefined

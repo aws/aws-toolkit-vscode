@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Adds Command Palette and CDK Explorer tree visualization capability for Step Functions state machines defined using the AWS CDK"
+}

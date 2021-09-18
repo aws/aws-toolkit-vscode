@@ -5,10 +5,12 @@
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
+import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { CodelensRootRegistry } from './sam/codelensRootRegistry'
+import { SchemaService } from './schemas'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
 
@@ -21,10 +23,12 @@ export namespace ext {
     export let window: Window
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
+    export let awsContext: AwsContext
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
     export let templateRegistry: CloudFormationTemplateRegistry
+    export let schemaService: SchemaService
     export let codelensRootRegistry: CodelensRootRegistry
 
     let _didReload = false
@@ -69,6 +73,7 @@ export namespace ext {
 }
 
 export interface IconPaths {
+    apprunner: string
     statemachine: string
     help: string
     cloudFormation: string
@@ -86,6 +91,10 @@ export interface IconPaths {
     // temporary icons while Cloud9 does not have codicon support
     plus: string
     edit: string
+    exit: string
+    sync: string
+    syncIgnore: string
+    refresh: string
 }
 
 function makeIconPathsObject(): IconPaths {
@@ -100,11 +109,16 @@ function makeIconPathsObject(): IconPaths {
         folder: '',
         file: '',
         schema: '',
+        apprunner: '',
         statemachine: '',
         cloudWatchLogGroup: '',
         bucket: '',
         createBucket: '',
         plus: '',
         edit: '',
+        exit: '',
+        refresh: '',
+        sync: '',
+        syncIgnore: '',
     }
 }

@@ -42,7 +42,11 @@ export async function copyArnCommand(
         const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
         window
             .showErrorMessage(
-                localize('AWS.explorerNode.noArnFound', 'Could not find an ARN for selected {0} Explorer node', getIdeProperties().company),
+                localize(
+                    'AWS.explorerNode.noArnFound',
+                    'Could not find an ARN for selected {0} Explorer node',
+                    getIdeProperties().company
+                ),
                 logsItem
             )
             .then(selection => {

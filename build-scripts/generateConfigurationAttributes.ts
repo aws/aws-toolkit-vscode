@@ -7,6 +7,7 @@ import * as fs from 'fs'
 import { JSONSchema4 } from 'json-schema'
 import { compile } from 'json-schema-to-typescript'
 import * as packageJson from '../package.json'
+import * as nlsJson from '../package.nls.json'
 
 const config = [
     {
@@ -32,6 +33,10 @@ const header = `
 import * as vscode from 'vscode'
 `
 
+const docRegex = /%([a-zA-Z.]{1,})%/g
+const replacer: (match: string, key: string) => string = (match, key) =>
+    (nlsJson as { [key: string]: string })[key].replace(/\n/g, '\n* ') ?? match
+
 function addBaseClass(generated: string, topLevelClass: string): string {
     return generated.replace(topLevelClass, `${topLevelClass} extends vscode.DebugConfiguration`)
 }
@@ -45,9 +50,10 @@ async function generateConfigurationAttributes(): Promise<void> {
             continue
         }
         // JSONSchema4 impl doesn't like properties with type undefined, but the compilation works correctly
-        const schema = (debugConfiguration.configurationAttributes[debuggerConfig.requestType] as any) as JSONSchema4
+        const schema = debugConfiguration.configurationAttributes[debuggerConfig.requestType] as any as JSONSchema4
         await compile(schema, 'DirectInvoke', { bannerComment: header })
             .then(ts => addBaseClass(ts, debuggerConfig.topLevelClass))
+            .then(ts => ts.replace(docRegex, replacer))
             .then(ts => fs.writeFileSync(debuggerConfig.outputFile, ts))
     }
 }

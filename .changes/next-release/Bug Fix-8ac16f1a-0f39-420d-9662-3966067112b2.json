@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM Debug Configuration Editor: All fields will persist after Save or Invoke action."
+}

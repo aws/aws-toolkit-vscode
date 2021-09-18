@@ -29,27 +29,43 @@ export async function initializeAwsCredentialsStatusBarItem(
         'The current credentials used by the {0} Toolkit.\n\nClick this status bar item to use different credentials.',
         getIdeProperties().company
     )
+
     statusBarItem.show()
     updateCredentialsStatusBarItem(statusBarItem)
 
     context.subscriptions.push(statusBarItem)
 
     context.subscriptions.push(
-        awsContext.onDidChangeContext(async (awsContextChangedEvent: ContextChangeEventsArgs) => {
-            updateCredentialsStatusBarItem(statusBarItem, awsContextChangedEvent.profileName)
+        awsContext.onDidChangeContext(async (ev: ContextChangeEventsArgs) => {
+            updateCredentialsStatusBarItem(statusBarItem, ev.profileName, ev.developerMode)
         })
     )
 }
 
 // Resolves when the status bar reaches its final state
-export async function updateCredentialsStatusBarItem(statusBarItem: vscode.StatusBarItem, credentialsId?: string): Promise<void> {
+export async function updateCredentialsStatusBarItem(
+    statusBarItem: vscode.StatusBarItem,
+    credentialsId?: string,
+    developerMode?: boolean
+): Promise<void> {
     clearTimeout(timeoutID)
+
+    if (developerMode) {
+        ;(statusBarItem as any).backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
+    } else {
+        ;(statusBarItem as any).backgroundColor = undefined
+    }
 
     // Shows confirmation text in the status bar message
     let delay = 0
     if (credentialsId) {
         delay = STATUSBAR_CONNECTED_DELAY
-        statusBarItem.text = localize('AWS.credentials.statusbar.text', '{0}: {1}', getIdeProperties().company, STATUSBAR_TEXT_CONNECTED)
+        statusBarItem.text = localize(
+            'AWS.credentials.statusbar.text',
+            '{0}: {1}',
+            getIdeProperties().company,
+            STATUSBAR_TEXT_CONNECTED
+        )
     }
 
     return new Promise<void>(

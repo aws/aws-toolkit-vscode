@@ -97,7 +97,7 @@ The Toolkit _local SAM debugging_ feature supports these Lambda runtimes:
 -   Go (1.x)
 -   Java (8, 8.al2, 11)
 -   JavaScript/TypeScript (Node.js 10.x, 12.x, 14.x)
--   Python (2.7, 3.6, 3.7, 3.8)
+-   Python (2.7, 3.6, 3.7, 3.8, 3.9)
 
 For more information see [Working with AWS Serverless Applications](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html) in the user guide. To get setup for local debugging, see [Configuring your toolchain](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-toolchain.html).
 
@@ -215,6 +215,8 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | `AWS: Create a new Systems Manager Document locally` | Creates a new Systems Manager Document from a template in either YAML or JSON                                                                                                                                                                                                                                  |
 | `AWS: Create Credentials Profile`                    | Creates an AWS credentials profile. For more information, see [Setting Up Your AWS Credentials](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-credentials) in the user guide.                                                                                                                   |
 | `AWS: Create Lambda SAM Application`                 | Generates code files for a new AWS serverless Lambda application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam) in the user guide.                                                                                          |
+| `AWS: Create new CloudFormation Template`            | Creates a new starter Cloudformation Template                                                                                                                                                                                                                                                                  |
+| `AWS: Create new SAM Template`                       | Creates a new starter SAM Template                                                                                                                                                                                                                                                                             |
 | `AWS: Deploy SAM Application`                        | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) in the user guide.                                                                                      |
 | `AWS: Detect SAM CLI`                                | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed.                                                                                                                                                                                                                   |
 | `AWS: Focus on Explorer View`                        | Opens the **AWS** panel and focuses the [_Explorer_](#ui-components-aws-expl).                                                                                                                                                                                                                                 |

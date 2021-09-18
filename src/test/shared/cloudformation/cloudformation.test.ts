@@ -7,11 +7,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 
-import {
-    CloudFormation,
-    getManifestDetails,
-    updateYamlSchemasArray,
-} from '../../../shared/cloudformation/cloudformation'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import {
@@ -22,8 +18,6 @@ import {
     makeSampleSamTemplateYaml,
     strToYamlFile,
 } from './cloudformationTestUtils'
-import { FakeWorkspace } from '../vscode/fakeWorkspace'
-import { WorkspaceConfiguration } from '../../../shared/vscode/workspace'
 
 describe('CloudFormation', function () {
     let tempFolder: string
@@ -665,87 +659,6 @@ describe('CloudFormation', function () {
                     'surprise!'
                 )
             })
-        })
-    })
-})
-
-describe('Cloudformation Utils', function () {
-    describe('updateYamlSchemasArray', function () {
-        let config: WorkspaceConfiguration
-        const cfnSchema = 'cfn'
-        const samSchema = 'sam'
-
-        beforeEach(function () {
-            config = new FakeWorkspace().getConfiguration()
-        })
-
-        it('handles adding to and removing from a nonexistent setting', function () {
-            updateYamlSchemasArray('/foo', 'cfn', { paths: { cfnSchema, samSchema }, config, skipExtensionLoad: true })
-            const val: any = config.get('schemas')
-            assert.deepStrictEqual(val[cfnSchema], ['/foo'])
-            assert.deepStrictEqual(val[samSchema], undefined)
-        })
-
-        it('handles adding to and removing from a setting with an undefined value', function () {
-            config.update('schemas', undefined)
-            updateYamlSchemasArray('/foo', 'cfn', { paths: { cfnSchema, samSchema }, config, skipExtensionLoad: true })
-            const val: any = config.get('schemas')
-            assert.deepStrictEqual(val[cfnSchema], ['/foo'])
-            assert.deepStrictEqual(val[samSchema], undefined)
-        })
-        it('handles adding to and removing from a setting with a blank array', function () {
-            config.update('schemas', { cfn: [], sam: [] })
-            updateYamlSchemasArray('/foo', 'cfn', { paths: { cfnSchema, samSchema }, config, skipExtensionLoad: true })
-            const val: any = config.get('schemas')
-            assert.deepStrictEqual(val[cfnSchema], ['/foo'])
-            assert.deepStrictEqual(val[samSchema], [])
-        })
-
-        it('handles adding to and removing from an existing array', function () {
-            config.update('schemas', { cfn: ['/bar'], sam: ['/asdf', '/foo'] })
-            updateYamlSchemasArray('/foo', 'cfn', { paths: { cfnSchema, samSchema }, config, skipExtensionLoad: true })
-            const val: any = config.get('schemas')
-            assert.deepStrictEqual(val[cfnSchema], ['/bar', '/foo'])
-            assert.deepStrictEqual(val[samSchema], ['/asdf'])
-        })
-
-        it('handles adding to and removing from a string', function () {
-            config.update('schemas', { cfn: '/bar', sam: '/foo' })
-            updateYamlSchemasArray('/foo', 'cfn', { paths: { cfnSchema, samSchema }, config, skipExtensionLoad: true })
-            const val: any = config.get('schemas')
-            assert.deepStrictEqual(val[cfnSchema], ['/bar', '/foo'])
-            assert.deepStrictEqual(val[samSchema], [])
-        })
-
-        it('handles removes from strings and arrays with `none`', function () {
-            config.update('schemas', { cfn: '/bar', sam: ['/foo', '/bar'] })
-            updateYamlSchemasArray('/bar', 'none', { paths: { cfnSchema, samSchema }, config, skipExtensionLoad: true })
-            const val: any = config.get('schemas')
-            assert.deepStrictEqual(val[cfnSchema], [])
-            assert.deepStrictEqual(val[samSchema], ['/foo'])
-        })
-    })
-
-    describe('getManifestDetails', function () {
-        it('errors if manifest is not JSON', function () {
-            assert.throws(() => getManifestDetails('foo'))
-        })
-
-        it('errors if no tag name is present', function () {
-            assert.throws(() => getManifestDetails('{"foo": "bar"}'))
-        })
-
-        it('returns URLs if a tag name is present', function () {
-            const vals = getManifestDetails('{"tag_name": "111"}')
-            assert.strictEqual(
-                vals.samUrl,
-                'https://raw.githubusercontent.com/awslabs/goformation/111/schema/sam.schema.json'
-            )
-            assert.strictEqual(
-                vals.cfnUrl,
-                'https://raw.githubusercontent.com/awslabs/goformation/111/schema/cloudformation.schema.json'
-            )
-            assert.strictEqual(vals.version, '111')
         })
     })
 })

@@ -11,7 +11,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3Node } from '../explorer/s3Nodes'
-import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 /**
  * Deletes the bucket represented by the given node.
@@ -49,7 +49,7 @@ export async function deleteBucketCommand(
         telemetry.recordS3DeleteBucket({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to delete bucket ${node.bucket.name}: %O`, e)
-        showErrorWithLogs(
+        showViewLogsMessage(
             localize('AWS.s3.deleteBucket.error.general', 'Failed to delete bucket {0}', node.bucket.name),
             window
         )

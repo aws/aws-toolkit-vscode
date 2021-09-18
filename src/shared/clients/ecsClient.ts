@@ -98,7 +98,7 @@ export class DefaultEcsClient {
             const describedTasks = await sdkClient.describeTasks(params).promise()
             return describedTasks.tasks ?? []
         } catch (error) {
-            getLogger().error(error)
+            getLogger().error(error as Error)
             throw error
         }
     }

@@ -70,8 +70,6 @@ export async function activate(args: {
         })
     )
 
-    recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
-
     args.awsContextTrees.addTree(awsExplorer)
 
     updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, ext.context)
@@ -159,6 +157,18 @@ async function registerAwsExplorerCommands(
                 await executeStateMachine({
                     stateMachineNode: node,
                     outputChannel: toolkitOutputChannel,
+                })
+        )
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.renderStateMachineGraph',
+            async (node: StateMachineNode) =>
+                await downloadStateMachineDefinition({
+                    stateMachineNode: node,
+                    outputChannel: toolkitOutputChannel,
+                    isPreviewAndRender: true,
                 })
         )
     )

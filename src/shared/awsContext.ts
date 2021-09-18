@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as AWS from '@aws-sdk/types'
 
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
@@ -16,6 +17,7 @@ export interface AwsContextCredentials {
 export interface ContextChangeEventsArgs {
     readonly profileName?: string
     readonly accountId?: string
+    readonly developerMode?: boolean
 }
 
 // Represents a credential profile and zero or more regions.
@@ -39,6 +41,8 @@ export interface AwsContext {
     addExplorerRegion(...regions: string[]): Promise<void>
     // removes one or more regions from the user's preferred set
     removeExplorerRegion(...regions: string[]): Promise<void>
+
+    setDeveloperMode(enable: boolean): Promise<void>
 }
 
 export class NoActiveCredentialError extends Error {

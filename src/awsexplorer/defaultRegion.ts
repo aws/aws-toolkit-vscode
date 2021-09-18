@@ -12,6 +12,7 @@ import { extensionSettingsPrefix } from '../shared/constants'
 import * as localizedText from '../shared/localizedText'
 import { createQuickPick, promptUser } from '../shared/ui/picker'
 import { AwsExplorer } from './awsExplorer'
+import { getIdeProperties } from '../shared/extensionUtilities'
 
 /**
  * The actions that can be taken when we discover that a profile's default region is not
@@ -95,8 +96,10 @@ export async function checkExplorerForDefaultRegion(
             ignoreFocusOut: true,
             title: localize(
                 'AWS.message.prompt.defaultRegionHidden',
-                "This profile's default region ({0}) is currently hidden. Would you like to show it in the Explorer?",
-                profileRegion
+                'Default region "{0}" of profile "{1}" is currently hidden. Show it in {2} Explorer?',
+                profileRegion,
+                profileName,
+                getIdeProperties().company
             ),
         },
         items: items,

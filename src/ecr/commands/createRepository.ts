@@ -8,7 +8,7 @@ import { EcrNode } from '../explorer/ecrNode'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { validateRepositoryName } from '../utils'
 import { recordEcrCreateRepository } from '../../shared/telemetry/telemetry'
 
@@ -42,7 +42,7 @@ export async function createRepository(
         recordEcrCreateRepository({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create repository ${repositoryName}: %O`, e)
-        showErrorWithLogs(
+        showViewLogsMessage(
             localize('AWS.ecr.createRepository.failure', 'Failed to create repository {0}', repositoryName),
             window
         )

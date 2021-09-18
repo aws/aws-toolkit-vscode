@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "App Runner: fix issue with create wizard failing at the end after backing out of the select file dialog"
+}

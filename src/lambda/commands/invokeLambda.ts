@@ -4,7 +4,8 @@
  */
 
 import { _Blob } from 'aws-sdk/clients/lambda'
-import _ = require('lodash')
+import { readFileSync } from 'fs'
+import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
@@ -115,6 +116,28 @@ function createMessageReceivedFunc({
 
     return async (message: CommandMessage) => {
         switch (message.command) {
+            case 'promptForFile': {
+                const fileLocations = await vscode.window.showOpenDialog({
+                    openLabel: 'Open',
+                })
+
+                if (!fileLocations || fileLocations.length === 0) {
+                    return undefined
+                }
+
+                try {
+                    const fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+                    restParams.onPostMessage({
+                        command: 'loadedSample',
+                        sample: fileContent,
+                        selectedFile: fileLocations[0].path,
+                    })
+                } catch (e) {
+                    getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+                    vscode.window.showErrorMessage((e as Error).message)
+                }
+                return
+            }
             case 'sampleRequestSelected': {
                 logger.info(`Requesting ${message.value}`)
                 const sampleUrl = `${sampleRequestPath}${message.value}`

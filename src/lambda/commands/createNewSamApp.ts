@@ -30,7 +30,6 @@ import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
-import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
@@ -51,6 +50,7 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { execSync } from 'child_process'
 import { writeFile } from 'fs-extra'
+import { checklogs } from '../../shared/localizedText'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -96,23 +96,15 @@ export async function resumeCreateNewSamApp(
         )
         const tryOpenReadme = await writeToolkitReadme(readmeUri.fsPath, configs)
         if (tryOpenReadme) {
-            isCloud9()
-                ? await vscode.workspace.openTextDocument(readmeUri)
-                : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+            await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
         }
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
 
-        const checkLogsMessage = makeCheckLogsMessage()
-
         ext.outputChannel.show(true)
         getLogger('channel').error(
-            localize(
-                'AWS.samcli.initWizard.resume.error',
-                'An error occured while resuming SAM Application creation. {0}',
-                checkLogsMessage
-            )
+            localize('AWS.samcli.initWizard.resume.error', 'Error resuming SAM Application creation. {0}', checklogs())
         )
 
         getLogger().error('Error resuming new SAM Application: %O', err as Error)
@@ -323,9 +315,7 @@ export async function createNewSamApplication(
         // TODO: Replace when Cloud9 supports `markdown` commands
 
         if (tryOpenReadme) {
-            isCloud9()
-                ? await vscode.workspace.openTextDocument(readmeUri)
-                : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+            await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
         } else {
             await vscode.workspace.openTextDocument(templateUri)
         }
@@ -333,15 +323,9 @@ export async function createNewSamApplication(
         createResult = 'Failed'
         reason = 'error'
 
-        const checkLogsMessage = makeCheckLogsMessage()
-
         ext.outputChannel.show(true)
         getLogger('channel').error(
-            localize(
-                'AWS.samcli.initWizard.general.error',
-                'An error occurred while creating a new SAM Application. {0}',
-                checkLogsMessage
-            )
+            localize('AWS.samcli.initWizard.general.error', 'Error creating new SAM Application. {0}', checklogs())
         )
 
         getLogger().error('Error creating new SAM Application: %O', err as Error)
@@ -480,6 +464,7 @@ export async function writeToolkitReadme(
             )
 
         await writeFile(readmeLocation, readme)
+        getLogger().debug(`writeToolkitReadme: wrote file: %O`, readmeLocation)
 
         return true
     } catch (e) {
