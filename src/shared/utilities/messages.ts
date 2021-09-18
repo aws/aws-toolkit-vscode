@@ -4,57 +4,57 @@
  */
 
 import * as vscode from 'vscode'
-import { getIdeProperties, isCloud9, isCn } from '../extensionUtilities'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { ext } from '../extensionGlobals'
+import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { Timeout } from './timeoutUtils'
 
-// function instead of constant to prevent isCn() from running prior to compute region being determined
-// two localized strings instead of a single one with a parameter since this is also used as a command name
-function commandName(): string {
-    return isCn() ? localize('AWS.command.viewLogs.cn', 'View Amazon Toolkit Logs') :  localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
-}
-
-export function makeCheckLogsMessage(): string {
-    const message = localize(
-        'AWS.error.check.logs',
-        'Check the logs for more information by running the "{0}" command from the {1}.',
-        commandName(),
-        getIdeProperties().commandPalette
-    )
-
-    return message
-}
-
 export function makeFailedWriteMessage(filename: string): string {
-    const message = localize(
-        'AWS.failedToWrite',
-        '{0}: Failed to write "{1}". Use the "{2}" command to see error details.',
-        getIdeProperties().company,
-        filename,
-        commandName()
-    )
+    const message = localize('AWS.failedToWrite', '{0}: Failed to write "{1}".', getIdeProperties().company, filename)
 
     return message
 }
 
 /**
- * Shows a non-modal error message with a button to open the log output channel.
+ * Shows a non-modal message with a "View Logs" button.
  *
- * @returns	A promise that resolves when the button is clicked or the error is dismissed.
+ * @param message  Message text
+ * @param window  Window
+ * @param kind  Kind of message to show
+ * @param extraItems  Extra buttons shown _before_ the "View Logs" button
+ * @returns	Promise that resolves when a button is clicked or the message is
+ * dismissed, and returns the selected button text.
  */
-export async function showErrorWithLogs(message: string, window: Window = ext.window): Promise<void> {
+export async function showViewLogsMessage(
+    message: string,
+    window: Window = ext.window,
+    kind: 'info' | 'warn' | 'error' = 'error',
+    extraItems: string[] = []
+): Promise<string | undefined> {
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
+    const items = [...extraItems, logsItem]
 
-    return window
-        .showErrorMessage(message, localize('AWS.generic.message.viewLogs', 'View Logs...'))
-        .then(selection => {
-            if (selection === logsItem) {
-                showLogOutputChannel()
-            }
-        })
+    let p = undefined
+    switch (kind) {
+        case 'info':
+            p = window.showInformationMessage(message, ...items)
+            break
+        case 'warn':
+            p = window.showWarningMessage(message, ...items)
+            break
+        case 'error':
+        default:
+            p = window.showErrorMessage(message, ...items)
+            break
+    }
+    return p.then<string | undefined>(selection => {
+        if (selection === logsItem) {
+            showLogOutputChannel()
+        }
+        return selection
+    })
 }
 
 /**

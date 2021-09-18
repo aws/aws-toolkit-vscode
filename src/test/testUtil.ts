@@ -10,8 +10,9 @@ import * as fsextra from 'fs-extra'
 import * as FakeTimers from '@sinonjs/fake-timers'
 
 import * as pathutil from '../shared/utilities/pathUtils'
-import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
-import * as disposableFiles from '../shared/utilities/disposableFiles'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
+
+const testTempDirs: string[] = []
 
 /**
  * Writes the string form of `o` to `filepath` as UTF-8 text.
@@ -55,11 +56,25 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  */
 export async function createTestWorkspaceFolder(name?: string): Promise<vscode.WorkspaceFolder> {
     const tempFolder = await makeTemporaryToolkitFolder()
-    disposableFiles.ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
+    testTempDirs.push(tempFolder)
     return {
         uri: vscode.Uri.file(tempFolder),
         name: name ?? 'test-workspace-folder',
         index: 0,
+    }
+}
+
+export async function deleteTestTempDirs(): Promise<void> {
+    let failed = 0
+    for (const s of testTempDirs) {
+        if (!tryRemoveFolder(s)) {
+            failed += 1
+        }
+    }
+    if (failed > 0) {
+        console.error('deleteTestTempDirs: failed to delete %d/%d test temp dirs', failed, testTempDirs.length)
+    } else {
+        console.error('deleteTestTempDirs: deleted %d test temp dirs', testTempDirs.length)
     }
 }
 

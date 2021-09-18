@@ -15,7 +15,7 @@ export interface SamCliStartApiArguments {
     /**
      * Location of the file containing the environment variables to invoke the Lambda Function against.
      */
-    environmentVariablePath: string
+    environmentVariablePath?: string
     /**
      * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
      */
@@ -71,10 +71,9 @@ export async function buildSamCliStartApiArguments(args: SamCliStartApiArguments
         ...(getLogger().logLevelEnabled('debug') ? ['--debug'] : []),
         '--template',
         args.templatePath,
-        '--env-vars',
-        args.environmentVariablePath,
     ]
 
+    pushIf(invokeArgs, !!args.environmentVariablePath, '--env-vars', args.environmentVariablePath)
     pushIf(invokeArgs, !!args.port, '--port', args.port!)
     pushIf(invokeArgs, !!args.debugPort, '--debug-port', args.debugPort!)
     pushIf(invokeArgs, !!args.dockerNetwork, '--docker-network', args.dockerNetwork!)

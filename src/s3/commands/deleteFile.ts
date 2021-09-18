@@ -14,7 +14,7 @@ import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { readablePath } from '../util'
-import { showErrorWithLogs, showConfirmationMessage } from '../../shared/utilities/messages'
+import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 
 const DELETE_FILE_DISPLAY_TIMEOUT_MS = 2000
 
@@ -60,7 +60,7 @@ export async function deleteFileCommand(
         telemetry.recordS3DeleteObject({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to delete file ${filePath}: %O`, e)
-        showErrorWithLogs(
+        showViewLogsMessage(
             localize('AWS.s3.deleteFile.error.general', 'Failed to delete file {0}', node.file.name),
             window
         )

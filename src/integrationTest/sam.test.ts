@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
+import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as vscodeUtils from '../../src/shared/utilities/vsCodeUtils'
@@ -15,7 +15,7 @@ import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { fileExists } from '../shared/filesystemUtilities'
+import { fileExists, tryRemoveFolder } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import * as testUtils from './integrationTestsUtilities'
@@ -31,6 +31,7 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 /* Test constants go here */
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
+// note: this refers to the _test_ timeout, not the invocation timeout
 const DEBUG_TIMEOUT: number = 120000
 const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
@@ -114,6 +115,15 @@ const scenarios: TestScenario[] = [
         language: 'python',
         dependencyManager: 'pip',
     },
+    // TODO: Add Python3.9 support to integration test hosts
+    // {
+    //     runtime: 'python3.9',
+    //     displayName: 'python3.9 (ZIP)',
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    // },
     {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
@@ -196,6 +206,25 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'pip',
     },
     {
+        runtime: 'python3.8',
+        displayName: 'python3.8 (Image)',
+        baseImage: `amazon/python3.8-base`,
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+    },
+    // TODO: Add Python3.9 support to integration test hosts
+    // {
+    //     runtime: 'python3.9',
+    //     displayName: 'python3.9 (Image)',
+    //     baseImage: `amazon/python3.9-base`,
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    // },
+    {
         runtime: 'go1.x',
         displayName: 'go1.x (Image)',
         baseImage: 'amazon/go1.x-base',
@@ -204,15 +233,6 @@ const scenarios: TestScenario[] = [
         language: 'go',
         dependencyManager: 'mod',
     },
-    // {
-    //     runtime: 'python3.8',
-    //     displayName: 'python3.8 (Image)',
-    //     baseImage: `amazon/python3.8-base`,
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
-    // },
     {
         runtime: 'java8',
         displayName: 'java8 (Maven Image)',
@@ -248,14 +268,6 @@ async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
     const document = await vscode.workspace.openTextDocument(applicationPath)
 
     return document.uri
-}
-
-function tryRemoveFolder(fullPath: string) {
-    try {
-        removeSync(fullPath)
-    } catch (e) {
-        console.error(`Failed to remove path ${fullPath}`, e)
-    }
 }
 
 /**
@@ -389,7 +401,7 @@ describe('SAM Integration Tests', async function () {
     })
 
     after(async function () {
-        tryRemoveFolder(testSuiteRoot)
+        await tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
         config.update('server.launchMode', javaLanguageSetting)
@@ -411,7 +423,7 @@ describe('SAM Integration Tests', async function () {
             after(async function () {
                 // don't clean up after java tests so the java language server doesn't freak out
                 if (scenario.language !== 'java') {
-                    tryRemoveFolder(runtimeTestRoot)
+                    await tryRemoveFolder(runtimeTestRoot)
                 }
             })
 
@@ -433,7 +445,7 @@ describe('SAM Integration Tests', async function () {
                 afterEach(async function () {
                     // don't clean up after java tests so the java language server doesn't freak out
                     if (scenario.language !== 'java') {
-                        tryRemoveFolder(testDir)
+                        await tryRemoveFolder(testDir)
                     }
                 })
 
@@ -483,7 +495,7 @@ describe('SAM Integration Tests', async function () {
                 after(async function () {
                     // don't clean up after java tests so the java language server doesn't freak out
                     if (scenario.language !== 'java') {
-                        tryRemoveFolder(testDir)
+                        await tryRemoveFolder(testDir)
                     }
                 })
 

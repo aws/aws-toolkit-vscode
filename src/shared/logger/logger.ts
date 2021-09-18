@@ -67,9 +67,7 @@ export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
 export function getLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
     const logger = toolkitLoggers[type ?? 'main']
     if (!logger) {
-        throw new Error(
-            'Logger not initialized. Extension code should call initialize() from shared/logger/activation, test code should call setLogger().'
-        )
+        return new ConsoleLogger()
     }
 
     return logger
@@ -93,6 +91,39 @@ export class NullLogger implements Logger {
         return 0
     }
     public error(message: string | Error, ...meta: any[]): number {
+        return 0
+    }
+    public getLogById(logID: number, file: Uri): string | undefined {
+        return undefined
+    }
+}
+
+/**
+ * Fallback to console.log() if getLogger() is requested before logging is fully initialized.
+ */
+export class ConsoleLogger implements Logger {
+    public setLogLevel(logLevel: LogLevel) {}
+    public logLevelEnabled(logLevel: LogLevel): boolean {
+        return false
+    }
+    public debug(message: string | Error, ...meta: any[]): number {
+        console.trace(message, meta)
+        return 0
+    }
+    public verbose(message: string | Error, ...meta: any[]): number {
+        console.debug(message, meta)
+        return 0
+    }
+    public info(message: string | Error, ...meta: any[]): number {
+        console.info(message, meta)
+        return 0
+    }
+    public warn(message: string | Error, ...meta: any[]): number {
+        console.warn(message, meta)
+        return 0
+    }
+    public error(message: string | Error, ...meta: any[]): number {
+        console.error(message, meta)
         return 0
     }
     public getLogById(logID: number, file: Uri): string | undefined {

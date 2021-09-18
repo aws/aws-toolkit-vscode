@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,6 +16,8 @@ import { generatePropertyNodes, PropertyNode } from './propertyNode'
 export class ConstructNode extends AWSTreeNodeBase {
     private readonly type: string
     private readonly properties: ConstructProps | undefined
+    public readonly id: string
+    public readonly tooltip: string
 
     public constructor(
         public readonly parent: AWSTreeNodeBase,
@@ -24,7 +26,7 @@ export class ConstructNode extends AWSTreeNodeBase {
         public readonly construct: ConstructTreeEntity
     ) {
         super(construct.id, collapsibleState)
-        this.contextValue = 'awsCdkConstructNode'
+        this.contextValue = isStateMachine(construct) ? 'awsCdkStateMachineNode' : 'awsCdkConstructNode'
 
         this.type = treeInspector.getTypeAttributeOrDefault(construct, '')
         this.properties = treeInspector.getProperties(construct)
@@ -78,4 +80,18 @@ export class ConstructNode extends AWSTreeNodeBase {
 
         return entities
     }
+}
+
+/**
+ * Determines if a CDK construct is of type state machine
+ *
+ * @param {ConstructTreeEntity} construct - CDK construct
+ */
+export function isStateMachine(construct: ConstructTreeEntity): boolean {
+    const resource = construct.children?.Resource
+    if (!resource) {
+        return false
+    }
+    const type: string = treeInspector.getTypeAttributeOrDefault(resource, '')
+    return type === 'AWS::StepFunctions::StateMachine'
 }

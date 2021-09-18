@@ -83,14 +83,17 @@ export function isExtensionActive(extId: string): boolean {
 }
 
 /**
- * Activates the given extension, or does nothing if the extension is not
- * installed.
+ * Activates the given extension and returns it, or does nothing
+ * if the extension is not installed.
  *
- * @param extId  Extension id
- * @param silent  Return undefined on failure, instead of throwing
- * @returns Extension object, or undefined on failure if `silent`
+ * @param extId Extension id
+ * @param silent Return undefined on failure, instead of throwing
+ * @returns Extension, or undefined on failure if `silent`
  */
-export async function activateExtension(extId: string, silent: boolean = true): Promise<vscode.Extension<void> | undefined> {
+export async function activateExtension<T>(
+    extId: string,
+    silent: boolean = true
+): Promise<vscode.Extension<T> | undefined> {
     let loggerInitialized: boolean
     try {
         getLogger()
@@ -106,7 +109,7 @@ export async function activateExtension(extId: string, silent: boolean = true): 
         }
     }
 
-    const extension = vscode.extensions.getExtension(extId)
+    const extension = vscode.extensions.getExtension<T>(extId)
     if (!extension) {
         if (silent) {
             return undefined
@@ -126,6 +129,12 @@ export async function activateExtension(extId: string, silent: boolean = true): 
             return undefined
         }
     }
-
     return extension
+}
+
+/**
+ * Convenience function to make a Thenable into a Promise.
+ */
+export function promisifyThenable<T>(thenable: Thenable<T>): Promise<T> {
+    return new Promise((resolve, reject) => thenable.then(resolve, reject))
 }

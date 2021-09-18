@@ -312,7 +312,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
+        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set does not add second Vis on duplicate preview', async function () {
@@ -328,7 +328,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
+        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set adds second Vis on different preview', async function () {
@@ -345,8 +345,8 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
-        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
+        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
+        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set does not add duplicate renders when multiple Vis active', async function () {
@@ -373,8 +373,8 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
-        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
+        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
+        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async function () {
@@ -424,7 +424,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const postMessage = sinon.spy()
         class MockAslVisualizationYaml extends AslVisualization {
             public getWebview(): vscode.Webview | undefined {
-                return ({ postMessage } as unknown) as vscode.Webview
+                return { postMessage } as unknown as vscode.Webview
             }
         }
 
@@ -447,7 +447,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const postMessage = sinon.spy()
         class MockAslVisualizationJson extends AslVisualization {
             public getWebview(): vscode.Webview | undefined {
-                return ({ postMessage } as unknown) as vscode.Webview
+                return { postMessage } as unknown as vscode.Webview
             }
         }
 
@@ -522,7 +522,7 @@ class MockVSCode {
 
     private getDocument(documentToFind: vscode.TextDocument): vscode.TextDocument | undefined {
         for (const doc of this.documents) {
-            if (doc.uri.path === documentToFind.uri.path) {
+            if (doc.uri.fsPath === documentToFind.uri.fsPath) {
                 return doc
             }
         }

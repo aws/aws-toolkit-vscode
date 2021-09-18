@@ -12,6 +12,3 @@ Resources:
                     Properties:
                         Path: /hello
                         Method: GET
-            Environment:
-                Variables:
-                    PARAM1: VALUE

@@ -261,3 +261,14 @@ export function applyPrimitives<T1 extends Record<string, any>, T2 extends T1>(o
 
     Object.assign(obj, clone)
 }
+
+/** Recursively delete undefined key/value pairs */
+export function stripUndefined(obj: any): void {
+    Object.keys(obj).forEach(key => {
+        if (obj[key] === undefined) {
+            delete obj[key]
+        } else if (typeof obj[key] === 'object') {
+            stripUndefined(obj[key])
+        }
+    })
+}

@@ -59,18 +59,19 @@ import {
     recordAwsShowExtensionSource,
     recordToolkitInit,
 } from './shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { activate as activateEcs } from './ecs/activation'
+import { activate as activateAppRunner } from './apprunner/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
+import { SchemaService } from './shared/schemas'
 
 let localize: nls.LocalizeFunc
 
@@ -100,6 +101,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const endpointsProvider = makeEndpointsProvider()
 
         const awsContext = new DefaultAwsContext(context)
+        ext.awsContext = awsContext
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
@@ -121,6 +123,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
+        ext.schemaService = new SchemaService(context)
 
         await initializeCredentials({
             extensionContext: context,
@@ -134,6 +137,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
+        await ext.schemaService.start()
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -215,6 +219,8 @@ export async function activate(context: vscode.ExtensionContext) {
             remoteInvokeOutputChannel,
         })
 
+        await activateAppRunner(extContext)
+
         await activateApiGateway({
             extContext: extContext,
             outputChannel: remoteInvokeOutputChannel,
@@ -223,8 +229,6 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateLambda(extContext)
 
         await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
-
-        await ExtensionDisposableFiles.initialize(context)
 
         await activateSam(extContext)
 
@@ -254,12 +258,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
         ext.telemetry.assertPassiveTelemetry(ext.didReload())
     } catch (error) {
+        const stacktrace = (error as Error).stack?.split('\n')
+        // truncate if the stacktrace is unusually long
+        if (stacktrace !== undefined && stacktrace.length > 40) {
+            stacktrace.length = 40
+        }
         getLogger('channel').error(
             localize(
                 'AWS.channel.aws.toolkit.activation.error',
-                'Error Activating {0} Toolkit: {1}',
+                'Error Activating {0} Toolkit: {1} \n{2}',
                 getIdeProperties().company,
-                (error as Error).message
+                (error as Error).message,
+                stacktrace?.join('\n')
             )
         )
         throw error
@@ -305,6 +315,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
 
+    ext.iconPaths.dark.apprunner = context.asAbsolutePath('resources/dark/apprunner.svg')
+    ext.iconPaths.light.apprunner = context.asAbsolutePath('resources/light/apprunner.svg')
+
     ext.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
     ext.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
 
@@ -323,6 +336,18 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.edit = context.asAbsolutePath('resources/dark/edit.svg')
     ext.iconPaths.light.edit = context.asAbsolutePath('resources/light/edit.svg')
+
+    ext.iconPaths.dark.sync = context.asAbsolutePath('resources/dark/sync.svg')
+    ext.iconPaths.light.sync = context.asAbsolutePath('resources/light/sync.svg')
+
+    ext.iconPaths.dark.syncIgnore = context.asAbsolutePath('resources/dark/sync-ignore.svg')
+    ext.iconPaths.light.syncIgnore = context.asAbsolutePath('resources/light/sync-ignore.svg')
+
+    ext.iconPaths.dark.refresh = context.asAbsolutePath('resources/dark/refresh.svg')
+    ext.iconPaths.light.refresh = context.asAbsolutePath('resources/light/refresh.svg')
+
+    ext.iconPaths.dark.exit = context.asAbsolutePath('resources/dark/exit.svg')
+    ext.iconPaths.light.exit = context.asAbsolutePath('resources/light/exit.svg')
 }
 
 function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
@@ -378,7 +403,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
             duration: duration,
         })
     } catch (err) {
-        logger?.error(err)
+        logger?.error(err as Error)
     }
 }
 

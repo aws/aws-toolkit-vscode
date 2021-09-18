@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSOOIDC } from 'aws-sdk'
+import { SSOOIDC, StartDeviceAuthorizationResponse } from '@aws-sdk/client-sso-oidc'
 import { SsoClientRegistration } from './ssoClientRegistration'
 import { openSsoPortalLink, SsoAccessToken } from './sso'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
-import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const CLIENT_NAME = 'aws-toolkit-vscode'
@@ -97,7 +96,7 @@ export class SsoAccessTokenProvider {
 
         while (true) {
             try {
-                const tokenResponse = await this.ssoOidcClient.createToken(createTokenParams).promise()
+                const tokenResponse = await this.ssoOidcClient.createToken(createTokenParams)
                 const accessToken: SsoAccessToken = {
                     startUrl: this.ssoUrl,
                     region: this.ssoRegion,
@@ -106,13 +105,14 @@ export class SsoAccessTokenProvider {
                 }
                 return accessToken
             } catch (err) {
-                if (err.code === 'SlowDownException') {
+                const error = err as { name: string }
+                if (error.name === 'SlowDownException') {
                     retryInterval += BACKOFF_DELAY_MS
-                } else if (err.code === 'AuthorizationPendingException') {
+                } else if (error.name === 'AuthorizationPendingException') {
                     // Do nothing, try again after the interval.
-                } else if (err.code === 'ExpiredTokenException') {
+                } else if (error.name === 'ExpiredTokenException') {
                     throw Error(deviceCodeExpiredMsg)
-                } else if (err.code === 'TimeoutException') {
+                } else if (error.name === 'TimeoutException') {
                     retryInterval *= 2
                 } else {
                     throw err
@@ -136,17 +136,15 @@ export class SsoAccessTokenProvider {
             startUrl: this.ssoUrl,
         }
         try {
-            const authorizationResponse = await this.ssoOidcClient
-                .startDeviceAuthorization(authorizationParams)
-                .promise()
+            const authorizationResponse = await this.ssoOidcClient.startDeviceAuthorization(authorizationParams)
             const openedPortalLink = await openSsoPortalLink(authorizationResponse)
             if (!openedPortalLink) {
                 throw Error(`User has canceled SSO login`)
             }
             return authorizationResponse
         } catch (err) {
-            getLogger().error(err)
-            if (err.code === 'InvalidClientException') {
+            getLogger().error(err as Error) // TODO: remove log? we are rethrowing
+            if ((err as { code: string }).code === 'InvalidClientException') {
                 this.cache.invalidateClientRegistration(this.ssoRegion)
             }
             throw err
@@ -167,7 +165,7 @@ export class SsoAccessTokenProvider {
             clientType: CLIENT_REGISTRATION_TYPE,
             clientName: CLIENT_NAME,
         }
-        const registerResponse = await this.ssoOidcClient.registerClient(registerParams).promise()
+        const registerResponse = await this.ssoOidcClient.registerClient(registerParams)
         const formattedExpiry = new Date(registerResponse.clientSecretExpiresAt! * MS_PER_SECOND).toISOString()
 
         const registration: SsoClientRegistration = {
