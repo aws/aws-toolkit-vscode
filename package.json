@@ -207,6 +207,16 @@
                     "type": "boolean",
                     "description": "%AWS.configuration.description.ecs.warnRunCommand%",
                     "default": true
+                },
+                "aws.ecs.warnBeforeEnablingExcecuteCommand": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.ecs.warnBeforeEnablingExcecuteCommand%",
+                    "default": true
+                },
+                "aws.ecs.warnBeforeDisablingExecuteCommand": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.ecs.warnBeforeDisablingExecuteCommand%",
+                    "default": true
                 }
             }
         },
@@ -1184,6 +1194,16 @@
                     "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
                 },
                 {
+                    "command": "aws.command.enableEcsExec",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
+                },
+                {
+                    "command": "aws.command.disableEcsExec",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
+                },
+                {
                     "command": "aws.apprunner.createServiceFromEcr",
                     "group": "0@2",
                     "when": "view == aws.explorer && viewItem =~ /awsEcrTagNode|awsEcrRepositoryNode/"
@@ -1912,8 +1932,28 @@
                 }
             },
             {
+                "command": "aws.command.enableEcsExec",
+                "title": "%AWS.command.enableEcsExec%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.apprunner.createService",
                 "title": "%AWS.command.apprunner.createService%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.command.disableEcsExec",
+                "title": "%AWS.command.disableEcsExec%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
