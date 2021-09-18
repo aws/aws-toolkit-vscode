@@ -11,7 +11,6 @@ import { DefaultEcsClient, EcsClient } from '../../../shared/clients/ecsClient'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { FakeChildProcessResult } from '../../shared/sam/cli/testSamCliProcessInvoker'
-import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { MockOutputChannel } from '../../mockOutputChannel'
 
 describe('runCommandInContainer', function () {
@@ -63,12 +62,11 @@ describe('runCommandInContainer', function () {
         sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
         sandbox.stub(picker, 'promptUser').resolves(chosenTask)
-        sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         await runCommandInContainer(node, window, outputChannel)
 
-        assert.strictEqual(childCalls.callCount, 3)
+        assert.strictEqual(childCalls.callCount, 2)
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter the command to run in container: containerName')
     })
 
@@ -78,14 +76,13 @@ describe('runCommandInContainer', function () {
         sandbox.stub(ecs, 'describeServices').resolves(serviceNoDeployments)
         sandbox.stub(ecs, 'listTasks').resolves(taskListOne)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
-        sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
         const pickerStub = sandbox.stub(picker, 'promptUser')
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         await runCommandInContainer(node, window, outputChannel)
 
         assert.strictEqual(pickerStub.notCalled, true)
-        assert.strictEqual(childCalls.callCount, 3)
+        assert.strictEqual(childCalls.callCount, 2)
     })
 
     it('throws error if AWS CLI not installed', async function () {

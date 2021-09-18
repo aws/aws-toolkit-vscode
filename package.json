@@ -189,10 +189,25 @@
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {
                         "apprunnerNotifyPricing": false,
+                        "ecsRunCommand": false,
+                        "ecsRunCommandDisable": false,
+                        "ecsRunCommandEnable": false,
                         "yamlExtPrompt": false
                     },
                     "properties": {
                         "apprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommand": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommandEnable": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommandDisable": {
                             "type": "boolean",
                             "default": false
                         },
@@ -202,21 +217,6 @@
                         }
                     },
                     "additionalProperties": false
-                },
-                "aws.ecs.warnRunCommand": {
-                    "type": "boolean",
-                    "description": "%AWS.configuration.description.ecs.warnRunCommand%",
-                    "default": true
-                },
-                "aws.ecs.warnBeforeEnablingExcecuteCommand": {
-                    "type": "boolean",
-                    "description": "%AWS.configuration.description.ecs.warnBeforeEnablingExcecuteCommand%",
-                    "default": true
-                },
-                "aws.ecs.warnBeforeDisablingExecuteCommand": {
-                    "type": "boolean",
-                    "description": "%AWS.configuration.description.ecs.warnBeforeDisablingExecuteCommand%",
-                    "default": true
                 }
             }
         },
