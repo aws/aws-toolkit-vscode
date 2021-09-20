@@ -138,9 +138,9 @@ export default defineComponent({
         // Send a message back to let the backend know we're ready for messages
         vscode.postMessage({ command: 'initialized' })
 
-        const oldState = vscode.getState() ?? {}
-        this.launchConfig = oldState.launchConfig
-        this.payload = oldState.payload
+        const oldState: Partial<SamInvokeVueState> = vscode.getState() ?? {}
+        this.launchConfig = oldState.launchConfig ?? this.launchConfig
+        this.payload = oldState.payload ?? this.payload
     },
     data(): SamInvokeVueData {
         return {
@@ -169,7 +169,7 @@ export default defineComponent({
                 vscode.setState(
                     Object.assign(vscode.getState() ?? {}, {
                         launchConfig: newval,
-                    })
+                    } as SamInvokeVueState)
                 )
             },
             deep: true,
@@ -179,7 +179,7 @@ export default defineComponent({
             vscode.setState(
                 Object.assign(vscode.getState() ?? {}, {
                     payload: newval,
-                })
+                } as SamInvokeVueState)
             )
         },
     },
@@ -232,7 +232,7 @@ export default defineComponent({
                 try {
                     return JSON.parse(field.value)
                 } catch (e) {
-                    field.errorMsg = e
+                    field.errorMsg = (e as Error).message
                     throw e
                 }
             }
