@@ -96,9 +96,7 @@ export async function resumeCreateNewSamApp(
         )
         const tryOpenReadme = await writeToolkitReadme(readmeUri.fsPath, configs)
         if (tryOpenReadme) {
-            isCloud9()
-                ? await vscode.workspace.openTextDocument(readmeUri)
-                : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+            await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
         }
     } catch (err) {
         createResult = 'Failed'
@@ -317,9 +315,7 @@ export async function createNewSamApplication(
         // TODO: Replace when Cloud9 supports `markdown` commands
 
         if (tryOpenReadme) {
-            isCloud9()
-                ? await vscode.workspace.openTextDocument(readmeUri)
-                : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+            await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
         } else {
             await vscode.workspace.openTextDocument(templateUri)
         }

@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
-import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
@@ -20,7 +19,7 @@ describe('WinstonToolkitLogger', function () {
     })
 
     after(async function () {
-        await fs.remove(tempFolder)
+        await filesystemUtilities.tryRemoveFolder(tempFolder)
     })
 
     it('logLevelEnabled()', function () {

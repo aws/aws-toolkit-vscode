@@ -58,6 +58,7 @@
         "onCommand:aws.stepfunctions.publishStateMachine",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
+        "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
@@ -182,6 +183,25 @@
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
+                },
+                "aws.suppressPrompts": {
+                    "type": "object",
+                    "description": "%AWS.configuration.description.suppressPrompts%",
+                    "default": {
+                        "apprunnerNotifyPricing": false,
+                        "yamlExtPrompt": false
+                    },
+                    "properties": {
+                        "apprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "yamlExtPrompt": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    "additionalProperties": false
                 }
             }
         },
@@ -782,6 +802,10 @@
                     "when": "!isCloud9"
                 },
                 {
+                    "command": "aws.cdk.renderStateMachineGraph",
+                    "when": "!isCloud9"
+                },
+                {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
                 },
@@ -1046,6 +1070,16 @@
                     "command": "aws.renderStateMachineGraph",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.cdk.renderStateMachineGraph",
+                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cdk.renderStateMachineGraph",
+                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "group": "0@1"
                 },
                 {
                     "command": "aws.executeStateMachine",
@@ -1728,6 +1762,15 @@
                 }
             },
             {
+                "command": "aws.cdk.renderStateMachineGraph",
+                "title": "%AWS.command.cdk.previewStateMachine%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/stepfunctions/preview.svg",
+                    "dark": "resources/dark/stepfunctions/preview.svg"
+                }
+            },
+            {
                 "command": "aws.aboutToolkit",
                 "title": "%AWS.command.aboutToolkit%",
                 "category": "%AWS.title%"
@@ -2121,17 +2164,17 @@
         "@types/cross-spawn": "^6.0.0",
         "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
-        "@types/js-yaml": "^4.0.1",
-        "@types/lodash": "^4.14.136",
+        "@types/js-yaml": "^4.0.3",
+        "@types/lodash": "^4.14.173",
         "@types/marked": "^0.6.5",
-        "@types/mime-types": "^2.1.0",
+        "@types/mime-types": "^2.1.1",
         "@types/mocha": "^7.0.2",
         "@types/node": "^10.14.22",
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.0",
-        "@types/sinonjs__fake-timers": "^6.0.2",
+        "@types/sinonjs__fake-timers": "^6.0.3",
         "@types/tcp-port-used": "^1.0.0",
         "@types/uuid": "^8.3.1",
         "@types/vscode": "1.42.0",
@@ -2139,7 +2182,9 @@
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^4.24.0",
         "@typescript-eslint/parser": "^4.29.2",
+        "@vue/compiler-sfc": "^3.2.6",
         "circular-dependency-plugin": "^5.2.2",
+        "css-loader": "^6.2.0",
         "decache": "^4.4.0",
         "esbuild-loader": "2.13.1",
         "eslint": "^7.28.0",
@@ -2147,7 +2192,7 @@
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.7",
-        "husky": "^6.0.0",
+        "husky": "^7.0.2",
         "istanbul": "^0.4.5",
         "json-schema-to-typescript": "^8.2.0",
         "marked": "^2.1.3",
@@ -2167,6 +2212,8 @@
         "vsce": "^1.93.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.5.2",
+        "vue-loader": "^16.5.0",
+        "vue-style-loader": "^4.1.3",
         "webpack": "^5.38.1",
         "webpack-cli": "^4.7.2"
     },
@@ -2187,7 +2234,7 @@
         "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^4.1.0",
-        "jsonc-parser": "^2.0.2",
+        "jsonc-parser": "^3.0.0",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.32",
         "moment": "^2.29.1",
@@ -2197,13 +2244,13 @@
         "sleep-promise": "^9.1.0",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^4.3.4",
+        "typescript": "^4.4.2",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.1",
-        "vscode-nls": "^4.1.1",
-        "vue": "^2.6.14",
+        "vscode-nls": "^5.0.0",
+        "vue": "^3.2.6",
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",

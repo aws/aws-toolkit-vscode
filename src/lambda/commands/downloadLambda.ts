@@ -178,7 +178,7 @@ async function downloadAndUnzipLambda(
                         resolve(true)
                     } catch (err) {
                         // err loading zip into AdmZip, prior to attempting an unzip
-                        zipErr = err
+                        zipErr = err as Error
                         resolve(false)
                     }
                 })

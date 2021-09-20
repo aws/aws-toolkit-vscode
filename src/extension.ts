@@ -59,7 +59,6 @@ import {
     recordAwsShowExtensionSource,
     recordToolkitInit,
 } from './shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
@@ -71,6 +70,7 @@ import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
+import { SchemaService } from './shared/schemas'
 
 let localize: nls.LocalizeFunc
 
@@ -100,6 +100,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const endpointsProvider = makeEndpointsProvider()
 
         const awsContext = new DefaultAwsContext(context)
+        ext.awsContext = awsContext
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
@@ -121,6 +122,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
+        ext.schemaService = new SchemaService(context)
 
         await initializeCredentials({
             extensionContext: context,
@@ -134,6 +136,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
+        await ext.schemaService.start()
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -225,8 +228,6 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateLambda(extContext)
 
         await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
-
-        await ExtensionDisposableFiles.initialize(context)
 
         await activateSam(extContext)
 
@@ -399,7 +400,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
             duration: duration,
         })
     } catch (err) {
-        logger?.error(err)
+        logger?.error(err as Error)
     }
 }
 
