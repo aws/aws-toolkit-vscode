@@ -98,6 +98,9 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
         )
 
         const vsDbgVersion = 'latest'
+        // TODO: If vsdbg works with qemu, have this detect Architectures[0] and swap to `linux-arm64` if ARM.
+        // See https://github.com/OmniSharp/omnisharp-vscode/issues/3277 ;
+        // qemu appears to set PrivateTmp=true : https://github.com/qemu/qemu/blob/326ff8dd09556fc2e257196c49f35009700794ac/contrib/systemd/qemu-pr-helper.service#L8 ?
         const vsDbgRuntime = 'linux-x64'
 
         const installScriptPath = await downloadInstallScript(debuggerPath)

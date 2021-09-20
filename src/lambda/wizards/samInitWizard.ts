@@ -32,6 +32,7 @@ import {
     DependencyManager,
     getDependencyManager,
     RuntimePackageType,
+    samArmLambdaRuntimes,
     samLambdaCreatableRuntimes,
 } from '../models/samLambdaRuntime'
 import {
@@ -79,10 +80,17 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     private readonly samCliVersion: string
 
     private readonly totalSteps: number = 4
-    private stepsToAdd = { promptUserForDependencyManager: false, promptUserForRegion: false }
+    private stepsToAdd = {
+        promptUserForDependencyManager: false,
+        promptUserForRegion: false,
+        promptUserForArchitecture: false,
+    }
     private additionalSteps(): number {
         let n = 0
         if (this.stepsToAdd.promptUserForDependencyManager) {
+            n += 1
+        }
+        if (this.stepsToAdd.promptUserForArchitecture) {
             n += 1
         }
         if (this.stepsToAdd.promptUserForRegion) {
@@ -108,6 +116,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined> {
         // last common step; reset additionalSteps to 0
         this.stepsToAdd.promptUserForDependencyManager = false
+        this.stepsToAdd.promptUserForArchitecture = false
 
         const quickPick = createRuntimeQuickPick({
             // TODO: remove check when SAM CLI version is low enough
@@ -150,7 +159,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 options: {
                     ignoreFocusOut: true,
                     title: localize('AWS.samcli.initWizard.dependencyManager.prompt', 'Select a Dependency Manager'),
-                    step: 2,
+                    step: 1 + this.additionalSteps(),
                     totalSteps: this.totalSteps + this.additionalSteps(),
                 },
                 buttons: [this.helpButton, vscode.QuickInputButtons.Back],
@@ -174,6 +183,36 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             return val ? (val.label as DependencyManager) : undefined
         }
     }
+
+    // public async promptUserForArchitecture(
+    //     currRuntime: Runtime
+    // ): Promise<'x86_64' | 'arm64' | undefined> {
+    //     this.stepsToAdd.promptUserForArchitecture = true
+    //     const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+    //         options: {
+    //             ignoreFocusOut: true,
+    //             title: localize('AWS.samcli.initWizard.architecture.prompt', 'Select an Architecture'),
+    //             step: 1 + this.additionalSteps(),
+    //             totalSteps: this.totalSteps + this.additionalSteps(),
+    //         },
+    //         buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+    //         items: [{ label: 'x86_64' }, { label: 'amd64' }],
+    //     })
+
+    //     const choices = await picker.promptUser({
+    //         picker: quickPick,
+    //         onDidTriggerButton: (button, resolve, reject) => {
+    //             if (button === vscode.QuickInputButtons.Back) {
+    //                 resolve(undefined)
+    //             } else if (button === this.helpButton) {
+    //                 vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
+    //             }
+    //         },
+    //     })
+    //     const val = picker.verifySinglePickerOutput(choices)
+
+    //     return val ? val.label : undefined
+    // }
 
     public async promptUserForTemplate(
         currRuntime: Runtime,
@@ -502,8 +541,20 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             return WIZARD_RETRY
         }
 
+        // return wizardContinue(this.ARCHITECTURE)
         return wizardContinue(this.TEMPLATE)
     }
+
+    // private readonly ARCHITECTURE: WizardStep = async () => {
+    //     const archRequired = !!this.runtime && samArmLambdaRuntimes.has(this.runtime)
+    //     this.architecture = archRequired ? await this.context.promptUserForArchitecture(this.runtime) : 'x86_64'
+
+    //     if (!this.architecture) {
+    //         return WIZARD_GOBACK
+    //     }
+
+    //     return wizardContinue(this.TEMPLATE)
+    // }
 
     private readonly TEMPLATE: WizardStep = async () => {
         this.template = await this.context.promptUserForTemplate(this.runtime!, this.packageType!)

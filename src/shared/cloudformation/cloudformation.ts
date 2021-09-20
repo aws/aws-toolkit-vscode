@@ -73,6 +73,7 @@ export namespace CloudFormation {
         Environment?: Environment
         Events?: Events
         PackageType?: 'Image' | 'Zip'
+        Architectures?: ('x86_64' | 'arm64')[]
         [key: string]: any
     }
 
