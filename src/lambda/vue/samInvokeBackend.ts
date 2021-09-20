@@ -46,6 +46,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
                 id: 'createLambda',
                 name: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
                 webviewJs: 'samInvokeVue.js',
+                cssFiles: ['base.css'],
                 onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
                     handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
                 context: context.extensionContext,
