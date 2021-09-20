@@ -22,7 +22,7 @@ interface ServiceClientDefinition {
 async function generateServiceClients(serviceClientDefinitions: ServiceClientDefinition[]): Promise<void> {
     const tempJsSdkPath = path.join(repoRoot, 'node_modules', '.zzz-awssdk2')
     console.log(`Temp JS SDK Repo location: ${tempJsSdkPath}`)
-    console.log('Serivce Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
+    console.log('Service Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
 
     await cloneJsSdk(tempJsSdkPath)
     await insertServiceClientsIntoJsSdk(tempJsSdkPath, serviceClientDefinitions)
@@ -208,8 +208,16 @@ ${fileContents}
 ;(async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
+            serviceJsonPath: 'types/REMOVED.api.json',
+            serviceName: 'ClientCodeAws'
+        },
+        {
             serviceJsonPath: 'src/shared/telemetry/service-2.json',
             serviceName: 'ClientTelemetry',
+        },
+        {
+            serviceJsonPath: 'types/REMOVED.normal.json',
+            serviceName: 'ClientMde'
         },
     ]
     await generateServiceClients(serviceClientDefinitions)

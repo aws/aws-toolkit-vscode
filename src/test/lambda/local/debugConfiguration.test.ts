@@ -15,7 +15,7 @@ import * as testutil from '../../testUtil'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import * as path from 'path'
-import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 import { isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
 

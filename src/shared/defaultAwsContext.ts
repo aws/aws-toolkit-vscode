@@ -26,6 +26,8 @@ export class DefaultAwsContext implements AwsContext {
 
     private currentCredentials: AwsContextCredentials | undefined
     private developerMode: boolean | undefined
+    private cawsUsername: string | undefined
+    private cawsSecret: string | undefined
 
     public constructor(public context: vscode.ExtensionContext) {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
@@ -35,10 +37,6 @@ export class DefaultAwsContext implements AwsContext {
         this.explorerRegions = persistedRegions || []
     }
 
-    /**
-     * Sets the credentials to be used by the Toolkit.
-     * Passing in undefined represents that there are no active credentials.
-     */
     public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
         if (JSON.stringify(this.currentCredentials) === JSON.stringify(credentials)) {
             // Do nothing. Besides performance, this avoids infinite loops.
@@ -65,6 +63,16 @@ export class DefaultAwsContext implements AwsContext {
      */
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
         return this.currentCredentials?.credentials
+    }
+
+    public setCawsCredentials(username: string, secret: string): void {
+        this.cawsUsername = username
+        this.cawsSecret = secret
+        this.emitEvent()
+    }
+
+    public getCawsCredentials(): string | undefined {
+        return this.cawsUsername
     }
 
     // returns the configured profile, if any
@@ -127,6 +135,8 @@ export class DefaultAwsContext implements AwsContext {
             profileName: this.currentCredentials?.credentialsId,
             accountId: this.currentCredentials?.accountId,
             developerMode: this.developerMode,
+            cawsUsername: this.cawsUsername,
+            cawsSecret: this.cawsSecret,
         })
     }
 }
