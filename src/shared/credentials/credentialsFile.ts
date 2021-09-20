@@ -14,11 +14,13 @@ import * as fs from 'fs'
 import * as _ from 'lodash'
 import { homedir } from 'os'
 import { join, sep } from 'path'
+import { ExtensionContext } from 'vscode'
 import { loginWithMostRecentCredentials } from '../../credentials/activation'
 import { LoginManager } from '../../credentials/loginManager'
 import { EnvironmentVariables } from '../environmentVariables'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { SettingsConfiguration } from '../settingsConfiguration'
+import { getCredentialsFilename, getConfigFilename } from '../../credentials/sharedCredentials'
 
 export interface SharedConfigInit {
     /**
@@ -180,4 +182,10 @@ export function createCredentialsFileWatcher(
             }
         }, 100)
     )
+}
+
+export function initCredentialsWatch(context: ExtensionContext, toolkitSettings: SettingsConfiguration, loginManager: LoginManager) {
+    const credWatcher = createCredentialsFileWatcher(getCredentialsFilename(), toolkitSettings, loginManager)
+    const configWatcher = createCredentialsFileWatcher(getConfigFilename(), toolkitSettings, loginManager)
+    context.subscriptions.push({ dispose: () => credWatcher.close() }, { dispose: () => configWatcher.close() })
 }

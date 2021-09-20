@@ -4,7 +4,6 @@
  */
 
 import { access, mkdtemp, mkdirp, readFile, remove, existsSync } from 'fs-extra'
-import * as _ from 'lodash'
 import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as os from 'os'
