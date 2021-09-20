@@ -10,7 +10,16 @@ import { AwsDevSetting, SettingsConfiguration } from '../../shared/settingsConfi
  */
 export class TestSettingsConfiguration implements SettingsConfiguration {
     private readonly _data: { [key: string]: any } = {}
-    private readonly _promptData: { [key: string]: boolean } = {}
+
+    public async disablePrompt(promptName: string): Promise<void> {}
+
+    public async isPromptEnabled(promptName: string): Promise<boolean> {
+        return true
+    }
+
+    public async getSuppressPromptSetting(promptName: string): Promise<{ [prompt: string]: boolean } | undefined> {
+        return {}
+    }
 
     public readSetting<T>(settingKey: string, defaultValue?: T | undefined): T | undefined {
         return this._data[settingKey] as T
@@ -23,17 +32,5 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
 
     public readDevSetting<T>(key: AwsDevSetting, type: string = 'string', silent: boolean = false): T | undefined {
         return undefined
-    }
-
-    public async disablePrompt(promptName: string): Promise<void> {
-        this._promptData[promptName] = true
-    }
-
-    public async isPromptEnabled(promptName: string): Promise<boolean> {
-        return this._promptData[promptName] !== true
-    }
-
-    public async getSuppressPromptSetting(promptName: string): Promise<{ [prompt: string]: boolean } | undefined> {
-        return this._promptData
     }
 }

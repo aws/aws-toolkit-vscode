@@ -19,6 +19,7 @@ export interface ContextChangeEventsArgs {
     readonly profileName?: string
     /** AWS account. */
     readonly accountId?: string
+    readonly developerMode?: boolean
     /** CODE.AWS username. */
     readonly cawsUsername?: string
     /** CODE.AWS secret. */
@@ -48,6 +49,7 @@ export interface AwsContext {
     // removes one or more regions from the user's preferred set
     removeExplorerRegion(...regions: string[]): Promise<void>
 
+    setDeveloperMode(enable: boolean): Promise<void>
     /** Gets the current CODE.AWS credentials. */
     getCawsCredentials(): string | undefined
     /** Sets the current CODE.AWS credentials, or undefined to logout. */

@@ -24,7 +24,8 @@ export class DefaultAwsContext implements AwsContext {
     // the current workspace
     private readonly explorerRegions: string[]
 
-    private credentials: AwsContextCredentials | undefined
+    private currentCredentials: AwsContextCredentials | undefined
+    private developerMode: boolean | undefined
     private cawsUsername: string | undefined
     private cawsSecret: string | undefined
 
@@ -37,12 +38,31 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
-        this.credentials = credentials
+        if (JSON.stringify(this.currentCredentials) === JSON.stringify(credentials)) {
+            // Do nothing. Besides performance, this avoids infinite loops.
+            return
+        }
+        this.currentCredentials = credentials
         this.emitEvent()
     }
 
+    /**
+     * Sets "developer mode" when a Toolkit developer setting is active.
+     */
+    public async setDeveloperMode(enable: boolean): Promise<void> {
+        if (this.developerMode === enable) {
+            // Do nothing. Besides performance, this avoids infinite loops.
+            return
+        }
+        this.developerMode = enable
+        this.emitEvent()
+    }
+
+    /**
+     * @description Gets the Credentials currently used by the Toolkit.
+     */
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
-        return this.credentials?.credentials
+        return this.currentCredentials?.credentials
     }
 
     public setCawsCredentials(username: string, secret: string): void {
@@ -57,24 +77,24 @@ export class DefaultAwsContext implements AwsContext {
 
     // returns the configured profile, if any
     public getCredentialProfileName(): string | undefined {
-        return this.credentials?.credentialsId
+        return this.currentCredentials?.credentialsId
     }
 
     // returns the configured profile's account ID, if any
     public getCredentialAccountId(): string | undefined {
-        return this.credentials?.accountId
+        return this.currentCredentials?.accountId
     }
 
     public getCredentialDefaultRegion(): string {
-        const credId = this.credentials?.credentialsId ?? ''
-        if (!logged.has(credId) && !this.credentials?.defaultRegion) {
+        const credId = this.currentCredentials?.credentialsId ?? ''
+        if (!logged.has(credId) && !this.currentCredentials?.defaultRegion) {
             logged.add(credId)
             getLogger().warn(
                 `AwsContext: no default region in credentials profile, falling back to ${DEFAULT_REGION}: ${credId}`
             )
         }
 
-        return this.credentials?.defaultRegion ?? DEFAULT_REGION
+        return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -110,9 +130,11 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     private emitEvent() {
+        // TODO(jmkeyes): skip this if the state did not actually change.
         this._onDidChangeContext.fire({
-            profileName: this.credentials?.credentialsId,
-            accountId: this.credentials?.accountId,
+            profileName: this.currentCredentials?.credentialsId,
+            accountId: this.currentCredentials?.accountId,
+            developerMode: this.developerMode,
             cawsUsername: this.cawsUsername,
             cawsSecret: this.cawsSecret,
         })
