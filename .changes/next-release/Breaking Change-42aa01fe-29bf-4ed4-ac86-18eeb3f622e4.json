@@ -1,0 +1,4 @@
+{
+	"type": "Breaking Change",
+	"description": "DEPRECATION:  SAM actions using `python2.7` and `nodejs10.x` runtimes (Phase 2 Lambda deprecation)"
+}
