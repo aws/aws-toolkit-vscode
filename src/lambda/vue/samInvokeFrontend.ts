@@ -7,6 +7,7 @@ import { defineComponent } from 'vue'
 import { WebviewApi } from 'vscode-webview'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { AwsSamDebuggerConfigurationLoose, SamInvokerResponse, SamInvokeVueState } from './samInvokeBackend'
+import settingsPanel from '../../webviews/components/settingsPanel.vue'
 
 declare const vscode: WebviewApi<SamInvokeVueState>
 
@@ -16,7 +17,6 @@ interface VueDataLaunchPropertyObject {
 }
 export interface SamInvokeVueData {
     msg: any
-    showAllFields: boolean
     targetTypes: { [k: string]: string }[]
     runtimes: string[]
     httpMethods: string[]
@@ -27,8 +27,8 @@ export interface SamInvokeVueData {
     headers: VueDataLaunchPropertyObject
     stageVariables: VueDataLaunchPropertyObject
     parameters: VueDataLaunchPropertyObject
-    containerBuildStr: string
-    skipNewImageCheckStr: string
+    containerBuild: boolean
+    skipNewImageCheck: boolean
 }
 
 function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDebuggerConfigurationLoose {
@@ -90,6 +90,9 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDe
 }
 
 export default defineComponent({
+    components: {
+        settingsPanel,
+    },
     created() {
         window.addEventListener('message', ev => {
             const event = ev.data as SamInvokerResponse
@@ -125,16 +128,8 @@ export default defineComponent({
                     if (event.data.launchConfig.api?.stageVariables) {
                         this.stageVariables.value = JSON.stringify(event.data.launchConfig.api?.stageVariables)
                     }
-                    if (event.data.launchConfig.sam?.containerBuild === true) {
-                        this.containerBuildStr = 'True'
-                    } else if (event.data.launchConfig.sam?.containerBuild === false) {
-                        this.containerBuildStr = 'False'
-                    }
-                    if (event.data.launchConfig.sam?.skipNewImageCheck === true) {
-                        this.skipNewImageCheckStr = 'True'
-                    } else if (event.data.launchConfig.sam?.skipNewImageCheck === false) {
-                        this.skipNewImageCheckStr = 'False'
-                    }
+                    this.containerBuild = event.data.launchConfig.sam?.containerBuild ?? false
+                    this.skipNewImageCheck = event.data.launchConfig.sam?.containerBuild ?? false
                     this.msg = `Loaded config ${event.data.launchConfig.name}`
                     break
             }
@@ -143,23 +138,20 @@ export default defineComponent({
         // Send a message back to let the backend know we're ready for messages
         vscode.postMessage({ command: 'initialized' })
 
-        const oldState = vscode.getState()
-        if (oldState) {
-            this.launchConfig = oldState.launchConfig
-            this.payload = oldState.payload
-        }
+        const oldState: Partial<SamInvokeVueState> = vscode.getState() ?? {}
+        this.launchConfig = oldState.launchConfig ?? this.launchConfig
+        this.payload = oldState.payload ?? this.payload
     },
     data(): SamInvokeVueData {
         return {
             msg: 'Hello',
-            showAllFields: false,
             targetTypes: [
                 { name: 'Code', value: 'code' },
                 { name: 'Template', value: 'template' },
                 { name: 'API Gateway (Template)', value: 'api' },
             ],
-            containerBuildStr: '',
-            skipNewImageCheckStr: '',
+            containerBuild: false,
+            skipNewImageCheck: false,
             runtimes: [],
             httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
             launchConfig: newLaunchConfig(),
@@ -174,19 +166,21 @@ export default defineComponent({
     watch: {
         launchConfig: {
             handler(newval: AwsSamDebuggerConfigurationLoose) {
-                vscode.setState({
-                    payload: this.payload,
-                    launchConfig: newval,
-                })
+                vscode.setState(
+                    Object.assign(vscode.getState() ?? {}, {
+                        launchConfig: newval,
+                    } as SamInvokeVueState)
+                )
             },
             deep: true,
         },
         payload: function (newval: { value: string; errorMsg: string }) {
             this.resetJsonErrors()
-            vscode.setState({
-                payload: newval,
-                launchConfig: this.launchConfig,
-            })
+            vscode.setState(
+                Object.assign(vscode.getState() ?? {}, {
+                    payload: newval,
+                } as SamInvokeVueState)
+            )
         },
     },
     methods: {
@@ -224,12 +218,6 @@ export default defineComponent({
                 command: 'getTemplate',
             })
         },
-        toggleShowAllFields() {
-            this.showAllFields = !this.showAllFields
-        },
-        stringToBoolean(field: string) {
-            return field === 'True'
-        },
         formatFieldToStringArray(field: string | undefined) {
             if (!field) {
                 return undefined
@@ -240,7 +228,7 @@ export default defineComponent({
         },
         formatStringtoJSON(field: VueDataLaunchPropertyObject) {
             field.errorMsg = ''
-            if (field.value !== '') {
+            if (field.value) {
                 try {
                     return JSON.parse(field.value)
                 } catch (e) {
@@ -287,8 +275,8 @@ export default defineComponent({
                             ...launchConfig.sam,
                             buildArguments: this.formatFieldToStringArray(launchConfig.sam?.buildArguments?.toString()),
                             localArguments: this.formatFieldToStringArray(launchConfig.sam?.localArguments?.toString()),
-                            containerBuild: this.stringToBoolean(this.containerBuildStr),
-                            skipNewImageCheck: this.stringToBoolean(this.skipNewImageCheckStr),
+                            containerBuild: this.containerBuild,
+                            skipNewImageCheck: this.skipNewImageCheck,
                             template: {
                                 parameters: parametersJson,
                             },
@@ -309,15 +297,14 @@ export default defineComponent({
         },
         clearForm() {
             this.launchConfig = newLaunchConfig()
-            this.containerBuildStr = ''
-            this.skipNewImageCheckStr = ''
+            this.containerBuild = false
+            this.skipNewImageCheck = false
             this.payload = { value: '', errorMsg: '' }
             this.apiPayload = { value: '', errorMsg: '' }
             this.environmentVariables = { value: '', errorMsg: '' }
             this.parameters = { value: '', errorMsg: '' }
             this.headers = { value: '', errorMsg: '' }
             this.stageVariables = { value: '', errorMsg: '' }
-            this.showAllFields = false
         },
     },
 })
