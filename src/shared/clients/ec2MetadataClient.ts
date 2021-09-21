@@ -37,8 +37,12 @@ export class DefaultEc2MetadataClient {
                 if (err) {
                     reject(err)
                 }
-                const jsonResponse: T = JSON.parse(response)
-                resolve(jsonResponse)
+                try {
+                    const jsonResponse: T = JSON.parse(response)
+                    resolve(jsonResponse)
+                } catch (e) {
+                    reject(e)
+                }
             })
         })
     }
