@@ -557,6 +557,7 @@
     "AWS.samcli.initWizard.completionMessage": "Created SAM application \"{0}\" and added launch configurations to launch.json: {1}",
     "AWS.samcli.initWizard.launchConfigFail": "Created SAM application \"{0}\" but failed to generate launch configurations. You can generate these via {1} in the template or handler file.",
     "AWS.samcli.build.failedBuild": "\"sam build\" failed: {0}",
+    "AWS.samcli.deprecatedRuntime": "Runtime {0} has been deprecated. Update to a currently-supported runtime.",
     "AWS.sam.localApi.request": "Sending request to local API: {0}",
     "AWS.pickDebugHandler.noEditor": "Toolkit could not find an active editor",
     "AWS.pickDebugHandler.invalidLanguage": "Toolkit cannot detect handlers in language: {0}",

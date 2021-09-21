@@ -4,4 +4,4 @@ Resources:
         Properties:
             CodeUri: src/
             Handler: subfolder/app.handlerInManifestSubfolder
-            Runtime: nodejs10.x
+            Runtime: nodejs14.x
