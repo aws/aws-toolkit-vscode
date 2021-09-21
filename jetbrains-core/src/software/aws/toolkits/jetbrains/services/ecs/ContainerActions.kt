@@ -122,7 +122,7 @@ class ContainerLogsAction(
             }
     }
 
-    private suspend fun showSingleStream(window: CloudWatchLogWindow, logGroup: String, logStream: String): Boolean {
+    private fun showSingleStream(window: CloudWatchLogWindow, logGroup: String, logStream: String): Boolean {
         if (!project.awsClient<CloudWatchLogsClient>().checkIfLogStreamExists(logGroup, logStream)) {
             notifyInfo(message("ecs.service.logs.no_log_stream"))
             return false
