@@ -18,13 +18,13 @@ export async function activate(ctx: ExtContext): Promise<void> {
     )
 
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.command.enableEcsExec', async (node: EcsServiceNode) => {
+        vscode.commands.registerCommand('aws.ecs.enableEcsExec', async (node: EcsServiceNode) => {
             await updateEnableExecuteCommandFlag(node, true)
         })
     )
 
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.command.disableEcsExec', async (node: EcsServiceNode) => {
+        vscode.commands.registerCommand('aws.ecs.disableEcsExec', async (node: EcsServiceNode) => {
             await updateEnableExecuteCommandFlag(node, false)
         })
     )
