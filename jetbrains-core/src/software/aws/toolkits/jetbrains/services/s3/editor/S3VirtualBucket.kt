@@ -84,7 +84,7 @@ class S3VirtualBucket(val s3Bucket: String, prefix: String, val client: S3Client
 
     suspend fun renameObject(fromKey: String, toKey: String) {
         withContext(getCoroutineBgContext()) {
-            client.copyObject { it.copySource("$s3Bucket/$fromKey").destinationBucket(s3Bucket).destinationKey(toKey) }
+            client.copyObject { it.sourceBucket(s3Bucket).sourceKey(fromKey).destinationBucket(s3Bucket).destinationKey(toKey) }
             client.deleteObject { it.bucket(s3Bucket).key(fromKey) }
         }
     }
