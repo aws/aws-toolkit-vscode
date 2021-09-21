@@ -32,7 +32,7 @@ describe('EcsNode', function () {
     })
 
     it('gets children', async function () {
-        when(ecs.listClusters(undefined)).thenResolve({
+        when(ecs.getClusters(undefined)).thenResolve({
             resource: [firstCluster, secondCluster],
             nextToken: undefined,
         })
@@ -46,7 +46,7 @@ describe('EcsNode', function () {
     })
 
     it('gets children with node for loading more results', async function () {
-        when(ecs.listClusters(undefined)).thenResolve({
+        when(ecs.getClusters(undefined)).thenResolve({
             resource: [firstCluster],
             nextToken,
         })

@@ -304,9 +304,9 @@ export class MockEcrClient implements EcrClient {
 
 export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
-    public readonly listClusters: (nextToken?: string) => Promise<EcsResourceAndToken>
-    public readonly listServices: (cluster: string, nextToken?: string) => Promise<EcsResourceAndToken>
-    public readonly listContainerNames: (taskDefinition: string) => Promise<string[]>
+    public readonly getClusters: (nextToken?: string) => Promise<EcsResourceAndToken>
+    public readonly getServices: (cluster: string, nextToken?: string) => Promise<EcsResourceAndToken>
+    public readonly getContainerNames: (taskDefinition: string) => Promise<string[]>
     public readonly listTasks: (cluster: string, serviceName: string) => Promise<string[]>
     public readonly describeTasks: (cluster: string, tasks: string[]) => Promise<ECS.Task[]>
     public readonly updateService: (cluster: string, serviceName: string, enable: boolean) => Promise<void>
@@ -332,9 +332,9 @@ export class MockEcsClient implements EcsClient {
         describeServices?(): Promise<ECS.Service[]>
     }) {
         this.regionCode = regionCode
-        this.listClusters = listClusters
-        this.listServices = listServices
-        this.listContainerNames = listContainerNames
+        this.getClusters = listClusters
+        this.getServices = listServices
+        this.getContainerNames = listContainerNames
         this.listTasks = listTasks
         this.describeTasks = describeTasks
         this.updateService = updateService

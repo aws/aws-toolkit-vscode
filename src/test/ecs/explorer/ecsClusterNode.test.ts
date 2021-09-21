@@ -42,7 +42,7 @@ describe('EcsClusterNode', function () {
 
     describe('getChildren', function () {
         it('gets children', async function () {
-            when(ecs.listServices(cluster.clusterArn!, undefined)).thenResolve({
+            when(ecs.getServices(cluster.clusterArn!, undefined)).thenResolve({
                 resource: [service],
                 nextToken: undefined,
             })
@@ -55,7 +55,7 @@ describe('EcsClusterNode', function () {
         })
 
         it('gets children with node for loading more results', async function () {
-            when(ecs.listServices(cluster.clusterArn!, undefined)).thenResolve({
+            when(ecs.getServices(cluster.clusterArn!, undefined)).thenResolve({
                 resource: [service],
                 nextToken,
             })

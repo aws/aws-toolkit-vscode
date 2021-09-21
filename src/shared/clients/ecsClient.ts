@@ -19,7 +19,7 @@ const MAX_RESULTS_PER_RESPONSE = 100
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async listClusters(nextToken?: string): Promise<EcsResourceAndToken> {
+    public async getClusters(nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
         const clusterArnList = await sdkClient
             .listClusters({ maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
@@ -40,7 +40,7 @@ export class DefaultEcsClient {
         }
     }
 
-    public async listServices(cluster: string, nextToken?: string): Promise<EcsResourceAndToken> {
+    public async getServices(cluster: string, nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
         const serviceArnList = await sdkClient
             .listServices({ cluster: cluster, maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
@@ -61,7 +61,7 @@ export class DefaultEcsClient {
         }
     }
 
-    public async listContainerNames(taskDefinition: string): Promise<string[]> {
+    public async getContainerNames(taskDefinition: string): Promise<string[]> {
         const sdkClient = await this.createSdkClient()
         try {
             const describeTaskDefinitionResponse = await sdkClient.describeTaskDefinition({ taskDefinition }).promise()
