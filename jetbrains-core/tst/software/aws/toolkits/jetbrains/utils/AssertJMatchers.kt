@@ -8,6 +8,7 @@ import org.assertj.core.api.CompletableFutureAssert
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 private val TIMEOUT = Duration.ofSeconds(1)
 
@@ -29,3 +30,4 @@ val <T> CompletionStage<T>.value get() = toCompletableFuture().get(TIMEOUT.toMil
 val <T> CompletableFutureAssert<T>.hasException get() = this.wait().isCompletedExceptionally
 
 inline fun <reified T> AbstractAssert<*, *>.isInstanceOf() = isInstanceOf(T::class.java)
+inline fun <reified T> AbstractAssert<*, *>.isInstanceOfSatisfying(checker: Consumer<T>) = isInstanceOfSatisfying(T::class.java, checker)

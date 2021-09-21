@@ -33,24 +33,19 @@ interface ExecutableType<VersionScheme> {
 }
 
 interface AutoResolvable {
-
     /**
      * Attempt to automatically resolve the path
      *
      * @return the resolved path or null if not found
-     * @throws if an exception occurred attempting to resolve the path, when success was expected
+     * @throws Exception if an exception occurred attempting to resolve the path
      */
     fun resolve(): Path?
 }
 
+@Deprecated("Should not be used, delete after ToolManager migration")
 interface Validatable {
-
     /**
-     * Validate the executable at the given path, this may include version checks
-     * or any other validation required to ensure this executable is compatible with
-     * the toolkit.
-     *
-     * If validation fails throw exception, [Exception.message] is displayed to the user
+     * Validate the executable at the given path, beyond being a supported version to ensure this executable is compatible wit the toolkit.
      */
     fun validate(path: Path)
 }
