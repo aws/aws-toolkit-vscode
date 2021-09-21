@@ -23,6 +23,8 @@ export const documentationUrl: string = isCloud9()
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 
+export const supportedLambdaRuntimesUrl: string =
+    'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'
 // URLs for samInitWizard
 export const samInitDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/latest/user-guide/create-sam.html'

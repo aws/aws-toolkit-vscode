@@ -11,6 +11,7 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { Map as ImmutableMap, Set as ImmutableSet } from 'immutable'
 import * as picker from '../../shared/ui/picker'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { supportedLambdaRuntimesUrl } from '../../shared/constants'
 
 export enum RuntimeFamily {
     Unknown,
@@ -25,21 +26,38 @@ export type RuntimePackageType = 'Image' | 'Zip'
 
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
-export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs14.x', 'nodejs12.x', 'nodejs10.x'])
+export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs14.x', 'nodejs12.x'])
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.9',
     'python3.8',
     'python3.7',
     'python3.6',
-    'python2.7',
 ])
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java11', 'java8', 'java8.al2'])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore2.1', 'dotnetcore3.1'])
+
+/**
+ * Deprecated runtimes can be found at https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html
+ * (or whatever shared/constants.supportedLambdaRuntimesUrl is pointing to)
+ * Add runtimes as they enter Phase 2 deprecation (updating existing functions blocked)
+ * Don't add unsupported languages for now (e.g. ruby25): no point in telling a user they're deprecated and then telling them we have no support after they update.
+ */
+export const deprecatedRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'dotnetcore1.0',
+    'dotnetcore2.0',
+    'python2.7',
+    'nodejs',
+    'nodejs4.3',
+    'nodejs4.3-edge',
+    'nodejs6.10',
+    'nodejs8.10',
+    'nodejs10.x',
+])
 const DEFAULT_RUNTIMES = ImmutableMap<RuntimeFamily, Runtime>([
-    [RuntimeFamily.NodeJS, 'nodejs12.x'],
-    [RuntimeFamily.Python, 'python3.8'],
-    [RuntimeFamily.DotNetCore, 'dotnetcore2.1'],
+    [RuntimeFamily.NodeJS, 'nodejs14.x'],
+    [RuntimeFamily.Python, 'python3.9'],
+    [RuntimeFamily.DotNetCore, 'dotnetcore3.1'],
     [RuntimeFamily.Go, 'go1.x'],
     [RuntimeFamily.Java, 'java11'],
 ])
@@ -54,11 +72,11 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 
 // Cloud9 supports a subset of runtimes for debugging.
 // * .NET is not supported
-// * Python2.7 + 3.6 are not supported for debugging by IKP3db
+// * Python3.6 is not supported for debugging by IKP3db
 // for some reason, ImmutableSet does not like `ImmutableSet.union().filter()`; initialize union set here.
 const cloud9SupportedBaseRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 const cloud9SupportedCreateRuntimes = cloud9SupportedBaseRuntimes.filter(
-    (runtime: string) => !['python3.6', 'python2.7'].includes(runtime)
+    (runtime: string) => !['python3.6'].includes(runtime)
 )
 // only interpreted languages are importable as compiled languages won't provide a useful artifact for editing.
 export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
@@ -77,7 +95,9 @@ export function samImageLambdaRuntimes(cloud9: boolean = isCloud9()): ImmutableS
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
 export function getDependencyManager(runtime: Runtime): DependencyManager[] {
-    if (nodeJsRuntimes.has(runtime)) {
+    if (deprecatedRuntimes.has(runtime)) {
+        handleDeprecatedRuntime(runtime)
+    } else if (nodeJsRuntimes.has(runtime)) {
         return ['npm']
     } else if (pythonRuntimes.has(runtime)) {
         return ['pip']
@@ -92,7 +112,9 @@ export function getDependencyManager(runtime: Runtime): DependencyManager[] {
 }
 
 export function getFamily(runtime: string): RuntimeFamily {
-    if (nodeJsRuntimes.has(runtime)) {
+    if (deprecatedRuntimes.has(runtime)) {
+        handleDeprecatedRuntime(runtime)
+    } else if (nodeJsRuntimes.has(runtime)) {
         return RuntimeFamily.NodeJS
     } else if (pythonRuntimes.has(runtime)) {
         return RuntimeFamily.Python
@@ -104,6 +126,25 @@ export function getFamily(runtime: string): RuntimeFamily {
         return RuntimeFamily.Java
     }
     return RuntimeFamily.Unknown
+}
+
+function handleDeprecatedRuntime(runtime: Runtime) {
+    const moreInfo = localize('AWS.generic.message.learnMore', 'Learn More')
+    vscode.window
+        .showErrorMessage(
+            localize(
+                'AWS.samcli.deprecatedRuntime',
+                'Runtime {0} has been deprecated. Update to a currently-supported runtime.',
+                runtime
+            ),
+            moreInfo
+        )
+        .then(button => {
+            if (button === moreInfo) {
+                vscode.env.openExternal(vscode.Uri.parse(supportedLambdaRuntimesUrl))
+            }
+        })
+    throw new Error(`Runtime ${runtime} is deprecated, see: ${supportedLambdaRuntimesUrl}`)
 }
 
 /**
