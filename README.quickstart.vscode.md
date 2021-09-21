@@ -96,8 +96,8 @@ The Toolkit _local SAM debugging_ feature supports these Lambda runtimes:
 -   C# (.NET Core 2.1, 3.1; .NET 5.0)
 -   Go (1.x)
 -   Java (8, 8.al2, 11)
--   JavaScript/TypeScript (Node.js 10.x, 12.x, 14.x)
--   Python (2.7, 3.6, 3.7, 3.8, 3.9)
+-   JavaScript/TypeScript (Node.js 12.x, 14.x)
+-   Python (3.6, 3.7, 3.8, 3.9)
 
 For more information see [Working with AWS Serverless Applications](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html) in the user guide. To get setup for local debugging, see [Configuring your toolchain](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-toolchain.html).
 
