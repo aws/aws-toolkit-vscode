@@ -1541,10 +1541,7 @@
                 "command": "aws.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "dark": "third-party/resources/from-vscode/dark/feedback.svg",
-                    "light": "third-party/resources/from-vscode/light/feedback.svg"
-                },
+                "icon": "$(comment)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
