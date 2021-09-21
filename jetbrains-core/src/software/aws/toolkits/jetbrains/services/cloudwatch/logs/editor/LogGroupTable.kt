@@ -19,7 +19,6 @@ import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
@@ -97,8 +96,8 @@ class LogGroupTable(
     private fun addKeyListener(table: JBTable) {
         table.addKeyListener(
             object : KeyAdapter() {
-                override fun keyTyped(e: KeyEvent) = runBlocking {
-                    val logStream = table.getSelectedRowLogStream() ?: return@runBlocking
+                override fun keyTyped(e: KeyEvent) {
+                    val logStream = table.getSelectedRowLogStream() ?: return
                     if (!e.isConsumed && e.keyCode == KeyEvent.VK_ENTER) {
                         e.consume()
                         val window = CloudWatchLogWindow.getInstance(project)
@@ -111,11 +110,11 @@ class LogGroupTable(
 
     private fun addTableMouseListener(table: JBTable) {
         object : DoubleClickListener() {
-            override fun onDoubleClick(e: MouseEvent): Boolean = runBlocking {
-                val logStream = table.getSelectedRowLogStream() ?: return@runBlocking false
+            override fun onDoubleClick(e: MouseEvent): Boolean {
+                val logStream = table.getSelectedRowLogStream() ?: return false
                 val window = CloudWatchLogWindow.getInstance(project)
                 window.showLogStream(logGroup, logStream)
-                return@runBlocking true
+                return true
             }
         }.installOn(table)
     }

@@ -3,11 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.text.DateFormatUtil
 import icons.AwsIcons
-import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -28,7 +28,7 @@ class CloudWatchLogWindow(private val project: Project) {
     private val toolWindow = ToolkitToolWindowManager.getInstance(project, CW_LOGS_TOOL_WINDOW)
     private val edtContext = getCoroutineUiContext()
 
-    suspend fun showLogGroup(logGroup: String) {
+    fun showLogGroup(logGroup: String) {
         var result = Result.Succeeded
         try {
             if (showWindow(logGroup)) {
@@ -36,7 +36,7 @@ class CloudWatchLogWindow(private val project: Project) {
             }
             val group = CloudWatchLogGroup(project, logGroup)
             val title = message("cloudwatch.logs.log_group_title", logGroup.split("/").last())
-            withContext(edtContext) {
+            runInEdt {
                 toolWindow.addTab(title, group.content, activate = true, id = logGroup, disposable = group, refresh = { group.refreshTable() })
             }
         } catch (e: Exception) {
@@ -48,7 +48,7 @@ class CloudWatchLogWindow(private val project: Project) {
         }
     }
 
-    suspend fun showLogStream(
+    fun showLogStream(
         logGroup: String,
         logStream: String,
         previousEvent: LogStreamEntry? = null,
@@ -72,7 +72,7 @@ class CloudWatchLogWindow(private val project: Project) {
                 message("cloudwatch.logs.log_stream_title", logStream)
             }
             val stream = CloudWatchLogStream(project, logGroup, logStream, previousEvent, duration, streamLogs)
-            withContext(edtContext) {
+            runInEdt {
                 toolWindow.addTab(title, stream.content, activate = true, id = id, disposable = stream, refresh = { stream.refreshTable() })
             }
         } catch (e: Exception) {
@@ -84,41 +84,41 @@ class CloudWatchLogWindow(private val project: Project) {
         }
     }
 
-    suspend fun showQueryResults(queryDetails: QueryDetails, queryId: String, fields: List<String>) {
+    fun showQueryResults(queryDetails: QueryDetails, queryId: String, fields: List<String>) {
         if (showWindow(queryId)) {
             return
         }
 
         val panel = QueryResultPanel(project, fields, queryId, queryDetails)
         val title = message("cloudwatch.logs.query_tab_title", queryId)
-        withContext(edtContext) {
+        runInEdt {
             toolWindow.addTab(title, panel, activate = true, id = queryId, disposable = panel)
         }
     }
 
-    suspend fun showDetailedEvent(client: CloudWatchLogsClient, identifier: String) {
+    fun showDetailedEvent(client: CloudWatchLogsClient, identifier: String) {
         if (showWindow(identifier)) {
             return
         }
 
         val detailedLogEvent = DetailedLogRecord(project, client, identifier)
-        withContext(edtContext) {
+        runInEdt {
             toolWindow.addTab(detailedLogEvent.title, detailedLogEvent.getComponent(), activate = true, id = identifier, disposable = detailedLogEvent)
         }
     }
 
-    suspend fun closeLogGroup(logGroup: String) {
-        toolWindow.findPrefix(logGroup).forEach {
-            withContext(edtContext) {
+    fun closeLogGroup(logGroup: String) {
+        runInEdt {
+            toolWindow.findPrefix(logGroup).forEach {
                 it.dispose()
             }
         }
     }
 
-    private suspend fun showWindow(identifier: String): Boolean {
+    private fun showWindow(identifier: String): Boolean {
         val existingWindow = toolWindow.find(identifier)
         if (existingWindow != null) {
-            withContext(edtContext) {
+            runInEdt {
                 existingWindow.show(refresh = true)
             }
             return true
@@ -127,13 +127,13 @@ class CloudWatchLogWindow(private val project: Project) {
     }
 
     companion object {
+        private val LOG = getLogger<CloudWatchLogWindow>()
         internal val CW_LOGS_TOOL_WINDOW = ToolkitToolWindowType(
             "AWS.CloudWatchLog",
             message("cloudwatch.logs.toolwindow"),
             AwsIcons.Resources.CloudWatch.LOGS_TOOL_WINDOW
         )
 
-        fun getInstance(project: Project) = ServiceManager.getService(project, CloudWatchLogWindow::class.java)
-        private val LOG = getLogger<CloudWatchLogWindow>()
+        fun getInstance(project: Project) = project.service<CloudWatchLogWindow>()
     }
 }

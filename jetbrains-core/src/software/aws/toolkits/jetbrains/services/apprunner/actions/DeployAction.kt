@@ -10,7 +10,6 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbAware
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.apprunner.AppRunnerClient
 import software.amazon.awssdk.services.apprunner.model.AppRunnerException
 import software.amazon.awssdk.services.apprunner.model.ServiceStatus
@@ -19,7 +18,6 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.apprunner.AppRunnerServiceNode
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
@@ -67,9 +65,7 @@ class DeployAction : SingleResourceNodeAction<AppRunnerServiceNode>(message("app
         (1..15).forEach { _ ->
             if (runCatching { cloudwatchClient.checkIfLogStreamExists(logGroup, logStream) }.getOrNull() == true) {
                 LOG.info { "Found log stream for deployment $logStream" }
-                withContext(getCoroutineUiContext()) {
-                    logWindow.showLogStream(logGroup, logStream, streamLogs = true)
-                }
+                logWindow.showLogStream(logGroup, logStream, streamLogs = true)
                 return
             }
             delay(1000)
