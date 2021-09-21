@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.sso.model.GetRoleCredentialsRequest
 import software.amazon.awssdk.services.sso.model.GetRoleCredentialsResponse
 import software.amazon.awssdk.services.sso.model.RoleCredentials
-import software.amazon.awssdk.services.ssooidc.model.AccessDeniedException
+import software.amazon.awssdk.services.sso.model.UnauthorizedException
 import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.core.utils.test.aString
 import java.time.Instant
@@ -80,7 +80,7 @@ class SsoCredentialProviderTest {
             on(
                 ssoClient.getRoleCredentials(any<GetRoleCredentialsRequest>())
             ).thenThrow(
-                AccessDeniedException.builder().build()
+                UnauthorizedException.builder().build()
             )
         }
 
