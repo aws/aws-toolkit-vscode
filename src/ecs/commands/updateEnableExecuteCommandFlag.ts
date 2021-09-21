@@ -6,7 +6,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { extensionSettingsPrefix } from '../../shared/constants'
-import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordEcsDisableExecuteCommand, recordEcsEnableExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
@@ -16,7 +16,8 @@ export async function updateEnableExecuteCommandFlag(
     node: EcsServiceNode,
     enable: boolean,
     window = Window.vscode(),
-    commands = Commands.vscode()
+    commands = Commands.vscode(),
+    settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
     const hasExecEnabled = node.service.enableExecuteCommand
 
@@ -31,8 +32,6 @@ export async function updateEnableExecuteCommandFlag(
     const yes = localize('AWS.generic.response.yes', 'Yes')
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
-
-    const settings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
     if (enable) {
         if (hasExecEnabled) {
