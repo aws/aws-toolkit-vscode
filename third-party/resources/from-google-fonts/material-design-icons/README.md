@@ -1,0 +1,2 @@
+Source from the [material design icons](https://github.com/google/material-design-icons) set under Google Fonts.
+This directory contains the original, unmodified SVGs; the /resources/ directory contains modified icons to match different themes.
