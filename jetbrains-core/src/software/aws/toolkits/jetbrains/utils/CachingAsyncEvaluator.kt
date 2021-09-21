@@ -77,22 +77,6 @@ abstract class CachingAsyncEvaluator<TEntry, TReturn> {
         return promise.blockingGet(blockingTime, blockingUnit)!!
     }
 
-    @Suppress("unused")
-    fun containsEntry(entry: TEntry): Boolean =
-        synchronized(lock) {
-            requests.containsKey(entry)
-        }
-
-    @Suppress("unused")
-    fun cancelRequests() {
-        synchronized(lock) {
-            requests.forEach { request ->
-                (request.value as? AsyncPromise)?.cancel()
-            }
-            requests.clear()
-        }
-    }
-
     fun clearRequests() {
         synchronized(lock) {
             requests.clear()

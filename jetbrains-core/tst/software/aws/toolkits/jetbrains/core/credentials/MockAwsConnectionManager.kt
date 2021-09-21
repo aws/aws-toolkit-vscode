@@ -49,6 +49,22 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
         connectionState = state
     }
 
+    fun addRecentRegion(region: AwsRegion) {
+        recentlyUsedRegions.add(region.id)
+    }
+
+    fun clearRecentRegions() {
+        recentlyUsedRegions.clear()
+    }
+
+    fun addRecentCredentials(identifier: CredentialIdentifier) {
+        recentlyUsedProfiles.add(identifier.id)
+    }
+
+    fun clearRecentCredentials() {
+        recentlyUsedProfiles.clear()
+    }
+
     override fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) {}
 
     companion object {

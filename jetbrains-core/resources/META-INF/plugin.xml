@@ -175,6 +175,10 @@ with what features/services are supported.
                             testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockTelemetryService" />
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
+
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.tools.ToolSettings"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.tools.ToolManager"/>
+
         <applicationService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
@@ -476,7 +480,7 @@ with what features/services are supported.
             <action id="sqs.delete.queue" class="software.aws.toolkits.jetbrains.services.sqs.actions.DeleteQueueAction"/>
         </group>
 
-        <action class="software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
+        <action class="software.aws.toolkits.jetbrains.core.credentials.ConfigureAwsConnectionAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction" id="serverless.application.deploy" />
         <action class="software.aws.toolkits.jetbrains.settings.ShowSettingsAction" id="aws.settings.show" icon="AllIcons.General.Settings"/>
