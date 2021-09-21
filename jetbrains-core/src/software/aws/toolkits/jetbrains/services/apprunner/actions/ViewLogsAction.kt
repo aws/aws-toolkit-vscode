@@ -48,7 +48,7 @@ class ViewApplicationLogsAction :
     }
 }
 
-internal suspend fun viewLogGroup(selected: AppRunnerServiceNode, logSuffix: String) {
+internal fun viewLogGroup(selected: AppRunnerServiceNode, logSuffix: String) {
     val project = selected.nodeProject
     val logGroup = "/aws/apprunner/${selected.service.serviceName()}/${selected.service.serviceId()}/$logSuffix"
     try {
