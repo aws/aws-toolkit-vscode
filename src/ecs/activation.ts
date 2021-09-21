@@ -12,7 +12,7 @@ import { EcsServiceNode } from './explorer/ecsServiceNode'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.command.runCommandInContainer', async (node: EcsContainerNode) => {
+        vscode.commands.registerCommand('aws.ecs.runCommandInContainer', async (node: EcsContainerNode) => {
             await runCommandInContainer(node)
         })
     )
