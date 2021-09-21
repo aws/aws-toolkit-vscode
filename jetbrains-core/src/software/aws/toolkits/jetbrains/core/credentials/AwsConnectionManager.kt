@@ -111,7 +111,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     /**
      * Changes the credentials and then validates them. Notifies listeners of results
      */
-    fun changeCredentialProvider(identifier: CredentialIdentifier) {
+    fun changeCredentialProvider(identifier: CredentialIdentifier, passive: Boolean = false) {
         changeFieldsAndNotify {
             recentlyUsedProfiles.add(identifier.id)
 
@@ -119,16 +119,25 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
 
             selectedRegion = credentialsRegionHandler.determineSelectedRegion(identifier, selectedRegion)
         }
+
+        AwsTelemetry.setCredentials(project = project, credentialType = identifier.credentialType.toTelemetryType(), passive = passive)
     }
 
     /**
      * Changes the region and then validates them. Notifies listeners of results
      */
-    fun changeRegion(region: AwsRegion) {
+    fun changeRegion(region: AwsRegion, passive: Boolean = false) {
+        val oldRegion = selectedRegion
         changeFieldsAndNotify {
             recentlyUsedRegions.add(region.id)
             selectedRegion = region
         }
+
+        if (oldRegion?.partitionId != region.partitionId) {
+            AwsTelemetry.setPartition(project = project, partitionId = region.partitionId, passive = passive)
+        }
+
+        AwsTelemetry.setRegion(project = project, passive = passive)
     }
 
     @Synchronized
