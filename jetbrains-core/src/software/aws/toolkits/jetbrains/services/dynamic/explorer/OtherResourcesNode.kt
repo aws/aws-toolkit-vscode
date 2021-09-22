@@ -9,6 +9,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNod
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings
 import software.aws.toolkits.resources.message
@@ -25,7 +26,8 @@ class OtherResourcesNode(project: Project, service: AwsExplorerServiceNode) :
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> {
         val shouldShow = DynamicResourcesSettings.getInstance().selected
         val resourcesAvailableInRegion = nodeProject.getResourceNow(DynamicResources.listTypes()).toSet()
-        return listOf(DynamicResourceSelectorNode(nodeProject)) + DynamicResources.SUPPORTED_TYPES
+
+        return listOf(DynamicResourceSelectorNode(nodeProject)) + DynamicResourceSupportedTypes.getInstance().getSupportedTypes()
             .filter { it in shouldShow }
             .map { resourceType ->
                 if (resourceType in resourcesAvailableInRegion) {
