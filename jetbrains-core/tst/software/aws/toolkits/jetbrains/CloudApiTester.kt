@@ -6,15 +6,12 @@ package software.aws.toolkits.jetbrains
 import kotlinx.coroutines.runBlocking
 import org.junit.Ignore
 import org.junit.Test
-import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.outputStream
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourcesProvider
 import java.nio.file.Paths
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 
 class CloudApiTester {
     @OptIn(ExperimentalStdlibApi::class)
@@ -24,6 +21,9 @@ class CloudApiTester {
         val results = Paths.get("./cloudApiBlowUp.csv")
         results.outputStream().bufferedWriter().use {
             val cfnClient = CloudFormationClient.builder()
+                .region(Region.US_WEST_2)
+                .build()
+            val client = CloudControlClient.builder()
                 .region(Region.US_WEST_2)
                 .build()
             val provider = DynamicResourcesProvider(cfnClient)
@@ -39,9 +39,9 @@ class CloudApiTester {
                         println(type.fullName)
                         add(type.fullName)
 
-                        while (true) {
+                       /* while (true) {
                             try {
-                                if (provider.listResources(type.fullName).isEmpty()) {
+                                if (DynamicResources.listResources(type.fullName).isEmpty()) {
                                     add("Worked - empty")
                                 } else {
                                     add("Worked - resources")
@@ -65,7 +65,7 @@ class CloudApiTester {
                             } finally {
                                 add(DateTimeFormatter.ISO_DATE_TIME.format(Instant.now().atOffset(ZoneOffset.UTC)))
                             }
-                        }
+                        }*/
                     }.joinToString(separator = ",", postfix = "\n")
                 )
             }

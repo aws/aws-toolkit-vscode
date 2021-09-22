@@ -12,7 +12,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
 import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
-import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient

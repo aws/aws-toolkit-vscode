@@ -33,7 +33,13 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 ),
                 project
             )
-            DynamicresourceTelemetry.mutateResource(project, Result.Succeeded, state.resourceType, addOperationToTelemetry(state.operation), (DynamicResourceTelemetryResources.getCurrentTime()-state.startTime).toDouble())
+            DynamicresourceTelemetry.mutateResource(
+                project,
+                Result.Succeeded,
+                state.resourceType,
+                addOperationToTelemetry(state.operation),
+                (DynamicResourceTelemetryResources.getCurrentTime() - state.startTime).toDouble()
+            )
         } else if (state.status == OperationStatus.FAILED) {
             notifyError(
                 message(
@@ -49,7 +55,13 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 ),
                 project
             )
-            DynamicresourceTelemetry.mutateResource(project, Result.Failed, state.resourceType, addOperationToTelemetry(state.operation), (DynamicResourceTelemetryResources.getCurrentTime()-state.startTime).toDouble())
+            DynamicresourceTelemetry.mutateResource(
+                project,
+                Result.Failed,
+                state.resourceType,
+                addOperationToTelemetry(state.operation),
+                (DynamicResourceTelemetryResources.getCurrentTime() - state.startTime).toDouble()
+            )
         }
         AwsResourceCache.getInstance().clear(DynamicResources.listResources(state.resourceType), state.connectionSettings)
         refreshRequired.set(true)
@@ -63,5 +75,3 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
         }
     }
 }
-
-

@@ -30,7 +30,7 @@ object DynamicResources {
 
     fun listResources(typeName: String): Resource.Cached<List<DynamicResource>> =
         ClientBackedCachedResource(CloudControlClient::class, "cloudformation.dynamic.resources.$typeName") {
-            this.listResourcesPaginator{
+            this.listResourcesPaginator {
                 it.typeName(typeName)
             }.flatMap {
                 it.resourceDescriptions().map { resource ->

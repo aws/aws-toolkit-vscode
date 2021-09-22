@@ -51,7 +51,12 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
-                DynamicresourceTelemetry.mutateResource(project, Result.Failed, dynamicResourceIdentifier.resourceType, addOperationToTelemetry(Operation.DELETE), 0.0)
+                DynamicresourceTelemetry.mutateResource(
+                    project,
+                    Result.Failed,
+                    dynamicResourceIdentifier.resourceType,
+                    addOperationToTelemetry(Operation.DELETE), 0.0
+                )
             }
         }
     }
@@ -75,7 +80,12 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
-                DynamicresourceTelemetry.mutateResource(project, Result.Failed, dynamicResourceIdentifier.resourceType, addOperationToTelemetry(Operation.UPDATE), 0.0)
+                DynamicresourceTelemetry.mutateResource(
+                    project,
+                    Result.Failed,
+                    dynamicResourceIdentifier.resourceType,
+                    addOperationToTelemetry(Operation.UPDATE), 0.0
+                )
             }
         }
     }
@@ -131,7 +141,13 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                         ),
                         project
                     )
-                    DynamicresourceTelemetry.mutateResource(project, Result.Failed, mutation.resourceType, addOperationToTelemetry(mutation.operation), (DynamicResourceTelemetryResources.getCurrentTime()-mutation.startTime).toDouble())
+                    DynamicresourceTelemetry.mutateResource(
+                        project,
+                        Result.Failed,
+                        mutation.resourceType,
+                        addOperationToTelemetry(mutation.operation),
+                        (DynamicResourceTelemetryResources.getCurrentTime() - mutation.startTime).toDouble()
+                    )
                     null
                 }
                 val updatedMutation = when (val event = progress?.progressEvent()) {
@@ -162,8 +178,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         fun OperationStatus.isTerminal() = this in setOf(OperationStatus.SUCCESS, OperationStatus.CANCEL_COMPLETE, OperationStatus.FAILED)
 
         fun getInstance(project: Project): DynamicResourceUpdateManager = project.service()
-
-
     }
 }
 
@@ -200,14 +214,12 @@ data class ResourceMutationState(
 }
 
 object DynamicResourceTelemetryResources {
-    fun addOperationToTelemetry(operation: Operation): DynamicResourceOperation = when(operation){
+    fun addOperationToTelemetry(operation: Operation): DynamicResourceOperation = when (operation) {
         Operation.CREATE -> DynamicResourceOperation.Create
         Operation.UPDATE -> DynamicResourceOperation.Update
         Operation.DELETE -> DynamicResourceOperation.Delete
         else -> DynamicResourceOperation.Unknown
     }
 
-    fun getCurrentTime(): Long {
-        return Calendar.getInstance().timeInMillis
-    }
+    fun getCurrentTime(): Long = Calendar.getInstance().timeInMillis
 }
