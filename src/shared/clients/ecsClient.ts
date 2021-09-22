@@ -100,7 +100,7 @@ export class DefaultEcsClient {
             forceNewDeployment: true,
         }
         try {
-            sdkClient.updateService(params).promise()
+            await sdkClient.updateService(params).promise()
         } catch (error) {
             getLogger().error(`ecs: Failed to update service: ${error} `)
             throw error
