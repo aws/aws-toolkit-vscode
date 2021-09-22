@@ -396,7 +396,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         } else if (config.invokeTarget.target === 'code') {
             const codeConfig = config as SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
             // 'projectRoot' may be a relative path
-            codeConfig.invokeTarget.projectRoot = resolve(folder.uri.fsPath, config.invokeTarget.projectRoot)
+            // Older code left this property as relative, but there's no benefit in doing that since it's relative to the workspace
+            codeConfig.invokeTarget.projectRoot = pathutil.normalize(
+                resolve(folder.uri.fsPath, config.invokeTarget.projectRoot)
+            )
             templateInvoke.templatePath = await makeInputTemplate(codeConfig)
         }
 
