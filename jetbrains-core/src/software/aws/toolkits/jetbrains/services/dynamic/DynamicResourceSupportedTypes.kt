@@ -18,6 +18,7 @@ class DynamicResourceSupportedTypes {
             mapper.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(PermittedOperation.LIST) }.map { it.key }
         } ?: throw RuntimeException("dynamic resource manifest not found")
     }
+    
     fun getSupportedTypes(): List<String> = supportedTypes
 
     companion object {
