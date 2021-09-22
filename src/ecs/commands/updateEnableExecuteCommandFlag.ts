@@ -18,9 +18,7 @@ export async function updateEnableExecuteCommandFlag(
     window = Window.vscode(),
     commands = Commands.vscode(),
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-): Promise<void> {
-    const hasExecEnabled = node.service.enableExecuteCommand
-
+): Promise<void> {    
     const enableWarning = localize(
         'AWS.command.ecs.runCommandInContainer.warning.enableExecuteFlag',
         'Enabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\nAltering the state of resources while the Execute Command is enabled can lead to unpredictable results.\n Continue?'
@@ -29,50 +27,40 @@ export async function updateEnableExecuteCommandFlag(
         'AWS.command.ecs.runCommandInContainer.warning.disableExecuteFlag',
         'Disabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\n Continue?'
     )
+    const alreadyEnabled = localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
+    const alreadyDisabled = localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
     const yes = localize('AWS.generic.response.yes', 'Yes')
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
+    
+    const prompt = enable ? 'ecsRunCommandEnable' : 'ecsRunCommandDisable'
+    const hasExecEnabled = node.service.enableExecuteCommand
 
-    if (enable) {
-        if (hasExecEnabled) {
-            window.showInformationMessage(
-                localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
-            )
-            return
-        }
-        if (await settings.isPromptEnabled('ecsRunCommandEnable')) {
-            const choice = await window.showWarningMessage(enableWarning, yes, yesDontAskAgain, no)
+    const warningMessage = enable ? enableWarning : disableWarning
+    const redundentActionMessage = enable ? alreadyEnabled : alreadyDisabled
+
+    if(enable === hasExecEnabled) {
+        window.showInformationMessage(redundentActionMessage)
+        return
+    }
+
+    try {
+        if (await settings.isPromptEnabled(prompt)) {
+            const choice = await window.showWarningMessage(warningMessage, yes, yesDontAskAgain, no)
             if (choice === undefined || choice === no) {
                 return
             } else if (choice === yesDontAskAgain) {
-                settings.disablePrompt('ecsRunCommandEnable')
+                settings.disablePrompt(prompt)
             }
         }
-        await node.ecs.updateService(node.service.clusterArn!, node.name, true)
+        await node.ecs.updateService(node.service.clusterArn!, node.name, enable)
         recordEcsEnableExecuteCommand({ result: 'Succeeded', passive: false })
         node.parent.clearChildren()
-        commands.execute('aws.refreshAwsExplorer', node.parent)
+        commands.execute('aws.refreshAwsExplorerNode', node.parent)
         return
+    } catch (e) {
+        recordEcsEnableExecuteCommand({ result: 'Failed', passive: false })
+        window.showErrorMessage((e as Error).message)
     }
 
-    if (!hasExecEnabled) {
-        window.showInformationMessage(
-            localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
-        )
-        return
-    }
-
-    if (await settings.isPromptEnabled('ecsRunCommandDisable')) {
-        const choice = await window.showWarningMessage(disableWarning, yes, yesDontAskAgain, no)
-        if (choice === undefined || choice === no) {
-            return
-        } else if (choice === yesDontAskAgain) {
-            settings.disablePrompt('ecsRunCommandDisable')
-        }
-    }
-    await node.ecs.updateService(node.service.clusterArn!, node.name, false)
-    recordEcsDisableExecuteCommand({ result: 'Succeeded', passive: false })
-
-    node.parent.clearChildren()
-    commands.execute('aws.refreshAwsExplorer', node.parent)
 }
