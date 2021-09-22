@@ -170,6 +170,7 @@ export async function createNewSamApplication(
             name: config.name,
             location: config.location.fsPath,
             dependencyManager: config.dependencyManager,
+            architecture: config.architecture,
         }
 
         let request: SchemaCodeDownloadRequestDetails

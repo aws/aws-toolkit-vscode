@@ -52,6 +52,15 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
     javaRuntimes,
 ])
 
+export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'python3.9',
+    'python3.8',
+    'nodejs14.x',
+    'nodejs12.x',
+    'java11',
+    'java8.al2',
+])
+
 // Cloud9 supports a subset of runtimes for debugging.
 // * .NET is not supported
 // * Python2.7 + 3.6 are not supported for debugging by IKP3db
@@ -75,6 +84,7 @@ export function samImageLambdaRuntimes(cloud9: boolean = isCloud9()): ImmutableS
 }
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
+export type Architecture = 'x86_64' | 'arm64'
 
 export function getDependencyManager(runtime: Runtime): DependencyManager[] {
     if (nodeJsRuntimes.has(runtime)) {

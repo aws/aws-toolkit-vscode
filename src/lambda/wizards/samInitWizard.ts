@@ -28,6 +28,7 @@ import {
     WizardStep,
 } from '../../shared/wizards/multiStepWizard'
 import {
+    Architecture,
     createRuntimeQuickPick,
     DependencyManager,
     getDependencyManager,
@@ -55,7 +56,7 @@ export interface CreateNewSamAppWizardContext {
 
     promptUserForRuntimeAndDependencyManager(
         currRuntime?: Runtime
-    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined>
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager, Architecture | undefined] | undefined>
     promptUserForTemplate(
         currRuntime: Runtime,
         packageType: RuntimePackageType,
@@ -113,7 +114,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
     public async promptUserForRuntimeAndDependencyManager(
         currRuntime?: Runtime
-    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined> {
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager, Architecture | undefined] | undefined> {
         // last common step; reset additionalSteps to 0
         this.stepsToAdd.promptUserForDependencyManager = false
         this.stepsToAdd.promptUserForArchitecture = false
@@ -144,8 +145,14 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         }
 
         const dependencyManager = await this.promptUserForDependencyManager(val.runtime)
+        if (!dependencyManager) {
+            return undefined
+        }
+        const architecture = await this.promptUserForArchitecture(val.runtime)
 
-        return val ? [val.runtime, val.packageType, dependencyManager] : undefined
+        return val && dependencyManager && architecture
+            ? [val.runtime, val.packageType, dependencyManager, architecture]
+            : undefined
     }
 
     // don't preinclude currDependencyManager because it won't make sense if transitioning between runtimes
@@ -184,35 +191,36 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         }
     }
 
-    // public async promptUserForArchitecture(
-    //     currRuntime: Runtime
-    // ): Promise<'x86_64' | 'arm64' | undefined> {
-    //     this.stepsToAdd.promptUserForArchitecture = true
-    //     const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-    //         options: {
-    //             ignoreFocusOut: true,
-    //             title: localize('AWS.samcli.initWizard.architecture.prompt', 'Select an Architecture'),
-    //             step: 1 + this.additionalSteps(),
-    //             totalSteps: this.totalSteps + this.additionalSteps(),
-    //         },
-    //         buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-    //         items: [{ label: 'x86_64' }, { label: 'amd64' }],
-    //     })
+    public async promptUserForArchitecture(currRuntime: Runtime): Promise<Architecture | undefined> {
+        if (!samArmLambdaRuntimes.has(currRuntime)) {
+            return 'x86_64'
+        }
+        this.stepsToAdd.promptUserForArchitecture = true
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+            options: {
+                ignoreFocusOut: true,
+                title: localize('AWS.samcli.initWizard.architecture.prompt', 'Select an Architecture'),
+                step: 1 + this.additionalSteps(),
+                totalSteps: this.totalSteps + this.additionalSteps(),
+            },
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+            items: [{ label: 'x86_64' }, { label: 'arm64' }],
+        })
 
-    //     const choices = await picker.promptUser({
-    //         picker: quickPick,
-    //         onDidTriggerButton: (button, resolve, reject) => {
-    //             if (button === vscode.QuickInputButtons.Back) {
-    //                 resolve(undefined)
-    //             } else if (button === this.helpButton) {
-    //                 vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
-    //             }
-    //         },
-    //     })
-    //     const val = picker.verifySinglePickerOutput(choices)
+        const choices = await picker.promptUser({
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
+                }
+            },
+        })
+        const val = picker.verifySinglePickerOutput(choices)
 
-    //     return val ? val.label : undefined
-    // }
+        return val ? (val.label as Architecture) : undefined
+    }
 
     public async promptUserForTemplate(
         currRuntime: Runtime,
@@ -478,6 +486,7 @@ export interface CreateNewSamAppWizardResponse {
     schemaName?: string
     location: vscode.Uri
     name: string
+    architecture: Architecture
 }
 
 export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
@@ -490,6 +499,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     private schemaName?: string
     private location?: vscode.Uri
     private name?: string
+    private architecture?: Architecture
 
     public constructor(private readonly context: CreateNewSamAppWizardContext) {
         super()
@@ -506,7 +516,8 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             !this.packageType ||
             !this.template ||
             !this.location ||
-            !this.name
+            !this.name ||
+            !this.architecture
         ) {
             return undefined
         }
@@ -527,6 +538,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             schemaName: this.schemaName,
             location: this.location,
             name: this.name,
+            architecture: this.architecture,
         }
     }
 
@@ -536,7 +548,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             return WIZARD_TERMINATE
         }
 
-        ;[this.runtime, this.packageType, this.dependencyManager] = result
+        ;[this.runtime, this.packageType, this.dependencyManager, this.architecture] = result
         if (this.dependencyManager === undefined) {
             return WIZARD_RETRY
         }
@@ -546,7 +558,8 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     }
 
     // private readonly ARCHITECTURE: WizardStep = async () => {
-    //     const archRequired = !!this.runtime && samArmLambdaRuntimes.has(this.runtime)
+    //     // TODO: Remove packageType exemption when Image is working
+    //     const archRequired = !!this.runtime && this.packageType === 'Zip' && samArmLambdaRuntimes.has(this.runtime)
     //     this.architecture = archRequired ? await this.context.promptUserForArchitecture(this.runtime) : 'x86_64'
 
     //     if (!this.architecture) {
