@@ -46,7 +46,7 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
-import { makeJsonFiles } from '../localLambdaRunner'
+import { makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
 import { fromString } from '../../../credentials/providers/credentials'
@@ -385,10 +385,16 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // Other refs can fail; SAM will handle them.
         const handlerName = getHandlerName(folder, config)
 
+        // TODO is this normalize actually needed for any platform?
+        config.baseBuildDir = config.sam?.buildDir ?? pathutils.normalize(await makeTemporaryToolkitFolder())
+
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.
             // TODO: If path is relative, it is relative to launch.json (i.e. .vscode directory).
             templateInvoke.templatePath = pathutil.normalize(tryGetAbsolutePath(folder, templateInvoke.templatePath))
+        } else if (config.invokeTarget.target === 'code') {
+            const codeConfig = config as SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+            templateInvoke.templatePath = await makeInputTemplate(codeConfig)
         }
 
         const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
@@ -536,8 +542,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // 2. do `sam build`
         // 3. do `sam local invoke`
         //
-        // TODO is this normalize actually needed for any platform?
-        launchConfig.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
         switch (launchConfig.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 // Make a NodeJS launch-config from the generic config.

@@ -16,7 +16,7 @@ import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { runLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
@@ -37,7 +37,6 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         throw Error('invalid state: config.baseBuildDir was not set')
     }
     config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
-    config.templatePath = await makeInputTemplate(config)
     // TODO: avoid the reassignment
     // TODO: walk the tree to find .sln, .csproj ?
     const originalCodeRoot = config.codeRoot

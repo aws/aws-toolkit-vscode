@@ -12,7 +12,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { runLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
@@ -67,9 +67,6 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
     let localRoot: string | undefined
     let remoteRoot: string | undefined
     config.codeRoot = pathutil.normalize(config.codeRoot)
-
-    // Always generate a temporary template.yaml, don't use workspace one directly.
-    config.templatePath = await makeInputTemplate(config)
 
     const isImageLambda = isImageLambdaConfig(config)
 
