@@ -90,9 +90,7 @@ export async function makeInputTemplate(
     config: SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
 ): Promise<string> {
     let newTemplate: SamTemplateGenerator
-    // 'projectRoot' may be a relative path
-    const root = path.resolve(config.workspaceFolder.uri.fsPath, config.invokeTarget.projectRoot)
-    const inputTemplatePath: string = path.join(root, 'app___vsctk___template.yaml')
+    const inputTemplatePath: string = path.join(config.invokeTarget.projectRoot, 'app___vsctk___template.yaml')
     const resourceName = makeResourceName(config)
 
     // code type - generate ephemeral SAM template
@@ -100,7 +98,7 @@ export async function makeInputTemplate(
         .withFunctionHandler(config.invokeTarget.lambdaHandler)
         .withResourceName(resourceName)
         .withRuntime(config.lambda!.runtime!)
-        .withCodeUri(root)
+        .withCodeUri(config.invokeTarget.projectRoot)
 
     if (config.lambda?.environmentVariables) {
         newTemplate = newTemplate.withEnvironment({

@@ -61,6 +61,7 @@ import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
 } from '../cli/samCliValidator'
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
+import { resolve } from 'path'
 
 const localize = nls.loadMessageBundle()
 
@@ -394,6 +395,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             templateInvoke.templatePath = pathutil.normalize(tryGetAbsolutePath(folder, templateInvoke.templatePath))
         } else if (config.invokeTarget.target === 'code') {
             const codeConfig = config as SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+            // 'projectRoot' may be a relative path
+            codeConfig.invokeTarget.projectRoot = resolve(folder.uri.fsPath, config.invokeTarget.projectRoot)
             templateInvoke.templatePath = await makeInputTemplate(codeConfig)
         }
 

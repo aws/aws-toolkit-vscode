@@ -47,7 +47,6 @@ import { mkdir, remove } from 'fs-extra'
 import { ext } from '../../../../shared/extensionGlobals'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CredentialsProvider } from '../../../../credentials/providers/credentials'
-import { makeInputTemplate } from '../../../../shared/sam/localLambdaRunner'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -374,9 +373,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     runtime: 'go1.x',
                 },
                 templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
             const config = (await debugConfigProvider.makeConfig(folder, input))!
 
             assertFileText(
@@ -539,9 +536,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     },
                 },
                 templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -691,10 +686,7 @@ describe('SamDebugConfigurationProvider', async function () {
                         },
                     },
                 },
-                templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1197,10 +1189,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 lambda: {
                     runtime: 'java11',
                 },
-                templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1256,7 +1245,7 @@ describe('SamDebugConfigurationProvider', async function () {
     Properties:
       Handler: ${handler}
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
+        ${input.invokeTarget.projectRoot}
       Runtime: java11
 `
             )
@@ -1303,10 +1292,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 lambda: {
                     runtime: 'java11',
                 },
-                templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1362,7 +1348,7 @@ describe('SamDebugConfigurationProvider', async function () {
     Properties:
       Handler: ${handler}
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
+        ${input.invokeTarget.projectRoot}
       Runtime: java11
 `
             )
@@ -1612,12 +1598,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 lambda: {
                     runtime: 'dotnetcore2.1',
                 },
-                templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const codeRoot = `${appDir}${input.invokeTarget.projectRoot}`
+            const codeRoot = input.invokeTarget.projectRoot
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
@@ -1687,7 +1670,7 @@ describe('SamDebugConfigurationProvider', async function () {
     Properties:
       Handler: HelloWorld::HelloWorld.Function::FunctionHandler
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
+        ${input.invokeTarget.projectRoot}
       Runtime: dotnetcore2.1
 `
             )
@@ -2094,10 +2077,7 @@ describe('SamDebugConfigurationProvider', async function () {
                         path: relPayloadPath,
                     },
                 },
-                templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2595,11 +2575,7 @@ describe('SamDebugConfigurationProvider', async function () {
                         path: relPayloadPath,
                     },
                 },
-                templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
-
             // Debug option should not appear now
             getLogger().setLogLevel('verbose')
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2634,10 +2610,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 // Force ikpdb in non-cloud9 environment.
                 useIkpdb: true,
-                templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2969,10 +2942,7 @@ describe('SamDebugConfigurationProvider', async function () {
                         },
                     },
                 },
-                templatePath: undefined as string | undefined,
-                workspaceFolder: folder,
             }
-            input.templatePath = await makeInputTemplate(input as any)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
