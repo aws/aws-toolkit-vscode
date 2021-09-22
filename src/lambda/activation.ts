@@ -42,7 +42,10 @@ export async function activate(context: ExtContext): Promise<void> {
         ),
         // Capture debug finished events, and delete the temporary directory if it exists
         vscode.debug.onDidTerminateDebugSession(async session => {
-            if (session.configuration?.buildDir === undefined && session.configuration?.baseBuildDir !== undefined) {
+            if (
+                session.configuration?.sam?.buildDir === undefined &&
+                session.configuration?.baseBuildDir !== undefined
+            ) {
                 await tryRemoveFolder(session.configuration.baseBuildDir)
             }
         }),
