@@ -16,8 +16,13 @@ import software.amazon.awssdk.services.cloudcontrol.model.ProgressEvent
 import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.getClient
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceTelemetryResources.addOperationToTelemetry
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DynamicResourceOperation
+import software.aws.toolkits.telemetry.DynamicresourceTelemetry
+import software.aws.toolkits.telemetry.Result
+import java.util.Calendar
 import java.util.concurrent.ConcurrentLinkedQueue
 
 internal class DynamicResourceUpdateManager(private val project: Project) {
@@ -36,7 +41,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceIdentifier.resourceType)
                     it.identifier(dynamicResourceIdentifier.resourceIdentifier)
                 }.progressEvent()
-                startCheckingProgress(dynamicResourceIdentifier.connectionSettings, progress)
+                startCheckingProgress(dynamicResourceIdentifier.connectionSettings, progress, DynamicResourceTelemetryResources.getCurrentTime())
             } catch (e: Exception) {
                 e.notifyError(
                     message(
@@ -46,12 +51,33 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
+                DynamicresourceTelemetry.mutateResource(project, Result.Failed, dynamicResourceIdentifier.resourceType, addOperationToTelemetry(Operation.DELETE), 0.0)
             }
         }
     }
 
-    fun updateResource(dynamicResourceIdentifier: DynamicResourceIdentifier) {
-        TODO("Not yet implemented")
+    fun updateResource(dynamicResourceIdentifier: DynamicResourceIdentifier, patchOperation: String) {
+        coroutineScope.launch {
+            try {
+                val client = dynamicResourceIdentifier.connectionSettings.getClient<CloudControlClient>()
+                val progress = client.updateResource {
+                    it.typeName(dynamicResourceIdentifier.resourceType)
+                    it.identifier(dynamicResourceIdentifier.resourceIdentifier)
+                    it.patchDocument(patchOperation)
+                }.progressEvent()
+                startCheckingProgress(dynamicResourceIdentifier.connectionSettings, progress, DynamicResourceTelemetryResources.getCurrentTime())
+            } catch (e: Exception) {
+                e.notifyError(
+                    message(
+                        "dynamic_resources.operation_status_notification_title",
+                        dynamicResourceIdentifier.resourceIdentifier,
+                        message("general.delete").toLowerCase()
+                    ),
+                    project
+                )
+                DynamicresourceTelemetry.mutateResource(project, Result.Failed, dynamicResourceIdentifier.resourceType, addOperationToTelemetry(Operation.UPDATE), 0.0)
+            }
+        }
     }
 
     fun createResource(connectionSettings: ConnectionSettings, dynamicResourceType: String, desiredState: String) {
@@ -62,18 +88,19 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
                 }.progressEvent()
-                startCheckingProgress(connectionSettings, progress)
+                startCheckingProgress(connectionSettings, progress, DynamicResourceTelemetryResources.getCurrentTime())
             } catch (e: Exception) {
                 e.notifyError(
                     message("dynamic_resources.operation_status_notification_title", dynamicResourceType, message("dynamic_resources.create")),
                     project
                 )
+                DynamicresourceTelemetry.mutateResource(project, Result.Failed, dynamicResourceType, addOperationToTelemetry(Operation.CREATE), 0.0)
             }
         }
     }
 
-    private fun startCheckingProgress(connectionSettings: ConnectionSettings, progress: software.amazon.awssdk.services.cloudcontrol.model.ProgressEvent) {
-        pendingMutations.add(ResourceMutationState.fromEvent(connectionSettings, progress))
+    private fun startCheckingProgress(connectionSettings: ConnectionSettings, progress: ProgressEvent, startTime: Long) {
+        pendingMutations.add(ResourceMutationState.fromEvent(connectionSettings, progress, startTime))
         if (pendingMutations.size == 1) {
             alarm.addRequest({ getProgress() }, 0)
         }
@@ -104,6 +131,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                         ),
                         project
                     )
+                    DynamicresourceTelemetry.mutateResource(project, Result.Failed, mutation.resourceType, addOperationToTelemetry(mutation.operation), (DynamicResourceTelemetryResources.getCurrentTime()-mutation.startTime).toDouble())
                     null
                 }
                 val updatedMutation = when (val event = progress?.progressEvent()) {
@@ -134,6 +162,8 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         fun OperationStatus.isTerminal() = this in setOf(OperationStatus.SUCCESS, OperationStatus.CANCEL_COMPLETE, OperationStatus.FAILED)
 
         fun getInstance(project: Project): DynamicResourceUpdateManager = project.service()
+
+
     }
 }
 
@@ -151,10 +181,11 @@ data class ResourceMutationState(
     val resourceType: String,
     val status: OperationStatus,
     val resourceIdentifier: String?,
-    val message: String?
+    val message: String?,
+    val startTime: Long
 ) {
     companion object {
-        fun fromEvent(connectionSettings: ConnectionSettings, progress: ProgressEvent) =
+        fun fromEvent(connectionSettings: ConnectionSettings, progress: ProgressEvent, startTime: Long) =
             ResourceMutationState(
                 connectionSettings = connectionSettings,
                 token = progress.requestToken(),
@@ -162,7 +193,21 @@ data class ResourceMutationState(
                 resourceType = progress.typeName(),
                 status = progress.operationStatus(),
                 resourceIdentifier = progress.identifier(),
-                message = progress.statusMessage()
+                message = progress.statusMessage(),
+                startTime = startTime
             )
+    }
+}
+
+object DynamicResourceTelemetryResources {
+    fun addOperationToTelemetry(operation: Operation): DynamicResourceOperation = when(operation){
+        Operation.CREATE -> DynamicResourceOperation.Create
+        Operation.UPDATE -> DynamicResourceOperation.Update
+        Operation.DELETE -> DynamicResourceOperation.Delete
+        else -> DynamicResourceOperation.Unknown
+    }
+
+    fun getCurrentTime(): Long {
+        return Calendar.getInstance().timeInMillis
     }
 }

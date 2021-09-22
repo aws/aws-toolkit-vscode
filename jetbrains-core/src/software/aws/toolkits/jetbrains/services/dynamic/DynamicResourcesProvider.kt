@@ -29,22 +29,9 @@ class DynamicResourcesProvider(private val cfnClient: CloudFormationClient) {
 
         types.flatMap { resp ->
             resp.typeSummaries().map { summary ->
-                typeFromName(summary.typeName())
+                DynamicResources.resourceTypeFromResourceTypeName(summary.typeName())
             }
         }
-    }
-
-    fun listResources(type: String): List<DynamicResource> = cfnClient.listResourcesPaginator {
-        it.typeName(type)
-    }.flatMap {
-        it.resourceDescriptions().map { resource ->
-            DynamicResource(typeFromName(it.typeName()), resource.identifier())
-        }
-    }
-
-    private fun typeFromName(typeName: String): ResourceType {
-        val (_, svc, type) = typeName.split("::")
-        return ResourceType(typeName, svc, type)
     }
 }
 

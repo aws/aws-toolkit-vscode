@@ -8,9 +8,12 @@ import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.cloudcontrol.model.OperationStatus
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceTelemetryResources.addOperationToTelemetry
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DynamicresourceTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.util.concurrent.atomic.AtomicBoolean
 
 class DynamicResourceStateChangedNotificationHandler(private val project: Project) : DynamicResourceStateMutationHandler {
@@ -30,6 +33,7 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 ),
                 project
             )
+            DynamicresourceTelemetry.mutateResource(project, Result.Succeeded, state.resourceType, addOperationToTelemetry(state.operation), (DynamicResourceTelemetryResources.getCurrentTime()-state.startTime).toDouble())
         } else if (state.status == OperationStatus.FAILED) {
             notifyError(
                 message(
@@ -45,6 +49,7 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 ),
                 project
             )
+            DynamicresourceTelemetry.mutateResource(project, Result.Failed, state.resourceType, addOperationToTelemetry(state.operation), (DynamicResourceTelemetryResources.getCurrentTime()-state.startTime).toDouble())
         }
         AwsResourceCache.getInstance().clear(DynamicResources.listResources(state.resourceType), state.connectionSettings)
         refreshRequired.set(true)
@@ -58,3 +63,5 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
         }
     }
 }
+
+

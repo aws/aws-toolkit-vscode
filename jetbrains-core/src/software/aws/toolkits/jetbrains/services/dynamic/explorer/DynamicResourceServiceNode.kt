@@ -11,6 +11,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
+import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -88,13 +89,13 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
             override fun run(indicator: ProgressIndicator) {
                 indicator.text = message("dynamic_resources.fetch.fetch")
                 val model = try {
-                    nodeProject.awsClient<CloudFormationClient>()
+                    nodeProject.awsClient<CloudControlClient>()
                         .getResource {
                             it.typeName(resource.type.fullName)
                             it.identifier(resource.identifier)
                         }
                         .resourceDescription()
-                        .resourceModel()
+                        .properties()
                 } catch (e: Exception) {
                     LOG.error(e) { "Failed to retrieve resource model" }
                     notifyError(
