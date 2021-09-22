@@ -3,49 +3,70 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.testFramework.ProjectRule
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.Presentation
+import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.TestActionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.aCredentialsIdentifier
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.anAwsRegion
 
 class SettingsSelectorComboBoxActionTest {
     @Rule
     @JvmField
-    val projectRule = ProjectRule()
+    val applicationRule = ApplicationRule()
 
     private val dummyRegion = anAwsRegion()
     private val dummyCredential = aCredentialsIdentifier()
 
     @Test
-    fun canConfigureForRegions() {
-        val settings = MockAwsConnectionManager.getInstance(projectRule.project)
+    fun `respects updates to regions`() {
+        val testSelector = TestSelector(ChangeSettingsMode.REGIONS)
+        val comboBox = SettingsSelectorComboBoxAction(testSelector)
 
-        val group = SettingsSelectorComboBoxAction(projectRule.project, ChangeAccountSettingsMode.REGIONS)
+        var presentation = comboBox.updatePresentation()
+        assertThat(presentation.text).isEqualTo(testSelector.displayValue())
+        assertThat(presentation.description).isEqualTo(testSelector.tooltip())
 
-        settings.changeRegionAndWait(dummyRegion)
+        testSelector.currentRegion = dummyRegion
 
-        val action = TestActionEvent()
-        group.update(action)
-
-        assertThat(action.presentation.text).isEqualTo(dummyRegion.id)
-        assertThat(action.presentation.description).isEqualTo(dummyRegion.displayName)
+        presentation = comboBox.updatePresentation()
+        assertThat(presentation.text).isEqualTo(testSelector.displayValue())
+        assertThat(presentation.description).isEqualTo(testSelector.tooltip())
     }
 
     @Test
-    fun canConfigureForCredentials() {
-        val settings = MockAwsConnectionManager.getInstance(projectRule.project)
+    fun `respects updates to credentials`() {
+        val testSelector = TestSelector(ChangeSettingsMode.CREDENTIALS)
+        val comboBox = SettingsSelectorComboBoxAction(testSelector)
 
-        val group = SettingsSelectorComboBoxAction(projectRule.project, ChangeAccountSettingsMode.CREDENTIALS)
+        var presentation = comboBox.updatePresentation()
+        assertThat(presentation.text).isEqualTo(testSelector.displayValue())
+        assertThat(presentation.description).isEqualTo(testSelector.tooltip())
 
-        settings.changeCredentialProviderAndWait(dummyCredential)
+        testSelector.currentCredentials = dummyCredential
 
-        val action = TestActionEvent()
-        group.update(action)
+        presentation = comboBox.updatePresentation()
+        assertThat(presentation.text).isEqualTo(testSelector.displayValue())
+        assertThat(presentation.description).isEqualTo(testSelector.tooltip())
+    }
 
-        assertThat(action.presentation.text).isEqualTo(dummyCredential.shortName)
-        assertThat(action.presentation.description).isEqualTo(dummyCredential.displayName)
+    private fun AnAction.updatePresentation(): Presentation = TestActionEvent().also { this.update(it) }.presentation
+
+    class TestSelector(menuMode: ChangeSettingsMode) : SettingsSelectorLogicBase(menuMode) {
+        var currentRegion: AwsRegion? = null
+        var currentCredentials: CredentialIdentifier? = null
+
+        override fun currentRegion(): AwsRegion? = currentRegion
+
+        override fun onRegionChange(region: AwsRegion) {}
+
+        override fun currentCredentials(): CredentialIdentifier? = currentCredentials
+
+        override fun onCredentialChange(identifier: CredentialIdentifier) {}
     }
 }
