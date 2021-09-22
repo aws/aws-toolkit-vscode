@@ -39,11 +39,13 @@ export async function updateEnableExecuteCommandFlag(
     const warningMessage = enable ? enableWarning : disableWarning
     const redundentActionMessage = enable ? alreadyEnabled : alreadyDisabled
 
+    let result: 'Succeeded' | 'Failed' | 'Cancelled'
     if(enable === hasExecEnabled) {
+        result = 'Cancelled'
         window.showInformationMessage(redundentActionMessage)
+        recordEcsEnableExecuteCommand({ result: result, passive: false })
         return
     }
-    let result: 'Succeeded' | 'Failed'
     try {
         if (await settings.isPromptEnabled(prompt)) {
             const choice = await window.showWarningMessage(warningMessage, yes, yesDontAskAgain, no)
