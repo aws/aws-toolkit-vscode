@@ -9,9 +9,10 @@ import { EcsServiceNode } from '../../../ecs/explorer/ecsServiceNode'
 import { EcsClient, DefaultEcsClient } from '../../../shared/clients/ecsClient'
 import { ECS } from 'aws-sdk'
 import { EcsClusterNode } from '../../../ecs/explorer/ecsClusterNode'
-import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { updateEnableExecuteCommandFlag } from '../../../ecs/commands/updateEnableExecuteCommandFlag'
 import { Commands } from '../../../shared/vscode/commands'
+import { Window } from '../../../shared/vscode/window'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
 describe('updateEnableExecuteCommandFlag', async function () {
     let sandbox: sinon.SinonSandbox
@@ -33,12 +34,17 @@ describe('updateEnableExecuteCommandFlag', async function () {
 
     it('attempts to enable service', async function () {
         node = new EcsServiceNode(serviceExecDisabled, parent, ecs)
-        sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
         const updateStub = sandbox.stub(ecs, 'updateService').resolves()
         const parentStub = sandbox.stub(parent, 'clearChildren').resolves()
         sandbox.stub(commands, 'execute').resolves()
 
-        await updateEnableExecuteCommandFlag(node, true)
+        await updateEnableExecuteCommandFlag(
+            node,
+            true,
+            Window.vscode(),
+            Commands.vscode(),
+            new TestSettingsConfiguration()
+        )
 
         assert.strictEqual(
             updateStub.calledOnceWith('clusterArn', serviceName, true),
@@ -50,12 +56,17 @@ describe('updateEnableExecuteCommandFlag', async function () {
 
     it('attempts to disable service', async function () {
         node = new EcsServiceNode(serviceExecEnabled, parent, ecs)
-        sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
         const updateStub = sandbox.stub(ecs, 'updateService').resolves()
         const parentStub = sandbox.stub(parent, 'clearChildren').resolves()
         sandbox.stub(commands, 'execute').resolves()
 
-        await updateEnableExecuteCommandFlag(node, false)
+        await updateEnableExecuteCommandFlag(
+            node,
+            false,
+            Window.vscode(),
+            Commands.vscode(),
+            new TestSettingsConfiguration()
+        )
 
         assert.strictEqual(
             updateStub.calledOnceWith('clusterArn', serviceName, false),
@@ -67,27 +78,35 @@ describe('updateEnableExecuteCommandFlag', async function () {
 
     it('will not enable if enabled', async function () {
         node = new EcsServiceNode(serviceExecEnabled, parent, ecs)
-        const configStub = sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
         const updateStub = sandbox.stub(ecs, 'updateService').resolves()
         const parentStub = sandbox.stub(parent, 'clearChildren').resolves()
 
-        await updateEnableExecuteCommandFlag(node, true)
+        await updateEnableExecuteCommandFlag(
+            node,
+            true,
+            Window.vscode(),
+            Commands.vscode(),
+            new TestSettingsConfiguration()
+        )
 
         assert.strictEqual(updateStub.callCount, 0, 'Expected to return without updating service')
         assert.strictEqual(parentStub.callCount, 0)
-        assert.strictEqual(configStub.callCount, 0)
     })
 
     it('will not disable if disabled', async function () {
         node = new EcsServiceNode(serviceExecDisabled, parent, ecs)
-        const configStub = sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
         const updateStub = sandbox.stub(ecs, 'updateService').resolves()
         const parentStub = sandbox.stub(parent, 'clearChildren').resolves()
 
-        await updateEnableExecuteCommandFlag(node, false)
+        await updateEnableExecuteCommandFlag(
+            node,
+            false,
+            Window.vscode(),
+            Commands.vscode(),
+            new TestSettingsConfiguration()
+        )
 
         assert.strictEqual(updateStub.callCount, 0, 'Expected to return without updating service')
         assert.strictEqual(parentStub.callCount, 0)
-        assert.strictEqual(configStub.callCount, 0)
     })
 })

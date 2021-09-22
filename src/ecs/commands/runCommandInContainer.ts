@@ -12,7 +12,7 @@ import { getLogger } from '../../shared/logger'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
-import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { showOutputMessage } from '../../shared/utilities/messages'
@@ -21,7 +21,8 @@ import { ext } from '../../shared/extensionGlobals'
 export async function runCommandInContainer(
     node: EcsContainerNode,
     window = Window.vscode(),
-    outputChannel = ext.outputChannel
+    outputChannel = ext.outputChannel,
+    settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
 
@@ -83,24 +84,9 @@ export async function runCommandInContainer(
 
     const task = taskChoice[0].label
 
-    //Get command line text from user to run in the container
-    const command = await window.showInputBox({
-        prompt: localize(
-            'AWS.command.ecs.runCommandInContainer.prompt',
-            'Enter the command to run in container: {0}',
-            node.containerName
-        ),
-        placeHolder: localize('AWS.command.ecs.runCommandInContainer.placeHolder', 'Command to run'),
-        ignoreFocusOut: true,
-    })
-    if (!command) {
-        return
-    }
-
     // Warn the user that commands may modify the container, give the option to dismiss future prompts
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
-    const configuration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-    if (configuration.readSetting('ecs.warnRunCommand')) {
+    if (await settings.isPromptEnabled('ecsRunCommand')) {
         const choice = await window.showInformationMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.warnBeforeExecute',
@@ -115,8 +101,22 @@ export async function runCommandInContainer(
             getLogger().debug('ecs: Cancelled runCommandInContainer')
             return
         } else if (choice === yesDontAskAgain) {
-            configuration.writeSetting('ecs.warnRunCommand', false, vscode.ConfigurationTarget.Global)
+            settings.disablePrompt('ecsRunCommand')
         }
+    }
+
+    //Get command line text from user to run in the container
+    const command = await window.showInputBox({
+        prompt: localize(
+            'AWS.command.ecs.runCommandInContainer.prompt',
+            'Enter the command to run in container: {0}',
+            node.containerName
+        ),
+        placeHolder: localize('AWS.command.ecs.runCommandInContainer.placeHolder', 'Command to run'),
+        ignoreFocusOut: true,
+    })
+    if (!command) {
+        return
     }
 
     await runCliCommandInEcsContainer(node, task, command, outputChannel)
