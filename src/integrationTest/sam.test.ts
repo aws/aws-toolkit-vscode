@@ -60,14 +60,6 @@ interface TestScenario {
 const scenarios: TestScenario[] = [
     // zips
     {
-        runtime: 'nodejs10.x',
-        displayName: 'nodejs10.x (ZIP)',
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-    },
-    {
         runtime: 'nodejs12.x',
         displayName: 'nodejs12.x (ZIP)',
         path: 'hello-world/app.js',
@@ -82,14 +74,6 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
-    },
-    {
-        runtime: 'python2.7',
-        displayName: 'python2.7 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.6',
@@ -160,15 +144,6 @@ const scenarios: TestScenario[] = [
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
     // images
-    {
-        runtime: 'nodejs10.x',
-        displayName: 'nodejs10.x (Image)',
-        baseImage: `amazon/nodejs10.x-base`,
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-    },
     {
         runtime: 'nodejs12.x',
         displayName: 'nodejs12.x (Image)',

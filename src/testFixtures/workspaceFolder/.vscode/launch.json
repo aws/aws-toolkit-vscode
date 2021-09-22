@@ -76,7 +76,7 @@
             }
         },
         {
-            "name": "test-launchconfig-7-nodejs10",
+            "name": "test-launchconfig-7-nodejs14",
             "type": "aws-sam",
             "request": "direct-invoke",
             "invokeTarget": {

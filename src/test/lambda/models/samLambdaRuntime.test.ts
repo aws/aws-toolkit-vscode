@@ -21,10 +21,8 @@ describe('compareSamLambdaRuntime', async function () {
         higherRuntime: Runtime
     }[] = [
         { lowerRuntime: 'nodejs12.x', higherRuntime: 'nodejs14.x' },
-        { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs12.x' },
-        { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs14.x' },
-        { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs10.x (Image)' },
-        { lowerRuntime: 'nodejs10.x (Image)', higherRuntime: 'nodejs12.x' },
+        { lowerRuntime: 'nodejs14.x', higherRuntime: 'nodejs14.x (Image)' },
+        { lowerRuntime: 'nodejs12.x (Image)', higherRuntime: 'nodejs14.x' },
     ]
 
     scenarios.forEach(scenario => {
@@ -38,30 +36,37 @@ describe('compareSamLambdaRuntime', async function () {
     })
 })
 
-describe('getDependencyManager', async function () {
-    it('all runtimes are handled', async function () {
+describe('getDependencyManager', function () {
+    it('all runtimes are handled', function () {
         samZipLambdaRuntimes.forEach(runtime => {
-            // Checking that call does not throw
-            getDependencyManager(runtime)
+            assert.ok(getDependencyManager(runtime))
         })
+    })
+    it('throws on deprecated runtimes', function () {
+        assert.throws(() => getDependencyManager('nodejs'))
+    })
+    it('throws on unknown runtimes', function () {
+        assert.throws(() => getDependencyManager('BASIC'))
     })
 })
 
-describe('getFamily', async function () {
-    it('unknown runtime name', async function () {
+describe('getFamily', function () {
+    it('unknown runtime name', function () {
         assert.strictEqual(getFamily('foo'), RuntimeFamily.Unknown)
     })
-    it('handles all known runtimes', async function () {
+    it('handles all known runtimes', function () {
         samZipLambdaRuntimes.forEach(runtime => {
             assert.notStrictEqual(getFamily(runtime), RuntimeFamily.Unknown)
         })
     })
+    it('throws on deprecated runtimes', function () {
+        assert.throws(() => getFamily('nodejs'))
+    })
 })
 
 describe('runtimes', function () {
-    it('cloud9', async function () {
+    it('cloud9', function () {
         assert.deepStrictEqual(samLambdaCreatableRuntimes(true).toArray().sort(), [
-            'nodejs10.x',
             'nodejs12.x',
             'nodejs14.x',
             'python3.7',
@@ -69,7 +74,6 @@ describe('runtimes', function () {
             'python3.9',
         ])
         assert.deepStrictEqual(samImageLambdaRuntimes(true).toArray().sort(), [
-            'nodejs10.x',
             'nodejs12.x',
             'nodejs14.x',
             'python3.7',
@@ -77,7 +81,7 @@ describe('runtimes', function () {
             'python3.9',
         ])
     })
-    it('vscode', async function () {
+    it('vscode', function () {
         assert.deepStrictEqual(samLambdaCreatableRuntimes(false).toArray().sort(), [
             'dotnetcore2.1',
             'dotnetcore3.1',
@@ -85,10 +89,8 @@ describe('runtimes', function () {
             'java11',
             'java8',
             'java8.al2',
-            'nodejs10.x',
             'nodejs12.x',
             'nodejs14.x',
-            'python2.7',
             'python3.6',
             'python3.7',
             'python3.8',
@@ -102,10 +104,8 @@ describe('runtimes', function () {
             'java11',
             'java8',
             'java8.al2',
-            'nodejs10.x',
             'nodejs12.x',
             'nodejs14.x',
-            'python2.7',
             'python3.6',
             'python3.7',
             'python3.8',
