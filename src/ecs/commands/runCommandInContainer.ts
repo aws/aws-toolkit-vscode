@@ -150,8 +150,8 @@ async function verifyCliAndPlugin(window: Window): Promise<boolean> {
 async function isDeploymentInProgress(node: EcsContainerNode): Promise<boolean> {
     const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0].deployments
     if (deployments) {
-        for (let i = 0; i < deployments.length; i++) {
-            if (deployments[i].status === 'ACTIVE' || deployments[i].rolloutState === 'IN_PROGRESS') {
+        for (const deployment of deployments) {
+            if (deployment.status === 'ACTIVE' || deployment.rolloutState === 'IN_PROGRESS') {
                 return true 
             }
         }

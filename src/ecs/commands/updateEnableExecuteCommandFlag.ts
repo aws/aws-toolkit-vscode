@@ -43,7 +43,7 @@ export async function updateEnableExecuteCommandFlag(
         window.showInformationMessage(redundentActionMessage)
         return
     }
-
+    let result: 'Succeeded' | 'Failed'
     try {
         if (await settings.isPromptEnabled(prompt)) {
             const choice = await window.showWarningMessage(warningMessage, yes, yesDontAskAgain, no)
@@ -54,22 +54,17 @@ export async function updateEnableExecuteCommandFlag(
             }
         }
         await node.ecs.updateService(node.service.clusterArn!, node.name, enable)
-        if(enable) {
-            recordEcsEnableExecuteCommand({ result: 'Succeeded', passive: false })
-        } else {
-            recordEcsDisableExecuteCommand({ result: 'Succeeded', passive: false })
-        }
+        result = 'Succeeded'
         node.parent.clearChildren()
         commands.execute('aws.refreshAwsExplorerNode', node.parent)
-        return
     } catch (e) {
-        if(enable) {
-            recordEcsEnableExecuteCommand({ result: 'Failed', passive: false })
-        } else {
-            recordEcsDisableExecuteCommand({ result: 'Failed', passive: false })
-        }
-
+        result = 'Failed'
         window.showErrorMessage((e as Error).message)
+    } finally {
+        if(enable) {
+            recordEcsEnableExecuteCommand({ result: result!, passive: false })
+        } else {
+            recordEcsDisableExecuteCommand({ result: result!, passive: false })
+        }
     }
-
 }
