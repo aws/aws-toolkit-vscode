@@ -2196,7 +2196,7 @@
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
-        "sinon": "^11.1.1",
+        "sinon": "^11.1.2",
         "source-map-support": "^0.5.19",
         "ts-mockito": "^2.5.0",
         "ts-node": "^10.2.1",
@@ -2212,7 +2212,7 @@
     "dependencies": {
         "@aws-sdk/client-sso": "^3.16.0",
         "@aws-sdk/client-sso-oidc": "^3.16.0",
-        "@aws-sdk/credential-provider-ini": "^3.27.0",
+        "@aws-sdk/credential-provider-ini": "^3.33.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.16.0",
         "adm-zip": "^0.4.13",
