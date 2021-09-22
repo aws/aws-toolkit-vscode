@@ -54,12 +54,21 @@ export async function updateEnableExecuteCommandFlag(
             }
         }
         await node.ecs.updateService(node.service.clusterArn!, node.name, enable)
-        recordEcsEnableExecuteCommand({ result: 'Succeeded', passive: false })
+        if(enable) {
+            recordEcsEnableExecuteCommand({ result: 'Succeeded', passive: false })
+        } else {
+            recordEcsDisableExecuteCommand({ result: 'Succeeded', passive: false })
+        }
         node.parent.clearChildren()
         commands.execute('aws.refreshAwsExplorerNode', node.parent)
         return
     } catch (e) {
-        recordEcsEnableExecuteCommand({ result: 'Failed', passive: false })
+        if(enable) {
+            recordEcsEnableExecuteCommand({ result: 'Failed', passive: false })
+        } else {
+            recordEcsDisableExecuteCommand({ result: 'Failed', passive: false })
+        }
+
         window.showErrorMessage((e as Error).message)
     }
 
