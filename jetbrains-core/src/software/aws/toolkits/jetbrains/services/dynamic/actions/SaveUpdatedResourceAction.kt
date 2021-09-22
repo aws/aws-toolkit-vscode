@@ -33,6 +33,7 @@ class SaveUpdatedResourceAction : AnAction() {
                 file.isWritable = false
             }
         } else {
+            file.isWritable = false
             DynamicResourceUpdateManager.getInstance(psiFile.project).updateResource(file.dynamicResourceIdentifier, patchOperations.toPrettyString())
         }
     }
