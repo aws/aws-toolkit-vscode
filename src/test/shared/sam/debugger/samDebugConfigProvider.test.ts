@@ -889,17 +889,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
             )
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-    SourceCodeTwoFoldersDeep:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: .
-            Handler: src/subfolder/app.handlerTwoFoldersDeep
-            Runtime: nodejs14.x
-`
-            )
 
             //
             // Test pathMapping
