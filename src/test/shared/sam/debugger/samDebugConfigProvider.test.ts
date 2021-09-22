@@ -372,7 +372,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 lambda: {
                     runtime: 'go1.x',
                 },
-                templatePath: undefined as string | undefined,
             }
             const config = (await debugConfigProvider.makeConfig(folder, input))!
 
@@ -535,7 +534,6 @@ describe('SamDebugConfigurationProvider', async function () {
                         },
                     },
                 },
-                templatePath: undefined as string | undefined,
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
@@ -564,7 +562,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
@@ -714,7 +712,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
@@ -1220,9 +1218,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
             }
 
@@ -1323,9 +1319,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
             }
 
@@ -1630,7 +1624,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'HelloWorld', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
@@ -2113,7 +2107,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
@@ -2649,7 +2643,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     containerBuild: true,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
@@ -2891,7 +2885,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
@@ -2969,7 +2963,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello-world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
