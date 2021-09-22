@@ -98,7 +98,7 @@ export async function makeInputTemplate(
         .withFunctionHandler(config.invokeTarget.lambdaHandler)
         .withResourceName(resourceName)
         .withRuntime(config.lambda!.runtime!)
-        .withCodeUri(config.invokeTarget.projectRoot)
+        .withCodeUri(path.normalize(config.invokeTarget.projectRoot))
 
     if (config.lambda?.environmentVariables) {
         newTemplate = newTemplate.withEnvironment({
