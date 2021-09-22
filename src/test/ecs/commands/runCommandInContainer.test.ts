@@ -11,8 +11,8 @@ import { DefaultEcsClient, EcsClient } from '../../../shared/clients/ecsClient'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { FakeChildProcessResult } from '../../shared/sam/cli/testSamCliProcessInvoker'
-import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { MockOutputChannel } from '../../mockOutputChannel'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
 describe('runCommandInContainer', function () {
     let sandbox: sinon.SinonSandbox
@@ -27,6 +27,7 @@ describe('runCommandInContainer', function () {
     const clusterArn = 'arn:fake:cluster'
     const serviceNoDeployments = [{ deployments: [{ status: 'PRIMARY', rolloutState: 'COMPLETED' }] }]
     const outputChannel = new MockOutputChannel()
+    const settings = new TestSettingsConfiguration()
 
     const doesNotHaveAwsCliChildProcessResult: FakeChildProcessResult = {
         stdout: '',
@@ -50,6 +51,7 @@ describe('runCommandInContainer', function () {
     beforeEach(function () {
         sandbox = sinon.createSandbox()
         node = new EcsContainerNode(containerName, serviceName, clusterArn, ecs)
+        settings.disablePrompt('ecsRunCommand')
     })
 
     afterEach(function () {
@@ -63,10 +65,9 @@ describe('runCommandInContainer', function () {
         sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
         sandbox.stub(picker, 'promptUser').resolves(chosenTask)
-        sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
-        await runCommandInContainer(node, window, outputChannel)
+        await runCommandInContainer(node, window, outputChannel, settings)
 
         assert.strictEqual(childCalls.callCount, 3)
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter the command to run in container: containerName')
@@ -78,11 +79,10 @@ describe('runCommandInContainer', function () {
         sandbox.stub(ecs, 'describeServices').resolves(serviceNoDeployments)
         sandbox.stub(ecs, 'listTasks').resolves(taskListOne)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
-        sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
         const pickerStub = sandbox.stub(picker, 'promptUser')
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
-        await runCommandInContainer(node, window, outputChannel)
+        await runCommandInContainer(node, window, outputChannel, settings)
 
         assert.strictEqual(pickerStub.notCalled, true)
         assert.strictEqual(childCalls.callCount, 3)
@@ -99,7 +99,7 @@ describe('runCommandInContainer', function () {
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         try {
-            await runCommandInContainer(node, window, outputChannel)
+            await runCommandInContainer(node, window, outputChannel, settings)
         } catch (error) {
             assert.ok(error)
         }
@@ -117,7 +117,7 @@ describe('runCommandInContainer', function () {
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         try {
-            await runCommandInContainer(node, window, outputChannel)
+            await runCommandInContainer(node, window, outputChannel, settings)
         } catch (error) {
             assert.ok(error)
         }

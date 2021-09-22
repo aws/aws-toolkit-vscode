@@ -5,9 +5,8 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
 import { extensionSettingsPrefix } from '../../shared/constants'
-import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordEcsDisableExecuteCommand, recordEcsEnableExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
@@ -17,7 +16,8 @@ export async function updateEnableExecuteCommandFlag(
     node: EcsServiceNode,
     enable: boolean,
     window = Window.vscode(),
-    commands = Commands.vscode()
+    commands = Commands.vscode(),
+    settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
     const hasExecEnabled = node.service.enableExecuteCommand
 
@@ -33,8 +33,6 @@ export async function updateEnableExecuteCommandFlag(
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
 
-    const configuration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-
     if (enable) {
         if (hasExecEnabled) {
             window.showInformationMessage(
@@ -42,16 +40,12 @@ export async function updateEnableExecuteCommandFlag(
             )
             return
         }
-        if (configuration.readSetting('ecs.warnBeforeEnablingExcecuteCommand')) {
+        if (await settings.isPromptEnabled('ecsRunCommandEnable')) {
             const choice = await window.showWarningMessage(enableWarning, yes, yesDontAskAgain, no)
             if (choice === undefined || choice === no) {
                 return
             } else if (choice === yesDontAskAgain) {
-                configuration.writeSetting(
-                    'ecs.warnBeforeEnablingExcecuteCommand',
-                    false,
-                    vscode.ConfigurationTarget.Global
-                )
+                settings.disablePrompt('ecsRunCommandEnable')
             }
         }
         await node.ecs.updateService(node.service.clusterArn!, node.name, true)
@@ -68,16 +62,12 @@ export async function updateEnableExecuteCommandFlag(
         return
     }
 
-    if (configuration.readSetting('ecs.warnBeforeDisablingExecuteCommand')) {
+    if (await settings.isPromptEnabled('ecsRunCommandDisable')) {
         const choice = await window.showWarningMessage(disableWarning, yes, yesDontAskAgain, no)
         if (choice === undefined || choice === no) {
             return
         } else if (choice === yesDontAskAgain) {
-            configuration.writeSetting(
-                'ecs.warnBeforeDisablingExecuteCommand',
-                false,
-                vscode.ConfigurationTarget.Global
-            )
+            settings.disablePrompt('ecsRunCommandDisable')
         }
     }
     await node.ecs.updateService(node.service.clusterArn!, node.name, false)
