@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { readFileSync } from 'fs-extra'
 import * as vscode from 'vscode'
+import { readFileSync } from 'fs-extra'
 import { VSCODE_EXTENSION_ID } from '../extensions'
+import { getLogger } from '../logger/logger'
 import { activateExtension } from '../utilities/vsCodeUtils'
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
@@ -22,7 +23,7 @@ interface YamlExtensionApi {
 const AWS_SCHEME = 'aws'
 
 function applyScheme(scheme: string, path: vscode.Uri): vscode.Uri {
-    return vscode.Uri.parse(`${scheme}://${path.fsPath}`)
+    return path.with({ scheme })
 }
 
 function evaluate(schema: vscode.Uri | (() => vscode.Uri)): vscode.Uri {
@@ -47,7 +48,12 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
             return schemaMap.get(resource)?.toString()
         },
         uri => {
-            return readFileSync(vscode.Uri.parse(uri).fsPath).toString()
+            try {
+                return readFileSync(vscode.Uri.file(uri).fsPath).toString()
+            } catch (e) {
+                getLogger().error(`YAML Extension: failed to read schema URI "${uri}": ${e}`)
+                throw new Error(`The AWS Toolkit was unable to parse the JSON schema URI: ${uri}`)
+            }
         }
     )
 
