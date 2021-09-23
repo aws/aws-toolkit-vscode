@@ -53,6 +53,7 @@ abstract class BaseSamCliLocator {
             location = await this.getSystemPathLocation()
         }
 
+        // this is spamming on windows ?
         this.logger.info(`SAM CLI location: ${location}`)
 
         return location
