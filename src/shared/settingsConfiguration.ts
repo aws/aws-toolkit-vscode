@@ -194,7 +194,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         }
 
         if (ext.awsContext) {
-            ext.awsContext.setDeveloperMode(true)
+            ext.awsContext.setDeveloperMode(true, key)
         }
         return val
     }
