@@ -35,7 +35,7 @@ class ResourceSchemaProviderFactoryTest {
     @Rule
     val resourceCache = MockResourceCacheRule()
 
-    private val resource = DynamicResource(ResourceType("AWS::Logs::LogGroup", "Logs", "LogGroup"), "sampleIdentifier")
+    private val resource = DynamicResource(ResourceType("AWS::Log::LogGroup", "Log", "LogGroup"), "sampleIdentifier")
 
     @Test
     fun `Check whether schema is applied`() {
@@ -70,7 +70,7 @@ class ResourceSchemaProviderFactoryTest {
             "  }\n" +
             "}\n"
 
-        val schemaFile = File.createTempFile("AWSLogsLogGroupSchema", ".json")
+        val schemaFile = File.createTempFile("AWSLogLogGroupSchema", ".json")
         schemaFile.writeText(schema)
 
         resourceCache.addEntry(
