@@ -43,6 +43,17 @@ export async function updateCredentialsStatusBarItem(
     developerMode?: Set<string>
 ): Promise<void> {
     clearTimeout(timeoutID)
+    const connectedMsg = localize(
+        'AWS.credentials.statusbar.connected',
+        'Connected to {0} with "{1}" credentials.\nClick to change.',
+        getIdeProperties().company,
+        credentialsId
+    )
+    const disconnectedMsg = localize(
+        'AWS.credentials.statusbar.disconnected',
+        'Not connected to {0}.\nClick to connect.',
+        getIdeProperties().company
+    )
 
     if (developerMode && developerMode.size > 0) {
         ;(statusBarItem as any).backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
@@ -51,11 +62,7 @@ export async function updateCredentialsStatusBarItem(
         statusBarItem.tooltip = `Toolkit developer settings:\n${devSettingsStr}`
     } else {
         ;(statusBarItem as any).backgroundColor = undefined
-        statusBarItem.tooltip = localize(
-            'AWS.credentials.statusbar.tooltip',
-            'Connected to {0} with these credentials.\n\nClick to change.',
-            getIdeProperties().company
-        )
+        statusBarItem.tooltip = credentialsId ? connectedMsg : disconnectedMsg
     }
 
     // Shows confirmation text in the status bar message
