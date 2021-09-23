@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { readFileSync } from 'fs-extra'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger } from '../logger/logger'
+import { getIdeProperties } from '../extensionUtilities'
 import { activateExtension } from '../utilities/vsCodeUtils'
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
@@ -52,7 +53,7 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
                 return readFileSync(vscode.Uri.parse(uri).fsPath).toString()
             } catch (e) {
                 getLogger().error(`YAML Extension: failed to read schema URI "${uri}": ${e}`)
-                throw new Error(`The AWS Toolkit was unable to parse the JSON schema URI: ${uri}`)
+                throw new Error(`${getIdeProperties().company} Toolkit could not parse JSON schema URI: ${uri}`)
             }
         }
     )
