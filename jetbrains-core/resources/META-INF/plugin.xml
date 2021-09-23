@@ -395,6 +395,8 @@ with what features/services are supported.
         
         <group id="aws.toolkit.explorer.dynamic.mutate.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.MutateResourceModelFloatingToolbarActionGroup">
             <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.BeginCreateResourceAction"/>
+            <action id="dynamic.resource.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.EditResourceAction"/>
+            <action id="dynamic.resource.save.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.SaveUpdatedResourceAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.dynamic.additional.resources" popup="true" compact="false">
@@ -408,6 +410,8 @@ with what features/services are supported.
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>
             <action id="dynamic.copy.arn"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCopyIdentifierAction"/>
+            <action id="dynamic.update.resource"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceUpdateResourceAction"/>
             <action id="dynamic.delete.resource"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceDeleteResourceAction"/>
         </group>
