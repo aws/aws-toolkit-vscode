@@ -24,12 +24,6 @@ export async function initializeAwsCredentialsStatusBarItem(
 ): Promise<void> {
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, STATUSBAR_PRIORITY)
     statusBarItem.command = 'aws.login'
-    statusBarItem.tooltip = localize(
-        'AWS.credentials.statusbar.tooltip',
-        'The current credentials used by the {0} Toolkit.\n\nClick this status bar item to use different credentials.',
-        getIdeProperties().company
-    )
-
     statusBarItem.show()
     updateCredentialsStatusBarItem(statusBarItem)
 
@@ -46,14 +40,29 @@ export async function initializeAwsCredentialsStatusBarItem(
 export async function updateCredentialsStatusBarItem(
     statusBarItem: vscode.StatusBarItem,
     credentialsId?: string,
-    developerMode?: boolean
+    developerMode?: Set<string>
 ): Promise<void> {
     clearTimeout(timeoutID)
+    const connectedMsg = localize(
+        'AWS.credentials.statusbar.connected',
+        'Connected to {0} with "{1}" credentials.\nClick to change.',
+        getIdeProperties().company,
+        credentialsId
+    )
+    const disconnectedMsg = localize(
+        'AWS.credentials.statusbar.disconnected',
+        'Not connected to {0}.\nClick to connect.',
+        getIdeProperties().company
+    )
 
-    if (developerMode) {
+    if (developerMode && developerMode.size > 0) {
         ;(statusBarItem as any).backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
+
+        const devSettingsStr = Array.from(developerMode).join('  \n')
+        statusBarItem.tooltip = `Toolkit developer settings:\n${devSettingsStr}`
     } else {
         ;(statusBarItem as any).backgroundColor = undefined
+        statusBarItem.tooltip = credentialsId ? connectedMsg : disconnectedMsg
     }
 
     // Shows confirmation text in the status bar message
