@@ -23,22 +23,27 @@ export class DefaultEc2MetadataClient {
 
     public constructor(private metadata: MetadataService = DefaultEc2MetadataClient.getMetadataService()) {}
 
-    getInstanceIdentity(): Promise<InstanceIdentity> {
+    public getInstanceIdentity(): Promise<InstanceIdentity> {
         return this.invoke<InstanceIdentity>('/latest/dynamic/instance-identity/document')
     }
 
-    getIamInfo(): Promise<IamInfo> {
+    public getIamInfo(): Promise<IamInfo> {
         return this.invoke<IamInfo>('/latest/meta-data/iam/info')
     }
 
-    private invoke<T>(path: string): Promise<T> {
+    public invoke<T>(path: string): Promise<T> {
         return new Promise((resolve, reject) => {
             this.metadata.request(path, (err, response) => {
                 if (err) {
                     reject(err)
+                    return
                 }
-                const jsonResponse: T = JSON.parse(response)
-                resolve(jsonResponse)
+                try {
+                    const jsonResponse: T = JSON.parse(response)
+                    resolve(jsonResponse)
+                } catch (e) {
+                    reject(`Ec2MetadataClient: invalid response from "${path}": ${response}\nerror: ${e}`)
+                }
             })
         })
     }
