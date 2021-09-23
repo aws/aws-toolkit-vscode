@@ -90,7 +90,7 @@ describe('WinstonToolkitLogger', function () {
         logger.info('some info')
 
         const expected = '(Test) some info'
-        assert.ok(await isTextInLogFile(tempLogPath, expected), 'No name was appended to log message')
+        assert.ok(await isTextInLogFile(tempLogPath, expected), 'No name was prepended to log message')
     })
 
     it('throws when logging to a disposed object', async function () {
