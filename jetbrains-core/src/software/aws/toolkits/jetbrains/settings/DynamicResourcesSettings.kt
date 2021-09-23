@@ -9,6 +9,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 
+
 @State(name = "dynamic_resources", storages = [Storage("aws.xml")])
 class DynamicResourcesSettings : PersistentStateComponent<DynamicResourcesConfiguration> {
     private var state = DynamicResourcesConfiguration()

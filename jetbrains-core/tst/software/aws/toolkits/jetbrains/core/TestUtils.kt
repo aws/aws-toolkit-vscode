@@ -20,7 +20,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.apprunner.resources.AppRunnerResources
 import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
+import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
@@ -57,7 +57,7 @@ fun MockResourceCacheRule.fillResourceCache(project: Project) {
 
     this.addEntry(
         project,
-        DynamicResources.listTypes(),
+        CloudControlApiResources.listTypes(),
         CompletableFuture.completedFuture(listOf("Aws::Sample::Resource"))
     )
 

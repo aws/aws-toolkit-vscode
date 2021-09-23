@@ -11,6 +11,7 @@ import com.intellij.ui.ListSpeedSearch
 import com.intellij.ui.layout.panel
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
+import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OtherResourcesNode
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultListModel
