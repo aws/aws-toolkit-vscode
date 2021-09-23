@@ -9,6 +9,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 
 -   [AWS Explorer](#ui-components-aws-expl)
     -   API Gateway
+    -   [App Runner](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/using-apprunner.html)
     -   CloudFormation stacks
     -   CloudWatch Logs
     -   ECR
