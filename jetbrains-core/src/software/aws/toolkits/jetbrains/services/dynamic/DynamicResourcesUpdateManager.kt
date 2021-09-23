@@ -22,7 +22,8 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicResourceOperation
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 import software.aws.toolkits.telemetry.Result
-import java.util.Calendar
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentLinkedQueue
 
 internal class DynamicResourceUpdateManager(private val project: Project) {
@@ -55,7 +56,8 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     project,
                     Result.Failed,
                     dynamicResourceIdentifier.resourceType,
-                    addOperationToTelemetry(Operation.DELETE), 0.0
+                    addOperationToTelemetry(Operation.DELETE),
+                    0.0
                 )
             }
         }
@@ -84,7 +86,8 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     project,
                     Result.Failed,
                     dynamicResourceIdentifier.resourceType,
-                    addOperationToTelemetry(Operation.UPDATE), 0.0
+                    addOperationToTelemetry(Operation.UPDATE),
+                    0.0
                 )
             }
         }
@@ -109,7 +112,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         }
     }
 
-    private fun startCheckingProgress(connectionSettings: ConnectionSettings, progress: ProgressEvent, startTime: Long) {
+    private fun startCheckingProgress(connectionSettings: ConnectionSettings, progress: ProgressEvent, startTime: Instant) {
         pendingMutations.add(ResourceMutationState.fromEvent(connectionSettings, progress, startTime))
         if (pendingMutations.size == 1) {
             alarm.addRequest({ getProgress() }, 0)
@@ -146,7 +149,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                         Result.Failed,
                         mutation.resourceType,
                         addOperationToTelemetry(mutation.operation),
-                        (DynamicResourceTelemetryResources.getCurrentTime() - mutation.startTime).toDouble()
+                        ChronoUnit.MILLIS.between(mutation.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
                     )
                     null
                 }
@@ -196,10 +199,10 @@ data class ResourceMutationState(
     val status: OperationStatus,
     val resourceIdentifier: String?,
     val message: String?,
-    val startTime: Long
+    val startTime: Instant
 ) {
     companion object {
-        fun fromEvent(connectionSettings: ConnectionSettings, progress: ProgressEvent, startTime: Long) =
+        fun fromEvent(connectionSettings: ConnectionSettings, progress: ProgressEvent, startTime: Instant) =
             ResourceMutationState(
                 connectionSettings = connectionSettings,
                 token = progress.requestToken(),
@@ -221,5 +224,5 @@ object DynamicResourceTelemetryResources {
         else -> DynamicResourceOperation.Unknown
     }
 
-    fun getCurrentTime(): Long = Calendar.getInstance().timeInMillis
+    fun getCurrentTime(): Instant = Instant.now()
 }

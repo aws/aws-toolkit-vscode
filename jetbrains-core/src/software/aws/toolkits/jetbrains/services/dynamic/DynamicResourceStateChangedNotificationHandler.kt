@@ -14,6 +14,7 @@ import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 import software.aws.toolkits.telemetry.Result
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 class DynamicResourceStateChangedNotificationHandler(private val project: Project) : DynamicResourceStateMutationHandler {
@@ -38,7 +39,7 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 Result.Succeeded,
                 state.resourceType,
                 addOperationToTelemetry(state.operation),
-                (DynamicResourceTelemetryResources.getCurrentTime() - state.startTime).toDouble()
+                ChronoUnit.MILLIS.between(state.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
             )
         } else if (state.status == OperationStatus.FAILED) {
             notifyError(
@@ -60,10 +61,10 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 Result.Failed,
                 state.resourceType,
                 addOperationToTelemetry(state.operation),
-                (DynamicResourceTelemetryResources.getCurrentTime() - state.startTime).toDouble()
+                ChronoUnit.MILLIS.between(state.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
             )
         }
-        AwsResourceCache.getInstance().clear(DynamicResources.listResources(state.resourceType), state.connectionSettings)
+        AwsResourceCache.getInstance().clear(CloudControlApiResources.listResources(state.resourceType), state.connectionSettings)
         refreshRequired.set(true)
     }
 

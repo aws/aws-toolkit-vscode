@@ -12,7 +12,7 @@ import com.intellij.ui.ListSpeedSearch
 import com.intellij.ui.layout.panel
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
+import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OtherResourcesNode
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
@@ -50,7 +50,7 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
         val allCheckboxes = mutableListOf<JCheckBox>()
         val selected = DynamicResourcesSettings.getInstance().state.selected
         coroutineScope.launch {
-            DynamicResources.SUPPORTED_TYPES.forEach {
+            CloudControlApiResources.SUPPORTED_TYPES.forEach {
                 checklist.addItem(it, it, it in selected)
             }
             allCheckboxes.addAll(checklist.map { _, checkbox -> checkbox })

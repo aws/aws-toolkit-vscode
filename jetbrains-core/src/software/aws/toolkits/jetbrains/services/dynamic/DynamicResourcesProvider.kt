@@ -29,7 +29,7 @@ class DynamicResourcesProvider(private val cfnClient: CloudFormationClient) {
 
         types.flatMap { resp ->
             resp.typeSummaries().map { summary ->
-                DynamicResources.resourceTypeFromResourceTypeName(summary.typeName())
+                CloudControlApiResources.resourceTypeFromResourceTypeName(summary.typeName())
             }
         }
     }

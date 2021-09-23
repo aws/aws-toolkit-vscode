@@ -20,12 +20,12 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
+import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager.Companion.isTerminal
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -45,7 +45,7 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
 
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = try {
-        nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
+        nodeProject.getResourceNow(CloudControlApiResources.listResources(resourceType))
             .map { DynamicResourceNode(nodeProject, it) }
             .also { DynamicresourceTelemetry.listResource(project = nodeProject, success = true, resourceType = resourceType) }
     } catch (e: Exception) {
@@ -67,7 +67,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     ResourceActionNode {
 
     override fun actionGroupName() = "aws.toolkit.explorer.dynamic"
-    override fun displayName(): String = DynamicResources.getResourceDisplayName(resource.identifier)
+    override fun displayName(): String = CloudControlApiResources.getResourceDisplayName(resource.identifier)
 
     override fun statusText(): String? {
         val state = DynamicResourceUpdateManager.getInstance(nodeProject)

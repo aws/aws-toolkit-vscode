@@ -8,7 +8,7 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import kotlinx.coroutines.runBlocking
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
+import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 
 @State(name = "dynamic_resources", storages = [Storage("aws.xml")])
 class DynamicResourcesSettings : PersistentStateComponent<DynamicResourcesConfiguration> {
@@ -19,7 +19,7 @@ class DynamicResourcesSettings : PersistentStateComponent<DynamicResourcesConfig
             state.selected = value
         }
 
-    fun resourcesAvailable() = runBlocking { DynamicResources.SUPPORTED_TYPES }.size - state.selected.size
+    fun resourcesAvailable() = runBlocking { CloudControlApiResources.SUPPORTED_TYPES }.size - state.selected.size
 
     override fun getState() = state
 

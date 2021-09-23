@@ -16,20 +16,20 @@ import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import java.io.File
 
-object DynamicResources {
+object CloudControlApiResources {
     private val mapper = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
     val SUPPORTED_TYPES by lazy {
         if (ApplicationManager.getApplication().isDispatchThread) {
             throw IllegalStateException("Access from Event Dispatch Thread")
         } else {
-            DynamicResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
+            CloudControlApiResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
                 mapper.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(PermittedOperation.LIST) }.map { it.key }
             } ?: throw RuntimeException("dynamic resource manifest not found")
         }
     }
 
     fun listResources(typeName: String): Resource.Cached<List<DynamicResource>> =
-        ClientBackedCachedResource(CloudControlClient::class, "cloudformation.dynamic.resources.$typeName") {
+        ClientBackedCachedResource(CloudControlClient::class, "cloudcontrolapi.dynamic.resources.$typeName") {
             this.listResourcesPaginator {
                 it.typeName(typeName)
             }.flatMap {
