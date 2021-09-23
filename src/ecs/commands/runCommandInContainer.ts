@@ -31,15 +31,17 @@ export async function runCommandInContainer(
     }
 
     // Check to see if there are any deployments in progress
-    if(await isDeploymentInProgress(node)) {
+    const activeDeployments = await deploymentsInProgress(node)
+    if (activeDeployments.ACTIVE > 0 || activeDeployments.IN_PROGRESS > 0) {
         window.showWarningMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.warnDeploymentInProgress',
-                'A deployment for this service may still be in progress. Not all containers may be running.'
+                'Service is currently deploying (ACTIVE={0}, IN_PROGRESS={1})',
+                activeDeployments.ACTIVE,
+                activeDeployments.IN_PROGRESS
             )
         )
     }
-    
 
     // Quick pick to choose from the tasks in that service
     const quickPickItems = await getTaskItems(node)
@@ -147,16 +149,21 @@ async function verifyCliAndPlugin(window: Window): Promise<boolean> {
     return true
 }
 
-async function isDeploymentInProgress(node: EcsContainerNode): Promise<boolean> {
+async function deploymentsInProgress(node: EcsContainerNode) {
+    let activeCount = 0
+    let inProgressCount = 0
     const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0].deployments
     if (deployments) {
         for (const deployment of deployments) {
-            if (deployment.status === 'ACTIVE' || deployment.rolloutState === 'IN_PROGRESS') {
-                return true 
+            if (deployment.status === 'ACTIVE') {
+                activeCount++
+            }
+            if (deployment.rolloutState === 'IN_PROGRESS') {
+                inProgressCount++
             }
         }
     }
-    return false
+    return { ACTIVE: activeCount, IN_PROGRESS: inProgressCount }
 }
 
 async function getTaskItems(node: EcsContainerNode): Promise<vscode.QuickPickItem[]> {
@@ -174,7 +181,12 @@ async function getTaskItems(node: EcsContainerNode): Promise<vscode.QuickPickIte
     })
 }
 
-async function runCliCommandInEcsContainer(node: EcsContainerNode, task: string, command: string, outputChannel: vscode.OutputChannel) {
+async function runCliCommandInEcsContainer(
+    node: EcsContainerNode,
+    task: string,
+    command: string,
+    outputChannel: vscode.OutputChannel
+) {
     const cmd = new ChildProcess(
         true,
         'aws',

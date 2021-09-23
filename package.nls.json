@@ -188,7 +188,7 @@
     "AWS.command.ecs.runCommandInContainer.warning.disableExecuteFlag": "Disabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\n Continue?",
     "AWS.command.ecs.enableEcsExec.alreadyEnabled": "ECS Exec is already enabled for this service",
     "AWS.command.ecs.disableEcsExec.alreadyDisabled": "ECS Exec is already disabled for this service",
-    "AWS.command.ecs.runCommandInContainer.warnDeploymentInProgress": "A deployment for this service may still be in progress. Not all containers may be running.",
+    "AWS.command.ecs.runCommandInContainer.warnDeploymentInProgress": "Service is currently deploying (ACTIVE={0}, IN_PROGRESS={1})",
     "AWS.command.ecs.runCommandInContainer.chooseTask": "Choose a task",
     "AWS.command.samcli.detect": "Detect SAM CLI",
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
