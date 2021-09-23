@@ -52,7 +52,7 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
                 return readFileSync(vscode.Uri.file(uri).fsPath).toString()
             } catch (e) {
                 getLogger().error(`YAML Extension: failed to read schema URI "${uri}": ${e}`)
-                throw new Error('The AWS Toolkit was unable to parse the JSON schema URI')
+                throw new Error(`The AWS Toolkit was unable to parse the JSON schema URI: ${uri}`)
             }
         }
     )
