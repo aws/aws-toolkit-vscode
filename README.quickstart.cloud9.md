@@ -9,7 +9,9 @@ See [Get help](#get-help) for support.
 
 -   [AWS Explorer](#ui-components-aws-expl)
     -   API Gateway
+    -   App Runner
     -   CloudFormation stacks
+    -   [CloudWatch Logs](https://docs.aws.amazon.com/cloud9/latest/user-guide/cloudwatch-logs-toolkit.html)
     -   ECR
     -   Lambda functions
     -   S3 explorer
