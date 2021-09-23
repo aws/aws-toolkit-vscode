@@ -18,31 +18,31 @@ export async function updateEnableExecuteCommandFlag(
     window = Window.vscode(),
     commands = Commands.vscode(),
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-): Promise<void> {    
-    const enableWarning = localize(
-        'AWS.command.ecs.runCommandInContainer.warning.enableExecuteFlag',
-        'Enabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\nAltering the state of resources while the Execute Command is enabled can lead to unpredictable results.\n Continue?'
-    )
-    const disableWarning = localize(
-        'AWS.command.ecs.runCommandInContainer.warning.disableExecuteFlag',
-        'Disabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\n Continue?'
-    )
-    const alreadyEnabled = localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
-    const alreadyDisabled = localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
+): Promise<void> {
     const yes = localize('AWS.generic.response.yes', 'Yes')
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
-    
+
     const prompt = enable ? 'ecsRunCommandEnable' : 'ecsRunCommandDisable'
     const hasExecEnabled = node.service.enableExecuteCommand
 
-    const warningMessage = enable ? enableWarning : disableWarning
-    const redundentActionMessage = enable ? alreadyEnabled : alreadyDisabled
+    const warningMessage = enable
+        ? localize(
+              'AWS.command.ecs.runCommandInContainer.warning.enableExecuteFlag',
+              'Enabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\nAltering the state of resources while the Execute Command is enabled can lead to unpredictable results.\n Continue?'
+          )
+        : localize(
+              'AWS.command.ecs.runCommandInContainer.warning.disableExecuteFlag',
+              'Disabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\n Continue?'
+          )
+    const redundantActionMessage = enable
+        ? localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
+        : localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
 
     let result: 'Succeeded' | 'Failed' | 'Cancelled'
-    if(enable === hasExecEnabled) {
+    if (enable === hasExecEnabled) {
         result = 'Cancelled'
-        window.showInformationMessage(redundentActionMessage)
+        window.showInformationMessage(redundantActionMessage)
         recordEcsEnableExecuteCommand({ result: result, passive: false })
         return
     }
@@ -63,7 +63,7 @@ export async function updateEnableExecuteCommandFlag(
         result = 'Failed'
         window.showErrorMessage((e as Error).message)
     } finally {
-        if(enable) {
+        if (enable) {
             recordEcsEnableExecuteCommand({ result: result!, passive: false })
         } else {
             recordEcsDisableExecuteCommand({ result: result!, passive: false })
