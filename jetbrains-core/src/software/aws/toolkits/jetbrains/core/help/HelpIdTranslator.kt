@@ -6,8 +6,10 @@ package software.aws.toolkits.jetbrains.core.help
 import com.intellij.openapi.help.WebHelpProvider
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 
 class HelpIdTranslator : WebHelpProvider() {
+
     override fun getHelpPageUrl(helpTopicId: String) = HELP_REGISTRY.getOrElse(helpTopicId) {
         LOGGER.warn { "Missing id $helpTopicId" }
         DEFAULT_LOCATION
@@ -17,7 +19,8 @@ class HelpIdTranslator : WebHelpProvider() {
         const val DEFAULT_LOCATION = "https://docs.aws.amazon.com/console/toolkit-for-jetbrains"
         val LOGGER = getLogger<HelpIdTranslator>()
         private val HELP_REGISTRY by lazy {
-            HelpIds.values().asSequence().map { it.id to it.url }.toMap()
+
+            HelpIds.values().asSequence().map { it.id to it.url }.toMap() + DynamicResourceSupportedTypes.getInstance().docs
         }
     }
 }

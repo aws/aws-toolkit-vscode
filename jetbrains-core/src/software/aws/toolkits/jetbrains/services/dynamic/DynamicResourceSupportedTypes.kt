@@ -10,12 +10,15 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 
 class DynamicResourceSupportedTypes {
+    val docs = mutableMapOf<String, String>()
     private val mapper = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
     private val supportedTypes = if (ApplicationManager.getApplication().isDispatchThread) {
         throw IllegalStateException("Access from Event Dispatch Thread")
     } else {
         this.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
-            mapper.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(PermittedOperation.LIST) }.map { it.key }
+            val resDetails = mapper.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(PermittedOperation.LIST) }
+            resDetails.forEach { docs["aws.toolkit.${it.key}"] = it.value.documentation.toString() }
+            resDetails.map { it.key }
         } ?: throw RuntimeException("dynamic resource manifest not found")
     }
 

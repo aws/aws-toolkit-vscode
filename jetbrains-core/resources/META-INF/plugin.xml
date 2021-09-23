@@ -198,6 +198,7 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
+        <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileHelpNotificationProvider"/>
 
         <editorFloatingToolbarProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.ResourceModelFileFloatingToolbarProvider"/>
 
