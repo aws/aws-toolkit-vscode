@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
@@ -81,9 +80,9 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     override fun isAlwaysShowPlus(): Boolean = false
     override fun isAlwaysLeaf(): Boolean = true
     override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
-    override fun onDoubleClick() = openResourceModelInEditor()
+    override fun onDoubleClick() = openResourceModelInEditor(OpenResourceModelSourceAction.READ)
 
-    fun openResourceModelInEditor() {
+    fun openResourceModelInEditor(sourceAction: OpenResourceModelSourceAction) {
         object : Task.Backgroundable(nodeProject, message("dynamic_resources.fetch.indicator_title", resource.identifier), true) {
             override fun run(indicator: ProgressIndicator) {
                 indicator.text = message("dynamic_resources.fetch.fetch")
@@ -114,14 +113,14 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
 
                 indicator.text = message("dynamic_resources.fetch.open")
                 WriteCommandAction.runWriteCommandAction(nodeProject) {
-                    FileEditorManager.getInstance(nodeProject).openFile(file, true)
                     CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
-
-                    file.isWritable = false
-
-                    // editor readonly prop is separate from file prop. this is graceful if the getDocument call returns null
-                    FileDocumentManager.getInstance().getDocument(file)?.setReadOnly(true)
-                    DynamicresourceTelemetry.getResource(nodeProject, success = true, resourceType = resource.type.fullName)
+                    if (sourceAction == OpenResourceModelSourceAction.READ) {
+                        file.isWritable = false
+                        DynamicresourceTelemetry.getResource(nodeProject, success = true, resourceType = resource.type.fullName)
+                    } else if (sourceAction == OpenResourceModelSourceAction.EDIT) {
+                        file.isWritable = true
+                    }
+                    FileEditorManager.getInstance(nodeProject).openFile(file, true)
                 }
             }
         }.queue()
@@ -130,4 +129,8 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     private companion object {
         val LOG = getLogger<DynamicResourceNode>()
     }
+}
+
+enum class OpenResourceModelSourceAction {
+    READ, EDIT
 }
