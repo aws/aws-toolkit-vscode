@@ -8,10 +8,12 @@ import * as fs from 'fs'
 import * as request from 'request'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
+import { logging } from '../utilities/decorators'
 import { ResourceFetcher } from './resourcefetcher'
 
+@logging
 export class HttpResourceFetcher implements ResourceFetcher {
-    private readonly logger: Logger = getLogger()
+    public readonly logger: Logger = getLogger()
 
     /**
      *

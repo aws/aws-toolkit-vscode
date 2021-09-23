@@ -22,6 +22,17 @@ describe('@logging', function () {
     })
 
     @logging
+    class ChildTest extends Test {
+        constructor() {
+            super()
+        }
+    }
+
+    it('can override parent decorators', function () {
+        assert.strictEqual(new ChildTest().logger.name, 'ChildTest')
+    })
+
+    @logging
     class BadType {
         public logger!: Logger
     }
