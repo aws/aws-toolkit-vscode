@@ -26,6 +26,8 @@ export interface Logger {
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
     getLogById(logID: number, file: Uri): string | undefined
+    /** A 'name' used to prefix log messages with */
+    name?: string
 }
 
 /**

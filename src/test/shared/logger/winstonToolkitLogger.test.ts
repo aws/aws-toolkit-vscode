@@ -14,6 +14,35 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 describe('WinstonToolkitLogger', function () {
     let tempFolder: string
 
+    async function isTextInLogFile(logPath: string, text: string): Promise<boolean> {
+        await waitForLogFile(logPath)
+        const logText = await filesystemUtilities.readFileAsString(logPath)
+        return !!(await waitUntil(async () => logText.includes(text), {
+            timeout: 5000,
+            interval: 100,
+            truthy: false,
+        }))
+    }
+
+    async function waitForLogFile(logPath: string): Promise<void> {
+        const timeoutPromise = new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                clearTimeout(timeout)
+                reject('Log file not found in 1500 ms')
+            }, 1500)
+        })
+
+        const fileExistsPromise = new Promise<void>(async (resolve, reject) => {
+            while (true) {
+                if (await filesystemUtilities.fileExists(logPath)) {
+                    resolve()
+                }
+            }
+        })
+
+        return Promise.race([timeoutPromise, fileExistsPromise])
+    }
+
     before(async function () {
         tempFolder = await filesystemUtilities.makeTemporaryToolkitFolder()
     })
@@ -50,6 +79,18 @@ describe('WinstonToolkitLogger', function () {
 
     it('creates an object', function () {
         assert.notStrictEqual(new WinstonToolkitLogger('info'), undefined)
+    })
+
+    it('can log using a name', async function () {
+        const tempLogPath = path.join(tempFolder, 'temp.log')
+        const logger = new WinstonToolkitLogger('info')
+
+        logger.name = 'Test'
+        logger.logToFile(tempLogPath)
+        logger.info('some info')
+
+        const expected = '(Test) some info'
+        assert.ok(await isTextInLogFile(tempLogPath, expected), 'No name was appended to log message')
     })
 
     it('throws when logging to a disposed object', async function () {
@@ -152,35 +193,6 @@ describe('WinstonToolkitLogger', function () {
                 assert.ok(await isTextInLogFile(tempLogPath, message), 'Expected log message was missing')
             })
         })
-
-        async function isTextInLogFile(logPath: string, text: string): Promise<boolean> {
-            await waitForLogFile(logPath)
-            const logText = await filesystemUtilities.readFileAsString(logPath)
-            return !!(await waitUntil(async () => logText.includes(text), {
-                timeout: 5000,
-                interval: 100,
-                truthy: false,
-            }))
-        }
-
-        async function waitForLogFile(logPath: string): Promise<void> {
-            const timeoutPromise = new Promise<void>((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    clearTimeout(timeout)
-                    reject('Log file not found in 1500 ms')
-                }, 1500)
-            })
-
-            const fileExistsPromise = new Promise<void>(async (resolve, reject) => {
-                while (true) {
-                    if (await filesystemUtilities.fileExists(logPath)) {
-                        resolve()
-                    }
-                }
-            })
-
-            return Promise.race([timeoutPromise, fileExistsPromise])
-        }
     })
 
     describe('logs to an OutputChannel', async function () {
