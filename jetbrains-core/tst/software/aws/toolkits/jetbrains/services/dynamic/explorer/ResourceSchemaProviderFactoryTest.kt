@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.dynamic.explorer
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.runInEdtAndWait
 import com.jetbrains.jsonSchema.impl.inspections.JsonSchemaComplianceInspection
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
@@ -35,12 +36,8 @@ class ResourceSchemaProviderFactoryTest {
     @Rule
     val resourceCache = MockResourceCacheRule()
 
-    private val resource = DynamicResource(ResourceType("AWS::Log::LogGroup", "Log", "LogGroup"), "sampleIdentifier")
-
-    @Test
-    fun `Check whether schema is applied`() {
-        val fixture = projectRule.fixture
-        val jsonSchemaComplianceInspection = JsonSchemaComplianceInspection()
+    @Before
+    fun setup(){
         val schema = "{\n" +
             "  \"properties\": {\n" +
             "    \"RetentionInDays\": {\n" +
@@ -77,6 +74,15 @@ class ResourceSchemaProviderFactoryTest {
             projectRule.project, DynamicResources.getResourceSchema(resource.type.fullName),
             CompletableFuture.completedFuture(schemaFile)
         )
+    }
+
+    private val resource = DynamicResource(ResourceType("AWS::Log::LogGroup", "Log", "LogGroup"), "sampleIdentifier")
+
+    @Test
+    fun `Check whether schema is applied`() {
+        val fixture = projectRule.fixture
+        val jsonSchemaComplianceInspection = JsonSchemaComplianceInspection()
+
 
         try {
             fixture.enableInspections(jsonSchemaComplianceInspection)
