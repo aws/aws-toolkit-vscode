@@ -5,20 +5,23 @@
 
 import * as assert from 'assert'
 import { getNullLogger, Logger } from '../../../shared/logger'
+import { NullLogger } from '../../../shared/logger/logger'
 import { logging } from '../../../shared/utilities/decorators'
 
 describe('@logging', function () {
     @logging
     class Test {
-        public logger: Logger
+        public logger: NullLogger
 
         constructor() {
             this.logger = getNullLogger()
         }
     }
 
-    it('sets name of logger', function () {
-        assert.strictEqual(new Test().logger.name, 'Test')
+    it('add name metadata to log methods', function () {
+        const logger = new Test().logger
+        logger.info('some info')
+        assert.deepStrictEqual(logger.lastMetadata?.pop(), { name: 'Test' })
     })
 
     @logging
@@ -29,7 +32,9 @@ describe('@logging', function () {
     }
 
     it('can override parent decorators', function () {
-        assert.strictEqual(new ChildTest().logger.name, 'ChildTest')
+        const logger = new ChildTest().logger
+        logger.error('some info')
+        assert.deepStrictEqual(logger.lastMetadata?.pop(), { name: 'ChildTest' })
     })
 
     @logging

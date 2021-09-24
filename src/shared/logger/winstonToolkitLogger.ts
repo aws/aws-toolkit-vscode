@@ -16,7 +16,6 @@ import { OutputChannelTransport } from './outputChannelTransport'
 // LRU cache would work well, currently it just dumps the least recently added log
 const LOGMAP_SIZE: number = 1000
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
-    public name?: string
     private readonly logger: winston.Logger
     private disposed: boolean = false
     private idCounter: number = 0
@@ -35,7 +34,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
                         return info.message
                     }
 
-                    const nameLabel = this.name ? `(${this.name})` : ''
+                    const nameLabel = info.name ? `(${info.name})` : ''
 
                     return `${info.timestamp} [${info.level.toUpperCase()}]: ${nameLabel} ${info.message}`
                 })

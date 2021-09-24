@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Logger } from '../logger/logger'
+import { Logger, logLevels } from '../logger/logger'
 
 export function logging<T extends new (...args: any) => { logger: Logger }>(constructor: T) {
     let _logger: Logger | undefined
@@ -16,8 +16,17 @@ export function logging<T extends new (...args: any) => { logger: Logger }>(cons
             return _logger
         },
         set: (v: Logger) => {
-            v.name = name
-            _logger = v
+            const clone = Object.create(v)
+
+            for (const key of logLevels.keys()) {
+                Object.defineProperty(clone, key, {
+                    value: function (message: string | Error, ...meta: any[]) {
+                        Object.getPrototypeOf(v)[key].call(v, message, ...meta, { name })
+                    },
+                })
+            }
+
+            _logger = clone
         },
     })
 }

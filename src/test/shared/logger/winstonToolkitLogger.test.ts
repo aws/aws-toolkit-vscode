@@ -85,9 +85,8 @@ describe('WinstonToolkitLogger', function () {
         const tempLogPath = path.join(tempFolder, 'temp.log')
         const logger = new WinstonToolkitLogger('info')
 
-        logger.name = 'Test'
         logger.logToFile(tempLogPath)
-        logger.info('some info')
+        logger.info('some info', { name: 'Test' })
 
         const expected = '(Test) some info'
         assert.ok(await isTextInLogFile(tempLogPath, expected), 'No name was appended to log message')

@@ -26,8 +26,6 @@ export interface Logger {
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
     getLogById(logID: number, file: Uri): string | undefined
-    /** A 'name' used to prefix log messages with */
-    name?: string
 }
 
 /**
@@ -37,7 +35,7 @@ export interface Logger {
  * > RFC5424: severity of levels is numerically ascending from most important
  * > to least important.
  */
-const logLevels = new Map<LogLevel, number>([
+export const logLevels = new Map<LogLevel, number>([
     ['error', 1],
     ['warn', 2],
     ['info', 3],
@@ -75,24 +73,31 @@ export function getLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
     return logger
 }
 
+/* Logs nothing (also exposes metadata for testing) */
 export class NullLogger implements Logger {
+    public lastMetadata?: any[]
     public setLogLevel(logLevel: LogLevel) {}
     public logLevelEnabled(logLevel: LogLevel): boolean {
         return false
     }
     public debug(message: string | Error, ...meta: any[]): number {
+        this.lastMetadata = meta
         return 0
     }
     public verbose(message: string | Error, ...meta: any[]): number {
+        this.lastMetadata = meta
         return 0
     }
     public info(message: string | Error, ...meta: any[]): number {
+        this.lastMetadata = meta
         return 0
     }
     public warn(message: string | Error, ...meta: any[]): number {
+        this.lastMetadata = meta
         return 0
     }
     public error(message: string | Error, ...meta: any[]): number {
+        this.lastMetadata = meta
         return 0
     }
     public getLogById(logID: number, file: Uri): string | undefined {
