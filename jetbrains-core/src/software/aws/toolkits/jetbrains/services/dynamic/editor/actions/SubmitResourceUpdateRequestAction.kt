@@ -1,7 +1,7 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.dynamic.actions
+package software.aws.toolkits.jetbrains.services.dynamic.editor.actions
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.flipkart.zjsonpatch.JsonDiff
@@ -10,12 +10,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.Messages.showYesNoDialog
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.resources.message
 
-class SaveUpdatedResourceAction : AnAction() {
+class SubmitResourceUpdateRequestAction : AnAction(message("dynamic_resources.editor.submitResourceUpdateRequest_text")) {
     override fun actionPerformed(e: AnActionEvent) {
         val psiFile = e.getData(CommonDataKeys.PSI_FILE)
         val file = psiFile?.virtualFile as? ViewEditableDynamicResourceVirtualFile ?: return
@@ -30,11 +29,9 @@ class SaveUpdatedResourceAction : AnAction() {
                 ) == Messages.NO
             ) {
                 file.isWritable = false
-                DynamicResourceFileActionProvider.updatePanel(file, psiFile.project)
             }
         } else {
             file.isWritable = false
-            DynamicResourceFileActionProvider.updatePanel(file, psiFile.project)
             DynamicResourceUpdateManager.getInstance(psiFile.project).updateResource(file.dynamicResourceIdentifier, patchOperations.toPrettyString())
         }
     }

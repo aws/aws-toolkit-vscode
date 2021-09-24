@@ -52,7 +52,7 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
         throw e
     }
 
-    override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.resource"
+    override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.resource.type"
 }
 
 class UnavailableDynamicResourceTypeNode(project: Project, resourceType: String) : AwsExplorerNode<String>(project, resourceType, null) {
@@ -65,7 +65,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     AwsExplorerNode<DynamicResource>(project, resource, null),
     ResourceActionNode {
 
-    override fun actionGroupName() = "aws.toolkit.explorer.dynamic"
+    override fun actionGroupName() = "aws.toolkit.explorer.dynamic.resource"
     override fun displayName(): String = CloudControlApiResources.getResourceDisplayName(resource.identifier)
 
     override fun statusText(): String? {

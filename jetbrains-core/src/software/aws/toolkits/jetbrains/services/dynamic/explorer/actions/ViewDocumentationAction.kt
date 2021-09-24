@@ -9,7 +9,7 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActio
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceResourceTypeNode
 import software.aws.toolkits.resources.message
 
-class DynamicResourceViewDocumentationAction : SingleExplorerNodeAction<DynamicResourceResourceTypeNode>(message("dynamic_resources.resource_documentation")) {
+class ViewDocumentationAction : SingleExplorerNodeAction<DynamicResourceResourceTypeNode>(message("dynamic_resources.type.explorer.view_documentation")) {
     override fun actionPerformed(selected: DynamicResourceResourceTypeNode, e: AnActionEvent) {
         DynamicResourceFileActionProvider.openBrowser(selected.value, selected.nodeProject)
     }

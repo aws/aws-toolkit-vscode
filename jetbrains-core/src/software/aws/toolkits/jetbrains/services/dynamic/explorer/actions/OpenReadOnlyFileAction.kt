@@ -10,10 +10,10 @@ import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OpenResourceModelSourceAction
 import software.aws.toolkits.resources.message
 
-class DynamicResourceUpdateResourceAction :
-    SingleExplorerNodeAction<DynamicResourceNode>(message("dynamic_resources.update_resource_action")),
+class OpenReadOnlyFileAction :
+    SingleExplorerNodeAction<DynamicResourceNode>(message("dynamic_resources.openReadOnlyFile_text")),
     DumbAware {
     override fun actionPerformed(selected: DynamicResourceNode, e: AnActionEvent) {
-        selected.openResourceModelInEditor(OpenResourceModelSourceAction.EDIT)
+        selected.openResourceModelInEditor(OpenResourceModelSourceAction.READ)
     }
 }

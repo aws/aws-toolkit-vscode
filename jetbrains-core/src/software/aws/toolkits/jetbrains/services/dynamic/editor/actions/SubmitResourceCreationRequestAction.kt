@@ -1,7 +1,7 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.dynamic.actions
+package software.aws.toolkits.jetbrains.services.dynamic.editor.actions
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.actionSystem.AnAction
@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.services.dynamic.InitialCreateDynamicReso
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
-class BeginCreateResourceAction : AnAction() {
+class SubmitResourceCreationRequestAction : AnAction(message("general.create")) {
 
     override fun actionPerformed(e: AnActionEvent) {
         val psiFile = e.getData(CommonDataKeys.PSI_FILE)
