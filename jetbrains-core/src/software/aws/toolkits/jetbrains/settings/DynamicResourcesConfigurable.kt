@@ -10,17 +10,13 @@ import com.intellij.ui.CheckBoxList
 import com.intellij.ui.FilterComponent
 import com.intellij.ui.ListSpeedSearch
 import com.intellij.ui.layout.panel
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
-import kotlinx.coroutines.launch
-import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow
-import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OtherResourcesNode
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultListModel
 import javax.swing.JCheckBox
 import javax.swing.ListSelectionModel
-
 
 class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dynamic_resources_configurable.title")) {
 
