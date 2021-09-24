@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.openapi.ui.TestDialog
+import com.intellij.openapi.ui.TestDialogManager
 import com.intellij.testFramework.DisposableRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -24,7 +25,6 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution
-import software.aws.toolkits.jetbrains.ui.TestDialogService
 import software.aws.toolkits.jetbrains.utils.createMockFileChooser
 import java.io.OutputStream
 import java.time.Instant
@@ -48,7 +48,7 @@ class DownloadObjectActionTest : ObjectActionTestBase() {
 
     @After
     fun tearDown() {
-        TestDialogService.setTestDialog(TestDialog.DEFAULT)
+        TestDialogManager.setTestDialog(TestDialog.DEFAULT)
     }
 
     @Test
@@ -369,7 +369,7 @@ class DownloadObjectActionTest : ObjectActionTestBase() {
             TestData("testFile-1")
         )
 
-        TestDialogService.setTestDialog {
+        TestDialogManager.setTestDialog {
             -1 // Means cancel (esc)
         }
 
@@ -447,7 +447,7 @@ class DownloadObjectActionTest : ObjectActionTestBase() {
 
     private fun setUpConflictResolutionResponses(choices: List<ConflictResolution>, vararg responses: ConflictResolution) {
         var responseNum = 0
-        TestDialogService.setTestDialog {
+        TestDialogManager.setTestDialog {
             choices.indexOf(responses[responseNum++])
         }
     }

@@ -7,6 +7,7 @@ import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.ui.TestDialogManager
 import com.intellij.openapi.ui.TestInputDialog
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -49,7 +50,6 @@ import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
-import software.aws.toolkits.jetbrains.ui.TestDialogService
 import java.io.File
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -103,12 +103,12 @@ class ProfileCredentialProviderFactoryTest {
             disposableRule.disposable
         )
 
-        TestDialogService.setTestInputDialog { MFA_TOKEN }
+        TestDialogManager.setTestInputDialog { MFA_TOKEN }
     }
 
     @After
     fun tearDown() {
-        TestDialogService.setTestInputDialog(TestInputDialog.DEFAULT)
+        TestDialogManager.setTestInputDialog(TestInputDialog.DEFAULT)
         mockProfileWatcher.reset()
     }
 

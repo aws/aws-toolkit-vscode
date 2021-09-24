@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.openapi.ui.TestDialog
+import com.intellij.openapi.ui.TestDialogManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
@@ -19,7 +20,6 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeErrorNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
-import software.aws.toolkits.jetbrains.ui.TestDialogService
 import java.time.Instant
 
 class RenameObjectActionTest : ObjectActionTestBase() {
@@ -27,7 +27,7 @@ class RenameObjectActionTest : ObjectActionTestBase() {
 
     @After
     fun tearDown() {
-        TestDialogService.setTestDialog(TestDialog.DEFAULT)
+        TestDialogManager.setTestDialog(TestDialog.DEFAULT)
     }
 
     @Test
@@ -99,7 +99,7 @@ class RenameObjectActionTest : ObjectActionTestBase() {
     @Test
     fun `rename object action works`() {
         val input = aString()
-        TestDialogService.setTestInputDialog { input }
+        TestDialogManager.setTestInputDialog { input }
 
         val dir = S3TreeDirectoryNode(s3Bucket, null, "path1/")
         val obj = S3TreeObjectNode(dir, "path1/obj1", 1, Instant.now())
@@ -123,7 +123,7 @@ class RenameObjectActionTest : ObjectActionTestBase() {
 
     @Test
     fun `rename object action can be cancelled`() {
-        TestDialogService.setTestInputDialog { null }
+        TestDialogManager.setTestInputDialog { null }
 
         val dir = S3TreeDirectoryNode(s3Bucket, null, "path1/")
         val nodes = listOf(
