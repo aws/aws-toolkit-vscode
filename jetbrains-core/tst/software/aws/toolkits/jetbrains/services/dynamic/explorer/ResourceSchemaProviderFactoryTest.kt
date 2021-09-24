@@ -3,11 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
-import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.runInEdtAndWait
-import com.jetbrains.jsonSchema.JsonSchemaMappingsProjectConfiguration
-import com.jetbrains.jsonSchema.ide.JsonSchemaService
 import com.jetbrains.jsonSchema.impl.inspections.JsonSchemaComplianceInspection
 import org.junit.Before
 import org.junit.Rule
@@ -16,7 +13,6 @@ import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
-import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
@@ -80,7 +76,6 @@ class ResourceSchemaProviderFactoryTest {
             projectRule.project, DynamicResources.getResourceSchema("AWS::Log::LogGroup"),
             CompletableFuture.completedFuture(schemaFile)
         )
-
     }
 
     private val resource = DynamicResource(ResourceType("AWS::Log::LogGroup", "Log", "LogGroup"), "sampleIdentifier")

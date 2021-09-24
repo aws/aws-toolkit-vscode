@@ -28,7 +28,6 @@ import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
-import java.io.File
 import java.util.concurrent.CompletableFuture
 
 fun MockResourceCacheRule.fillResourceCache(project: Project) {
@@ -116,10 +115,8 @@ fun MockResourceCacheRule.fillResourceCache(project: Project) {
         SqsResources.LIST_QUEUE_URLS,
         listOf("https://sqs.us-east-1.amazonaws.com/123456789012/test1")
     )
-
 }
 
 fun makeMockList(clusterArn: String): Resource.Cached<List<String>> = mock {
     on { id }.thenReturn("ecs.list_services.$clusterArn")
 }
-
