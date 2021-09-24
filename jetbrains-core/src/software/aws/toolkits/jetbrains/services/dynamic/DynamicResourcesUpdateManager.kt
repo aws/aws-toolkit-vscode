@@ -104,7 +104,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                 startCheckingProgress(connectionSettings, progress, DynamicResourceTelemetryResources.getCurrentTime())
             } catch (e: Exception) {
                 e.notifyError(
-                    message("dynamic_resources.operation_status_notification_title", dynamicResourceType, message("dynamic_resources.create")),
+                    message("dynamic_resources.operation_status_notification_title", dynamicResourceType, message("general.create".decapitalize())),
                     project
                 )
                 DynamicresourceTelemetry.mutateResource(project, Result.Failed, dynamicResourceType, addOperationToTelemetry(Operation.CREATE), 0.0)
