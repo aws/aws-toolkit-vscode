@@ -37,6 +37,14 @@ describe('@logging', function () {
         assert.deepStrictEqual(logger.lastMetadata?.pop(), { name: 'ChildTest' })
     })
 
+    it('does not reinstrument on reassignment', function () {
+        const base = new Test()
+        const logger = new ChildTest().logger
+        base.logger = logger
+        base.logger.info('some info')
+        assert.deepStrictEqual(logger.lastMetadata?.pop(), { name: 'ChildTest' })
+    })
+
     @logging
     class BadType {
         public logger!: Logger

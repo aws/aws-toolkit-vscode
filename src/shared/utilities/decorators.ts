@@ -16,12 +16,19 @@ export function logging<T extends new (...args: any) => { logger: Logger }>(cons
             return _logger
         },
         set: (v: Logger) => {
+            const proto = Object.getPrototypeOf(v)
+            if (!Object.prototype.hasOwnProperty.call(proto, 'constructor')) {
+                // the 'logger' is already instrumented
+                _logger = v
+                return
+            }
+
             const clone = Object.create(v)
 
             for (const key of logLevels.keys()) {
                 Object.defineProperty(clone, key, {
                     value: function (message: string | Error, ...meta: any[]) {
-                        Object.getPrototypeOf(v)[key].call(v, message, ...meta, { name })
+                        proto[key].call(v, message, ...meta, { name })
                     },
                 })
             }
