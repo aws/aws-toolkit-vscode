@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.openapi.ui.TestDialog
+import com.intellij.openapi.ui.TestDialogManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
@@ -19,7 +20,6 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeErrorNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
-import software.aws.toolkits.jetbrains.ui.TestDialogService
 import java.time.Instant
 
 class DeleteObjectActionTest : ObjectActionTestBase() {
@@ -27,7 +27,7 @@ class DeleteObjectActionTest : ObjectActionTestBase() {
 
     @After
     fun tearDown() {
-        TestDialogService.setTestDialog(TestDialog.DEFAULT)
+        TestDialogManager.setTestDialog(TestDialog.DEFAULT)
     }
 
     @Test
@@ -104,7 +104,7 @@ class DeleteObjectActionTest : ObjectActionTestBase() {
             S3TreeObjectNode(dir, "path1/obj1", 1, Instant.now())
         )
 
-        TestDialogService.setTestDialog(TestDialog.NO)
+        TestDialogManager.setTestDialog(TestDialog.NO)
 
         sut.executeAction(nodes)
 
@@ -120,7 +120,7 @@ class DeleteObjectActionTest : ObjectActionTestBase() {
             S3TreeObjectNode(dir, "path1/obj1", 1, Instant.now())
         )
 
-        TestDialogService.setTestDialog {
+        TestDialogManager.setTestDialog {
             -1 // means cancel
         }
 
@@ -140,7 +140,7 @@ class DeleteObjectActionTest : ObjectActionTestBase() {
             S3TreeObjectNode(dir, "path1/obj3", 1, Instant.now()),
         )
 
-        TestDialogService.setTestDialog(TestDialog.OK)
+        TestDialogManager.setTestDialog(TestDialog.OK)
 
         sut.executeAction(nodes)
 

@@ -17,40 +17,6 @@ object IdeVersions {
 
     private val ideProfiles = listOf(
         Profile(
-            name = "2020.2",
-            community = ProductProfile(
-                sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "2020.2",
-                plugins = commonPlugins + listOf(
-                    "java",
-                    "com.intellij.gradle",
-                    "org.jetbrains.idea.maven",
-                    "PythonCore:202.6397.124",
-                    "Docker:202.6397.93"
-                )
-            ),
-            ultimate = ProductProfile(
-                sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "2020.2",
-                plugins = commonPlugins + listOf(
-                    "JavaScript",
-                    "JavaScriptDebugger",
-                    "com.intellij.database",
-                    "Pythonid:202.6397.98",
-                    "org.jetbrains.plugins.go:202.6397.20"
-                )
-            ),
-            rider = RiderProfile(
-                sdkVersion = "2020.2",
-                plugins = commonPlugins + listOf(
-                    "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
-                ),
-                netFrameworkTarget = "net461",
-                rdGenVersion = "0.203.161",
-                nugetVersion = "2020.2.0"
-            )
-        ),
-        Profile(
             name = "2020.3",
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,

@@ -5,14 +5,10 @@ package base
 
 import com.intellij.ide.GeneralSettings
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.SystemInfo
 import com.jetbrains.rider.projectView.solutionDirectory
 import com.jetbrains.rider.test.base.BaseTestWithSolutionBase
-import com.jetbrains.rider.test.base.PrepareTestEnvironment
 import com.jetbrains.rider.test.debugger.XDebuggerTestHelper
 import com.jetbrains.rider.test.scriptingApi.getVirtualFileFromPath
-import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
-import com.jetbrains.rider.test.scriptingApi.setUpDotNetCoreCliPath
 import com.jetbrains.rider.test.scriptingApi.useCachedTemplates
 import org.testng.annotations.AfterClass
 import org.testng.annotations.BeforeClass
@@ -43,20 +39,10 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
     override val testCaseNameToTempDir: String
         get() = getSolutionDirectoryName()
 
-    // TODO: Remove when https://youtrack.jetbrains.com/issue/RIDER-47995 is fixed FIX_WHEN_MIN_IS_203
+    // TODO: Remove when https://youtrack.jetbrains.com/issue/RIDER-47995 is fixed FIX_WHEN_MIN_IS_211
     @BeforeClass
     fun allowDotnetRoots() {
         allowCustomDotnetRoots()
-    }
-
-    @BeforeClass
-    fun setUpBuildToolPath() {
-        // TODO: Does not appear to be needed in 203+ FIX_WHEN_MIN_IS_203
-        if (SystemInfo.isWindows) {
-            PrepareTestEnvironment.dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
-            setUpDotNetCoreCliPath(PrepareTestEnvironment.dotnetCoreCliPath)
-            setUpCustomToolset(msBuild)
-        }
     }
 
     @BeforeClass(alwaysRun = true)
