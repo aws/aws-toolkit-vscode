@@ -127,7 +127,6 @@ tasks.withType<RunIdeForUiTestTask>().all {
     systemProperty("jb.consents.confirmation.enabled", "false")
     // This does some magic in EndUserAgreement.java to make it not show the privacy policy
     systemProperty("jb.privacy.policy.text", "<!--999.999-->")
-    // This only works on 2020.3+ FIX_WHEN_MIN_IS_203 remove this explanation
     systemProperty("ide.show.tips.on.startup.default.value", false)
 
     systemProperty("aws.telemetry.skip_prompt", "true")
