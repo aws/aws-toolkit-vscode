@@ -57,11 +57,6 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
     override fun before(description: Description) {
         super.before(description)
         this.description = description
-        // We can't find fork join pool correctly on JDK 11, we have to match all fork join threads because we can only register by name prefixes unlike the
-        // actual JB logic
-        // https://github.com/JetBrains/intellij-community/commit/0a6c9e16e95983ae0786d7667290c07b420ce705
-        // TODO: Remove this FIX_WHEN_MIN_IS_203
-        ThreadTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "ForkJoinPool.commonPool-worker-")
         // This timer is cancelled but it still continues running when the test is over since it cancels lazily. This is fine, so suppress the leak
         ThreadTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "Debugger Worker launch timer")
     }

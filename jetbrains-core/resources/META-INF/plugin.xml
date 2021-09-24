@@ -212,7 +212,7 @@ with what features/services are supported.
 
         <!-- Min Version Notice -->
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.notification.MinimumVersionChange"/>
-        <!-- TODO: Migrate to this FIX_WHEN_MIN_IS_203 <notificationGroup id="aws.toolkit_deprecation" displayType="STICKY_BALLOON" key="aws.toolkit_deprecation.title"/> -->
+        <notificationGroup id="aws.toolkit_deprecation" displayType="STICKY_BALLOON" key="aws.toolkit_deprecation.title"/>
 
         <!-- ECS -->
         <configurationType implementation="software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationType"/>

@@ -8,6 +8,7 @@ import base.msBuild
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.util.SystemInfo
+import com.jetbrains.rd.ide.model.IconModel
 import com.jetbrains.rider.test.annotations.TestEnvironment
 import com.jetbrains.rider.test.base.BaseTestWithSolution
 import com.jetbrains.rider.test.base.PrepareTestEnvironment
@@ -17,7 +18,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
-import software.aws.toolkits.jetbrains.rider.compatability.IconModel
 
 class DotNetHandlerCompletionTest : BaseTestWithSolution() {
 
