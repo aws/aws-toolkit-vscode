@@ -30,7 +30,7 @@ class DynamicResourceFileActionProvider :
         init {
             val file = virtualFile as CreateDynamicResourceVirtualFile
             createActionLabel(message("dynamic_resources.resource_documentation")) {
-                BrowserLauncher.instance.browse(DynamicResourceSupportedTypes.getInstance().getDocs(file.dynamicResourceType), project = project)
+                openBrowser(file.dynamicResourceType, project)
             }
 
             createActionLabel(message("dynamic_resources.create").capitalize(), "dynamic.resource.create.resource.action")
@@ -38,12 +38,12 @@ class DynamicResourceFileActionProvider :
         }
     }
 
-    class ViewEditableDynamicResourceVirtualFilePanel(file: VirtualFile, project: Project) :
+    class ViewEditableDynamicResourceVirtualFilePanel(virtualFile: VirtualFile, project: Project) :
         DynamicResourceVirtualFilePanel() {
         init {
-            val f = file as ViewEditableDynamicResourceVirtualFile
+            val file = virtualFile as ViewEditableDynamicResourceVirtualFile
             createActionLabel(message("dynamic_resources.resource_documentation")) {
-                BrowserLauncher.instance.browse(DynamicResourceSupportedTypes.getInstance().getDocs(f.dynamicResourceType), project = project)
+                openBrowser(file.dynamicResourceType, project)
             }
             if (!file.isWritable) {
                 createActionLabel(message("dynamic_resources.edit_resource"), "dynamic.resource.update.resource.action")
@@ -60,9 +60,9 @@ class DynamicResourceFileActionProvider :
     }
 
     companion object {
-        /**
-         * Key used to store the notification panel in an editor
-         */
-        val KEY = Key.create<DynamicResourceVirtualFilePanel>("software.aws.toolkits.jetbrains.core.dynamic.resource.information")
+        val KEY = Key.create<DynamicResourceVirtualFilePanel>("software.aws.toolkits.jetbrains.core.dynamic.resource.file.actions")
+
+        fun openBrowser(resourceType: String, project: Project) =
+            BrowserLauncher.instance.browse(DynamicResourceSupportedTypes.getInstance().getDocs(resourceType), project = project)
     }
 }
