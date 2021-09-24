@@ -26,6 +26,7 @@ import { ext } from '../shared/extensionGlobals'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
+import { sleep } from '../shared/utilities/promiseUtilities'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
@@ -315,11 +316,11 @@ async function startDebugger(
         async () => {
             logSession('START', vscode.debug.activeDebugSession!.name)
 
-            await testUtils.sleep(400)
+            await sleep(400)
             await continueDebugger()
-            await testUtils.sleep(400)
+            await sleep(400)
             await continueDebugger()
-            await testUtils.sleep(400)
+            await sleep(400)
             await continueDebugger()
 
             await success

@@ -8,6 +8,7 @@ import { SsoClientRegistration } from './ssoClientRegistration'
 import { openSsoPortalLink, SsoAccessToken } from './sso'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
+import { sleep } from '../../shared/utilities/promiseUtilities'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const CLIENT_NAME = 'aws-toolkit-vscode'
@@ -121,8 +122,8 @@ export class SsoAccessTokenProvider {
             if (Date.now() + retryInterval > deviceCodeExpiration) {
                 throw Error(deviceCodeExpiredMsg)
             }
-            // Wait `retryInterval` milliseconds before next poll attempt.
-            await new Promise(resolve => setTimeout(resolve, retryInterval))
+
+            await sleep(retryInterval)
         }
     }
 
