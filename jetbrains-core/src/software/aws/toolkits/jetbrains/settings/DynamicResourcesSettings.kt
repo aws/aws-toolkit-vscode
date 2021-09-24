@@ -20,6 +20,7 @@ class DynamicResourcesSettings : PersistentStateComponent<DynamicResourcesConfig
 
     fun resourcesAvailable() = DynamicResourceSupportedTypes.getInstance().getSupportedTypes().size - state.selected.size
 
+
     override fun getState() = state
 
     override fun loadState(state: DynamicResourcesConfiguration) {

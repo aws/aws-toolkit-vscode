@@ -13,10 +13,10 @@ import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.services.dynamic.ResourceType
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -73,7 +73,7 @@ class ResourceSchemaProviderFactoryTest {
         val schemaFile = File.createTempFile("AWSLogLogGroupSchema", ".json")
         schemaFile.writeText(schema)
         resourceCache.addEntry(
-            projectRule.project, DynamicResources.getResourceSchema("AWS::Log::LogGroup"),
+            projectRule.project, CloudControlApiResources.getResourceSchema(resource.type.fullName),
             CompletableFuture.completedFuture(schemaFile)
         )
     }

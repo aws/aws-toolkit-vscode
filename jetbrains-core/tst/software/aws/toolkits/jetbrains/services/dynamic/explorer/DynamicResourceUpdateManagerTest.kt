@@ -11,14 +11,14 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.stub
-import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.amazon.awssdk.services.cloudformation.model.DeleteResourceRequest
-import software.amazon.awssdk.services.cloudformation.model.DeleteResourceResponse
-import software.amazon.awssdk.services.cloudformation.model.GetResourceRequestStatusRequest
-import software.amazon.awssdk.services.cloudformation.model.GetResourceRequestStatusResponse
-import software.amazon.awssdk.services.cloudformation.model.Operation
-import software.amazon.awssdk.services.cloudformation.model.OperationStatus
-import software.amazon.awssdk.services.cloudformation.model.ProgressEvent
+import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
+import software.amazon.awssdk.services.cloudcontrol.model.DeleteResourceRequest
+import software.amazon.awssdk.services.cloudcontrol.model.DeleteResourceResponse
+import software.amazon.awssdk.services.cloudcontrol.model.GetResourceRequestStatusRequest
+import software.amazon.awssdk.services.cloudcontrol.model.GetResourceRequestStatusResponse
+import software.amazon.awssdk.services.cloudcontrol.model.Operation
+import software.amazon.awssdk.services.cloudcontrol.model.OperationStatus
+import software.amazon.awssdk.services.cloudcontrol.model.ProgressEvent
 import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
@@ -41,7 +41,7 @@ class DynamicResourceUpdateManagerTest {
     @Rule
     val mockClientManager = MockClientManagerRule()
 
-    private lateinit var cloudFormationClient: CloudFormationClient
+    private lateinit var cloudFormationClient: CloudControlClient
     private lateinit var dynamicResourceUpdateManager: DynamicResourceUpdateManager
     private lateinit var connectionSettings: ConnectionSettings
     private val resource = DynamicResource(ResourceType("AWS::SampleService::Type", "SampleService", "Type"), "sampleIdentifier")

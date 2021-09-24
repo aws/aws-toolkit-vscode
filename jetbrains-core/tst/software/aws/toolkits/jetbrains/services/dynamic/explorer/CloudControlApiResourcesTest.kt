@@ -5,14 +5,14 @@ package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
+import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 
-class DynamicResourcesTest {
+class CloudControlApiResourcesTest {
 
     @Test
     fun `Correct resource name to be displayed is returned depending on the resource identifier name`() {
         val expectedDisplayName = "sampleIdentifier"
-        assertThat(DynamicResources.getResourceDisplayName("sampleIdentifier")).isEqualTo(expectedDisplayName)
-        assertThat(DynamicResources.getResourceDisplayName("arn:aws:sqs:us-west-2:1234567890:sampleIdentifier")).isEqualTo(expectedDisplayName)
+        assertThat(CloudControlApiResources.getResourceDisplayName("sampleIdentifier")).isEqualTo(expectedDisplayName)
+        assertThat(CloudControlApiResources.getResourceDisplayName("arn:aws:sqs:us-west-2:1234567890:sampleIdentifier")).isEqualTo(expectedDisplayName)
     }
 }

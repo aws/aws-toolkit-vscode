@@ -14,7 +14,6 @@ import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVir
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.InitialCreateDynamicResourceContent
-import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
@@ -49,7 +48,7 @@ class BeginCreateResourceAction : AnAction() {
 
     override fun update(e: AnActionEvent) {
         val file = e.getData(CommonDataKeys.PSI_FILE)?.virtualFile as? DynamicResourceVirtualFile ?: return
-        e.presentation.isEnabledAndVisible = file is CreateDynamicResourceVirtualFile && file !is ViewEditableDynamicResourceVirtualFile
+        e.presentation.isEnabledAndVisible = file is CreateDynamicResourceVirtualFile
         e.presentation.icon = AllIcons.Actions.Menu_saveall // TODO: Revisit and review this icon
         e.presentation.text = message("dynamic_resources.create_resource_action", file.dynamicResourceType)
     }

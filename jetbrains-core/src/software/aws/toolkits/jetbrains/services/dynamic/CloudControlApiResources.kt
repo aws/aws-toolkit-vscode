@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.dynamic
 
 import software.amazon.awssdk.arns.Arn
+import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.amazon.awssdk.services.cloudformation.model.Visibility
@@ -11,12 +12,23 @@ import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import java.io.File
 
-object DynamicResources {
+object CloudControlApiResources {
 
     fun listResources(typeName: String): Resource.Cached<List<DynamicResource>> =
-        ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.$typeName") {
-            DynamicResourcesProvider(this@ClientBackedCachedResource).listResources(typeName)
+        ClientBackedCachedResource(CloudControlClient::class, "cloudcontrolapi.dynamic.resources.$typeName") {
+            this.listResourcesPaginator {
+                it.typeName(typeName)
+            }.flatMap {
+                it.resourceDescriptions().map { resource ->
+                    DynamicResource(resourceTypeFromResourceTypeName(it.typeName()), resource.identifier())
+                }
+            }
         }
+
+    fun resourceTypeFromResourceTypeName(typeName: String): ResourceType {
+        val (_, svc, type) = typeName.split("::")
+        return ResourceType(typeName, svc, type)
+    }
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
 

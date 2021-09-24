@@ -11,7 +11,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.Messages.showYesNoDialog
-import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.resources.message
@@ -40,7 +39,7 @@ class SaveUpdatedResourceAction : AnAction() {
 
     override fun update(e: AnActionEvent) {
         val file = e.getData(CommonDataKeys.PSI_FILE)?.virtualFile
-        e.presentation.isEnabledAndVisible = file is ViewEditableDynamicResourceVirtualFile && file.isWritable && file !is CreateDynamicResourceVirtualFile
+        e.presentation.isEnabledAndVisible = file is ViewEditableDynamicResourceVirtualFile && file.isWritable
         e.presentation.icon = AllIcons.Actions.Menu_saveall
         val virtualFile = file as? ViewEditableDynamicResourceVirtualFile ?: return
         e.presentation.text = message("dynamic_resources.update_resource", virtualFile.dynamicResourceIdentifier.resourceIdentifier)
