@@ -457,8 +457,7 @@
                                             "options",
                                             "patch",
                                             "post",
-                                            "put",
-                                            ""
+                                            "put"
                                         ]
                                     },
                                     "payload": {
@@ -2160,7 +2159,6 @@
         "@types/mocha": "^7.0.2",
         "@types/node": "^10.14.22",
         "@types/readline-sync": "^1.4.3",
-        "@types/request": "^2.47.1",
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.0",
         "@types/sinonjs__fake-timers": "^6.0.3",
@@ -2220,6 +2218,7 @@
         "bytes": "^3.1.0",
         "cross-spawn": "^7.0.3",
         "fs-extra": "^10.0.0",
+        "got": "^11.8.2",
         "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^4.1.0",
@@ -2228,7 +2227,6 @@
         "mime-types": "^2.1.32",
         "moment": "^2.29.1",
         "portfinder": "^1.0.25",
-        "request": "^2.88.0",
         "semver": "^7.3.5",
         "sleep-promise": "^9.1.0",
         "strip-ansi": "^5.2.0",

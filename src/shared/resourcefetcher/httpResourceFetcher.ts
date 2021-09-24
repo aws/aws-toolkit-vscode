@@ -4,8 +4,7 @@
  */
 
 import * as fs from 'fs'
-// TODO: Move off of deprecated `request` to `got` or similar modern library.
-import * as request from 'request'
+import got, { Response, RequestError } from 'got'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
@@ -58,27 +57,18 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
     }
 
-    private async getResponseFromGetRequest(): Promise<request.Response> {
-        return new Promise<request.Response>((resolve, reject) => {
-            const call = request(
-                {
-                    url: this.url,
-                    headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
-                },
-                (err, response, body) => {
-                    if (err) {
-                        // swallow error to keep URL private
-                        // some AWS APIs use presigned links (e.g. Lambda.getFunction); showing these represent a securty concern.
-                        reject({ code: err.code })
-                    }
-                    resolve(response)
-                }
-            )
-
-            if (this.params.pipeLocation) {
-                call.pipe(fs.createWriteStream(this.params.pipeLocation))
-            }
+    private async getResponseFromGetRequest(): Promise<Response<string>> {
+        const response = await got(this.url, {
+            headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
+        }).catch((err: RequestError) => {
+            throw { code: err.code }
         })
+
+        if (this.params.pipeLocation) {
+            response.pipe(fs.createWriteStream(this.params.pipeLocation))
+        }
+
+        return response
     }
 }
 
