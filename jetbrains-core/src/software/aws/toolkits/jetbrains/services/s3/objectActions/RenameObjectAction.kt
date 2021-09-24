@@ -8,7 +8,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
@@ -36,7 +36,7 @@ class RenameObjectAction :
         if (newName == null) {
             S3Telemetry.renameObject(project, Result.Cancelled)
         } else {
-            val scope = applicationThreadPoolScope(project)
+            val scope = projectCoroutineScope(project)
             scope.launch {
                 try {
                     treeTable.bucket.renameObject(node.key, "${node.parent?.key}$newName")

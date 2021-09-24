@@ -25,12 +25,12 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundExce
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.LogResult
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.identifier
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.toLogResult
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.time.Duration
@@ -40,7 +40,8 @@ sealed class CloudWatchActor<T, Message>(
     protected val client: CloudWatchLogsClient,
     protected val table: TableView<T>
 ) : Disposable {
-    protected val coroutineScope = ApplicationThreadPoolScope("CloudWatchLogsActor", this)
+    @Suppress("LeakingThis")
+    protected val coroutineScope = disposableCoroutineScope(this)
     val channel = Channel<Message>()
 
     protected abstract val emptyText: String

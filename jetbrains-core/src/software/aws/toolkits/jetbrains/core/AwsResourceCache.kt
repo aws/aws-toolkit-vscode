@@ -21,6 +21,7 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
@@ -29,7 +30,6 @@ import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -265,7 +265,7 @@ class DefaultAwsResourceCache(
     private val maximumCacheEntries: Int,
     private val maintenanceInterval: Duration
 ) : AwsResourceCache, Disposable, ToolkitCredentialsChangeListener {
-    private val coroutineScope = ApplicationThreadPoolScope("DefaultAwsResourceCache", this)
+    private val coroutineScope = disposableCoroutineScope(this)
     @Suppress("unused")
     constructor() : this(Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
 

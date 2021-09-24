@@ -8,7 +8,7 @@ import com.intellij.openapi.project.Project
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.ecs.model.Service
 import software.aws.toolkits.jetbrains.AwsToolkit
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
@@ -22,7 +22,7 @@ class DisableEcsExecuteCommand :
         if (!settings.showExecuteCommandWarning ||
             EnableDisableExecuteCommandWarning(selected.nodeProject, enable = false, selected.value.serviceName()).showAndGet()
         ) {
-            val coroutineScope = applicationThreadPoolScope(selected.nodeProject)
+            val coroutineScope = projectCoroutineScope(selected.nodeProject)
             coroutineScope.launch {
                 disableExecuteCommand(selected.nodeProject, selected.value)
             }

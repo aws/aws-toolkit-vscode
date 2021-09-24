@@ -20,12 +20,12 @@ import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.services.dynamodb.DynamoDbUtils.executeStatementPaginator
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
 import software.aws.toolkits.jetbrains.services.dynamodb.toAttribute
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import java.beans.PropertyChangeListener
@@ -34,7 +34,7 @@ import javax.swing.JComponent
 class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDataHolderBase(), FileEditor {
     data class EditorState(var maxResults: Int = DEFAULT_MAX_RESULTS)
 
-    private val coroutineScope = ApplicationThreadPoolScope("DynamoDbTableEditor", this)
+    private val coroutineScope = disposableCoroutineScope(this)
     private val bg = getCoroutineBgContext()
     private val edt = getCoroutineUiContext()
 
