@@ -13,6 +13,7 @@ import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
 import { activateUriHandlers } from './mdeUriHandlers'
+import { promptDevFiles } from './wizards/devFiles'
 // import * as mde from '../shared/clients/mdeClient'
 
 /**
@@ -56,7 +57,15 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
     )
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.create', async (treenode: MdeRootNode) => {
-            mdeCreateCommand(treenode)
+            const testRemote = {
+                name: 'Test Remote',
+                fetchUrl: 'https://github.com/devfile/registry',
+            }
+            const devfileLocation = await promptDevFiles(testRemote).catch(e => console.log(e))
+            if (devfileLocation === undefined) {
+                return
+            }
+            mdeCreateCommand(treenode, { devfile: { location: devfileLocation } })
         })
     )
 }

@@ -15,6 +15,7 @@ import { Window } from '../shared/vscode/window'
 import { MdeRootNode } from './mdeRootNode'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { Timeout, waitTimeout, waitUntil } from '../shared/utilities/timeoutUtils'
+import { CreateEnvironmentRequest } from '../../types/clientmde'
 
 const localize = nls.loadMessageBundle()
 
@@ -90,6 +91,9 @@ export async function mdeConnectCommand(env: Pick<mde.MdeEnvironment, 'id'>): Pr
 
 export async function mdeCreateCommand(
     node?: MdeRootNode,
+    // this is just partial for now for testing
+    // it should instead be pass-through to the create API
+    options?: Partial<CreateEnvironmentRequest>,
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<mde.MdeEnvironment | undefined> {
@@ -107,7 +111,7 @@ export async function mdeCreateCommand(
             instanceType: 'mde.large',
             // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
             persistentStorage: { sizeInGiB: 0 },
-            sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
+            // sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
             // definition: {
             //     shellImage: `"{"\"shellImage\"": "\"mcr.microsoft.com/vscode/devcontainers/go\""}"`,
             // },
@@ -116,6 +120,7 @@ export async function mdeCreateCommand(
             },
             // instanceType: ...  // TODO?
             // ideRuntimes: ...  // TODO?
+            ...options,
         })
 
         getLogger().info('MDE: created environment: %O', env)
