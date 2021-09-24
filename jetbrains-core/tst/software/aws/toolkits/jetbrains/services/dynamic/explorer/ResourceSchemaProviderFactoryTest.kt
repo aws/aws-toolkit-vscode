@@ -37,7 +37,7 @@ class ResourceSchemaProviderFactoryTest {
     val resourceCache = MockResourceCacheRule()
 
     @Before
-    fun setup(){
+    fun setup() {
         val schema = "{\n" +
             "  \"properties\": {\n" +
             "    \"RetentionInDays\": {\n" +
@@ -82,7 +82,6 @@ class ResourceSchemaProviderFactoryTest {
     fun `Check whether schema is applied`() {
         val fixture = projectRule.fixture
         val jsonSchemaComplianceInspection = JsonSchemaComplianceInspection()
-
 
         try {
             fixture.enableInspections(jsonSchemaComplianceInspection)
