@@ -24,7 +24,6 @@ import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.CREDE
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode.REGIONS
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsMenuBuilder.Companion.connectionSettingsMenuBuilder
 import software.aws.toolkits.resources.message
-import java.awt.BorderLayout
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
@@ -174,15 +173,17 @@ class SettingsSelectorComboLabel(private val selectorLogic: SettingsSelectorLogi
     private val label = JBLabel()
 
     init {
-        add(label, BorderLayout.CENTER)
-        addToRight(JBLabel(AllIcons.General.ArrowDown))
+        val arrowLabel = JBLabel(AllIcons.General.ArrowDown)
+        addToCenter(label)
+        addToRight(arrowLabel)
 
-        addMouseListener(object : MouseAdapter() {
+        val clickAdapter = object : MouseAdapter() {
             override fun mouseClicked(e: MouseEvent) {
                 showPopup()
             }
-        })
-
+        }
+        label.addMouseListener(clickAdapter)
+        arrowLabel.addMouseListener(clickAdapter)
         selectorLogic.addChangeListener {
             updateText()
         }
