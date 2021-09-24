@@ -198,9 +198,7 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
-        <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileHelpNotificationProvider"/>
-
-        <editorFloatingToolbarProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.ResourceModelFileFloatingToolbarProvider"/>
+        <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
 
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
@@ -393,10 +391,10 @@ with what features/services are supported.
             <action id="dynamic.resource.create" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCreateResourceAction"/>
         </group>
         
-        <group id="aws.toolkit.explorer.dynamic.mutate.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.MutateResourceModelFloatingToolbarActionGroup">
-            <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.BeginCreateResourceAction"/>
-            <action id="dynamic.resource.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.EditResourceAction"/>
-            <action id="dynamic.resource.save.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.SaveUpdatedResourceAction"/>
+        <group id="aws.toolkit.explorer.dynamic.mutate.resource.file">
+            <action id="dynamic.resource.create.resource.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.BeginCreateResourceAction"/>
+            <action id="dynamic.resource.update.resource.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.EditResourceAction"/>
+            <action id="dynamic.resource.save.updated.resource.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.SaveUpdatedResourceAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.dynamic.additional.resources" popup="true" compact="false">

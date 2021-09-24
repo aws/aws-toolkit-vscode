@@ -9,8 +9,8 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNod
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings
 import software.aws.toolkits.resources.message
 

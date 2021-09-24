@@ -12,7 +12,6 @@ import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import java.io.File
 
-
 object CloudControlApiResources {
 
     fun listResources(typeName: String): Resource.Cached<List<DynamicResource>> =

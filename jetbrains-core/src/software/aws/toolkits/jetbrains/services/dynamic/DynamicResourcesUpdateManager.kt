@@ -66,7 +66,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     fun updateResource(dynamicResourceIdentifier: DynamicResourceIdentifier, patchOperation: String) {
         coroutineScope.launch {
             try {
-
                 val client = dynamicResourceIdentifier.connectionSettings.getClient<CloudControlClient>()
                 val progress = client.updateResource {
                     it.typeName(dynamicResourceIdentifier.resourceType)
