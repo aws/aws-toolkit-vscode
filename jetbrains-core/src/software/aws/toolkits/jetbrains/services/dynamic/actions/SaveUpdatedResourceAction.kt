@@ -10,6 +10,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.Messages.showYesNoDialog
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.resources.message
@@ -29,9 +30,11 @@ class SaveUpdatedResourceAction : AnAction() {
                 ) == Messages.NO
             ) {
                 file.isWritable = false
+                DynamicResourceFileActionProvider.updatePanel(file, psiFile.project)
             }
         } else {
             file.isWritable = false
+            DynamicResourceFileActionProvider.updatePanel(file, psiFile.project)
             DynamicResourceUpdateManager.getInstance(psiFile.project).updateResource(file.dynamicResourceIdentifier, patchOperations.toPrettyString())
         }
     }

@@ -33,7 +33,7 @@ class DynamicResourceFileActionProvider :
                 openBrowser(file.dynamicResourceType, project)
             }
 
-            createActionLabel(message("dynamic_resources.create").capitalize(), "dynamic.resource.create.resource.action")
+            createActionLabel(message("general.create"), "dynamic.resource.create.resource.action")
             text(message("dynamic_resources.create_resource_instruction"))
         }
     }
@@ -48,15 +48,11 @@ class DynamicResourceFileActionProvider :
             if (!file.isWritable) {
                 createActionLabel(message("dynamic_resources.edit_resource"), "dynamic.resource.update.resource.action")
                 text(message("dynamic_resources.edit_resource_instruction"))
-                update(file, project)
             } else {
                 createActionLabel(message("dynamic_resources.update_resource"), "dynamic.resource.save.updated.resource.action")
                 text(message("dynamic_resources.update_resource_instruction"))
-                update(file, project)
             }
         }
-
-        private fun update(file: VirtualFile, project: Project) = EditorNotifications.getInstance(project).updateNotifications(file)
     }
 
     companion object {
@@ -64,5 +60,7 @@ class DynamicResourceFileActionProvider :
 
         fun openBrowser(resourceType: String, project: Project) =
             BrowserLauncher.instance.browse(DynamicResourceSupportedTypes.getInstance().getDocs(resourceType), project = project)
+
+        fun updatePanel(file: VirtualFile, project: Project) = EditorNotifications.getInstance(project).updateNotifications(file)
     }
 }
