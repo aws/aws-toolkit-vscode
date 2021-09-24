@@ -117,7 +117,6 @@ fun MockResourceCacheRule.fillResourceCache(project: Project) {
         listOf("https://sqs.us-east-1.amazonaws.com/123456789012/test1")
     )
 
-
     this.addEntry(
         project, DynamicResources.getResourceSchema("AWS::Log::LogGroup"),
         CompletableFuture.completedFuture(getDummySchema())
@@ -128,7 +127,7 @@ fun makeMockList(clusterArn: String): Resource.Cached<List<String>> = mock {
     on { id }.thenReturn("ecs.list_services.$clusterArn")
 }
 
-fun getDummySchema() : File {
+fun getDummySchema(): File {
     val schema = "{\n" +
         "  \"properties\": {\n" +
         "    \"RetentionInDays\": {\n" +
