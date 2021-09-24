@@ -10,6 +10,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import software.aws.toolkits.core.utils.AttributeBag
 import software.aws.toolkits.core.utils.AttributeBagKey
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.tryOrNull
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -17,18 +19,48 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Cross step context that exists for the life of a step workflow execution. Keeps track of the global execution state and allows passing data between steps.
  */
 class Context(val project: Project) {
+    interface Listener {
+        fun onCancel() {}
+        fun onComplete() {}
+    }
+
     val workflowToken = UUID.randomUUID().toString()
     private val attributeMap = AttributeBag()
     private val isCancelled = AtomicBoolean(false)
     private val isCompleted = AtomicBoolean(false)
+    private val listeners = mutableListOf<Listener>()
 
     fun cancel() {
+        if (isCompleted()) {
+            return
+        }
+
         isCancelled.set(true)
         isCompleted.set(true)
+
+        listeners.forEach {
+            LOG.tryOrNull("Context callback failed") {
+                it.onCancel()
+            }
+        }
     }
 
     fun complete() {
+        if (isCompleted()) {
+            return
+        }
+
         isCompleted.set(true)
+
+        listeners.forEach {
+            LOG.tryOrNull("Context callback failed") {
+                it.onComplete()
+            }
+        }
+    }
+
+    fun addListener(listener: Listener) {
+        listeners.add(listener)
     }
 
     fun isCancelled() = isCancelled.get()
@@ -62,5 +94,9 @@ class Context(val project: Project) {
 
     fun <T : Any> putAttribute(key: AttributeBagKey<T>, data: T) {
         attributeMap.putData(key, data)
+    }
+
+    private companion object {
+        private val LOG = getLogger<Context>()
     }
 }
