@@ -12,7 +12,6 @@ import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.concurrency.Invoker
 import com.intellij.util.ui.tree.TreeUtil
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -20,7 +19,7 @@ import org.junit.Test
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerTreeStructure
 import software.aws.toolkits.jetbrains.core.fillResourceCache
-import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -47,7 +46,8 @@ class DynamicResourceTreeStructureProviderTest {
 
     @Test
     fun `dynamic resources settings node is first in subtree`() {
-        DynamicResourcesSettings.getInstance().selected = runBlocking { CloudControlApiResources.SUPPORTED_TYPES }.toSet()
+        DynamicResourcesSettings.getInstance().selected = DynamicResourceSupportedTypes.getInstance().getSupportedTypes().toSet()
+
         val countDownLatch = CountDownLatch(1)
 
         val model = Tree(createTreeModel())

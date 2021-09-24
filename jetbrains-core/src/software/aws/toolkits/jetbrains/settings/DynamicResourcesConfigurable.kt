@@ -3,25 +3,23 @@
 
 package software.aws.toolkits.jetbrains.settings
 
-import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.ui.CheckBoxList
 import com.intellij.ui.FilterComponent
 import com.intellij.ui.ListSpeedSearch
 import com.intellij.ui.layout.panel
-import kotlinx.coroutines.launch
-import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow
-import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OtherResourcesNode
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultListModel
 import javax.swing.JCheckBox
 import javax.swing.ListSelectionModel
 
-class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dynamic_resources_configurable.title")), Disposable {
-    private val coroutineScope = disposableCoroutineScope(this)
+class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dynamic_resources_configurable.title")) {
+
     private val checklistModel = DefaultListModel<JCheckBox>()
     private val checklist = CheckBoxList<String>(checklistModel)
     private val changeSet = mutableSetOf<Int>()
@@ -49,8 +47,9 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
     override fun createPanel() = panel {
         val allCheckboxes = mutableListOf<JCheckBox>()
         val selected = DynamicResourcesSettings.getInstance().state.selected
-        coroutineScope.launch {
-            CloudControlApiResources.SUPPORTED_TYPES.forEach {
+
+        ApplicationManager.getApplication().executeOnPooledThread {
+            DynamicResourceSupportedTypes.getInstance().getSupportedTypes().forEach {
                 checklist.addItem(it, it, it in selected)
             }
             allCheckboxes.addAll(checklist.map { _, checkbox -> checkbox })
@@ -137,6 +136,4 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
             this.map(fn)
         }
     }
-
-    override fun dispose() {}
 }

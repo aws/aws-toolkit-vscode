@@ -3,9 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
-import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.runInEdtAndWait
 import com.jetbrains.jsonSchema.impl.inspections.JsonSchemaComplianceInspection
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
@@ -27,20 +28,19 @@ class ResourceSchemaProviderFactoryTest {
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
 
-    @Rule
-    @JvmField
-    val disposableRule = DisposableRule()
-
     @JvmField
     @Rule
     val resourceCache = MockResourceCacheRule()
 
-    private val resource = DynamicResource(ResourceType("AWS::Logs::LogGroup", "Logs", "LogGroup"), "sampleIdentifier")
+    @Rule
+    @JvmField
+    val ruleChain = RuleChain(
+        projectRule,
+        resourceCache
+    )
 
-    @Test
-    fun `Check whether schema is applied`() {
-        val fixture = projectRule.fixture
-        val jsonSchemaComplianceInspection = JsonSchemaComplianceInspection()
+    @Before
+    fun setup() {
         val schema = "{\n" +
             "  \"properties\": {\n" +
             "    \"RetentionInDays\": {\n" +
@@ -70,13 +70,20 @@ class ResourceSchemaProviderFactoryTest {
             "  }\n" +
             "}\n"
 
-        val schemaFile = File.createTempFile("AWSLogsLogGroupSchema", ".json")
+        val schemaFile = File.createTempFile("AWSLogLogGroupSchema", ".json")
         schemaFile.writeText(schema)
-
         resourceCache.addEntry(
             projectRule.project, CloudControlApiResources.getResourceSchema(resource.type.fullName),
             CompletableFuture.completedFuture(schemaFile)
         )
+    }
+
+    private val resource = DynamicResource(ResourceType("AWS::Log::LogGroup", "Log", "LogGroup"), "sampleIdentifier")
+
+    @Test
+    fun `Check whether schema is applied`() {
+        val fixture = projectRule.fixture
+        val jsonSchemaComplianceInspection = JsonSchemaComplianceInspection()
 
         try {
             fixture.enableInspections(jsonSchemaComplianceInspection)
@@ -93,6 +100,7 @@ class ResourceSchemaProviderFactoryTest {
             }
         } finally {
             fixture.disableInspections(jsonSchemaComplianceInspection)
+            DynamicResourceSchemaMapping.getInstance().removeCurrentlyActiveResourceTypes(projectRule.project)
         }
     }
 }
