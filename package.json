@@ -2230,7 +2230,6 @@
         "portfinder": "^1.0.25",
         "request": "^2.88.0",
         "semver": "^7.3.5",
-        "sleep-promise": "^9.1.0",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
         "typescript": "^4.4.2",

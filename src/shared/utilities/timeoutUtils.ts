@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { sleep } from './promiseUtilities'
+
 export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
 export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
 export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
@@ -150,7 +152,7 @@ export async function waitUntil<T>(
             return undefined
         }
 
-        await new Promise(r => setTimeout(r, opt.interval))
+        await sleep(opt.interval)
     }
 }
 
