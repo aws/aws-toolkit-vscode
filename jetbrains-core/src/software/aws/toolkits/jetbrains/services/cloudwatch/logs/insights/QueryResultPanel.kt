@@ -13,8 +13,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
 import software.aws.toolkits.telemetry.InsightsDialogOpenSource
@@ -25,7 +25,7 @@ class QueryResultPanel(
     queryId: String,
     private val queryDetails: QueryDetails
 ) : SimpleToolWindowPanel(false, true), Disposable {
-    private val coroutineScope = ApplicationThreadPoolScope(ID, this)
+    private val coroutineScope = disposableCoroutineScope(this)
     init {
         val resultsTable = QueryResultsTable(project, queryDetails.connectionSettings, fields, queryId)
         Disposer.register(this, resultsTable)

@@ -21,11 +21,11 @@ import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.impl.XDebugSessionImpl
 import kotlinx.coroutines.withContext
 import software.aws.toolkits.core.lambda.LambdaRuntime
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.RuntimeDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 
 class JavaRuntimeDebugSupport : RuntimeDebugSupport {
     override suspend fun createDebugProcess(

@@ -11,7 +11,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.sso.SsoClient
-import software.amazon.awssdk.services.ssooidc.model.AccessDeniedException
+import software.amazon.awssdk.services.sso.model.UnauthorizedException
 import software.amazon.awssdk.utils.cache.CachedSupplier
 import software.amazon.awssdk.utils.cache.RefreshResult
 import java.time.Duration
@@ -43,7 +43,7 @@ class SsoCredentialProvider(
                 it.accountId(ssoAccount)
                 it.roleName(ssoRole)
             }
-        } catch (e: AccessDeniedException) {
+        } catch (e: UnauthorizedException) {
             // OIDC access token was rejected, invalidate the cache and throw
             ssoAccessTokenProvider.invalidate()
             throw e

@@ -18,7 +18,7 @@ import software.aws.toolkits.core.utils.deleteIfExists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.outputStream
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3Object
@@ -195,7 +195,7 @@ class DownloadObjectAction :
     }
 
     private fun downloadAll(project: Project, files: List<DownloadInfo>) {
-        val scope = applicationThreadPoolScope(project)
+        val scope = projectCoroutineScope(project)
         scope.launch {
             try {
                 files.forEach {

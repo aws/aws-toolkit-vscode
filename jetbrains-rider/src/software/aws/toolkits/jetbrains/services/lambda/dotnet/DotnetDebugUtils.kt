@@ -32,15 +32,15 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.FindDockerContainer.Companion.DOCKER_CONTAINER
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.FindPid.Companion.DOTNET_PID
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
 import software.aws.toolkits.jetbrains.utils.compatability.createNetCoreAttachStartInfo
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import java.net.InetAddress
 import java.util.Timer
@@ -87,7 +87,7 @@ object DotnetDebugUtils {
             RiderDebuggerWorkerModelManager.createDebuggerModel(debuggerLifetime, protocol)
         }
 
-        ApplicationThreadPoolScope(environment.runProfile.name, environment).launch(bgContext) {
+        disposableCoroutineScope(environment, environment.runProfile.name).launch(bgContext) {
             try {
                 val dockerContainer = context.getRequiredAttribute(DOCKER_CONTAINER)
                 val pid = context.getRequiredAttribute(DOTNET_PID)
