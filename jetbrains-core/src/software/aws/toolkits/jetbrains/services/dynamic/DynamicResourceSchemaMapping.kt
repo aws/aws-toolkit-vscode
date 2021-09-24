@@ -24,6 +24,12 @@ class DynamicResourceSchemaMapping {
 
     fun getCurrentlyActiveResourceTypes(): Set<String> = currentlyActiveResourceTypes
 
+    //For test purposes only
+    fun removeCurrentlyActiveResourceTypes(project: Project){
+        currentlyActiveResourceTypes.remove("AWS::Log::LogGroup")
+        JsonSchemaService.Impl.get(project).reset()
+    }
+
     companion object {
         fun getInstance(): DynamicResourceSchemaMapping = service()
     }
