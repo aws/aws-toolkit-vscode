@@ -8,7 +8,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 
 class HelpIdTranslator : WebHelpProvider() {
-
     override fun getHelpPageUrl(helpTopicId: String) = HELP_REGISTRY.getOrElse(helpTopicId) {
         LOGGER.warn { "Missing id $helpTopicId" }
         DEFAULT_LOCATION
