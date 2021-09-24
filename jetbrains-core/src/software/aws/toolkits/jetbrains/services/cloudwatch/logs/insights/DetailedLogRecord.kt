@@ -18,9 +18,9 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LocationCrumbs
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.installClickListener
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
@@ -32,7 +32,7 @@ class DetailedLogRecord(
     private val client: CloudWatchLogsClient,
     private val logRecordPointer: String
 ) : Disposable {
-    private val coroutineScope = ApplicationThreadPoolScope("DetailedLogEvents", this)
+    private val coroutineScope = disposableCoroutineScope(this)
     val title = message("cloudwatch.logs.log_record", logRecordPointer)
 
     private lateinit var breadcrumbHolder: JPanel

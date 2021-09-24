@@ -17,8 +17,8 @@ import software.amazon.awssdk.services.apprunner.model.ServiceStatus
 import software.amazon.awssdk.services.apprunner.model.ServiceSummary
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.help.HelpIds
@@ -59,7 +59,7 @@ class ResumeServiceAction :
         }
 
         if (dialog.showAndGet()) {
-            val scope = applicationThreadPoolScope(selected.nodeProject)
+            val scope = projectCoroutineScope(selected.nodeProject)
             scope.launch {
                 performResume(selected.nodeProject, selected.nodeProject.awsClient(), selected.service)
             }

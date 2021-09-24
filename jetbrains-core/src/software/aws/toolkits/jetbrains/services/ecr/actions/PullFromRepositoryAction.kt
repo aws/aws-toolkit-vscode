@@ -15,9 +15,9 @@ import com.intellij.ui.layout.panel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.ecr.EcrClient
-import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
 import software.aws.toolkits.jetbrains.services.ecr.EcrLogin
 import software.aws.toolkits.jetbrains.services.ecr.EcrRepositoryNode
@@ -26,7 +26,6 @@ import software.aws.toolkits.jetbrains.services.ecr.getDockerLogin
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
-import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.resources.message
 
 class PullFromRepositoryAction : EcrDockerAction() {
@@ -40,7 +39,7 @@ class PullFromRepositoryAction : EcrDockerAction() {
 
         val (repo, image) = dialog.getPullRequest()
         val client: EcrClient = project.awsClient()
-        val scope = applicationThreadPoolScope(project)
+        val scope = projectCoroutineScope(project)
         scope.launch {
             val runtime = scope.dockerServerRuntimeAsync().await()
             val authData = withContext(getCoroutineBgContext()) {
@@ -48,10 +47,6 @@ class PullFromRepositoryAction : EcrDockerAction() {
             }
             PullFromEcrTask(project, authData.getDockerLogin(), repo, image, runtime).queue()
         }
-    }
-
-    private companion object {
-        val LOG = getLogger<PullFromRepositoryAction>()
     }
 }
 

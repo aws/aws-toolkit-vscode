@@ -8,8 +8,8 @@ import com.intellij.openapi.project.DumbAware
 import icons.AwsIcons
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.checkIfLogGroupExists
@@ -24,7 +24,7 @@ class LambdaLogGroupAction :
         val project = selected.nodeProject
         val client = project.awsClient<CloudWatchLogsClient>()
         val logGroup = "/aws/lambda/${selected.functionName()}"
-        val scope = applicationThreadPoolScope(project)
+        val scope = projectCoroutineScope(project)
         scope.launch {
             if (client.checkIfLogGroupExists(logGroup)) {
                 val window = CloudWatchLogWindow.getInstance(project)

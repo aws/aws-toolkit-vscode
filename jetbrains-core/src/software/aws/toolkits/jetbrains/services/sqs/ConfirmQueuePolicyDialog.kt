@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.ui.ConfirmPolicyPanel
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
@@ -31,7 +31,7 @@ class ConfirmQueuePolicyDialog(
     private val existingPolicy: String?,
     parent: Component? = null
 ) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
-    private val coroutineScope = applicationThreadPoolScope(project)
+    private val coroutineScope = projectCoroutineScope(project)
     private val policyStatement = createSqsSnsSubscribePolicyStatement(queue.arn, topicArn)
 
     val view = ConfirmPolicyPanel(project, message("sqs.confirm.iam.warning.sqs_queue_permissions"))

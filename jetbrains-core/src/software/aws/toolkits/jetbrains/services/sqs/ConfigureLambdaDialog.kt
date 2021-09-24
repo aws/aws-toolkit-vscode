@@ -20,8 +20,8 @@ import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.core.utils.Waiters.waitUntil
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -33,7 +33,7 @@ class ConfigureLambdaDialog(
     private val project: Project,
     private val queue: Queue
 ) : DialogWrapper(project) {
-    private val coroutineScope = applicationThreadPoolScope(project)
+    private val coroutineScope = projectCoroutineScope(project)
     private val lambdaClient: LambdaClient = project.awsClient()
     private val iamClient: IamClient = project.awsClient()
     val view = ConfigureLambdaPanel(project)

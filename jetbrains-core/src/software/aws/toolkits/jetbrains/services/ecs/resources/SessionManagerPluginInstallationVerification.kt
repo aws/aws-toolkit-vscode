@@ -8,8 +8,8 @@ import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.runBlocking
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.services.ecs.exec.SessionManagerPluginWarning
-import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 
 object SessionManagerPluginInstallationVerification {
     private fun checkInstallation(): Boolean = runBlocking(getCoroutineBgContext()) {
