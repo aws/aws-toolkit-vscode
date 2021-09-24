@@ -13,6 +13,7 @@ import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
@@ -38,42 +39,7 @@ class ResourceSchemaProviderFactoryTest {
 
     @Before
     fun setup() {
-        val schema = "{\n" +
-            "  \"properties\": {\n" +
-            "    \"RetentionInDays\": {\n" +
-            "      \"description\": \"The number of days to retain the log events " +
-            "in the specified log group. Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, and 3653.\",\n" +
-            "      \"type\": \"integer\",\n" +
-            "      \"enum\": [\n" +
-            "        1,\n" +
-            "        3,\n" +
-            "        5,\n" +
-            "        7,\n" +
-            "        14,\n" +
-            "        30,\n" +
-            "        60,\n" +
-            "        90,\n" +
-            "        120,\n" +
-            "        150,\n" +
-            "        180,\n" +
-            "        365,\n" +
-            "        400,\n" +
-            "        545,\n" +
-            "        731,\n" +
-            "        1827,\n" +
-            "        3653\n" +
-            "      ]\n" +
-            "    }" +
-            "  }\n" +
-            "}\n"
-
-        val schemaFile = File.createTempFile("AWSLogLogGroupSchema", ".json")
-        schemaFile.writeText(schema)
-
-        resourceCache.addEntry(
-            projectRule.project, DynamicResources.getResourceSchema(resource.type.fullName),
-            CompletableFuture.completedFuture(schemaFile)
-        )
+        resourceCache.fillResourceCache(projectRule.project)
     }
 
     private val resource = DynamicResource(ResourceType("AWS::Log::LogGroup", "Log", "LogGroup"), "sampleIdentifier")

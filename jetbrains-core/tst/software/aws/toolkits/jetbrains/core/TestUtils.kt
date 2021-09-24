@@ -28,6 +28,7 @@ import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
+import java.io.File
 import java.util.concurrent.CompletableFuture
 
 fun MockResourceCacheRule.fillResourceCache(project: Project) {
@@ -115,8 +116,49 @@ fun MockResourceCacheRule.fillResourceCache(project: Project) {
         SqsResources.LIST_QUEUE_URLS,
         listOf("https://sqs.us-east-1.amazonaws.com/123456789012/test1")
     )
+
+
+    this.addEntry(
+        project, DynamicResources.getResourceSchema("AWS::Log::LogGroup"),
+        CompletableFuture.completedFuture(getDummySchema())
+    )
 }
 
 fun makeMockList(clusterArn: String): Resource.Cached<List<String>> = mock {
     on { id }.thenReturn("ecs.list_services.$clusterArn")
+}
+
+fun getDummySchema() : File {
+    val schema = "{\n" +
+        "  \"properties\": {\n" +
+        "    \"RetentionInDays\": {\n" +
+        "      \"description\": \"The number of days to retain the log events " +
+        "in the specified log group. Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, and 3653.\",\n" +
+        "      \"type\": \"integer\",\n" +
+        "      \"enum\": [\n" +
+        "        1,\n" +
+        "        3,\n" +
+        "        5,\n" +
+        "        7,\n" +
+        "        14,\n" +
+        "        30,\n" +
+        "        60,\n" +
+        "        90,\n" +
+        "        120,\n" +
+        "        150,\n" +
+        "        180,\n" +
+        "        365,\n" +
+        "        400,\n" +
+        "        545,\n" +
+        "        731,\n" +
+        "        1827,\n" +
+        "        3653\n" +
+        "      ]\n" +
+        "    }" +
+        "  }\n" +
+        "}\n"
+
+    val schemaFile = File.createTempFile("AWSLogLogGroupSchema", ".json")
+    schemaFile.writeText(schema)
+    return schemaFile
 }
