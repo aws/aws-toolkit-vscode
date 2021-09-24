@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.amazon.awssdk.services.cloudcontrol.model.Operation
 import software.amazon.awssdk.services.cloudcontrol.model.OperationStatus
 import software.amazon.awssdk.services.cloudcontrol.model.ProgressEvent
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.getClient
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceTelemetryResources.addOperationToTelemetry
@@ -30,7 +30,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     // TODO: Make DynamicResourceUpdateManager an application-level service
 
     private val pendingMutations = ConcurrentLinkedQueue<ResourceMutationState>()
-    private val coroutineScope = project.applicationThreadPoolScope("DynamicResourceUpdateManager")
+    private val coroutineScope = projectCoroutineScope(project)
     private val alarm: Alarm =
         AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
 

@@ -19,13 +19,13 @@ import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.sqs.MAX_NUMBER_OF_POLLED_MESSAGES
 import software.aws.toolkits.jetbrains.services.sqs.Queue
 import software.aws.toolkits.jetbrains.services.sqs.actions.CopyMessageAction
 import software.aws.toolkits.jetbrains.services.sqs.actions.PurgeQueueAction
 import software.aws.toolkits.jetbrains.services.sqs.approximateNumberOfMessages
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.resources.message
 import javax.swing.JButton
 import javax.swing.JLabel
@@ -37,7 +37,7 @@ class PollMessagePane(
     private val queue: Queue,
     disposable: Disposable
 ) {
-    private val coroutineScope = ApplicationThreadPoolScope("PollMessagesPane", disposable)
+    private val coroutineScope = projectCoroutineScope(project)
     private val bgContext = getCoroutineBgContext()
 
     lateinit var component: JPanel

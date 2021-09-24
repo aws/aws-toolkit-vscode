@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.settings
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.ui.CheckBoxList
@@ -47,10 +48,12 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
         val allCheckboxes = mutableListOf<JCheckBox>()
         val selected = DynamicResourcesSettings.getInstance().state.selected
 
-        DynamicResourceSupportedTypes.getInstance().getSupportedTypes().forEach {
-            checklist.addItem(it, it, it in selected)
+        ApplicationManager.getApplication().executeOnPooledThread {
+            DynamicResourceSupportedTypes.getInstance().getSupportedTypes().forEach {
+                checklist.addItem(it, it, it in selected)
+            }
+            allCheckboxes.addAll(checklist.map { _, checkbox -> checkbox })
         }
-        allCheckboxes.addAll(checklist.map { _, checkbox -> checkbox })
 
         row {
             // filter

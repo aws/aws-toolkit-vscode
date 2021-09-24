@@ -19,13 +19,13 @@ import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditorAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.TailLogsAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogsAction
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.ui.onEmpty
 import software.aws.toolkits.jetbrains.utils.ui.onEnter
 import software.aws.toolkits.resources.message
@@ -41,7 +41,7 @@ class CloudWatchLogStream(
     private val duration: Duration? = null,
     streamLogs: Boolean = false
 ) : Disposable {
-    private val coroutineScope = ApplicationThreadPoolScope("CloudWatchLogStream", this)
+    private val coroutineScope = disposableCoroutineScope(this)
     lateinit var content: JPanel
         private set
     private lateinit var breadcrumbHolder: JPanel

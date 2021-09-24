@@ -12,4 +12,5 @@ class EditResourceAction : AnAction() {
         val file = e.getData(CommonDataKeys.PSI_FILE)?.virtualFile
         file?.isWritable = true
     }
+
 }
