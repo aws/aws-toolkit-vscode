@@ -25,7 +25,6 @@ class OtherResourcesNode(project: Project, service: AwsExplorerServiceNode) :
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> {
         val shouldShow = DynamicResourcesSettings.getInstance().selected
-
         val resourcesAvailableInRegion = nodeProject.getResourceNow(CloudControlApiResources.listTypes()).toSet()
 
         return listOf(DynamicResourceSelectorNode(nodeProject)) + DynamicResourceSupportedTypes.getInstance().getSupportedTypes()
