@@ -23,7 +23,7 @@ class ResourceSchemaProviderFactory : JsonSchemaProviderFactory {
                 override fun getName(): String = "$it schema"
 
                 override fun getSchemaFile(): VirtualFile? {
-                    val schema = project.getResourceNow(DynamicResources.getResourceSchema(it))
+                    val schema = project.getResourceNow(CloudControlApiResources.getResourceSchema(it))
                     return LocalFileSystem.getInstance().findFileByNioFile(schema.toPath())
                 }
 

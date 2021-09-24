@@ -24,7 +24,7 @@ class CreateDynamicResourceVirtualFile(val connectionSettings: ConnectionSetting
 
 class ViewEditableDynamicResourceVirtualFile(val dynamicResourceIdentifier: DynamicResourceIdentifier, fileContent: String) :
     DynamicResourceVirtualFile(
-        DynamicResources.getResourceDisplayName(dynamicResourceIdentifier.resourceIdentifier),
+        CloudControlApiResources.getResourceDisplayName(dynamicResourceIdentifier.resourceIdentifier),
         dynamicResourceIdentifier.resourceType,
         fileContent
     )
