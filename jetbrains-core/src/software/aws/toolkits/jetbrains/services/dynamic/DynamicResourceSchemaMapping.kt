@@ -7,6 +7,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.jetbrains.jsonSchema.JsonSchemaMappingsProjectConfiguration
 import com.jetbrains.jsonSchema.ide.JsonSchemaService
+import org.jetbrains.annotations.TestOnly
 
 class DynamicResourceSchemaMapping {
     private val currentlyActiveResourceTypes: MutableSet<String> = mutableSetOf()
@@ -24,9 +25,9 @@ class DynamicResourceSchemaMapping {
 
     fun getCurrentlyActiveResourceTypes(): Set<String> = currentlyActiveResourceTypes
 
-    // For test purposes only
+    @TestOnly
     fun removeCurrentlyActiveResourceTypes(project: Project) {
-        currentlyActiveResourceTypes.remove("AWS::Log::LogGroup")
+        currentlyActiveResourceTypes.clear()
         JsonSchemaService.Impl.get(project).reset()
     }
 
