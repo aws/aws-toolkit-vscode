@@ -10,7 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
@@ -44,7 +44,7 @@ class DeleteObjectAction : S3ObjectAction(message("s3.delete.object.action"), Al
         if (response != Messages.OK) {
             S3Telemetry.deleteObject(project, Result.Cancelled)
         } else {
-            val scope = applicationThreadPoolScope(project)
+            val scope = projectCoroutineScope(project)
             scope.launch {
                 try {
                     treeTable.bucket.deleteObjects(nodes.map { it.key })

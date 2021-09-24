@@ -16,7 +16,7 @@ import com.intellij.util.AlarmFactory
 import kotlinx.coroutines.launch
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.AsyncPromise
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import java.awt.Component
 import java.util.concurrent.Future
@@ -31,7 +31,7 @@ class AsyncComboBox<T>(
     customizer: SimpleListCellRenderer.Customizer<in T>? = null
 ) : ComboBox<T>(comboBoxModel), Disposable {
     private val loading = AtomicBoolean(false)
-    private val scope = ApplicationThreadPoolScope("AsyncComboBox", this)
+    private val scope = disposableCoroutineScope(this)
     init {
         renderer = object : SimpleListCellRenderer<T>() {
             override fun getListCellRendererComponent(

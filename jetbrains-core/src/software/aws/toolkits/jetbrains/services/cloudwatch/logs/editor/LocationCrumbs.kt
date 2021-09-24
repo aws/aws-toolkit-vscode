@@ -57,7 +57,7 @@ class LocationCrumbs(project: Project, logGroup: String, logStream: String? = nu
             null,
             object : AbstractAction(message("cloudwatch.logs.view_log_streams")), DumbAware {
                 override fun actionPerformed(e: ActionEvent?): Unit = runBlocking {
-                    CloudWatchLogWindow.getInstance(project)?.showLogGroup(logGroup)
+                    CloudWatchLogWindow.getInstance(project).showLogGroup(logGroup)
                 }
             }
         ),
@@ -67,8 +67,8 @@ class LocationCrumbs(project: Project, logGroup: String, logStream: String? = nu
                 it,
                 null,
                 object : AbstractAction(message("cloudwatch.logs.view_log_stream")), DumbAware {
-                    override fun actionPerformed(e: ActionEvent?): Unit = runBlocking {
-                        CloudWatchLogWindow.getInstance(project)?.showLogStream(logGroup, it)
+                    override fun actionPerformed(e: ActionEvent?) {
+                        CloudWatchLogWindow.getInstance(project).showLogStream(logGroup, it)
                     }
                 }
             )

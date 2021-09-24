@@ -17,8 +17,8 @@ import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.LogDriver
 import software.amazon.awssdk.services.ecs.model.Service
 import software.aws.toolkits.jetbrains.AwsToolkit
-import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.withAwsConnection
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeActionGroup
 import software.aws.toolkits.jetbrains.core.getResource
@@ -122,7 +122,7 @@ class ContainerLogsAction(
             }
     }
 
-    private suspend fun showSingleStream(window: CloudWatchLogWindow, logGroup: String, logStream: String): Boolean {
+    private fun showSingleStream(window: CloudWatchLogWindow, logGroup: String, logStream: String): Boolean {
         if (!project.awsClient<CloudWatchLogsClient>().checkIfLogStreamExists(logGroup, logStream)) {
             notifyInfo(message("ecs.service.logs.no_log_stream"))
             return false
@@ -136,7 +136,7 @@ class ExecuteCommandAction(
     private val project: Project,
     private val container: ContainerDetails
 ) : AnAction(message("ecs.execute_command_run"), null, null) {
-    private val coroutineScope = applicationThreadPoolScope(project)
+    private val coroutineScope = projectCoroutineScope(project)
     override fun actionPerformed(e: AnActionEvent) {
         coroutineScope.launch {
             if (EcsExecUtils.ensureServiceIsInStableState(project, container.service)) {
@@ -162,7 +162,7 @@ class ExecuteCommandInShellAction(
     private val project: Project,
     private val container: ContainerDetails
 ) : AnAction(message("ecs.execute_command_run_command_in_shell"), null, null) {
-    private val coroutineScope = applicationThreadPoolScope(project)
+    private val coroutineScope = projectCoroutineScope(project)
     override fun actionPerformed(e: AnActionEvent) {
         coroutineScope.launch {
             if (EcsExecUtils.ensureServiceIsInStableState(project, container.service)) {
