@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 import { tickPromise } from '../../../test/testUtil'
+import { sleep } from '../../../shared/utilities/promiseUtilities'
 
 describe('timeoutUtils', async function () {
     let clock: FakeTimers.InstalledClock
@@ -146,7 +147,7 @@ describe('timeoutUtils', async function () {
 
         // Simple wrapper that waits until calling testFunction
         async function slowTestFunction(): Promise<number | undefined> {
-            await new Promise(r => setTimeout(r, testSettings.functionDelay))
+            await sleep(testSettings.functionDelay)
             return testFunction()
         }
 
@@ -270,7 +271,7 @@ describe('timeoutUtils', async function () {
         })
 
         async function testFunction(delay: number = 500, error?: Error) {
-            await new Promise(r => setTimeout(r, delay))
+            await sleep(delay)
 
             if (error) {
                 throw error

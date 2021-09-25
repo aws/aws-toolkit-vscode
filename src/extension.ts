@@ -30,7 +30,7 @@ import {
     githubCreateIssueUrl,
     githubUrl,
 } from './shared/constants'
-import { DefaultAwsContext } from './shared/defaultAwsContext'
+import { DefaultAwsContext } from './shared/awsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
 import {
