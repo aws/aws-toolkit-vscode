@@ -23,16 +23,16 @@ export async function activate(
     regionProvider: RegionProvider,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    await registerSsmDocumentCommands(extensionContext, awsContext, regionProvider, outputChannel)
-    await activateSSMLanguageServer(extensionContext)
+    registerSsmDocumentCommands(extensionContext, awsContext, regionProvider, outputChannel)
+    activateSSMLanguageServer(extensionContext)
 }
 
-async function registerSsmDocumentCommands(
+function registerSsmDocumentCommands(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
     regionProvider: RegionProvider,
     outputChannel: vscode.OutputChannel
-): Promise<void> {
+): void {
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.createLocalDocument', async () => {
             await createSsmDocumentFromTemplate(extensionContext)

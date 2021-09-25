@@ -216,12 +216,12 @@ async function activateCodeLensProviders(
     try {
         const registry = new CodelensRootRegistry()
 
-        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
-        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
-        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
-        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
+        registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
+        registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
+        registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+        registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
+        registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
+        registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
 
         ext.codelensRootRegistry = registry
     } catch (e) {
