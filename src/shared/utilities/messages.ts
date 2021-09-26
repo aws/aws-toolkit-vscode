@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { LocalizedString } from 'vscode-nls'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
@@ -11,7 +12,7 @@ import { ext } from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { Timeout } from './timeoutUtils'
 
-export function makeFailedWriteMessage(filename: string): string {
+export function makeFailedWriteMessage(filename: string): LocalizedString {
     const message = localize('AWS.failedToWrite', '{0}: Failed to write "{1}".', getIdeProperties().company, filename)
 
     return message
@@ -28,7 +29,7 @@ export function makeFailedWriteMessage(filename: string): string {
  * dismissed, and returns the selected button text.
  */
 export async function showViewLogsMessage(
-    message: string,
+    message: LocalizedString,
     window: Window = ext.window,
     kind: 'info' | 'warn' | 'error' = 'error',
     extraItems: string[] = []
@@ -66,7 +67,7 @@ export async function showViewLogsMessage(
  * @param window the window.
  */
 export async function showConfirmationMessage(
-    { prompt, confirm, cancel }: { prompt: string; confirm: string; cancel: string },
+    { prompt, confirm, cancel }: { prompt: LocalizedString; confirm: LocalizedString; cancel: LocalizedString },
     window: Window
 ): Promise<boolean> {
     const confirmItem: vscode.MessageItem = { title: confirm }

@@ -5,6 +5,7 @@
 
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
+import { confirm, cancel } from '../../shared/localizedText'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { AppRunnerServiceNode } from '../explorer/apprunnerServiceNode'
@@ -25,7 +26,7 @@ export async function pauseService(node: AppRunnerServiceNode): Promise<void> {
             'Your service will be unavailable while paused. ' +
                 'You can resume the service once the pause operation is complete.'
         )
-        const confirmationOptions = { prompt: notifyPrompt, confirm: 'Confirm', cancel: 'Cancel' }
+        const confirmationOptions = { prompt: notifyPrompt, confirm, cancel }
 
         if (shouldNotify && !(await showConfirmationMessage(confirmationOptions, vscode.window))) {
             telemetryResult = 'Cancelled'
