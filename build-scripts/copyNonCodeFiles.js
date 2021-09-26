@@ -14,6 +14,7 @@ const outRoot = path.join(repoRoot, 'dist')
 // May be individual files or entire directories.
 const relativePaths = [
     path.join('src', 'templates'),
+    path.join('src', 'cdk', 'schema'),
     path.join('src', 'test', 'shared', 'cloudformation', 'yaml'),
     path.join('src', 'testFixtures'),
 ]

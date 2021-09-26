@@ -1995,6 +1995,10 @@
                 "url": "./dist/src/templates/templates.json"
             },
             {
+                "fileMatch": "cdk.json",
+                "url": "./dist/src/cdk/schema/cdk.json"
+            },
+            {
                 "fileMatch": "*ecs-task-def.json",
                 "url": "https://ecs-intellisense.s3-us-west-2.amazonaws.com/task-definition/schema.json"
             }

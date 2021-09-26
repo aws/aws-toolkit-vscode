@@ -1,0 +1,233 @@
+{
+    "$id": "https://github.com/aws/aws-toolkit-vscode/tree/master/src/cdk/schema/cdk.json",
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "description": "Provides defaults values for AWS CDK Toolkit commands options, see `npx cdk --help`",
+    "type": "object",
+    "properties": {
+        "app": {
+            "description": "command-line for executing your app or a cloud assembly directory",
+            "examples": [
+                "node bin/my-app.js",
+                "npx ts-node --prefer-ts-exts bin/cdk-app.ts",
+                "node --abort-on-uncaught-exception --enable-source-maps --unhandled-rejections=strict --experimental-specifier-resolution=node --experimental-json-modules --loader ts-node/esm lib/app.ts"
+            ],
+            "type": "string",
+            "minLength": 1
+        },
+        "output": {
+            "description": "Emits the synthesized cloud assembly into a directory",
+            "default": "cdk.out",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+        },
+        "plugin": {
+            "type": "array",
+            "description": "Name or path of a node package(s) that extend the CDK features.",
+            "examples": [
+                "cdk-multi-profile-plugin",
+                "cdk-assume-role-plugin",
+                "cdk-cross-account-plugin",
+                "./lib/custom-cdk-plugin.js"
+            ],
+            "additionalItems": false,
+            "uniqueItems": true,
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "trace": {
+            "description": "Print trace for stack warnings",
+            "type": "boolean"
+        },
+        "strict": {
+            "description": "Do not construct stacks with warnings",
+            "type": "boolean"
+        },
+        "lookups": {
+            "description": "Perform context lookups (synthesis fails if this is disabled and context lookups need to be performed)",
+            "type": "boolean",
+            "default": true
+        },
+        "ignoreErrors": {
+            "description": "Ignores synthesis errors, which will likely produce an invalid output",
+            "type": "boolean",
+            "default": false
+        },
+        "json": {
+            "description": "Use JSON output instead of YAML when templates are printed to STDOUT",
+            "type": "boolean",
+            "default": false
+        },
+        "profile": {
+            "description": "Use the indicated AWS profile as the default environment",
+            "type": "string",
+            "minLength": 1
+        },
+        "proxy": {
+            "description": "Use the indicated proxy.",
+            "type": "string",
+            "default": "$HTTPS_PROXY"
+        },
+        "caBundlePath": {
+            "description": "Path to CA certificate to use when validating HTTPS requests.",
+            "default": "$AWS_CA_BUNDLE",
+            "type": "string",
+            "minLength": 1
+        },
+        "ec2creds": {
+            "description": "Force trying to fetch EC2 instance credentials.",
+            "type": "boolean"
+        },
+        "versionReporting": {
+            "description": "Include the `AWS::CDK::Metadata` resource in synthesized templates",
+            "default": true,
+            "type": "boolean"
+        },
+        "pathMetadata": {
+            "description": "Include `aws:cdk:path` CloudFormation metadata for each resource",
+            "type": "boolean",
+            "default": true
+        },
+        "assetMetadata": {
+            "description": "Include `aws:asset:*` CloudFormation metadata for resources that uses assets"
+        },
+        "roleArn": {
+            "description": "ARN of Role to use when invoking CloudFormation",
+            "type": "string",
+            "pattern": "^arn:aws(-[a-zA-Z0-9-_]+)?:iam::[0-9]+:[Rr]ole(/[a-zA-Z0-9_@=\\-]+){1,}$"
+        },
+        "toolkitStackName": {
+            "description": "The name of the CDK toolkit stack",
+            "type": "string"
+        },
+        "staging": {
+            "description": "Copy assets to the output directory",
+            "type": "boolean",
+            "default": true
+        },
+        "progress": {
+            "description": "Display mode for stack activity events",
+            "type": "string",
+            "enum": ["bar", "events"]
+        },
+        "outputsFile": {
+            "$comment": "https://github.com/aws/aws-cdk/issues/14307",
+            "description": "Write stack outputs from deployments into a file. When your stack finishes deploying, all stack outputs will be written to the output file as JSON.",
+            "type": "string",
+            "examples": ["outputs.json"],
+            "minLength": 1
+        },
+        "bootstrapBucketName": {
+            "description": "The name of the CDK toolkit bucket; bucket will be created and must not exist",
+            "type": "string",
+            "minLength": 1
+        },
+        "bootstrapKmsKeyId": {
+            "description": "AWS KMS master key ID used for the SSE-KMS encryption",
+            "type": "string",
+            "minLength": 1
+        },
+        "bootstrapCustomerKey": {
+            "description": "Create a Customer Master Key (CMK) for the bootstrap bucket (you will be charged but can customize permissions, modern bootstrapping only)",
+            "type": "boolean"
+        },
+        "trust": {
+            "description": "The AWS account IDs that should be trusted to perform deployments into this environment (modern bootstrapping only)",
+            "type": "array",
+            "uniqueItems": true,
+            "additionalItems": false,
+            "items": {
+                "type": "string",
+                "pattern": "^\\d+$",
+                "minLength": 1
+            }
+        },
+        "trustForLookup": {
+            "description": "The AWS account IDs that should be trusted to look up values in this environment (modern bootstrapping only)",
+            "type": "array",
+            "uniqueItems": true,
+            "additionalItems": false,
+            "items": {
+                "type": "string",
+                "pattern": "^\\d+$",
+                "minLength": 1
+            }
+        },
+        "requireApproval": {
+            "description": "What security-sensitive changes need manual approval",
+            "type": "string",
+            "enum": ["never", "any-change", "broadening"]
+        },
+        "context": {
+            "description": "Context values are key-value pairs that can be associated with a stack or construct, see https://docs.aws.amazon.com/cdk/latest/guide/context.html",
+            "$comment": "Feature flags reference - https://github.com/aws/aws-cdk/blob/master/packages/@aws-cdk/cx-api/lib/features.ts, Banned context properties - https://github.com/aws/aws-cdk/issues/59",
+            "type": "object",
+            "additionalProperties": true,
+            "patternProperties": {
+                "^aws:": false
+            },
+            "properties": {
+                "default-account": false,
+                "default-region": false,
+                "@aws-cdk/core:enableStackNameDuplicates": {
+                    "description": "If this is set, multiple stacks can use the same stack name (e.g. deployed to different environments). This means that the name of the synthesized template file will be based on the construct path and not on the defined `stackName` of the stack. This is a `future flag`: the feature is disabled by default for backwards compatibility, but new projects created using `cdk init` will have this enabled through the generated `cdk.json`.",
+                    "type": "boolean"
+                },
+                "aws-cdk:enableDiffNoFail": {
+                    "description": "If this is set, `cdk diff` will always exit with 0. Use `cdk diff --fail` to exit with 1 if there's a diff.",
+                    "type": "boolean"
+                },
+                "@aws-cdk/core:newStyleStackSynthesis": {
+                    "description": "Switch to new stack synthesis method which enable CI/CD",
+                    "type": "boolean"
+                },
+                "@aws-cdk/core:stackRelativeExports": {
+                    "description": "Name exports based on the construct paths relative to the stack, rather than the global construct path",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-ecr-assets:dockerIgnoreSupport": {
+                    "description": "DockerImageAsset properly supports `.dockerignore` files by default. If this flag is not set, the default behavior for `DockerImageAsset` is to use glob semantics for `.dockerignore` files. If this flag is set, the default behavior is standard Docker ignore semantics.",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-secretsmanager:parseOwnedSecretName": {
+                    "description": "Secret.secretName for an \"owned\" secret will attempt to parse the secretName from the ARN, rather than the default full resource name, which includes the SecretsManager suffix. If this flag is not set, Secret.secretName will include the SecretsManager suffix, which cannot be directly used by SecretsManager.DescribeSecret, and must be parsed by the user first (e.g., Fn:Join, Fn:Select, Fn:Split).",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-kms:defaultKeyPolicies": {
+                    "description": "KMS Keys start with a default key policy that grants the account access to administer the key, mirroring the behavior of the KMS SDK/CLI/Console experience. Users may override the default key policy by specifying their own. If this flag is not set, the default key policy depends on the setting of the `trustAccountIdentities` flag. If false (the default, for backwards-compatibility reasons), the default key policy somewhat resemebles the default admin key policy, but with the addition of 'GenerateDataKey' permissions. If true, the policy matches what happens when this feature flag is set. Additionally, if this flag is not set and the user supplies a custom key policy, this will be appended to the key's default policy (rather than replacing it).",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-s3:grantWriteWithoutAcl": {
+                    "description": "Change the old 's3:PutObject*' permission to 's3:PutObject' on Bucket, as the former includes 's3:PutObjectAcl', which could be used to grant read/write object access to IAM principals in other accounts. Use a feature flag to make sure existing customers who might be relying on the overly-broad permissions are not broken.",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-ecs-patterns:removeDefaultDesiredCount": {
+                    "description": "ApplicationLoadBalancedServiceBase, ApplicationMultipleTargetGroupServiceBase, NetworkLoadBalancedServiceBase, NetworkMultipleTargetGroupServiceBase, and QueueProcessingServiceBase currently determine a default value for the desired count of a CfnService if a desiredCount is not provided.",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-rds:lowercaseDbIdentifier": {
+                    "description": "ServerlessCluster.clusterIdentifier currently can has uppercase letters, and ServerlessCluster pass it through to CfnDBCluster.dbClusterIdentifier. The identifier is saved as lowercase string in AWS and is resolved as original string in CloudFormation.",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-apigateway:usagePlanKeyOrderInsensitiveId": {
+                    "description": "The UsagePlanKey resource connects an ApiKey with a UsagePlan. API Gateway does not allow more than one UsagePlanKey for any given UsagePlan and ApiKey combination. For this reason, CloudFormation cannot replace this resource without either the UsagePlan or ApiKey changing.",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-efs:defaultEncryptionAtRest": {
+                    "description": "Enable this feature flag to have elastic file systems encrypted at rest by default.",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-lambda:recognizeVersionProp": {
+                    "description": "Enable this feature flag to opt in to the updated logical id calculation for Lambda Version created using the `fn.currentVersion`.",
+                    "type": "boolean"
+                },
+                "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": {
+                    "description": "Enable this feature flag to have cloudfront distributions use the security policy TLSv1.2_2021 by default.",
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}
