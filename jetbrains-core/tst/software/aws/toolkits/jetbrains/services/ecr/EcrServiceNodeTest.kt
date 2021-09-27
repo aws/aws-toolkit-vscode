@@ -7,7 +7,6 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.utils.CompletableFutureUtils
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
@@ -15,6 +14,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.EcrExplorerRootNode
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
+import java.util.concurrent.CompletableFuture
 
 class EcrServiceNodeTest {
     @JvmField
@@ -52,7 +52,7 @@ class EcrServiceNodeTest {
 
     @Test
     fun `Error loading repositories`() {
-        resourceCache.addEntry(projectRule.project, EcrResources.LIST_REPOS, CompletableFutureUtils.failedFuture(RuntimeException("network broke")))
+        resourceCache.addEntry(projectRule.project, EcrResources.LIST_REPOS, CompletableFuture.failedFuture(RuntimeException("network broke")))
         val children = EcrServiceNode(projectRule.project, ECR_EXPLORER_NODE).children
         assertThat(children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)
     }
@@ -83,7 +83,7 @@ class EcrServiceNodeTest {
         val node = EcrRepositoryNode(projectRule.project, repo)
         resourceCache.addEntry(
             projectRule.project, EcrResources.listTags(repo.repositoryName),
-            CompletableFutureUtils.failedFuture(RuntimeException("network broke"))
+            CompletableFuture.failedFuture(RuntimeException("network broke"))
         )
         val children = node.children
         assertThat(children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)

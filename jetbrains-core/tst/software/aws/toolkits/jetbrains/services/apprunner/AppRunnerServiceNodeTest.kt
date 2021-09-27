@@ -9,12 +9,12 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.apprunner.model.ServiceStatus
 import software.amazon.awssdk.services.apprunner.model.ServiceSummary
-import software.amazon.awssdk.utils.CompletableFutureUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AppRunnerExplorerRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.services.apprunner.resources.AppRunnerResources
+import java.util.concurrent.CompletableFuture
 
 class AppRunnerServiceNodeTest {
     @JvmField
@@ -52,7 +52,7 @@ class AppRunnerServiceNodeTest {
 
     @Test
     fun `Error loading repositories`() {
-        resourceCache.addEntry(projectRule.project, AppRunnerResources.LIST_SERVICES, CompletableFutureUtils.failedFuture(RuntimeException("network broke")))
+        resourceCache.addEntry(projectRule.project, AppRunnerResources.LIST_SERVICES, CompletableFuture.failedFuture(RuntimeException("network broke")))
         val children = AppRunnerNode(projectRule.project, APPRUNNER_EXPLORER_NODE).children
         assertThat(children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)
     }
