@@ -7,7 +7,7 @@ val junitVersion: String by project
 val assertjVersion: String by project
 
 plugins {
-    kotlin
+    id("toolkit-kotlin-conventions")
     id("toolkit-testing")
     id("toolkit-detekt")
 }
