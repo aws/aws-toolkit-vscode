@@ -54,7 +54,7 @@ class DynamicResourceUpdateManagerTest {
 
     @Test
     fun `Resource State Change Triggers are correctly reflected`() {
-        var testOperationStatus: MutableList<OperationStatus> = mutableListOf()
+        var testOperationState: MutableList<ResourceMutationState> = mutableListOf()
         dynamicResourceUpdateManager = DynamicResourceUpdateManager.getInstance(projectRule.project)
 
         cloudFormationClient.stub {
@@ -65,6 +65,7 @@ class DynamicResourceUpdateManagerTest {
                         .typeName(resource.type.fullName)
                         .operation(Operation.DELETE)
                         .operationStatus(OperationStatus.IN_PROGRESS)
+                        .statusMessage("Message in progress")
                         .build()
                 ).build()
             }
@@ -74,6 +75,7 @@ class DynamicResourceUpdateManagerTest {
                         .requestToken("sampleToken")
                         .operation(Operation.DELETE)
                         .operationStatus(OperationStatus.SUCCESS)
+                        .statusMessage("Completed successfully")
                         .build()
                 )
                     .build()
@@ -85,7 +87,7 @@ class DynamicResourceUpdateManagerTest {
                 DynamicResourceUpdateManager.DYNAMIC_RESOURCE_STATE_CHANGED,
                 object : DynamicResourceStateMutationHandler {
                     override fun mutationStatusChanged(state: ResourceMutationState) {
-                        testOperationStatus.add(state.status)
+                        testOperationState.add(state)
                     }
 
                     override fun statusCheckComplete() {}
@@ -94,8 +96,9 @@ class DynamicResourceUpdateManagerTest {
 
         dynamicResourceUpdateManager.deleteResource(DynamicResourceIdentifier(connectionSettings, resource.type.fullName, resource.identifier))
         CountDownLatch(1).await(400, TimeUnit.MILLISECONDS)
-        assertThat(testOperationStatus.size).isEqualTo(1)
-        assertThat(testOperationStatus.first()).isEqualTo(OperationStatus.SUCCESS)
+        assertThat(testOperationState.size).isEqualTo(1)
+        assertThat(testOperationState.first().message).isEqualTo("Completed successfully")
+        assertThat(testOperationState.first().status).isEqualTo(OperationStatus.SUCCESS)
     }
 
     @Test
