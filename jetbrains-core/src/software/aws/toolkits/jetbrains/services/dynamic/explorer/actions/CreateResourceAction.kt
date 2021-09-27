@@ -16,8 +16,8 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMap
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceResourceTypeNode
 import software.aws.toolkits.resources.message
 
-class DynamicResourceCreateResourceAction() :
-    SingleExplorerNodeAction<DynamicResourceResourceTypeNode>(message("dynamic_resources.create_resource")), DumbAware {
+class CreateResourceAction :
+    SingleExplorerNodeAction<DynamicResourceResourceTypeNode>(message("dynamic_resources.type.explorer.create_resource")), DumbAware {
 
     override fun actionPerformed(selected: DynamicResourceResourceTypeNode, e: AnActionEvent) {
         val file = CreateDynamicResourceVirtualFile(

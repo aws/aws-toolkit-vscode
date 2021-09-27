@@ -200,8 +200,7 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
-
-        <editorFloatingToolbarProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.ResourceModelFileFloatingToolbarProvider"/>
+        <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
 
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
@@ -390,30 +389,30 @@ with what features/services are supported.
         </group>
 
 
-        <group id="aws.toolkit.explorer.dynamic.resource" popup="true" compact="false">
-            <action id="dynamic.resource.create" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCreateResourceAction"/>
+        <group id="aws.toolkit.explorer.dynamic.resource.type" popup="true" compact="false">
+            <action id="dynamic.resource.type.explorer.createResource" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.CreateResourceAction"/>
+            <action id="dynamic.resource.type.explorer.viewDocumentation" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.ViewDocumentationAction"/>
         </group>
         
-        <group id="aws.toolkit.explorer.dynamic.mutate.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.MutateResourceModelFloatingToolbarActionGroup">
-            <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.BeginCreateResourceAction"/>
-            <action id="dynamic.resource.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.EditResourceAction"/>
-            <action id="dynamic.resource.save.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.SaveUpdatedResourceAction"/>
+        <group id="aws.toolkit.dynamic.resource.editor">
+            <action id="dynamic.resource.editor.submitResourceCreationRequest" class="software.aws.toolkits.jetbrains.services.dynamic.editor.actions.SubmitResourceCreationRequestAction"/>
+            <action id="dynamic.resource.editor.enableEditingResource" class="software.aws.toolkits.jetbrains.services.dynamic.editor.actions.EnableEditingResourceAction"/>
+            <action id="dynamic.resource.editor.submitResourceUpdateRequest" class="software.aws.toolkits.jetbrains.services.dynamic.editor.actions.SubmitResourceUpdateRequestAction"/>
         </group>
 
-        <group id="aws.toolkit.explorer.dynamic.additional.resources" popup="true" compact="false">
-            <action id="dynamic.add.resources"
-                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceAddResourcesToExplorerAction"/>
+        <group id="aws.toolkit.explorer.dynamic.more.resources" popup="true" compact="false">
+            <action id="dynamic.resource.addResourcesToExplorerAction"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.AddResourcesToExplorerAction"/>
         </group>
 
-        <group id="aws.toolkit.explorer.dynamic" popup="true" compact="false">
-
-            <action id="dynamic.open"
-                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>
-            <action id="dynamic.copy.arn"
-                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCopyIdentifierAction"/>
-            <action id="dynamic.update.resource"
-                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceUpdateResourceAction"/>
-            <action id="dynamic.delete.resource"
+        <group id="aws.toolkit.explorer.dynamic.resource" popup="true" compact="false">
+            <action id="dynamic.resource.explorer.openReadOnlyAction"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.OpenReadOnlyFileAction"/>
+            <action id="dynamic.resource.explorer.copy.arn"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.CopyIdentifierAction"/>
+            <action id="dynamic.resource.explorer.openFileForUpdateAction"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.OpenFileForUpdateAction"/>
+            <action id="dynamic.resource.explorer.dynamicResourceDeleteResourceAction"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceDeleteResourceAction"/>
         </group>
 

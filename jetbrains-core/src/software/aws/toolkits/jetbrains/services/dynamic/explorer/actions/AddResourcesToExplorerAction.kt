@@ -12,7 +12,7 @@ import software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
-class DynamicResourceAddResourcesToExplorerAction : DumbAwareAction(
+class AddResourcesToExplorerAction : DumbAwareAction(
     { message("explorer.node.other.add_remove", DynamicResourcesSettings.getInstance().resourcesAvailable()) }, IconUtil.getEditIcon()
 ) {
     override fun actionPerformed(e: AnActionEvent) {

@@ -38,5 +38,5 @@ class OtherResourcesNode(project: Project, service: AwsExplorerServiceNode) :
             }
     }
 
-    override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.additional.resources"
+    override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.more.resources"
 }
