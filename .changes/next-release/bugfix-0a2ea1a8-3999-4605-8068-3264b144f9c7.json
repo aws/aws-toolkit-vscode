@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix not being able to start Rider debugger against a Lambda running on a host ARM machine"
+}
