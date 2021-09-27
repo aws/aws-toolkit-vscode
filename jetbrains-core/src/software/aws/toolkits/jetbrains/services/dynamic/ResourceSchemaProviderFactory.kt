@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.jetbrains.jsonSchema.extension.JsonSchemaFileProvider
 import com.jetbrains.jsonSchema.extension.JsonSchemaProviderFactory
@@ -22,10 +21,7 @@ class ResourceSchemaProviderFactory : JsonSchemaProviderFactory {
 
                 override fun getName(): String = "$it schema"
 
-                override fun getSchemaFile(): VirtualFile? {
-                    val schema = project.getResourceNow(CloudControlApiResources.getResourceSchema(it))
-                    return LocalFileSystem.getInstance().findFileByNioFile(schema.toPath())
-                }
+                override fun getSchemaFile(): VirtualFile? = project.getResourceNow(CloudControlApiResources.getResourceSchema(it))
 
                 override fun getSchemaVersion(): JsonSchemaVersion = JsonSchemaVersion.SCHEMA_7
 

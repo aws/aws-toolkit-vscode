@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic
 
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.testFramework.LightVirtualFile
 import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
@@ -10,7 +12,6 @@ import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.amazon.awssdk.services.cloudformation.model.Visibility
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
-import java.io.File
 
 object CloudControlApiResources {
 
@@ -39,15 +40,13 @@ object CloudControlApiResources {
             identifier
         }
 
-    fun getResourceSchema(resourceType: String): Resource.Cached<File> =
+    fun getResourceSchema(resourceType: String): Resource.Cached<VirtualFile> =
         ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.schema.$resourceType") {
             val schema = this.describeType {
                 it.type(RegistryType.RESOURCE)
                 it.typeName(resourceType)
             }.schema()
-            val file = File("$resourceType.json")
-            file.writeText(schema)
-            file
+            LightVirtualFile("${resourceType}Schema.json", schema)
         }
 
     fun listTypes(): Resource.Cached<List<String>> = ClientBackedCachedResource(
