@@ -265,8 +265,10 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
             ConnectionSettingsStateChangeNotifier::class.java
         )
 
-        fun Project.getConnectionSettings(): ConnectionSettings = getInstance(this).connectionSettings()
+        fun Project.getConnectionSettingsOrThrow(): ConnectionSettings = getConnectionSettings()
             ?: throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")
+
+        fun Project.getConnectionSettings(): ConnectionSettings? = getInstance(this).connectionSettings()
 
         @JvmStatic
         fun getInstance(project: Project): AwsConnectionManager = ServiceManager.getService(project, AwsConnectionManager::class.java)
