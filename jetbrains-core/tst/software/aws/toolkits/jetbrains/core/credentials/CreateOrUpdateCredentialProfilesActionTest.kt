@@ -8,6 +8,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.FileTypes
 import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
 import com.intellij.openapi.ui.TestDialog
+import com.intellij.openapi.ui.TestDialogManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.TestActionEvent
@@ -23,7 +24,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyZeroInteractions
-import software.aws.toolkits.jetbrains.ui.TestDialogService
 import java.io.File
 
 class CreateOrUpdateCredentialProfilesActionTest {
@@ -62,7 +62,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         val credFile = File(folderRule.newFolder(), "credentials")
 
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
-        TestDialogService.setTestDialog(TestDialog.OK)
+        TestDialogManager.setTestDialog(TestDialog.OK)
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
@@ -82,7 +82,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         credFile.writeText("cred")
 
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
-        TestDialogService.setTestDialog(TestDialog.OK)
+        TestDialogManager.setTestDialog(TestDialog.OK)
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
@@ -102,7 +102,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         configFile.writeText("config")
 
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
-        TestDialogService.setTestDialog(TestDialog.OK)
+        TestDialogManager.setTestDialog(TestDialog.OK)
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
@@ -120,7 +120,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         credFile.writeText("cred")
 
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
-        TestDialogService.setTestDialog(TestDialog.OK)
+        TestDialogManager.setTestDialog(TestDialog.OK)
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
@@ -150,7 +150,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         }
 
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
-        TestDialogService.setTestDialog(TestDialog.OK)
+        TestDialogManager.setTestDialog(TestDialog.OK)
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
@@ -170,7 +170,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         val credFile = File(folderRule.newFolder(), "credentials")
 
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
-        TestDialogService.setTestDialog(TestDialog.NO)
+        TestDialogManager.setTestDialog(TestDialog.NO)
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 

@@ -5,8 +5,7 @@ package software.aws.toolkits.jetbrains.core.notification
 
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.notification.NotificationAction
-import com.intellij.notification.NotificationDisplayType
-import com.intellij.notification.NotificationGroup
+import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.ApplicationManager
@@ -45,9 +44,8 @@ class MinimumVersionChange @JvmOverloads constructor(isUnderTest: Boolean = fals
             MIN_VERSION_HUMAN
         )
 
-        // TODO: Migrate to this FIX_WHEN_MIN_IS_203
-//        val notificationGroup = NotificationGroupManager.getInstance().getNotificationGroup("aws.toolkit_deprecation")
-        NOTIFICATION_GROUP.createNotification(title, message, NotificationType.WARNING)
+        val notificationGroup = NotificationGroupManager.getInstance().getNotificationGroup("aws.toolkit_deprecation")
+        notificationGroup.createNotification(title, message, NotificationType.WARNING)
             .addAction(
                 NotificationAction.createSimpleExpiring(message("general.notification.action.hide_forever")) {
                     PropertiesComponent.getInstance().setValue(IGNORE_PROMPT, true)
@@ -63,14 +61,5 @@ class MinimumVersionChange @JvmOverloads constructor(isUnderTest: Boolean = fals
         // Used by tests to make sure the prompt never shows up
         const val SKIP_PROMPT = "aws.suppress_deprecation_prompt"
         const val IGNORE_PROMPT = "aws.ignore_deprecation_prompt"
-
-        private val NOTIFICATION_GROUP = NotificationGroup(
-            "aws.toolkit_deprecation",
-            NotificationDisplayType.STICKY_BALLOON,
-            true,
-            null,
-            null,
-            message("aws.toolkit_deprecation.title"),
-        )
     }
 }

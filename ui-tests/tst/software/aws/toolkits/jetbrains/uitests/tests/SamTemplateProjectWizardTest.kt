@@ -55,6 +55,9 @@ class SamTemplateProjectWizardTest {
             }
 
             idea {
+                // Give some time for the project to open and background jobs to start
+                Thread.sleep(5000)
+
                 waitForBackgroundTasks()
 
                 step("Validate Readme is opened") {
