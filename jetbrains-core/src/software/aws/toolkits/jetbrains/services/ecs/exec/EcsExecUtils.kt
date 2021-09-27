@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.iam.model.PolicyEvaluationDecisionType
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
@@ -86,7 +86,7 @@ object EcsExecUtils {
                 }
 
                 override fun onSuccess() {
-                    val currentConnectionSettings = project.getConnectionSettings()
+                    val currentConnectionSettings = project.getConnectionSettingsOrThrow()
                     project.refreshAwsTree(EcsResources.describeService(service.clusterArn(), service.serviceArn()), currentConnectionSettings)
 
                     if (enable) {
