@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.iam.model.PolicyEvaluationDecisionType
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettingsOrThrow
+import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
