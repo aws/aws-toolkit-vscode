@@ -16,7 +16,7 @@ class SqsWindowUi(private val project: Project, private val client: SqsClient, v
     private val mainPanel = JBTabbedPane().apply {
         tabComponentInsets = JBUI.emptyInsets()
         border = JBUI.Borders.empty()
-        add(message("sqs.queue.polled.messages"), PollMessagePane(project, client, queue, this@SqsWindowUi).component)
+        add(message("sqs.queue.polled.messages"), PollMessagePane(project, client, queue).component)
         add(message("sqs.send.message"), SendMessagePane(project, client, queue, this@SqsWindowUi).component)
     }
 

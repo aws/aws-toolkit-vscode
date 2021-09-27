@@ -49,6 +49,7 @@ class StepExecutor(
             System.currentTimeMillis()
         ).apply {
             isActivateToolWindowWhenAdded = true
+            withProcessHandler(processHandler, null)
         }
 
         // TODO add optional filters and use descriptor.withExecutionFilter for deploy instead of using pop up notification
@@ -71,7 +72,7 @@ class StepExecutor(
         processHandler: StepExecutorProcessHandler
     ) {
         try {
-            executionStarted(descriptor, progressListener, processHandler)
+            executionStarted(descriptor, progressListener)
             workflow.run(context, messageEmitter)
 
             // If the dummy process was cancelled (or any step got cancelled), we need to rethrow the cancel
@@ -89,8 +90,8 @@ class StepExecutor(
         }
     }
 
-    private fun executionStarted(descriptor: BuildDescriptor, progressListener: BuildProgressListener, processHandler: StepExecutorProcessHandler) {
-        progressListener.onEvent(uniqueId, StartBuildEventImpl(descriptor, message("general.execution.running")).withProcessHandler(processHandler, null))
+    private fun executionStarted(descriptor: BuildDescriptor, progressListener: BuildProgressListener) {
+        progressListener.onEvent(uniqueId, StartBuildEventImpl(descriptor, message("general.execution.running")))
     }
 
     private fun executionFinishedSuccessfully(processHandler: StepExecutorProcessHandler, progressListener: BuildProgressListener) {

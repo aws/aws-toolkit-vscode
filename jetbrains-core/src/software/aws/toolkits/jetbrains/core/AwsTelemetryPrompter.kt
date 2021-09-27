@@ -3,45 +3,32 @@
 
 package software.aws.toolkits.jetbrains.core
 
-import com.intellij.notification.Notification
-import com.intellij.notification.NotificationDisplayType
-import com.intellij.notification.NotificationGroup
-import com.intellij.notification.NotificationListener
+import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.resources.message
-import javax.swing.event.HyperlinkEvent
 
-// Used by tests to skip telemetry prompt
-internal const val SKIP_TELEMETRY_PROMPT = "aws.telemetry.skip_prompt"
-internal const val GROUP_DISPLAY_ID = "AWS Telemetry"
-
-class AwsTelemetryPrompter : StartupActivity {
+class AwsTelemetryPrompter : StartupActivity.Background {
     override fun runActivity(project: Project) {
-        if (AwsSettings.getInstance().promptedForTelemetry || System.getProperty(SKIP_TELEMETRY_PROMPT, null)?.toBoolean() == true) {
+        if (AwsSettings.getInstance().promptedForTelemetry || System.getProperty("aws.telemetry.skip_prompt", null)?.toBoolean() == true) {
             return
         }
-        val group = NotificationGroup(GROUP_DISPLAY_ID, NotificationDisplayType.STICKY_BALLOON, true)
 
+        val group = NotificationGroupManager.getInstance().getNotificationGroup("aws.toolkit_telemetry")
         val notification = group.createNotification(
             message("aws.settings.telemetry.prompt.title"),
             message("aws.settings.telemetry.prompt.message"),
-            NotificationType.INFORMATION,
-            // 2020.1 fails to compile this when this argument is a lambda instead
-            object : NotificationListener {
-                override fun hyperlinkUpdate(notification: Notification, event: HyperlinkEvent) {
-                    ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
-                    notification.expire()
-                }
-            }
-        )
+            NotificationType.INFORMATION
+        ) { notification, _ ->
+            ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
+            notification.expire()
+        }
 
-        Notifications.Bus.notify(notification, project)
+        notification.notify(project)
 
         AwsSettings.getInstance().promptedForTelemetry = true
     }

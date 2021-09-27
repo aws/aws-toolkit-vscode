@@ -161,7 +161,7 @@ class LogStreamDownloadToFileTask(
                 title = message("aws.notification.title"),
                 content = message("cloudwatch.logs.saving_to_disk_succeeded", logStream, file.path),
                 notificationActions = listOf(
-                    object : AnAction(message("cloudwatch.logs.open_in_editor"), null, AllIcons.Actions.Menu_open) {
+                    object : AnAction(message("cloudwatch.logs.open_in_editor"), null, AllIcons.Actions.MenuOpen) {
                         override fun actionPerformed(e: AnActionEvent) {
                             val virtualFile = VirtualFileWrapper(file).virtualFile
                                 ?: throw IllegalStateException("Log Stream was downloaded but does not exist on disk!")

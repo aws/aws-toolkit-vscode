@@ -33,6 +33,7 @@ import software.aws.toolkits.telemetry.SchemaLanguage
 import software.aws.toolkits.telemetry.SchemasTelemetry
 import java.awt.event.ActionEvent
 import java.io.File
+import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import javax.swing.Action
@@ -197,14 +198,14 @@ class DownloadCodeForSchemaDialog(
     }
 
     private fun openSchemaCoreCodeFileInEditor(
-        schemaCoreCodeFile: File?,
+        schemaCoreCodeFile: Path?,
         project: Project
     ): CompletionStage<Void> {
         val future = CompletableFuture<Void>()
         ApplicationManager.getApplication().invokeLater {
             try {
                 schemaCoreCodeFile?.let {
-                    val vSchemaCoreCodeFileName = LocalFileSystem.getInstance().findFileByIoFile(schemaCoreCodeFile)
+                    val vSchemaCoreCodeFileName = LocalFileSystem.getInstance().findFileByNioFile(schemaCoreCodeFile)
                     vSchemaCoreCodeFileName?.let {
                         val fileEditorManager = FileEditorManager.getInstance(project)
                         fileEditorManager.openTextEditor(OpenFileDescriptor(project, it), true)

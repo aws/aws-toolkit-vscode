@@ -185,11 +185,6 @@ private fun JTextArea.speedSearchHighlighter(speedSearchEnabledComponent: JCompo
     }
 }
 
-fun CellBuilder<JComponent>.visible(visibility: Boolean): CellBuilder<JComponent> {
-    component.isVisible = visibility
-    return this
-}
-
 class WrappingCellRenderer(
     private val wrapOnSelection: Boolean = false,
     private val wrapOnToggle: Boolean = false,
@@ -266,31 +261,11 @@ fun CellBuilder<DialogPanel>.installOnParent(applies: () -> Boolean = { true }):
     return this
 }
 
-/**
- * Similar to {@link com.intellij.ui.layout.CellBuilder#enableIf} but for component visibility
- */
-fun <T : JComponent> CellBuilder<T>.visibleIf(predicate: ComponentPredicate): CellBuilder<T> {
-    component.isVisible = predicate()
-    predicate.addListener {
-        component.isVisible = it
-    }
-    return this
-}
-
 fun Row.visibleIf(predicate: ComponentPredicate): Row {
     visible = predicate()
     predicate.addListener { visible = it }
     return this
 }
-
-val AbstractButton.notSelected: ComponentPredicate
-    get() = object : ComponentPredicate() {
-        override fun invoke(): Boolean = !isSelected
-
-        override fun addListener(listener: (Boolean) -> Unit) {
-            addChangeListener { listener(!isSelected) }
-        }
-    }
 
 /**
  * Add a contextual help icon component
