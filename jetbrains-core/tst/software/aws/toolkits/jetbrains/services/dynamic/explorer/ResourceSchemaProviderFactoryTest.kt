@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
+import com.intellij.testFramework.LightVirtualFile
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.runInEdtAndWait
 import com.jetbrains.jsonSchema.impl.inspections.JsonSchemaComplianceInspection
@@ -20,7 +21,6 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMap
 import software.aws.toolkits.jetbrains.services.dynamic.ResourceType
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
-import java.io.File
 import java.util.concurrent.CompletableFuture
 
 class ResourceSchemaProviderFactoryTest {
@@ -70,8 +70,7 @@ class ResourceSchemaProviderFactoryTest {
             "  }\n" +
             "}\n"
 
-        val schemaFile = File.createTempFile("AWSLogLogGroupSchema", ".json")
-        schemaFile.writeText(schema)
+        val schemaFile = LightVirtualFile("AWSLogLogGroupSchema.json", schema)
         resourceCache.addEntry(
             projectRule.project, CloudControlApiResources.getResourceSchema(resource.type.fullName),
             CompletableFuture.completedFuture(schemaFile)

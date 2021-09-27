@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
@@ -70,7 +70,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
 
     override fun statusText(): String? {
         val state = DynamicResourceUpdateManager.getInstance(nodeProject)
-            .getUpdateStatus(DynamicResourceIdentifier(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier))?.takeIf {
+            .getUpdateStatus(DynamicResourceIdentifier(nodeProject.getConnectionSettingsOrThrow(), resource.type.fullName, resource.identifier))?.takeIf {
                 !it.status.isTerminal()
             }
             ?: return null
@@ -106,7 +106,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                 } ?: return
 
                 val file = ViewEditableDynamicResourceVirtualFile(
-                    DynamicResourceIdentifier(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier),
+                    DynamicResourceIdentifier(nodeProject.getConnectionSettingsOrThrow(), resource.type.fullName, resource.identifier),
                     model
                 )
                 DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
