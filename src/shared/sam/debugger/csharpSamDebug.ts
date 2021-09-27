@@ -28,7 +28,6 @@ import { Window } from '../../vscode/window'
 import * as nls from 'vscode-nls'
 import { getSamCliVersion } from '../cli/samCliContext'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT } from '../cli/samCliValidator'
-import { logger } from 'handlebars'
 const localize = nls.loadMessageBundle()
 
 /**
