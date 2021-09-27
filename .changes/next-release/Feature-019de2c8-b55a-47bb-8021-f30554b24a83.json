@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Support for SAM's Architectures property on select runtimes"
+}
