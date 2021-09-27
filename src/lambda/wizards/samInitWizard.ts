@@ -44,7 +44,10 @@ import {
     SamTemplate,
 } from '../models/samTemplates'
 import * as semver from 'semver'
-import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
+import {
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT,
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
+} from '../../shared/sam/cli/samCliValidator'
 import * as fsutil from '../../shared/filesystemUtilities'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 
@@ -56,7 +59,7 @@ export interface CreateNewSamAppWizardContext {
 
     promptUserForRuntimeAndDependencyManager(
         currRuntime?: Runtime
-    ): Promise<[Runtime, RuntimePackageType, DependencyManager, Architecture | undefined] | undefined>
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined, Architecture | undefined] | undefined>
     promptUserForTemplate(
         currRuntime: Runtime,
         packageType: RuntimePackageType,
@@ -114,7 +117,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
     public async promptUserForRuntimeAndDependencyManager(
         currRuntime?: Runtime
-    ): Promise<[Runtime, RuntimePackageType, DependencyManager, Architecture | undefined] | undefined> {
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined, Architecture | undefined] | undefined> {
         // last common step; reset additionalSteps to 0
         this.stepsToAdd.promptUserForDependencyManager = false
         this.stepsToAdd.promptUserForArchitecture = false
@@ -145,14 +148,16 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         }
 
         const dependencyManager = await this.promptUserForDependencyManager(val.runtime)
+        let architecture: Architecture | undefined
         if (!dependencyManager) {
-            return undefined
+            return [val.runtime, val.packageType, dependencyManager, architecture]
         }
-        const architecture = await this.promptUserForArchitecture(val.runtime)
 
-        return val && dependencyManager && architecture
-            ? [val.runtime, val.packageType, dependencyManager, architecture]
-            : undefined
+        if (semver.gte(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT)) {
+            architecture = await this.promptUserForArchitecture(val.runtime, val.packageType, dependencyManager)
+        }
+
+        return val && dependencyManager ? [val.runtime, val.packageType, dependencyManager, architecture] : undefined
     }
 
     // don't preinclude currDependencyManager because it won't make sense if transitioning between runtimes
@@ -191,8 +196,13 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         }
     }
 
-    public async promptUserForArchitecture(currRuntime: Runtime): Promise<Architecture | undefined> {
-        if (!samArmLambdaRuntimes.has(currRuntime)) {
+    public async promptUserForArchitecture(
+        currRuntime: Runtime,
+        packageType: RuntimePackageType,
+        dependencyManager: DependencyManager
+    ): Promise<Architecture | undefined> {
+        // TODO: Remove Image Maven check if/when Hello World app supports multiarch Maven builds
+        if (!samArmLambdaRuntimes.has(currRuntime) || (dependencyManager === 'maven' && packageType === 'Image')) {
             return 'x86_64'
         }
         this.stepsToAdd.promptUserForArchitecture = true
@@ -486,7 +496,7 @@ export interface CreateNewSamAppWizardResponse {
     schemaName?: string
     location: vscode.Uri
     name: string
-    architecture: Architecture
+    architecture?: Architecture
 }
 
 export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
@@ -516,8 +526,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             !this.packageType ||
             !this.template ||
             !this.location ||
-            !this.name ||
-            !this.architecture
+            !this.name
         ) {
             return undefined
         }
@@ -553,21 +562,8 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             return WIZARD_RETRY
         }
 
-        // return wizardContinue(this.ARCHITECTURE)
         return wizardContinue(this.TEMPLATE)
     }
-
-    // private readonly ARCHITECTURE: WizardStep = async () => {
-    //     // TODO: Remove packageType exemption when Image is working
-    //     const archRequired = !!this.runtime && this.packageType === 'Zip' && samArmLambdaRuntimes.has(this.runtime)
-    //     this.architecture = archRequired ? await this.context.promptUserForArchitecture(this.runtime) : 'x86_64'
-
-    //     if (!this.architecture) {
-    //         return WIZARD_GOBACK
-    //     }
-
-    //     return wizardContinue(this.TEMPLATE)
-    // }
 
     private readonly TEMPLATE: WizardStep = async () => {
         this.template = await this.context.promptUserForTemplate(this.runtime!, this.packageType!)

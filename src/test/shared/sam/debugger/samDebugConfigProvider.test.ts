@@ -543,6 +543,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -693,6 +694,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -848,6 +850,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -992,6 +995,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -1072,6 +1076,7 @@ Resources:
                 containerEnvFile: `${actualWithPathMapping.baseBuildDir}/container-env-vars.json`,
                 envFile: undefined,
                 eventPayloadFile: undefined,
+                architecture: 'x86_64',
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
@@ -1154,6 +1159,7 @@ Resources:
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -1246,6 +1252,7 @@ Resources:
                     path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
                 ),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1351,6 +1358,7 @@ Resources:
                     path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
                 ),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1464,6 +1472,7 @@ Resources:
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1594,6 +1603,7 @@ Resources:
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1715,6 +1725,7 @@ Resources:
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(appDir, 'src', 'HelloWorld', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Csharp-related fields
@@ -1880,6 +1891,7 @@ Resources:
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
+                architecture: 'x86_64',
 
                 //
                 // Csharp-related fields
@@ -2064,6 +2076,7 @@ Resources:
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Csharp-related fields
@@ -2258,6 +2271,7 @@ Resources:
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Python-related fields
@@ -2406,6 +2420,7 @@ Resources:
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Python-related fields
@@ -2601,6 +2616,7 @@ Outputs:
                 ),
                 port: actual.debugPort,
                 redirectOutput: false,
+                architecture: 'x86_64',
 
                 //
                 // Python-related fields
@@ -2758,6 +2774,7 @@ Outputs:
                 ),
                 port: actual.debugPort,
                 redirectOutput: false,
+                architecture: 'x86_64',
 
                 //
                 // Python-related fields
@@ -2961,6 +2978,7 @@ Resources:
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Python-ikpdb fields
@@ -3069,6 +3087,7 @@ Resources:
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Python-ikpdb fields
@@ -3237,6 +3256,7 @@ Outputs:
                     path.join(path.dirname(tempFile.fsPath), 'app___vsctk___template.yaml')
                 ),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -3269,6 +3289,8 @@ Resources:
       CodeUri: codeuri
       Runtime: nodejs12.x
       Timeout: 12345
+      Architectures:
+        - x86_64
       Environment:
         Variables:
           ENVVAR: envvar
@@ -3383,6 +3405,7 @@ Resources:
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -3461,6 +3484,7 @@ Resources:
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(appDir, 'hello-world', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Go-related fields

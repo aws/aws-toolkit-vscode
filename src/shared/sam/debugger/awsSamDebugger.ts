@@ -17,6 +17,7 @@ import {
     getTemplate,
 } from '../../../lambda/local/debugConfiguration'
 import {
+    Architecture,
     getDefaultRuntime,
     getFamily,
     getRuntimeFamily,
@@ -41,7 +42,7 @@ import {
     createApiAwsSamDebugConfig,
     createTemplateAwsSamDebugConfig,
 } from './awsSamDebugConfiguration'
-import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
+import { CodeTargetProperties, TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
 import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
@@ -164,6 +165,11 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     //
     samLocalInvokeCommand?: SamLocalInvokeCommand
     onWillAttachDebugger?(debugPort: number, timeout: Timeout): Promise<void>
+
+    /**
+     * Specifies container architecture. Necessary for C#, to either swap debugger download or to force into no-debug mode
+     */
+    architecture?: Architecture
 }
 
 /**
@@ -459,20 +465,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         let awsCredentials: Credentials | undefined
 
-        // TODO: Remove this when min sam version is >= 1.4.0
-        if (runtime === 'dotnetcore3.1' && !config.noDebug) {
-            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, '1.4.0')) {
-                vscode.window.showWarningMessage(
-                    localize(
-                        'AWS.output.sam.local.no.net.3.1.debug',
-                        'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
-                    )
-                )
-                config.noDebug = true
-            }
-        }
-
         if (config.aws?.credentials) {
             const credentials = fromString(config.aws.credentials)
             try {
@@ -527,6 +519,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
             useIkpdb: isCloud9() || !!(config as any).useIkpdb,
+            architecture: this.getArchitecture(template, templateResource, config.InvokeTarget),
         }
 
         //
@@ -627,5 +620,25 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 throw Error(`unknown runtimeFamily: ${config.runtimeFamily}`)
             }
         }
+    }
+
+    private getArchitecture(
+        template: CloudFormation.Template | undefined,
+        resource: CloudFormation.Resource | undefined,
+        invokeTarget: AwsSamDebuggerConfiguration['invokeTarget']
+    ): Architecture {
+        let arch: string | undefined
+        if (template) {
+            arch = (CloudFormation.getArrayForProperty(resource?.Properties, 'Architectures', template) ?? [
+                'x86_64',
+            ])[0]
+        } else {
+            arch = (invokeTarget as CodeTargetProperties)?.architecture
+        }
+        return this.isArchitecture(arch) ? arch : 'x86_64'
+    }
+
+    private isArchitecture(a: any): a is Architecture {
+        return ['x86_64', 'arm64'].includes(a)
     }
 }
