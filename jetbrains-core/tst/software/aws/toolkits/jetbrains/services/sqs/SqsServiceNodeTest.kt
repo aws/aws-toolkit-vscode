@@ -7,12 +7,12 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.utils.CompletableFutureUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.SqsExplorerRootNode
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
+import java.util.concurrent.CompletableFuture
 
 class SqsServiceNodeTest {
     @JvmField
@@ -57,7 +57,7 @@ class SqsServiceNodeTest {
 
     @Test
     fun `Error loading queues`() {
-        resourceCache.addEntry(projectRule.project, SqsResources.LIST_QUEUE_URLS, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
+        resourceCache.addEntry(projectRule.project, SqsResources.LIST_QUEUE_URLS, CompletableFuture.failedFuture(RuntimeException("Simulated error")))
         val children = SqsServiceNode(projectRule.project, SQS_EXPLORER_NODE).children
         assertThat(children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)
     }
