@@ -265,11 +265,6 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
             ConnectionSettingsStateChangeNotifier::class.java
         )
 
-        fun Project.getConnectionSettingsOrThrow(): ConnectionSettings = getConnectionSettings()
-            ?: throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")
-
-        fun Project.getConnectionSettings(): ConnectionSettings? = getInstance(this).connectionSettings()
-
         @JvmStatic
         fun getInstance(project: Project): AwsConnectionManager = ServiceManager.getService(project, AwsConnectionManager::class.java)
 
@@ -278,6 +273,11 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
         internal val AwsConnectionManager.selectedPartition get() = selectedRegion?.let { AwsRegionProvider.getInstance().partitions()[it.partitionId] }
     }
 }
+
+fun Project.getConnectionSettingsOrThrow(): ConnectionSettings = getConnectionSettings()
+    ?: throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")
+
+fun Project.getConnectionSettings(): ConnectionSettings? = AwsConnectionManager.getInstance(this).connectionSettings()
 
 /**
  * A state machine around the connection validation steps the toolkit goes through. Attempts to encapsulate both state, data available at each state and

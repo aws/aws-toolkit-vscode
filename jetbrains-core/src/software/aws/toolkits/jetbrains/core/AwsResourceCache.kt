@@ -23,9 +23,9 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
