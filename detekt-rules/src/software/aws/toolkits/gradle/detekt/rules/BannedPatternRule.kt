@@ -1,6 +1,7 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+@file:Suppress("BannedPattern")
 package software.aws.toolkits.gradle.detekt.rules
 
 import io.gitlab.arturbosch.detekt.api.CodeSmell
