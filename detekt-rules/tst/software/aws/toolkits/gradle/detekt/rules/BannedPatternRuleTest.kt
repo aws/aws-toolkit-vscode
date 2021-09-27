@@ -1,11 +1,12 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+@file:Suppress("BannedPattern")
+package software.aws.toolkits.gradle.detekt.rules
+
 import io.gitlab.arturbosch.detekt.test.lint
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import software.aws.toolkits.gradle.detekt.rules.BannedPattern
-import software.aws.toolkits.gradle.detekt.rules.BannedPatternRule
 
 class BannedPatternRuleTest {
     @Test
