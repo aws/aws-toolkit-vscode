@@ -8,7 +8,7 @@ import { ExtContext } from '../shared/extensions'
 import { MdeDevfileCodeLensProvider } from '../shared/codelens/devfileCodeLensProvider'
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
 import { localize } from '../shared/utilities/messages'
-import { mdeConnectCommand, mdeCreateCommand } from './mdeCommands'
+import { mdeConnectCommand, mdeCreateCommand, mdeDeleteCommand } from './mdeCommands'
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
@@ -66,6 +66,12 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
                 return
             }
             mdeCreateCommand(treenode, { devfile: { location: devfileLocation } })
+        })
+    )
+    ctx.extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('aws.mde.delete', async (treenode: MdeInstanceNode) => {
+            // TODO: refresh explorer and poll
+            mdeDeleteCommand(treenode.env)
         })
     )
 }

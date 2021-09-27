@@ -133,6 +133,9 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.caws = await CawsClient.create(toolkitSettings)
         ext.mde = await MdeClient.create()
 
+        // temporary, move to activation later (if we even need it)
+        ext.awsContext.onDidChangeContext(ctx => ext.mde.onCredentialsChanged(ctx.cawsUsername))
+
         await initializeCredentials({
             extensionContext: context,
             awsContext: ext.awsContext,

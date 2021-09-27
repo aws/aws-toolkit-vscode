@@ -28,7 +28,7 @@ export class UriHandler implements vscode.UriHandler {
     public async handleUri(uri: vscode.Uri): Promise<void> {
         getLogger().verbose(`UriHandler: received request on path "${uri.path}"`)
 
-        const uriNoQuery = uri.with({ query: undefined }).toString()
+        const uriNoQuery = uri.with({ query: '' }).toString()
 
         if (!this.handlers.has(uri.path)) {
             ext.window.showErrorMessage(localize('AWS.uriHandler.nohandler', 'No handler found for: {0}', uriNoQuery))

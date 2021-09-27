@@ -82,32 +82,35 @@ export class MdeClient {
     public async *listEnvironments(
         args: mde.ListEnvironmentsRequest
     ): AsyncIterableIterator<MdeEnvironment | undefined> {
-        const c = this.sdkClient
-        const r = await this.call(c.listEnvironments(args))
+        const r = await this.call(this.sdkClient.listEnvironments(args))
         for (const i of r.environmentSummaries ?? []) {
             yield i
         }
     }
 
     public async createEnvironment(args: mde.CreateEnvironmentRequest): Promise<MdeEnvironment | undefined> {
-        const c = this.sdkClient
-        const r = await this.call(c.createEnvironment(args))
+        const r = await this.call(this.sdkClient.createEnvironment(args))
         return r
     }
 
     public async getEnvironmentMetadata(
         args: mde.GetEnvironmentMetadataRequest
     ): Promise<mde.GetEnvironmentMetadataResponse | undefined> {
-        const c = this.sdkClient
-        const r = await this.call(c.getEnvironmentMetadata(args))
+        const r = await this.call(this.sdkClient.getEnvironmentMetadata(args))
         return r
     }
 
     public async startEnvironment(
         args: mde.StartEnvironmentRequest
     ): Promise<mde.StartEnvironmentResponse | undefined> {
-        const c = this.sdkClient
-        const r = await this.call(c.startEnvironment(args))
+        const r = await this.call(this.sdkClient.startEnvironment(args))
+        return r
+    }
+
+    public async deleteEnvironment(
+        args: mde.DeleteEnvironmentRequest
+    ): Promise<mde.DeleteEnvironmentResponse | undefined> {
+        const r = await this.call(this.sdkClient.deleteEnvironment(args))
         return r
     }
 }

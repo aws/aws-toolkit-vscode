@@ -9,16 +9,15 @@ const MDE_URI_PATH = '/mde' as const
 import { EnvironmentId } from '../../types/clientmde'
 import * as vscode from 'vscode'
 import { ParsedUrlQuery } from 'querystring'
-import { mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
+import { cloneToMde, mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
 import { ExtContext } from '../shared/extensions'
 
 interface MdeUriParams {
     /** If no ID is provided, a new MDE is created */
     // TODO: rename to 'environmentId'? all consumers use that, but responses produce 'id'
     id?: EnvironmentId
-
-    // not implemented
     cloneUrl?: vscode.Uri
+    /** Not implemented */
     branch?: string
 }
 
@@ -44,7 +43,7 @@ export function parseMdeUriParams(query: ParsedUrlQuery): MdeUriParams {
 
 export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
     if (params.id === undefined) {
-        const newMde = await mdeCreateCommand()
+        const newMde = await mdeCreateCommand(undefined)
         // mde create command swallows the exception
         if (newMde === undefined) {
             return
@@ -56,6 +55,12 @@ export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
 
     if (mde === undefined) {
         return
+    }
+
+    // Clone repo to MDE
+    // TODO: show notification while cloning?
+    if (params.cloneUrl) {
+        await cloneToMde(mde, params.cloneUrl)
     }
 
     return mdeConnectCommand(mde)
