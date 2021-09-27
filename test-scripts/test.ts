@@ -8,6 +8,7 @@ import { runTests } from 'vscode-test'
 import { setupVSCodeTestInstance } from './launchTestUtilities'
 import { env } from 'process'
 import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
+import { sleep } from '../src/shared/utilities/promiseUtilities'
 
 /**
  * Amount of time to wait before executing tests.
@@ -22,7 +23,7 @@ const DISABLE_EXTENSIONS = '--disable-extensions'
 
 async function setupVSCode(): Promise<string> {
     const vsCodeExecutablePath = await setupVSCodeTestInstance()
-    await new Promise(r => setTimeout(r, START_UP_DELAY))
+    await sleep(START_UP_DELAY)
     return vsCodeExecutablePath
 }
 
