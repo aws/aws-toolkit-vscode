@@ -9,7 +9,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
@@ -21,7 +21,7 @@ class CreateResourceAction :
 
     override fun actionPerformed(selected: DynamicResourceResourceTypeNode, e: AnActionEvent) {
         val file = CreateDynamicResourceVirtualFile(
-            selected.nodeProject.getConnectionSettings(),
+            selected.nodeProject.getConnectionSettingsOrThrow(),
             selected.value
         )
         // TODO: Populate the file with required properties in the schema
