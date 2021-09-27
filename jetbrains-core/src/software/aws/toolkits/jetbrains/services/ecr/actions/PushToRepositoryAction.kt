@@ -59,7 +59,6 @@ import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.ui.installOnParent
 import software.aws.toolkits.jetbrains.utils.ui.selected
-import software.aws.toolkits.jetbrains.utils.ui.visibleIf
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcrDeploySource
 import software.aws.toolkits.telemetry.EcrTelemetry

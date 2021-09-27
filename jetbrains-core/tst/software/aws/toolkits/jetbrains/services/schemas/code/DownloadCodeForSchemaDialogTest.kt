@@ -150,7 +150,7 @@ class DownloadCodeForSchemaDialogTest {
         val fileName = testFile.name
 
         schemaCodeDownloader.stub {
-            on { downloadCode(any(), any()) }.thenReturn(completedFuture(testFile))
+            on { downloadCode(any(), any()) }.thenReturn(completedFuture(testFile.toPath()))
         }
 
         runInEdtAndWait {

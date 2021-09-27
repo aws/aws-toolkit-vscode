@@ -19,7 +19,7 @@ class OpenCurrentInEditorAction(
     private val project: Project,
     private val logStream: String,
     private val tableEntries: () -> List<LogStreamEntry>
-) : AnAction(message("cloudwatch.logs.open_in_editor"), null, AllIcons.Actions.Menu_open),
+) : AnAction(message("cloudwatch.logs.open_in_editor"), null, AllIcons.Actions.MenuOpen),
     DumbAware {
     private val coroutineScope = projectCoroutineScope(project)
     private val edt = getCoroutineUiContext()
