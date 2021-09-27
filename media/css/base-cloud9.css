@@ -1,0 +1,175 @@
+/* Styling sheet for use with Cloud9 */
+/* TODO: remove this when Cloud9 injects the correct styling information into webviews */
+
+body {
+    /* Temporary variables for C9 to shade/tint elements. Best-effort styling based off current theme. */
+    /* Since these are applied as rgba, it's very easy to make things look 'washed-out' or too dark */
+    --tint: 255, 255, 255;
+    --shade: 0, 0, 0;
+}
+
+/* Radio button */
+input[type='radio'] {
+    -webkit-appearance: none;
+    display: inline-block;
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    padding: 4px;
+    border: 1px solid var(--vscode-settings-textInputForeground);
+    background-clip: content-box;
+    background-color: transparent;
+    border-radius: 50%;
+    margin: 0;
+}
+input[type='radio']:checked {
+    background-color: var(--vscode-focusBorder);
+    border: 1px solid var(--vscode-focusBorder);
+}
+input:focus:not(:focus-visible) {
+    outline-color: transparent;
+}
+
+/* Checkbox */
+input[type='checkbox']:not(.collapse-button) {
+    -webkit-appearance: none;
+    display: inline-block;
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    border: 1px solid var(--vscode-settings-checkboxBorder);
+    border-radius: 20%;
+    background-size: 16px;
+    background-color: rgba(var(--shade), 0.1);
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0;
+}
+body.vscode-dark input[type='checkbox']:not(.collapse-button):checked {
+    background-image: url('../../resources/dark/done.svg');
+}
+body.vscode-light input[type='checkbox']:not(.collapse-button):checked {
+    background-image: url('../../resources/light/done.svg');
+}
+
+/* Placeholder */
+::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+}
+
+/* Text/number input box */
+input[type='text'],
+input[type='number'] {
+    color: var(--vscode-settings-textInputForeground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+    padding: 4px 4px;
+}
+body.vscode-dark input {
+    background: rgba(var(--shade), 0.1);
+}
+
+input[type='text'][data-invalid='true'],
+input[type='number'][data-invalid='true'] {
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    border-bottom: 0;
+}
+.input-validation {
+    color: var(--vscode-inputValidation-errorForeground);
+    background: var(--vscode-inputValidation-errorBackground);
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    padding: 4px 4px;
+}
+
+/* Select drop-down */
+select {
+    margin: 0px 0px;
+    padding: 2px 0px;
+    border-radius: 4px;
+    border: 1px solid var(--vscode-settings-dropdownBorder);
+    color: var(--vscode-settings-dropdownForeground);
+}
+select:invalid {
+    color: var(--vscode-input-placeholderForeground);
+}
+option {
+    color: var(--vscode-settings-dropdownForeground);
+    background: var(--vscode-settings-dropdownBackground);
+}
+body.vscode-dark select {
+    background: rgba(var(--shade), 0.1);
+}
+
+/* Header (for settings) (TODO: move to different sheet) */
+.header {
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: row;
+}
+body.vscode-dark .header {
+    background-color: rgba(var(--tint), 0.02);
+}
+body.vscode-light .header {
+    background-color: rgba(var(--shade), 0.02);
+}
+
+/* Buttons */
+button,
+.button-theme-primary {
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px;
+}
+button,
+.button-theme-primary:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+.button-theme-secondary {
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border);
+}
+.button-theme-secondary:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+}
+.button-theme-soft {
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+}
+
+/* Text area */
+textarea {
+    color: var(--vscode-settings-textInputForeground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+}
+body.vscode-dark textarea {
+    background: rgba(var(--shade), 0.1);
+}
+
+/* Misc. */
+.no-spacing {
+    margin: 0;
+    padding: 0;
+}
+.soft {
+    color: var(--vscode-input-placeholderForeground);
+}
+.container {
+    background: var(--vscode-menu-background);
+}
+.wrapper {
+    display: contents;
+}
+
+/* Overrides */
+body.vscode-dark .settings-panel {
+    background: rgba(var(--tint), 0.02) !important;
+}
+body.vscode-light .settings-panel {
+    background: rgba(var(--shade), 0.02) !important;
+}
+#invoke-button-container {
+    border: none !important;
+    background: none !important;
+}

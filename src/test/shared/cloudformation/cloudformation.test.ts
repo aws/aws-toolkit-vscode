@@ -215,20 +215,20 @@ describe('CloudFormation', function () {
         {
             title: 'existing lambda, single runtime',
             handlerName: 'app.lambda_handler',
-            templateFileName: 'template_python2.7.yaml',
-            expectedRuntime: 'python2.7',
+            templateFileName: 'template_python3.9.yaml',
+            expectedRuntime: 'python3.9',
         },
         {
             title: '2nd existing lambda, multiple runtimes',
-            handlerName: 'app.lambda_handler2',
+            handlerName: 'app.lambda_handler38',
             templateFileName: 'template_python_mixed.yaml',
-            expectedRuntime: 'python2.7',
+            expectedRuntime: 'python3.8',
         },
         {
             title: '1st existing lambda, multiple runtimes',
-            handlerName: 'app.lambda_handler3',
+            handlerName: 'app.lambda_handler39',
             templateFileName: 'template_python_mixed.yaml',
-            expectedRuntime: 'python3.6',
+            expectedRuntime: 'python3.9',
         },
     ]
 
@@ -236,7 +236,7 @@ describe('CloudFormation', function () {
         {
             title: 'non-existing lambda, single runtime',
             handlerName: 'app.handler_that_does_not_exist',
-            templateFileName: 'template_python2.7.yaml',
+            templateFileName: 'template_python3.9.yaml',
             expectedRuntime: undefined,
         },
         {

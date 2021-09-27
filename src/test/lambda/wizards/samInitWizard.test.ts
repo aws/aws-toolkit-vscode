@@ -229,7 +229,7 @@ describe('CreateNewSamAppWizard', async function () {
         it('uses user response as runtime', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                Set<Runtime>(['nodejs10.x']),
+                Set<Runtime>(['nodejs14.x']),
                 ['npm'],
                 ['x86_64'],
                 'myName',
@@ -243,7 +243,7 @@ describe('CreateNewSamAppWizard', async function () {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.runtime, 'nodejs10.x')
+            assert.strictEqual(args!.runtime, 'nodejs14.x')
             assert.strictEqual(args!.dependencyManager, 'npm')
             assert.strictEqual(args!.architecture, 'x86_64')
         })
@@ -335,7 +335,7 @@ describe('CreateNewSamAppWizard', async function () {
         it('uses user response as template', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                Set<Runtime>(['nodejs10.x']),
+                Set<Runtime>(['nodejs14.x']),
                 ['npm'],
                 ['x86_64'],
                 'myName',
@@ -355,7 +355,7 @@ describe('CreateNewSamAppWizard', async function () {
         it('backtracks when cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
+                [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                 ['pip', 'npm'],
                 ['x86_64', 'x86_64'],
                 'myName',
@@ -369,7 +369,7 @@ describe('CreateNewSamAppWizard', async function () {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.runtime, 'nodejs10.x')
+            assert.strictEqual(args!.runtime, 'nodejs14.x')
             assert.strictEqual(args!.template, helloWorldTemplate)
         })
 
@@ -388,7 +388,7 @@ describe('CreateNewSamAppWizard', async function () {
             beforeEach(async function () {
                 context = new MockCreateNewSamAppWizardContext(
                     [],
-                    Set<Runtime>(['nodejs10.x']),
+                    Set<Runtime>(['nodejs14.x']),
                     ['npm'],
                     ['x86_64'],
                     'myName',
@@ -411,7 +411,7 @@ describe('CreateNewSamAppWizard', async function () {
                 it('backtracks when cancelled', async function () {
                     context = new MockCreateNewSamAppWizardContext(
                         [],
-                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
+                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                         ['pip', 'npm'],
                         ['x86_64'],
                         'myName',
@@ -439,7 +439,7 @@ describe('CreateNewSamAppWizard', async function () {
                 it('backtracks when cancelled', async function () {
                     context = new MockCreateNewSamAppWizardContext(
                         [],
-                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
+                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                         ['pip', 'npm'],
                         ['x86_64'],
                         'myName',
@@ -467,7 +467,7 @@ describe('CreateNewSamAppWizard', async function () {
                 it('backtracks when cancelled', async function () {
                     context = new MockCreateNewSamAppWizardContext(
                         [],
-                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
+                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                         ['pip', 'npm'],
                         ['x86_64'],
                         'myName',
@@ -495,7 +495,7 @@ describe('CreateNewSamAppWizard', async function () {
                 it('backtracks when cancelled', async function () {
                     context = new MockCreateNewSamAppWizardContext(
                         [],
-                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
+                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                         ['pip', 'npm'],
                         ['x86_64'],
                         'myName',
@@ -520,7 +520,7 @@ describe('CreateNewSamAppWizard', async function () {
         it('uses user response as location', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                Set<Runtime>(['nodejs10.x']),
+                Set<Runtime>(['nodejs14.x']),
                 ['npm'],
                 ['x86_64'],
                 'myName',
@@ -540,7 +540,7 @@ describe('CreateNewSamAppWizard', async function () {
         it('backtracks when cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
+                [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                 ['pip', 'npm'],
                 ['x86_64'],
                 'myName',
@@ -562,7 +562,7 @@ describe('CreateNewSamAppWizard', async function () {
             const name = 'myInputBoxResult'
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                Set<Runtime>(['nodejs10.x']),
+                Set<Runtime>(['nodejs14.x']),
                 ['npm'],
                 ['x86_64'],
                 name,
@@ -589,7 +589,7 @@ describe('CreateNewSamAppWizard', async function () {
                     name: path.basename(p),
                     index: index++,
                 })),
-                Set<Runtime>(['nodejs10.x']),
+                Set<Runtime>(['nodejs14.x']),
                 ['npm'],
                 ['x86_64'],
                 'myName',
@@ -611,7 +611,7 @@ describe('CreateNewSamAppWizard', async function () {
         it('uses user response as name', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                Set<Runtime>(['nodejs10.x']),
+                Set<Runtime>(['nodejs14.x']),
                 ['npm'],
                 ['x86_64'],
                 'myName',
@@ -631,7 +631,7 @@ describe('CreateNewSamAppWizard', async function () {
         it('backtracks when cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                Set<Runtime>(['nodejs10.x']),
+                Set<Runtime>(['nodejs14.x']),
                 ['npm'],
                 ['x86_64'],
                 ['', 'myName'],

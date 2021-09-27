@@ -824,7 +824,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs10.x',
+                runtime: 'nodejs14.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {
@@ -881,7 +881,7 @@ describe('SamDebugConfigurationProvider', async function () {
     Properties:
       CodeUri: .
       Handler: src/subfolder/app.handlerTwoFoldersDeep
-      Runtime: nodejs10.x
+      Runtime: nodejs14.x
 `
             )
 
@@ -1038,7 +1038,7 @@ Resources:
             Path: /hello
             Method: get
     Metadata:
-      DockerTag: nodejs12.x-v1
+      DockerTag: nodejs14.x-v1
       DockerContext: ./hello-world
       Dockerfile: Dockerfile
 `
@@ -1131,7 +1131,7 @@ Resources:
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs10.x',
+                runtime: 'nodejs14.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {
@@ -1191,7 +1191,7 @@ Resources:
     Properties:
       CodeUri: .
       Handler: src/subfolder/app.handlerTwoFoldersDeep
-      Runtime: nodejs10.x
+      Runtime: nodejs14.x
 `
             )
 

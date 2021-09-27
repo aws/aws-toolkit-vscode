@@ -1549,10 +1549,7 @@
                 "command": "aws.submitFeedback",
                 "title": "%AWS.command.submitFeedback%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "dark": "third-party/resources/from-vscode/dark/feedback.svg",
-                    "light": "third-party/resources/from-vscode/light/feedback.svg"
-                },
+                "icon": "$(comment)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2204,12 +2201,12 @@
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
-        "sinon": "^11.1.1",
+        "sinon": "^11.1.2",
         "source-map-support": "^0.5.19",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^9.1.1",
+        "ts-node": "^10.2.1",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^1.93.0",
+        "vsce": "^1.99.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.5.2",
         "vue-loader": "^16.5.0",
@@ -2220,7 +2217,7 @@
     "dependencies": {
         "@aws-sdk/client-sso": "^3.16.0",
         "@aws-sdk/client-sso-oidc": "^3.16.0",
-        "@aws-sdk/credential-provider-ini": "^3.27.0",
+        "@aws-sdk/credential-provider-ini": "^3.33.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.16.0",
         "adm-zip": "^0.4.13",
@@ -2241,7 +2238,6 @@
         "portfinder": "^1.0.25",
         "request": "^2.88.0",
         "semver": "^7.3.5",
-        "sleep-promise": "^9.1.0",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
         "typescript": "^4.4.2",

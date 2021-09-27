@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as sleep from 'sleep-promise'
 import * as vscode from 'vscode'
+import { sleep } from './promiseUtilities'
 
 export interface LoadSymbolsContext {
     executeCommand: typeof vscode.commands.executeCommand
