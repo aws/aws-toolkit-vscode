@@ -27,6 +27,8 @@ import { Window } from '../../vscode/window'
 
 import * as nls from 'vscode-nls'
 import { getSamCliVersion } from '../cli/samCliContext'
+import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT } from '../cli/samCliValidator'
+import { logger } from 'handlebars'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -79,7 +81,7 @@ export async function invokeCsharpLambda(
     if (!config.noDebug) {
         const samCliVersion = await getSamCliVersion(ctx.samCliContext())
         // TODO: Remove this when min sam version is >= 1.4.0
-        if (semver.lt(samCliVersion, '1.4.0')) {
+        if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT)) {
             window.showWarningMessage(
                 localize(
                     'AWS.output.sam.local.no.net.3.1.debug',
@@ -94,6 +96,7 @@ export async function invokeCsharpLambda(
                     'The vsdbg debugger does not currently support the arm64 architecture. Function will run locally without debug.'
                 )
             )
+            getLogger().warn('SAM Invoke: Attempting to debug dotnet on ARM - removing debug flag.')
             config.noDebug = true
         }
     }

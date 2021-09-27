@@ -628,14 +628,32 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         invokeTarget: AwsSamDebuggerConfiguration['invokeTarget']
     ): Architecture {
         let arch: string | undefined
+        let architectureLocation: string
         if (template) {
             arch = (CloudFormation.getArrayForProperty(resource?.Properties, 'Architectures', template) ?? [
                 'x86_64',
             ])[0]
+            architectureLocation = localize('AWS.generic.template', 'template file')
         } else {
             arch = (invokeTarget as CodeTargetProperties)?.architecture
+            architectureLocation = localize('AWS.generic.launchConfig', 'launch configuration')
         }
-        return this.isArchitecture(arch) ? arch : 'x86_64'
+
+        const isArch = this.isArchitecture(arch)
+
+        if (!isArch) {
+            getLogger().warn('SAM Invoke: Invalid architecture. Defaulting to x86_64.')
+            vscode.window.showWarningMessage(
+                localize(
+                    'AWS.output.sam.invalidArchitecture',
+                    'Invalid architecture specified in {0}. Defaulting to x86_64 architecture for invocation.',
+                    architectureLocation
+                )
+            )
+            arch = 'x86_64'
+        }
+
+        return arch as Architecture
     }
 
     private isArchitecture(a: any): a is Architecture {
