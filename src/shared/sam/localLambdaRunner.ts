@@ -483,7 +483,7 @@ async function requestLocalApi(
         method: reqMethod,
         retry: {
             limit: RETRY_LIMIT,
-            statusCodes: [403],
+            statusCodes: [],
             methods: [reqMethod],
             calculateDelay: obj => {
                 if (obj.error.response !== undefined) {
