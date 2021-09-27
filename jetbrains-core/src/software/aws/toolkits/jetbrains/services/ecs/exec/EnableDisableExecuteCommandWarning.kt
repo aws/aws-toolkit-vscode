@@ -10,7 +10,6 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.layout.panel
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings
-import software.aws.toolkits.jetbrains.utils.ui.visible
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -71,5 +70,5 @@ class EnableDisableExecuteCommandWarning(private val project: Project, private v
 
     override fun createCenterPanel(): JComponent = component
 
-    override fun getHelpId(): String? = HelpIds.ECS_EXEC_PERMISSIONS_REQUIRED.id
+    override fun getHelpId(): String = HelpIds.ECS_EXEC_PERMISSIONS_REQUIRED.id
 }

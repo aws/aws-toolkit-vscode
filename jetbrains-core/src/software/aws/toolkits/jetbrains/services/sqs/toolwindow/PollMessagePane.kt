@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.HelpTooltip
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.CommonShortcuts
@@ -34,8 +33,7 @@ import javax.swing.JPanel
 class PollMessagePane(
     private val project: Project,
     private val client: SqsClient,
-    private val queue: Queue,
-    disposable: Disposable
+    private val queue: Queue
 ) {
     private val coroutineScope = projectCoroutineScope(project)
     private val bgContext = getCoroutineBgContext()

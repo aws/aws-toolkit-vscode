@@ -41,6 +41,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture.completedFuture
 import java.util.concurrent.CompletableFuture.failedFuture
@@ -74,7 +75,7 @@ class SchemaCodeDownloaderTest {
     private val codeExtractor = mock<CodeExtractor>()
     private val progressIndicator = mock<ProgressIndicator>()
     private val downloadedSchemaCode = mock<DownloadedSchemaCode>()
-    private val schemaCodeCoreFile = mock<File>()
+    private val schemaCodeCoreFile = mock<Path>()
 
     @Before
     fun setUp() {
@@ -259,8 +260,8 @@ class SchemaCodeDownloaderTest {
         // Assert the schema core code file exists, and is returned
         assertThat(schemaCoreCodeFile).isNotNull
         schemaCoreCodeFile?.let {
-            assertThat(schemaCoreCodeFile.exists()).isTrue
-            assertThat(schemaCoreCodeFile.name).isEqualTo(ZIP_FILE_SCHEMA_CORE_CODE_FILE_NAME)
+            assertThat(Files.exists(schemaCoreCodeFile)).isTrue
+            assertThat(schemaCoreCodeFile.fileName.toString()).isEqualTo(ZIP_FILE_SCHEMA_CORE_CODE_FILE_NAME)
         }
     }
 

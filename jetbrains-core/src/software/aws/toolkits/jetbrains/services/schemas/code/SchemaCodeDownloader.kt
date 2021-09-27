@@ -20,6 +20,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.resources.message
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
@@ -35,7 +36,7 @@ class SchemaCodeDownloader(
     fun downloadCode(
         schemaDownloadRequest: SchemaCodeDownloadRequestDetails,
         indicator: ProgressIndicator
-    ): CompletionStage<File?> {
+    ): CompletionStage<Path?> {
         val schemaName = schemaDownloadRequest.schema.name
         indicator.updateProgress(message("schemas.schema.download_code_bindings.notification.start", schemaName))
 
@@ -194,14 +195,14 @@ class CodeExtractor {
     fun extractAndPlace(
         request: SchemaCodeDownloadRequestDetails,
         downloadedSchemaCode: DownloadedSchemaCode
-    ): CompletionStage<File?> {
+    ): CompletionStage<Path?> {
         val zipContents = downloadedSchemaCode.zipContents
         val zipFileName = "${request.schema.registryName}.${request.schema.name}.${request.version}.${request.language.apiValue}.zip"
 
         val schemaCoreCodeFileName = request.schemaCoreCodeFileName()
-        var schemaCoreCodeFile: File? = null
+        var schemaCoreCodeFile: Path? = null
 
-        val future = CompletableFuture<File?>()
+        val future = CompletableFuture<Path?>()
 
         try {
             val codeZipDir = createTempDir()
@@ -215,9 +216,9 @@ class CodeExtractor {
 
             val decompressor = Decompressor.Zip(codeZipFile)
                 .overwrite(false)
-                .postprocessor { file ->
-                    if (schemaCoreCodeFile == null && file.name.equals(schemaCoreCodeFileName)) {
-                        schemaCoreCodeFile = file
+                .postProcessor { path ->
+                    if (schemaCoreCodeFile == null && path.fileName.toString() == schemaCoreCodeFileName) {
+                        schemaCoreCodeFile = path
                     }
                 }
             decompressor.extract(request.destinationDirectory)
