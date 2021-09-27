@@ -16,9 +16,9 @@ import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
+import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.getResourceIfPresent
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.settings.AwsSettings
