@@ -13,7 +13,6 @@ class CustomRuleSetProvider : RuleSetProvider {
         ruleSetId,
         listOf(
             BannedPatternRule(BannedPatternRule.DEFAULT_PATTERNS),
-            ExpressionBodyRule(),
             LazyLogRule(),
             DialogModalityRule(),
             BannedImportsRule()
