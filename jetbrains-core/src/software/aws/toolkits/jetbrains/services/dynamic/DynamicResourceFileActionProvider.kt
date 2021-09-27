@@ -18,28 +18,29 @@ class DynamicResourceFileActionProvider :
     override fun getKey(): Key<DynamicResourceVirtualFilePanel> = KEY
 
     override fun createNotificationPanel(file: VirtualFile, fileEditor: FileEditor, project: Project):
-        DynamicResourceVirtualFilePanel? = when {
-        file is CreateDynamicResourceVirtualFile ->
+        DynamicResourceVirtualFilePanel? = when (file) {
+        is CreateDynamicResourceVirtualFile ->
             DynamicResourceVirtualFilePanel(
                 project,
                 file,
                 message("dynamic_resources.create_resource_instruction"),
                 "dynamic.resource.editor.submitResourceCreationRequest"
             )
-        file is ViewEditableDynamicResourceVirtualFile && !file.isWritable ->
-            DynamicResourceVirtualFilePanel(
-                project,
-                file,
-                message("dynamic_resources.edit_resource_instruction"),
-                "dynamic.resource.editor.enableEditingResource"
-            )
-        file is ViewEditableDynamicResourceVirtualFile && file.isWritable ->
-            DynamicResourceVirtualFilePanel(
-                project,
-                file,
-                message("dynamic_resources.update_resource_instruction"),
-                "dynamic.resource.editor.submitResourceUpdateRequest"
-            )
+        is ViewEditableDynamicResourceVirtualFile ->
+            when (file.isWritable) {
+                true -> DynamicResourceVirtualFilePanel(
+                    project,
+                    file,
+                    message("dynamic_resources.update_resource_instruction"),
+                    "dynamic.resource.editor.submitResourceUpdateRequest"
+                )
+                false -> DynamicResourceVirtualFilePanel(
+                    project,
+                    file,
+                    message("dynamic_resources.edit_resource_instruction"),
+                    "dynamic.resource.editor.enableEditingResource"
+                )
+            }
         else -> null
     }
 
