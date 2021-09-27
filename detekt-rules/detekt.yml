@@ -64,6 +64,8 @@ formatting:
   EnumEntryNameCase:
     active: false
     autoCorrect: true
+  ExpressionBodySyntax:
+    includeLineWrapping: true
   Filename:
     active: true
   FinalNewline:

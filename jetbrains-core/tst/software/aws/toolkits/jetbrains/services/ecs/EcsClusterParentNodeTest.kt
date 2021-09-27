@@ -7,7 +7,6 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.utils.CompletableFutureUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
@@ -31,7 +30,7 @@ class EcsClusterParentNodeTest {
         resourceCache.addEntry(
             projectRule.project,
             EcsResources.LIST_CLUSTER_ARNS,
-            CompletableFutureUtils.failedFuture(RuntimeException("Simulated error"))
+            CompletableFuture.failedFuture(RuntimeException("Simulated error"))
         )
 
         assertThat(node.children).hasSize(1)

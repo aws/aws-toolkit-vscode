@@ -9,6 +9,7 @@ import com.intellij.execution.util.ExecUtil
 import com.intellij.util.text.nullize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import org.intellij.lang.annotations.Language
 import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.steps.GetPorts.Companion.DEBUG_PORTS
@@ -67,15 +68,17 @@ class FindPid : Step() {
 
     companion object {
         val DOTNET_PID = AttributeBagKey.create<Int>("DOTNET_PID")
+
+        @Language("sh")
         private const val FIND_PID_SCRIPT =
             """
-            for i in `ls /proc/*/exe` ; do
-                symlink=`readlink  ${'$'}i 2>/dev/null`;
-                if [[ "${'$'}symlink" == *"/dotnet" ]]; then
-                    echo  ${'$'}i | sed -n 's/.*\/proc\/\(.*\)\/exe.*/\1/p'
+            for i in /proc/*/cmdline ; do
+                if tr '\0' ' ' < "${'$'}i" 2>/dev/null | grep -cq 'dotnet'; then
+                    echo  ${'$'}i | sed -n 's/.*\/proc\/\(.*\)\/cmdline.*/\1/p'
+                    break
                 fi;
             done;
-        """
+            """
     }
 }
 
