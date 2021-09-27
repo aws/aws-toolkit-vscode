@@ -68,8 +68,8 @@
     <ID>AbsentOrWrongFileLicense:ViewObjectVersionAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.ViewObjectVersionAction.kt</ID>
     <ID>AbsentOrWrongFileLicense:build.gradle.kts$.build.gradle.kts</ID>
     <ID>AbsentOrWrongFileLicense:settings.gradle.kts$.settings.gradle.kts</ID>
-    <ID>BannedPattern:BannedPatternRule.kt$software.aws.toolkits.gradle.detekt.rules.BannedPatternRule.kt</ID>
-    <ID>BannedPattern:BannedPatternRuleTest.kt$.BannedPatternRuleTest.kt</ID>
+    <ID>BannedPattern:BannedPatternRule.kt$BannedPatternRule.kt</ID>
+    <ID>BannedPattern:software.aws.toolkits.gradle.detekt.rules.BannedPatternRuleTest.kt$.software.aws.toolkits.gradle.detekt.rules.BannedPatternRuleTest.kt</ID>
     <ID>CopyrightHeader:build.gradle.kts$.build.gradle.kts</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_fail_autodetectBadSam_andManuallySetToBadSam()</ID>
     <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectBadSam()</ID>

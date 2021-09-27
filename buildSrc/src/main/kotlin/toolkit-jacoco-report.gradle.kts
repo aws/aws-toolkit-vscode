@@ -61,7 +61,7 @@ tasks.register<JacocoReport>("coverageReport") {
         include("**/software/aws/toolkits/**")
     })
     additionalSourceDirs(sourcesPath.incoming.artifactView { lenient(true) }.files)
-    executionData(coverageDataPath.incoming.artifactView { lenient(true) }.files.filter { it.exists() })
+    executionData(coverageDataPath.incoming.artifactView { lenient(true) }.files.filter { it.exists() && it.extension == "exec" })
 
     reports {
         html.required.set(true)
