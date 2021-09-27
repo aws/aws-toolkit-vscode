@@ -8,7 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.DeleteResourceDialog
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
@@ -26,7 +26,7 @@ class DynamicResourceDeleteResourceAction :
         val response = DeleteResourceDialog(selected.nodeProject, resourceType, selected.displayName()).showAndGet()
         if (response) {
             val dynamicResourceIdentifier = DynamicResourceIdentifier(
-                selected.nodeProject.getConnectionSettings(),
+                selected.nodeProject.getConnectionSettingsOrThrow(),
                 selected.resource.type.fullName, selected.resource.identifier
             )
             val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
