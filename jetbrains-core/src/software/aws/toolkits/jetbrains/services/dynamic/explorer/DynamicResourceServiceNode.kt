@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettingsOrThrow
+import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode

@@ -9,7 +9,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettingsOrThrow
+import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
