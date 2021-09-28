@@ -23,18 +23,16 @@ export class CawsView implements vscode.TreeDataProvider<vscode.TreeItem> {
     }
 
     getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
-        return element;
+        return element
     }
 
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
         const isConnected = !!ext.awsContext.getCawsCredentials()
         if (!isConnected) {
             // Will show the "welcome view" (`viewsWelcome`).
-            return Promise.resolve([]);
+            return Promise.resolve([])
         }
 
-        return Promise.resolve([
-            new vscode.TreeItem('TODO')
-        ]);
+        return Promise.resolve([new vscode.TreeItem('TODO')])
     }
 }

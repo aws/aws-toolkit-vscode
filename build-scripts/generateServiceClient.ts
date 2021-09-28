@@ -209,7 +209,7 @@ ${fileContents}
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
             serviceJsonPath: 'types/REMOVED.api.json',
-            serviceName: 'ClientCodeAws'
+            serviceName: 'ClientCodeAws',
         },
         {
             serviceJsonPath: 'src/shared/telemetry/service-2.json',
@@ -217,7 +217,7 @@ ${fileContents}
         },
         {
             serviceJsonPath: 'types/REMOVED.normal.json',
-            serviceName: 'ClientMde'
+            serviceName: 'ClientMde',
         },
     ]
     await generateServiceClients(serviceClientDefinitions)
