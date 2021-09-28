@@ -173,12 +173,11 @@ export class GitExtension {
 
         try {
             const { stdout } = await execFileAsync(this.api.git.path, ['--version'])
-            // seems fragile, maybe use regexp instead?
-            const version = semverParse(stdout.trim().split(/\s/).pop()) as SemVer | undefined
-            if (!version) {
+            const match = stdout.trim().match(/[0-9]+.[0-9]+.[0-9]+/g)
+            if (!match) {
                 throw new Error(`Unable to parse git output for version: ${stdout}`)
             }
-            return version
+            return semverParse(match[0]) as SemVer | undefined
         } catch (err) {
             getLogger().verbose('git: failed to retrieve version: %O', err)
         }
