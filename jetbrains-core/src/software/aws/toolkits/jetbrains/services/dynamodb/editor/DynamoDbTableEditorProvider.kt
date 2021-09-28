@@ -11,7 +11,7 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamodbTelemetry
@@ -29,7 +29,7 @@ class DynamoDbTableEditorProvider : FileEditorProvider, DumbAware {
     companion object {
         fun openViewer(project: Project, tableArn: String) {
             try {
-                val virtualFile = DynamoDbVirtualFile(tableArn, project.awsClient())
+                val virtualFile = DynamoDbVirtualFile(tableArn, project.getConnectionSettingsOrThrow())
                 FileEditorManager.getInstance(project).openTextEditor(
                     OpenFileDescriptor(project, virtualFile),
                     /*focusEditor*/ true
