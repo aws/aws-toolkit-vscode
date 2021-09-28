@@ -106,10 +106,7 @@ describe('UserCredentialsUtils', function () {
                 profileName: profileName,
                 secretKey: 'ABC',
             }
-            await UserCredentialsUtils.generateCredentialsFile(
-                path.join(__dirname, '..', '..', '..', '..', '..'),
-                creds
-            )
+            await UserCredentialsUtils.generateCredentialsFile(creds)
 
             const sharedConfigFiles: SharedConfigFiles = await loadSharedConfigFiles()
             assert(typeof sharedConfigFiles === 'object', 'sharedConfigFiles should be an object')
