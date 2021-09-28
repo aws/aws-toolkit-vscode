@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
+import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsextra from 'fs-extra'
 import * as FakeTimers from '@sinonjs/fake-timers'
@@ -97,4 +98,18 @@ export function assertFileText(file: string, expected: string, message?: string 
 export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.InstalledClock, t: number): Promise<T> {
     clock.tick(t)
     return await promise
+}
+
+/**
+ * Creates an executable file (including any parent directories) with the given contents.
+ */
+export function createExecutableFile(filepath: string, contents: string): void {
+    fs.mkdirpSync(path.dirname(filepath))
+    if (process.platform === 'win32') {
+        fs.writeFileSync(filepath, `@echo OFF$\r\n${contents}\r\n`)
+        
+    } else {
+        fs.writeFileSync(filepath, contents)
+        fs.chmodSync(filepath, 0o744)
+    }
 }

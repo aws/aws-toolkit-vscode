@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM/nodejs: do not check for \"tsc\" (typescript compiler) for plain javascript projects"
+}

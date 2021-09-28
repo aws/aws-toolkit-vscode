@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
@@ -11,6 +12,7 @@ import * as path from 'path'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
+import * as testutil from '../testUtil'
 
 describe('SystemUtilities', function () {
     let tempFolder: string
@@ -89,5 +91,28 @@ describe('SystemUtilities', function () {
             const filename: string = path.join(tempFolder, 'non-existing-file.txt')
             assert.strictEqual(await SystemUtilities.fileExists(filename), false)
         })
+    })
+
+    it('findTypescriptCompiler()', async function () {
+        const iswin = (process.platform === 'win32')
+        const workspace = vscode.workspace.workspaceFolders![0]
+        const tscNodemodules = path.join(workspace.uri.fsPath,
+            `foo/bar/node_modules/.bin/tsc${iswin ? '.cmd' : ''}`)
+        fs.removeSync(tscNodemodules)
+
+        // The test workspace normally doesn't have node_modules so this will
+        // be undefined or it will find the globally-installed "tsc".
+        const tscGlobal = await SystemUtilities.findTypescriptCompiler()
+        assert.ok(tscGlobal === undefined || tscGlobal === 'tsc')
+
+        // Create a fake "node_modules/.bin/tsc" in the test workspace.
+        testutil.createExecutableFile(
+            tscNodemodules,
+            'echo "typescript Version 42"')
+
+        const result = await SystemUtilities.findTypescriptCompiler()
+        assert(result !== undefined)
+        testutil.assertEqualPaths(result, tscNodemodules)
+        fs.removeSync(tscNodemodules)
     })
 })
