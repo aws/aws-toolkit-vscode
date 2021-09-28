@@ -185,8 +185,8 @@ async function buildLambdaHandler(
             throw new Error(samBuild.failure())
         }
         // build successful: use output template path for invocation
-        // XXX: reassignment
         await remove(config.templatePath)
+        // XXX: reassignment
         config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
         getLogger('channel').info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
         return true
