@@ -5,11 +5,14 @@ package software.aws.toolkits.jetbrains.services.dynamodb.editor
 
 import com.intellij.testFramework.LightVirtualFile
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
+import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 
 /**
  * Light virtual file to represent a dynamo table, used to open the custom editor
  */
-class DynamoDbVirtualFile(val tableArn: String, val dynamoDbClient: DynamoDbClient) : LightVirtualFile(tableArn) {
+class DynamoDbVirtualFile(val tableArn: String, val connectionSettings: ConnectionSettings) : LightVirtualFile(tableArn) {
+    val dynamoDbClient: DynamoDbClient = connectionSettings.awsClient()
     val tableName = tableArn.substringAfterLast('/')
 
     /**

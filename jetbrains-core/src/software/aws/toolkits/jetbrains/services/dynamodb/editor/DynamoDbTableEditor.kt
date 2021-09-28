@@ -27,6 +27,10 @@ import software.aws.toolkits.jetbrains.services.dynamodb.DynamoDbUtils.executeSt
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
 import software.aws.toolkits.jetbrains.services.dynamodb.toAttribute
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DynamoDbFetchType
+import software.aws.toolkits.telemetry.DynamoDbIndexType
+import software.aws.toolkits.telemetry.DynamodbTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.awt.BorderLayout
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
@@ -43,6 +47,7 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
     private val loadingPanel = JBLoadingPanel(BorderLayout(), this)
 
     private lateinit var searchPanel: SearchPanel
+    private lateinit var tableInfo: TableInfo
     private val searchResults = SearchResultsPanel()
 
     init {
@@ -50,7 +55,7 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
         loadingPanel.startLoading()
 
         coroutineScope.launch {
-            val tableInfo = try {
+            tableInfo = try {
                 getTableInfo(dynamoTable.tableName)
             } catch (e: Exception) {
                 withContext(edt) {
@@ -114,11 +119,16 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
         coroutineScope.launch(edt) {
             searchResults.setBusy(true)
             val (index, partiqlStatement) = searchPanel.getSearchQuery()
+            val fetchType = when (searchPanel.searchType) {
+                SearchPanel.SearchType.Scan -> DynamoDbFetchType.Scan
+                SearchPanel.SearchType.Query -> DynamoDbFetchType.Query
+            }
 
             withContext(bg) {
                 LOG.debug { "Querying Dynamo with '$partiqlStatement'" }
 
                 val request = ExecuteStatementRequest.builder().statement(partiqlStatement).build()
+                var telemetryResult = Result.Succeeded
                 try {
                     val results = dynamoTable.dynamoDbClient.executeStatementPaginator(request)
                         .flatMap { it.items().asSequence() }
@@ -132,10 +142,24 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
                     }
                 } catch (e: Exception) {
                     LOG.error(e) { "Query failed to execute" }
+                    telemetryResult = Result.Failed
                     withContext(edt) {
                         searchResults.setError(e)
                         searchResults.setBusy(false)
                     }
+                } finally {
+                    val indexType = when (index) {
+                        tableInfo.tableIndex -> DynamoDbIndexType.Primary
+                        in tableInfo.localSecondary -> DynamoDbIndexType.LocalSecondary
+                        in tableInfo.globalSecondary -> DynamoDbIndexType.GlobalSecondary
+                        else -> DynamoDbIndexType.Unknown
+                    }
+                    DynamodbTelemetry.fetchRecords(
+                        dynamoTable.connectionSettings,
+                        result = telemetryResult,
+                        dynamoDbFetchType = fetchType,
+                        dynamoDbIndexType = indexType
+                    )
                 }
             }
         }

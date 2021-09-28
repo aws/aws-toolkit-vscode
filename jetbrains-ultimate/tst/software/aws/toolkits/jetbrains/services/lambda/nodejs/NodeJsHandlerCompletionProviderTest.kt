@@ -16,12 +16,6 @@ class NodeJsHandlerCompletionProviderTest {
     val projectRule = NodeJsCodeInsightTestFixtureRule()
 
     @Test
-    fun completionIsNotSupportedNodeJs10X() {
-        val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.NODEJS10_X)
-        assertFalse(provider.isCompletionSupported)
-    }
-
-    @Test
     fun completionIsNotSupportedNodeJs12X() {
         val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.NODEJS12_X)
         assertFalse(provider.isCompletionSupported)

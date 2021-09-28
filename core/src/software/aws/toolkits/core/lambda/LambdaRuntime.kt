@@ -17,13 +17,11 @@ enum class LambdaRuntime(
         // and 1.17.0 broke the arguments
         minSamDebugging = "1.18.1"
     ),
-    NODEJS10_X(Runtime.NODEJS10_X),
     NODEJS12_X(Runtime.NODEJS12_X),
     NODEJS14_X(Runtime.NODEJS14_X, minSamDebugging = "1.17.0", minSamInit = "1.17.0"),
     JAVA8(Runtime.JAVA8),
     JAVA8_AL2(Runtime.JAVA8_AL2, minSamDebugging = "1.2.0"),
     JAVA11(Runtime.JAVA11),
-    PYTHON2_7(Runtime.PYTHON2_7),
     PYTHON3_6(Runtime.PYTHON3_6),
     PYTHON3_7(Runtime.PYTHON3_7),
     PYTHON3_8(Runtime.PYTHON3_8),
