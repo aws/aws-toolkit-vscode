@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as vscodeUtils from '../../src/shared/utilities/vsCodeUtils'
 import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
-import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
+import { helloWorldTemplate, typeScriptBackendTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { Language } from '../shared/codelens/codeLensUtils'
@@ -60,6 +60,14 @@ interface TestScenario {
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
     // zips
+    {
+        runtime: 'nodejs12.x',
+        displayName: 'nodejs12.x/typescript (ZIP)',
+        path: 'app/src/handlers/post.ts',
+        debugSessionType: 'pwa-node',
+        language: 'typescript',
+        dependencyManager: 'npm',
+    },
     {
         runtime: 'nodejs12.x',
         displayName: 'nodejs12.x (ZIP)',
@@ -453,7 +461,14 @@ describe('SAM Integration Tests', async function () {
                     await createSamApplication(testDir)
                     appPath = path.join(testDir, samApplicationName, scenario.path)
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
-                    assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
+                    if (!(await fileExists(cfnTemplatePath))) {
+                        // May be ".yaml" or ".yml". COOL!
+                        cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yml')
+                    }
+                    assert.ok(
+                        await fileExists(cfnTemplatePath),
+                        `Expected SAM template.{yml,yaml} to exist at: ${cfnTemplatePath}`
+                    )
 
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
@@ -498,6 +513,7 @@ describe('SAM Integration Tests', async function () {
                     let manifestFile: RegExp
                     switch (scenario.language) {
                         case 'javascript':
+                        case 'typescript':
                             manifestFile = /^package\.json$/
                             break
                         case 'python':
@@ -624,6 +640,9 @@ describe('SAM Integration Tests', async function () {
             }
             if (scenario.baseImage) {
                 initArguments.baseImage = scenario.baseImage
+            } else if (scenario.language === 'typescript') {
+                initArguments.runtime = scenario.runtime
+                initArguments.template = typeScriptBackendTemplate
             } else {
                 initArguments.runtime = scenario.runtime
                 initArguments.template = helloWorldTemplate

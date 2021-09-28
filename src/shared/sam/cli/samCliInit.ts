@@ -53,7 +53,7 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
         args.push('--app-template', 'hello-world-lambda-image')
     }
 
-    if (initArguments.extraContent!) {
+    if (initArguments.extraContent) {
         args.push('--extra-context', JSON.stringify(initArguments.extraContent))
     }
 
