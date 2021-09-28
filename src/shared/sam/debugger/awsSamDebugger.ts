@@ -386,9 +386,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // Other refs can fail; SAM will handle them.
         const handlerName = getHandlerName(folder, config)
 
-        config.baseBuildDir = pathutil.normalize(
-            resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
-        )
+        config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
 
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.

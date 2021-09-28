@@ -292,7 +292,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 )
 
                 const actual = await debugConfigProvider.makeConfig(folder, config)
-                assert.strictEqual(actual?.baseBuildDir, pathutil.normalize(buildDir))
+                assert.strictEqual(actual?.baseBuildDir, buildDir)
             })
         })
 
