@@ -154,7 +154,11 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     null
                 }
                 val updatedMutation = when (val event = progress?.progressEvent()) {
-                    is ProgressEvent -> mutation.copy(status = event.operationStatus(), resourceIdentifier = event.identifier())
+                    is ProgressEvent -> mutation.copy(
+                        status = event.operationStatus(),
+                        resourceIdentifier = event.identifier(),
+                        message = event.statusMessage()
+                    )
                     else -> mutation
                 }
                 if (updatedMutation != mutation) {

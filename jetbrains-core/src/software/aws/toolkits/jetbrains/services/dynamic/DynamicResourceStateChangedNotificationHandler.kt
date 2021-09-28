@@ -42,20 +42,26 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
                 ChronoUnit.MILLIS.between(state.startTime, DynamicResourceTelemetryResources.getCurrentTime()).toDouble()
             )
         } else if (state.status == OperationStatus.FAILED) {
-            notifyError(
-                message(
-                    "dynamic_resources.operation_status_notification_title",
-                    state.resourceIdentifier ?: "",
-                    state.operation.name.toLowerCase()
-                ),
-                message(
-                    "dynamic_resources.operation_status_failed",
-                    state.resourceIdentifier ?: "",
-                    state.operation.name.toLowerCase(),
-                    state.message ?: ""
-                ),
-                project
-            )
+            if (state.message.isNullOrBlank()) {
+                displayErrorMessage(
+                    state,
+                    message(
+                        "dynamic_resources.operation_status_failed_no_message",
+                        state.resourceIdentifier ?: state.resourceType,
+                        state.operation.name.toLowerCase()
+                    )
+                )
+            } else {
+                displayErrorMessage(
+                    state,
+                    message(
+                        "dynamic_resources.operation_status_failed",
+                        state.resourceIdentifier ?: state.resourceType,
+                        state.operation.name.toLowerCase(),
+                        state.message
+                    )
+                )
+            }
             DynamicresourceTelemetry.mutateResource(
                 project,
                 Result.Failed,
@@ -66,6 +72,18 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
         }
         AwsResourceCache.getInstance().clear(CloudControlApiResources.listResources(state.resourceType), state.connectionSettings)
         refreshRequired.set(true)
+    }
+
+    private fun displayErrorMessage(state: ResourceMutationState, errorMessage: String) {
+        notifyError(
+            message(
+                "dynamic_resources.operation_status_notification_title",
+                state.resourceIdentifier ?: state.resourceType,
+                state.operation.name.toLowerCase()
+            ),
+            errorMessage,
+            project
+        )
     }
 
     override fun statusCheckComplete() {
