@@ -142,7 +142,7 @@ export async function createNewSamApplication(
     let config: CreateNewSamAppWizardResponse | undefined
     let samVersion: string | undefined
 
-    let initArguments: SamCliInitArgs
+    let initArguments: SamCliInitArgs | undefined
 
     try {
         await validateSamCli(samCliContext.validator)
@@ -340,6 +340,7 @@ export async function createNewSamApplication(
             reason: reason,
             runtime: createRuntime as TelemetryRuntime,
             version: samVersion,
+            architecture: initArguments?.architecture,
         })
     }
 }

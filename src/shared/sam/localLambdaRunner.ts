@@ -245,6 +245,7 @@ async function invokeLambdaHandler(
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 httpMethod: config.api?.httpMethod,
+                architecture: config.architecture,
             })
         }
 
@@ -333,6 +334,7 @@ async function invokeLambdaHandler(
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 version: samVersion,
+                architecture: config.architecture,
             })
         }
 
@@ -424,6 +426,7 @@ export async function runLambdaFunction(
                     result: attachResult ? 'Succeeded' : 'Failed',
                     attempts: attempts,
                     duration: timer.elapsedTime,
+                    architecture: config.architecture,
                 })
             },
         })
