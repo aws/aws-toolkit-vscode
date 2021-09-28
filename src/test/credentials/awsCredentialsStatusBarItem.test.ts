@@ -22,9 +22,9 @@ describe('updateCredentialsStatusBarItem', async function () {
     })
 
     beforeEach(async function () {
-        statusBarItem = ({
+        statusBarItem = {
             text: '',
-        } as any) as vscode.StatusBarItem
+        } as any as vscode.StatusBarItem
     })
 
     it('updates text with credentials id', async function () {
@@ -39,10 +39,8 @@ describe('updateCredentialsStatusBarItem', async function () {
 
     it('updates text with placeholder when there is no credentials id', async function () {
         await tickPromise(updateCredentialsStatusBarItem(statusBarItem, undefined), clock, 2000)
-        assert.ok(
-            statusBarItem.text.includes('(not connected)'),
-            'expected statusbar item text to indicate that no credentials are in use'
-        )
+        assert(statusBarItem.tooltip)
+        assert.deepStrictEqual(statusBarItem.tooltip, 'Click to connect to AWS')
     })
 
     it('shows (connected) after a successful login', async function () {
