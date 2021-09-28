@@ -24,7 +24,6 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
     override val supportsPathMappings: Boolean = true
 
     override val supportedRuntimes = listOf(
-        LambdaRuntime.NODEJS10_X,
         LambdaRuntime.NODEJS12_X,
         LambdaRuntime.NODEJS14_X
     )
@@ -34,7 +33,6 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
     override fun determineRuntime(project: Project): LambdaRuntime? =
         NodeJsInterpreterManager.getInstance(project).interpreter?.cachedVersion?.get()?.let {
             when {
-                it.major <= 10 -> LambdaRuntime.NODEJS10_X
                 it.major <= 12 -> LambdaRuntime.NODEJS12_X
                 it.major <= 14 -> LambdaRuntime.NODEJS14_X
                 else -> null
