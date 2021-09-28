@@ -16,7 +16,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.Alarm
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.help.HelpIds

@@ -14,10 +14,10 @@ import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.panel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
-import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.ui.ResourceSelector

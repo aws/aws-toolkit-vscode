@@ -24,9 +24,9 @@ import com.intellij.util.text.SemVer
 import org.jetbrains.concurrency.isPending
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.lambda.validOrNull
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent

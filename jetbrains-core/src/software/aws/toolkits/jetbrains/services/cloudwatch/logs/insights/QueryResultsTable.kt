@@ -13,9 +13,9 @@ import com.intellij.util.ui.ListTableModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
 import software.aws.toolkits.resources.message

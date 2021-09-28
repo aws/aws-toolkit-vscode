@@ -5,9 +5,9 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 
 fun Project.refreshAwsTree(resource: Resource<*>? = null, connectionSettings: ConnectionSettings = getConnectionSettingsOrThrow()) {

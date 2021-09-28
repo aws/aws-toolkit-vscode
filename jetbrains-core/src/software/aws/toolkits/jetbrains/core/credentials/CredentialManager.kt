@@ -11,10 +11,6 @@ import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
-import software.amazon.awssdk.core.SdkSystemSetting.AWS_ACCESS_KEY_ID
-import software.amazon.awssdk.core.SdkSystemSetting.AWS_SECRET_ACCESS_KEY
-import software.amazon.awssdk.core.SdkSystemSetting.AWS_SESSION_TOKEN
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
@@ -147,31 +143,5 @@ class DefaultCredentialManager : CredentialManager() {
     companion object {
         val EP_NAME = ExtensionPointName.create<CredentialProviderFactory>("aws.toolkit.credentialProviderFactory")
         private val LOG = getLogger<DefaultCredentialManager>()
-    }
-}
-
-private val CREDENTIAL_ENVIRONMENT_VARIABLES = setOf(
-    AWS_ACCESS_KEY_ID.environmentVariable(),
-    AWS_SECRET_ACCESS_KEY.environmentVariable(),
-    AWS_SESSION_TOKEN.environmentVariable()
-)
-
-fun AwsCredentials.toEnvironmentVariables(): Map<String, String> {
-    val map = mutableMapOf<String, String>()
-    map[AWS_ACCESS_KEY_ID.environmentVariable()] = this.accessKeyId()
-    map[AWS_SECRET_ACCESS_KEY.environmentVariable()] = this.secretAccessKey()
-
-    if (this is AwsSessionCredentials) {
-        map[AWS_SESSION_TOKEN.environmentVariable()] = this.sessionToken()
-    }
-
-    return map
-}
-
-fun AwsCredentials.mergeWithExistingEnvironmentVariables(existing: MutableMap<String, String>, replace: Boolean = false) {
-    val envVars = toEnvironmentVariables()
-    if (replace || existing.keys.none { it in CREDENTIAL_ENVIRONMENT_VARIABLES }) {
-        CREDENTIAL_ENVIRONMENT_VARIABLES.forEach { existing.remove(it) }
-        existing.putAll(envVars)
     }
 }

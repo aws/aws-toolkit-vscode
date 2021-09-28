@@ -16,8 +16,8 @@ import org.junit.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources

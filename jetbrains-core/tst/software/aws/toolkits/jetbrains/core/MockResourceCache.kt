@@ -8,10 +8,10 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ApplicationRule
 import kotlinx.coroutines.runBlocking
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap

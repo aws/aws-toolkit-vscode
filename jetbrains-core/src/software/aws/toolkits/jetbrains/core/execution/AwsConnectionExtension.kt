@@ -8,14 +8,14 @@ import com.intellij.execution.configurations.RunConfigurationBase
 import com.intellij.openapi.util.Key
 import com.intellij.util.xmlb.XmlSerializer
 import org.jdom.Element
+import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.credentials.mergeWithExistingEnvironmentVariables
 import software.aws.toolkits.core.region.mergeWithExistingEnvironmentVariables
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.credentials.mergeWithExistingEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry

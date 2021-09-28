@@ -7,8 +7,8 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
+import software.aws.toolkits.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.core.utils.AttributeBagKey
-import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.LocalLambdaRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.TemplateSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.resolveDebuggerSupport

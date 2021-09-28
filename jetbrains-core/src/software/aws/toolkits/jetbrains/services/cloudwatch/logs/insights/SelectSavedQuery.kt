@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.icons.AllIcons
 import com.intellij.ui.SimpleListCellRenderer
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryDefinition
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import javax.swing.JButton

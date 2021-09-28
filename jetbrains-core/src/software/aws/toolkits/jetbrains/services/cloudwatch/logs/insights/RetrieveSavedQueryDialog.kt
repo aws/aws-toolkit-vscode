@@ -6,7 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryDefinition
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
 import software.aws.toolkits.telemetry.Result

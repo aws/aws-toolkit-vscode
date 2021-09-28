@@ -3,7 +3,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.intellij.openapi.progress.ProgressIndicator
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.code.SchemaCodeDownloadRequestDetails

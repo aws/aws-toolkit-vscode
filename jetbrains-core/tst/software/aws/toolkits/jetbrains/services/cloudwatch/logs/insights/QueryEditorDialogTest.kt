@@ -18,11 +18,11 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup
 import software.amazon.awssdk.services.cloudwatchlogs.model.StartQueryRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.StartQueryResponse
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.InsightsUtils.queryDetails
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
