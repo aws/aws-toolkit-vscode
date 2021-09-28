@@ -4,10 +4,28 @@
  */
 
 import * as fs from 'fs'
+import * as http from 'http'
+import * as https from 'https'
+import * as vscode from 'vscode'
+import * as semver from 'semver'
 import got, { Response, RequestError } from 'got'
+import urlToOptions from 'got/dist/source/core/utils/url-to-options'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
+
+// XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
+// `got` has also deprecated `urlToOptions`
+const patchedGot = got.extend({
+    request: (url, options, callback) => {
+        if (url.protocol === 'https:') {
+            return https.request({ ...options, ...urlToOptions(url) }, callback)
+        }
+        return http.request({ ...options, ...urlToOptions(url) }, callback)
+    },
+})
+// I can't track down the real version but this seems close enough
+const MIN_VERSION_FOR_GOT = '1.47.0'
 
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
@@ -58,7 +76,8 @@ export class HttpResourceFetcher implements ResourceFetcher {
     }
 
     private async getResponseFromGetRequest(): Promise<Response<string>> {
-        const response = await got(this.url, {
+        const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
+        const response = await requester(this.url, {
             headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
         }).catch((err: RequestError) => {
             throw { code: err.code }
