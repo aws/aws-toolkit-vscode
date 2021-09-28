@@ -5,14 +5,14 @@
 
 import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
-import { CloudFormation } from './cloudformation'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes, goRuntimes, javaRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
-import { WatchedFiles, WatchedItem } from '../watchedFiles'
+import { WatchedFiles, WatchedItem } from './watchedFiles'
 import { getLogger } from '../logger'
 
 export interface TemplateDatum {
