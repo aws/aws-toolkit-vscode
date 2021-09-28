@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM/typescript: fix run/debug for target=code if source dir name has special chars"
+}
