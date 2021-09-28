@@ -164,7 +164,8 @@ async function downloadAndUnzipLambda(
 
         let last: number = 0
         streams.requestStream.on('downloadProgress', (p: Progress) => {
-            const message = p.total ? `Downloading ${p.transferred}/${p.total}` : 'Downloading...'
+            // I think these are bytes...
+            const message = p.total ? `Downloading ${p.transferred}/${p.total} bytes` : 'Downloading...'
             const increment = p.total ? ((p.transferred - last) / p.total) * 100 : 0
             last = p.transferred
             progress.report({ message, increment })
