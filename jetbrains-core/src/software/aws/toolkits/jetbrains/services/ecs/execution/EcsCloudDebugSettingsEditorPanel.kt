@@ -30,10 +30,10 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.JBUI.CurrentTheme.Validator.errorBackgroundColor
 import com.intellij.util.ui.JBUI.CurrentTheme.Validator.errorBorderColor
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.filter
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider

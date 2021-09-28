@@ -8,7 +8,7 @@ import com.intellij.database.dataSource.DataSourceSslConfiguration
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.remote.jdbc.helpers.JdbcSettings.SslMode
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.rds.AuroraMySql

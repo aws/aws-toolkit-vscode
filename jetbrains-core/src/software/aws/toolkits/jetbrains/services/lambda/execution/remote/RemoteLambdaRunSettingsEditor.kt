@@ -5,9 +5,9 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources

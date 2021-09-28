@@ -13,13 +13,13 @@ import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.MutableCollectionComboBoxModel
 import com.intellij.util.ExceptionUtil
 import org.jetbrains.annotations.TestOnly
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.utils.Either
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.resources.message

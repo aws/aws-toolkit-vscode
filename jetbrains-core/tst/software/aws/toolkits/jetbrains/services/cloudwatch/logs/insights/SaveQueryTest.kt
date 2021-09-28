@@ -20,11 +20,11 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.CloudWatchLogsExcept
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutQueryDefinitionRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutQueryDefinitionResponse
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryDefinition
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message

@@ -11,9 +11,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryDefinition
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.InsightsUtils.queryDetails
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 

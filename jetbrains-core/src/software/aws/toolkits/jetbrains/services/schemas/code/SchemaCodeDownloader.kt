@@ -14,9 +14,9 @@ import software.amazon.awssdk.services.schemas.model.DescribeCodeBindingRequest
 import software.amazon.awssdk.services.schemas.model.GetCodeBindingSourceRequest
 import software.amazon.awssdk.services.schemas.model.NotFoundException
 import software.amazon.awssdk.services.schemas.model.PutCodeBindingRequest
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.resources.message
 import java.io.File
 import java.io.FileOutputStream

@@ -4,8 +4,8 @@
 package software.aws.toolkits.jetbrains.services.clouddebug.execution.steps
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import software.aws.toolkits.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.core.utils.AttributeBagKey
-import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.clouddebug.CliOutputParser
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugCliStep
