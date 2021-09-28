@@ -386,10 +386,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // Other refs can fail; SAM will handle them.
         const handlerName = getHandlerName(folder, config)
 
-        // TODO is this normalize actually needed for any platform?
-        config.baseBuildDir = resolve(
-            folder.uri.fsPath,
-            config.sam?.buildDir ?? pathutils.normalize(await makeTemporaryToolkitFolder())
+        config.baseBuildDir = pathutil.normalize(
+            resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
         )
 
         if (templateInvoke?.templatePath) {
