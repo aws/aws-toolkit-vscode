@@ -23,7 +23,6 @@ enum class LambdaRuntime(
     JAVA8(Runtime.JAVA8),
     JAVA8_AL2(Runtime.JAVA8_AL2, minSamDebugging = "1.2.0"),
     JAVA11(Runtime.JAVA11),
-    PYTHON2_7(Runtime.PYTHON2_7),
     PYTHON3_6(Runtime.PYTHON3_6),
     PYTHON3_7(Runtime.PYTHON3_7),
     PYTHON3_8(Runtime.PYTHON3_8),
