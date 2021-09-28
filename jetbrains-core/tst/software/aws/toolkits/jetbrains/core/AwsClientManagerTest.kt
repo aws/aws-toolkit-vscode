@@ -7,12 +7,15 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.any
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.github.tomakehurst.wiremock.matching.ContainsPattern
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.use
+import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.RuleChain
 import org.assertj.core.api.Assertions.assertThat
@@ -28,18 +31,23 @@ import software.amazon.awssdk.core.client.config.SdkClientOption
 import software.amazon.awssdk.core.signer.Signer
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.LambdaClientBuilder
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.region.anAwsRegion
+import software.aws.toolkits.jetbrains.core.AwsClientManager.Companion.CUSTOMIZER_EP
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
+import java.net.URI
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
 
 class AwsClientManagerTest {
     private val projectRule = ProjectRule()
+    private val disposableRule = DisposableRule()
     private val temporaryDirectory = TemporaryFolder()
     private val regionProvider = MockRegionProviderRule()
     private val credentialManager = MockCredentialManagerRule()
@@ -56,7 +64,8 @@ class AwsClientManagerTest {
         temporaryDirectory,
         credentialManager,
         regionProvider,
-        projectSettingsRule
+        projectSettingsRule,
+        disposableRule
     )
 
     @Test
@@ -189,16 +198,20 @@ class AwsClientManagerTest {
     fun userAgentIsPassed() {
         wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
 
-        getClientManager().createNewClient(
-            LambdaClient::class,
-            regionProvider.createAwsRegion(),
-            credentialManager.createCredentialProvider(),
-            endpointOverride = wireMockRule.baseUrl()
-        ).use {
+        val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
+        val customizer = AwsClientCustomizer { connection, builder ->
+            assertThat(connection).isEqualTo(aConnection)
+            if (builder is LambdaClientBuilder) {
+                builder.endpointOverride(URI.create(wireMockRule.baseUrl()))
+            }
+        }
+        ExtensionTestUtil.maskExtensions(CUSTOMIZER_EP, listOf(customizer), disposableRule.disposable)
+
+        getClientManager().createNewClient(LambdaClient::class, aConnection).use {
             it.listFunctions()
         }
 
-        wireMockRule.verify(anyRequestedFor(anyUrl()).withHeader("User-Agent", ContainsPattern("AWS-Toolkit-For-JetBrains/")))
+        wireMockRule.verify(anyRequestedFor(urlPathMatching("(.*)/functions/")).withHeader("User-Agent", ContainsPattern("AWS-Toolkit-For-JetBrains/")))
     }
 
     // Test against real version so bypass ServiceManager for the client manager

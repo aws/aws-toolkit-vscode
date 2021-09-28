@@ -5,6 +5,7 @@ package software.aws.toolkits.core
 
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
@@ -41,27 +42,31 @@ abstract class ToolkitClientManager {
     ): T = this.getClient(T::class, credProvider, region)
 
     @Suppress("UNCHECKED_CAST")
-    open fun <T : SdkClient> getClient(
+    fun <T : SdkClient> getClient(
         sdkClass: KClass<T>,
-        credProvider: ToolkitCredentialsProvider,
-        region: AwsRegion
+        connection: ConnectionSettings
     ): T {
         val key = AwsClientKey(
-            credentialProviderId = credProvider.id,
-            region = region,
+            credentialProviderId = connection.credentials.id,
+            region = connection.region,
             serviceClass = sdkClass
         )
 
         val serviceId = key.serviceClass.java.getField("SERVICE_METADATA_ID").get(null) as String
-        if (serviceId !in GLOBAL_SERVICE_DENY_LIST && getRegionProvider().isServiceGlobal(region, serviceId)) {
-            val globalRegion = getRegionProvider().getGlobalRegionForService(region, serviceId)
-            return cachedClients.computeIfAbsent(key.copy(region = globalRegion)) { createNewClient(sdkClass, globalRegion, credProvider) } as T
+        if (serviceId !in GLOBAL_SERVICE_DENY_LIST && getRegionProvider().isServiceGlobal(connection.region, serviceId)) {
+            val globalRegion = getRegionProvider().getGlobalRegionForService(connection.region, serviceId)
+            return cachedClients.computeIfAbsent(key.copy(region = globalRegion)) { createNewClient(sdkClass, connection.copy(region = globalRegion)) } as T
         }
 
-        return cachedClients.computeIfAbsent(key) { createNewClient(sdkClass, region, credProvider) } as T
+        return cachedClients.computeIfAbsent(key) { createNewClient(sdkClass, connection) } as T
     }
 
     protected abstract fun getRegionProvider(): ToolkitRegionProvider
+
+    /**
+     * Allow implementations to apply customizations to clients before they are built
+     */
+    protected open fun clientCustomizer(connection: ConnectionSettings, builder: AwsClientBuilder<*, *>) {}
 
     /**
      * Calls [AutoCloseable.close] on all managed clients and clears the cache
@@ -86,16 +91,14 @@ abstract class ToolkitClientManager {
     @Suppress("UNCHECKED_CAST")
     open fun <T : SdkClient> createNewClient(
         sdkClass: KClass<T>,
-        region: AwsRegion,
-        credProvider: ToolkitCredentialsProvider,
-        endpointOverride: String? = null
+        connection: ConnectionSettings
     ): T = createNewClient(
         sdkClass = sdkClass,
         httpClient = sdkHttpClient(),
-        region = Region.of(region.id),
-        credProvider = credProvider,
+        region = Region.of(connection.region.id),
+        credProvider = connection.credentials,
         userAgent = userAgent,
-        endpointOverride = endpointOverride
+        clientCustomizer = { builder -> clientCustomizer(connection, builder) }
     )
 
     companion object {
@@ -110,7 +113,8 @@ abstract class ToolkitClientManager {
             region: Region,
             credProvider: AwsCredentialsProvider,
             userAgent: String? = null,
-            endpointOverride: String? = null
+            endpointOverride: String? = null,
+            clientCustomizer: (AwsClientBuilder<*, *>) -> Unit = {}
         ): T {
             val builderMethod = sdkClass.java.methods.find {
                 it.name == "builder" && Modifier.isStatic(it.modifiers) && Modifier.isPublic(it.modifiers)
@@ -132,7 +136,14 @@ abstract class ToolkitClientManager {
                         builder.endpointOverride(URI.create(it))
                     }
                 }
+                .apply(clientCustomizer)
                 .build() as T
         }
     }
 }
+
+fun <T : SdkClient> ToolkitClientManager.getClient(
+    sdkClass: KClass<T>,
+    credProvider: ToolkitCredentialsProvider,
+    region: AwsRegion
+): T = this.getClient(sdkClass, ConnectionSettings(credProvider, region))
