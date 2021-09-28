@@ -39,9 +39,6 @@ const baseConfig = {
     },
     resolve: {
         extensions: ['.ts', '.js'],
-        alias: {
-            handlebars: 'handlebars/dist/handlebars.min.js',
-        },
     },
     node: {
         __dirname: false, //preserve the default node.js behavior for __dirname
