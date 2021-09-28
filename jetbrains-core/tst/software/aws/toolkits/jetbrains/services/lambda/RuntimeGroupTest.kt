@@ -29,13 +29,13 @@ class RuntimeGroupTest {
 
     @Test
     fun canDetermineRuntimeFromAnActionEventUsingModule() {
-        ModuleRootModificationUtil.setModuleSdk(projectRule.module, PyTestSdk("2.7.0"))
+        ModuleRootModificationUtil.setModuleSdk(projectRule.module, PyTestSdk("3.9.0"))
         val event: AnActionEvent = mock {
             on { getData(LangDataKeys.LANGUAGE) }.thenReturn(PythonLanguage.INSTANCE)
             on { getData(LangDataKeys.MODULE) }.thenReturn(projectRule.module)
         }
 
-        assertThat(event.runtime()).isEqualTo(LambdaRuntime.PYTHON2_7)
+        assertThat(event.runtime()).isEqualTo(LambdaRuntime.PYTHON3_9)
     }
 
     @Test

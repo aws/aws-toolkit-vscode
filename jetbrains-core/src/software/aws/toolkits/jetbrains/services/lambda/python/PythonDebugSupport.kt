@@ -72,13 +72,6 @@ abstract class PythonImageDebugSupport : ImageDebugSupport {
     }
 }
 
-class Python27ImageDebugSupport : PythonImageDebugSupport() {
-    override val id: String = LambdaRuntime.PYTHON2_7.toString()
-    override fun displayName() = LambdaRuntime.PYTHON2_7.toString().capitalize()
-    override val pythonPath: String = "/usr/bin/python2.7"
-    override val bootstrapPath: String = "/var/runtime/awslambda/bootstrap.py"
-}
-
 class Python36ImageDebugSupport : PythonImageDebugSupport() {
     override val id: String = LambdaRuntime.PYTHON3_6.toString()
     override fun displayName() = LambdaRuntime.PYTHON3_6.toString().capitalize()

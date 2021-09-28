@@ -17,12 +17,6 @@ class PythonHandlerCompletionProviderTest {
     val projectRule = PythonCodeInsightTestFixtureRule()
 
     @Test
-    fun completionIsNotSupportedPython27() {
-        val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.PYTHON2_7)
-        assertFalse(provider.isCompletionSupported)
-    }
-
-    @Test
     fun completionIsNotSupportedPython36() {
         val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.PYTHON3_6)
         assertFalse(provider.isCompletionSupported)

@@ -39,7 +39,6 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun data(): Collection<Array<Runtime>> = listOf(
-            arrayOf(Runtime.PYTHON2_7),
             arrayOf(Runtime.PYTHON3_6),
             arrayOf(Runtime.PYTHON3_7),
             arrayOf(Runtime.PYTHON3_8),
