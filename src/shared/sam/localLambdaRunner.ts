@@ -113,8 +113,8 @@ export async function makeInputTemplate(
     if (config.lambda?.timeoutSec) {
         newTemplate = newTemplate.withTimeout(config.lambda?.timeoutSec)
     }
-    if ((config.invokeTarget as CodeTargetProperties).architecture) {
-        newTemplate = newTemplate.withArchitectures([(config.invokeTarget as CodeTargetProperties).architecture!])
+    if (config.architecture) {
+        newTemplate = newTemplate.withArchitectures([config.architecture])
     }
 
     await newTemplate.generate(inputTemplatePath)

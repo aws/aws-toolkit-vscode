@@ -255,7 +255,7 @@ export function getArchitecture(
         const isArch = isArchitecture(arch)
 
         if (!isArch) {
-            getLogger().warn('SAM Invoke: Invalid architecture. Defaulting to x86_64.')
+            getLogger('channel').warn('SAM Invoke: Invalid architecture. Defaulting to x86_64.')
             vscode.window.showWarningMessage(
                 localize(
                     'AWS.output.sam.invalidArchitecture',
