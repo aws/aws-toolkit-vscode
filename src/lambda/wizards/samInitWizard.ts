@@ -157,7 +157,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             architecture = await this.promptUserForArchitecture(val.runtime, val.packageType, dependencyManager)
         }
 
-        return val && dependencyManager ? [val.runtime, val.packageType, dependencyManager, architecture] : undefined
+        return [val.runtime, val.packageType, dependencyManager, architecture]
     }
 
     // don't preinclude currDependencyManager because it won't make sense if transitioning between runtimes

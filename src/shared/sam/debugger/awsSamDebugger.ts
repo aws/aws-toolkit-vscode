@@ -15,6 +15,7 @@ import {
     PythonDebugConfiguration,
     GoDebugConfiguration,
     getTemplate,
+    getArchitecture,
 } from '../../../lambda/local/debugConfiguration'
 import {
     Architecture,
@@ -42,7 +43,7 @@ import {
     createApiAwsSamDebugConfig,
     createTemplateAwsSamDebugConfig,
 } from './awsSamDebugConfiguration'
-import { CodeTargetProperties, TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
+import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
 import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
@@ -529,7 +530,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
             useIkpdb: isCloud9() || !!(config as any).useIkpdb,
-            architecture: this.getArchitecture(template, templateResource, config.InvokeTarget),
+            architecture: getArchitecture(template, templateResource, config.InvokeTarget),
         }
 
         //
@@ -628,43 +629,5 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 throw Error(`unknown runtimeFamily: ${config.runtimeFamily}`)
             }
         }
-    }
-
-    private getArchitecture(
-        template: CloudFormation.Template | undefined,
-        resource: CloudFormation.Resource | undefined,
-        invokeTarget: AwsSamDebuggerConfiguration['invokeTarget']
-    ): Architecture {
-        let arch: string | undefined
-        let architectureLocation: string
-        if (template) {
-            arch = (CloudFormation.getArrayForProperty(resource?.Properties, 'Architectures', template) ?? [
-                'x86_64',
-            ])[0]
-            architectureLocation = localize('AWS.generic.template', 'template file')
-        } else {
-            arch = (invokeTarget as CodeTargetProperties)?.architecture
-            architectureLocation = localize('AWS.generic.launchConfig', 'launch configuration')
-        }
-
-        const isArch = this.isArchitecture(arch)
-
-        if (!isArch) {
-            getLogger().warn('SAM Invoke: Invalid architecture. Defaulting to x86_64.')
-            vscode.window.showWarningMessage(
-                localize(
-                    'AWS.output.sam.invalidArchitecture',
-                    'Invalid architecture specified in {0}. Defaulting to x86_64 architecture for invocation.',
-                    architectureLocation
-                )
-            )
-            arch = 'x86_64'
-        }
-
-        return arch as Architecture
-    }
-
-    private isArchitecture(a: any): a is Architecture {
-        return ['x86_64', 'arm64'].includes(a)
     }
 }
