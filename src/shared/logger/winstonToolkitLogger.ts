@@ -107,12 +107,13 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         return this.writeToLogs('error', message, ...meta)
     }
 
-    public dispose() {
+    public dispose(): Promise<void> {
+        const flushed = new Promise<void>(resolve => this.logger.on('finish', resolve))
         if (!this.disposed) {
-            this.logger.close()
-            this.logger.clear()
+            this.logger.end()
             this.disposed = true
         }
+        return flushed
     }
 
     private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): number {
@@ -166,11 +167,11 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
      * @param obj  Object passed from the event
      */
     private parseLogObject(file: vscode.Uri, obj: any): void {
-        const logID: number | NamedNodeMap = parseInt(obj.logID) % LOGMAP_SIZE
+        const logID: number = parseInt(obj.logID) % LOGMAP_SIZE
         const symbols: symbol[] = Object.getOwnPropertySymbols(obj)
         const messageSymbol: symbol | undefined = symbols.find((s: symbol) => s.toString() === 'Symbol(message)')
 
-        if (logID && messageSymbol) {
+        if (this.logMap[logID] !== undefined && messageSymbol) {
             this.logMap[logID][file.toString(true)] = obj[messageSymbol]
         }
     }
