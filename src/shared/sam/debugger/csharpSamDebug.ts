@@ -6,6 +6,7 @@
 import { chmod, ensureDir, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
+import * as semver from 'semver'
 import {
     DotNetCoreDebugConfiguration,
     DOTNET_CORE_DEBUGGER_PATH,
@@ -22,8 +23,11 @@ import { ChildProcess } from '../../utilities/childProcess'
 import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
 import { ext } from '../../extensionGlobals'
 import { getLogger } from '../../logger'
+import { Window } from '../../vscode/window'
 
 import * as nls from 'vscode-nls'
+import { getSamCliVersion } from '../cli/samCliContext'
+import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT } from '../cli/samCliValidator'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -63,10 +67,37 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
  * Linux, then mount it with the SAM app on run. User's C# workspace dir will
  * have a `.vsdbg` dir after the first run.
  */
-export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
+export async function invokeCsharpLambda(
+    ctx: ExtContext,
+    config: SamLaunchRequestArgs,
+    window: Window = Window.vscode()
+): Promise<SamLaunchRequestArgs> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.DOTNET])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
+
+    if (!config.noDebug) {
+        const samCliVersion = await getSamCliVersion(ctx.samCliContext())
+        // TODO: Remove this when min sam version is >= 1.4.0
+        if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT)) {
+            window.showWarningMessage(
+                localize(
+                    'AWS.output.sam.local.no.net.3.1.debug',
+                    'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
+                )
+            )
+            config.noDebug = true
+        } else if (config.architecture === 'arm64') {
+            window.showWarningMessage(
+                localize(
+                    'AWS.output.sam.local.no.arm.net.3.1.debug',
+                    'The vsdbg debugger does not currently support the arm64 architecture. Function will run locally without debug.'
+                )
+            )
+            getLogger().warn('SAM Invoke: Attempting to debug dotnet on ARM - removing debug flag.')
+            config.noDebug = true
+        }
+    }
     return await runLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {
             await _installDebugger({
@@ -97,6 +128,9 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
         )
 
         const vsDbgVersion = 'latest'
+        // TODO: If vsdbg works with qemu, have this detect Architecture and swap to `linux-arm64` if ARM.
+        // See https://github.com/OmniSharp/omnisharp-vscode/issues/3277 ;
+        // qemu appears to set PrivateTmp=true : https://github.com/qemu/qemu/blob/326ff8dd09556fc2e257196c49f35009700794ac/contrib/systemd/qemu-pr-helper.service#L8 ?
         const vsDbgRuntime = 'linux-x64'
 
         const installScriptPath = await downloadInstallScript(debuggerPath)
