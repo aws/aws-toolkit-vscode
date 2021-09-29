@@ -15,8 +15,10 @@ import {
     PythonDebugConfiguration,
     GoDebugConfiguration,
     getTemplate,
+    getArchitecture,
 } from '../../../lambda/local/debugConfiguration'
 import {
+    Architecture,
     getDefaultRuntime,
     getFamily,
     getRuntimeFamily,
@@ -164,6 +166,11 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     //
     samLocalInvokeCommand?: SamLocalInvokeCommand
     onWillAttachDebugger?(debugPort: number, timeout: Timeout): Promise<void>
+
+    /**
+     * Specifies container architecture. Necessary for C#, to either swap debugger download or to force into no-debug mode
+     */
+    architecture?: Architecture
 }
 
 /**
@@ -469,20 +476,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         let awsCredentials: Credentials | undefined
 
-        // TODO: Remove this when min sam version is >= 1.4.0
-        if (runtime === 'dotnetcore3.1' && !config.noDebug) {
-            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, '1.4.0')) {
-                vscode.window.showWarningMessage(
-                    localize(
-                        'AWS.output.sam.local.no.net.3.1.debug',
-                        'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
-                    )
-                )
-                config.noDebug = true
-            }
-        }
-
         if (config.aws?.credentials) {
             const credentials = fromString(config.aws.credentials)
             try {
@@ -537,6 +530,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
             useIkpdb: isCloud9() || !!(config as any).useIkpdb,
+            architecture: getArchitecture(template, templateResource, config.InvokeTarget),
         }
 
         //

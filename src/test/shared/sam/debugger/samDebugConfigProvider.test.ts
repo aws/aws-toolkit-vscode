@@ -564,6 +564,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -714,6 +715,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -867,6 +869,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -997,6 +1000,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
+                architecture: 'x86_64',
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
@@ -1050,6 +1054,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 containerEnvFile: `${actualWithPathMapping.baseBuildDir}/container-env-vars.json`,
                 envFile: undefined,
                 eventPayloadFile: undefined,
+                architecture: 'x86_64',
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
@@ -1129,6 +1134,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
+                architecture: 'x86_64',
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
@@ -1209,6 +1215,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1310,6 +1317,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1419,6 +1427,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1521,6 +1530,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
             }
 
             const expectedDebug = {
@@ -1615,6 +1625,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Csharp-related fields
@@ -1775,6 +1786,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     ...input.lambda,
                 },
                 name: input.name,
+                architecture: 'x86_64',
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
@@ -1933,6 +1945,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Csharp-related fields
@@ -2100,6 +2113,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Python-related fields
@@ -2244,6 +2258,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Python-related fields
@@ -2371,6 +2386,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
+                architecture: 'x86_64',
 
                 //
                 // Python-related fields
@@ -2460,6 +2476,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
+                architecture: 'x86_64',
 
                 //
                 // Python-related fields
@@ -2634,6 +2651,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Python-ikpdb fields
@@ -2738,6 +2756,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Python-ikpdb fields
@@ -2876,6 +2895,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -2954,6 +2974,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Go-related fields
