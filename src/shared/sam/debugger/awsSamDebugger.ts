@@ -46,7 +46,7 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
-import { makeJsonFiles } from '../localLambdaRunner'
+import { makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
 import { fromString } from '../../../credentials/providers/credentials'
@@ -55,12 +55,12 @@ import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliVersion } from '../cli/samCliContext'
 import { ext } from '../../extensionGlobals'
-import * as pathutils from '../../utilities/pathUtils'
 import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
 } from '../cli/samCliValidator'
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
+import { resolve } from 'path'
 
 const localize = nls.loadMessageBundle()
 
@@ -385,10 +385,20 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // Other refs can fail; SAM will handle them.
         const handlerName = getHandlerName(folder, config)
 
+        config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
+
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.
             // TODO: If path is relative, it is relative to launch.json (i.e. .vscode directory).
             templateInvoke.templatePath = pathutil.normalize(tryGetAbsolutePath(folder, templateInvoke.templatePath))
+        } else if (config.invokeTarget.target === 'code') {
+            const codeConfig = config as SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+            // 'projectRoot' may be a relative path
+            // Older code left this property as relative, but there's no benefit in doing that since it's relative to the workspace
+            codeConfig.invokeTarget.projectRoot = pathutil.normalize(
+                resolve(folder.uri.fsPath, config.invokeTarget.projectRoot)
+            )
+            templateInvoke.templatePath = await makeInputTemplate(codeConfig)
         }
 
         const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
@@ -536,8 +546,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // 2. do `sam build`
         // 3. do `sam local invoke`
         //
-        // TODO is this normalize actually needed for any platform?
-        launchConfig.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
         switch (launchConfig.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 // Make a NodeJS launch-config from the generic config.
