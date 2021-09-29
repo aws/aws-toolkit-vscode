@@ -42,7 +42,7 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
     }
 
     if (initArguments.architecture) {
-        args.push('--architectures', initArguments.architecture)
+        args.push('--architecture', initArguments.architecture)
     }
 
     if (initArguments.baseImage) {
