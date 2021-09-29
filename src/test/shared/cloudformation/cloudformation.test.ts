@@ -215,20 +215,20 @@ describe('CloudFormation', function () {
         {
             title: 'existing lambda, single runtime',
             handlerName: 'app.lambda_handler',
-            templateFileName: 'template_python2.7.yaml',
-            expectedRuntime: 'python2.7',
+            templateFileName: 'template_python3.9.yaml',
+            expectedRuntime: 'python3.9',
         },
         {
             title: '2nd existing lambda, multiple runtimes',
-            handlerName: 'app.lambda_handler2',
+            handlerName: 'app.lambda_handler38',
             templateFileName: 'template_python_mixed.yaml',
-            expectedRuntime: 'python2.7',
+            expectedRuntime: 'python3.8',
         },
         {
             title: '1st existing lambda, multiple runtimes',
-            handlerName: 'app.lambda_handler3',
+            handlerName: 'app.lambda_handler39',
             templateFileName: 'template_python_mixed.yaml',
-            expectedRuntime: 'python3.6',
+            expectedRuntime: 'python3.9',
         },
     ]
 
@@ -236,7 +236,7 @@ describe('CloudFormation', function () {
         {
             title: 'non-existing lambda, single runtime',
             handlerName: 'app.handler_that_does_not_exist',
-            templateFileName: 'template_python2.7.yaml',
+            templateFileName: 'template_python3.9.yaml',
             expectedRuntime: undefined,
         },
         {
@@ -338,6 +338,10 @@ describe('CloudFormation', function () {
                         MemorySize: {
                             Ref: 'numParamVal',
                         },
+                        Layers: {
+                            Ref: 'strList',
+                        },
+                        Tags: ['tag', 'you', 'are', 'it'],
                     },
                 },
                 Parameters: {
@@ -354,6 +358,21 @@ describe('CloudFormation', function () {
                     },
                     numParamNoVal: {
                         Type: 'Number',
+                    },
+                    numList: {
+                        Type: 'List<Number>',
+                        Default: '1,2,3',
+                    },
+                    strList: {
+                        Type: 'CommaDelimitedList',
+                        Default: 'a,b,c',
+                    },
+                    strListNoComma: {
+                        Type: 'CommaDelimitedList',
+                        Default: 'abcdefg',
+                    },
+                    strListNoVal: {
+                        Type: 'CommaDelimitedList',
                     },
                 },
                 Resources: {
@@ -581,6 +600,151 @@ describe('CloudFormation', function () {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getNumberForProperty(
+                        template.Resources!.resource?.Properties,
+                        'Description',
+                        template
+                    ),
+                    undefined
+                )
+            })
+        })
+
+        describe('getArrayForProperty', function () {
+            it('returns an array', function () {
+                const property: string[] = ['fee', 'fie', 'fo', 'fum']
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Arr = property
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource!.Properties, 'Arr', template),
+                    property
+                )
+            })
+
+            it('returns an array from a CommaDelimitedList ref with a default value', function () {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strList',
+                }
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Arr = property
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource!.Properties, 'Arr', template),
+                    ['a', 'b', 'c']
+                )
+            })
+
+            it('returns an array from a CommaDelimitedList ref with a default value that is not an array', function () {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strListNoComma',
+                }
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Arr = property
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource!.Properties, 'Arr', template),
+                    ['abcdefg']
+                )
+            })
+
+            it('returns an string array from a List<Number> ref with a default value', function () {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numList',
+                }
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Arr = property
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource!.Properties, 'Arr', template),
+                    ['1', '2', '3']
+                )
+            })
+
+            it('returns undefined if the ref does not have a default value', function () {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strListNoVal',
+                }
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Arr = property
+                assert.strictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource!.Properties, 'Arr', template),
+                    undefined
+                )
+            })
+
+            it('returns undefined if value is a string', function () {
+                const template = newTemplate()
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource!.Properties, 'Handler', template),
+                    undefined
+                )
+            })
+
+            it('returns undefined if a ref to a string is provided', function () {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Handler = property
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource!.Properties, 'Handler', template),
+                    undefined
+                )
+            })
+
+            it('returns undefined if value is a number', function () {
+                const template = newTemplate()
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource!.Properties, 'Timeout', template),
+                    undefined
+                )
+            })
+
+            it('returns undefined if a ref to a number is provided', function () {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Handler = property
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(
+                        template.Resources!.resource!.Properties,
+                        'numParamValue',
+                        template
+                    ),
+                    undefined
+                )
+            })
+
+            it('returns undefined if undefined is provided', function () {
+                const template = newTemplate()
+                assert.strictEqual(CloudFormation.getArrayForProperty(undefined, 'dont-matter', template), undefined)
+            })
+
+            it('returns a global value', function () {
+                const template = newTemplate()
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource?.Properties, 'Tags', template),
+                    ['tag', 'you', 'are', 'it']
+                )
+            })
+
+            it('returns a global Ref value', function () {
+                const template = newTemplate()
+                assert.deepStrictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource?.Properties, 'Layers', template),
+                    ['a', 'b', 'c']
+                )
+            })
+
+            it('returns undefined for a global string value', function () {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getArrayForProperty(template.Resources!.resource?.Properties, 'Runtime', template),
+                    undefined
+                )
+            })
+
+            it('returns undefined for a global Ref string value', function () {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getArrayForProperty(
                         template.Resources!.resource?.Properties,
                         'Description',
                         template

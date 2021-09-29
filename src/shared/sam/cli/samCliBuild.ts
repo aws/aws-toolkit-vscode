@@ -8,6 +8,8 @@ import { getLogger, Logger } from '../../logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { pushIf } from '../../utilities/collectionUtils'
 import { localize } from '../../utilities/vsCodeUtils'
+import { Timeout, waitTimeout } from '../../utilities/timeoutUtils'
+import { ChildProcessResult } from '../../utilities/childProcess'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -88,7 +90,7 @@ export class SamCliBuildInvocation {
      *
      * @returns Process exit code, or -1 if `SamCliBuildInvocation` stopped the process and stored a failure message in `SamCliBuildInvocation.failure()`.
      */
-    public async execute(): Promise<number> {
+    public async execute(timer?: Timeout): Promise<number> {
         await this.validate()
 
         const invokeArgs: string[] = [
@@ -118,28 +120,47 @@ export class SamCliBuildInvocation {
             ...this.args.environmentVariables,
         }
 
-        const checkFailure = (text: string): void => {
+        const onOutput = (text: string): void => {
             if (text.match(/(RuntimeError: Container does not exist)/)) {
                 this.args.invoker.stop()
                 this._failure = localize(
                     'AWS.sam.build.failure.diskSpace',
                     '"sam build" failed. Check system disk space.'
                 )
+            } else if (timer !== undefined) {
+                timer.refresh()
             }
         }
 
-        const childProcessResult = await this.args.invoker.invoke({
+        let childProcessResult: Promise<ChildProcessResult | void> = this.args.invoker.invoke({
             spawnOptions: { env },
             arguments: invokeArgs,
-            onStdout: checkFailure,
-            onStderr: checkFailure,
+            onStdout: onOutput,
+            onStderr: onOutput,
         })
 
-        if (this._failure) {
+        // TODO: add `Timeout` support to `ChildProcess` itself instead of wrapping the promise
+        if (timer) {
+            childProcessResult = waitTimeout(childProcessResult, timer, {
+                completeTimeout: false,
+                onExpire: () => {
+                    this.args.invoker.stop()
+                    this._failure = localize(
+                        'AWS.sam.build.failure.timeout',
+                        '"sam build" failed. Timed out waiting for build.'
+                    )
+                },
+            })
+        }
+
+        const result = await childProcessResult
+
+        if (this._failure || result === undefined) {
             return -1
         }
-        logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
-        return childProcessResult.exitCode
+
+        logAndThrowIfUnexpectedExitCode(result, 0)
+        return result.exitCode
     }
 
     private async validate(): Promise<void> {

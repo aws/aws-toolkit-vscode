@@ -13,11 +13,14 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import {
+    Architecture,
     createRuntimeQuickPick,
     DependencyManager,
     getDependencyManager,
     RuntimeAndPackage,
     RuntimePackageType,
+    samArmLambdaRuntimes,
+    samLambdaCreatableRuntimes,
 } from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
@@ -26,7 +29,10 @@ import {
     SamTemplate,
 } from '../models/samTemplates'
 import * as semver from 'semver'
-import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
+import {
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT,
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
+} from '../../shared/sam/cli/samCliValidator'
 import * as fsutil from '../../shared/filesystemUtilities'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createFolderPrompt } from '../../shared/ui/common/location'

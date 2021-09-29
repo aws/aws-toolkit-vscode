@@ -32,6 +32,7 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
     const jsPath: string = path.join(params.context.extensionPath, 'media', 'js')
     const cssPath: string = path.join(params.context.extensionPath, 'media', 'css')
     const webviewPath: string = path.join(params.context.extensionPath, 'dist')
+    const resourcesPath: string = path.join(params.context.extensionPath, 'resources')
 
     const view = vscode.window.createWebviewPanel(
         params.id,
@@ -45,6 +46,7 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
                 vscode.Uri.file(jsPath),
                 vscode.Uri.file(cssPath),
                 vscode.Uri.file(webviewPath),
+                vscode.Uri.file(resourcesPath),
             ],
             // HACK: Cloud9 does not have get/setState support. Remove when it does.
             retainContextWhenHidden: isCloud9() ? true : params.persistWithoutFocus,

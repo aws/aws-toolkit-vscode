@@ -4,12 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { ExtContext } from '../shared/extensions'
-import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
 import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
@@ -67,37 +65,23 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
 
     /**
      * Creates a fake `vscode.ExtensionContext` for use in tests.
-     *
-     *  Disposes any existing `ExtensionDisposableFiles` and creates a new one
-     *  with the new `ExtContext`.
      */
     public static async getNew(): Promise<FakeExtensionContext> {
         const ctx = new FakeExtensionContext()
-        try {
-            TestExtensionDisposableFiles.clearInstance()
-        } catch {
-            // Ignore.
-        }
-        await TestExtensionDisposableFiles.initialize(ctx)
         return ctx
     }
 
     /**
      * Creates a fake `ExtContext` for use in tests.
-     *
-     *  Disposes any existing `ExtensionDisposableFiles` and creates a new one
-     *  with the new `ExtContext`.
      */
     public static async getFakeExtContext(): Promise<ExtContext> {
         const ctx = await FakeExtensionContext.getNew()
         const awsContext = new FakeAwsContext()
         const samCliContext = () => {
             return {
-                invoker: new TestSamCliProcessInvoker(
-                    (spawnOptions, args: any[]): ChildProcessResult => {
-                        return new FakeChildProcessResult({})
-                    }
-                ),
+                invoker: new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
+                    return new FakeChildProcessResult({})
+                }),
                 validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
             } as SamCliContext
         }
@@ -116,27 +100,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             telemetryService: telemetryService,
             credentialsStore: new CredentialsStore(),
         }
-    }
-}
-
-export class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
-    public static ORIGINAL_INSTANCE = ExtensionDisposableFiles.INSTANCE
-
-    public static clearInstance() {
-        // XXX: INSTANCE=undefined is done first, to avoid a race:
-        //      1. del.sync() does file IO
-        //      2. the Node scheduler looks for pending handlers to execute while waiting on IO
-        //      3. other async handlers may try to use ExtensionDisposableFiles.getInstance()
-        const instance = ExtensionDisposableFiles.INSTANCE
-        ExtensionDisposableFiles.INSTANCE = undefined
-        if (instance) {
-            fs.removeSync(instance.toolkitTempFolder)
-            instance.dispose()
-        }
-    }
-
-    public static resetOriginalInstance() {
-        ExtensionDisposableFiles.INSTANCE = TestExtensionDisposableFiles.ORIGINAL_INSTANCE
     }
 }
 

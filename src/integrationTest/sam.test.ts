@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
+import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as vscodeUtils from '../../src/shared/utilities/vsCodeUtils'
@@ -15,7 +15,7 @@ import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { fileExists } from '../shared/filesystemUtilities'
+import { fileExists, tryRemoveFolder } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import * as testUtils from './integrationTestsUtilities'
@@ -26,11 +26,13 @@ import { ext } from '../shared/extensionGlobals'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
+import { sleep } from '../shared/utilities/promiseUtilities'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
+// note: this refers to the _test_ timeout, not the invocation timeout
 const DEBUG_TIMEOUT: number = 120000
 const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
@@ -59,14 +61,6 @@ interface TestScenario {
 const scenarios: TestScenario[] = [
     // zips
     {
-        runtime: 'nodejs10.x',
-        displayName: 'nodejs10.x (ZIP)',
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-    },
-    {
         runtime: 'nodejs12.x',
         displayName: 'nodejs12.x (ZIP)',
         path: 'hello-world/app.js',
@@ -81,14 +75,6 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
-    },
-    {
-        runtime: 'python2.7',
-        displayName: 'python2.7 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.6',
@@ -159,15 +145,6 @@ const scenarios: TestScenario[] = [
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
     // images
-    {
-        runtime: 'nodejs10.x',
-        displayName: 'nodejs10.x (Image)',
-        baseImage: `amazon/nodejs10.x-base`,
-        path: 'hello-world/app.js',
-        debugSessionType: 'pwa-node',
-        language: 'javascript',
-        dependencyManager: 'npm',
-    },
     {
         runtime: 'nodejs12.x',
         displayName: 'nodejs12.x (Image)',
@@ -269,14 +246,6 @@ async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
     return document.uri
 }
 
-function tryRemoveFolder(fullPath: string) {
-    try {
-        removeSync(fullPath)
-    } catch (e) {
-        console.error(`Failed to remove path ${fullPath}`, e)
-    }
-}
-
 /**
  * Returns a string if there is a validation issue, undefined if there is no issue.
  */
@@ -347,11 +316,11 @@ async function startDebugger(
         async () => {
             logSession('START', vscode.debug.activeDebugSession!.name)
 
-            await testUtils.sleep(400)
+            await sleep(400)
             await continueDebugger()
-            await testUtils.sleep(400)
+            await sleep(400)
             await continueDebugger()
-            await testUtils.sleep(400)
+            await sleep(400)
             await continueDebugger()
 
             await success
@@ -408,7 +377,7 @@ describe('SAM Integration Tests', async function () {
     })
 
     after(async function () {
-        tryRemoveFolder(testSuiteRoot)
+        await tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
         config.update('server.launchMode', javaLanguageSetting)
@@ -430,7 +399,7 @@ describe('SAM Integration Tests', async function () {
             after(async function () {
                 // don't clean up after java tests so the java language server doesn't freak out
                 if (scenario.language !== 'java') {
-                    tryRemoveFolder(runtimeTestRoot)
+                    await tryRemoveFolder(runtimeTestRoot)
                 }
             })
 
@@ -452,7 +421,7 @@ describe('SAM Integration Tests', async function () {
                 afterEach(async function () {
                     // don't clean up after java tests so the java language server doesn't freak out
                     if (scenario.language !== 'java') {
-                        tryRemoveFolder(testDir)
+                        await tryRemoveFolder(testDir)
                     }
                 })
 
@@ -502,7 +471,7 @@ describe('SAM Integration Tests', async function () {
                 after(async function () {
                     // don't clean up after java tests so the java language server doesn't freak out
                     if (scenario.language !== 'java') {
-                        tryRemoveFolder(testDir)
+                        await tryRemoveFolder(testDir)
                     }
                 })
 

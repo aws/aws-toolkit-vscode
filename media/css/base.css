@@ -1,0 +1,150 @@
+/* Base styling sheet for standard tags and common classes */
+
+/* Radio button */
+input[type='radio'] {
+    -webkit-appearance: none;
+    display: inline-block;
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    padding: 4px;
+    border: 1px solid var(--vscode-settings-textInputForeground);
+    background-clip: content-box;
+    background-color: transparent;
+    border-radius: 50%;
+    margin: 0;
+}
+input[type='radio']:checked {
+    background-color: var(--vscode-focusBorder);
+    border: 1px solid var(--vscode-focusBorder);
+}
+input:focus:not(:focus-visible) {
+    outline-color: transparent;
+}
+
+/* Checkbox */
+input[type='checkbox']:not(.collapse-button) {
+    -webkit-appearance: none;
+    display: inline-block;
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    border: 1px solid var(--vscode-settings-checkboxBorder);
+    border-radius: 20%;
+    background-size: 16px;
+    background-color: var(--vscode-settings-checkboxBackground);
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0;
+}
+body.vscode-dark input[type='checkbox']:not(.collapse-button):checked {
+    background-image: url('../../resources/dark/done.svg');
+}
+body.vscode-light input[type='checkbox']:not(.collapse-button):checked {
+    background-image: url('../../resources/light/done.svg');
+}
+
+/* Placeholder */
+::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+}
+
+/* Text/number input box */
+input[type='text'],
+input[type='number'] {
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+    padding: 4px 4px;
+}
+input[type='text'][data-invalid='true'],
+input[type='number'][data-invalid='true'] {
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    border-bottom: 0;
+}
+.input-validation {
+    color: var(--vscode-inputValidation-errorForeground);
+    background: var(--vscode-inputValidation-errorBackground);
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    padding: 4px 4px;
+}
+
+/* Select drop-down */
+select {
+    margin: 0px 0px;
+    padding: 2px 0px;
+    border-radius: 4px;
+    border: 1px solid var(--vscode-settings-dropdownBorder);
+    background: var(--vscode-settings-dropdownBackground);
+    color: var(--vscode-settings-dropdownForeground);
+}
+select:invalid {
+    color: var(--vscode-input-placeholderForeground);
+}
+option {
+    color: var(--vscode-settings-dropdownForeground);
+    background: var(--vscode-settings-dropdownBackground);
+}
+
+/* Header (for settings) (TODO: move to different sheet) */
+.header {
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: row;
+}
+/* The below selectors apply a tint depending on the theme: light for dark and dark for light */
+/* `backdrop-filter` with a brightness offset of 0.2 would be better here but it causes some slight flickering */
+body.vscode-dark .header {
+    background-color: rgb(255, 255, 255, 0.05);
+}
+body.vscode-light .header {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Buttons */
+button,
+.button-theme-primary {
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px;
+}
+button,
+.button-theme-primary:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+.button-theme-secondary {
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border);
+}
+.button-theme-secondary:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+}
+.button-theme-soft {
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+}
+
+/* Text area */
+textarea {
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+}
+
+/* Misc. */
+.no-spacing {
+    margin: 0;
+    padding: 0;
+}
+.soft {
+    color: var(--vscode-input-placeholderForeground);
+}
+.container {
+    background: var(--vscode-menu-background);
+}
+.wrapper {
+    display: contents;
+}

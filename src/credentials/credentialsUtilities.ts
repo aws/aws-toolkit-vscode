@@ -88,13 +88,13 @@ export async function resolveProviderWithCancel(
         }
     }, CREDENTIALS_PROGRESS_DELAY)
 
-    return (await waitTimeout(provider, timeout, {
+    return await waitTimeout(provider, timeout, {
+        allowUndefined: false,
         onCancel: () => {
             throw new Error(`Request to get credentials for "${profile}" cancelled`)
         },
         onExpire: () => {
             throw new Error(`Request to get credentials for "${profile}" expired`)
         },
-        allowUndefined: false,
-    })) as Credentials
+    })
 }
