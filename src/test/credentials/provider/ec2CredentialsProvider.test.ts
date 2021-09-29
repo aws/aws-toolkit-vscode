@@ -23,7 +23,7 @@ describe('Ec2CredentialsProvider', function () {
         credentialsProvider = new Ec2CredentialsProvider(instance(mockMetadata))
     })
 
-    it('should be valid if EC2 metadata service resolves valid IAM status', async function () {
+    it('is valid if EC2 metadata service resolves valid IAM status', async function () {
         mockClient({
             identity: {} as InstanceIdentity,
             validIam: true,
@@ -31,21 +31,21 @@ describe('Ec2CredentialsProvider', function () {
         assert.strictEqual(await credentialsProvider.isAvailable(), true)
     })
 
-    it('should be invalid if EC2 metadata resolves invalid IAM status', async function () {
+    it('is invalid if EC2 metadata resolves invalid IAM status', async function () {
         mockClient({
             validIam: false,
         })
         assert.strictEqual(await credentialsProvider.isAvailable(), false)
     })
 
-    it('should be invalid if EC2 metadata service fails to resolve', async function () {
+    it('is invalid if EC2 metadata service fails to resolve', async function () {
         mockClient({
             fail: true,
         })
         assert.strictEqual(await credentialsProvider.isAvailable(), false)
     })
 
-    it('should only validate once per instance', async function () {
+    it('only validates once per instance', async function () {
         mockClient({
             identity: mockIdentity,
             validIam: true,
@@ -57,7 +57,7 @@ describe('Ec2CredentialsProvider', function () {
         } catch (err) {}
     })
 
-    it('should return EC2 retrieved region if available', async function () {
+    it('returns EC2 retrieved region if available', async function () {
         mockClient({
             identity: mockIdentity,
             validIam: true,
@@ -67,7 +67,7 @@ describe('Ec2CredentialsProvider', function () {
         assert.strictEqual(credentialsProvider.getDefaultRegion(), dummyRegion)
     })
 
-    it('should return undefined region when not available', async function () {
+    it('returns undefined region when not available', async function () {
         mockClient({
             identity: {} as InstanceIdentity,
             validIam: true,

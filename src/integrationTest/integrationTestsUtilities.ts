@@ -10,10 +10,6 @@ import * as vscode from 'vscode'
 // java8.al2 image does a while to pull
 const LAMBDA_SESSION_TIMEOUT = 60000
 
-export async function sleep(miliseconds: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, miliseconds))
-}
-
 // Retrieves CodeLenses from VS Code
 export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
     return vscode.commands.executeCommand('vscode.executeCodeLensProvider', uri)

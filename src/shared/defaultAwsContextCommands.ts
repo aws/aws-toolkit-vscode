@@ -140,7 +140,7 @@ export class DefaultAWSContextCommands {
 
             if (accountId) {
                 await UserCredentialsUtils.generateCredentialDirectoryIfNonexistent()
-                await UserCredentialsUtils.generateCredentialsFile(ext.context.extensionPath, {
+                await UserCredentialsUtils.generateCredentialsFile({
                     profileName: state.profileName,
                     accessKey: state.accesskey,
                     secretKey: state.secretKey,

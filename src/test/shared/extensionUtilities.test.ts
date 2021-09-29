@@ -134,7 +134,7 @@ describe('extensionUtilities', function () {
     })
 })
 
-describe('initializeComputeRegion & getComputeRegion', async function () {
+describe('initializeComputeRegion, getComputeRegion', async function () {
     const metadataService = new DefaultEc2MetadataClient()
 
     let sandbox: sinon.SinonSandbox
@@ -182,5 +182,9 @@ describe('initializeComputeRegion & getComputeRegion', async function () {
 
         await initializeComputeRegion(metadataService, false)
         assert.strictEqual(getComputeRegion(), undefined)
+    })
+
+    it('handles invalid endpoint or invalid response', async function () {
+        await assert.rejects(metadataService.invoke('/bogus/path'))
     })
 })

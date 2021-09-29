@@ -3,18 +3,37 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as handlebars from 'handlebars'
 import * as path from 'path'
 
 import { mkdirp, writeFile } from 'fs-extra'
 import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
-import { fileExists, readFileAsString } from '../filesystemUtilities'
+import { fileExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
-/**
- * The payload used to fill in the handlebars template
- * for the simple credentials file.
- */
+const createNewCredentialsFile = (ctx: CredentialsTemplateContext) =>
+    `
+# Amazon Web Services Credentials File used by AWS CLI, SDKs, and tools
+# This file was created by the AWS Toolkit for Visual Studio Code extension.
+#
+# Your AWS credentials are represented by access keys associated with IAM users.
+# For information about how to create and manage AWS access keys for a user, see:
+# https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+#
+# This credential file can store multiple access keys by placing each one in a
+# named "profile". For information about how to change the access keys in a 
+# profile or to add a new profile with a different access key, see:
+# https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html 
+#
+[${ctx.profileName}]
+# The access key and secret key pair identify your account and grant access to AWS.
+aws_access_key_id = ${ctx.accessKey}
+# Treat your secret key like a password. Never share your secret key with anyone. Do 
+# not post it in online forums, or store it in a source control system. If your secret 
+# key is ever disclosed, immediately use IAM to delete the access key and secret key
+# and create a new key pair. Then, update this file with the replacement key details.
+aws_secret_access_key = ${ctx.secretKey}
+`
+
 export interface CredentialsTemplateContext {
     profileName: string
     accessKey: string
@@ -62,16 +81,8 @@ export class UserCredentialsUtils {
      *
      * @param credentialsContext the profile to create in the file
      */
-    public static async generateCredentialsFile(
-        extensionPath: string,
-        credentialsContext: CredentialsTemplateContext
-    ): Promise<void> {
-        const templatePath: string = path.join(extensionPath, 'resources', 'newUserCredentialsFile')
-
-        const credentialsTemplate: string = await readFileAsString(templatePath)
-
-        const handlebarTemplate = handlebars.compile(credentialsTemplate)
-        const credentialsFileContents = handlebarTemplate(credentialsContext)
+    public static async generateCredentialsFile(credentialsContext: CredentialsTemplateContext): Promise<void> {
+        const credentialsFileContents = createNewCredentialsFile(credentialsContext)
 
         // Make a final check
         if (await SystemUtilities.fileExists(getCredentialsFilename())) {
