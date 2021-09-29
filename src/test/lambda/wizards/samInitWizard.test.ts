@@ -22,8 +22,8 @@ describe('CreateNewSamAppWizard', async function () {
         tester.assertShowCount(4)
     })
 
-    it('sets architecture to "x86_64" by default', function () {
-        tester.architecture.assertValue('x86_64')
+    it('leaves architecture undefined by default', function () {
+        tester.architecture.assertValue(undefined)
     })
 
     it('prompts for dependency manager if there are multiple', function () {

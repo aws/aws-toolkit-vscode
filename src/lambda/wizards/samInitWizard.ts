@@ -47,7 +47,7 @@ const localize = nls.loadMessageBundle()
 export interface CreateNewSamAppWizardForm {
     runtimeAndPackage: RuntimeAndPackage
     dependencyManager: DependencyManager
-    architecture: Architecture
+    architecture?: Architecture
     template: SamTemplate
     region?: string
     registryName?: string
@@ -236,7 +236,6 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.architecture.bindPrompter(createArchitecturePrompter, {
             showWhen: canShowArchitecture,
-            setDefault: () => 'x86_64',
         })
 
         this.form.template.bindPrompter(state =>
