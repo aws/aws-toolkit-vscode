@@ -9,7 +9,7 @@ import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { getTemplate, getTemplateResource, isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
+import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { getLogger } from '../logger'
@@ -86,43 +86,24 @@ const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 let samStartApi: Promise<boolean>
 let samStartApiProc: ChildProcess | undefined
 
-export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<string> {
+export async function makeInputTemplate(
+    config: SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+): Promise<string> {
     let newTemplate: SamTemplateGenerator
-    let inputTemplatePath: string
+    const inputTemplatePath: string = path.join(config.baseBuildDir!, 'app___vsctk___template.yaml')
     const resourceName = makeResourceName(config)
 
-    // use existing template to create a temporary template
-    if (['api', 'template'].includes(config.invokeTarget.target)) {
-        const template = getTemplate(config.workspaceFolder, config)
-        const templateResource = getTemplateResource(config.workspaceFolder, config)
+    // code type - generate ephemeral SAM template
+    newTemplate = new SamTemplateGenerator()
+        .withFunctionHandler(config.invokeTarget.lambdaHandler)
+        .withResourceName(resourceName)
+        .withRuntime(config.lambda!.runtime!)
+        .withCodeUri(pathutil.normalize(config.invokeTarget.projectRoot))
 
-        if (!template || !templateResource) {
-            throw new Error('Resource not found in base template')
-        }
-
-        // We make a copy as to not mutate the template registry version
-        // TODO remove the template registry? make it return non-mutatable things?
-        const templateClone = { ...template }
-
-        // TODO fix this API, withTemplateResources is required (with a runtime error), but if we pass in a template why do we need it?
-        newTemplate = new SamTemplateGenerator(templateClone).withTemplateResources(templateClone.Resources!)
-
-        // template type uses the template dir and a throwaway template name so we can use existing relative paths
-        // clean this one up manually; we don't want to accidentally delete the workspace dir
-        inputTemplatePath = path.join(path.dirname(config.templatePath), 'app___vsctk___template.yaml')
-    } else {
-        // code type - generate ephemeral SAM template
-        newTemplate = new SamTemplateGenerator()
-            .withFunctionHandler(config.handlerName)
-            .withResourceName(resourceName)
-            .withRuntime(config.runtime)
-            .withCodeUri(config.codeRoot)
-        if (config.lambda?.environmentVariables) {
-            newTemplate = newTemplate.withEnvironment({
-                Variables: config.lambda?.environmentVariables,
-            })
-        }
-        inputTemplatePath = path.join(config.codeRoot, 'app___vsctk___template.yaml')
+    if (config.lambda?.environmentVariables) {
+        newTemplate = newTemplate.withEnvironment({
+            Variables: config.lambda?.environmentVariables,
+        })
     }
 
     // additional overrides
@@ -185,8 +166,7 @@ async function buildLambdaHandler(
             throw new Error(samBuild.failure())
         }
         // build successful: use output template path for invocation
-        await remove(config.templatePath)
-        // XXX: reassignment
+        // TODO: refactor `buildLambdaHandler` to not mutate the config
         config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
         getLogger('channel').info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
         return true
@@ -323,7 +303,9 @@ async function invokeLambdaHandler(
 
             return false
         } finally {
-            await remove(config.templatePath)
+            if (config.sam?.buildDir === undefined) {
+                await remove(config.templatePath)
+            }
             telemetry.recordLambdaInvokeLocal({
                 lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
                 result: invokeResult,

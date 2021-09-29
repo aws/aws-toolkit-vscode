@@ -19,7 +19,7 @@ import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/t
 import { isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
 
-describe('makeCoreCLRDebugConfiguration', async function () {
+describe('makeCoreCLRDebugConfiguration', function () {
     let tempFolder: string
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
 
@@ -74,7 +74,7 @@ describe('makeCoreCLRDebugConfiguration', async function () {
         return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
     }
 
-    describe('windows', async function () {
+    describe('windows', function () {
         if (os.platform() === 'win32') {
             it('massages drive letters to uppercase', async function () {
                 const config = await makeConfig({})
@@ -98,7 +98,7 @@ describe('makeCoreCLRDebugConfiguration', async function () {
             )
         })
     })
-    describe('*nix', async function () {
+    describe('*nix', function () {
         it('uses the default shell', async function () {
             const config = await makeConfig({})
 
@@ -116,7 +116,7 @@ describe('makeCoreCLRDebugConfiguration', async function () {
     })
 })
 
-describe('isImageLambdaConfig', async function () {
+describe('isImageLambdaConfig', function () {
     let tempFolder: string
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
 
