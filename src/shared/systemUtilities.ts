@@ -4,9 +4,11 @@
  */
 
 import * as fs from 'fs'
+import * as vscode from 'vscode'
 import * as os from 'os'
 import * as path from 'path'
 import { EnvironmentVariables } from './environmentVariables'
+import { ChildProcess } from './utilities/childProcess'
 
 export class SystemUtilities {
     public static getHomeDirectory(): string {
@@ -37,5 +39,30 @@ export class SystemUtilities {
                 resolve(true)
             })
         })
+    }
+
+    /**
+     * Searches for `tsc` in the current workspace, or the system (tries `tsc`
+     * using current $PATH).
+     *
+     * @returns fullpath if found in the workspace, "tsc" if found in current $PATH, else undefined.
+     */
+    public static async findTypescriptCompiler(): Promise<string | undefined> {
+        const foundUris = await vscode.workspace.findFiles('**/node_modules/.bin/{tsc,tsc.cmd}', undefined, 1)
+        const tscPaths = []
+        if (foundUris.length > 0) {
+            tscPaths.push(foundUris[0].fsPath)
+        }
+        tscPaths.push('tsc') // Try this last.
+
+        for (const tsc of tscPaths) {
+            // Try to run "tsc -v".
+            const result = await new ChildProcess(true, tsc, undefined, '-v').run()
+            if (result.exitCode === 0 && result.stdout.includes('Version')) {
+                return tsc
+            }
+        }
+
+        return undefined
     }
 }

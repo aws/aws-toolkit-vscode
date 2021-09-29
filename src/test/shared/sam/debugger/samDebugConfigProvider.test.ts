@@ -273,6 +273,29 @@ describe('SamDebugConfigurationProvider', async function () {
     })
 
     describe('makeConfig', async function () {
+        describe('buildDir', function () {
+            it('uses `buildDir` as `baseBuildDir` when provided', async function () {
+                const buildDir = path.resolve('/my', 'build', 'dir')
+                const folder = testutil.getWorkspaceFolder(testutil.getProjectDir())
+                const launchConfig = await getConfig(
+                    debugConfigProvider,
+                    ext.templateRegistry,
+                    'testFixtures/workspaceFolder/js-plain-sam-app/'
+                )
+                const config = launchConfig.config as AwsSamDebuggerConfiguration & {
+                    invokeTarget: { target: 'template' }
+                }
+                config.sam = Object.assign(launchConfig.config.sam ?? {}, { buildDir })
+                config.invokeTarget.templatePath = config.invokeTarget.templatePath.replace(
+                    '${workspaceFolder}',
+                    launchConfig.folder.uri.fsPath
+                )
+
+                const actual = await debugConfigProvider.makeConfig(folder, config)
+                assert.strictEqual(actual?.baseBuildDir, buildDir)
+            })
+        })
+
         it('failure modes', async function () {
             const config = await getConfig(
                 debugConfigProvider,
@@ -362,8 +385,6 @@ describe('SamDebugConfigurationProvider', async function () {
       CodeUri: >-
         ${config.codeRoot}
       Runtime: go1.x
-      Environment:
-        Variables: {}
 `
             )
         })
@@ -541,7 +562,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 
@@ -692,7 +713,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 
@@ -846,9 +867,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 
@@ -872,17 +891,6 @@ describe('SamDebugConfigurationProvider', async function () {
             assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
-            )
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-  SourceCodeTwoFoldersDeep:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: .
-      Handler: src/subfolder/app.handlerTwoFoldersDeep
-      Runtime: nodejs14.x
-`
             )
 
             //
@@ -992,10 +1000,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
                 architecture: 'x86_64',
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
                 // Node-related fields
@@ -1014,34 +1020,6 @@ describe('SamDebugConfigurationProvider', async function () {
             assertFileText(
                 expected.containerEnvFile!,
                 `{"NODE_OPTIONS":"--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
-            )
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  js-image-sam-app
-  Sample SAM Template for js-image-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-    Metadata:
-      DockerTag: nodejs14.x-v1
-      DockerContext: ./hello-world
-      Dockerfile: Dockerfile
-`
             )
 
             //
@@ -1156,10 +1134,8 @@ Resources:
                 },
                 localRoot: appDir,
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
                 architecture: 'x86_64',
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
                 // Node-related fields
@@ -1182,17 +1158,6 @@ Resources:
             assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
-            )
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-  SourceCodeTwoFoldersDeep:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: .
-      Handler: src/subfolder/app.handlerTwoFoldersDeep
-      Runtime: nodejs14.x
-`
             )
 
             // Test noDebug=true.
@@ -1248,9 +1213,7 @@ Resources:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
             }
@@ -1274,10 +1237,8 @@ Resources:
     Properties:
       Handler: ${handler}
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
+        ${input.invokeTarget.projectRoot}
       Runtime: java11
-      Environment:
-        Variables: {}
 `
             )
 
@@ -1354,9 +1315,7 @@ Resources:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
             }
@@ -1380,10 +1339,8 @@ Resources:
     Properties:
       Handler: ${handler}
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
+        ${input.invokeTarget.projectRoot}
       Runtime: java11
-      Environment:
-        Variables: {}
 `
             )
 
@@ -1468,9 +1425,7 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
             }
@@ -1487,32 +1442,6 @@ Resources:
             assertEqualLaunchConfigs(actual, expectedDebug)
             assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
             assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
-
-            assertFileText(
-                expectedDebug.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  Test SAM Template
-Globals:
-  Function:
-    Timeout: 20
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: HelloWorldFunction
-      Handler: ${handler}
-      Runtime: java11
-      MemorySize: 512
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-`
-            )
 
             //
             // Test noDebug=true.
@@ -1599,9 +1528,7 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
             }
@@ -1623,33 +1550,6 @@ Resources:
                 `{"_JAVA_OPTIONS":"${expectedDebug.containerEnvVars!._JAVA_OPTIONS}"}`
             )
 
-            assertFileText(
-                expectedDebug.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  java11-image-gradle-sam-app
-  Sample SAM Template for java11-image-gradle-sam-app
-Globals:
-  Function:
-    Timeout: 20
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-    Metadata:
-      DockerTag: java11-gradle-v1
-      DockerContext: ./HelloWorldFunction
-      Dockerfile: Dockerfile
-`
-            )
             //
             // Test noDebug=true.
             //
@@ -1693,7 +1593,7 @@ Resources:
                 },
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const codeRoot = `${appDir}${input.invokeTarget.projectRoot}`
+            const codeRoot = input.invokeTarget.projectRoot
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
@@ -1723,7 +1623,7 @@ Resources:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'HelloWorld', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 
@@ -1764,10 +1664,8 @@ Resources:
     Properties:
       Handler: HelloWorld::HelloWorld.Function::FunctionHandler
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
+        ${input.invokeTarget.projectRoot}
       Runtime: dotnetcore2.1
-      Environment:
-        Variables: {}
 `
             )
 
@@ -1888,10 +1786,8 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
                 architecture: 'x86_64',
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
                 // Csharp-related fields
@@ -1924,31 +1820,6 @@ Resources:
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
             assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  Test SAM Template
-Globals:
-  Function:
-    Timeout: 10
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./src/HelloWorld/
-      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
-      Runtime: dotnetcore2.1
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-`
-            )
 
             //
             // Test pathMapping
@@ -2072,9 +1943,7 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 
@@ -2120,33 +1989,6 @@ Resources:
                 const sourceFileMap = actual.sourceFileMap!['/build']
                 assert.ok(/^[A-Z]:/.test(sourceFileMap.substring(0, 2)), 'sourceFileMap driveletter must be uppercase')
             }
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  Sample SAM Template for csharp2.1-image-sam-app
-Globals:
-  Function:
-    Timeout: 10
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-    Metadata:
-      DockerTag: dotnetcore2.1-v1
-      DockerContext: ./src/HelloWorld
-      Dockerfile: Dockerfile
-`
-            )
 
             //
             // Test pathMapping
@@ -2267,7 +2109,7 @@ Resources:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
@@ -2307,8 +2149,6 @@ Resources:
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: python3.7
-      Environment:
-        Variables: {}
 `
             )
 
@@ -2414,9 +2254,7 @@ Resources:
                     timeoutSec: 3,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
@@ -2445,72 +2283,6 @@ Resources:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  python3.7-plain-sam-app
-  Sample SAM Template for python3.7-plain-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-  Function2NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_2
-      Runtime: python3.7
-  Function3NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_3
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /apipath1
-            Method: get
-  ServerlessApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: ResourceName
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
-`
-            )
 
             //
             // Test pathMapping
@@ -2611,9 +2383,7 @@ Outputs:
                     timeoutSec: 3,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 architecture: 'x86_64',
@@ -2642,72 +2412,6 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  python3.7-plain-sam-app
-  Sample SAM Template for python3.7-plain-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-  Function2NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_2
-      Runtime: python3.7
-  Function3NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_3
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /apipath1
-            Method: get
-  ServerlessApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: ResourceName
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
-`
-            )
 
             // Test noDebug=true.
             expected.handlerName = 'app.lambda_handler'
@@ -2769,9 +2473,7 @@ Outputs:
                     runtime: 'python3.7',
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 architecture: 'x86_64',
@@ -2800,34 +2502,6 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  python3.7-image-sam-app
-  Sample SAM Template for python3.7-image-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-    Metadata:
-      DockerTag: python3.7-v1
-      DockerContext: ./hello_world
-      Dockerfile: Dockerfile
-`
-            )
 
             //
             // Test pathMapping
@@ -2902,7 +2576,6 @@ Resources:
                     },
                 },
             }
-
             // Debug option should not appear now
             getLogger().setLogLevel('verbose')
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2976,7 +2649,7 @@ Resources:
                     containerBuild: true,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 
@@ -3004,8 +2677,6 @@ Resources:
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: python3.7
-      Environment:
-        Variables: {}
 `
             )
 
@@ -3083,9 +2754,7 @@ Resources:
                     containerBuild: true,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 
@@ -3099,72 +2768,6 @@ Resources:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  python3.7-plain-sam-app
-  Sample SAM Template for python3.7-plain-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-  Function2NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_2
-      Runtime: python3.7
-  Function3NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_3
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /apipath1
-            Method: get
-  ServerlessApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: ResourceName
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
-`
-            )
 
             //
             // Test noDebug=true.
@@ -3183,119 +2786,6 @@ Outputs:
                 eventPayloadFile: undefined,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
-        })
-
-        it('debugconfig with extraneous env vars', async function () {
-            const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
-            )
-            const folder = testutil.getWorkspaceFolder(appDir)
-            const input = {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'test-extraneous-env',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: TEMPLATE_TARGET_TYPE,
-                    templatePath: tempFile.fsPath,
-                    logicalId: resourceName,
-                },
-                lambda: {
-                    // These are written to env-vars.json, but ignored by SAM.
-                    environmentVariables: {
-                        var1: '2',
-                        var2: '1',
-                    },
-                },
-            }
-            testutil.toFile(
-                makeSampleSamTemplateYaml(true, {
-                    resourceName: resourceName,
-                    runtime: 'nodejs12.x',
-                    handler: 'my.test.handler',
-                    codeUri: 'codeuri',
-                }),
-                tempFile.fsPath
-            )
-            await ext.templateRegistry.addItemToRegistry(tempFile)
-            const actual = (await debugConfigProvider.makeConfig(folder, input))!
-            const tempDir = path.dirname(actual.codeRoot)
-
-            const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
-                type: AWS_SAM_DEBUG_TYPE,
-                useIkpdb: false,
-                workspaceFolder: {
-                    index: 0,
-                    name: 'test-workspace-folder',
-                    uri: vscode.Uri.file(appDir),
-                },
-                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: `${actual.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: undefined,
-                codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
-                apiPort: undefined,
-                debugPort: actual.debugPort,
-                documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'my.test.handler',
-                invokeTarget: {
-                    target: 'template',
-                    templatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
-                    logicalId: 'myResource',
-                },
-                lambda: {
-                    environmentVariables: {
-                        var1: '2',
-                        var2: '1',
-                    },
-                    memoryMb: undefined,
-                    timeoutSec: 12345, // From template.yaml.
-                },
-                localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
-                name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(tempFile.fsPath), 'app___vsctk___template.yaml')
-                ),
-                parameterOverrides: undefined,
-                architecture: 'x86_64',
-
-                //
-                // Node-related fields
-                //
-                address: 'localhost',
-                port: actual.debugPort,
-                preLaunchTask: undefined,
-                protocol: 'inspector',
-                remoteRoot: '/var/task',
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
-                runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
-                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-                stopOnEntry: false,
-            }
-
-            assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile!, '{"myResource":{"var1":"2","var2":"1"}}')
-
-            assertFileText(
-                expected.templatePath,
-                `Globals:
-  Function:
-    Timeout: 5
-Resources:
-  myResource:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: my.test.handler
-      CodeUri: codeuri
-      Runtime: nodejs12.x
-      Timeout: 12345
-      Architectures:
-        - x86_64
-      Environment:
-        Variables:
-          ENVVAR: envvar
-`
-            )
         })
 
         it('debugconfig with aws section', async function () {
@@ -3403,7 +2893,7 @@ Resources:
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 
@@ -3482,7 +2972,7 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello-world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
                 architecture: 'x86_64',
 

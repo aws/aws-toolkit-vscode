@@ -40,12 +40,12 @@ export async function activate(context: ExtContext): Promise<void> {
                     outputChannel,
                 })
         ),
-        // Capture debug finished events, and delete the base build dir if it exists
+        // Capture debug finished events, and delete the temporary directory if it exists
         vscode.debug.onDidTerminateDebugSession(async session => {
-            // if it has a base build dir, then we remove it. We can't find out the type easily since
-            // 'type' is just 'python'/'nodejs' etc, but we can tell it's a run config we care about if
-            // it has a baseBuildDirectory.
-            if (session.configuration?.baseBuildDir !== undefined) {
+            if (
+                session.configuration?.sam?.buildDir === undefined &&
+                session.configuration?.baseBuildDir !== undefined
+            ) {
                 await tryRemoveFolder(session.configuration.baseBuildDir)
             }
         }),
