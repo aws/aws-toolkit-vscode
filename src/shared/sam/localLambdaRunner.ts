@@ -25,7 +25,7 @@ import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
-import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
+import { APIGatewayProperties, CodeTargetProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
 import { ext } from '../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerContext'
@@ -112,6 +112,9 @@ export async function makeInputTemplate(
     }
     if (config.lambda?.timeoutSec) {
         newTemplate = newTemplate.withTimeout(config.lambda?.timeoutSec)
+    }
+    if ((config.invokeTarget as CodeTargetProperties).architecture) {
+        newTemplate = newTemplate.withArchitectures([(config.invokeTarget as CodeTargetProperties).architecture!])
     }
 
     await newTemplate.generate(inputTemplatePath)
@@ -222,6 +225,7 @@ async function invokeLambdaHandler(
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 httpMethod: config.api?.httpMethod,
+                architecture: config.architecture,
             })
         }
 
@@ -312,6 +316,7 @@ async function invokeLambdaHandler(
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 version: samVersion,
+                architecture: config.architecture,
             })
         }
 
@@ -403,6 +408,7 @@ export async function runLambdaFunction(
                     result: attachResult ? 'Succeeded' : 'Failed',
                     attempts: attempts,
                     duration: timer.elapsedTime,
+                    architecture: config.architecture,
                 })
             },
         })

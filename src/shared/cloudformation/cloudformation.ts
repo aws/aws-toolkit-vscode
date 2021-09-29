@@ -64,6 +64,7 @@ export namespace CloudFormation {
         Environment?: Environment
         Events?: Events
         PackageType?: 'Image' | 'Zip'
+        Architectures?: ('x86_64' | 'arm64')[]
         [key: string]: any
     }
 
@@ -146,6 +147,9 @@ export namespace CloudFormation {
         | 'CommaDelimitedList'
         | AWSSpecificParameterType
         | SSMParameterType
+
+    type ThingType = 'number' | 'string' | 'array'
+    const samParamArrayTypes = ['List<Number>', 'CommaDelimitedList']
 
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-specific-parameter-types
     type AWSSpecificParameterType =
@@ -230,6 +234,8 @@ export namespace CloudFormation {
         SimpleTable?: SimpleTableGlobals
     }
 
+    type GlobalType = string | number | Record<string, unknown> | string[] | undefined
+
     type FunctionKeys =
         | 'Handler'
         | 'Runtime'
@@ -270,7 +276,7 @@ export namespace CloudFormation {
         'EventInvokeConfig',
     ])
     type FunctionGlobals = {
-        [key in FunctionKeys]?: string | number | Record<string, unknown> | undefined
+        [key in FunctionKeys]?: GlobalType
     }
 
     type ApiKeys =
@@ -311,7 +317,7 @@ export namespace CloudFormation {
         'Domain',
     ])
     type ApiGlobals = {
-        [key in ApiKeys]?: string | number | Record<string, unknown> | undefined
+        [key in ApiKeys]?: GlobalType
     }
 
     type HttpApiKeys =
@@ -332,13 +338,13 @@ export namespace CloudFormation {
         'Domain',
     ])
     type HttpApiGlobals = {
-        [key in HttpApiKeys]?: string | number | Record<string, unknown> | undefined
+        [key in HttpApiKeys]?: GlobalType
     }
 
     type SimpleTableKeys = 'SSESpecification'
     const simpleTableKeysSet: Set<string> = new Set(['SSESpecification'])
     type SimpleTableGlobals = {
-        [key in SimpleTableKeys]?: string | number | Record<string, unknown> | undefined
+        [key in SimpleTableKeys]?: GlobalType
     }
 
     function globalPropForKey(key: string): keyof TemplateGlobals | undefined {
@@ -528,7 +534,7 @@ export namespace CloudFormation {
      * @param template Full template object. Required for `Ref` and `Globals` lookup.
      */
     export function getStringForProperty(
-        targetObj: { [key: string]: string | number | Record<string, unknown> | undefined } | undefined,
+        targetObj: { [key: string]: GlobalType } | undefined,
         key: string,
         template: Template
     ): string | undefined {
@@ -553,6 +559,28 @@ export namespace CloudFormation {
     }
 
     /**
+     * Gets the array value for a property in a template.
+     * As per [the SAM documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#parameters-section-structure-properties-type) ,
+     *    this will **always** be a string array.
+     *
+     * TODO: [lists in Globals are **additive** with other fields](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy-globals.html#sam-specification-template-anatomy-globals-overrideable-lists)
+     *
+     * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
+     * If the value is not defined in the `targetObj` (`undefined` Ref counts as a definition), will attempt to find a value in Globals.
+     * Returns undefined if the value is not found in `targetObj` or `Globals`.
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
+     */
+    export function getArrayForProperty(
+        targetObj: { [key: string]: string | number | Record<string, unknown> | undefined } | undefined,
+        key: string,
+        template: Template
+    ): string[] | undefined {
+        return getThingForProperty(targetObj, key, template, 'array') as string[] | undefined
+    }
+
+    /**
      * Returns the "thing" that represents the property within `targetObj` or `Globals`:
      * * string if a string is requested and (the property is a string or if the property is a ref that is not a Number and has a default value)
      * * number if a number is requested and (the property is a number or if the property is a ref that is Number and has a default value)
@@ -566,12 +594,12 @@ export namespace CloudFormation {
      * @param globalLookup Whether or not this is currently looking at `Globals` fields. Internal for recursion prevention.
      */
     function getThingForProperty(
-        targetObj: { [key: string]: string | number | Record<string, unknown> | undefined } | undefined,
+        targetObj: { [key: string]: GlobalType } | undefined,
         key: string,
         template: Template,
-        type: 'string' | 'number',
+        type: ThingType,
         globalLookup?: boolean
-    ): string | number | undefined {
+    ): string | number | string[] | undefined {
         if (!targetObj) {
             return undefined
         }
@@ -579,6 +607,8 @@ export namespace CloudFormation {
         if (validatePropertyType(targetObj, key, template, type)) {
             if (typeof property !== 'object' && typeof property === type) {
                 return property as 'string' | 'number'
+            } else if (Array.isArray(property)) {
+                return property as string[]
             } else if (isRef(property)) {
                 try {
                     const forcedProperty = property as Ref
@@ -612,25 +642,31 @@ export namespace CloudFormation {
      * @param globalLookup Whether or not this is currently looking at `Globals` fields. Internal for recursion prevention.
      */
     function validatePropertyType(
-        targetObj: { [key: string]: string | number | Record<string, unknown> | undefined } | undefined,
+        targetObj: { [key: string]: GlobalType } | undefined,
         key: string,
         template: Template,
-        type: 'string' | 'number',
+        type: ThingType,
         globalLookup?: boolean
     ): boolean {
         if (!targetObj) {
             return false
         }
         const property: unknown = targetObj[key]
-        if (typeof property === type) {
+        if (typeof property === type || (type === 'array' && Array.isArray(property))) {
             return true
         } else if (isRef(property)) {
             // property has a Ref, force it to abide by that shape
             const forcedProperty = property as Ref
             const param = getReffedParam(forcedProperty, template)
-            const paramType = param.Type === 'Number' ? 'number' : 'string'
-
-            return paramType === type
+            switch (type) {
+                case 'number':
+                    return param.Type === 'Number'
+                // TODO: gate this on "string" type specifically?
+                case 'string':
+                    return param.Type !== 'Number'
+                case 'array':
+                    return samParamArrayTypes.includes(param.Type)
+            }
         }
 
         // only look if we're not already looking at globals
@@ -653,23 +689,29 @@ export namespace CloudFormation {
      * - returns undefined if the Ref does not have a default value but is
      *   a number.
      *
-     * @param ref Ref to pull a number from
+     * @param ref Ref to pull a value from
      * @param template Template to parse through
      * @param thingType Type to validate against
      */
-    function getReffedThing(ref: Ref, template: Template, thingType: 'number' | 'string'): number | string | undefined {
+    function getReffedThing(
+        ref: Ref,
+        template: Template,
+        thingType: ThingType
+    ): number | string | string[] | undefined {
         const param = getReffedParam(ref, template)
         // every other type, including List<Number>, is formatted as a string.
         if (
             (thingType === 'number' && param.Type === 'Number') ||
-            (thingType !== 'number' && param.Type !== 'Number')
+            (thingType === 'string' && param.Type !== 'Number') ||
+            (thingType === 'array' && samParamArrayTypes.includes(param.Type))
         ) {
-            if (param.Default && typeof param.Default !== thingType) {
-                throw new Error(`Parameter ${ref.Ref} is not a ${thingType}`)
+            if (param.Default && (thingType === 'array' ? 'string' : thingType) !== typeof param.Default) {
+                throw new Error(`Default value for Parameter "${ref.Ref}" is not a ${thingType}`)
             }
 
+            // attempt to convert to str array if array
             // returns undefined if no default value is present
-            return param.Default as 'number' | 'string'
+            return param.Default && thingType === 'array' ? param.Default.toString().split(',') : param.Default
         }
 
         throw new Error(`Parameter ${ref.Ref} is not a ${thingType}`)

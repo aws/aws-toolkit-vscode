@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import { Architecture } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
@@ -18,6 +19,7 @@ describe('SamTemplateGenerator', function () {
     const sampleMemorySize: number = 256
     const sampleTimeout: number = 321
     const sampleRuntimeValue: string = 'sampleRuntime'
+    const sampleArchitecture: Architecture = 'arm64'
     const sampleEnvironment: CloudFormation.Environment = {}
     let templateFilename: string
     let tempFolder: string
@@ -96,6 +98,20 @@ describe('SamTemplateGenerator', function () {
         const resource = template.Resources![sampleResourceNameValue]
         assert.ok(resource)
         assert.deepStrictEqual(resource!.Properties!.Environment, sampleEnvironment)
+    })
+
+    it('Produces a template containing Architectures', async function () {
+        await makeMinimalTemplate().withArchitectures([sampleArchitecture]).generate(templateFilename)
+
+        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+
+        const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
+        assert.ok(template.Resources)
+        assert.notStrictEqual(Object.keys(template.Resources!).length, 0)
+
+        const resource = template.Resources![sampleResourceNameValue]
+        assert.ok(resource)
+        assert.deepStrictEqual(resource!.Properties?.Architectures, [sampleArchitecture])
     })
 
     it('Produces a template with a Globals section', async function () {
