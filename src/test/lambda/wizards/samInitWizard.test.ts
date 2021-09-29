@@ -11,7 +11,7 @@ describe('CreateNewSamAppWizard', async function () {
     let tester: WizardTester<CreateNewSamAppWizardForm>
 
     beforeEach(function () {
-        tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '', schemaRegions: [] }))
+        tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.0.0', schemaRegions: [] }))
     })
 
     it('prompts for runtime first', function () {
@@ -20,6 +20,10 @@ describe('CreateNewSamAppWizard', async function () {
 
     it('always prompts for at least 4 things', function () {
         tester.assertShowCount(4)
+    })
+
+    it('sets architecture to "x86_64" by default', function () {
+        tester.architecture.assertValue('x86_64')
     })
 
     it('prompts for dependency manager if there are multiple', function () {
@@ -47,5 +51,39 @@ describe('CreateNewSamAppWizard', async function () {
         tester.region.assertShowFirst()
         tester.registryName.assertShowSecond()
         tester.schemaName.assertShowThird()
+    })
+
+    describe('architecture', function () {
+        beforeEach(function () {
+            tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.33.0', schemaRegions: [] }))
+        })
+
+        it('prompts for architecture after runtime (no dependency manager) if SAM CLI >= 1.33', function () {
+            tester.runtimeAndPackage.applyInput({ runtime: 'python3.9', packageType: 'Zip' })
+            tester.architecture.assertShowFirst()
+        })
+
+        it('prompts for architecture after the dependency manager if SAM CLI >= 1.33', function () {
+            tester.runtimeAndPackage.applyInput({ runtime: 'java11', packageType: 'Zip' })
+            tester.dependencyManager.assertShowFirst()
+            tester.architecture.assertShowSecond()
+        })
+
+        it('skips prompt for earlier versions of SAM CLI', function () {
+            tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '1.32.0', schemaRegions: [] }))
+            tester.runtimeAndPackage.applyInput({ runtime: 'java11', packageType: 'Zip' })
+            tester.architecture.assertDoesNotShow()
+        })
+
+        it('skips prompt if runtime has no ARM support', function () {
+            tester.runtimeAndPackage.applyInput({ runtime: 'go1.x', packageType: 'Zip' })
+            tester.architecture.assertDoesNotShow()
+        })
+
+        it('skips prompt for maven + Image type', function () {
+            tester.runtimeAndPackage.applyInput({ runtime: 'java11', packageType: 'Image' })
+            tester.dependencyManager.applyInput('maven')
+            tester.architecture.assertDoesNotShow()
+        })
     })
 })

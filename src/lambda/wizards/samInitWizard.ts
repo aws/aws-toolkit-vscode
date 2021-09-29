@@ -20,7 +20,6 @@ import {
     RuntimeAndPackage,
     RuntimePackageType,
     samArmLambdaRuntimes,
-    samLambdaCreatableRuntimes,
 } from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
@@ -44,9 +43,11 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
+
 export interface CreateNewSamAppWizardForm {
     runtimeAndPackage: RuntimeAndPackage
     dependencyManager: DependencyManager
+    architecture: Architecture
     template: SamTemplate
     region?: string
     registryName?: string
@@ -187,6 +188,13 @@ function createNamePrompter(defaultValue: string): InputBoxPrompter {
     })
 }
 
+function createArchitecturePrompter(): QuickPickPrompter<Architecture> {
+    return createLabelQuickPick<Architecture>([{ label: 'x86_64' }, { label: 'arm64' }], {
+        title: localize('AWS.samcli.initWizard.architecture.prompt', 'Select an Architecture'),
+        buttons: createCommonButtons(samInitDocUrl),
+    })
+}
+
 export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
     public constructor(context: {
         samCliVersion: string
@@ -208,6 +216,27 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
                 state.runtimeAndPackage?.runtime !== undefined
                     ? getDependencyManager(state.runtimeAndPackage.runtime)[0]
                     : undefined,
+        })
+
+        // TODO: remove `partial` when updated wizard types gets merged (need to make the PR first of course...)
+        function canShowArchitecture(
+            state: Partial<Pick<CreateNewSamAppWizardForm, 'runtimeAndPackage' | 'dependencyManager'>>
+        ): boolean {
+            // TODO: Remove Image Maven check if/when Hello World app supports multiarch Maven builds
+            if (state.dependencyManager === 'maven' && state.runtimeAndPackage?.packageType === 'Image') {
+                return false
+            }
+
+            if (semver.lt(context.samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT)) {
+                return false
+            }
+
+            return samArmLambdaRuntimes.has(state.runtimeAndPackage?.runtime ?? 'unknown')
+        }
+
+        this.form.architecture.bindPrompter(createArchitecturePrompter, {
+            showWhen: canShowArchitecture,
+            setDefault: () => 'x86_64',
         })
 
         this.form.template.bindPrompter(state =>
