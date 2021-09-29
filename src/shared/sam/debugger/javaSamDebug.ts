@@ -7,7 +7,7 @@ import { getCodeRoot, isImageLambdaConfig } from '../../../lambda/local/debugCon
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../../extensions'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { makeInputTemplate, runLambdaFunction, waitForPort } from '../localLambdaRunner'
+import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 export async function makeJavaConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
@@ -21,7 +21,6 @@ export async function makeJavaConfig(config: SamLaunchRequestArgs): Promise<SamL
     }
 
     config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
-    config.templatePath = await makeInputTemplate(config)
 
     config.type = 'java'
     config.runtimeFamily = RuntimeFamily.Java

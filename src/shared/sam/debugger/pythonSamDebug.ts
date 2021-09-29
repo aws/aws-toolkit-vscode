@@ -23,7 +23,7 @@ import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { makeInputTemplate, runLambdaFunction } from '../localLambdaRunner'
+import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 /** SAM will mount the --debugger-path to /tmp/lambci_debug_files */
@@ -149,8 +149,6 @@ export async function makePythonDebugConfig(
             useIkpdb: !!config.useIkpdb,
         })
     }
-
-    config.templatePath = await makeInputTemplate(config)
 
     let pathMappings: PythonPathMapping[]
     if (config.lambda?.pathMappings !== undefined) {
