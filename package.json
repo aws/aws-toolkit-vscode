@@ -399,6 +399,10 @@
                                             "type": "string"
                                         }
                                     },
+                                    "buildDir": {
+                                        "description": "%AWS.configuration.description.awssam.debug.buildDir%",
+                                        "type": "string"
+                                    },
                                     "containerBuild": {
                                         "description": "%AWS.configuration.description.awssam.debug.containerBuild%",
                                         "type": "boolean"

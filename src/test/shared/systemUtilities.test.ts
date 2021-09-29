@@ -94,10 +94,9 @@ describe('SystemUtilities', function () {
     })
 
     it('findTypescriptCompiler()', async function () {
-        const iswin = (process.platform === 'win32')
+        const iswin = process.platform === 'win32'
         const workspace = vscode.workspace.workspaceFolders![0]
-        const tscNodemodules = path.join(workspace.uri.fsPath,
-            `foo/bar/node_modules/.bin/tsc${iswin ? '.cmd' : ''}`)
+        const tscNodemodules = path.join(workspace.uri.fsPath, `foo/bar/node_modules/.bin/tsc${iswin ? '.cmd' : ''}`)
         fs.removeSync(tscNodemodules)
 
         // The test workspace normally doesn't have node_modules so this will
@@ -106,9 +105,7 @@ describe('SystemUtilities', function () {
         assert.ok(tscGlobal === undefined || tscGlobal === 'tsc')
 
         // Create a fake "node_modules/.bin/tsc" in the test workspace.
-        testutil.createExecutableFile(
-            tscNodemodules,
-            'echo "typescript Version 42"')
+        testutil.createExecutableFile(tscNodemodules, 'echo "typescript Version 42"')
 
         const result = await SystemUtilities.findTypescriptCompiler()
         assert(result !== undefined)
