@@ -28,10 +28,12 @@ import {
     WizardStep,
 } from '../../shared/wizards/multiStepWizard'
 import {
+    Architecture,
     createRuntimeQuickPick,
     DependencyManager,
     getDependencyManager,
     RuntimePackageType,
+    samArmLambdaRuntimes,
     samLambdaCreatableRuntimes,
 } from '../models/samLambdaRuntime'
 import {
@@ -42,7 +44,10 @@ import {
     SamTemplate,
 } from '../models/samTemplates'
 import * as semver from 'semver'
-import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
+import {
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT,
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
+} from '../../shared/sam/cli/samCliValidator'
 import * as fsutil from '../../shared/filesystemUtilities'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 
@@ -54,7 +59,7 @@ export interface CreateNewSamAppWizardContext {
 
     promptUserForRuntimeAndDependencyManager(
         currRuntime?: Runtime
-    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined>
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined, Architecture | undefined] | undefined>
     promptUserForTemplate(
         currRuntime: Runtime,
         packageType: RuntimePackageType,
@@ -79,10 +84,17 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     private readonly samCliVersion: string
 
     private readonly totalSteps: number = 4
-    private stepsToAdd = { promptUserForDependencyManager: false, promptUserForRegion: false }
+    private stepsToAdd = {
+        promptUserForDependencyManager: false,
+        promptUserForRegion: false,
+        promptUserForArchitecture: false,
+    }
     private additionalSteps(): number {
         let n = 0
         if (this.stepsToAdd.promptUserForDependencyManager) {
+            n += 1
+        }
+        if (this.stepsToAdd.promptUserForArchitecture) {
             n += 1
         }
         if (this.stepsToAdd.promptUserForRegion) {
@@ -105,9 +117,10 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
     public async promptUserForRuntimeAndDependencyManager(
         currRuntime?: Runtime
-    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined> {
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined, Architecture | undefined] | undefined> {
         // last common step; reset additionalSteps to 0
         this.stepsToAdd.promptUserForDependencyManager = false
+        this.stepsToAdd.promptUserForArchitecture = false
 
         const quickPick = createRuntimeQuickPick({
             // TODO: remove check when SAM CLI version is low enough
@@ -135,8 +148,16 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         }
 
         const dependencyManager = await this.promptUserForDependencyManager(val.runtime)
+        let architecture: Architecture | undefined
+        if (!dependencyManager) {
+            return [val.runtime, val.packageType, dependencyManager, architecture]
+        }
 
-        return val ? [val.runtime, val.packageType, dependencyManager] : undefined
+        if (semver.gte(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_ARM_SUPPORT)) {
+            architecture = await this.promptUserForArchitecture(val.runtime, val.packageType, dependencyManager)
+        }
+
+        return [val.runtime, val.packageType, dependencyManager, architecture]
     }
 
     // don't preinclude currDependencyManager because it won't make sense if transitioning between runtimes
@@ -150,7 +171,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 options: {
                     ignoreFocusOut: true,
                     title: localize('AWS.samcli.initWizard.dependencyManager.prompt', 'Select a Dependency Manager'),
-                    step: 2,
+                    step: 1 + this.additionalSteps(),
                     totalSteps: this.totalSteps + this.additionalSteps(),
                 },
                 buttons: [this.helpButton, vscode.QuickInputButtons.Back],
@@ -173,6 +194,42 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
             return val ? (val.label as DependencyManager) : undefined
         }
+    }
+
+    public async promptUserForArchitecture(
+        currRuntime: Runtime,
+        packageType: RuntimePackageType,
+        dependencyManager: DependencyManager
+    ): Promise<Architecture | undefined> {
+        // TODO: Remove Image Maven check if/when Hello World app supports multiarch Maven builds
+        if (!samArmLambdaRuntimes.has(currRuntime) || (dependencyManager === 'maven' && packageType === 'Image')) {
+            return 'x86_64'
+        }
+        this.stepsToAdd.promptUserForArchitecture = true
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+            options: {
+                ignoreFocusOut: true,
+                title: localize('AWS.samcli.initWizard.architecture.prompt', 'Select an Architecture'),
+                step: 1 + this.additionalSteps(),
+                totalSteps: this.totalSteps + this.additionalSteps(),
+            },
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+            items: [{ label: 'x86_64' }, { label: 'arm64' }],
+        })
+
+        const choices = await picker.promptUser({
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
+                }
+            },
+        })
+        const val = picker.verifySinglePickerOutput(choices)
+
+        return val ? (val.label as Architecture) : undefined
     }
 
     public async promptUserForTemplate(
@@ -439,6 +496,7 @@ export interface CreateNewSamAppWizardResponse {
     schemaName?: string
     location: vscode.Uri
     name: string
+    architecture?: Architecture
 }
 
 export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
@@ -451,6 +509,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     private schemaName?: string
     private location?: vscode.Uri
     private name?: string
+    private architecture?: Architecture
 
     public constructor(private readonly context: CreateNewSamAppWizardContext) {
         super()
@@ -488,6 +547,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             schemaName: this.schemaName,
             location: this.location,
             name: this.name,
+            architecture: this.architecture,
         }
     }
 
@@ -497,7 +557,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             return WIZARD_TERMINATE
         }
 
-        ;[this.runtime, this.packageType, this.dependencyManager] = result
+        ;[this.runtime, this.packageType, this.dependencyManager, this.architecture] = result
         if (this.dependencyManager === undefined) {
             return WIZARD_RETRY
         }

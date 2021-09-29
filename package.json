@@ -284,6 +284,14 @@
                                                 "enum": [
                                                     "code"
                                                 ]
+                                            },
+                                            "architecture": {
+                                                "description": "%AWS.configuration.description.awssam.debug.architecture%",
+                                                "type": "string",
+                                                "enum": [
+                                                    "x86_64",
+                                                    "arm64"
+                                                ]
                                             }
                                         },
                                         "additionalProperties": false,

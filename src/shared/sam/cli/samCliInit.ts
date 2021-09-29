@@ -5,7 +5,7 @@
 
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { SchemaTemplateExtraContext } from '../../../eventSchemas/templates/schemasAppTemplateUtils'
-import { DependencyManager } from '../../../lambda/models/samLambdaRuntime'
+import { Architecture, DependencyManager } from '../../../lambda/models/samLambdaRuntime'
 import { getSamCliTemplateParameter, SamTemplate } from '../../../lambda/models/samTemplates'
 import { SamCliContext } from './samCliContext'
 import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
@@ -20,6 +20,7 @@ export interface SamCliInitArgs {
     runtime?: Runtime
     // image-based lambdas; mutually exclusive with runtime
     baseImage?: string
+    architecture?: Architecture
 }
 
 export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamCliContext): Promise<void> {
@@ -38,6 +39,10 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
 
     if (initArguments.template) {
         args.push('--app-template', getSamCliTemplateParameter(initArguments.template))
+    }
+
+    if (initArguments.architecture) {
+        args.push('--architecture', initArguments.architecture)
     }
 
     if (initArguments.baseImage) {

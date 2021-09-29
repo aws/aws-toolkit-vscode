@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM: `arm64` support (through SAM CLI's Architectures property) on select runtimes"
+}

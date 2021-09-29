@@ -41,6 +41,7 @@ export function createBaseResource(): CloudFormation.Resource {
             CodeUri: '/',
             Runtime: 'nodejs12.x',
             Timeout: 12345,
+            Architectures: ['x86_64'],
             Environment: {
                 Variables: {
                     ENVVAR: 'envvar',
@@ -106,6 +107,8 @@ export function makeSampleYamlResource(
             CodeUri: ${subValues.codeUri ? subValues.codeUri : '/'}
             Runtime: ${subValues.runtime ? subValues.runtime : 'nodejs12.x'}
             Timeout: 12345
+            Architectures:
+                - x86_64
             Environment:
                 Variables:
                     ENVVAR: envvar`

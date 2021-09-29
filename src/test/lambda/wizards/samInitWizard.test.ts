@@ -20,7 +20,7 @@ import {
     CreateNewSamAppWizardContext,
     CreateNewSamAppWizardResponse,
 } from '../../../lambda/wizards/samInitWizard'
-import { DependencyManager, RuntimePackageType } from '../../../lambda/models/samLambdaRuntime'
+import { Architecture, DependencyManager, RuntimePackageType } from '../../../lambda/models/samLambdaRuntime'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertEqualPaths } from '../../testUtil'
 
@@ -100,6 +100,7 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         private readonly _workspaceFolders: vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][],
         private readonly _lambdaRuntimes: Set<Runtime> | Set<Runtime>[],
         private readonly _dependencyManagers: (DependencyManager | undefined)[],
+        private readonly _architectures: (Architecture | undefined)[],
         private readonly inputBoxResult: string | string[],
         private readonly openDialogResult: (vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[],
         private readonly _samTemplates: (Set<SamTemplate> | undefined) | (Set<SamTemplate> | undefined)[],
@@ -133,6 +134,7 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         }
         // keeps things in line with the set reverse above
         this._dependencyManagers = this._dependencyManagers.reverse()
+        this._architectures = this._architectures.reverse()
     }
 
     public async showOpenDialog(options: vscode.OpenDialogOptions): Promise<vscode.Uri[] | undefined> {
@@ -149,9 +151,11 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
 
     public async promptUserForRuntimeAndDependencyManager(
         currRuntime?: Runtime
-    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined> {
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined, Architecture | undefined] | undefined> {
         const runtime = this.lambdaRuntimes.toArray().pop()
-        return runtime ? [runtime, 'Zip', this._dependencyManagers.pop()] : undefined
+        const dependencyManager = this._dependencyManagers.pop()
+        const architecture = this._architectures.pop()
+        return runtime ? [runtime, 'Zip', dependencyManager, architecture] : undefined
     }
 
     public async promptUserForTemplate(
@@ -221,12 +225,13 @@ describe('CreateNewSamAppWizard', async function () {
         fs.rmdirSync(dir)
     })
 
-    describe('runtime and dependency manager', async function () {
+    describe('runtime, dependency manager, architecture', async function () {
         it('uses user response as runtime', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs14.x']),
                 ['npm'],
+                ['x86_64'],
                 'myName',
                 [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
@@ -240,6 +245,7 @@ describe('CreateNewSamAppWizard', async function () {
             assert.ok(args)
             assert.strictEqual(args!.runtime, 'nodejs14.x')
             assert.strictEqual(args!.dependencyManager, 'npm')
+            assert.strictEqual(args!.architecture, 'x86_64')
         })
 
         it('selects a runtime, restarts the step if a dependency manager is not set, and continues on', async function () {
@@ -247,6 +253,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 Set<Runtime>(['java11', 'nodejs14.x']),
                 [undefined, 'npm'],
+                [undefined, 'arm64'],
                 'myName',
                 [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
@@ -260,12 +267,36 @@ describe('CreateNewSamAppWizard', async function () {
             assert.ok(args)
             assert.strictEqual(args!.runtime, 'nodejs14.x')
             assert.strictEqual(args!.dependencyManager, 'npm')
+            assert.strictEqual(args!.architecture, 'arm64')
+        })
+
+        it('selects a runtime and dependency manager, ignores architecture if not set, and continues on', async function () {
+            const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
+                [],
+                Set<Runtime>(['java11']),
+                ['maven'],
+                [undefined, 'arm64'],
+                'myName',
+                [vscode.Uri.file(dir)],
+                Set<SamTemplate>([helloWorldTemplate]),
+                [],
+                [],
+                []
+            )
+            const wizard = new CreateNewSamAppWizard(context)
+            const args = await wizard.run()
+
+            assert.ok(args)
+            assert.strictEqual(args!.runtime, 'java11')
+            assert.strictEqual(args!.dependencyManager, 'maven')
+            assert.strictEqual(args!.architecture, undefined)
         })
 
         it('exits when cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(),
+                [],
                 [],
                 'myName',
                 [vscode.Uri.file(dir)],
@@ -284,6 +315,7 @@ describe('CreateNewSamAppWizard', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 [Set<Runtime>('java11'), Set<Runtime>()],
+                [],
                 [],
                 'myName',
                 [vscode.Uri.file(dir)],
@@ -305,6 +337,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 Set<Runtime>(['nodejs14.x']),
                 ['npm'],
+                ['x86_64'],
                 'myName',
                 [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
@@ -324,6 +357,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                 ['pip', 'npm'],
+                ['x86_64', 'x86_64'],
                 'myName',
                 [vscode.Uri.file(dir)],
                 [undefined, Set<SamTemplate>([helloWorldTemplate])],
@@ -356,6 +390,7 @@ describe('CreateNewSamAppWizard', async function () {
                     [],
                     Set<Runtime>(['nodejs14.x']),
                     ['npm'],
+                    ['x86_64'],
                     'myName',
                     [vscode.Uri.file(locationPath)],
                     Set<SamTemplate>([eventBridgeStarterAppTemplate]),
@@ -378,6 +413,7 @@ describe('CreateNewSamAppWizard', async function () {
                         [],
                         [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                         ['pip', 'npm'],
+                        ['x86_64'],
                         'myName',
                         [vscode.Uri.file(locationPath)],
                         Set<SamTemplate>([eventBridgeStarterAppTemplate]),
@@ -405,6 +441,7 @@ describe('CreateNewSamAppWizard', async function () {
                         [],
                         [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                         ['pip', 'npm'],
+                        ['x86_64'],
                         'myName',
                         [vscode.Uri.file(locationPath)],
                         Set<SamTemplate>([eventBridgeStarterAppTemplate]),
@@ -432,6 +469,7 @@ describe('CreateNewSamAppWizard', async function () {
                         [],
                         [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                         ['pip', 'npm'],
+                        ['x86_64'],
                         'myName',
                         [vscode.Uri.file(locationPath)],
                         Set<SamTemplate>([eventBridgeStarterAppTemplate]),
@@ -459,6 +497,7 @@ describe('CreateNewSamAppWizard', async function () {
                         [],
                         [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                         ['pip', 'npm'],
+                        ['x86_64'],
                         'myName',
                         [undefined, [vscode.Uri.file(locationPath)]],
                         Set<SamTemplate>([eventBridgeStarterAppTemplate]),
@@ -483,6 +522,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 Set<Runtime>(['nodejs14.x']),
                 ['npm'],
+                ['x86_64'],
                 'myName',
                 [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
@@ -502,6 +542,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs14.x'])],
                 ['pip', 'npm'],
+                ['x86_64'],
                 'myName',
                 [undefined, [vscode.Uri.file(dir)]],
                 [Set<SamTemplate>([helloWorldTemplate]), Set<SamTemplate>([eventBridgeHelloWorldTemplate])],
@@ -523,6 +564,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 Set<Runtime>(['nodejs14.x']),
                 ['npm'],
+                ['x86_64'],
                 name,
                 [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
@@ -549,6 +591,7 @@ describe('CreateNewSamAppWizard', async function () {
                 })),
                 Set<Runtime>(['nodejs14.x']),
                 ['npm'],
+                ['x86_64'],
                 'myName',
                 [],
                 Set<SamTemplate>([helloWorldTemplate]),
@@ -570,6 +613,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 Set<Runtime>(['nodejs14.x']),
                 ['npm'],
+                ['x86_64'],
                 'myName',
                 [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
@@ -589,6 +633,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 Set<Runtime>(['nodejs14.x']),
                 ['npm'],
+                ['x86_64'],
                 ['', 'myName'],
                 [[vscode.Uri.file(dir)], [vscode.Uri.file(dir2)]],
                 Set<SamTemplate>([helloWorldTemplate]),
