@@ -19,7 +19,7 @@ export async function makeChildrenNodes<
     getNoChildrenPlaceholderNode?(): Promise<P>
     getErrorNode(error: Error, logID: number): Promise<E>
     sort?(a: T, b: T): number
-}): Promise<T[] | P[] | E[]> {
+}): Promise<T[] | [P] | [E]> {
     try {
         const nodes = await parameters.getChildNodes()
 
