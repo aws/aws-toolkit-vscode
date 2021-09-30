@@ -417,10 +417,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 // this is the only way to get this to show on going back
                 // this will make it so it always shows even when searching for something else
                 alwaysShow: region.id === initialRegionCode,
-                description:
-                    region.id === initialRegionCode
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : '',
+                description: region.id === initialRegionCode ? localizedText.selectedPreviously : '',
             })),
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })

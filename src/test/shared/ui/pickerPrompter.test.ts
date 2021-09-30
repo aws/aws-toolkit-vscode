@@ -18,6 +18,7 @@ import {
 } from '../../../shared/ui/pickerPrompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
+import { selectedPreviously } from '../../../shared/localizedText'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -29,8 +30,11 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick([])
         const picker = prompter.quickPick
 
-        Object.keys(DEFAULT_QUICKPICK_OPTIONS).forEach(key => {
-            assert.strictEqual(picker[key as keyof vscode.QuickPick<any>], (DEFAULT_QUICKPICK_OPTIONS as any)[key])
+        Object.keys(picker).forEach(key => {
+            const defaultValue = (DEFAULT_QUICKPICK_OPTIONS as Record<string, any>)[key]
+            if (defaultValue !== undefined) {
+                assert.strictEqual(picker[key as keyof vscode.QuickPick<any>], defaultValue)
+            }
         })
     })
 
@@ -54,6 +58,34 @@ describe('createQuickPick', function () {
         assert.strictEqual(prompter.quickPick.enabled, true)
         assert.deepStrictEqual(prompter.quickPick.items, items)
     })
+
+    it('creates a new prompter when given an AsyncIterable', async function () {
+        let r1!: (v?: any) => void
+        let r2!: (v?: any) => void
+        const p1 = new Promise(r => (r1 = r))
+        const p2 = new Promise(r => (r2 = r))
+
+        async function* generator() {
+            for (const item of items) {
+                if (item === items[0]) {
+                    await p1
+                } else {
+                    await p2
+                }
+                yield [item]
+            }
+        }
+
+        const prompter = createQuickPick(generator())
+        r1()
+        await new Promise(r => setImmediate(r))
+        assert.deepStrictEqual(prompter.quickPick.items, [items[0]])
+        assert.strictEqual(prompter.quickPick.busy, true)
+        r2()
+        await new Promise(r => setImmediate(r))
+        assert.deepStrictEqual(prompter.quickPick.items, items)
+        assert.strictEqual(prompter.quickPick.busy, false)
+    })
 })
 
 describe('createLabelQuickPick', function () {
@@ -73,7 +105,6 @@ describe('createLabelQuickPick', function () {
         const prompter = createLabelQuickPick(itemsPromise)
 
         assert.strictEqual(prompter.quickPick.busy, true)
-        assert.strictEqual(prompter.quickPick.enabled, false)
     })
 })
 
@@ -83,11 +114,15 @@ describe('QuickPickPrompter', function () {
         { label: 'item2', data: 1 },
         { label: 'item3', data: 2 },
     ]
-    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue' | 'onDidTriggerButton'>
+    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue' | 'onDidTriggerButton' | 'onDidHide'>
     let testPrompter: QuickPickPrompter<number>
 
     beforeEach(function () {
-        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidTriggerButton'])
+        picker = exposeEmitters(vscode.window.createQuickPick(), [
+            'onDidChangeValue',
+            'onDidTriggerButton',
+            'onDidHide',
+        ])
         picker.items = testItems
         testPrompter = new QuickPickPrompter(picker)
     })
@@ -113,6 +148,13 @@ describe('QuickPickPrompter', function () {
         const testButton = { iconPath: vscode.Uri.parse(''), onClick: () => 5 }
         testPrompter.onDidShow(() => picker.fireOnDidTriggerButton(testButton))
         assert.strictEqual(await testPrompter.prompt(), 5)
+    })
+
+    it('can selectively enable input when loading', async function () {
+        const p = testPrompter.loadItems(new Promise(r => setImmediate(() => r([]))), false)
+        assert.strictEqual(testPrompter.quickPick.enabled, true)
+        await p
+        assert.strictEqual(testPrompter.quickPick.enabled, true)
     })
 
     it('does not close if button does not return anything', async function () {
@@ -144,6 +186,91 @@ describe('QuickPickPrompter', function () {
     it('shows first item if last response does not exist', async function () {
         testPrompter.setLastResponse({ label: 'item4', data: 3 })
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
+    })
+
+    it('adds a message to the description when an item has been previously selected', async function () {
+        testPrompter = new QuickPickPrompter(picker, { addSelectedPreviouslyText: true })
+        testPrompter.setLastResponse({ label: 'item1', data: 0 })
+        const description = ` (${selectedPreviously})`
+        assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
+    })
+
+    it('shows a `noItemsFound` item if no items are loaded', async function () {
+        const noItemsFoundItem = { label: 'placeholder', data: 0 }
+        testPrompter = new QuickPickPrompter(picker, { noItemsFoundItem })
+        testPrompter.clearAndLoadItems([])
+        assert.deepStrictEqual(picker.items, [noItemsFoundItem])
+    })
+
+    it('does not show a `noItemsFound` item if busy', async function () {
+        let resolveItems!: (items: DataQuickPickItem<number>[]) => void
+        const itemsPromise = new Promise<DataQuickPickItem<number>[]>(resolve => (resolveItems = resolve))
+        const noItemsFoundItem = { label: 'placeholder', data: 0 }
+
+        testPrompter = new QuickPickPrompter(picker, { noItemsFoundItem })
+        testPrompter.clearAndLoadItems(itemsPromise)
+        assert.strictEqual(picker.items.length, 0)
+        assert.strictEqual(picker.busy, true)
+        resolveItems(testItems)
+    })
+
+    it('shows an error item if a Promise fails to load things', async function () {
+        const badPromise = Promise.reject(new Error('my error'))
+        const errorItem = { label: 'error', data: 0 }
+        testPrompter = new QuickPickPrompter(picker, { errorItem })
+        await testPrompter.clearAndLoadItems(badPromise)
+        assert.deepStrictEqual(picker.items, [{ detail: 'my error', ...errorItem }])
+    })
+
+    it('handles AsyncIterables that return something', async function () {
+        async function* generator() {
+            for (const item of testItems.slice(0, -1)) {
+                yield [item]
+            }
+
+            return testItems.slice(-1)
+        }
+
+        await testPrompter.clearAndLoadItems(generator())
+        assert.strictEqual(picker.items.length, 3)
+    })
+
+    it('handles AsyncIterables that throw', async function () {
+        const errorItem = { label: 'error', data: 0 }
+        testPrompter = new QuickPickPrompter(picker, { errorItem })
+
+        async function* generator() {
+            for (const item of testItems.slice(0, -1)) {
+                yield [item]
+            }
+
+            throw new Error('my error')
+        }
+
+        await testPrompter.clearAndLoadItems(generator())
+        assert.strictEqual(picker.items.length, 3)
+        assert.strictEqual(picker.items[picker.items.length - 1].detail, 'my error')
+    })
+
+    it('stops requesting from an AsyncIterable when hidden', async function () {
+        let unlock!: () => void
+        let lock = new Promise<void>(r => (unlock = r))
+        async function* generator() {
+            for (const item of testItems) {
+                await lock
+                yield [item]
+                lock = new Promise<void>(r => (unlock = r))
+            }
+        }
+
+        testPrompter.clearAndLoadItems(generator())
+        picker.fireOnDidHide()
+        unlock()
+        await new Promise(r => setImmediate(r))
+        assert.strictEqual(picker.items.length, 1)
+        unlock()
+        await new Promise(r => setImmediate(r))
+        assert.strictEqual(picker.items.length, 1)
     })
 })
 
