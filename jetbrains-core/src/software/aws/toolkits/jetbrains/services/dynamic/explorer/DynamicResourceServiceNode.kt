@@ -10,6 +10,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
+import com.intellij.ui.EditorNotifications
 import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -83,47 +84,60 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     override fun onDoubleClick() = openResourceModelInEditor(OpenResourceModelSourceAction.READ)
 
     fun openResourceModelInEditor(sourceAction: OpenResourceModelSourceAction) {
-        object : Task.Backgroundable(nodeProject, message("dynamic_resources.fetch.indicator_title", resource.identifier), true) {
-            override fun run(indicator: ProgressIndicator) {
-                indicator.text = message("dynamic_resources.fetch.fetch")
-                val model = try {
-                    nodeProject.awsClient<CloudControlClient>()
-                        .getResource {
-                            it.typeName(resource.type.fullName)
-                            it.identifier(resource.identifier)
-                        }
-                        .resourceDescription()
-                        .properties()
-                } catch (e: Exception) {
-                    LOG.error(e) { "Failed to retrieve resource model" }
-                    notifyError(
-                        project = nodeProject,
-                        title = message("dynamic_resources.fetch.fail.title"),
-                        content = message("dynamic_resources.fetch.fail.content", resource.identifier)
+        val dynamicResourceIdentifier = DynamicResourceIdentifier(nodeProject.getConnectionSettingsOrThrow(), resource.type.fullName, resource.identifier)
+        val openFiles = FileEditorManager.getInstance(nodeProject).openFiles.filter {
+            it is ViewEditableDynamicResourceVirtualFile && it.dynamicResourceIdentifier == dynamicResourceIdentifier
+        }
+        if (openFiles.isEmpty()) {
+            object : Task.Backgroundable(nodeProject, message("dynamic_resources.fetch.indicator_title", resource.identifier), true) {
+                override fun run(indicator: ProgressIndicator) {
+                    indicator.text = message("dynamic_resources.fetch.fetch")
+                    val model = try {
+                        nodeProject.awsClient<CloudControlClient>()
+                            .getResource {
+                                it.typeName(resource.type.fullName)
+                                it.identifier(resource.identifier)
+                            }
+                            .resourceDescription()
+                            .properties()
+                    } catch (e: Exception) {
+                        LOG.error(e) { "Failed to retrieve resource model" }
+                        notifyError(
+                            project = nodeProject,
+                            title = message("dynamic_resources.fetch.fail.title"),
+                            content = message("dynamic_resources.fetch.fail.content", resource.identifier)
+                        )
+                        DynamicresourceTelemetry.getResource(nodeProject, success = false, resourceType = resource.type.fullName)
+                        null
+                    } ?: return
+
+                    val file = ViewEditableDynamicResourceVirtualFile(
+                        dynamicResourceIdentifier,
+                        model
                     )
-                    DynamicresourceTelemetry.getResource(nodeProject, success = false, resourceType = resource.type.fullName)
-                    null
-                } ?: return
+                    DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
 
-                val file = ViewEditableDynamicResourceVirtualFile(
-                    DynamicResourceIdentifier(nodeProject.getConnectionSettingsOrThrow(), resource.type.fullName, resource.identifier),
-                    model
-                )
-                DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
-
-                indicator.text = message("dynamic_resources.fetch.open")
-                WriteCommandAction.runWriteCommandAction(nodeProject) {
-                    CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
-                    if (sourceAction == OpenResourceModelSourceAction.READ) {
-                        file.isWritable = false
-                        DynamicresourceTelemetry.getResource(nodeProject, success = true, resourceType = resource.type.fullName)
-                    } else if (sourceAction == OpenResourceModelSourceAction.EDIT) {
-                        file.isWritable = true
+                    indicator.text = message("dynamic_resources.fetch.open")
+                    WriteCommandAction.runWriteCommandAction(nodeProject) {
+                        CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
+                        if (sourceAction == OpenResourceModelSourceAction.READ) {
+                            file.isWritable = false
+                            DynamicresourceTelemetry.getResource(nodeProject, success = true, resourceType = resource.type.fullName)
+                        } else if (sourceAction == OpenResourceModelSourceAction.EDIT) {
+                            file.isWritable = true
+                        }
+                        FileEditorManager.getInstance(nodeProject).openFile(file, true)
                     }
-                    FileEditorManager.getInstance(nodeProject).openFile(file, true)
                 }
+            }.queue()
+        } else {
+            val openFile = openFiles.first()
+            if (sourceAction == OpenResourceModelSourceAction.EDIT) {
+                openFile.isWritable = true
             }
-        }.queue()
+            FileEditorManager.getInstance(nodeProject).openFile(openFile, true)
+            EditorNotifications.getInstance(nodeProject).updateNotifications(openFile)
+        }
     }
 
     private companion object {
