@@ -1,0 +1,25 @@
+{
+    "partitions": [
+        {
+            "defaults": {
+                "hostname": "{service}.{region}.{dnsSuffix}",
+                "protocols": ["https"],
+                "signatureVersions": ["v4"]
+            },
+            "dnsSuffix": "amazonaws.com",
+            "partition": "aws",
+            "partitionName": "AWS Standard",
+            "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
+            "regions": {
+                "us-west-1": {
+                    "description": "US West (California)"
+                },
+                "us-east-1": {
+                    "description": "US East (N. Virginia)"
+                }
+            },
+            "services": {}
+        }
+    ],
+    "version": 3
+}
