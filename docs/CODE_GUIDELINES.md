@@ -9,6 +9,8 @@ that cannot be enforced by a `lint` build-task.
 
 - Where possible, follow the conventions of the [VSCode User Interface](https://code.visualstudio.com/docs/getstarted/userinterface)
   instead of inventing new conventions.
+- Convention: provide global editor commands as an alternative to browsing items in the Explorer.
+    - Instead of needing to visit service _Foo_ in the Explorer to _View_ its items, consider also providing a `AWS: Foo: View Item` command.
 
 ## Naming
 
