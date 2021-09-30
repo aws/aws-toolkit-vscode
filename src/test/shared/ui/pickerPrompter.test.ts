@@ -195,23 +195,31 @@ describe('QuickPickPrompter', function () {
         assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })
 
-    it('shows a placeholder if no items are loaded', async function () {
-        const placeholderItem = { label: 'placeholder', data: 0 }
-        testPrompter = new QuickPickPrompter(picker, { placeholderItem })
+    it('shows a `noItemsFound` item if no items are loaded', async function () {
+        const noItemsFoundItem = { label: 'placeholder', data: 0 }
+        testPrompter = new QuickPickPrompter(picker, { noItemsFoundItem })
         testPrompter.clearAndLoadItems([])
-        assert.deepStrictEqual(picker.items, [placeholderItem])
+        assert.deepStrictEqual(picker.items, [noItemsFoundItem])
     })
 
-    it('does not show a placeholder if busy', async function () {
+    it('does not show a `noItemsFound` item if busy', async function () {
         let resolveItems!: (items: DataQuickPickItem<number>[]) => void
         const itemsPromise = new Promise<DataQuickPickItem<number>[]>(resolve => (resolveItems = resolve))
-        const placeholderItem = { label: 'placeholder', data: 0 }
+        const noItemsFoundItem = { label: 'placeholder', data: 0 }
 
-        testPrompter = new QuickPickPrompter(picker, { placeholderItem })
+        testPrompter = new QuickPickPrompter(picker, { noItemsFoundItem })
         testPrompter.clearAndLoadItems(itemsPromise)
         assert.strictEqual(picker.items.length, 0)
         assert.strictEqual(picker.busy, true)
         resolveItems(testItems)
+    })
+
+    it('shows an error item if a Promise fails to load things', async function () {
+        const badPromise = Promise.reject(new Error('my error'))
+        const errorItem = { label: 'error', data: 0 }
+        testPrompter = new QuickPickPrompter(picker, { errorItem })
+        await testPrompter.clearAndLoadItems(badPromise)
+        assert.deepStrictEqual(picker.items, [{ detail: 'my error', ...errorItem }])
     })
 
     it('handles AsyncIterables that return something', async function () {
@@ -225,6 +233,23 @@ describe('QuickPickPrompter', function () {
 
         await testPrompter.clearAndLoadItems(generator())
         assert.strictEqual(picker.items.length, 3)
+    })
+
+    it('handles AsyncIterables that throw', async function () {
+        const errorItem = { label: 'error', data: 0 }
+        testPrompter = new QuickPickPrompter(picker, { errorItem })
+
+        async function* generator() {
+            for (const item of testItems.slice(0, -1)) {
+                yield [item]
+            }
+
+            throw new Error('my error')
+        }
+
+        await testPrompter.clearAndLoadItems(generator())
+        assert.strictEqual(picker.items.length, 3)
+        assert.strictEqual(picker.items[picker.items.length - 1].detail, 'my error')
     })
 
     it('stops requesting from an AsyncIterable when hidden', async function () {

@@ -11,6 +11,7 @@ import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult, Transform } from './prompter'
 import { applyPrimitives, isAsyncIterable } from '../utilities/collectionUtils'
 import { selectedPreviously } from '../localizedText'
+import { getLogger } from '../logger/logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -49,8 +50,11 @@ export type ExtendedQuickPickOptions<T> = Omit<
     filterBoxInputSettings?: FilterBoxInputSettings<T>
     /** Used to sort QuickPick items after loading new ones */
     compare?: (a: DataQuickPickItem<T>, b: DataQuickPickItem<T>) => number
+    /** [NOT IMPLEMENTED] Item to show while items are loading */
+    loadingItem?: DataQuickPickItem<T>
     /** Item to show if no items were loaded */
-    placeholderItem?: DataQuickPickItem<T>
+    noItemsFoundItem?: DataQuickPickItem<T>
+    // TODO: this could optionally be a callback accepting the error and returning an item
     /** Item to show if there was an error loading items */
     errorItem?: DataQuickPickItem<T>
     /**
@@ -60,10 +64,18 @@ export type ExtendedQuickPickOptions<T> = Omit<
     addSelectedPreviouslyText?: boolean
 }
 
-/** See {@link ExtendedQuickPickOptions.placeholderItem placeholderItem} for setting a different placeholder */
-const DEFAULT_PLACEHOLDER_ITEM = {
+/** See {@link ExtendedQuickPickOptions.noItemsFoundItem noItemsFoundItem} for setting a different item */
+const DEFAULT_NO_ITEMS_ITEM = {
     label: localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
     detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
+    alwaysShow: true,
+    data: WIZARD_BACK,
+}
+
+/** See {@link ExtendedQuickPickOptions.errorItem errorItem} for setting a different error item */
+const DEFAULT_ERROR_ITEM = {
+    // TODO: add icon, check for C9
+    label: localize('AWS.picker.dynamic.error.label', '[Error loading items]'),
     alwaysShow: true,
     data: WIZARD_BACK,
 }
@@ -71,7 +83,8 @@ const DEFAULT_PLACEHOLDER_ITEM = {
 export const DEFAULT_QUICKPICK_OPTIONS: ExtendedQuickPickOptions<any> = {
     ignoreFocusOut: true,
     addSelectedPreviouslyText: true,
-    placeholderItem: DEFAULT_PLACEHOLDER_ITEM,
+    noItemsFoundItem: DEFAULT_NO_ITEMS_ITEM,
+    errorItem: DEFAULT_ERROR_ITEM,
 }
 
 type QuickPickData<T> = PromptResult<T> | (() => Promise<PromptResult<T>>)
@@ -225,6 +238,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     protected _estimator?: StepEstimator<T>
     protected _lastPicked?: DataQuickPickItem<T>
     private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    // Placeholder can be any 'ephemeral' item such as `noItemsItem` or `errorItem` that should be removed on refresh
     private isShowingPlaceholder?: boolean
     /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
@@ -288,7 +302,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
         if (picker.items.length === 0 && !picker.busy) {
             this.isShowingPlaceholder = true
-            picker.items = this.options.placeholderItem !== undefined ? [this.options.placeholderItem] : []
+            picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
         }
 
         this.selectItems(...previousSelected)
@@ -314,6 +328,15 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.clearItems()
         }
 
+        const addErrorItem = (err: Error) => {
+            if (this.options.errorItem === undefined) {
+                return
+            }
+            this.isShowingPlaceholder = true
+            const errorWithMessage = { detail: err.message, ...this.options.errorItem }
+            this.appendItems([errorWithMessage])
+        }
+
         picker.busy = true
         picker.enabled = !disableInput
 
@@ -331,17 +354,28 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             let hidden = false
             const checkHidden = this.quickPick.onDidHide(() => (hidden = true))
             while (!hidden) {
-                const { value, done } = await iterator.next()
-                if (value) {
-                    this.appendItems(value)
-                }
-                if (done) {
+                try {
+                    const { value, done } = await iterator.next()
+                    if (value) {
+                        this.appendItems(value)
+                    }
+                    if (done) {
+                        break
+                    }
+                } catch (err) {
+                    getLogger().error('QuickPickPrompter: loading items from AsyncIterable failed: %O', err)
+                    addErrorItem(err as Error)
                     break
                 }
             }
             checkHidden.dispose()
         } else if (items instanceof Promise) {
-            this.appendItems(await items)
+            try {
+                this.appendItems(await items)
+            } catch (err) {
+                getLogger().error('QuickPickPrompter: loading items from Promise failed: %O', err)
+                addErrorItem(err as Error)
+            }
         } else {
             this.appendItems(items)
         }
@@ -349,6 +383,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         picker.busy = false
         picker.enabled = true
 
+        // Currently needed for the cases where async loads did not load any items, forcing a `noItemsFoundItem`
         this.appendItems([])
     }
 

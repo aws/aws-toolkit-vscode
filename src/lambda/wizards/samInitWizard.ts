@@ -63,7 +63,7 @@ function createRuntimePrompter(samCliVersion: string): QuickPickPrompter<Runtime
     })
 }
 
-function createTemplatePrompter(
+function createSamTemplatePrompter(
     currRuntime: Runtime,
     packageType: RuntimePackageType,
     samCliVersion: string
@@ -239,7 +239,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
         })
 
         this.form.template.bindPrompter(state =>
-            createTemplatePrompter(
+            createSamTemplatePrompter(
                 state.runtimeAndPackage!.runtime!,
                 state.runtimeAndPackage!.packageType!,
                 context.samCliVersion
