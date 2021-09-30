@@ -19,4 +19,4 @@ RUN if [ "$SAM_BUILD_MODE" = "debug" ]; then cp -r /build/bin/Debug/net5.0/publi
 FROM public.ecr.aws/lambda/dotnet:5.0
 
 COPY --from=build-image /build/build_artifacts/ /var/task/
-CMD ["HelloWorld::HelloWorld.Function::FunctionHandler"]
+CMD ["HelloWorld::EchoLambda.Function::FunctionHandler"]
