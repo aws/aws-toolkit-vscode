@@ -5,9 +5,9 @@ package software.aws.toolkits.jetbrains.core.explorer.nodes
 
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationServiceNode
+import software.aws.toolkits.jetbrains.services.dynamic.explorer.OtherResourcesNode
 
-class CloudFormationExplorerRootNode : AwsExplorerServiceNode {
+class OtherResourcesRootNode : AwsExplorerServiceNode {
     override val serviceId: String = CloudFormationClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = CloudFormationServiceNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = OtherResourcesNode(project, this)
 }

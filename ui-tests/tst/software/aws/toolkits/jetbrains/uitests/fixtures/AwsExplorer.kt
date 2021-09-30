@@ -38,7 +38,7 @@ open class AwsExplorer(
     remoteRobot: RemoteRobot,
     remoteComponent: RemoteComponent
 ) : CommonContainerFixture(remoteRobot, remoteComponent) {
-    private fun explorerTree() = find<JTreeFixture>(byXpath("//div[@class='Tree']")).also { it.waitUntilLoaded() }
+    fun explorerTree() = find<JTreeFixture>(byXpath("//div[@class='Tree']")).also { it.waitUntilLoaded() }
 
     fun openExplorerActionMenu(vararg path: String) {
         explorerTree().rightClickPath(*path)
