@@ -15,4 +15,4 @@ FROM public.ecr.aws/lambda/dotnet:core2.1
 COPY --from=build-image /build/bin/Release/netcoreapp2.1/publish/ /var/task/
 
 # Command can be overwritten by providing a different command in the template directly.
-CMD ["HelloWorld::HelloWorld.Function::FunctionHandler"]
+CMD ["HelloWorld::EchoLambda.Function::FunctionHandler"]

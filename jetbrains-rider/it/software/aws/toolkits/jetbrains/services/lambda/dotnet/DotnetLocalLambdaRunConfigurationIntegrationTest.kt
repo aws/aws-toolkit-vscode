@@ -133,11 +133,6 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
     }
-
-    // Extracts the first json structure. Needed since output has all build output and sam cli messages
-    private fun jsonToMap(data: String) = data.substringAfter("{").substringBefore("}").let {
-        jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
-    }
 }
 
 abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: LambdaRuntime) :
@@ -184,6 +179,13 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
 
         val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration)
         assertThat(executeLambda.exitCode).isEqualTo(0)
+
+        assertThat(jsonToMap(executeLambda.stdout))
+            .describedAs("Credentials are passed")
+            .containsEntry("AWS_ACCESS_KEY_ID", mockCreds.accessKeyId())
+            .containsEntry("AWS_SECRET_ACCESS_KEY", mockCreds.secretAccessKey())
+            // An empty AWS_SESSION_TOKEN is inserted by Samcli/the Lambda runtime as of 1.13.1
+            .containsEntry("AWS_SESSION_TOKEN", "")
     }
 
     @Test
@@ -208,4 +210,9 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(debuggerIsHit.get()).isTrue
     }
+}
+
+// Extracts the first json structure. Needed since output has all build output and sam cli messages
+private fun jsonToMap(data: String) = data.substringAfter("{").substringBefore("}").let {
+    jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
 }
