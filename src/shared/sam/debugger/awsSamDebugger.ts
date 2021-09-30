@@ -530,7 +530,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
             useIkpdb: isCloud9() || !!(config as any).useIkpdb,
-            architecture: getArchitecture(template, templateResource, config.InvokeTarget),
+            architecture: getArchitecture(template, templateResource, config.invokeTarget),
         }
 
         //
