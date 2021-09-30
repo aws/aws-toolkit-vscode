@@ -262,6 +262,6 @@ export function createRuntimeQuickPick(params: {
 
     return createQuickPick([...zipRuntimeItems, ...imageRuntimeItems].sort(extractAndCompareRuntime), {
         title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
-        buttons: params.buttons,
+        buttons: params.buttons ?? [],
     })
 }
