@@ -15,6 +15,7 @@ import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.messages.Topic
 import org.jetbrains.concurrency.AsyncPromise
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
@@ -278,6 +279,12 @@ fun Project.getConnectionSettingsOrThrow(): ConnectionSettings = getConnectionSe
     ?: throw IllegalStateException("Bug: Attempting to retrieve connection settings with invalid connection state")
 
 fun Project.getConnectionSettings(): ConnectionSettings? = AwsConnectionManager.getInstance(this).connectionSettings()
+
+fun <T> Project.withAwsConnection(block: (ConnectionSettings) -> T): T {
+    val connectionSettings = AwsConnectionManager.getInstance(this).connectionSettings()
+        ?: throw IllegalStateException("Connection settings are not configured")
+    return block(connectionSettings)
+}
 
 /**
  * A state machine around the connection validation steps the toolkit goes through. Attempts to encapsulate both state, data available at each state and

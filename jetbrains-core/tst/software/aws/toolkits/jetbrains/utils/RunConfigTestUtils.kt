@@ -13,6 +13,7 @@ import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.execution.runners.ProgramRunner
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -141,12 +142,17 @@ fun checkBreakPointHit(project: Project, callback: () -> Unit = {}): Ref<Boolean
                 debugProcess.session.addSessionListener(
                     object : XDebugSessionListener {
                         override fun sessionPaused() {
-                            runInEdt {
-                                val suspendContext = debugProcess.session.suspendContext
-                                println("Resuming: $suspendContext")
+                            ApplicationManager.getApplication().executeOnPooledThread {
+                                val stopLocation = debugProcess.session.suspendContext
+                                println("Session paused: $stopLocation")
+
                                 callback()
                                 debuggerIsHit.set(true)
-                                debugProcess.resume(suspendContext)
+
+                                runInEdt {
+                                    println("Resuming: $stopLocation")
+                                    debugProcess.session.resume()
+                                }
                             }
                         }
 

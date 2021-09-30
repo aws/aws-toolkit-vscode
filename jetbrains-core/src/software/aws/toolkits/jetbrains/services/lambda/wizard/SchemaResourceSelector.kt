@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.fasterxml.jackson.databind.JsonNode
 import org.jetbrains.annotations.TestOnly
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.schemas.SchemaDownloader
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateExtraContext

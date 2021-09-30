@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.intellij.json.JsonFileType
 import com.intellij.testFramework.LightVirtualFile
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.resources.message
 
 sealed class DynamicResourceVirtualFile(fileName: String, val dynamicResourceType: String, fileContent: String) :

@@ -14,14 +14,14 @@ import icons.TerminalIcons
 import org.jetbrains.plugins.terminal.TerminalTabState
 import org.jetbrains.plugins.terminal.TerminalView
 import software.amazon.awssdk.profiles.ProfileFileSystemSetting
+import software.aws.toolkits.core.credentials.mergeWithExistingEnvironmentVariables
 import software.aws.toolkits.core.region.mergeWithExistingEnvironmentVariables
+import software.aws.toolkits.core.shortName
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
-import software.aws.toolkits.jetbrains.core.credentials.mergeWithExistingEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialsIdentifier
-import software.aws.toolkits.jetbrains.core.credentials.shortName
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.Result

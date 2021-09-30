@@ -1,0 +1,83 @@
+{
+    "partitions": [
+        {
+            "defaults": {
+                "hostname": "{service}.{region}.{dnsSuffix}",
+                "protocols": ["https"],
+                "signatureVersions": ["v4"]
+            },
+            "dnsSuffix": "amazonaws.com",
+            "partition": "aws",
+            "partitionName": "AWS Standard",
+            "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
+            "regions": {
+                "us-east-1": {
+                    "description": "US East (N. Virginia)"
+                },
+                "us-west-2001": {
+                    "description": "US West (Cascadia)"
+                }
+            },
+            "services": {
+                "single-region-service": {
+                    "endpoints": {
+                        "us-west-2001": {}
+                    }
+                },
+                "service-with-fips-endpoint": {
+                    "defaults": {
+                        "protocols": [
+                            "http",
+                            "https"
+                        ]
+                    },
+                    "endpoints": {
+                        "us-east-1": {},
+                        "us-east-1-fips": {
+                            "credentialScope": {
+                                "region": "us-east-1"
+                            },
+                            "hostname": "fipsyservice-fips.us-east-1.amazonaws.com"
+                        }
+                    }
+                },
+                "global-service": {
+                    "endpoints": {
+                        "aws-global": {
+                            "credentialScope": {
+                                "region": "us-east-1"
+                            },
+                            "hostname": "global-service.amazonaws.com"
+                        }
+                    },
+                    "isRegionalized": false,
+                    "partitionEndpoint": "aws-global"
+                }
+            }
+        },
+        {
+            "defaults": {
+                "hostname": "{service}.{region}.{dnsSuffix}",
+                "protocols": ["https"],
+                "signatureVersions": ["v4"]
+            },
+            "dnsSuffix": "moon.amazonaws.com",
+            "partition": "moon",
+            "partitionName": "AWS Moon",
+            "regionRegex": "^(moon)\\-\\w+\\-\\d+${'$'}",
+            "regions": {
+                "moon-east-2001": {
+                    "description": "Moon East (Tranquillitatis)"
+                }
+            },
+            "services": {
+                "moon-partition": {
+                    "endpoints": {
+                        "moon-east-2001": {}
+                    }
+                }
+            }
+        }
+    ],
+    "version": 3
+}

@@ -4,7 +4,7 @@
 package software.aws.toolkits.jetbrains.services.clouddebug.execution.steps
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugCliStep
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context

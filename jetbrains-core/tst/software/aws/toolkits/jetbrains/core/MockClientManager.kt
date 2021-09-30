@@ -11,6 +11,7 @@ import com.intellij.testFramework.ThreadTracker
 import com.intellij.testFramework.replaceService
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.core.SdkClient
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.clients.SdkClientProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -32,10 +33,8 @@ class MockClientManager : AwsClientManager() {
     @Suppress("UNCHECKED_CAST")
     override fun <T : SdkClient> createNewClient(
         sdkClass: KClass<T>,
-        region: AwsRegion,
-        credProvider: ToolkitCredentialsProvider,
-        endpointOverride: String?
-    ): T = mockClients[Key(sdkClass, region, credProvider.id)] as? T
+        connection: ConnectionSettings
+    ): T = mockClients[Key(sdkClass, connection.region, connection.credentials.id)] as? T
         ?: mockClients[Key(sdkClass)] as? T
         ?: throw IllegalStateException("No mock registered for $sdkClass")
 

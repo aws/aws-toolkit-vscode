@@ -44,7 +44,7 @@ object PartitionParser {
         .enable(JsonParser.Feature.ALLOW_COMMENTS)
 
     fun parse(inputStream: InputStream): Partitions? = LOG.tryOrNull("Failed to parse Partitions") {
-        mapper.readValue<Partitions>(inputStream, Partitions::class.java)
+        mapper.readValue(inputStream, Partitions::class.java)
     }
 }
 

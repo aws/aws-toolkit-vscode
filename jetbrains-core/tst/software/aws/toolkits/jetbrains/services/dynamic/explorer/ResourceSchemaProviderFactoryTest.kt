@@ -10,10 +10,10 @@ import com.jetbrains.jsonSchema.impl.inspections.JsonSchemaComplianceInspection
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier

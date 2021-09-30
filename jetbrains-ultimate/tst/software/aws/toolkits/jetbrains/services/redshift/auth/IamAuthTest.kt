@@ -26,10 +26,10 @@ import software.amazon.awssdk.services.redshift.model.DescribeClustersRequest
 import software.amazon.awssdk.services.redshift.model.DescribeClustersResponse
 import software.amazon.awssdk.services.redshift.model.GetClusterCredentialsRequest
 import software.amazon.awssdk.services.redshift.model.GetClusterCredentialsResponse
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY

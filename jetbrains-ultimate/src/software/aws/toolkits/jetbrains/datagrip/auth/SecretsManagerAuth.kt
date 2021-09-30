@@ -16,11 +16,11 @@ import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.future.future
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getDatabaseEngine
 import software.aws.toolkits.jetbrains.datagrip.secretsManagerIsApplicable

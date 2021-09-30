@@ -19,10 +19,10 @@ import software.amazon.awssdk.services.cloudcontrol.model.GetResourceRequestStat
 import software.amazon.awssdk.services.cloudcontrol.model.Operation
 import software.amazon.awssdk.services.cloudcontrol.model.OperationStatus
 import software.amazon.awssdk.services.cloudcontrol.model.ProgressEvent
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceStateMutationHandler

@@ -13,9 +13,9 @@ import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
 import software.amazon.awssdk.services.cloudcontrol.model.Operation
 import software.amazon.awssdk.services.cloudcontrol.model.OperationStatus
 import software.amazon.awssdk.services.cloudcontrol.model.ProgressEvent
+import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
-import software.aws.toolkits.jetbrains.core.credentials.getClient
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceTelemetryResources.addOperationToTelemetry
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -37,7 +37,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     fun deleteResource(dynamicResourceIdentifier: DynamicResourceIdentifier) {
         coroutineScope.launch {
             try {
-                val client = dynamicResourceIdentifier.connectionSettings.getClient<CloudControlClient>()
+                val client = dynamicResourceIdentifier.connectionSettings.awsClient<CloudControlClient>()
                 val progress = client.deleteResource {
                     it.typeName(dynamicResourceIdentifier.resourceType)
                     it.identifier(dynamicResourceIdentifier.resourceIdentifier)
@@ -66,7 +66,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     fun updateResource(dynamicResourceIdentifier: DynamicResourceIdentifier, patchOperation: String) {
         coroutineScope.launch {
             try {
-                val client = dynamicResourceIdentifier.connectionSettings.getClient<CloudControlClient>()
+                val client = dynamicResourceIdentifier.connectionSettings.awsClient<CloudControlClient>()
                 val progress = client.updateResource {
                     it.typeName(dynamicResourceIdentifier.resourceType)
                     it.identifier(dynamicResourceIdentifier.resourceIdentifier)
@@ -96,7 +96,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     fun createResource(connectionSettings: ConnectionSettings, dynamicResourceType: String, desiredState: String) {
         coroutineScope.launch {
             try {
-                val client = connectionSettings.getClient<CloudControlClient>()
+                val client = connectionSettings.awsClient<CloudControlClient>()
                 val progress = client.createResource {
                     it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
@@ -132,7 +132,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         while (size > 0) {
             val mutation = pendingMutations.remove()
             if (!mutation.status.isTerminal()) {
-                val client = mutation.connectionSettings.getClient<CloudControlClient>()
+                val client = mutation.connectionSettings.awsClient<CloudControlClient>()
                 val progress = try {
                     client.getResourceRequestStatus { it.requestToken(mutation.token) }
                 } catch (e: Exception) {
