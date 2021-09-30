@@ -51,8 +51,7 @@ abstract class ToolkitRegionProvider {
 
     open fun isServiceGlobal(region: AwsRegion, serviceId: String): Boolean {
         val partition = partitionData()[region.partitionId] ?: throw IllegalStateException("Partition data is missing for ${region.partitionId}")
-        val service = partition.services[serviceId] ?: throw IllegalStateException("Unknown service $serviceId in ${region.partitionId}")
-        return service.isGlobal
+        return partition.services[serviceId]?.isGlobal == true
     }
 
     fun getGlobalRegionForService(region: AwsRegion, serviceId: String): AwsRegion {

@@ -16,10 +16,12 @@ import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.core.utils.RemoteResource
 import software.aws.toolkits.core.utils.RemoteResourceResolver
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
@@ -51,236 +53,44 @@ class AwsRegionProviderTest {
 
     @Test
     fun correctRegionDataIsFiltered() {
-        createRegionDataProvider(
-            """
-            {
-                "partitions": [
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com",
-                        "partition": "aws",
-                        "partitionName": "AWS Standard",
-                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "us-west-2": {
-                                "description": "US West (Oregon)"
-                            }
-                        },
-                        "services": {}
-                    },
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com.cn",
-                        "partition": "aws-cn",
-                        "partitionName": "AWS China",
-                        "regionRegex": "^cn\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "cn-north-1": {
-                                "description": "China (Beijing)"
-                            }
-                        },
-                        "services": {}
-                    }
-                ],
-                "version": 3
-            }
-            """.trimIndent()
-        )
+        createRegionDataProvider()
 
         val awsRegionProvider = AwsRegionProvider()
-        assertThat(awsRegionProvider.regions("aws")).doesNotContainKey("cn-north-1").containsKey("us-west-2")
+        assertThat(awsRegionProvider.regions("aws")).containsOnlyKeys("us-west-2001", "us-east-1")
     }
 
     @Test
     fun allRegionsWorks() {
-        createRegionDataProvider(
-            """
-            {
-                "partitions": [
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com",
-                        "partition": "aws",
-                        "partitionName": "AWS Standard",
-                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "us-west-2": {
-                                "description": "US West (Oregon)"
-                            }
-                        },
-                        "services": {}
-                    },
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com.cn",
-                        "partition": "aws-cn",
-                        "partitionName": "AWS China",
-                        "regionRegex": "^cn\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "cn-north-1": {
-                                "description": "China (Beijing)"
-                            }
-                        },
-                        "services": {}
-                    }
-                ],
-                "version": 3
-            }
-            """.trimIndent()
-        )
-
+        createRegionDataProvider()
         val awsRegionProvider = AwsRegionProvider()
-        assertThat(awsRegionProvider.allRegions())
-            .containsKey("cn-north-1")
-            .containsKey("us-west-2")
+        assertThat(awsRegionProvider.allRegions()).containsOnlyKeys("moon-east-2001", "us-west-2001", "us-east-1")
     }
 
     @Test
     fun allRegionsForServiceWorks() {
-        createRegionDataProvider(
-            """
-            {
-                "partitions": [
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com",
-                        "partition": "aws",
-                        "partitionName": "AWS Standard",
-                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "us-west-2": {
-                                "description": "US West (Oregon)"
-                            }
-                        },
-                        "services": {
-                            "a4b" : {
-                                "endpoints" : {
-                                    "us-west-2" : { }
-                                }
-                            }
-                        }
-                    },
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com.cn",
-                        "partition": "aws-cn",
-                        "partitionName": "AWS China",
-                        "regionRegex": "^cn\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "cn-north-1": {
-                                "description": "China (Beijing)"
-                            }
-                        },
-                        "services": {}
-                    }
-                ],
-                "version": 3
-            }
-            """.trimIndent()
-        )
-
+        createRegionDataProvider()
         val awsRegionProvider = AwsRegionProvider()
-        assertThat(awsRegionProvider.allRegionsForService("a4b"))
-            .doesNotContainKey("cn-north-1")
-            .containsKey("us-west-2")
+        assertThat(awsRegionProvider.allRegionsForService("single-region-service")).containsOnlyKeys("us-west-2001")
     }
 
     @Test
     fun noDefaultRegionFallsBackToUsEast1() {
-        createRegionDataProvider(
-            """
-            {
-                "partitions": [
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com",
-                        "partition": "aws",
-                        "partitionName": "AWS Standard",
-                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "us-east-1": {
-                                "description": "US East (N. Virginia)"
-                            }
-                        },
-                        "services": {}
-                    }
-                ],
-                "version": 3
-            }
-            """.trimIndent()
-        )
-
+        createRegionDataProvider("no-default-region-us-east-1-fallback-endpoints.json")
         val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-east-1")
     }
 
     @Test
     fun noUsEast1FallbackToFirstRegionInMetadata() {
-        createRegionDataProvider(
-            """
-            {
-                "partitions": [
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com",
-                        "partition": "aws",
-                        "partitionName": "AWS Standard",
-                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "us-region-1": {
-                                "description": "Blah"
-                            }
-                        },
-                        "services": {}
-                    }
-                ],
-                "version": 3
-            }
-            """.trimIndent()
-        )
-
+        createRegionDataProvider("no-default-region-no-us-east-1-endpoints.json")
         val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-region-1")
     }
 
     @Test
     fun emptyRegionsCantHaveADefaultDueToError() {
-        createRegionDataProvider("")
-
+        createRegionDataProvider("no-regions-endpoints.json")
         val awsRegionProvider = AwsRegionProvider()
-
         assertThatThrownBy { awsRegionProvider.defaultRegion() }.isInstanceOf(IllegalStateException::class.java)
     }
 
@@ -297,32 +107,7 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        createRegionDataProvider(
-            """
-            {
-                "partitions": [
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com",
-                        "partition": "aws",
-                        "partitionName": "AWS Standard",
-                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "us-west-2001": {
-                                "description": "US West (Cascadia)"
-                            }
-                        },
-                        "services": {}
-                    }
-                ],
-                "version": 3
-            }
-            """.trimIndent()
-        )
+        createRegionDataProvider()
 
         val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-west-2001")
@@ -330,74 +115,15 @@ class AwsRegionProviderTest {
 
     @Test
     fun testGlobalServices() {
-        createRegionDataProvider(
-            """
-            {
-                "partitions": [
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": [
-                                "https"
-                            ],
-                            "signatureVersions": [
-                                "v4"
-                            ]
-                        },
-                        "dnsSuffix": "amazonaws.com",
-                        "partition": "aws",
-                        "partitionName": "AWS Standard",
-                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "us-east-1" : {
-                                "description" : "US East (N. Virginia)"
-                            }
-                        },
-                        "services": {
-                            "dynamodb": {
-                                "defaults": {
-                                    "protocols": [
-                                        "http",
-                                        "https"
-                                    ]
-                                },
-                                "endpoints": {
-                                    "us-east-1": {},
-                                    "us-east-1-fips": {
-                                        "credentialScope": {
-                                            "region": "us-east-1"
-                                        },
-                                        "hostname": "dynamodb-fips.us-east-1.amazonaws.com"
-                                    }
-                                }
-                            },
-                            "iam": {
-                                "endpoints": {
-                                    "aws-global": {
-                                        "credentialScope": {
-                                            "region": "us-east-1"
-                                        },
-                                        "hostname": "iam.amazonaws.com"
-                                    }
-                                },
-                                "isRegionalized": false,
-                                "partitionEndpoint": "aws-global"
-                            }
-                        }
-                    }
-                ],
-                "version": 3
-            }
-            """.trimIndent()
-        )
+        createRegionDataProvider()
 
         val awsRegionProvider = AwsRegionProvider()
         val usEast1 = awsRegionProvider.regions("aws")["us-east-1"] ?: throw IllegalStateException("Bad test data")
 
         assertThat(awsRegionProvider.isServiceGlobal(usEast1, "dynamodb")).isFalse()
-
-        assertThat(awsRegionProvider.isServiceGlobal(usEast1, "iam")).isTrue()
-        assertThat(awsRegionProvider.getGlobalRegionForService(usEast1, "iam").id).isEqualTo("aws-global")
+        assertThat(awsRegionProvider.isServiceGlobal(usEast1, "global-service")).isTrue()
+        assertThat(awsRegionProvider.isServiceGlobal(usEast1, "non-existent-service")).isFalse()
+        assertThat(awsRegionProvider.getGlobalRegionForService(usEast1, "global-service").id).isEqualTo("aws-global")
     }
 
     @Test
@@ -413,49 +139,7 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        createRegionDataProvider(
-            """
-            {
-                "partitions": [
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "amazonaws.com",
-                        "partition": "aws",
-                        "partitionName": "AWS Standard",
-                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
-                        "regions": {
-                            "us-west-2001": {
-                                "description": "US West (Cascadia)"
-                            }
-                        },
-                        "services": {}
-                    },
-                    {
-                        "defaults": {
-                            "hostname": "{service}.{region}.{dnsSuffix}",
-                            "protocols": ["https"],
-                            "signatureVersions": ["v4"]
-                        },
-                        "dnsSuffix": "moon.amazonaws.com",
-                        "partition": "moon",
-                        "partitionName": "AWS Moon",
-                        "regionRegex": "^(moon)\\-\\w+\\-\\d+${'$'}",
-                        "regions": {
-                            "moon-east-2001": {
-                                "description": "Moon East (Tranquillitatis)"
-                            }
-                        },
-                        "services": {}
-                    }
-                ],
-                "version": 3
-            }
-            """.trimIndent()
-        )
+        createRegionDataProvider()
 
         val awsRegionProvider = AwsRegionProvider()
 
@@ -464,15 +148,14 @@ class AwsRegionProviderTest {
         }
     }
 
-    private fun createRegionDataProvider(endpointsData: String) {
+    private fun createRegionDataProvider(endpointsFile: String = "simplified-multi-partition-endpoint.json") {
+        val file = javaClass.getResource(endpointsFile)?.let { Paths.get(it.toURI()).takeIf { f -> f.exists() } }
+            ?: throw RuntimeException("Test file $endpointsFile not found")
+
         val mockRemoteResource = object : RemoteResourceResolverProvider {
             override fun get() = object : RemoteResourceResolver {
                 override fun resolve(resource: RemoteResource): CompletionStage<Path> = CompletableFuture<Path>().apply {
-                    complete(
-                        Files.createTempFile("endpointData", ".json").apply {
-                            writeText(endpointsData)
-                        }
-                    )
+                    complete(file)
                 }
             }
         }
