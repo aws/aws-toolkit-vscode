@@ -31,7 +31,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     testImplementation("com.intellij.remoterobot:remote-robot:$remoteRobotVersion")
     testImplementation("com.intellij.remoterobot:remote-fixtures:$remoteRobotVersion")
-//    testImplementation("software.amazon.awssdk:cloudformation:$awsSdkVersion")
+    testImplementation("software.amazon.awssdk:cloudformation:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:s3:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:dynamodb:$awsSdkVersion")
