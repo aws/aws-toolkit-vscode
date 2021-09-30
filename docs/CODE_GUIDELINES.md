@@ -5,6 +5,11 @@ Toolkit for VSCode. It provides answers to common questions, decisions, UX and
 project consistency, questions of style and code structure, and anything else
 that cannot be enforced by a `lint` build-task.
 
+## UI
+
+- Where possible, follow the conventions of the [VSCode User Interface](https://code.visualstudio.com/docs/getstarted/userinterface)
+  instead of inventing new conventions.
+
 ## Naming
 
 Naming is one of the central opportunities for you as a human to add value to

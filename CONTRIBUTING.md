@@ -76,8 +76,8 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ### Guidelines
 
-- Project practices and patterns: [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md)
-- [VS Code UI guide](https://code.visualstudio.com/docs/getstarted/userinterface)
+- Project patterns and practices: [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md)
+- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
 - [VS Code API Documentation](https://code.visualstudio.com/api/references/vscode-api)
 - [VS Code Extension Capabilities](https://code.visualstudio.com/api/extension-capabilities/common-capabilities)
 
