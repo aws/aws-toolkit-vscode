@@ -50,7 +50,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDe
             ...existingConfig?.invokeTarget,
         },
         lambda: {
-            runtime: '',
+            runtime: existingConfig?.lambda?.runtime,
             memoryMb: undefined,
             timeoutSec: undefined,
             environmentVariables: {},
@@ -129,7 +129,7 @@ export default defineComponent({
                         this.stageVariables.value = JSON.stringify(event.data.launchConfig.api?.stageVariables)
                     }
                     this.containerBuild = event.data.launchConfig.sam?.containerBuild ?? false
-                    this.skipNewImageCheck = event.data.launchConfig.sam?.containerBuild ?? false
+                    this.skipNewImageCheck = event.data.launchConfig.sam?.skipNewImageCheck ?? false
                     this.msg = `Loaded config ${event.data.launchConfig.name}`
                     break
             }
@@ -174,13 +174,16 @@ export default defineComponent({
             },
             deep: true,
         },
-        payload: function (newval: { value: string; errorMsg: string }) {
-            this.resetJsonErrors()
-            vscode.setState(
-                Object.assign(vscode.getState() ?? {}, {
-                    payload: newval,
-                } as SamInvokeVueState)
-            )
+        payload: {
+            handler(newval: { value: string; errorMsg: string }) {
+                this.resetJsonErrors()
+                vscode.setState(
+                    Object.assign(vscode.getState() ?? {}, {
+                        payload: newval,
+                    } as SamInvokeVueState)
+                )
+            },
+            deep: true,
         },
     },
     methods: {
