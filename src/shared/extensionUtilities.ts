@@ -46,11 +46,13 @@ let computeRegion: string | undefined = NOT_INITIALIZED
 
 export function getIdeType(): IDE {
     const settings = new DefaultSettingsConfiguration('aws')
-    if (
-        vscode.env.appName === CLOUD9_APPNAME ||
-        vscode.env.appName === CLOUD9_CN_APPNAME ||
-        !!settings.readDevSetting<boolean>('aws.forceCloud9', 'boolean', true)
-    ) {
+    const forceIde = settings.readDevSetting<string>('aws.dev.forceIde', 'string', true)
+
+    if (forceIde === 'vscode') {
+        return IDE.vscode
+    }
+
+    if (vscode.env.appName === CLOUD9_APPNAME || vscode.env.appName === CLOUD9_CN_APPNAME || forceIde === 'cloud9') {
         return IDE.cloud9
     }
 
