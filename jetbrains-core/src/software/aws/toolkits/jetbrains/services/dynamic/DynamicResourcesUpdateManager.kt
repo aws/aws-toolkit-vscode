@@ -78,7 +78,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     message(
                         "dynamic_resources.operation_status_notification_title",
                         dynamicResourceIdentifier.resourceIdentifier,
-                        message("general.delete").toLowerCase()
+                        message("dynamic_resources.editor.submitResourceUpdateRequest_text").toLowerCase()
                     ),
                     project
                 )

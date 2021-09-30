@@ -409,10 +409,12 @@ with what features/services are supported.
         <group id="aws.toolkit.explorer.dynamic.resource" popup="true" compact="false">
             <action id="dynamic.resource.explorer.openReadOnlyAction"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.OpenReadOnlyFileAction"/>
-            <action id="dynamic.resource.explorer.copy.arn"
-                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.CopyIdentifierAction"/>
             <action id="dynamic.resource.explorer.openFileForUpdateAction"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.OpenFileForUpdateAction"/>
+            <separator/>
+            <action id="dynamic.resource.explorer.copy.identifier"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.CopyIdentifierAction"/>
+            <separator/>
             <action id="dynamic.resource.explorer.dynamicResourceDeleteResourceAction"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceDeleteResourceAction"/>
         </group>
