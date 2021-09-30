@@ -421,6 +421,11 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     if (path.isAbsolute(targetPath)) {
         return vscode.Uri.file(targetPath)
     }
+    // TODO: rework this logic (and config variables in general)
+    // we have too many places where we try to resolve these paths when it realistically can be
+    // in a single place. Much less bug-prone when it's centralized.
+    // the following line is a quick-fix for a very narrow edge-case
+    targetPath = targetPath.replace('${workspaceFolder}/', '')
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     for (const workspaceFolder of workspaceFolders) {
         const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)
