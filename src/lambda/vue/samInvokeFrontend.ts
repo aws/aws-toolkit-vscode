@@ -94,6 +94,10 @@ export default defineComponent({
         settingsPanel,
     },
     created() {
+        const oldState: Partial<SamInvokeVueState> = vscode.getState() ?? {}
+        this.launchConfig = oldState.launchConfig ?? this.launchConfig
+        this.payload = oldState.payload ?? this.payload
+
         window.addEventListener('message', ev => {
             const event = ev.data as SamInvokerResponse
             switch (event.command) {
@@ -109,6 +113,10 @@ export default defineComponent({
                     this.launchConfig.invokeTarget.templatePath = event.data.template
                     break
                 case 'loadSamLaunchConfig':
+                    if (oldState.launchConfig !== undefined) {
+                        return
+                    }
+
                     this.clearForm()
                     this.launchConfig = newLaunchConfig(event.data.launchConfig)
                     if (event.data.launchConfig.lambda?.payload) {
@@ -137,10 +145,6 @@ export default defineComponent({
 
         // Send a message back to let the backend know we're ready for messages
         vscode.postMessage({ command: 'initialized' })
-
-        const oldState: Partial<SamInvokeVueState> = vscode.getState() ?? {}
-        this.launchConfig = oldState.launchConfig ?? this.launchConfig
-        this.payload = oldState.payload ?? this.payload
     },
     data(): SamInvokeVueData {
         return {
@@ -168,7 +172,7 @@ export default defineComponent({
             handler(newval: AwsSamDebuggerConfigurationLoose) {
                 vscode.setState(
                     Object.assign(vscode.getState() ?? {}, {
-                        launchConfig: newval,
+                        launchConfig: JSON.parse(JSON.stringify(newval)),
                     } as SamInvokeVueState)
                 )
             },
@@ -176,10 +180,9 @@ export default defineComponent({
         },
         payload: {
             handler(newval: { value: string; errorMsg: string }) {
-                this.resetJsonErrors()
                 vscode.setState(
                     Object.assign(vscode.getState() ?? {}, {
-                        payload: newval,
+                        payload: JSON.parse(JSON.stringify(newval)),
                     } as SamInvokeVueState)
                 )
             },
