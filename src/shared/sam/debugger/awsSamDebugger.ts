@@ -387,6 +387,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const template = getTemplate(folder, config)
         const templateResource = getTemplateResource(folder, config)
         const codeRoot = getCodeRoot(folder, config)
+        const architecture = getArchitecture(template, templateResource, config.invokeTarget)
         // Handler is the only field that we need to parse refs for.
         // This is necessary for Python debugging since we have to create the temporary entry file
         // Other refs can fail; SAM will handle them.
@@ -530,7 +531,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
             useIkpdb: isCloud9() || !!(config as any).useIkpdb,
-            architecture: getArchitecture(template, templateResource, config.invokeTarget),
+            architecture: architecture,
         }
 
         //
