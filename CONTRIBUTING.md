@@ -1,7 +1,7 @@
-# Contributing Guidelines
+# Contributing to AWS Toolkit for VS Code
 
-Thank you for your interest in contributing to our project. We greatly value
-feedback and contributions from our community!
+Thanks for taking the time to help us. We greatly value feedback and
+contributions from our community!
 
 Reviewing this document will maximize your success in working with the
 codebase and sending pull requests.
@@ -74,9 +74,12 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ## Develop
 
-### Code guidelines
+### Guidelines
 
-See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
+- Project patterns and practices: [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md)
+- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+- [VS Code API Documentation](https://code.visualstudio.com/api/references/vscode-api)
+- [VS Code Extension Capabilities](https://code.visualstudio.com/api/extension-capabilities/common-capabilities)
 
 ### Technical notes
 
