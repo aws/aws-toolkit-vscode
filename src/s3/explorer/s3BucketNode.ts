@@ -32,7 +32,7 @@ import { S3Node } from './s3Nodes'
  * Represents an S3 bucket that may contain folders and/or objects.
  */
 export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-    private readonly childLoader: ChildNodeLoader
+    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
 
     public constructor(
         public readonly bucket: Bucket,
@@ -47,7 +47,6 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
             light: vscode.Uri.file(ext.iconPaths.light.s3),
         }
         this.contextValue = 'awsS3BucketNode'
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -71,7 +70,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         this.childLoader.clearChildren()
     }
 
-    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
+    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<S3FolderNode | S3FileNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
         const response = await this.s3.listFiles({
             bucketName: this.bucket.name,
