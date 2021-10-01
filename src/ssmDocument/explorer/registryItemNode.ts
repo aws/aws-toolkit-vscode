@@ -51,15 +51,13 @@ export class RegistryItemNode extends AWSTreeNodeBase {
 
                 return [...this.documentNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
                     localize('AWS.explorerNode.documentType.noSsmDocument', `[No documents found]`)
                 ),
-            sort: (nodeA: DocumentItemNode, nodeB: DocumentItemNode) =>
-                nodeA.documentName.localeCompare(nodeB.documentName),
+            sort: (nodeA, nodeB) => nodeA.documentName.localeCompare(nodeB.documentName),
         })
     }
 
