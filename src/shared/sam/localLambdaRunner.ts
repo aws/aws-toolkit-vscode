@@ -212,7 +212,7 @@ async function invokeLambdaHandler(
             debugPort: debugPort,
             debuggerPath: config.debuggerPath,
             debugArgs: config.debugArgs,
-            skipPullImage: config.sam?.skipNewImageCheck ?? (isImageLambdaConfig(config) || config.sam?.containerBuild),
+            skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
