@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.validateAndGetProfiles
+import software.aws.toolkits.resources.message
 import java.io.File
 
 class ProfileReaderTest {
@@ -48,7 +49,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to "Profile 'role' references source profile 'source_profile' which does not exist")
+            .contains("role" to message("credentials.profile.source_profile_not_found", "role", "source_profile"))
     }
 
     @Test
@@ -77,8 +78,10 @@ class ProfileReaderTest {
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
             .contains(
-                "role" to "Profile 'role' is invalid due to a circular profile dependency was found between " +
+                "role" to message(
+                    "credentials.profile.circular_profiles", "role",
                     "role->source_profile->source_profile2->source_profile3->source_profile"
+                )
             )
     }
 
@@ -95,7 +98,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to "Profile 'role' is invalid due to a circular profile dependency was found between role->role")
+            .contains("role" to message("credentials.profile.circular_profiles", "role", "role->role"))
     }
 
     @Test
@@ -110,7 +113,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to "Profile 'role' is missing required property source_profile")
+            .contains("role" to message("credentials.profile.missing_property", "role", "source_profile"))
     }
 
     @Test
@@ -129,7 +132,7 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to "Profile 'source_profile' is missing required property source_profile")
-            .contains("source_profile" to "Profile 'source_profile' is missing required property source_profile")
+            .contains("role" to message("credentials.profile.missing_property", "source_profile", "source_profile"))
+            .contains("source_profile" to message("credentials.profile.missing_property", "source_profile", "source_profile"))
     }
 }
