@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "SAM run/debug: You can now change where SAM CLI builds your lambda by adding a 'buildDir' field to your launch configuration's \"sam\" section"
-}

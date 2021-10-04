@@ -1,0 +1,74 @@
+{
+	"date": "2021-10-04",
+	"version": "1.30.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "DEPRECATION:  SAM actions using `python2.7` and `nodejs10.x` runtimes (Phase 2 Lambda deprecation)"
+		},
+		{
+			"type": "Breaking Change",
+			"description": "SAM run/debug: The launch configuration options 'timeoutSec' and 'memoryMb' no longer apply to template or API targets"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM/nodejs: do not check for \"tsc\" (typescript compiler) for plain javascript projects"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM Debug Configuration Editor: All fields will persist after Save or Invoke action."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM: refresh timeout timer during build step"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM/typescript: fix run/debug for target=code if source dir name has special chars"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "App Runner: fix issue with create wizard failing at the end after backing out of the select file dialog"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: `arm64` support (through SAM CLI's Architectures property) on select runtimes"
+		},
+		{
+			"type": "Feature",
+			"description": "Step Functions: Adds ability to render state machine graph from AWS Explorer."
+		},
+		{
+			"type": "Feature",
+			"description": "Credentials: SSO profiles will reconnect on startup if the token is still valid"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM run/debug: You can now change where SAM CLI builds your lambda by adding a 'buildDir' field to your launch configuration's \"sam\" section"
+		},
+		{
+			"type": "Feature",
+			"description": "UI: Toolkit statusbar now shows on the left and takes less space"
+		},
+		{
+			"type": "Feature",
+			"description": "Step Functions: enable visualizing ASL files in YAML (not asl-yaml) mode."
+		},
+		{
+			"type": "Feature",
+			"description": "SAM/CFN schema support: avoid changes to user settings, improve reliability."
+		},
+		{
+			"type": "Feature",
+			"description": "Adds Command Palette and CDK Explorer tree visualization capability for Step Functions state machines defined using the AWS CDK"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM/typescript: search node_modules in the workspace for \"tsc\" typescript compiler"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM Debug Configuration Editor: The UI has been updated to more closely match VS Code's style"
+		}
+	]
+}
