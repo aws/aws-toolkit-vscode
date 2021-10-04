@@ -10,6 +10,7 @@ import { SettingsConfiguration } from './settingsConfiguration'
 import { TelemetryService } from './telemetry/telemetryService'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { SamCliContext } from './sam/cli/samCliContext'
+import { UriHandler } from './vscode/uriHandler'
 
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
@@ -35,6 +36,7 @@ export interface ExtContext {
     outputChannel: vscode.OutputChannel
     telemetryService: TelemetryService
     credentialsStore: CredentialsStore
+    uriHandler: UriHandler
 }
 
 /**
