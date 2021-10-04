@@ -27,7 +27,7 @@ reported the issue. Please try to include as much information as you can. Detail
 * Dotnet Framework (Windows)
   * macOS steps:
     ```
-    brew cask install dotnet-sdk
+    brew install --cask dotnet-sdk
     ```
 
 ### Instructions
