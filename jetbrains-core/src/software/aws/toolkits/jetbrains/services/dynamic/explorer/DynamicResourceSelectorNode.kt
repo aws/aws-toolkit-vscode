@@ -18,7 +18,7 @@ class DynamicResourceSelectorNode(nodeProject: Project) : AwsExplorerNode<Unit>(
     override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
 
     override fun onDoubleClick() {
-        ShowSettingsUtil.getInstance().showSettingsDialog(nodeProject, DynamicResourcesConfigurable::class.java)
+        ShowSettingsUtil.getInstance().showSettingsDialog(null, DynamicResourcesConfigurable::class.java)
         DynamicresourceTelemetry.selectResources(nodeProject)
     }
 }

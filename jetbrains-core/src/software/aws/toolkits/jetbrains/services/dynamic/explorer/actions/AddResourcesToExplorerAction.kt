@@ -16,7 +16,7 @@ class AddResourcesToExplorerAction : DumbAwareAction(
     { message("explorer.node.other.add_remove", DynamicResourcesSettings.getInstance().resourcesAvailable()) }, IconUtil.getEditIcon()
 ) {
     override fun actionPerformed(e: AnActionEvent) {
-        ShowSettingsUtil.getInstance().showSettingsDialog(e.project, DynamicResourcesConfigurable::class.java)
+        ShowSettingsUtil.getInstance().showSettingsDialog(null, DynamicResourcesConfigurable::class.java)
         DynamicresourceTelemetry.selectResources(e.project)
     }
 }

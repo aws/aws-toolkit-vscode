@@ -8,7 +8,6 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.options.SearchableConfigurable
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.util.text.StringUtil
@@ -34,12 +33,11 @@ import java.util.concurrent.CompletionException
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-class AwsSettingsConfigurable(private val project: Project) : SearchableConfigurable {
+class AwsSettingsConfigurable() : SearchableConfigurable {
     private lateinit var panel: JPanel
     private lateinit var samHelp: JComponent
     private lateinit var cloudDebugHelp: JComponent
     private lateinit var awsCliHelp: JComponent
-    private lateinit var showAllHandlerGutterIcons: JBCheckBox
     private lateinit var serverlessSettings: JPanel
     private lateinit var remoteDebugSettings: JPanel
     private lateinit var awsCliSettings: JPanel
@@ -94,11 +92,9 @@ class AwsSettingsConfigurable(private val project: Project) : SearchableConfigur
 
     override fun isModified(): Boolean {
         val awsSettings = AwsSettings.getInstance()
-        val lambdaSettings = LambdaSettings.getInstance(project)
         return samTextboxInput != getSavedExecutablePath(samExecutableInstance, false) ||
             cloudDebugTextboxInput != getSavedExecutablePath(cloudDebugExecutableInstance, false) ||
             awsCliTextboxInput != getSavedExecutablePath(awsCliExecutableInstance, false) ||
-            isModified(showAllHandlerGutterIcons, lambdaSettings.showAllHandlerGutterIcons) ||
             isModified(enableTelemetry, awsSettings.isTelemetryEnabled) ||
             isModified(defaultRegionHandling, awsSettings.useDefaultCredentialRegion) ||
             isModified(profilesNotification, awsSettings.profilesNotification)
@@ -127,16 +123,13 @@ class AwsSettingsConfigurable(private val project: Project) : SearchableConfigur
             awsCliTextboxInput
         )
         saveAwsSettings()
-        saveLambdaSettings()
     }
 
     override fun reset() {
         val awsSettings = AwsSettings.getInstance()
-        val lambdaSettings = LambdaSettings.getInstance(project)
         samExecutablePath.setText(getSavedExecutablePath(samExecutableInstance, false))
         cloudDebugExecutablePath.setText(getSavedExecutablePath(cloudDebugExecutableInstance, false))
         awsCliExecutablePath.setText(getSavedExecutablePath(awsCliExecutableInstance, false))
-        showAllHandlerGutterIcons.isSelected = lambdaSettings.showAllHandlerGutterIcons
         enableTelemetry.isSelected = awsSettings.isTelemetryEnabled
         defaultRegionHandling.selectedItem = awsSettings.useDefaultCredentialRegion
         profilesNotification.selectedItem = awsSettings.profilesNotification
@@ -154,7 +147,7 @@ class AwsSettingsConfigurable(private val project: Project) : SearchableConfigur
         field.addBrowseFolderListener(
             message("aws.settings.find.title", cliName),
             message("aws.settings.find.description", cliName),
-            project,
+            null,
             FileChooserDescriptorFactory.createSingleLocalFileDescriptor()
         )
         return field
@@ -237,10 +230,6 @@ class AwsSettingsConfigurable(private val project: Project) : SearchableConfigur
         awsSettings.isTelemetryEnabled = enableTelemetry.isSelected
         awsSettings.useDefaultCredentialRegion = defaultRegionHandling.selectedItem as? UseAwsCredentialRegion ?: UseAwsCredentialRegion.Never
         awsSettings.profilesNotification = profilesNotification.selectedItem as? ProfilesNotification ?: ProfilesNotification.Always
-    }
-
-    private fun saveLambdaSettings() {
-        LambdaSettings.getInstance(project).showAllHandlerGutterIcons = showAllHandlerGutterIcons.isSelected
     }
 
     companion object {
