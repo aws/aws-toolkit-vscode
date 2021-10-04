@@ -32,7 +32,7 @@ reported the issue. Please try to include as much information as you can. Detail
 
 ### Instructions
 
-1. Clone the github repository and run `./gradlew buildPlugin` <br/> (This will produce a plugin zip under `build/distributions`)
+1. Clone the github repository and run `./gradlew :intellij:buildPlugin` <br/> (This will produce a plugin zip under `intellij/build/distributions`)
 2. In your JetBrains IDE (e.g. IntelliJ) navigate to the `Plugins` preferences and select "Install Plugin from Disk...", navigate to the zip file produced in step 1. 
 4. You will be prompted to restart your IDE.
 
@@ -53,9 +53,9 @@ To send us a pull request, please:
    ./gradlew check
    ```
 
-4. Generate a change log entry for your change using 
+4. Generate a change log entry for your change if the change is visible to users of the toolkit in their IDE.
    ```
-   ./gradlew newChange --console plain
+   ./gradlew :newChange --console plain
    ```
 
    and following the prompts. Change log entries should describe the change
@@ -70,50 +70,74 @@ GitHub provides additional documentation on [forking a repository](https://help.
 
 ## Debugging/Running Locally
 
-To test your changes locally, you can run the project from IntelliJ or gradle.
+To test your changes locally, you can run the project from IntelliJ or Gradle using the `runIde` tasks. Each build will download the required IDE version and 
+start it in a sandbox (isolated) configuration.
 
-- **Simple approach:** from the top-level of the repository, run:
+### In IDE Approach (Recommended)
+
+Launch the IDE through your IntelliJ instance using the provided run configurations. 
+If ran using the Debug feature, a debugger will be auto-attached to the sandbox IDE.
+
+### Running manually
+
   ```
-  ./gradlew runIde --info
-  ```
-  The `runIde` task automatically downloads the correct version of IntelliJ
-  Community Edition, builds and installs the plugin, and starts a _new_
-  instance of IntelliJ with the built extension.
-- To run **Rider or "Ultimate"**, specify the respective gradle target:
-  ```
+  ./gradlew jetbrains-core:runIde
   ./gradlew jetbrains-ultimate:runIde
   ./gradlew jetbrains-rider:runIde
   ```
   - These targets download the required IDE for testing.
-  - Do not specify `ALTERNATIVE_IDE`.
+
+#### Alternative IDE
+
 - To run the plugin in a **specific JetBrains IDE** (and you have it installed), specify the `ALTERNATIVE_IDE` environment variable:
   ```
-  ALTERNATIVE_IDE=/path/to/ide ./gradlew :runIde
+  ALTERNATIVE_IDE=/path/to/ide ./gradlew :intellij:runIde
   ```
   - This is needed to run PyCharm and WebStorm.
-  - Notice that the top-level `:runIde` target is always used with `ALTERNATIVE_IDE`.
-  - See also `ideDirectory` option in the `runIde` and `buildSearchableOptions` tasks provided by the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin).
-- To run **integration tests**:
-  ```
-  ./gradlew integrationTest
-  ```
-  - Requires valid AWS credentials (take care: it will respect any credentials currently defined in your environmental variables, and fallback to your default AWS profile otherwise).
-  - Requires `sam` CLI to be on your `$PATH`.
-- To run **GUI tests**:
-  ```
-  ./gradlew uiTestCore
-  ```
-  - To debug GUI tests,
-    1. Start the IDE that will be debugged `./gradlew :jetbrains-core:runIdeForUiTests --debug-jvm`
-	2. In your running Intellij instance `Run -> Attach to process` attach to the ide test debug process.
-    4. Run `./gradlew uiTestCore`. This will attach to the running debug IDE instance and run tests.
+  - See also `alternativeIdePath` option in the `runIde` tasks provided by the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin).
+
+## Running Tests
+
+### Unit Tests / Checkstyle
+
+These tests make no network calls and are safe for anyone to run.
+ ```
+ ./gradlew check
+ ```
+
+### Integration Tests
+
+It is **NOT** recommended for third party contributors to run these due to they create and mutate AWS resources.
+
+- Requires valid AWS credentials (take care: it will respect any credentials currently defined in your environmental variables, and fallback to your default AWS profile otherwise).
+- Requires `sam` CLI to be on your `$PATH`.
+ ```
+ ./gradlew integrationTest
+ ```
+
+### UI Tests
+
+It is **NOT** recommended for third party contributors to run these due to they create and mutate AWS resources.
+
+- Requires valid AWS credentials (take care: it will respect any credentials currently defined in your environmental variables, and fallback to your default AWS profile otherwise).
+- Requires `sam` CLI to be on your `$PATH`.
+ ```
+ ./gradlew :ui-tests:uiTestCore
+ ```
+
+#### Debug GUI tests
+
+The sandbox IDE runs with a debug port open (`5005`). In your main IDE, create a Java Remote Debug run configuration and tell it to attach to that port.
+
+If the tests run too quickly, you can tell the UI tests to wait for the debugger to attach by editing the `suspend.set(false)` to `true` in the tasks
+`RunIdeForUiTestTask` in [toolkit-intellij-subplugin Gradle plugin](buildSrc/src/main/kotlin/toolkit-intellij-subplugin.gradle.kts)
 
 ### Logging
 
 - Log messages (`LOG.info`, `LOG.error()`, …) by default are written to:
   ```
-  jetbrains-core/build/idea-sandbox/system/log/idea.log
-  jetbrains-core/build/idea-sandbox/system-test/logs/idea.log  # Tests
+  jetbrains-[subModule]/build/idea-sandbox/system/log/idea.log
+  jetbrains-[subModule]/build/idea-sandbox/system-test/logs/idea.log  # Tests
   ```
 - DEBUG-level log messages are skipped by default. To enable them, add the
   following line to the _Help_ \> _Debug Log Settings_ dialog in the IDE
@@ -121,7 +145,7 @@ To test your changes locally, you can run the project from IntelliJ or gradle.
   ```
   software.aws.toolkits
   ```
-
+  **Please be aware that debug level logs may contain more sensitive information. It is not advisable to keep it on nor share log files that contain debug logs**
 
 ## Guidelines
 
@@ -131,7 +155,6 @@ To test your changes locally, you can run the project from IntelliJ or gradle.
 ## Finding contributions to work on
 
 Looking at the existing issues is a great way to find something to contribute on. Any of the [help wanted](https://github.com/aws/aws-toolkit-jetbrains/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) issues is a great place to start.
-
 
 ## Code of Conduct
 
