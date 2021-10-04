@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "SAM/typescript: search node_modules in the workspace for \"tsc\" typescript compiler"
-}
