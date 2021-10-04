@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.30.0-SNAPSHOT",
+    "version": "1.31.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -2221,7 +2221,7 @@
     "dependencies": {
         "@aws-sdk/client-sso": "^3.16.0",
         "@aws-sdk/client-sso-oidc": "^3.16.0",
-        "@aws-sdk/credential-provider-ini": "^3.33.0",
+        "@aws-sdk/credential-provider-ini": "^3.35.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.16.0",
         "adm-zip": "^0.4.13",
