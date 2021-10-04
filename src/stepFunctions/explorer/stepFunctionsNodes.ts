@@ -59,8 +59,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
                     this,
                     localize('AWS.explorerNode.stepfunctions.noStateMachine', '[No State Machines found]')
                 ),
-            sort: (nodeA: StateMachineNode, nodeB: StateMachineNode) =>
-                nodeA.functionName.localeCompare(nodeB.functionName),
+            sort: (nodeA, nodeB) => nodeA.functionName.localeCompare(nodeB.functionName),
         })
     }
 

@@ -45,7 +45,7 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noTags', '[No tags found]')),
-            sort: (item1: EcrTagNode, item2: EcrTagNode) => item1.tag.localeCompare(item2.tag),
+            sort: (item1, item2) => item1.tag.localeCompare(item2.tag),
         })
     }
 

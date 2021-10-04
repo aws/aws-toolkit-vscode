@@ -11,34 +11,34 @@ import * as AsyncLock from 'async-lock'
 
 const LOCK_KEY = 'ChildNodeLoader'
 
-export interface ChildNodePage {
-    newChildren: AWSTreeNodeBase[]
+export interface ChildNodePage<T extends AWSTreeNodeBase = AWSTreeNodeBase> {
+    newChildren: T[]
     newContinuationToken: string | undefined
 }
 
 /**
  * Controls loading paginated children for LoadMore nodes.
  */
-export class ChildNodeLoader {
-    private readonly loadPage: (continuationToken: string | undefined) => Promise<ChildNodePage>
+export class ChildNodeLoader<T extends AWSTreeNodeBase = AWSTreeNodeBase> {
+    private readonly loadPage: (continuationToken: string | undefined) => Promise<ChildNodePage<T>>
     private readonly moreResults: MoreResultsNode
     private readonly loadChildrenLock: AsyncLock
-    private cache: ChildNodeCache
+    private cache: ChildNodeCache<T>
 
     public constructor(
         parent: LoadMoreNode,
-        loadPage: (continuationToken: string | undefined) => Promise<ChildNodePage>
+        loadPage: (continuationToken: string | undefined) => Promise<ChildNodePage<T>>
     ) {
         this.loadPage = loadPage
         this.moreResults = new MoreResultsNode(parent)
         this.loadChildrenLock = new AsyncLock()
-        this.cache = new ChildNodeCache()
+        this.cache = new ChildNodeCache<T>()
     }
 
     /**
      * Gets the initial or previously-loaded children.
      */
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    public async getChildren(): Promise<(T | MoreResultsNode)[]> {
         await this.loadMoreChildrenIf(() => !this.initialChildrenLoaded())
         return this.getExistingChildren()
     }
@@ -74,7 +74,7 @@ export class ChildNodeLoader {
         return this.initialChildrenLoaded() && this.cache.continuationToken === undefined
     }
 
-    private getExistingChildren(): AWSTreeNodeBase[] {
+    private getExistingChildren(): (T | MoreResultsNode)[] {
         if (this.cache.continuationToken !== undefined) {
             return [...this.cache.children, this.moreResults]
         }

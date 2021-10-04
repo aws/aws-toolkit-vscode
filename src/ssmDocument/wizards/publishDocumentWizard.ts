@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
 
 import { ext } from '../../shared/extensionGlobals'
+import { selectedPreviously } from '../../shared/localizedText'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import * as input from '../../shared/ui/input'
@@ -197,10 +198,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                 // this is the only way to get this to show on going back
                 // this will make it so it always shows even when searching for something else
                 alwaysShow: region.id === initialRegionCode,
-                description:
-                    region.id === initialRegionCode
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : '',
+                description: region.id === initialRegionCode ? selectedPreviously : '',
             })),
             buttons: [vscode.QuickInputButtons.Back],
         })
@@ -367,7 +365,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
             },
         ].map((item: PublishActionQuickPickItem) => {
             if (item.action === currentAction) {
-                item.description = localize('AWS.wizard.selectedPreviously', 'Selected Previously')
+                item.description = selectedPreviously
             }
 
             return item

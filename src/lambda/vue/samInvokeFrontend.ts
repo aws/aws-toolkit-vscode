@@ -6,10 +6,10 @@
 import { defineComponent } from 'vue'
 import { WebviewApi } from 'vscode-webview'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { AwsSamDebuggerConfigurationLoose, SamInvokerResponse, SamInvokeVueState } from './samInvokeBackend'
+import { AwsSamDebuggerConfigurationLoose, SamInvokerResponse } from './samInvokeBackend'
 import settingsPanel from '../../webviews/components/settingsPanel.vue'
 
-declare const vscode: WebviewApi<SamInvokeVueState>
+declare const vscode: WebviewApi<SamInvokeVueData>
 
 interface VueDataLaunchPropertyObject {
     value: string
@@ -50,7 +50,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDe
             ...existingConfig?.invokeTarget,
         },
         lambda: {
-            runtime: '',
+            runtime: existingConfig?.lambda?.runtime,
             memoryMb: undefined,
             timeoutSec: undefined,
             environmentVariables: {},
@@ -94,6 +94,13 @@ export default defineComponent({
         settingsPanel,
     },
     created() {
+        const oldState: Partial<SamInvokeVueData> = vscode.getState() ?? {}
+
+        const keys = Object.keys(oldState) as [keyof SamInvokeVueData]
+        keys.forEach(k => {
+            this.$data[k] = oldState[k] ?? this.$data[k]
+        })
+
         window.addEventListener('message', ev => {
             const event = ev.data as SamInvokerResponse
             switch (event.command) {
@@ -109,6 +116,10 @@ export default defineComponent({
                     this.launchConfig.invokeTarget.templatePath = event.data.template
                     break
                 case 'loadSamLaunchConfig':
+                    if (oldState.launchConfig !== undefined && event.data.initialCall) {
+                        return
+                    }
+
                     this.clearForm()
                     this.launchConfig = newLaunchConfig(event.data.launchConfig)
                     if (event.data.launchConfig.lambda?.payload) {
@@ -129,18 +140,27 @@ export default defineComponent({
                         this.stageVariables.value = JSON.stringify(event.data.launchConfig.api?.stageVariables)
                     }
                     this.containerBuild = event.data.launchConfig.sam?.containerBuild ?? false
-                    this.skipNewImageCheck = event.data.launchConfig.sam?.containerBuild ?? false
+                    this.skipNewImageCheck = event.data.launchConfig.sam?.skipNewImageCheck ?? false
                     this.msg = `Loaded config ${event.data.launchConfig.name}`
                     break
             }
         })
 
+        Object.keys(this.$data).forEach(k => {
+            this.$watch(
+                k,
+                (v: any) => {
+                    const old = vscode.getState()
+                    vscode.setState(
+                        Object.assign(old ?? {}, { [k]: JSON.parse(JSON.stringify(v)) }) as SamInvokeVueData
+                    )
+                },
+                { deep: true }
+            )
+        })
+
         // Send a message back to let the backend know we're ready for messages
         vscode.postMessage({ command: 'initialized' })
-
-        const oldState: Partial<SamInvokeVueState> = vscode.getState() ?? {}
-        this.launchConfig = oldState.launchConfig ?? this.launchConfig
-        this.payload = oldState.payload ?? this.payload
     },
     data(): SamInvokeVueData {
         return {
@@ -162,26 +182,6 @@ export default defineComponent({
             headers: { value: '', errorMsg: '' },
             stageVariables: { value: '', errorMsg: '' },
         }
-    },
-    watch: {
-        launchConfig: {
-            handler(newval: AwsSamDebuggerConfigurationLoose) {
-                vscode.setState(
-                    Object.assign(vscode.getState() ?? {}, {
-                        launchConfig: newval,
-                    } as SamInvokeVueState)
-                )
-            },
-            deep: true,
-        },
-        payload: function (newval: { value: string; errorMsg: string }) {
-            this.resetJsonErrors()
-            vscode.setState(
-                Object.assign(vscode.getState() ?? {}, {
-                    payload: newval,
-                } as SamInvokeVueState)
-            )
-        },
     },
     methods: {
         resetJsonErrors() {
