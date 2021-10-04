@@ -62,6 +62,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
                               command: 'loadSamLaunchConfig',
                               data: {
                                   launchConfig: launchConfig,
+                                  initialCall: true,
                               },
                           },
                       ]
@@ -71,11 +72,6 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
             recordSamOpenConfigUi()
         }
     )
-}
-
-export interface SamInvokeVueState {
-    launchConfig: AwsSamDebuggerConfigurationLoose
-    payload: { value: string; errorMsg: string }
 }
 
 export interface AwsSamDebuggerConfigurationLoose extends AwsSamDebuggerConfiguration {
@@ -92,6 +88,7 @@ export interface LoadSamLaunchConfigResponse {
     command: 'loadSamLaunchConfig'
     data: {
         launchConfig: AwsSamDebuggerConfiguration
+        initialCall?: boolean
     }
 }
 
