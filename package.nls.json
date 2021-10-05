@@ -231,7 +231,7 @@
     "AWS.command.apprunner.open": "Open in Browser",
     "AWS.command.apprunner.startDeployment": "Start Deployment",
     "AWS.command.moreResources.copyIdentifier": "Copy Identifier",
-    "AWS.command.moreResources.configure": "Show Resources....",
+    "AWS.command.moreResources.configure": "Show Resources...",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.error.during.sam.local": "Failed to run SAM application locally: {0}",
     "AWS.error.endpoint.load.failure": "The {0} Toolkit was unable to load endpoints data.",
