@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.editor.actions
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -22,9 +21,8 @@ class SubmitResourceCreationRequestAction : AnAction(message("general.create")) 
         val file = psiFile?.virtualFile as? CreateDynamicResourceVirtualFile ?: return
         val resourceType = file.dynamicResourceType
 
-        val contentString = removePrettyPrinting(psiFile.text)
+        val contentString = psiFile.text
         val continueWithContent = if (contentString == InitialCreateDynamicResourceContent.initialContent) {
-            // TODO: Custom warning with documentation links
             Messages.showYesNoDialog(
                 psiFile.project,
                 message("dynamic_resources.create_resource_file_empty"),
@@ -42,11 +40,5 @@ class SubmitResourceCreationRequestAction : AnAction(message("general.create")) 
             )
             DynamicResourceUpdateManager.getInstance(psiFile.project).createResource(file.connectionSettings, file.dynamicResourceType, contentString)
         }
-    }
-
-    private fun removePrettyPrinting(content: String) = mapper.writeValueAsString(mapper.readTree(content))
-
-    companion object {
-        private val mapper = jacksonObjectMapper()
     }
 }
