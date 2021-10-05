@@ -8,12 +8,11 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.util.IconUtil
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable
-import software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
 class AddResourcesToExplorerAction : DumbAwareAction(
-    { message("explorer.node.other.add_remove", DynamicResourcesSettings.getInstance().resourcesAvailable()) }, IconUtil.getEditIcon()
+    { message("explorer.node.other.add_remove") }, IconUtil.getEditIcon()
 ) {
     override fun actionPerformed(e: AnActionEvent) {
         ShowSettingsUtil.getInstance().showSettingsDialog(null, DynamicResourcesConfigurable::class.java)
