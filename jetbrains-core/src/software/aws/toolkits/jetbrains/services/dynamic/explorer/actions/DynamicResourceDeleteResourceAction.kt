@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.DeleteResourceDialog
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
@@ -37,5 +38,9 @@ class DynamicResourceDeleteResourceAction :
             }
             DynamicResourceUpdateManager.getInstance(selected.nodeProject).deleteResource(dynamicResourceIdentifier)
         }
+    }
+
+    override fun update(selected: DynamicResourceNode, e: AnActionEvent) {
+        e.presentation.isEnabledAndVisible = AwsToolkit.isMoreResourcesMutationEnabled()
     }
 }

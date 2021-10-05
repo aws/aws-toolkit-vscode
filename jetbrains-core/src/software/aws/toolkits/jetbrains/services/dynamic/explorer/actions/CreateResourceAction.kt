@@ -9,6 +9,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
@@ -32,5 +33,9 @@ class CreateResourceAction :
             FileEditorManager.getInstance(selected.nodeProject).openFile(file, true)
             file.isWritable = true
         }
+    }
+
+    override fun update(selected: DynamicResourceResourceTypeNode, e: AnActionEvent) {
+        e.presentation.isEnabledAndVisible = AwsToolkit.isMoreResourcesMutationEnabled()
     }
 }

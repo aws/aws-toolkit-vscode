@@ -11,6 +11,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.intellij.ui.EditorNotifications
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.resources.message
 
 class DynamicResourceFileActionProvider :
@@ -18,30 +19,33 @@ class DynamicResourceFileActionProvider :
     override fun getKey(): Key<DynamicResourceVirtualFilePanel> = KEY
 
     override fun createNotificationPanel(file: VirtualFile, fileEditor: FileEditor, project: Project):
-        DynamicResourceVirtualFilePanel? = when (file) {
-        is CreateDynamicResourceVirtualFile ->
-            DynamicResourceVirtualFilePanel(
-                project,
-                file,
-                message("dynamic_resources.create_resource_instruction"),
-                "dynamic.resource.editor.submitResourceCreationRequest"
-            )
-        is ViewEditableDynamicResourceVirtualFile ->
-            when (file.isWritable) {
-                true -> DynamicResourceVirtualFilePanel(
+        DynamicResourceVirtualFilePanel? {
+        if (!AwsToolkit.isMoreResourcesMutationEnabled()) return null
+        return when (file) {
+            is CreateDynamicResourceVirtualFile ->
+                DynamicResourceVirtualFilePanel(
                     project,
                     file,
-                    message("dynamic_resources.update_resource_instruction"),
-                    "dynamic.resource.editor.submitResourceUpdateRequest"
+                    message("dynamic_resources.create_resource_instruction"),
+                    "dynamic.resource.editor.submitResourceCreationRequest"
                 )
-                false -> DynamicResourceVirtualFilePanel(
-                    project,
-                    file,
-                    message("dynamic_resources.edit_resource_instruction"),
-                    "dynamic.resource.editor.enableEditingResource"
-                )
-            }
-        else -> null
+            is ViewEditableDynamicResourceVirtualFile ->
+                when (file.isWritable) {
+                    true -> DynamicResourceVirtualFilePanel(
+                        project,
+                        file,
+                        message("dynamic_resources.update_resource_instruction"),
+                        "dynamic.resource.editor.submitResourceUpdateRequest"
+                    )
+                    false -> DynamicResourceVirtualFilePanel(
+                        project,
+                        file,
+                        message("dynamic_resources.edit_resource_instruction"),
+                        "dynamic.resource.editor.enableEditingResource"
+                    )
+                }
+            else -> null
+        }
     }
 
     class DynamicResourceVirtualFilePanel(project: Project, file: DynamicResourceVirtualFile, text: String, actionId: String) : EditorNotificationPanel() {
