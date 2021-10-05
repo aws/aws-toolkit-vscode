@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.utils
 
+import com.intellij.execution.ExecutionListener
+import com.intellij.execution.ExecutionManager
 import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.Output
 import com.intellij.execution.OutputListener
@@ -11,12 +13,13 @@ import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndWait
@@ -30,9 +33,7 @@ import org.junit.Assume.assumeTrue
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
-import software.aws.toolkits.jetbrains.services.lambda.execution.TEST_PROCESS_LISTENER
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
-import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon.Companion.minImageVersion
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
@@ -54,6 +55,7 @@ fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: Stri
             val runner = ProgramRunner.getRunner(executorId, runConfiguration)!!
             val executionEnvironmentBuilder = ExecutionEnvironmentBuilder.create(executor, runConfiguration)
                 .runner(runner)
+            val executionEnvironment = executionEnvironmentBuilder.build()
 
             val listener = object : OutputListener() {
                 override fun processTerminated(event: ProcessEvent) {
@@ -65,20 +67,17 @@ fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: Stri
                 }
             }
 
-            // in mocks, this runner returns too quickly for the normal path
-            val executionEnvironment = if (runner is RemoteLambdaRunner) {
-                executionEnvironmentBuilder.build().also {
-                    it.putUserData(TEST_PROCESS_LISTENER, listener)
+            runConfiguration.project.messageBus.connect(executionEnvironment).subscribe(
+                ExecutionManager.EXECUTION_TOPIC,
+                object : ExecutionListener {
+                    override fun processStarting(executorId: String, env: ExecutionEnvironment, handler: ProcessHandler) {
+                        handler.addProcessListener(listener)
+                    }
                 }
-            } else {
-                executionEnvironmentBuilder.build { it.processHandler!!.addProcessListener(listener) }
-            }
-
-            // Hack: Normally this is handled through the ProgramRunner and RunContentDescriptor, but since we bypass ProgramRunner we need to do it ourselves
-            Disposer.register(executionEnvironment.project, executionEnvironment)
+            )
 
             // TODO: exception isn't propagated out and test is forced to wait to timeout instead of exiting immediately
-            runner.execute(executionEnvironment)
+            executionEnvironment.runner.execute(executionEnvironment)
         } catch (e: Throwable) {
             executionFuture.completeExceptionally(e)
         }
