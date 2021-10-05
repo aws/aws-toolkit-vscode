@@ -39,9 +39,28 @@ class StepExecutor(
     var onSuccess: ((Context) -> Unit)? = null
     var onError: ((Throwable) -> Unit)? = null
 
+    private val context = Context(project)
+    private val processHandler = StepExecutorProcessHandler(title, context)
+
+    /**
+     * Returns a pseudo process handler that coincides with the life cycle of the StepExecutors workflow
+     *
+     * Can also be used to give the ownership of the lifecycle over to a 3rd party such as a Run Config
+     */
+    fun getProcessHandler() = processHandler
+
+    /**
+     * Starts the workflow if not already started
+     */
     fun startExecution(): ProcessHandler {
-        val context = Context(project)
-        val processHandler = StepExecutorProcessHandler(title, context)
+        if (!processHandler.isStartNotified) {
+            processHandler.startNotify()
+        }
+
+        return processHandler
+    }
+
+    private fun startWorkflow() {
         val descriptor = DefaultBuildDescriptor(
             uniqueId,
             title,
@@ -58,10 +77,6 @@ class StepExecutor(
         ApplicationManager.getApplication().executeOnPooledThread {
             execute(descriptor, progressListener, context, messageEmitter, processHandler)
         }
-
-        processHandler.startNotify()
-
-        return processHandler
     }
 
     private fun execute(
@@ -134,7 +149,7 @@ class StepExecutor(
      * Fake process handle that acts as the "wrapper" for all steps. Any cancelled step will "kill" this process and vice versa.
      * For example, in a run config this process handle can be tied to the red Stop button thus stopping it cancels the step execution flow.
      */
-    class StepExecutorProcessHandler(private val title: String, private val context: Context) : BuildProcessHandler() {
+    inner class StepExecutorProcessHandler(private val title: String, private val context: Context) : BuildProcessHandler() {
         // build progress listener for tests
         private val err = StringBuilder()
         private val out = StringBuilder()
@@ -145,6 +160,11 @@ class StepExecutor(
             } else {
                 out.append(event.message)
             }
+        }
+
+        override fun startNotify() {
+            startWorkflow()
+            super.startNotify()
         }
 
         @TestOnly
