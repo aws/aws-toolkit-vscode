@@ -168,7 +168,9 @@ class SamRunningState(
         executor.onError = {
             reportMetric(settings, Result.Failed, environment.isDebug())
         }
-        return executor.startExecution()
+
+        // Let run config system start the execution through the process handler
+        return executor.getProcessHandler()
     }
 
     private fun runConfigId() = environment.executionId.toString()
