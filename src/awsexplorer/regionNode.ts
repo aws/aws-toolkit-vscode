@@ -19,6 +19,7 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
+import { MoreResourcesNode } from '../moreResources/explorer/nodes/moreResourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 
@@ -76,6 +77,8 @@ export class RegionNode extends AWSTreeNodeBase {
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
+
+        this.childNodes.push(new MoreResourcesNode(this.regionCode))
     }
 
     private tryClearChildren(): void {
