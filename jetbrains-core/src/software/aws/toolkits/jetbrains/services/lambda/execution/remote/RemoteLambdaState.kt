@@ -21,7 +21,6 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.services.lambda.execution.TEST_PROCESS_LISTENER
 import software.aws.toolkits.jetbrains.utils.formatText
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaTelemetry
@@ -47,16 +46,16 @@ class RemoteLambdaState(
         val console = consoleBuilder.console
         console.attachToProcess(lambdaProcess)
 
-        environment.getUserData(TEST_PROCESS_LISTENER)?.let {
-            lambdaProcess.addProcessListener(it)
-        }
-
-        ApplicationManager.getApplication().executeOnPooledThread { invokeLambda(lambdaProcess) }
-
         return DefaultExecutionResult(console, lambdaProcess)
     }
 
     private inner class LambdaProcess : ProcessHandler() {
+        override fun startNotify() {
+            super.startNotify()
+
+            ApplicationManager.getApplication().executeOnPooledThread { invokeLambda(this) }
+        }
+
         override fun getProcessInput(): OutputStream? = null
 
         override fun detachIsDefault(): Boolean = true
