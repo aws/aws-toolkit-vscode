@@ -5,6 +5,7 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import {
@@ -394,6 +395,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const handlerName = getHandlerName(folder, config)
 
         config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
+        fs.ensureDir(config.baseBuildDir)
 
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.
