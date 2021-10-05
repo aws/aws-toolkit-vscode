@@ -1,75 +1,10 @@
 {
     "types": [
-        {
-            "name": "resourceType",
-            "type": "string",
-            "description": "The dynamic resource type being interacted with"
-        },
-        {
-            "name": "dynamicResourceOperation",
-            "allowedValues": ["Create", "Update", "Delete"],
-            "description": "The dynamic resource operation being executed"
-        }
     ],
     "metrics": [
         {
             "name": "apprunner_openServiceUrl",
             "description": "Open the service URL in a browser"
-        },
-        {
-            "name": "dynamicresource_getResource",
-            "description": "Open the dynamic resource model in the IDE",
-            "metadata": [
-                {
-                    "type": "result"
-                },
-                {
-                    "type": "resourceType"
-                }
-            ]
-        },
-        {
-            "name": "dynamicresource_listResource",
-            "description": "Expand a Resource Type node",
-            "metadata": [
-                {
-                    "type": "result"
-                },
-                {
-                    "type": "resourceType"
-                }
-            ]
-        },
-        {
-            "name": "dynamicresource_selectResources",
-            "description": "Change the list of available dynamic resources in the AWS Explorer"
-        },
-        {
-            "name": "dynamicresource_copyIdentifier",
-            "description": "Copy the dynamic resource identifier",
-            "metadata": [
-                {
-                    "type": "resourceType"
-                }
-            ]
-        },
-        {
-            "name": "dynamicresource_mutateResource",
-            "description": "A dynamic resource mutation request completed",
-            "metadata": [
-                {
-                    "type": "result"
-                },
-                {
-                    "type": "resourceType"
-                },
-                {
-                    "type": "dynamicResourceOperation"
-                },
-                {
-                    "type": "duration"
-                }
-            ]
         },
         {
             "name": "aws_openLocalTerminal",
