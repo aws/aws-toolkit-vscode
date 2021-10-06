@@ -15,6 +15,7 @@ import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 
 export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
@@ -23,6 +24,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
     private readonly logger = getLogger()
+    private readonly settings = new DefaultSettingsConfiguration('aws')
 
     private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
@@ -37,7 +39,10 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 return undefined
             }
 
-            if (isReleaseVersion()) {
+            if (
+                isReleaseVersion() ||
+                this.settings.readDevSetting<boolean>('aws.dev.forceTelemetry', 'boolean', true)
+            ) {
                 await this.client
                     .postMetrics({
                         AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
