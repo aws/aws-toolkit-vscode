@@ -71,7 +71,7 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'awsResource')
-        assert.strictEqual(capturedUri.path, `${FAKE_IDENTIFIER}.${FAKE_TYPE_NAME}.preview.json`)
+        assert.strictEqual(capturedUri.fsPath, `${FAKE_IDENTIFIER}.${FAKE_TYPE_NAME}.preview.json`)
         assert.strictEqual(capturedUri.query, formatResourceModel(JSON.stringify(fakeResourceDescription)))
 
         assert.strictEqual(showTextDocumentStub.getCall(0).args[0], mockTextDocument)
@@ -91,9 +91,9 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'file')
-        assert.strictEqual(capturedUri.path.endsWith(`${FAKE_IDENTIFIER}.${FAKE_TYPE_NAME}.awsResource.json`), true)
+        assert.strictEqual(capturedUri.fsPath.endsWith(`${FAKE_IDENTIFIER}.${FAKE_TYPE_NAME}.awsResource.json`), true)
 
-        const fileContents = JSON.parse(await readFileAsString(capturedUri.path))
+        const fileContents = JSON.parse(await readFileAsString(capturedUri.fsPath))
         assert.deepStrictEqual(fileContents, fakeResourceDescription)
 
         assert.strictEqual(showTextDocumentStub.getCall(0).args[0], mockTextDocument)
@@ -136,9 +136,9 @@ describe('ResourceManager', function () {
         const capturedUri = openTextDocumentStub.getCall(0).args[0] as vscode.Uri
 
         assert.strictEqual(capturedUri.scheme, 'file')
-        assert.strictEqual(capturedUri.path.endsWith(`new.${FAKE_TYPE_NAME}.awsResource.json`), true)
+        assert.strictEqual(capturedUri.fsPath.endsWith(`new.${FAKE_TYPE_NAME}.awsResource.json`), true)
 
-        const fileContents = JSON.parse(await readFileAsString(capturedUri.path))
+        const fileContents = JSON.parse(await readFileAsString(capturedUri.fsPath))
         assert.deepStrictEqual(fileContents, {})
 
         assert.strictEqual(showTextDocumentStub.getCall(0).args[0], mockTextDocument)
