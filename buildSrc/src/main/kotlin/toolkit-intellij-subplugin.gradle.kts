@@ -100,6 +100,8 @@ tasks.withType<JavaExec> {
 }
 
 tasks.runIde {
+    systemProperty("aws.toolkit.developerMode", true)
+
     val alternativeIde = providers.environmentVariable("ALTERNATIVE_IDE").forUseAtConfigurationTime()
     if (alternativeIde.isPresent) {
         // remove the trailing slash if there is one or else it will not work

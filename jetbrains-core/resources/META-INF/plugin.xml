@@ -244,6 +244,7 @@ with what features/services are supported.
         <registryKey key="aws.feature.ecsCloudDebug" description="Enables the Cloud Debug for ECS set of features" restartRequired="false" defaultValue="true"/>
         <registryKey key="aws.feature.ecsExec" description="Enables the features and actions associated with ECS Execute Command" restartRequired="false" defaultValue="false"/>
         <registryKey key="aws.feature.dynamoDb" description="Enables the features and actions associated with DynamoDB" restartRequired="false" defaultValue="true"/>
+        <registryKey key="aws.toolkit.developerMode" description="Enables features to facilitate development of the toolkit" restartRequired="false" defaultValue="false"/>
     </extensions>
 
     <extensions defaultExtensionNs="JavaScript.JsonSchema">
@@ -277,8 +278,7 @@ with what features/services are supported.
     </extensions>
 
     <actions>
-        <action internal="true" id="aws.toolkit.open.telemetry.viewer"
-                class="software.aws.toolkits.jetbrains.services.telemetry.viewer.OpenTelemetryAction"/>
+        <action id="aws.toolkit.open.telemetry.viewer" class="software.aws.toolkits.jetbrains.services.telemetry.OpenTelemetryAction"/>
         <action id="aws.settings.refresh"  class="software.aws.toolkits.jetbrains.core.credentials.RefreshConnectionAction"/>
         <action id="aws.toolkit.showFeedback" class="software.aws.toolkits.jetbrains.ui.feedback.ShowFeedbackDialogAction"/>
         <group id="aws.toolkit.explorer.titleBar" popup="false" compact="true">
