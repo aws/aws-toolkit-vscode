@@ -11,9 +11,9 @@ import { Window } from '../../shared/vscode/window'
 import { IotCertificateNode } from '../explorer/iotCertificateNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotThingNode } from '../explorer/iotThingNode'
-import { IotThingFolderNode } from '../explorer/iotThingFolderNode'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { IotNode } from '../explorer/iotNodes'
+import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 
 const STATUS_REVOKED = 'REVOKED'
 const STATUS_ACTIVE = 'ACTIVE'
@@ -183,7 +183,10 @@ function getBaseNode(node: IotThingNode | IotCertsFolderNode): IotNode {
     return node.parent
 }
 
-async function refreshNode(node: IotThingFolderNode | IotCertsFolderNode, commands: Commands): Promise<void> {
+async function refreshNode(node: LoadMoreNode | undefined, commands: Commands): Promise<void> {
+    if (!node) {
+        return
+    }
     node.clearChildren()
     return commands.execute('aws.refreshAwsExplorerNode', node)
 }

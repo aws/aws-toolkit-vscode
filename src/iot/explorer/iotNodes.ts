@@ -14,6 +14,7 @@ import { inspect } from 'util'
 import { IotThingFolderNode } from './iotThingFolderNode'
 import { IotCertsFolderNode } from './iotCertFolderNode'
 import { IotPolicyFolderNode } from './iotPolicyFolderNode'
+import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 
 /**
  * An AWS Explorer node representing IoT.
@@ -21,22 +22,28 @@ import { IotPolicyFolderNode } from './iotPolicyFolderNode'
  * Contains folders for Things, Certificates, and Policies as child nodes.
  */
 export class IotNode extends AWSTreeNodeBase {
-    public readonly thingFolderNode: IotThingFolderNode
-    public readonly certFolderNode: IotCertsFolderNode
-    public readonly policyFolderNode: IotPolicyFolderNode
+    public thingFolderNode: LoadMoreNode | undefined
+    public certFolderNode: LoadMoreNode | undefined
+    public policyFolderNode: LoadMoreNode | undefined
 
     public constructor(private readonly iot: IotClient) {
         super('IoT', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsIotNode'
-        this.thingFolderNode = new IotThingFolderNode(this.iot, this)
-        this.certFolderNode = new IotCertsFolderNode(this.iot, this)
-        this.policyFolderNode = new IotPolicyFolderNode(this.iot, this)
+        // this.thingFolderNode = new IotThingFolderNode(this.iot, this)
+        // this.certFolderNode = new IotCertsFolderNode(this.iot, this)
+        // this.policyFolderNode = new IotPolicyFolderNode(this.iot, this)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                const categories: AWSTreeNodeBase[] = [this.thingFolderNode, this.certFolderNode, this.policyFolderNode]
+                const thingFolderNode = new IotThingFolderNode(this.iot, this)
+                this.thingFolderNode = thingFolderNode
+                const certFolderNode = new IotCertsFolderNode(this.iot, this)
+                this.certFolderNode = certFolderNode
+                const policyFolderNode = new IotPolicyFolderNode(this.iot, this)
+                this.policyFolderNode = policyFolderNode
+                const categories: AWSTreeNodeBase[] = [thingFolderNode, certFolderNode, policyFolderNode]
                 return categories
             },
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
