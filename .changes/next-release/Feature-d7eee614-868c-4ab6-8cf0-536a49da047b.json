@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Create new Step Functions state machine template from AWS Explorer"
+}
