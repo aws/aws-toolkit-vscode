@@ -1066,6 +1066,11 @@
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.stepfunctions.createStateMachineFromTemplate",
+                    "when": "view == aws.explorer && viewItem == awsStepFunctionsNode && !isCloud9",
+                    "group": "0@1"
+                },
+                {
                     "command": "aws.downloadStateMachineDefinition",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
                     "group": "0@1"
