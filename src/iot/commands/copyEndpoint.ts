@@ -9,6 +9,7 @@ import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { IotNode } from '../explorer/iotNodes'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 const COPY_PATH_DISPLAY_TIMEOUT_MS = 2000
 
@@ -25,6 +26,7 @@ export async function copyEndpointCommand(node: IotNode, window = Window.vscode(
         endpoint = await node.getEndpoint()
     } catch (e) {
         getLogger().error('Failed to retrieve endpoint: %O', e)
+        showViewLogsMessage(localize('AWS.iot.copyEndpoint.error', 'Failed to retrieve endpoint'), window)
         return
     }
 

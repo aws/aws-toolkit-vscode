@@ -581,32 +581,10 @@ export class DefaultIotCertificate {
 export class DefaultIotPolicy {
     public readonly name: string
     public readonly arn: string
-    public readonly document: Iot.PolicyDocument | undefined
-    public readonly defaultVersionId: Iot.PolicyVersionId | undefined
-    public readonly lastModifiedDate: Date | undefined
-    public readonly creationDate: Date | undefined
 
-    public constructor({
-        name,
-        arn,
-        document,
-        versionId,
-        creationDate,
-        lastModifiedDate,
-    }: {
-        name: string
-        arn: string
-        document?: string
-        versionId?: Iot.PolicyVersionId
-        creationDate?: Date
-        lastModifiedDate?: Date
-    }) {
+    public constructor({ name, arn }: { name: string; arn: string }) {
         this.name = name
         this.arn = arn
-        this.document = document
-        this.defaultVersionId = versionId
-        this.creationDate = creationDate
-        this.lastModifiedDate = lastModifiedDate
     }
 
     public [inspect.custom](): string {
