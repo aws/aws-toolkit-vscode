@@ -6,7 +6,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { pluginVersion } from '../extensionUtilities'
+import { isReleaseVersion, pluginVersion } from '../extensionUtilities'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
@@ -37,19 +37,23 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 return undefined
             }
 
-            await this.client
-                .postMetrics({
-                    AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                    AWSProductVersion: pluginVersion,
-                    ClientID: this.clientId,
-                    OS: os.platform(),
-                    OSVersion: os.release(),
-                    ParentProduct: vscode.env.appName,
-                    ParentProductVersion: vscode.version,
-                    MetricData: batch,
-                })
-                .promise()
-            this.logger.info(`Successfully sent a telemetry batch of ${batch.length}`)
+            if (isReleaseVersion()) {
+                await this.client
+                    .postMetrics({
+                        AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                        AWSProductVersion: pluginVersion,
+                        ClientID: this.clientId,
+                        OS: os.platform(),
+                        OSVersion: os.release(),
+                        ParentProduct: vscode.env.appName,
+                        ParentProductVersion: vscode.version,
+                        MetricData: batch,
+                    })
+                    .promise()
+                this.logger.info(`telemetry: sent batch (size=${batch.length})`)
+            } else {
+                this.logger.info(`telemetry: (test mode) dropped batch (size=${batch.length})`)
+            }
 
             return undefined
         } catch (err) {
