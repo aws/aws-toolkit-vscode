@@ -65,7 +65,7 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
             if (devfileLocation === undefined) {
                 return
             }
-            mdeCreateCommand(treenode, { devfile: { location: devfileLocation } })
+            mdeCreateCommand(treenode)
         })
     )
     ctx.extensionContext.subscriptions.push(
