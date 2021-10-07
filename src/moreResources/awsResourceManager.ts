@@ -4,7 +4,7 @@
  */
 
 import { writeFileSync } from 'fs'
-import { rm } from 'fs-extra'
+import { remove } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
@@ -93,7 +93,7 @@ export class AwsResourceManager {
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 
             if (uri.scheme === 'file') {
-                rm(uri.fsPath)
+                remove(uri.fsPath)
 
                 ext.schemaService.registerMapping({
                     path: uri.fsPath,
