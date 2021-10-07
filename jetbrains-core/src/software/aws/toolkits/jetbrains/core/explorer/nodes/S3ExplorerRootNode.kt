@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.s3.S3ServiceNode
 
 class S3ExplorerRootNode : AwsExplorerServiceNode {
     override val serviceId: String = S3Client.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = S3ServiceNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = S3ServiceNode(project, this)
 }

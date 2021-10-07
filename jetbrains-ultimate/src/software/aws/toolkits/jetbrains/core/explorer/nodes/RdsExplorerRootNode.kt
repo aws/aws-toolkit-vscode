@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.rds.RdsExplorerParentNode
 
 class RdsExplorerRootNode : AwsExplorerServiceNode {
     override val serviceId: String = RdsClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = RdsExplorerParentNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = RdsExplorerParentNode(project, this)
 }

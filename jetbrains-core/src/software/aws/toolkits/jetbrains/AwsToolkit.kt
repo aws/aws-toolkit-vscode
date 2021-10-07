@@ -21,4 +21,6 @@ object AwsToolkit {
     fun isEcsExecEnabled() = Registry.`is`("aws.feature.ecsExec")
 
     fun isDynamoDbEnabled() = Registry.`is`("aws.feature.dynamoDb")
+
+    fun isMoreResourcesMutationEnabled() = Registry.`is`("aws.feature.moreResources.mutation")
 }
