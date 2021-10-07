@@ -24,7 +24,7 @@ abstract class ParallelStep : Step() {
 
     final override fun execute(
         context: Context,
-        messageEmitter: MessageEmitter,
+        messageEmitter: StepEmitter,
         ignoreCancellation: Boolean
     ) {
         buildChildSteps(context).forEach {

@@ -8,8 +8,8 @@ import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.samBuildCommand
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 
@@ -33,7 +33,7 @@ class BuildLambda(private val request: BuildLambdaRequest) : SamCliStep() {
         samOptions = request.samOptions
     )
 
-    override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {
+    override fun handleSuccessResult(output: String, messageEmitter: StepEmitter, context: Context) {
         context.putAttribute(BUILT_LAMBDA, BuiltLambda(request.buildDir.resolve("template.yaml"), request.logicalId))
     }
 

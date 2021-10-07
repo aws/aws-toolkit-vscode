@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.lambda.steps.CreateLambda.Compan
 import software.aws.toolkits.jetbrains.services.lambda.steps.createLambdaWorkflowForImage
 import software.aws.toolkits.jetbrains.services.lambda.steps.createLambdaWorkflowForZip
 import software.aws.toolkits.jetbrains.settings.UpdateLambdaSettings
+import software.aws.toolkits.jetbrains.utils.execution.steps.BuildViewWorkflowEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -180,7 +181,12 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
             else -> throw UnsupportedOperationException("$packageType is not supported")
         }
 
-        return StepExecutor(project, message("lambda.workflow.create_new.name"), workflow, view.name.text)
+        val emitter = BuildViewWorkflowEmitter.createEmitter(
+            project,
+            message("lambda.workflow.create_new.name"),
+            view.name.text
+        )
+        return StepExecutor(project, workflow, emitter)
     }
 
     private fun viewToFunctionDetails(runtime: Runtime? = null, handler: String? = null): FunctionDetails = FunctionDetails(

@@ -14,11 +14,9 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
-import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiFile
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.utils.buildList
@@ -34,6 +32,7 @@ import software.aws.toolkits.jetbrains.services.lambda.steps.GetPorts
 import software.aws.toolkits.jetbrains.services.lambda.steps.SamRunnerStep
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.services.telemetry.MetricEventMetadata
+import software.aws.toolkits.jetbrains.utils.execution.steps.BuildViewWorkflowEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.ParallelStep
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
@@ -128,7 +127,7 @@ class SamRunningState(
         settings: LocalLambdaRunSettings,
         state: SamRunningState,
         buildRequest: BuildLambdaRequest,
-        emitter: BuildView
+        buildView: BuildView
     ): ProcessHandler {
         val startSam = SamRunnerStep(environment, settings, environment.isDebug())
 
@@ -161,7 +160,8 @@ class SamRunningState(
                 }
             }
         )
-        val executor = StepExecutor(environment.project, message("sam.build.running"), workflow, environment.executionId.toString(), emitter)
+        val emitter = BuildViewWorkflowEmitter.createEmitter(buildView, message("sam.build.running"), environment.executionId.toString())
+        val executor = StepExecutor(environment.project, workflow, emitter)
         executor.onSuccess = {
             reportMetric(settings, Result.Succeeded, environment.isDebug())
         }
@@ -232,9 +232,6 @@ class SamRunningState(
 
             return BuildLambdaRequest(templatePath, logicalId, buildDir, additionalBuildEnvironmentVariables, samOptions)
         }
-
-        private fun getModule(psiFile: PsiFile): Module = ModuleUtil.findModuleForFile(psiFile)
-            ?: throw IllegalStateException("Failed to locate module for $psiFile")
 
         private fun LocalLambdaRunSettings.lambdaBuilder() = LambdaBuilder.getInstance(this.runtimeGroup)
 

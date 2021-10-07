@@ -9,7 +9,7 @@ import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.sam.samDeployCommand
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 
@@ -28,7 +28,7 @@ class DeployLambda(
         settings = settings
     )
 
-    override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {
+    override fun handleSuccessResult(output: String, stepEmitter: StepEmitter, context: Context) {
         val changeSet = changeSetRegex.find(output)?.value ?: throw RuntimeException(message("serverless.application.deploy.change_set_not_found"))
         context.putAttribute(CHANGE_SET_ARN, changeSet)
     }

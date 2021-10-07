@@ -14,15 +14,15 @@ import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.steps.GetPorts.Companion.DEBUG_PORTS
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import java.time.Duration
 
 class FindDockerContainer : Step() {
     override val stepName = message("sam.debug.find_container")
     override val hidden = false
-    override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
         val frontendPort = context.getRequiredAttribute(DEBUG_PORTS).first()
         val container = runProcessUntil(
             duration = Duration.ofMillis(SamDebugSupport.debuggerConnectTimeoutMs()),
@@ -47,7 +47,7 @@ class FindDockerContainer : Step() {
 class FindPid : Step() {
     override val stepName = message("sam.debug.dotnet_find_pid")
     override val hidden = false
-    override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
         val dockerContainer = context.getRequiredAttribute(FindDockerContainer.DOCKER_CONTAINER)
         val pid = runProcessUntil(
             duration = Duration.ofMillis(SamDebugSupport.debuggerConnectTimeoutMs()),

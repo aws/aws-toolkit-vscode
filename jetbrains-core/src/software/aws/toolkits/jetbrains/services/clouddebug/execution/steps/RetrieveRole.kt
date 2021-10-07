@@ -8,8 +8,8 @@ import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants.I
 import software.aws.toolkits.jetbrains.services.clouddebug.resources.CloudDebuggingResources
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -22,7 +22,7 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
 
     override fun execute(
         context: Context,
-        messageEmitter: MessageEmitter,
+        messageEmitter: StepEmitter,
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()

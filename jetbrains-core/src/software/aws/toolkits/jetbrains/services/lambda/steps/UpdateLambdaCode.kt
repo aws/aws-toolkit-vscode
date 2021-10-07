@@ -6,14 +6,14 @@ package software.aws.toolkits.jetbrains.services.lambda.steps
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.services.lambda.steps.PackageLambda.Companion.UPLOADED_CODE_LOCATION
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 
 class UpdateLambdaCode(private val lambdaClient: LambdaClient, private val functionName: String, private val updatedHandler: String?) : Step() {
     override val stepName = message("lambda.create.step.update_lambda")
 
-    override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
         lambdaClient.updateFunctionCode {
             it.functionName(functionName)
 

@@ -18,9 +18,9 @@ import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.ParallelStep
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudDebugPlatform
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
@@ -53,7 +53,7 @@ class AttachDebugger(
 
     override fun execute(
         context: Context,
-        messageEmitter: MessageEmitter,
+        stepEmitter: StepEmitter,
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()

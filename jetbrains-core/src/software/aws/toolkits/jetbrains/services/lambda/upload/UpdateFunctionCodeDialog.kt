@@ -20,6 +20,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.steps.updateLambdaCodeWorkflowForImage
 import software.aws.toolkits.jetbrains.services.lambda.steps.updateLambdaCodeWorkflowForZip
 import software.aws.toolkits.jetbrains.settings.UpdateLambdaSettings
+import software.aws.toolkits.jetbrains.utils.execution.steps.BuildViewWorkflowEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -159,7 +160,8 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
             else -> throw UnsupportedOperationException("$packageType is not supported")
         }
 
-        return StepExecutor(project, message("lambda.workflow.update_code.name"), workflow, initialSettings.name)
+        val emitter = BuildViewWorkflowEmitter.createEmitter(project, message("lambda.workflow.update_code.name"), initialSettings.name)
+        return StepExecutor(project, workflow, emitter)
     }
 
     private fun loadSettings() {

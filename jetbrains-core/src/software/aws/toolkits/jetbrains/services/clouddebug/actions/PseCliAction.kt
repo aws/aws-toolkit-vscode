@@ -4,12 +4,6 @@
 package software.aws.toolkits.jetbrains.services.clouddebug.actions
 
 import com.intellij.build.BuildContentManager
-import com.intellij.build.BuildViewManager
-import com.intellij.build.DefaultBuildDescriptor
-import com.intellij.build.events.impl.FailureResultImpl
-import com.intellij.build.events.impl.FinishBuildEventImpl
-import com.intellij.build.events.impl.StartBuildEventImpl
-import com.intellij.build.events.impl.SuccessResultImpl
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.execution.process.ProcessAdapter
@@ -17,7 +11,6 @@ import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.progress.PerformInBackgroundOption
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -44,7 +37,7 @@ import software.aws.toolkits.jetbrains.services.ecs.EcsClusterNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources.describeService
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources.listServiceArns
-import software.aws.toolkits.jetbrains.utils.execution.steps.DefaultMessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.BuildViewWorkflowEmitter
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -67,21 +60,15 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
             ) {
                 override fun run(indicator: ProgressIndicator) {
                     val startTime = Instant.now()
-                    val buildViewManager = ServiceManager.getService(project, BuildViewManager::class.java)
-                    val descriptor = DefaultBuildDescriptor(
-                        actionName,
-                        actionName,
-                        "",
-                        System.currentTimeMillis()
-                    )
-                    val messageEmitter = DefaultMessageEmitter.createRoot(buildViewManager, actionName)
-                    buildViewManager.onEvent(actionName, StartBuildEventImpl(descriptor, ""))
+                    val workflowEmitter = BuildViewWorkflowEmitter.createEmitter(project, actionName, actionName)
+                    workflowEmitter.workflowStarted()
 
                     runInEdt {
                         @Suppress("UsePropertyAccessSyntax")
                         BuildContentManager.getInstance(project).getOrCreateToolWindow().show(null)
                     }
                     // validate CLI
+                    val messageEmitter = workflowEmitter.createStepEmitter()
                     CloudDebugResolver.validateOrUpdateCloudDebug(project, messageEmitter, null)
 
                     val region = AwsConnectionManager.getInstance(project).activeRegion.toEnvironmentVariables()
@@ -130,8 +117,8 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                             }
 
                             override fun processTerminated(event: ProcessEvent) {
-                                val result = if (event.exitCode == 0) {
-                                    SuccessResultImpl()
+                                if (event.exitCode == 0) {
+                                    workflowEmitter.workflowCompleted()
                                 } else {
                                     // TODO: really need to refactor this and steps - it's getting a bit crazy
                                     messageEmitter.emitMessage("Error details:\n", true)
@@ -140,9 +127,8 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                                         // output to the log for diagnostic and integrations tests
                                         LOG.debug { "Error details:\n $it" }
                                     }
-                                    FailureResultImpl()
+                                    workflowEmitter.workflowFailed(IllegalStateException("Cloud debug did not exit successfully"))
                                 }
-                                buildViewManager.onEvent(actionName, FinishBuildEventImpl(actionName, null, System.currentTimeMillis(), "", result))
                             }
                         }
                     )
