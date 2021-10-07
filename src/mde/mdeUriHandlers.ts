@@ -4,13 +4,13 @@
  */
 
 /** The 'path' for external URIs attempting to open an MDE within VS Code */
-const MDE_URI_PATH = '/mde' as const
+const MDE_URI_PATH = '/remote' as const
 
 import { EnvironmentId } from '../../types/clientmde'
 import * as vscode from 'vscode'
 import { ParsedUrlQuery } from 'querystring'
 import { cloneToMde, mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
-import { ExtContext } from '../shared/extensions'
+import { UriHandler } from '../shared/vscode/uriHandler'
 
 interface MdeUriParams {
     /** If no ID is provided, a new MDE is created */
@@ -21,10 +21,8 @@ interface MdeUriParams {
     branch?: string
 }
 
-export function activateUriHandlers(ctx: ExtContext): void {
-    ctx.extensionContext.subscriptions.push(
-        ctx.uriHandler.registerHandler(MDE_URI_PATH, handleMdeUriParams, parseMdeUriParams)
-    )
+export function activateUriHandlers(ctx: vscode.ExtensionContext, uriHandler: UriHandler): void {
+    ctx.subscriptions.push(uriHandler.registerHandler(MDE_URI_PATH, handleMdeUriParams, parseMdeUriParams))
 }
 
 export function parseMdeUriParams(query: ParsedUrlQuery): MdeUriParams {

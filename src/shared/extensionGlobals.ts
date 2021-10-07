@@ -15,6 +15,7 @@ import { CodelensRootRegistry } from './fs/codelensRootRegistry'
 import { SchemaService } from './schemas'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
+import { UriHandler } from './vscode/uriHandler'
 
 /**
  * Namespace for common variables used globally in the extension.
@@ -34,6 +35,7 @@ export namespace ext {
     export let schemaService: SchemaService
     export let codelensRootRegistry: CodelensRootRegistry
     export let caws: CawsClient
+    export let uriHandler: UriHandler
 
     let _didReload = false
 

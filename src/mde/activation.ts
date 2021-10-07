@@ -47,7 +47,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
-    activateUriHandlers(ctx)
+    activateUriHandlers(ctx.extensionContext, ctx.uriHandler)
 }
 
 async function registerCommands(ctx: ExtContext): Promise<void> {
