@@ -171,7 +171,10 @@ describe('ResourceManager', function () {
 
     it('returns existing resource uri from resource node', async function () {
         const editor = await resourceManager.open(resourceNode, false)
-        assert.strictEqual(resourceManager.toUri(resourceNode)?.fsPath, editor.document.uri.fsPath)
+        assert.strictEqual(
+            resourceManager.toUri(resourceNode)?.fsPath.toLowerCase(),
+            editor.document.uri.fsPath.toLowerCase()
+        )
     })
 
     it('returns undefined for non-existent resource from resource node', function () {
@@ -188,9 +191,9 @@ describe('ResourceManager', function () {
         const expectedSchemaLocation = path.join(tempFolder, 'sometype.schema.json')
         assert.ok(existsSync(expectedSchemaLocation))
         assert.strictEqual(mapping.type, 'json')
-        assert.strictEqual(mapping.path, editor.document.uri.fsPath)
+        assert.strictEqual(mapping.path.toLowerCase(), editor.document.uri.fsPath.toLowerCase())
         const schema = mapping.schema as vscode.Uri
-        assert.strictEqual(schema.fsPath, expectedSchemaLocation)
+        assert.strictEqual(schema.fsPath.toLowerCase(), expectedSchemaLocation.toLowerCase())
     })
 
     it('does not register schemas when opening in preview', async function () {
@@ -212,7 +215,7 @@ describe('ResourceManager', function () {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [mapping] = capture(schemaService.registerMapping).last()
         assert.strictEqual(mapping.type, 'json')
-        assert.strictEqual(mapping.path, editor.document.uri.fsPath)
+        assert.strictEqual(mapping.path.toLowerCase(), editor.document.uri.fsPath.toLowerCase())
         assert.strictEqual(mapping.schema, undefined)
     })
 
