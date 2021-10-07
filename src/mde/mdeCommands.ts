@@ -82,9 +82,17 @@ export async function mdeConnectCommand(env: Pick<mde.MdeEnvironment, 'id'>): Pr
     const cmd = new ChildProcess(
         true,
         vsc,
-        undefined,
+        {
+            env: Object.assign(
+                {
+                    AWS_REGION: mde.MDE_REGION,
+                    AWS_MDE_ENDPOINT: mde.MDE_ENDPOINT,
+                },
+                process.env
+            ),
+        },
         '--folder-uri',
-        `vscode-remote://ssh-remote+${env.id}/home/cloudshell-user`
+        `vscode-remote://ssh-remote+aws-mde-${env.id}/home/cloudshell-user`
     )
 
     // Note: `await` is intentionally not used.
@@ -176,7 +184,7 @@ export async function cloneToMde(mde: mde.MdeEnvironment & { id: string }, repo:
         '-o',
         'StrictHostKeyChecking=no',
         'AddKeysToAgent=yes',
-        `mkdir -p ~/.ssh && mkdir -p ~/projects && touch ~/.ssh/known_hosts && ssh-keyscan github.com >> ~/.ssh/known_hosts && git clone '${target}' ~/projects/'${repoName}'`
+        `mkdir -p ~/.ssh && mkdir -p /projects && touch ~/.ssh/known_hosts && ssh-keyscan github.com >> ~/.ssh/known_hosts && git clone '${target}' /projects/'${repoName}'`
     ).run(
         (stdout: string) => {
             getLogger().verbose(`MDE clone: ${mde.id}: ${stdout}`)
