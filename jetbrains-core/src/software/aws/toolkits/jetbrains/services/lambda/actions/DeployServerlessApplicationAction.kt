@@ -164,7 +164,7 @@ class DeployServerlessApplicationAction : AnAction(
                     try {
                         cfnClient.executeChangeSetAndWait(stackName, changeSetArn)
                         notifyInfo(
-                            message("cloudformation.execute_change_set.success.title"),
+                            message("cloudformation.service_name"),
                             message("cloudformation.execute_change_set.success", stackName),
                             project
                         )
@@ -184,17 +184,11 @@ class DeployServerlessApplicationAction : AnAction(
                         )
                     }
                 }
-
-                notifyInfo(
-                    project = project,
-                    title = message("lambda.service_name"),
-                    content = message("lambda.function.created.notification", stackName)
-                )
             }
         }
 
         workflow.onError = {
-            it.notifyError(project = project, title = message("lambda.service_name"))
+            it.notifyError(project = project, title = message("cloudformation.service_name"))
             SamTelemetry.deploy(
                 project = project,
                 version = SamCommon.getVersionString(),
