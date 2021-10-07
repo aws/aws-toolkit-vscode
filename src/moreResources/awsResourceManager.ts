@@ -24,17 +24,17 @@ export const RESOURCE_FILE_GLOB_PATTERN = '**/*.awsResource.json'
 
 export class AwsResourceManager {
     private folder: string | undefined
-    private schemas: Map<string, TypeSchema>
+    private schemas: Map<string, Schema>
     private openResources: Map<string, ResourceNode | ResourceTypeNode>
 
     public constructor(private readonly extensionContext: vscode.ExtensionContext) {
-        this.schemas = new Map<string, TypeSchema>()
+        this.schemas = new Map<string, Schema>()
         this.openResources = new Map<string, ResourceNode | ResourceTypeNode>()
     }
 
     public async new(type: ResourceTypeNode): Promise<vscode.TextEditor | undefined> {
-        await this.downloadTypeSchema(type.typeName, type.parent.cloudFormation)
         const uri = await this.createFile(type.typeName, 'new', getNewResourceJson())
+        await this.registerSchema(type.typeName, uri, type.parent.cloudFormation)
         this.openResources.set(uri.toString(), type)
 
         getLogger().debug(`resourceManager: created resource for type ${type.typeName} at ${uri.fsPath}`)
@@ -63,8 +63,8 @@ export class AwsResourceManager {
                 uri = vscode.Uri.parse(`awsResource:${identifier}.${normalizedTypeName}.preview.json?${formattedModel}`)
                 getLogger().debug(`resourceManager: opening resource ${identifier} (${typeName}) in preview`)
             } else {
-                await this.downloadTypeSchema(typeName, resource.parent.parent.cloudFormation)
                 uri = await this.createFile(typeName, identifier, formattedModel)
+                await this.registerSchema(typeName, uri, resource.parent.parent.cloudFormation)
                 getLogger().debug(
                     `resourceManager: opening resource ${identifier} (${typeName}) in edit at ${uri.fsPath}`
                 )
@@ -94,6 +94,12 @@ export class AwsResourceManager {
 
             if (uri.scheme === 'file') {
                 rm(uri.fsPath)
+
+                ext.schemaService.registerMapping({
+                    path: uri.fsPath,
+                    type: 'json',
+                    schema: undefined,
+                })
             }
 
             this.openResources.delete(path)
@@ -119,7 +125,7 @@ export class AwsResourceManager {
     }
 
     public getSchema(typeName: string): TypeSchema | undefined {
-        return this.schemas.get(typeName)
+        return this.schemas.get(typeName)?.typeSchema
     }
 
     private async initialize(): Promise<void> {
@@ -158,29 +164,40 @@ export class AwsResourceManager {
         return vscode.Uri.file(fullPath)
     }
 
-    private async downloadTypeSchema(typeName: string, cloudFormation: CloudFormationClient): Promise<void> {
+    private async registerSchema(
+        typeName: string,
+        file: vscode.Uri,
+        cloudFormation: CloudFormationClient
+    ): Promise<void> {
         await this.initialize()
+        const normalizedTypeName = getNormalizedTypeName(typeName)
 
-        if (this.schemas.has(typeName)) {
-            return
+        let location = this.schemas.get(typeName)?.location
+        if (!location) {
+            const type = await cloudFormation.describeType(typeName)
+            if (type && type.Schema) {
+                const schemaFile = path.join(
+                    this.extensionContext.globalStoragePath,
+                    `${normalizedTypeName}.schema.json`
+                )
+                writeFileSync(schemaFile, JSON.stringify(JSON.parse(type.Schema), undefined, 2))
+                location = vscode.Uri.file(schemaFile)
+                const typeSchema = JSON.parse(await readFileAsString(schemaFile)) as TypeSchema
+                this.schemas.set(typeName, {
+                    location,
+                    typeSchema,
+                })
+            } else {
+                getLogger().warn(`unable to download schema for ${typeName}`)
+                return
+            }
         }
 
-        const type = await cloudFormation.describeType(typeName)
-        if (type && type.Schema) {
-            const normalizedTypeName = getNormalizedTypeName(typeName)
-            const schemaFile = path.join(this.extensionContext.globalStoragePath, `${normalizedTypeName}.schema.json`)
-            writeFileSync(schemaFile, JSON.stringify(JSON.parse(type.Schema), undefined, 2))
-            const fileMatch = `/*.${normalizedTypeName}.awsResource.json`
-            ext.schemaService.registerMapping({
-                path: fileMatch,
-                type: 'json',
-                schema: vscode.Uri.file(schemaFile),
-            })
-            const schema = JSON.parse(await readFileAsString(schemaFile)) as TypeSchema
-            this.schemas.set(typeName, schema)
-        } else {
-            getLogger().warn(`unable to download schema for ${typeName}`)
-        }
+        ext.schemaService.registerMapping({
+            path: file.fsPath,
+            type: 'json',
+            schema: location,
+        })
     }
 }
 
@@ -195,6 +212,11 @@ export function getNormalizedTypeName(typeName: string): string {
 function getNewResourceJson(): string {
     const spaces = getTabSizeSetting()
     return `{\n${' '.repeat(spaces)}\n}`
+}
+
+type Schema = {
+    location: vscode.Uri
+    typeSchema: TypeSchema
 }
 
 export interface TypeSchema {

@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
+import * as path from 'path'
 import * as vscode from 'vscode'
 import { MoreResourcesNode, ResourceMetadata } from '../../moreResources/explorer/nodes/moreResourcesNode'
 import { ResourceNode } from '../../moreResources/explorer/nodes/resourceNode'
@@ -12,9 +13,13 @@ import { ResourceTypeNode } from '../../moreResources/explorer/nodes/resourceTyp
 import { formatResourceModel, AwsResourceManager } from '../../moreResources/awsResourceManager'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
-import { readFileAsString } from '../../shared/filesystemUtilities'
-import { deepEqual, instance, mock, when } from '../utilities/mockito'
+import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
+import { anything, capture, deepEqual, instance, mock, verify, when } from '../utilities/mockito'
 import { FakeExtensionContext } from '../fakeExtensionContext'
+import { ext } from '../../shared/extensionGlobals'
+import { SchemaService } from '../../shared/schemas'
+import { remove } from 'fs-extra'
+import { existsSync } from 'fs'
 
 describe('ResourceManager', function () {
     let sandbox: sinon.SinonSandbox
@@ -23,6 +28,8 @@ describe('ResourceManager', function () {
     let resourceNode: ResourceNode
     let resourceTypeNode: ResourceTypeNode
     let resourceManager: AwsResourceManager
+    let schemaService: SchemaService
+    let tempFolder: string
 
     const FAKE_TYPE_NAME = 'sometype'
     const FAKE_IDENTIFIER = 'someidentifier'
@@ -41,10 +48,12 @@ describe('ResourceManager', function () {
     beforeEach(async function () {
         cloudControl = mock()
         cloudFormation = mock()
+        schemaService = mock()
         sandbox = sinon.createSandbox()
         mockClients()
+        tempFolder = await makeTemporaryToolkitFolder()
 
-        const rootNode = new MoreResourcesNode(FAKE_REGION, cloudFormation, cloudControl)
+        const rootNode = new MoreResourcesNode(FAKE_REGION, instance(cloudFormation), cloudControl)
         resourceTypeNode = new ResourceTypeNode(
             rootNode,
             FAKE_TYPE_NAME,
@@ -52,12 +61,16 @@ describe('ResourceManager', function () {
             {} as ResourceMetadata
         )
         resourceNode = new ResourceNode(resourceTypeNode, FAKE_IDENTIFIER)
-        resourceManager = new AwsResourceManager(new FakeExtensionContext())
+        const fakeContext = new FakeExtensionContext()
+        fakeContext.globalStoragePath = tempFolder
+        resourceManager = new AwsResourceManager(fakeContext)
+        ext.schemaService = instance(schemaService)
     })
 
     afterEach(async function () {
         sandbox.restore()
         await resourceManager.dispose()
+        await remove(tempFolder)
     })
 
     it('opens resources in preview mode', async function () {
@@ -165,6 +178,44 @@ describe('ResourceManager', function () {
         assert.strictEqual(resourceManager.toUri(resourceNode), undefined)
     })
 
+    it('registers schema mappings when opening in edit', async function () {
+        const editor = await resourceManager.open(resourceNode, false)
+        verify(schemaService.registerMapping(anything())).once()
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        const [mapping] = capture(schemaService.registerMapping).last()
+
+        const expectedSchemaLocation = path.join(tempFolder, 'sometype.schema.json')
+        assert.ok(existsSync(expectedSchemaLocation))
+        assert.strictEqual(mapping.type, 'json')
+        assert.strictEqual(mapping.path, editor.document.uri.fsPath)
+        const schema = mapping.schema as vscode.Uri
+        assert.strictEqual(schema.fsPath, expectedSchemaLocation)
+    })
+
+    it('does not register schemas when opening in preview', async function () {
+        const mockTextDocument = {} as vscode.TextDocument
+        const mockTextEditor = {} as vscode.TextEditor
+        sandbox.stub(vscode.workspace, 'openTextDocument').resolves(mockTextDocument)
+        sandbox.stub(vscode.window, 'showTextDocument').resolves(mockTextEditor)
+
+        await resourceManager.open(resourceNode, true)
+        verify(schemaService.registerMapping(anything())).never()
+        verify(cloudFormation.describeType(anything())).never()
+    })
+
+    it('deletes resource mapping on file close', async function () {
+        const editor = await resourceManager.open(resourceNode, false)
+        await resourceManager.close(editor.document.uri)
+        verify(schemaService.registerMapping(anything())).twice()
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        const [mapping] = capture(schemaService.registerMapping).last()
+        assert.strictEqual(mapping.type, 'json')
+        assert.strictEqual(mapping.path, editor.document.uri.fsPath)
+        assert.strictEqual(mapping.schema, undefined)
+    })
+
     function mockClients(): void {
         when(
             cloudControl.getResource(
@@ -180,6 +231,8 @@ describe('ResourceManager', function () {
                 Properties: JSON.stringify(fakeResourceDescription),
             },
         })
-        when(cloudFormation.describeType(FAKE_TYPE_NAME)).thenResolve({})
+        when(cloudFormation.describeType(FAKE_TYPE_NAME)).thenResolve({
+            Schema: '{}',
+        })
     }
 })

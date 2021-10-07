@@ -63,6 +63,7 @@ export class SchemaService {
 
     public async start(): Promise<void> {
         getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
+        await cleanResourceMappings()
         await this.startTimer()
     }
 
@@ -274,22 +275,24 @@ export class JsonSchemaHandler implements SchemaHandler {
     public constructor(private config?: vscode.WorkspaceConfiguration) {}
 
     async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
-        const config = this.config ?? vscode.workspace.getConfiguration('json')
-        let schemaConfig: JSONSchemaSettings[] = config.get('schemas') ?? []
-        if (Object.keys(schemaConfig).length > 0) {
-            schemaConfig = schemaConfig.filter(schema => !schema.fileMatch?.includes(mapping.path))
-        } else {
-            schemaConfig = []
-        }
+        let settings = getJsonSettings(this.config)
 
         if (mapping.schema) {
-            schemaConfig.push({
-                fileMatch: [mapping.path],
-                url: resolveSchema(mapping.schema, schemas).toString(),
-            })
+            const uri = resolveSchema(mapping.schema, schemas).toString()
+            const existing = settings.find(schema => schema.url === uri)
+            if (existing) {
+                existing.fileMatch?.push(mapping.path)
+            } else {
+                settings.push({
+                    fileMatch: [mapping.path],
+                    url: uri,
+                })
+            }
+        } else {
+            settings = filterJsonSettings(settings, file => file !== mapping.path)
         }
 
-        await config.update('schemas', schemaConfig, vscode.ConfigurationTarget.Global)
+        await setJsonSettings(settings, this.config)
     }
 }
 
@@ -298,6 +301,32 @@ function resolveSchema(schema: string | vscode.Uri, schemas: Schemas): vscode.Ur
         return schema
     }
     return schemas[schema]
+}
+
+/**
+ * Attempts to find and remove orphaned resource mappings for AWS Resource documents
+ */
+export async function cleanResourceMappings(config?: vscode.WorkspaceConfiguration): Promise<void> {
+    let settings = getJsonSettings(config)
+    settings = filterJsonSettings(settings, file => !file.endsWith('.awsResource.json'))
+    await setJsonSettings(settings, config)
+}
+
+function getJsonSettings(workspaceConfig?: vscode.WorkspaceConfiguration): JSONSchemaSettings[] {
+    const config = workspaceConfig ?? vscode.workspace.getConfiguration('json')
+    return config.get('schemas') ?? []
+}
+
+async function setJsonSettings(settings: JSONSchemaSettings[], workspaceConfig?: vscode.WorkspaceConfiguration) {
+    const config = workspaceConfig ?? vscode.workspace.getConfiguration('json')
+    await config.update('schemas', settings, vscode.ConfigurationTarget.Global)
+}
+
+function filterJsonSettings(settings: JSONSchemaSettings[], predicate: (fileName: string) => boolean) {
+    return settings.filter(schema => {
+        schema.fileMatch = schema.fileMatch?.filter(file => predicate(file))
+        return schema.fileMatch && schema.fileMatch.length > 0
+    })
 }
 
 export interface JSONSchemaSettings {
