@@ -5,7 +5,6 @@
 
 import * as _ from 'lodash'
 import { Iot } from 'aws-sdk'
-import { inspect } from 'util'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
@@ -649,10 +648,6 @@ export class DefaultIotThing {
         this.name = name
         this.arn = arn
     }
-
-    public [inspect.custom](): string {
-        return `Thing (name=${this.name}, arn=${this.arn})`
-    }
 }
 
 export class DefaultIotCertificate {
@@ -677,10 +672,6 @@ export class DefaultIotCertificate {
         this.activeStatus = activeStatus
         this.creationDate = creationDate
     }
-
-    public [inspect.custom](): string {
-        return `Certificate (id=${this.id}, arn=${this.arn}, status=${this.activeStatus})`
-    }
 }
 
 export class DefaultIotPolicy {
@@ -690,10 +681,6 @@ export class DefaultIotPolicy {
     public constructor({ name, arn }: { name: string; arn: string }) {
         this.name = name
         this.arn = arn
-    }
-
-    public [inspect.custom](): string {
-        return `Policy (id=${this.name}, arn=${this.arn})`
     }
 }
 
