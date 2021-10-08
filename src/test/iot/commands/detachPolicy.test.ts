@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { detachPolicyCommand } from '../../../iot/commands/detachPolicy'
 import { IotCertWithPoliciesNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
-import { IotPolicyNode } from '../../../iot/explorer/iotPolicyNode'
+import { IotPolicyCertNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
@@ -17,7 +17,7 @@ describe('detachPolicyCommand', function () {
     const policyName = 'test-policy'
     const target = 'cert:arn'
     let iot: IotClient
-    let node: IotPolicyNode
+    let node: IotPolicyCertNode
     let parentNode: IotCertWithPoliciesNode
 
     beforeEach(function () {
@@ -27,7 +27,7 @@ describe('detachPolicyCommand', function () {
             {} as IotCertsFolderNode,
             instance(iot)
         )
-        node = new IotPolicyNode({ name: policyName, arn: 'arn' }, parentNode, instance(iot))
+        node = new IotPolicyCertNode({ name: policyName, arn: 'arn' }, parentNode, instance(iot))
     })
 
     it('confirms detach, detaches policy, and refreshes node', async function () {

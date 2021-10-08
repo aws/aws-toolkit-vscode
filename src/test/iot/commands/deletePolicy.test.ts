@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { deletePolicyCommand } from '../../../iot/commands/deletePolicy'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
-import { IotPolicyNode } from '../../../iot/explorer/iotPolicyNode'
+import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
@@ -16,13 +16,13 @@ import { anything, mock, instance, when, deepEqual, verify } from '../../utiliti
 describe('deletePolicyCommand', function () {
     const policyName = 'test-policy'
     let iot: IotClient
-    let node: IotPolicyNode
+    let node: IotPolicyWithVersionsNode
     let parentNode: IotPolicyFolderNode
 
     beforeEach(function () {
         iot = mock()
         parentNode = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
-        node = new IotPolicyNode({ name: policyName, arn: 'arn' }, parentNode, instance(iot))
+        node = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, parentNode, instance(iot))
     })
 
     it('confirms deletion, deletes policy, and refreshes node', async function () {

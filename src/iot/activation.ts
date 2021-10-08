@@ -11,7 +11,7 @@ import { createThingCommand } from './commands/createThing'
 import { deleteThingCommand } from './commands/deleteThing'
 import { IotCertificateNode, IotCertWithPoliciesNode, IotThingCertNode } from './explorer/iotCertificateNode'
 import { detachThingCertCommand } from './commands/detachCert'
-import { IotPolicyNode } from './explorer/iotPolicyNode'
+import { IotPolicyCertNode, IotPolicyWithVersionsNode } from './explorer/iotPolicyNode'
 import { detachPolicyCommand } from './commands/detachPolicy'
 import { deletePolicyCommand } from './commands/deletePolicy'
 import {
@@ -28,6 +28,10 @@ import { IotPolicyFolderNode } from './explorer/iotPolicyFolderNode'
 import { createPolicyCommand } from './commands/createPolicy'
 import { IotNode } from './explorer/iotNodes'
 import { copyEndpointCommand } from './commands/copyEndpoint'
+import { IotPolicyVersionNode } from './explorer/iotPolicyVersionNode'
+import { deletePolicyVersionCommand } from './commands/deletePolicyVersion'
+import { setDefaultPolicy } from './commands/setDefaultPolicy'
+import { createPolicyVersionCommand } from './commands/createPolicyVersion'
 
 /**
  * Activate API Gateway functionality for the extension.
@@ -57,13 +61,13 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.iot.createPolicy', async (node: IotPolicyFolderNode) => {
             await createPolicyCommand(node)
         }),
-        vscode.commands.registerCommand('aws.iot.deletePolicy', async (node: IotPolicyNode) => {
+        vscode.commands.registerCommand('aws.iot.deletePolicy', async (node: IotPolicyWithVersionsNode) => {
             await deletePolicyCommand(node)
         }),
         vscode.commands.registerCommand('aws.iot.attachPolicy', async (node: IotCertWithPoliciesNode) => {
             await attachPolicyCommand(node)
         }),
-        vscode.commands.registerCommand('aws.iot.detachPolicy', async (node: IotPolicyNode) => {
+        vscode.commands.registerCommand('aws.iot.detachPolicy', async (node: IotPolicyCertNode) => {
             await detachPolicyCommand(node)
         }),
         vscode.commands.registerCommand('aws.iot.activateCert', async (node: IotCertificateNode) => {
@@ -74,6 +78,15 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.iot.revokeCert', async (node: IotCertificateNode) => {
             await revokeCertificateCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.iot.createPolicyVersion', async (node: IotPolicyWithVersionsNode) => {
+            await createPolicyVersionCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.iot.deletePolicyVersion', async (node: IotPolicyVersionNode) => {
+            await deletePolicyVersionCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.iot.setDefaultPolicy', async (node: IotPolicyVersionNode) => {
+            await setDefaultPolicy(node)
         }),
         vscode.commands.registerCommand('aws.iot.copyEndpoint', async (node: IotNode) => {
             await copyEndpointCommand(node)

@@ -669,6 +669,10 @@ export class MockIotClient implements IotClient {
         request: Iot.ListThingPrincipalsRequest
     ) => Promise<Iot.ListThingPrincipalsResponse>
     public readonly getEndpoint: () => Promise<string>
+    public readonly listPolicyVersions: () => AsyncIterableIterator<Iot.PolicyVersion>
+    public readonly createPolicyVersion: (request: Iot.CreatePolicyVersionRequest) => Promise<void>
+    public readonly deletePolicyVersion: (request: Iot.DeletePolicyVersionRequest) => Promise<void>
+    public readonly setDefaultPolicyVersion: (request: Iot.SetDefaultPolicyVersionRequest) => Promise<void>
 
     public constructor({
         regionCode = '',
@@ -711,6 +715,10 @@ export class MockIotClient implements IotClient {
             nextToken: undefined,
         }),
         getEndpoint = async () => '',
+        listPolicyVersions = () => asyncGenerator([]),
+        createPolicyVersion = async (request: Iot.CreatePolicyVersionRequest) => {},
+        deletePolicyVersion = async (request: Iot.DeletePolicyVersionRequest) => {},
+        setDefaultPolicyVersion = async (request: Iot.SetDefaultPolicyVersionRequest) => {},
     }: {
         regionCode?: string
         listAllThings?(): Promise<Iot.ThingAttribute[]>
@@ -735,6 +743,10 @@ export class MockIotClient implements IotClient {
         listThingsForCert?(request: Iot.ListPrincipalThingsRequest): Promise<string[]>
         listThingPrincipals?(request: Iot.ListThingPrincipalsRequest): Promise<Iot.ListThingPrincipalsResponse>
         getEndpoint?(): Promise<string>
+        listPolicyVersions?(): AsyncIterableIterator<Iot.PolicyVersion>
+        createPolicyVersion?(request: Iot.CreatePolicyVersionRequest): Promise<void>
+        deletePolicyVersion?(request: Iot.DeletePolicyVersionRequest): Promise<void>
+        setDefaultPolicyVersion?(request: Iot.SetDefaultPolicyVersionRequest): Promise<void>
     }) {
         this.regionCode = regionCode
         this.listAllThings = listAllThings
@@ -757,6 +769,10 @@ export class MockIotClient implements IotClient {
         this.listThingsForCert = listThingsForCert
         this.listThingPrincipals = listThingPrincipals
         this.getEndpoint = getEndpoint
+        this.listPolicyVersions = listPolicyVersions
+        this.createPolicyVersion = createPolicyVersion
+        this.deletePolicyVersion = deletePolicyVersion
+        this.setDefaultPolicyVersion = setDefaultPolicyVersion
     }
 }
 

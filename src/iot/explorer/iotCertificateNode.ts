@@ -21,7 +21,7 @@ import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { IotCertsFolderNode } from './iotCertFolderNode'
 import { IotThingNode } from './iotThingNode'
-import { IotPolicyNode } from './iotPolicyNode'
+import { IotPolicyCertNode } from './iotPolicyNode'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 
 const CONTEXT_BASE = 'awsIotCertificateNode'
@@ -135,7 +135,7 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
                 ?.filter(policy => policy.policyArn && policy.policyName)
                 .map(
                     policy =>
-                        new IotPolicyNode(
+                        new IotPolicyCertNode(
                             new DefaultIotPolicy({ arn: policy.policyArn!, name: policy.policyName! }),
                             this,
                             this.iot

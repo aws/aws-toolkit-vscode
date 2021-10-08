@@ -8,10 +8,9 @@ import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
-import { IotPolicyNode } from '../explorer/iotPolicyNode'
+import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
-import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 
 /**
  * Deletes the policy represented by the given node.
@@ -22,15 +21,12 @@ import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
  * Refreshes the parent node.
  */
 export async function deletePolicyCommand(
-    node: IotPolicyNode,
+    node: IotPolicyWithVersionsNode,
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
-    getLogger().debug('DeleteThing called for %O', node)
+    getLogger().debug('DeletePolicy called for %O', node)
 
-    if (node.parent instanceof IotCertWithPoliciesNode) {
-        return undefined
-    }
     const policyName = node.policy.name
 
     //FIXME check if policy can be deleted by getting attached certificates

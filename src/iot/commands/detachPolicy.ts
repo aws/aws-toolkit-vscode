@@ -10,7 +10,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
-import { IotPolicyNode } from '../explorer/iotPolicyNode'
+import { IotPolicyCertNode } from '../explorer/iotPolicyNode'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
 
 /**
@@ -21,7 +21,7 @@ import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
  * Refreshes the parent node.
  */
 export async function detachPolicyCommand(
-    node: IotPolicyNode,
+    node: IotPolicyCertNode,
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {

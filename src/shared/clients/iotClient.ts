@@ -534,6 +534,82 @@ export class DefaultIotClient {
         getLogger().debug('GetEndpoint successful')
         return endpoint
     }
+
+    /**
+     * Lists versions for an IoT Policy
+     *
+     * @throws Error if there is an error calling IoT.
+     */
+    public async *listPolicyVersions(request: Iot.ListPolicyVersionsRequest): AsyncIterableIterator<Iot.PolicyVersion> {
+        const iot = await this.createIot()
+
+        const response = await iot.listPolicyVersions(request).promise()
+
+        if (response.policyVersions) {
+            yield* response.policyVersions
+        }
+    }
+
+    /**
+     * Creates a new version for an IoT policy
+     *
+     * @throws Error if there is an error calling IoT.
+     */
+    public async createPolicyVersion(request: Iot.CreatePolicyVersionRequest): Promise<void> {
+        getLogger().debug('CreatePolicyVersion called with request: %O', request)
+        const iot = await this.createIot()
+
+        try {
+            await iot.createPolicyVersion(request).promise()
+        } catch (e) {
+            getLogger().error('Failed to create new Policy Version: %O', e)
+            throw e
+        }
+
+        getLogger().debug('CreatePolicyVersion successful')
+    }
+
+    /**
+     * Deletes an IoT Policy version.
+     *
+     * Note that a policy cannot be deleted if it is attached to a certificate,
+     * or has non-default versions. A policy with non default versions must first
+     * delete versions with deletePolicyVersions()
+     *
+     * @throws Error if there is an error calling IoT.
+     */
+    public async deletePolicyVersion(request: Iot.DeletePolicyVersionRequest): Promise<void> {
+        getLogger().debug('DeletePolicyVersion called with request: %O', request)
+        const iot = await this.createIot()
+
+        try {
+            await iot.deletePolicyVersion(request).promise()
+        } catch (e) {
+            getLogger().error('Failed to delete Policy Version: %O', e)
+            throw e
+        }
+
+        getLogger().debug('DeletePolicyVersion successful')
+    }
+
+    /**
+     * Sets a default version for an Iot Policy.
+     *
+     * @throws Error if there is an error calling IoT.
+     */
+    public async setDefaultPolicyVersion(request: Iot.SetDefaultPolicyVersionRequest): Promise<void> {
+        getLogger().debug('SetDefaultPolicyVersion called with request: %O', request)
+        const iot = await this.createIot()
+
+        try {
+            await iot.setDefaultPolicyVersion(request).promise()
+        } catch (e) {
+            getLogger().error('Failed to set default policy version: %O', e)
+            throw e
+        }
+
+        getLogger().debug('SetDefaultPolicyVersion successful')
+    }
 }
 
 export class DefaultIotThing {

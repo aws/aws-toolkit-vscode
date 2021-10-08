@@ -16,7 +16,7 @@ import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { inspect } from 'util'
 import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
-import { IotPolicyNode } from './iotPolicyNode'
+import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { IotNode } from './iotNodes'
 
 /**
@@ -68,7 +68,7 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
                 ?.filter(policy => policy.policyArn && policy.policyName)
                 .map(
                     policy =>
-                        new IotPolicyNode(
+                        new IotPolicyWithVersionsNode(
                             new DefaultIotPolicy({ arn: policy.policyArn!, name: policy.policyName! }),
                             this,
                             this.iot

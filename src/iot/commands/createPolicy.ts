@@ -32,7 +32,7 @@ export async function createPolicyCommand(
         return
     }
 
-    const fileLocation = await promptForFileLocation(window)
+    const fileLocation = await promptForPolicyLocation(window)
     if (!fileLocation) {
         getLogger().info('CreatePolicy canceled: No document selected')
         return
@@ -52,7 +52,7 @@ export async function createPolicyCommand(
     await refreshNode(node, commands)
 }
 
-async function promptForFileLocation(window: Window): Promise<vscode.Uri | undefined> {
+export async function promptForPolicyLocation(window: Window): Promise<vscode.Uri | undefined> {
     const fileLocation = await window.showOpenDialog({
         canSelectFolders: false,
         canSelectFiles: true,
