@@ -672,6 +672,7 @@ export class MockIotClient implements IotClient {
     public readonly createPolicyVersion: (request: Iot.CreatePolicyVersionRequest) => Promise<void>
     public readonly deletePolicyVersion: (request: Iot.DeletePolicyVersionRequest) => Promise<void>
     public readonly setDefaultPolicyVersion: (request: Iot.SetDefaultPolicyVersionRequest) => Promise<void>
+    public readonly getPolicyVersion: (request: Iot.GetPolicyVersionRequest) => Promise<Iot.GetPolicyVersionResponse>
     public readonly listPolicyTargets: (request: Iot.ListTargetsForPolicyRequest) => Promise<string[]>
 
     public constructor({
@@ -718,6 +719,9 @@ export class MockIotClient implements IotClient {
         createPolicyVersion = async (request: Iot.CreatePolicyVersionRequest) => {},
         deletePolicyVersion = async (request: Iot.DeletePolicyVersionRequest) => {},
         setDefaultPolicyVersion = async (request: Iot.SetDefaultPolicyVersionRequest) => {},
+        getPolicyVersion = async (request: Iot.GetPolicyVersionRequest) => ({
+            policyDocument: '',
+        }),
         listPolicyTargets = async (request: Iot.ListTargetsForPolicyRequest) => [],
     }: {
         regionCode?: string
@@ -746,6 +750,7 @@ export class MockIotClient implements IotClient {
         createPolicyVersion?(request: Iot.CreatePolicyVersionRequest): Promise<void>
         deletePolicyVersion?(request: Iot.DeletePolicyVersionRequest): Promise<void>
         setDefaultPolicyVersion?(request: Iot.SetDefaultPolicyVersionRequest): Promise<void>
+        getPolicyVersion?(request: Iot.GetPolicyVersionRequest): Promise<Iot.GetPolicyVersionResponse>
         listPolicyTargets?(request: Iot.ListTargetsForPolicyRequest): Promise<string[]>
     }) {
         this.regionCode = regionCode
@@ -772,6 +777,7 @@ export class MockIotClient implements IotClient {
         this.createPolicyVersion = createPolicyVersion
         this.deletePolicyVersion = deletePolicyVersion
         this.setDefaultPolicyVersion = setDefaultPolicyVersion
+        this.getPolicyVersion = getPolicyVersion
         this.listPolicyTargets = listPolicyTargets
     }
 }

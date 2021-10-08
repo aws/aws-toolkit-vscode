@@ -618,6 +618,27 @@ export class DefaultIotClient {
 
         getLogger().debug('SetDefaultPolicyVersion successful')
     }
+
+    /**
+     * Downloads information including document for a specified policy version.
+     *
+     * @throws Error if there is an error calling IoT.
+     */
+    public async getPolicyVersion(request: Iot.GetPolicyVersionRequest): Promise<Iot.GetPolicyVersionResponse> {
+        getLogger().debug('GetPolicyVersion called with request: %O', request)
+        const iot = await this.createIot()
+
+        let output: Iot.GetPolicyVersionResponse
+        try {
+            output = await iot.getPolicyVersion(request).promise()
+        } catch (e) {
+            getLogger().error('Failed to get policy version: %O', e)
+            throw e
+        }
+
+        getLogger().debug('GetPolicyVersion successful')
+        return output
+    }
 }
 
 export class DefaultIotThing {

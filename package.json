@@ -851,6 +851,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.iot.editPolicyVersion",
+                    "when": "false"
+                },
+                {
                     "command": "aws.iot.setDefaultPolicy",
                     "when": "false"
                 },
@@ -1274,6 +1278,11 @@
                 {
                     "command": "aws.iot.createPolicyVersion",
                     "when": "view == aws.explorer && viewItem == awsIotPolicyNode.WithVersions",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.iot.editPolicyVersion",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotPolicyVersionNode./",
                     "group": "0@1"
                 },
                 {
@@ -1871,6 +1880,16 @@
             {
                 "command": "aws.iot.detachPolicy",
                 "title": "%AWS.command.iot.detachCert%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.editPolicyVersion",
+                "title": "%AWS.command.iot.editPolicyVersion%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

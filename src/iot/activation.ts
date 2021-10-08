@@ -32,6 +32,7 @@ import { IotPolicyVersionNode } from './explorer/iotPolicyVersionNode'
 import { deletePolicyVersionCommand } from './commands/deletePolicyVersion'
 import { setDefaultPolicy } from './commands/setDefaultPolicy'
 import { createPolicyVersionCommand } from './commands/createPolicyVersion'
+import { editPolicyVersion } from './commands/editPolicy'
 
 /**
  * Activate API Gateway functionality for the extension.
@@ -87,6 +88,9 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.iot.setDefaultPolicy', async (node: IotPolicyVersionNode) => {
             await setDefaultPolicy(node)
+        }),
+        vscode.commands.registerCommand('aws.iot.editPolicyVersion', async (node: IotPolicyVersionNode) => {
+            await editPolicyVersion(node)
         }),
         vscode.commands.registerCommand('aws.iot.copyEndpoint', async (node: IotNode) => {
             await copyEndpointCommand(node)
