@@ -11,6 +11,7 @@ import { Window } from '../../shared/vscode/window'
 import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { PromptResult } from '../../shared/ui/prompter'
 import { DefaultIotCertificate, IotCertificate } from '../../shared/clients/iotClient'
 import { WizardControl } from '../../shared/wizards/wizard'
 import { Iot } from 'aws-sdk'
@@ -24,6 +25,7 @@ import { Iot } from 'aws-sdk'
  */
 export async function attachCertificateCommand(
     node: IotThingNode,
+    promptFun = promptForCert,
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
@@ -59,24 +61,14 @@ export async function attachCertificateCommand(
         }
     } while (nextToken != undefined)
 
-    //const certificates = (await node.iot.listCertificates({})).certificates
     const certItems: DataQuickPickItem<IotCertificate | undefined>[] = certificates.map(cert => {
         return {
             label: cert.id,
             data: cert,
         }
     })
-    const placeHolder: DataQuickPickItem<IotCertificate | undefined> = {
-        label: 'No certificates found',
-        data: undefined,
-    }
 
-    const picker = createQuickPick(certItems, {
-        title: localize('AWS.iot.attachCert', 'Select a certificate'),
-        placeholderItem: placeHolder,
-        buttons: [vscode.QuickInputButtons.Back],
-    })
-    const result = await picker.prompt()
+    const result = await promptFun(certItems)
     if (!result || !isCert(result)) {
         getLogger().info('No certificate chosen')
         return undefined
@@ -94,6 +86,21 @@ export async function attachCertificateCommand(
     getLogger().debug('Attached certificate %O', cert.id)
 
     await refreshNode(node, commands)
+}
+
+async function promptForCert(
+    certItems: DataQuickPickItem<IotCertificate | undefined>[]
+): Promise<PromptResult<IotCertificate | undefined>> {
+    const placeHolder: DataQuickPickItem<IotCertificate | undefined> = {
+        label: 'No certificates found',
+        data: undefined,
+    }
+    const picker = createQuickPick(certItems, {
+        title: localize('AWS.iot.attachCert', 'Select a certificate'),
+        placeholderItem: placeHolder,
+        buttons: [vscode.QuickInputButtons.Back],
+    })
+    return picker.prompt()
 }
 
 function isCert(cert: IotCertificate | WizardControl): cert is IotCertificate {
