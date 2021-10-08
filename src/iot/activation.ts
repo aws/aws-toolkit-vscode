@@ -35,7 +35,7 @@ import { createPolicyVersionCommand } from './commands/createPolicyVersion'
 import { editPolicyVersion } from './commands/editPolicy'
 
 /**
- * Activate API Gateway functionality for the extension.
+ * Activate IoT components.
  */
 export async function activate(context: ExtContext): Promise<void> {
     const extensionContext = context.extensionContext

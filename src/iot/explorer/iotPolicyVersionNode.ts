@@ -27,7 +27,14 @@ export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResource
         public readonly iot: IotClient,
         protected readonly workspace = Workspace.vscode()
     ) {
-        super(`Version ${version.versionId}` + (version.isDefaultVersion ? '*' : ''))
+        super(
+            localize(
+                'AWS.explorerNode.iot.versionName',
+                'Version {0}{1}',
+                version.versionId,
+                version.isDefaultVersion ? '*' : ''
+            )
+        )
         this.update(version)
     }
 
