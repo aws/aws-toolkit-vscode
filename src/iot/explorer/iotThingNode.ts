@@ -25,7 +25,7 @@ import { IotThingCertNode } from './iotCertificateNode'
  * Represents an IoT Thing that may have attached certificates.
  */
 export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-    private readonly childLoader: ChildNodeLoader
+    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
 
     public constructor(
         public readonly thing: IotThing,
@@ -40,7 +40,6 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
             light: vscode.Uri.file(ext.iconPaths.light.thing),
         }
         this.contextValue = 'awsIotThingNode'
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -64,7 +63,7 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         this.childLoader.clearChildren()
     }
 
-    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
+    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<IotThingCertNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
         const response = await this.iot.listThingCertificates({
             thingName: this.thing.name,

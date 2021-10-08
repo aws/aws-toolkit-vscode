@@ -97,7 +97,7 @@ async function promptForCert(
     }
     const picker = createQuickPick(certItems, {
         title: localize('AWS.iot.attachCert', 'Select a certificate'),
-        placeholderItem: placeHolder,
+        noItemsFoundItem: placeHolder,
         buttons: [vscode.QuickInputButtons.Back],
     })
     return picker.prompt()

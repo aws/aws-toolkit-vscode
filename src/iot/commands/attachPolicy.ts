@@ -65,7 +65,7 @@ export async function attachPolicyCommand(
 
     const picker = createQuickPick(policyItems, {
         title: localize('AWS.iot.attachPolicy', 'Select a policy'),
-        placeholderItem: placeHolder,
+        noItemsFoundItem: placeHolder,
         buttons: [vscode.QuickInputButtons.Back],
     })
     const result = await picker.prompt()

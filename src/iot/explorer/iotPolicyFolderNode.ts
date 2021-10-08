@@ -23,7 +23,7 @@ import { IotNode } from './iotNodes'
  * Represents the group of all IoT Policies.
  */
 export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode {
-    private readonly childLoader: ChildNodeLoader
+    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
 
     public constructor(
         public readonly iot: IotClient,
@@ -33,7 +33,6 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
         super('Policies', vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = 'IoT Policies'
         this.contextValue = 'awsIotPoliciesNode'
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -57,7 +56,7 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
         this.childLoader.clearChildren()
     }
 
-    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
+    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<IotPolicyWithVersionsNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
         const response = await this.iot.listPolicies({
             marker: continuationToken,

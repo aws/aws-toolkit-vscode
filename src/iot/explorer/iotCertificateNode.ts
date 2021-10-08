@@ -88,7 +88,7 @@ export class IotThingCertNode extends IotCertificateNode {
  * Represents an IoT Certificate with the Certificate Folder Node as parent.
  */
 export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadMoreNode {
-    private readonly childLoader: ChildNodeLoader
+    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
 
     public constructor(
         public readonly certificate: IotCertificate,
@@ -98,7 +98,6 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
     ) {
         super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, workspace)
         this.contextValue = `${CONTEXT_BASE}.Policies.${this.certificate.activeStatus}`
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -122,7 +121,7 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
         this.childLoader.clearChildren()
     }
 
-    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
+    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<IotPolicyCertNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
         const response = await this.iot.listPrincipalPolicies({
             principal: this.certificate.arn,
