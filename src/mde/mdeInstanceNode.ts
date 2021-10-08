@@ -32,7 +32,7 @@ export class MdeInstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     private makeTooltip(env: mde.MdeEnvironment): string {
         let tags = ''
         for (const t of Object.entries(env.tags ?? {})) {
-            tags += `${t[0]}: ${t[1]}`
+            tags += `  ${t[0]}: ${t[1]}\n`
         }
         return `Id: ${env.id}
 Status: ${env.status}
@@ -45,7 +45,7 @@ Created by: ${env.userArn}`
 
     private getFriendlyName(): string {
         const status = this.env.status === 'RUNNING' ? '' : this.env.status
-        const label = `${this.env.id.substring(0, 7)}… ${this.env.userArn} ${status}`
+        const label = `${this.env.id.substring(0, 7)}… ${status}`
         // return validate(identifier) ? parse(identifier).resource : identifier
         return label
     }

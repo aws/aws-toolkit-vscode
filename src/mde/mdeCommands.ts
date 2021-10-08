@@ -7,6 +7,7 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import * as mde from '../shared/clients/mdeClient'
 import * as nls from 'vscode-nls'
+import * as arnparse from '@aws-sdk/util-arn-parser'
 import { ext } from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
@@ -19,6 +20,9 @@ import { Timeout, waitTimeout, waitUntil } from '../shared/utilities/timeoutUtil
 import { execFileSync } from 'child_process'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { CreateEnvironmentRequest } from '../../types/clientmde'
+import { createInputBox } from '../shared/ui/inputPrompter'
+import { createCommonButtons } from '../shared/ui/buttons'
+import { invalidArn } from '../shared/localizedText'
 
 const localize = nls.loadMessageBundle()
 
@@ -123,7 +127,7 @@ export async function mdeConnectCommand(
             ),
         },
         '--folder-uri',
-        `vscode-remote://ssh-remote+aws-mde-${env.id}/home/cloudshell-user`
+        `vscode-remote://ssh-remote+aws-mde-${env.id}/projects`
     )
 
     // Note: `await` is intentionally not used.
@@ -154,12 +158,24 @@ export async function mdeCreateCommand(
     getLogger().debug('MDE: mdeCreateCommand called on node: %O', node)
     const label = `created-${dateStr}`
 
+    const inputbox = createInputBox({
+        value: '',
+        placeholder: 'arn:aws:iam::541201481031:role/test-mde-1',
+        title: localize('AWS.mde.inputRole', 'Enter a role ARN'),
+        buttons: createCommonButtons(),
+        validateInput: s => (arnparse.validate(s) ? undefined : invalidArn),
+    })
+    const roleArn = (await inputbox.prompt())?.toString()
+    if (!roleArn) {
+        return
+    }
+
     try {
         const env = ext.mde.createEnvironment({
             instanceType: 'mde.large',
             // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
             persistentStorage: { sizeInGiB: 0 },
-            roleArn: 'arn:aws:iam::541201481031:role/Admin',
+            roleArn: roleArn,
             // sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
             // definition: {
             //     shellImage: `"{"\"shellImage\"": "\"mcr.microsoft.com/vscode/devcontainers/go\""}"`,
@@ -191,8 +207,18 @@ export async function mdeCreateCommand(
     }
 }
 
-export async function mdeDeleteCommand(env: Pick<mde.MdeEnvironment, 'id'>): Promise<void> {
-    await ext.mde.deleteEnvironment({ environmentId: env.id })
+export async function mdeDeleteCommand(
+    env: Pick<mde.MdeEnvironment, 'id'>,
+    node?: MdeRootNode,
+    commands = Commands.vscode()
+): Promise<void> {
+    const r = await ext.mde.deleteEnvironment({ environmentId: env.id })
+    getLogger().info('%O', r?.status)
+    if (node !== undefined) {
+        await commands.execute('aws.refreshAwsExplorerNode', node)
+    } else {
+        await commands.execute('aws.refreshAwsExplorer', true)
+    }
 }
 
 const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
