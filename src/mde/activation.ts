@@ -53,7 +53,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 async function registerCommands(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.connect', async (treenode: MdeInstanceNode) => {
-            mdeConnectCommand(treenode.env)
+            mdeConnectCommand(treenode.env, treenode.parent.regionCode)
         })
     )
     ctx.extensionContext.subscriptions.push(registerCreateMdeCommand(ctx))

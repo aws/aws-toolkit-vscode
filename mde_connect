@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Usage:
+#   AWS_MDE_ENDPOINT="https://r2g9qfgh3d.execute-api.us-east-1.amazonaws.com/prod" ./mde_connect
+
+set -e
+set -u
+
+_LOGFILE="${HOME:-}/aws-toolkit-vscode.ssh.log"
+
+_log() {
+    # >&2 echo "$@"
+    echo "$(date '+%Y%m%d')" "$@" >> "$_LOGFILE"
+}
+
+_require_nolog() {
+    if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
+        _log "error: missing required arg: $1"
+        exit 1
+    fi
+}
+
+_require() {
+    _require_nolog "$@"
+    _log "$1=$2"
+}
+
+_main() {
+    _HOST="${1:-}"
+    # _ENVID="$(echo "$_HOST" | sed 's/aws-mde-\(.*\)/\1/')"
+
+    _log "=============================================================================="
+    _require 'HOSTNAME (arg 1)' "${_HOST:-}"
+    _require AWS_MDE_ENDPOINT "${AWS_MDE_ENDPOINT:-}"
+    _require AWS_REGION "${AWS_REGION:-}"
+    _require AWS_MDE_SESSION "${AWS_MDE_SESSION:-}"
+    _require_nolog AWS_MDE_STREAMURL "${AWS_MDE_STREAMURL:-}"
+    _require_nolog AWS_MDE_TOKEN "${AWS_MDE_TOKEN:-}"
+
+    _log xxxx "AWS_REGION='$AWS_REGION' AWS_MDE_ENDPOINT='$AWS_MDE_ENDPOINT' AWS_MDE_SESSION='$AWS_MDE_SESSION' AWS_MDE_STREAMURL='$AWS_MDE_STREAMURL' AWS_MDE_TOKEN='$AWS_MDE_TOKEN' ssh '$_HOST'"
+
+    exec session-manager-plugin \
+        "{\"streamUrl\":\"$AWS_MDE_STREAMURL\",\"tokenValue\":\"$AWS_MDE_TOKEN\",\"sessionId\":\"$AWS_MDE_SESSION\"}" \
+        "$AWS_REGION" \
+        "StartSession"
+}
+
+_main "${1:-}"

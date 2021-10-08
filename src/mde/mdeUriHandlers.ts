@@ -11,6 +11,7 @@ import * as vscode from 'vscode'
 import { ParsedUrlQuery } from 'querystring'
 import { cloneToMde, mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
 import { UriHandler } from '../shared/vscode/uriHandler'
+import { MDE_REGION } from '../shared/clients/mdeClient'
 
 interface MdeUriParams {
     /** If no ID is provided, a new MDE is created */
@@ -61,5 +62,5 @@ export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
         await cloneToMde(mde, params.cloneUrl)
     }
 
-    return mdeConnectCommand(mde)
+    return mdeConnectCommand(mde, MDE_REGION)
 }

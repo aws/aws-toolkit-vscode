@@ -19,6 +19,7 @@ export function mdeEndpoint(): string {
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface MdeEnvironment extends mde.EnvironmentSummary {}
+export interface MdeSession extends mde.SessionSummary, mde.StartSessionResponse {}
 
 async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string = mdeEndpoint()): Promise<mde> {
     const c = (await ext.sdkClientBuilder.createAwsService(AWS.Service, {
@@ -108,6 +109,11 @@ export class MdeClient {
         args: mde.StartEnvironmentRequest
     ): Promise<mde.StartEnvironmentResponse | undefined> {
         const r = await this.call(this.sdkClient.startEnvironment(args))
+        return r
+    }
+
+    public async startSession(args: mde.StartSessionRequest): Promise<MdeSession | undefined> {
+        const r = await this.call(this.sdkClient.startSession(args))
         return r
     }
 

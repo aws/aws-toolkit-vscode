@@ -73,8 +73,36 @@ export async function startMde(env: Pick<mde.MdeEnvironment, 'id'>): Promise<mde
     })
 }
 
-export async function mdeConnectCommand(env: Pick<mde.MdeEnvironment, 'id'>): Promise<void> {
+export async function mdeConnectCommand(
+    env: Pick<mde.MdeEnvironment, 'id'>,
+    region: string,
+    window = Window.vscode()
+): Promise<void> {
     if (!isExtensionInstalledMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to MDE')) {
+        return
+    }
+
+    const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
+    let sessionResult: mde.MdeSession | undefined
+    try {
+        sessionResult = await mdeClient.startSession({
+            environmentId: env.id,
+            sessionConfiguration: {
+                ssh: {},
+            },
+        })
+    } catch (e) {
+        showViewLogsMessage(
+            localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', env.id),
+            window
+        )
+        return
+    }
+    if (!sessionResult) {
+        showViewLogsMessage(
+            localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', env.id),
+            window
+        )
         return
     }
 
@@ -85,8 +113,11 @@ export async function mdeConnectCommand(env: Pick<mde.MdeEnvironment, 'id'>): Pr
         {
             env: Object.assign(
                 {
-                    AWS_REGION: mde.MDE_REGION,
+                    AWS_REGION: region,
                     AWS_MDE_ENDPOINT: mde.mdeEndpoint(),
+                    AWS_MDE_SESSION: sessionResult.id,
+                    AWS_MDE_STREAMURL: sessionResult.accessDetails.streamUrl,
+                    AWS_MDE_TOKEN: sessionResult.accessDetails.tokenValue,
                 },
                 process.env
             ),
@@ -128,6 +159,7 @@ export async function mdeCreateCommand(
             instanceType: 'mde.large',
             // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
             persistentStorage: { sizeInGiB: 0 },
+            roleArn: 'arn:aws:iam::541201481031:role/Admin',
             // sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
             // definition: {
             //     shellImage: `"{"\"shellImage\"": "\"mcr.microsoft.com/vscode/devcontainers/go\""}"`,
