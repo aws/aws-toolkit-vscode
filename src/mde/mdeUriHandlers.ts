@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { ParsedUrlQuery } from 'querystring'
 import { cloneToMde, mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
 import { UriHandler } from '../shared/vscode/uriHandler'
-import { MDE_REGION } from '../shared/clients/mdeClient'
+import { MdeClient, mdeEndpoint, MDE_REGION } from '../shared/clients/mdeClient'
 
 interface MdeUriParams {
     /** If no ID is provided, a new MDE is created */
@@ -41,6 +41,9 @@ export function parseMdeUriParams(query: ParsedUrlQuery): MdeUriParams {
 }
 
 export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
+    // TODO: get region from URI params.
+    const region = 'us-west-2'
+    const mdeClient = await MdeClient.create(region, mdeEndpoint())
     if (params.id === undefined) {
         const newMde = await mdeCreateCommand(undefined)
         // mde create command swallows the exception
@@ -50,7 +53,7 @@ export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
         params.id = newMde.id
     }
 
-    const mde = await startMde(params as { id: EnvironmentId })
+    const mde = await startMde(params as { id: EnvironmentId }, mdeClient)
 
     if (mde === undefined) {
         return

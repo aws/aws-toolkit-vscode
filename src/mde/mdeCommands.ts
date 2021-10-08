@@ -35,7 +35,10 @@ const localize = nls.loadMessageBundle()
  *
  * @returns the environment on success, undefined otherwise
  */
-export async function startMde(env: Pick<mde.MdeEnvironment, 'id'>): Promise<mde.MdeEnvironment | undefined> {
+export async function startMde(
+    env: Pick<mde.MdeEnvironment, 'id'>,
+    mdeClient: mde.MdeClient
+): Promise<mde.MdeEnvironment | undefined> {
     // hard-coded timeout for now
     const TIMEOUT_LENGTH = 120000
 
@@ -50,14 +53,14 @@ export async function startMde(env: Pick<mde.MdeEnvironment, 'id'>): Promise<mde
                 return
             }
 
-            const resp = await ext.mde.getEnvironmentMetadata({ environmentId: env.id })
+            const resp = await mdeClient.getEnvironmentMetadata({ environmentId: env.id })
 
             if (resp?.status === 'STOPPED') {
                 progress.report({ message: localize('AWS.mde.startMde.stopStart', 'resuming environment...') })
-                await ext.mde.startEnvironment({ environmentId: env.id })
+                await mdeClient.startEnvironment({ environmentId: env.id })
             } else {
                 progress.report({
-                    message: localize('AWS.mde.startMde.starting', 'waiting for environment to start...'),
+                    message: localize('AWS.mde.startMde.starting', 'waiting for environment...'),
                 })
             }
 
@@ -69,7 +72,7 @@ export async function startMde(env: Pick<mde.MdeEnvironment, 'id'>): Promise<mde
     return waitTimeout(pollMde, timeout, {
         onExpire: () => (
             Window.vscode().showErrorMessage(
-                localize('AWS.mde.startFailed', 'Timed-out while waiting for MDE to start')
+                localize('AWS.mde.startFailed', 'Timeout waiting for MDE environment: {0}', env.id)
             ),
             undefined
         ),
@@ -78,7 +81,7 @@ export async function startMde(env: Pick<mde.MdeEnvironment, 'id'>): Promise<mde
 }
 
 export async function mdeConnectCommand(
-    env: Pick<mde.MdeEnvironment, 'id'>,
+    args: Pick<mde.MdeEnvironment, 'id'>,
     region: string,
     window = Window.vscode()
 ): Promise<void> {
@@ -87,26 +90,68 @@ export async function mdeConnectCommand(
     }
 
     const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
-    let sessionResult: mde.MdeSession | undefined
-    try {
-        sessionResult = await mdeClient.startSession({
-            environmentId: env.id,
-            sessionConfiguration: {
-                ssh: {},
-            },
-        })
-    } catch (e) {
-        showViewLogsMessage(
-            localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', env.id),
-            window
-        )
-        return
-    }
-    if (!sessionResult) {
-        showViewLogsMessage(
-            localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', env.id),
-            window
-        )
+
+    const TIMEOUT_LENGTH = 120000
+    const timeout = new Timeout(TIMEOUT_LENGTH)
+    const progress = await showMessageWithCancel(localize('AWS.mde.startMde.message', 'MDE'), timeout)
+    progress.report({ message: localize('AWS.mde.startMde.checking', 'checking status...') })
+
+    let startErr: Error
+    const pollMde = waitUntil(
+        async () => {
+            // Technically this will continue to be called until it reaches its
+            // own timeout, need a better way to 'cancel' a `waitUntil`.
+            if (timeout.completed) {
+                return
+            }
+
+            const mdeMeta = await mdeClient.getEnvironmentMetadata({ environmentId: args.id })
+
+            if (mdeMeta?.status === 'STOPPED') {
+                progress.report({ message: localize('AWS.mde.startMde.stopStart', 'resuming environment...') })
+                await mdeClient.startEnvironment({ environmentId: args.id })
+            } else {
+                progress.report({
+                    message: localize('AWS.mde.startMde.starting', 'waiting for environment...'),
+                })
+            }
+
+            if (mdeMeta?.actions?.devfile?.status !== 'RUNNING') {
+                return undefined
+            }
+
+            try {
+                const session = await mdeClient.startSession({
+                    environmentId: args.id,
+                    sessionConfiguration: {
+                        ssh: {},
+                    },
+                })
+                return session
+            } catch (e) {
+                startErr = e as Error
+                return undefined
+            }
+        },
+        { interval: 5000, timeout: TIMEOUT_LENGTH, truthy: true }
+    )
+
+    const session = await waitTimeout(pollMde, timeout, {
+        onExpire: () => {
+            if (startErr) {
+                showViewLogsMessage(
+                    localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', args.id),
+                    window
+                )
+            } else {
+                window.showErrorMessage(
+                    localize('AWS.mde.startFailed', 'Timeout waiting for MDE environment: {0}', args.id)
+                )
+            }
+        },
+        onCancel: () => undefined,
+    })
+    if (!session) {
         return
     }
 
@@ -119,24 +164,24 @@ export async function mdeConnectCommand(
                 {
                     AWS_REGION: region,
                     AWS_MDE_ENDPOINT: mde.mdeEndpoint(),
-                    AWS_MDE_SESSION: sessionResult.id,
-                    AWS_MDE_STREAMURL: sessionResult.accessDetails.streamUrl,
-                    AWS_MDE_TOKEN: sessionResult.accessDetails.tokenValue,
+                    AWS_MDE_SESSION: session.id,
+                    AWS_MDE_STREAMURL: session.accessDetails.streamUrl,
+                    AWS_MDE_TOKEN: session.accessDetails.tokenValue,
                 },
                 process.env
             ),
         },
         '--folder-uri',
-        `vscode-remote://ssh-remote+aws-mde-${env.id}/projects`
+        `vscode-remote://ssh-remote+aws-mde-${args.id}/projects`
     )
 
     // Note: `await` is intentionally not used.
     cmd.run(
         (stdout: string) => {
-            getLogger().verbose(`MDE connect: ${env.id}: ${stdout}`)
+            getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
         },
         (stderr: string) => {
-            getLogger().verbose(`MDE connect: ${env.id}: ${stderr}`)
+            getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
         }
     )
 }
