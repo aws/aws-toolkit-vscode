@@ -40,26 +40,6 @@ export class DefaultIotClient {
     }
 
     /**
-     * Lists all things owned by the client.
-     *
-     *
-     * @throws Error if there is an error calling S3.
-     */
-    public async listAllThings(): Promise<Iot.ThingAttribute[]> {
-        const iot = await this.createIot()
-
-        let iotThings: Iot.ThingAttribute[]
-        try {
-            const output = await iot.listThings().promise()
-            iotThings = output.things ?? []
-        } catch (e) {
-            getLogger().error('Failed to list things: %O', e)
-            throw e
-        }
-        return iotThings
-    }
-
-    /**
      * Lists Things owned by the client.
      *
      * @throws Error if there is an error calling IoT.
@@ -91,7 +71,7 @@ export class DefaultIotClient {
      * @throws Error if there is an error calling IoT.
      */
     public async createThing(request: Iot.CreateThingRequest): Promise<Iot.CreateThingResponse> {
-        getLogger().debug('CreateBucket called with request: %O', request)
+        getLogger().debug('CreateThing called with request: %O', request)
         const iot = await this.createIot()
 
         let output: Iot.CreateThingResponse
@@ -244,7 +224,7 @@ export class DefaultIotClient {
      * @throws Error if there is an error calling IoT.
      */
     public async listThingsForCert(request: Iot.ListPrincipalThingsRequest): Promise<string[]> {
-        getLogger().debug('UpdateCertificate called with request: %O', request)
+        getLogger().debug('ListThingsForCert called with request: %O', request)
         const iot = await this.createIot()
 
         let iotThings: Iot.ThingName[]
@@ -262,7 +242,7 @@ export class DefaultIotClient {
             throw e
         }
 
-        getLogger().debug('ListThings returned response: %O', iotThings)
+        getLogger().debug('ListThingsForCert returned response: %O', iotThings)
         return iotThings
     }
 
@@ -425,6 +405,34 @@ export class DefaultIotClient {
         }
         getLogger().debug('ListPrincipalPolicies returned response: %O', output)
         return output
+    }
+
+    /**
+     * Lists certificates attached to specified policy.
+     *
+     * @throws Error if there is an error calling IoT.
+     */
+    public async listPolicyTargets(request: Iot.ListTargetsForPolicyRequest): Promise<string[]> {
+        getLogger().debug('ListPolicyTargets called with request: %O', request)
+        const iot = await this.createIot()
+
+        let arns: Iot.Target[]
+        try {
+            const output = await iot
+                .listTargetsForPolicy({
+                    pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                    marker: request.marker,
+                    policyName: request.policyName,
+                })
+                .promise()
+            arns = output.targets ?? []
+        } catch (e) {
+            getLogger().error('Failed to list policy targets: %O', e)
+            throw e
+        }
+
+        getLogger().debug('ListPolicyTargets returned response: %O', arns)
+        return arns
     }
 
     /**

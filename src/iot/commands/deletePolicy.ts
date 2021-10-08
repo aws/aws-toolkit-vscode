@@ -29,8 +29,6 @@ export async function deletePolicyCommand(
 
     const policyName = node.policy.name
 
-    //FIXME check if policy can be deleted by getting attached certificates
-    //with iot.listTargetsForPolicy()
     const isConfirmed = await showConfirmationMessage(
         {
             prompt: localize('AWS.iot.deletePolicy.prompt', 'Are you sure you want to delete Policy {0}?', policyName),
@@ -46,6 +44,28 @@ export async function deletePolicyCommand(
 
     getLogger().info(`Deleting policy ${policyName}`)
     try {
+        const certs = await node.iot.listPolicyTargets({ policyName: policyName })
+        if (certs.length > 0) {
+            getLogger().error(`Policy ${policyName} has attached Certificates`)
+            showViewLogsMessage(
+                localize('AWS.iot.deletePolicy.attachedError', 'Policy has attached {0}', certs.toString()),
+                window
+            )
+            return
+        }
+        const versions = node.iot.listPolicyVersions({ policyName })
+        let numVersions: number = 0
+        for await (const _version of versions) {
+            numVersions++
+        }
+        if (numVersions != 1) {
+            getLogger().error(`Policy ${policyName} has non-default versions`)
+            showViewLogsMessage(
+                localize('AWS.iot.deletePolicy.versionError', 'Policy has non-default versions'),
+                window
+            )
+            return
+        }
         await node.iot.deletePolicy({ policyName: policyName })
 
         getLogger().info(`Successfully deleted Policy ${policyName}`)
