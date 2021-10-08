@@ -8,15 +8,19 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as mde from '../../../types/clientmde'
 import apiConfig = require('../../../types/REMOVED.normal.json')
 import { ext } from '../../shared/extensionGlobals'
+import * as settings from '../../shared/settingsConfiguration'
 import * as logger from '../logger/logger'
 
-export const MDE_REGION = 'us-east-1'
-export const MDE_ENDPOINT = 'https://r2g9qfgh3d.execute-api.us-east-1.amazonaws.com/prod'
+export const MDE_REGION = 'us-west-2'
+export function mdeEndpoint(): string {
+    const s = new settings.DefaultSettingsConfiguration()
+    return s.readDevSetting('aws.dev.mde.betaEndpoint')
+}
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface MdeEnvironment extends mde.EnvironmentSummary {}
 
-async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string = MDE_ENDPOINT): Promise<mde> {
+async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string = mdeEndpoint()): Promise<mde> {
     const c = (await ext.sdkClientBuilder.createAwsService(AWS.Service, {
         // apiConfig is internal and not in the TS declaration file
         apiConfig: apiConfig,
@@ -41,7 +45,7 @@ export class MdeClient {
      *
      * @note Call `onCredentialsChanged()` before making requests.
      */
-    public static async create(regionCode: string = MDE_REGION, endpoint: string = MDE_ENDPOINT): Promise<MdeClient> {
+    public static async create(regionCode: string = MDE_REGION, endpoint: string = mdeEndpoint()): Promise<MdeClient> {
         MdeClient.assertExtInitialized()
         const sdkClient = await createMdeClient(regionCode, endpoint)
         const c = new MdeClient(regionCode, endpoint, sdkClient)

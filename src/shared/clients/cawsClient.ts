@@ -115,7 +115,7 @@ export class CawsClient {
         private authCookie?: string
     ) {
         this.log = logger.getLogger()
-        this.apiKey = this.settings.readDevSetting('aws.developer.caws.apiKey')
+        this.apiKey = this.settings.readDevSetting('aws.dev.caws.apiKey')
     }
 
     /**

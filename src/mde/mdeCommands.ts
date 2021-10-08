@@ -86,7 +86,7 @@ export async function mdeConnectCommand(env: Pick<mde.MdeEnvironment, 'id'>): Pr
             env: Object.assign(
                 {
                     AWS_REGION: mde.MDE_REGION,
-                    AWS_MDE_ENDPOINT: mde.MDE_ENDPOINT,
+                    AWS_MDE_ENDPOINT: mde.mdeEndpoint(),
                 },
                 process.env
             ),
