@@ -64,7 +64,7 @@ export async function startMde(
                 })
             }
 
-            return resp?.status === 'RUNNING' ? resp : undefined
+            return resp?.actions?.devfile?.status === 'RUNNING' ? resp : undefined
         },
         { interval: 5000, timeout: TIMEOUT_LENGTH, truthy: true }
     )

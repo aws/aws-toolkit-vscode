@@ -15,7 +15,7 @@ import * as localizedText from '../shared/localizedText'
 import { registerCreateMdeCommand } from './vue/backend'
 import { activateUriHandlers } from './mdeUriHandlers'
 import { promptDevFiles } from './wizards/devFiles'
-// import * as mde from '../shared/clients/mdeClient'
+import { getLogger } from '../shared/logger'
 
 /**
  * Activates MDE functionality.
@@ -72,6 +72,10 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
     )
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.delete', async (treenode: MdeInstanceNode) => {
+            if (!treenode) {
+                getLogger().warn('aws.mde.delete: got null treenode')
+                return
+            }
             // TODO: refresh explorer and poll
             mdeDeleteCommand(treenode.env)
         })
