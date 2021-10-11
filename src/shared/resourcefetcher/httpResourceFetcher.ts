@@ -27,7 +27,7 @@ const patchedGot = got.extend({
     },
 })
 // I can't track down the real version but this seems close enough
-const MIN_VERSION_FOR_GOT = '1.47.0'
+const MIN_VERSION_FOR_GOT = '1.44.0'
 
 // Minimal interface for hooking into download + file write streams
 interface FetcherStreams {
