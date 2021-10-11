@@ -19,6 +19,7 @@ import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { ext } from '../shared/extensionGlobals'
+import { isCloud9 } from '../shared/extensionUtilities'
 
 export const RESOURCE_FILE_GLOB_PATTERN = '**/*.awsResource.json'
 
@@ -71,7 +72,7 @@ export class AwsResourceManager {
             }
 
             const doc = await vscode.workspace.openTextDocument(uri)
-            if (existing) {
+            if (existing && !isCloud9()) {
                 await this.close(existing)
             }
 

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import * as supportedResources from '../model/supported_resources.json'
+import supportedResources = require('../model/supported_resources.json')
 import { recordDynamicresourceSelectResources } from '../../shared/telemetry/telemetry'
 import { ResourceMetadata } from '../explorer/nodes/moreResourcesNode'
 const types = Object.keys(supportedResources)
