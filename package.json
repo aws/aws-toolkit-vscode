@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.30.0-SNAPSHOT",
+    "version": "1.31.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -284,6 +284,14 @@
                                                 "enum": [
                                                     "code"
                                                 ]
+                                            },
+                                            "architecture": {
+                                                "description": "%AWS.configuration.description.awssam.debug.architecture%",
+                                                "type": "string",
+                                                "enum": [
+                                                    "x86_64",
+                                                    "arm64"
+                                                ]
                                             }
                                         },
                                         "additionalProperties": false,
@@ -398,6 +406,10 @@
                                         "items": {
                                             "type": "string"
                                         }
+                                    },
+                                    "buildDir": {
+                                        "description": "%AWS.configuration.description.awssam.debug.buildDir%",
+                                        "type": "string"
                                     },
                                     "containerBuild": {
                                         "description": "%AWS.configuration.description.awssam.debug.containerBuild%",
@@ -1050,6 +1062,11 @@
                 {
                     "command": "aws.viewSchemaItem",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.stepfunctions.createStateMachineFromTemplate",
+                    "when": "view == aws.explorer && viewItem == awsStepFunctionsNode && !isCloud9",
                     "group": "0@1"
                 },
                 {

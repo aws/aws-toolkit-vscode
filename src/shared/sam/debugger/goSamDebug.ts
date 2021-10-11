@@ -12,7 +12,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
+import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import * as fs from 'fs-extra'
@@ -113,9 +113,6 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
 
     // We want to persist the binary we build since it takes a non-trivial amount of time to build
     config.debuggerPath = path.join(ext.context.globalStoragePath, 'debuggers', 'delve')
-
-    // Always generate a temporary template.yaml, don't use workspace one directly.
-    config.templatePath = await makeInputTemplate(config)
 
     const isImageLambda = isImageLambdaConfig(config)
 

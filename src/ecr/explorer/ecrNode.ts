@@ -32,12 +32,10 @@ export class EcrNode extends AWSTreeNodeBase {
 
                 return response.map(item => new EcrRepositoryNode(this, this.ecr, item))
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noRepositories', '[No repositories found]')),
-            sort: (item1: EcrRepositoryNode, item2: EcrRepositoryNode) =>
-                item1.repository.repositoryName.localeCompare(item2.repository.repositoryName),
+            sort: (item1, item2) => item1.repository.repositoryName.localeCompare(item2.repository.repositoryName),
         })
     }
 

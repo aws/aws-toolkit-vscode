@@ -4,13 +4,7 @@
  */
 
 import { AppRunner, IAM } from 'aws-sdk'
-import {
-    createBackButton,
-    createExitButton,
-    createHelpButton,
-    QuickInputButton,
-    QuickInputToggleButton,
-} from '../../shared/ui/buttons'
+import { createCommonButtons, QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import * as input from '../../shared/ui/inputPrompter'
@@ -30,10 +24,6 @@ import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { isCloud9 } from '../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
-
-function makeButtons() {
-    return [createHelpButton(), createBackButton(), createExitButton()]
-}
 
 const PUBLIC_ECR = 'public.ecr.aws'
 const APP_RUNNER_ECR_ENTITY = 'build.apprunner.amazonaws'
@@ -149,7 +139,7 @@ function createImagePrompter(
             transform: customUserInputTransform,
             validator: customUserInputValidator,
         },
-        buttons: makeButtons(),
+        buttons: createCommonButtons(),
     })
 }
 
@@ -166,7 +156,7 @@ function createPortPrompter(): Prompter<string> {
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
-        buttons: makeButtons(),
+        buttons: createCommonButtons(),
     })
 }
 
@@ -211,7 +201,7 @@ function createTagPrompter(
     return picker.createLabelQuickPick(tagItems, {
         title: localize('AWS.apprunner.createService.selectTag.title', 'Select an ECR tag'),
         placeholder: 'latest',
-        buttons: makeButtons(),
+        buttons: createCommonButtons(),
     })
 }
 
@@ -252,7 +242,9 @@ function createImageRepositorySubForm(
     )
 
     form.ImageConfiguration.Port.bindPrompter(() => createPortPrompter())
-    form.ImageConfiguration.RuntimeEnvironmentVariables.bindPrompter(() => createVariablesPrompter(makeButtons()))
+    form.ImageConfiguration.RuntimeEnvironmentVariables.bindPrompter(() =>
+        createVariablesPrompter(createCommonButtons())
+    )
 
     return subform
 }

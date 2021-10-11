@@ -10,29 +10,32 @@ import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
  * Produces a list of child nodes using handlers to consistently populate the
  * list when errors occur or if the list would otherwise be empty.
  */
-export async function makeChildrenNodes(parameters: {
-    getChildNodes(): Promise<AWSTreeNodeBase[]>
-    getNoChildrenPlaceholderNode?(): Promise<AWSTreeNodeBase>
-    getErrorNode(error: Error, logID: number): Promise<AWSTreeNodeBase>
-    sort?(a: AWSTreeNodeBase, b: AWSTreeNodeBase): number
-}): Promise<AWSTreeNodeBase[]> {
-    let childNodes: AWSTreeNodeBase[] = []
+export async function makeChildrenNodes<
+    T extends AWSTreeNodeBase,
+    P extends AWSTreeNodeBase,
+    E extends AWSTreeNodeBase
+>(parameters: {
+    getChildNodes(): Promise<T[]>
+    getNoChildrenPlaceholderNode?(): Promise<P>
+    getErrorNode(error: Error, logID: number): Promise<E>
+    sort?: (a: T, b: T) => number
+}): Promise<T[] | [P] | [E]> {
     try {
-        childNodes.push(...(await parameters.getChildNodes()))
+        const nodes = await parameters.getChildNodes()
 
-        if (childNodes.length === 0 && parameters.getNoChildrenPlaceholderNode) {
-            childNodes.push(await parameters.getNoChildrenPlaceholderNode())
+        if (nodes.length === 0 && parameters.getNoChildrenPlaceholderNode) {
+            return [await parameters.getNoChildrenPlaceholderNode()]
         }
 
         if (parameters.sort) {
-            childNodes = childNodes.sort((a, b) => parameters.sort!(a, b))
+            nodes.sort((a, b) => parameters.sort!(a, b))
         }
+
+        return nodes
     } catch (err) {
         const error = err as Error
-        const logID: number = getLogger().error(err as Error)
+        const logID: number = getLogger().error(error)
 
-        childNodes.push(await parameters.getErrorNode(error, logID))
+        return [await parameters.getErrorNode(error, logID)]
     }
-
-    return childNodes
 }

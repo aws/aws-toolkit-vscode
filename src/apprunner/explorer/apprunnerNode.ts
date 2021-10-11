@@ -39,8 +39,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
                     this,
                     localize('AWS.explorerNode.apprunner.noServices', '[No App Runner services found]')
                 ),
-            sort: (nodeA: AppRunnerServiceNode, nodeB: AppRunnerServiceNode) =>
-                nodeA.label!.localeCompare(nodeB.label!),
+            sort: (nodeA, nodeB) => nodeA.label!.localeCompare(nodeB.label!),
         })
     }
 

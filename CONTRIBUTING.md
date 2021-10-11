@@ -1,7 +1,7 @@
-# Contributing Guidelines
+# Contributing to AWS Toolkit for VS Code
 
-Thank you for your interest in contributing to our project. We greatly value
-feedback and contributions from our community!
+Thanks for taking the time to help us. We greatly value feedback and
+contributions from our community!
 
 Reviewing this document will maximize your success in working with the
 codebase and sending pull requests.
@@ -74,9 +74,12 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ## Develop
 
-### Code guidelines
+### Guidelines
 
-See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
+-   Project patterns and practices: [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md)
+-   [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+-   [VS Code API Documentation](https://code.visualstudio.com/api/references/vscode-api)
+-   [VS Code Extension Capabilities](https://code.visualstudio.com/api/extension-capabilities/common-capabilities)
 
 ### Technical notes
 
@@ -225,6 +228,14 @@ all tests and provides the build result via the _Details_ link as shown below.
 Besides the typical develop/test/run cycle describe above, there are
 some tools for special cases such as build tasks, generating telemetry,
 generating SDKs, etc.
+
+### Toolkit developer settings (`aws.dev.*`)
+
+The [AwsDevSetting](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/shared/settingsConfiguration.ts#L19)
+type defines various developer-only settings that change the behavior of the
+Toolkit for testing and development purposes. To use a setting just add it to
+your `settings.json`. At runtime if the Toolkit reads any of these settings,
+the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/credentials/awsCredentialsStatusBarItem.ts#L58).
 
 ### AWS SDK generator
 
