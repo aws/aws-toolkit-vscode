@@ -108,6 +108,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 resourceDiagnostics.set(textDocumentEvent.document.uri, diagnostics)
             }
         }),
+        vscode.workspace.onDidCloseTextDocument(closeDocumentEvent => {
+            resourceManager.close(closeDocumentEvent.uri)
+        }),
         vscode.languages.registerCodeLensProvider(
             {
                 language: 'json',
