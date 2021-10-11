@@ -30,11 +30,6 @@ describe('SamTemplateCodeLensProvider', async function () {
     })
 
     it('provides a CodeLens for a file with a new resource', async function () {
-        if (vscode.version.startsWith('1.42')) {
-            this.skip()
-        }
-
-        // Note: redhat.vscode-yaml no longer works on vscode 1.42
         await activateExtension(VSCODE_EXTENSION_ID.yaml, false)
 
         const codeLenses = await codeLensProvider.provideCodeLenses(

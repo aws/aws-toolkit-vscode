@@ -299,7 +299,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     }
 
     beforeEach(function () {
-        if (vscode.version.startsWith('1.42')) {
+        if (vscode.version.startsWith('1.44')) {
             this.skip()
         }
         picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidAccept'])
@@ -318,6 +318,7 @@ describe('FilterBoxQuickPickPrompter', function () {
 
         testPrompter.onDidShow(() => {
             // Note: VSC 1.42 will _not_ fire the change value event when setting `picker.value`
+            // TODO: check 1.44.2 or make a different test.
             picker.value = input
             picker.fireOnDidChangeValue(input)
         })
