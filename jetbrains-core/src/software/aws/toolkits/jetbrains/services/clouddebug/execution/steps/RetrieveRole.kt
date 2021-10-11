@@ -44,7 +44,7 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
             throw RuntimeException(message("cloud_debug.step.retrieve_execution_role.failed"), e)
         } finally {
             ClouddebugTelemetry.retrieveRole(
-                project = context.project,
+                project = context.getAttribute(Context.PROJECT_ATTRIBUTE),
                 workflowToken = context.workflowToken,
                 result = result,
                 value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),

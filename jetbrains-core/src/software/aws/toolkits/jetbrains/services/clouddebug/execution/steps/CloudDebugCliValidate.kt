@@ -18,7 +18,7 @@ class CloudDebugCliValidate : Step() {
     override val stepName = "Checking for cloud-debug validity and updates"
 
     override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
-        CloudDebugResolver.validateOrUpdateCloudDebug(context.project, messageEmitter, context)
+        CloudDebugResolver.validateOrUpdateCloudDebug(context.getRequiredAttribute(Context.PROJECT_ATTRIBUTE), messageEmitter, context)
     }
 
     companion object {

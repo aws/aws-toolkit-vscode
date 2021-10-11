@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Cross step context that exists for the life of a step workflow execution. Keeps track of the global execution state and allows passing data between steps.
  */
-class Context(val project: Project) {
+class Context {
     interface Listener {
         fun onCancel() {}
         fun onComplete() {}
@@ -96,7 +96,9 @@ class Context(val project: Project) {
         attributeMap.putData(key, data)
     }
 
-    private companion object {
+    companion object {
         private val LOG = getLogger<Context>()
+
+        val PROJECT_ATTRIBUTE = AttributeBagKey.create<Project>("project")
     }
 }

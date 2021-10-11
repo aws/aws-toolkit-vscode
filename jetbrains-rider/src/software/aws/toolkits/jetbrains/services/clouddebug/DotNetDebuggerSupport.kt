@@ -134,9 +134,9 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         return future
     }
 
-    override fun createDebuggerUploadStep(context: Context, containerName: String): ResourceTransferStep? {
-        val debuggerAssemblyNames =
-            DebuggerHelperHost.getInstance(context.project).model.getDebuggerAssemblies.sync(Unit, RpcTimeouts.longRunning)
+    override fun createDebuggerUploadStep(context: Context, containerName: String): ResourceTransferStep {
+        val debuggerAssemblyNames = DebuggerHelperHost.getInstance(context.getRequiredAttribute(Context.PROJECT_ATTRIBUTE))
+            .model.getDebuggerAssemblies.sync(Unit, RpcTimeouts.longRunning)
 
         // Helper assembly to detect dbgshim on 192 Rider
         val tempDirectory = FileUtil.getTempDirectory()

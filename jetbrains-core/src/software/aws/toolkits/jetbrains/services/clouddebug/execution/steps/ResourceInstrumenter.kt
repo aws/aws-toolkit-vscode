@@ -44,7 +44,7 @@ class ResourceInstrumenter(private val settings: EcsServiceCloudDebuggingRunSett
 
     override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
         ClouddebugTelemetry.instrument(
-            project = context.project,
+            project = context.getAttribute(Context.PROJECT_ATTRIBUTE),
             result = result,
             workflowToken = context.workflowToken,
             value = Duration.between(startTime, Instant.now()).toMillis().toDouble()
