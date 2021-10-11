@@ -17,7 +17,7 @@ export async function configureResources(): Promise<boolean> {
     const quickPickItems: vscode.QuickPickItem[] = []
     for (const typeName of types) {
         const resource = supportedResources[typeName as keyof typeof supportedResources] as ResourceMetadata
-        if (resource.operations.includes('LIST')) {
+        if (resource.operations?.includes('LIST')) {
             quickPickItems.push({
                 label: typeName,
                 picked: configuration ? configuration.includes(typeName) : false,
