@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as supportedResources from '../../model/supported_resources.json'
+import supportedResources = require('../../model/supported_resources.json')
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -16,6 +16,7 @@ import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { ext } from '../../../shared/extensionGlobals'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -61,9 +62,10 @@ export class MoreResourcesNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const enabledResources = vscode.workspace
-            .getConfiguration('aws')
-            .get<string[]>('moreResources.enabledResources')
+        const enabledResources = !isCloud9()
+            ? vscode.workspace.getConfiguration('aws').get<string[]>('moreResources.enabledResources')
+            : Object.keys(supportedResources)
+
         if (enabledResources) {
             const availableTypes: Map<string, CloudFormation.TypeSummary> = toMap(
                 await toArrayAsync(this.cloudFormation.listTypes()),

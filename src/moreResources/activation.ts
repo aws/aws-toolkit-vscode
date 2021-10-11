@@ -43,7 +43,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }),
         vscode.commands.registerCommand('aws.moreResources.configure', async (node: MoreResourcesNode) => {
             if (await configureResources()) {
-                await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
+                node.refresh()
             }
         }),
         vscode.commands.registerCommand('aws.moreResources.createResource', async (node: ResourceTypeNode) => {
@@ -53,7 +53,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             if (await deleteResource(node.parent.cloudControl, node.parent.typeName, node.identifier)) {
                 await resourceManager.close(resourceManager.toUri(node)!)
                 node.parent.clearChildren()
-                await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent)
+                node.parent.refresh()
             }
         }),
         vscode.commands.registerCommand('aws.moreResources.updateResource', async (node: ResourceNode) => {
