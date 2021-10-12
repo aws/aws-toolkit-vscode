@@ -1,11 +1,6 @@
 {
-    "types": [
-    ],
+    "types": [],
     "metrics": [
-        {
-            "name": "apprunner_openServiceUrl",
-            "description": "Open the service URL in a browser"
-        },
         {
             "name": "aws_openLocalTerminal",
             "description": "Open local terminal with aws connection injected",
