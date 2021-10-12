@@ -28,15 +28,15 @@ class ConsoleViewWorkflowEmitter private constructor(private val workflowTitle: 
 class ConsoleMessageEmitter(private val stepName: String) : StepEmitter {
     override fun createChildEmitter(stepName: String, hidden: Boolean): StepEmitter = ConsoleMessageEmitter(stepName)
 
-    override fun startStep() {
+    override fun stepStarted() {
         println("[$stepName] [Start Event]")
     }
 
-    override fun finishSuccessfully() {
+    override fun stepFinishSuccessfully() {
         println("[$stepName] [Finish Event] Success")
     }
 
-    override fun finishExceptionally(e: Throwable) {
+    override fun stepFinishExceptionally(e: Throwable) {
         println("[$stepName] [Finished Exceptionally] ${ExceptionUtil.getNonEmptyMessage(e, e.javaClass.simpleName)}")
     }
 

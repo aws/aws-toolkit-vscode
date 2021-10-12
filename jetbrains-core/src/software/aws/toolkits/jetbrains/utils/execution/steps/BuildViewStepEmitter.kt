@@ -99,8 +99,9 @@ class BuildViewStepEmitter private constructor(
         return BuildViewStepEmitter(buildListener, rootObject, childParent, childStepName, hidden, this)
     }
 
-    override fun startStep() {
+    override fun stepStarted() {
         if (hidden) return
+
         buildListener.onEvent(
             rootObject,
             StartEventImpl(
@@ -112,7 +113,22 @@ class BuildViewStepEmitter private constructor(
         )
     }
 
-    override fun finishSuccessfully() {
+    override fun stepSkipped() {
+        if (hidden) return
+
+        buildListener.onEvent(
+            rootObject,
+            FinishEventImpl(
+                stepName,
+                parentId,
+                System.currentTimeMillis(),
+                stepName,
+                SkippedResultImpl()
+            )
+        )
+    }
+
+    override fun stepFinishSuccessfully() {
         if (hidden) return
 
         buildListener.onEvent(
@@ -127,7 +143,7 @@ class BuildViewStepEmitter private constructor(
         )
     }
 
-    override fun finishExceptionally(e: Throwable) {
+    override fun stepFinishExceptionally(e: Throwable) {
         if (e is ProcessCanceledException) {
             emitMessage(message("general.step.canceled", stepName), true)
         } else {
