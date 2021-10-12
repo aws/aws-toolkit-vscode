@@ -94,16 +94,13 @@ environment provided by the SAM CLI.
 
 ### Experimental Features
 
-Sometimes we'll introduce experimental features that we're trying out. These may have small bugs or may not be fully functional, and because these
-aren't ready for prime-time we'll hide them behind an experimental feature flag. To enable these experiments you can take the following steps:
+Sometimes we'll introduce experimental features that we're trying out. These may have bugs, usability problems or may not be fully functional, and because these
+aren't ready for prime-time we'll hide them behind an experimental feature flag. 
 
-1. From inside your IDE session open the "[Find Action][find-action]" prompt (`Shift+Cmd+A` / `Ctrl+Shift+A`) 
-2. Search for "Registry..." and click it
-3. In the list that appears find the experiment you want to turn on (AWS Toolkit features will begin with `aws.feature`) and tick the box next to it
-4. Click Close
-5. If the feature requires restarting, you'll be prompted to restart the IDE.
+Experimental features can be enabled in the settings/preferences
+(`Settings -> Tools -> AWS -> Experimental Features`) or via the Addtional Settings (![Gear Icon][gear-icon]) in the AWS Explorer Tool Window. 
 
-The feature should now be enabled.
+Please note that experimental features may be disabled / removed at any time.
 
 ## Licensing
 
@@ -115,3 +112,4 @@ The plugin is distributed according to the terms outlined in our [LICENSE](LICEN
 [cloudformation-icon]: jetbrains-core/resources/icons/resources/CloudFormationStack.svg
 [redshift-icon]: jetbrains-core/resources/icons/resources/Redshift.svg
 [find-action]: https://www.jetbrains.com/help/idea/searching-everywhere.html#search_actions
+[gear-icon]: https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/general/gear.svg

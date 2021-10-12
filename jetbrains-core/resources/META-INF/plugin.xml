@@ -124,6 +124,7 @@ with what features/services are supported.
         <extensionPoint name="explorer.nodeProcessor" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNodeProcessor" dynamic="true"/>
         <extensionPoint name="explorer.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerTreeStructureProvider" dynamic="true"/>
         <extensionPoint name="sdk.clientCustomizer" interface="software.aws.toolkits.jetbrains.core.AwsClientCustomizer" dynamic="true"/>
+        <extensionPoint name="experiment" interface="software.aws.toolkits.jetbrains.core.experiments.ToolkitExperiment" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -183,6 +184,8 @@ with what features/services are supported.
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.experiments.ToolkitExperimentManager"/>
+
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager"/>
@@ -201,6 +204,7 @@ with what features/services are supported.
                     factoryClass="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindowFactory" icon="AwsIcons.Resources.Sqs.SQS_TOOL_WINDOW"/>
 
         <projectConfigurable id="aws" groupId="tools" key="aws.settings.title" instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
+        <applicationConfigurable id="aws.experiments" parentId="aws" instance="software.aws.toolkits.jetbrains.core.experiments.ExperimentConfigurable"/>
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
@@ -366,7 +370,7 @@ with what features/services are supported.
         </group>
 
         <group id="aws.toolkit.explorer.cloudformation" popup="true" compact="false">
-            <action id="cloudformation.serverless.deploy" class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction" />
+            <action id="cloudformation.serverless.deploy" class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.cloudformation.stack" popup="true" compact="false">

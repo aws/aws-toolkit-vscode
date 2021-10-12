@@ -22,6 +22,12 @@ class RegistryRule(private val featureId: String, private val desiredEnabledStat
         }
     }
 
+    fun setState(state: Boolean) {
+        if (Registry.get(featureId).asBoolean() != state) {
+            Registry.get(featureId).setValue(state)
+        }
+    }
+
     override fun after() {
         if (Registry.`is`(featureId) != originalState) {
             Registry.get(featureId).setValue(originalState)
