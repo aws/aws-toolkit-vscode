@@ -275,6 +275,20 @@ To develop [serverless applications](https://aws.amazon.com/serverless/) with th
 
 ---
 
+# <a id="experimental-features"></a>Experimental Features
+
+Sometimes we'll introduce experimental features that we're trying out. These may have bugs, usability problems or may not be fully functional, and because these
+aren't ready for prime-time we'll hide them behind an experimental feature flag.
+
+Experimental features can be enabled in the extension preferences
+(`Preferences -> Settings -> Extensions -> AWS Configuration -> Experiments`).
+
+Please note that experimental features may be disabled or removed at any time.
+
+{ [Return to Top](#top) }
+
+---
+
 # <a id="get-help"></a>Get help
 
 For additional details on how to use the AWS Toolkit, see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome).
