@@ -6,25 +6,25 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { configureResources } from '../../../moreResources/commands/configure'
+import { configureResources } from '../../../resources/commands/configure'
 
 describe('configureCommand', function () {
     let sandbox: sinon.SinonSandbox
 
     // These tests operate against the user's configuration.
     // Restore the initial value after testing is complete.
-    let originalMoreResourcesValue: any
+    let originalResourcesValue: any
     let settings: vscode.WorkspaceConfiguration
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        settings = vscode.workspace.getConfiguration('aws.moreResources')
-        originalMoreResourcesValue = settings.get('enabledResources')
+        settings = vscode.workspace.getConfiguration('aws.resources')
+        originalResourcesValue = settings.get('enabledResources')
     })
 
     afterEach(async function () {
         sandbox.restore()
-        await settings.update('enabledResources', originalMoreResourcesValue, vscode.ConfigurationTarget.Global)
+        await settings.update('enabledResources', originalResourcesValue, vscode.ConfigurationTarget.Global)
     })
 
     it('maps selected services to configuration', async function () {
@@ -33,7 +33,7 @@ describe('configureCommand', function () {
         sandbox.stub(vscode.window, 'showQuickPick' as any).returns(Promise.resolve(testItems))
         await configureResources()
 
-        const updatedConfiguration = vscode.workspace.getConfiguration('aws.moreResources').get('enabledResources')
+        const updatedConfiguration = vscode.workspace.getConfiguration('aws.resources').get('enabledResources')
         assert.deepStrictEqual(updatedConfiguration, ['Foo', 'Bar', 'Baz'])
     })
 })

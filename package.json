@@ -207,29 +207,29 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "moreResourcesModification": false
+                        "resourcesModification": false
                     },
                     "properties": {
-                        "moreResourcesModification": {
+                        "resourcesModification": {
                             "type": "boolean",
                             "default": false
                         }
                     },
                     "additionalProperties": false
                 },
-                "aws.moreResources.enabledResources": {
+                "aws.resources.enabledResources": {
                     "type": "array",
-                    "description": "%AWS.configuration.description.moreResources.enabledResources%",
+                    "description": "%AWS.configuration.description.resources.enabledResources%",
                     "items": {
                         "type": "string"
                     }
                 },
-                "aws.moreResources.maxItemsPerPage": {
+                "aws.resources.maxItemsPerPage": {
                     "type": "number",
                     "default": 50,
                     "minimum": 3,
                     "maximum": 1000,
-                    "markdownDescription": "%AWS.configuration.description.moreResources.maxItemsPerPage%"
+                    "markdownDescription": "%AWS.configuration.description.resources.maxItemsPerPage%"
                 }
             }
         },
@@ -858,39 +858,39 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.copyIdentifier",
+                    "command": "aws.resources.copyIdentifier",
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.openResourcePreview",
+                    "command": "aws.resources.openResourcePreview",
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.createResource",
+                    "command": "aws.resources.createResource",
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.deleteResource",
+                    "command": "aws.resources.deleteResource",
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.updateResource",
+                    "command": "aws.resources.updateResource",
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.updateResourceInline",
+                    "command": "aws.resources.updateResourceInline",
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.saveResource",
+                    "command": "aws.resources.saveResource",
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.closeResource",
+                    "command": "aws.resources.closeResource",
                     "when": "false"
                 },
                 {
-                    "command": "aws.moreResources.viewDocs",
+                    "command": "aws.resources.viewDocs",
                     "when": "false"
                 }
             ],
@@ -911,17 +911,17 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.moreResources.updateResourceInline",
-                    "when": "resourceScheme == awsResource && !isCloud9 && config.aws.experiments.moreResourcesModification",
+                    "command": "aws.resources.updateResourceInline",
+                    "when": "resourceScheme == awsResource && !isCloud9 && config.aws.experiments.resourcesModification",
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.moreResources.closeResource",
+                    "command": "aws.resources.closeResource",
                     "when": "resourcePath =~ /^.+(awsResource.json)$/",
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.moreResources.saveResource",
+                    "command": "aws.resources.saveResource",
                     "when": "resourcePath =~ /^.+(awsResource.json)$/",
                     "group": "navigation"
                 }
@@ -1254,48 +1254,48 @@
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
                 },
                 {
-                    "command": "aws.moreResources.configure",
-                    "when": "view == aws.explorer && viewItem == moreResourcesRootNode && !isCloud9",
+                    "command": "aws.resources.configure",
+                    "when": "view == aws.explorer && viewItem == resourcesRootNode && !isCloud9",
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.moreResources.configure",
-                    "when": "view == aws.explorer && viewItem == moreResourcesRootNode && !isCloud9",
+                    "command": "aws.resources.configure",
+                    "when": "view == aws.explorer && viewItem == resourcesRootNode && !isCloud9",
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.moreResources.openResourcePreview",
+                    "command": "aws.resources.openResourcePreview",
                     "when": "view == aws.explorer && viewItem =~ /^(.*)(ResourceNode)$/",
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.moreResources.copyIdentifier",
+                    "command": "aws.resources.copyIdentifier",
                     "when": "view == aws.explorer && viewItem =~ /^(.*)(ResourceNode)$/",
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.moreResources.viewDocs",
+                    "command": "aws.resources.viewDocs",
                     "when": "view == aws.explorer && viewItem =~ /^(.*)(Documented)(.*)(ResourceTypeNode)$/",
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.moreResources.createResource",
-                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.moreResourcesModification",
+                    "command": "aws.resources.createResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.resourcesModification",
                     "group": "2@1"
                 },
                 {
-                    "command": "aws.moreResources.createResource",
-                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.moreResourcesModification",
+                    "command": "aws.resources.createResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.resourcesModification",
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.moreResources.updateResource",
-                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Updatable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.moreResourcesModification",
+                    "command": "aws.resources.updateResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Updatable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.resourcesModification",
                     "group": "2@1"
                 },
                 {
-                    "command": "aws.moreResources.deleteResource",
-                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Deletable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.moreResourcesModification",
+                    "command": "aws.resources.deleteResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Deletable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.resourcesModification",
                     "group": "2@2"
                 },
                 {
@@ -2014,60 +2014,60 @@
                 }
             },
             {
-                "command": "aws.moreResources.copyIdentifier",
-                "title": "%AWS.command.moreResources.copyIdentifier%",
+                "command": "aws.resources.copyIdentifier",
+                "title": "%AWS.command.resources.copyIdentifier%",
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.moreResources.openResourcePreview",
+                "command": "aws.resources.openResourcePreview",
                 "title": "%AWS.generic.preview%",
                 "category": "%AWS.title%",
                 "icon": "$(open-preview)"
             },
             {
-                "command": "aws.moreResources.createResource",
+                "command": "aws.resources.createResource",
                 "title": "%AWS.generic.create%",
                 "category": "%AWS.title%",
                 "icon": "$(add)"
             },
             {
-                "command": "aws.moreResources.deleteResource",
+                "command": "aws.resources.deleteResource",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.moreResources.updateResource",
+                "command": "aws.resources.updateResource",
                 "title": "%AWS.generic.promptUpdate%",
                 "category": "%AWS.title%",
                 "icon": "$(pencil)"
             },
             {
-                "command": "aws.moreResources.updateResourceInline",
+                "command": "aws.resources.updateResourceInline",
                 "title": "%AWS.generic.promptUpdate%",
                 "category": "%AWS.title%",
                 "icon": "$(pencil)"
             },
             {
-                "command": "aws.moreResources.saveResource",
+                "command": "aws.resources.saveResource",
                 "title": "%AWS.generic.save%",
                 "category": "%AWS.title%",
                 "icon": "$(save)"
             },
             {
-                "command": "aws.moreResources.closeResource",
+                "command": "aws.resources.closeResource",
                 "title": "%AWS.generic.close%",
                 "category": "%AWS.title%",
                 "icon": "$(close)"
             },
             {
-                "command": "aws.moreResources.viewDocs",
+                "command": "aws.resources.viewDocs",
                 "title": "%AWS.generic.viewDocs%",
                 "category": "%AWS.title%",
                 "icon": "$(book)"
             },
             {
-                "command": "aws.moreResources.configure",
-                "title": "%AWS.command.moreResources.configure%",
+                "command": "aws.resources.configure",
+                "title": "%AWS.command.resources.configure%",
                 "category": "%AWS.title%",
                 "icon": "$(gear)"
             },

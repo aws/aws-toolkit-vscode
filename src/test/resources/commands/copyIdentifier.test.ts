@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { copyIdentifier } from '../../../moreResources/commands/copyIdentifier'
+import { copyIdentifier } from '../../../resources/commands/copyIdentifier'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 

@@ -24,7 +24,7 @@ export class ResourceNode extends AWSTreeNodeBase {
         this.tooltip = identifier
         this.command = {
             title: localize('AWS.generic.preview', 'Preview'),
-            command: 'aws.moreResources.openResourcePreview',
+            command: 'aws.resources.openResourcePreview',
             arguments: [this],
         }
     }

@@ -21,12 +21,7 @@ export async function deleteResource(
     getLogger().info(`deleteResource called for type ${typeName} identifier ${identifier}`)
     const ok = await showConfirmationMessage(
         {
-            prompt: localize(
-                'aws.moreResources.deleteResource.prompt',
-                'Delete resource {0} ({1})?',
-                identifier,
-                typeName
-            ),
+            prompt: localize('aws.resources.deleteResource.prompt', 'Delete resource {0} ({1})?', identifier, typeName),
             confirm: localize('AWS.generic.delete', 'Delete'),
             cancel: localize('AWS.generic.cancel', 'Cancel'),
         },
@@ -59,12 +54,7 @@ export async function deleteResource(
                 getLogger().info(`Deleted resource type ${typeName} identifier ${identifier}`)
 
                 window.showInformationMessage(
-                    localize(
-                        'aws.moreResources.deleteResource.success',
-                        'Deleted resource {0} ({1})',
-                        identifier,
-                        typeName
-                    )
+                    localize('aws.resources.deleteResource.success', 'Deleted resource {0} ({1})', identifier, typeName)
                 )
                 return true
             } catch (e) {
@@ -72,7 +62,7 @@ export async function deleteResource(
                 getLogger().error(`Failed to delete resource type ${typeName} identifier ${identifier}: %O`, e)
                 showViewLogsMessage(
                     localize(
-                        'aws.moreResources.deleteResource.failure',
+                        'aws.resources.deleteResource.failure',
                         'Failed to delete resource {0} ({1})',
                         identifier,
                         typeName

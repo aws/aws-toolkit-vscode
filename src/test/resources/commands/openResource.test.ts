@@ -6,12 +6,12 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
-import { AwsResourceManager, TypeSchema } from '../../../moreResources/awsResourceManager'
+import { AwsResourceManager, TypeSchema } from '../../../resources/awsResourceManager'
 import { instance, mock } from 'ts-mockito'
 import { when, verify } from '../../utilities/mockito'
-import { ResourceNode } from '../../../moreResources/explorer/nodes/resourceNode'
-import { ResourceTypeNode } from '../../../moreResources/explorer/nodes/resourceTypeNode'
-import { getDiagnostics, openResource } from '../../../moreResources/commands/openResource'
+import { ResourceNode } from '../../../resources/explorer/nodes/resourceNode'
+import { ResourceTypeNode } from '../../../resources/explorer/nodes/resourceTypeNode'
+import { getDiagnostics, openResource } from '../../../resources/commands/openResource'
 
 describe('openResource', function () {
     const FAKE_TYPE = 'fakeType'

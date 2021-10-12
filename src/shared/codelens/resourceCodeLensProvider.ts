@@ -7,8 +7,8 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsResourceManager } from '../../moreResources/awsResourceManager'
-import { ResourceNode } from '../../moreResources/explorer/nodes/resourceNode'
+import { AwsResourceManager } from '../../resources/awsResourceManager'
+import { ResourceNode } from '../../resources/explorer/nodes/resourceNode'
 
 export class ResourceCodeLensProvider implements vscode.CodeLensProvider {
     private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
@@ -32,11 +32,11 @@ export class ResourceCodeLensProvider implements vscode.CodeLensProvider {
                     isResolved: true,
                     command: {
                         title: localize(
-                            'aws.moreResources.codelens.docs',
+                            'aws.resources.codelens.docs',
                             'View resource documentation ({0})',
                             type.typeName
                         ),
-                        command: 'aws.moreResources.viewDocs',
+                        command: 'aws.resources.viewDocs',
                         arguments: [type],
                     },
                 },

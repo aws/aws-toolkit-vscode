@@ -44,7 +44,7 @@ export async function openResource(
                 if (!opts.preview) {
                     vscode.window.showWarningMessage(
                         localize(
-                            'aws.moreResources.editResource.notice',
+                            'aws.resources.editResource.notice',
                             'You are editing an AWS resource. Any saved changes will be reflected on the remote resource.'
                         )
                     )
@@ -57,7 +57,7 @@ export async function openResource(
             } catch (err) {
                 const error = err as Error
                 const errorMessage = localize(
-                    'AWS.message.error.moreResources.openResource.failed',
+                    'AWS.message.error.resources.openResource.failed',
                     'Failed to open resource {0} ({1})',
                     resource.identifier,
                     resource.parent.typeName
@@ -87,7 +87,7 @@ export function getDiagnostics(schema: TypeSchema, doc: vscode.TextDocument): vs
                 new vscode.Diagnostic(
                     range,
                     localize(
-                        'AWS.message.information.moreResources.createOnlyProperty',
+                        'AWS.message.information.resources.createOnlyProperty',
                         '"{0}" is a create-only property and cannot be modified on an existing resource',
                         propertyName
                     ),
@@ -104,7 +104,7 @@ export function getDiagnostics(schema: TypeSchema, doc: vscode.TextDocument): vs
                 new vscode.Diagnostic(
                     range,
                     localize(
-                        'AWS.message.information.moreResources.readOnlyProperty',
+                        'AWS.message.information.resources.readOnlyProperty',
                         '"{0}" is a read-only property and cannot be modified',
                         propertyName
                     ),

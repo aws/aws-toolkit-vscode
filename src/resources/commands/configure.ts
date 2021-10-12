@@ -7,12 +7,12 @@ import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import supportedResources = require('../model/supported_resources.json')
 import { recordDynamicresourceSelectResources } from '../../shared/telemetry/telemetry'
-import { ResourceMetadata } from '../explorer/nodes/moreResourcesNode'
+import { ResourceMetadata } from '../explorer/nodes/resourcesNode'
 const types = Object.keys(supportedResources)
 
 export async function configureResources(): Promise<boolean> {
     const window = vscode.window
-    const configuration = vscode.workspace.getConfiguration('aws').get<string[]>('moreResources.enabledResources')
+    const configuration = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
 
     const quickPickItems: vscode.QuickPickItem[] = []
     for (const typeName of types) {
@@ -26,7 +26,7 @@ export async function configureResources(): Promise<boolean> {
     }
 
     const result = await window.showQuickPick(quickPickItems, {
-        placeHolder: localize('aws.moreResources.resourcesToInclude', 'Select resources to include'),
+        placeHolder: localize('aws.resources.resourcesToInclude', 'Select resources to include'),
         canPickMany: true,
     })
 
@@ -34,7 +34,7 @@ export async function configureResources(): Promise<boolean> {
         const enabledResources = result?.map(res => res.label)
         await vscode.workspace
             .getConfiguration()
-            .update('aws.moreResources.enabledResources', enabledResources, vscode.ConfigurationTarget.Global)
+            .update('aws.resources.enabledResources', enabledResources, vscode.ConfigurationTarget.Global)
         recordDynamicresourceSelectResources()
         return true
     }

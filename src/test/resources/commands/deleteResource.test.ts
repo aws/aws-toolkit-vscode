@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { MockCloudControlClient } from '../../shared/clients/mockClients'
-import { deleteResource } from '../../../moreResources/commands/deleteResource'
+import { deleteResource } from '../../../resources/commands/deleteResource'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 
 describe('deleteResource', function () {

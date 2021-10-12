@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { instance, mock, when, verify, anything, deepEqual } from 'ts-mockito'
-import { createResource, updateResource } from '../../../moreResources/commands/saveResource'
+import { createResource, updateResource } from '../../../resources/commands/saveResource'
 import { AddOperation } from 'fast-json-patch'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 

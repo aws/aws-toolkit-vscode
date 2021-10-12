@@ -4,7 +4,7 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
-import { AwsResourceManager } from '../moreResources/awsResourceManager'
+import { AwsResourceManager } from '../resources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
