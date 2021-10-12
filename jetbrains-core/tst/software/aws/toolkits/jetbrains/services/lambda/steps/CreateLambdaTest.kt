@@ -147,7 +147,7 @@ class CreateLambdaTest {
             }
         }
 
-        val context = Context(projectRule.project)
+        val context = Context()
         context.putAttribute(PackageLambda.UPLOADED_CODE_LOCATION, codeLocation)
 
         CreateLambda(lambdaClient, details).run(context, ConsoleMessageEmitter("CreateLambda"))

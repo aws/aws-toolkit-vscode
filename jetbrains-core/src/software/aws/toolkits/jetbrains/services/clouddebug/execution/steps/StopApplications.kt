@@ -8,9 +8,9 @@ import software.aws.toolkits.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugCliStep
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.ParallelStep
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -58,19 +58,18 @@ class StopApplication(
 
     override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
         ClouddebugTelemetry.stopApplication(
-            project = context.project,
+            project = context.getAttribute(Context.PROJECT_ATTRIBUTE),
             result = result,
             workflowToken = context.workflowToken,
             value = Duration.between(startTime, Instant.now()).toMillis().toDouble()
         )
     }
 
-    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: MessageEmitter) =
+    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: StepEmitter) =
         if (isCleanup) {
             super.handleErrorResult(exitCode, output, messageEmitter)
         } else {
             messageEmitter.emitMessage(output, true)
             // suppress the error if stop fails
-            null
         }
 }

@@ -90,7 +90,7 @@ class UpdateLambdaCodeTest {
         }
         val functionName = aString()
 
-        val context = Context(projectRule.project)
+        val context = Context()
         context.putAttribute(PackageLambda.UPLOADED_CODE_LOCATION, codeLocation)
 
         UpdateLambdaCode(lambdaClient, functionName, handler).run(context, ConsoleMessageEmitter("UpdateLambdaCode"))

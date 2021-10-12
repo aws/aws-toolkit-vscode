@@ -8,7 +8,7 @@ import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.sam.samPackageCommand
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 
@@ -30,7 +30,7 @@ class PackageLambda(
         ecrRepo = ecrRepo
     )
 
-    override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {
+    override fun handleSuccessResult(output: String, messageEmitter: StepEmitter, context: Context) {
         // We finished the upload, extract out the uploaded code location if we have a logicalId
         logicalId ?: return
 

@@ -19,7 +19,7 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.Cloud
 import software.aws.toolkits.jetbrains.services.clouddebug.resources.CloudDebuggingResources
 import software.aws.toolkits.jetbrains.utils.ZipDecompressor
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -43,7 +43,7 @@ object CloudDebugResolver {
      * @param messageEmitter: MessageEmitter (remove this in favor of a message emitter in the object?)
      * @param context: Context (optional), used by steps to set attributes for other steps in the workflows
      */
-    fun validateOrUpdateCloudDebug(project: Project, messageEmitter: MessageEmitter, context: Context?) {
+    fun validateOrUpdateCloudDebug(project: Project, messageEmitter: StepEmitter, context: Context?) {
         var currentExecutable: ExecutableInstance.Executable? = null
         var currentVersion: String? = null
 
@@ -70,7 +70,7 @@ object CloudDebugResolver {
 
     private fun attemptToUpdateCloudDebug(
         project: Project,
-        messageEmitter: MessageEmitter,
+        messageEmitter: StepEmitter,
         currentExecutable: ExecutableInstance.Executable?,
         currentVersion: String?,
         context: Context?

@@ -24,12 +24,12 @@ import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
 import software.aws.toolkits.jetbrains.services.lambda.steps.DeployLambda
 import software.aws.toolkits.jetbrains.services.lambda.steps.createDeployWorkflow
 import software.aws.toolkits.jetbrains.utils.assumeImageSupport
+import software.aws.toolkits.jetbrains.utils.execution.steps.ConsoleViewWorkflowEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.readProject
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
-import software.aws.toolkits.resources.message
 import java.io.File
 import java.nio.file.Paths
 import java.util.UUID
@@ -269,7 +269,6 @@ class SamDeployTest {
             val deployDialog = runInEdtAndGet {
                 val workflow = StepExecutor(
                     projectRule.project,
-                    message("serverless.application.deploy_in_progress.title", stackName),
                     createDeployWorkflow(
                         projectRule.project,
                         templateFile,
@@ -284,7 +283,7 @@ class SamDeployTest {
                             capabilities = CreateCapabilities.values().toList()
                         )
                     ),
-                    stackName
+                    ConsoleViewWorkflowEmitter.createEmitter(stackName)
                 )
 
                 workflow.onSuccess = {

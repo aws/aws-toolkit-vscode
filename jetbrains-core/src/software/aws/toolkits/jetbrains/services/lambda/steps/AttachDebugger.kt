@@ -23,8 +23,8 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.sam.resolveDebu
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.steps.GetPorts.Companion.DEBUG_PORTS
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -32,7 +32,7 @@ class AttachDebugger(val environment: ExecutionEnvironment, val state: SamRunnin
     override val stepName = message("sam.debug.attach")
     override val hidden = false
 
-    override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
         try {
             val samProcessHandler = getSamProcess(context)
             val samCompleted = AtomicBoolean(false)

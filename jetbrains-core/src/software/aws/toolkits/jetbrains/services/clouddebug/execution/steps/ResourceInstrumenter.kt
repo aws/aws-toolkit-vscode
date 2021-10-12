@@ -12,7 +12,7 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugC
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -44,14 +44,14 @@ class ResourceInstrumenter(private val settings: EcsServiceCloudDebuggingRunSett
 
     override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
         ClouddebugTelemetry.instrument(
-            project = context.project,
+            project = context.getAttribute(Context.PROJECT_ATTRIBUTE),
             result = result,
             workflowToken = context.workflowToken,
             value = Duration.between(startTime, Instant.now()).toMillis().toDouble()
         )
     }
 
-    override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {
+    override fun handleSuccessResult(output: String, messageEmitter: StepEmitter, context: Context) {
         val targets = CliOutputParser.parseInstrumentResponse(output) ?: throw RuntimeException("Could not get targets from response")
         /* TODO uncomment this when the cli conforms to the contract
         val mappedTargets = targets.targets.map { it.name to it.target }.toMap()

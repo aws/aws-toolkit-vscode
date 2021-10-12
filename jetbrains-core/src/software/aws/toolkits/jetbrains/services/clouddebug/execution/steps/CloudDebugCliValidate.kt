@@ -10,15 +10,15 @@ import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugResolver
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 
 class CloudDebugCliValidate : Step() {
     override val stepName = "Checking for cloud-debug validity and updates"
 
-    override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
-        CloudDebugResolver.validateOrUpdateCloudDebug(context.project, messageEmitter, context)
+    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+        CloudDebugResolver.validateOrUpdateCloudDebug(context.getRequiredAttribute(Context.PROJECT_ATTRIBUTE), messageEmitter, context)
     }
 
     companion object {
