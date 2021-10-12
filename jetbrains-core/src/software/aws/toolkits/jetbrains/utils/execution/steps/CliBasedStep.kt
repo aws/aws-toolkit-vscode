@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.utils.execution.steps
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessAdapter
 import com.intellij.execution.process.KillableColoredProcessHandler
-import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
@@ -32,7 +31,7 @@ abstract class CliBasedStep : Step() {
      * Processes the command's stdout and throws an exception after the CLI exits with failure.
      * @return null if the failure should be ignored. You're probably doing something wrong if you want this.
      */
-    protected open fun handleErrorResult(exitCode: Int, output: String, stepEmitter: StepEmitter): Nothing? {
+    protected open fun handleErrorResult(exitCode: Int, output: String, stepEmitter: StepEmitter) {
         throw IllegalStateException(message("general.execution.cli_error", exitCode))
     }
 
@@ -44,26 +43,11 @@ abstract class CliBasedStep : Step() {
 
             LOG.debug { "Built command line: ${commandLine.commandLineString}" }
 
-            // Unix: Sends SIGINT on destroy so Docker container is shut down
-            // Windows: Run with mediator to allow for Cntrl+C to be used
-            val processHandler = object : KillableColoredProcessHandler(commandLine, true) {
-                override fun startNotify() {
-                    super.startNotify()
-                    onProcessStart(context, this)
-                }
-
-                override fun doDestroyProcess() {
-                    // send signal only if user explicitly requests termination
-                    if (this.getUserData(ProcessHandler.TERMINATION_REQUESTED) == true) {
-                        super.doDestroyProcess()
-                    } else {
-                        detachProcess()
-                    }
-                }
-            }
+            val processHandler = createProcessHandler(commandLine, context)
             val processCapture = CapturingProcessAdapter()
             processHandler.addProcessListener(processCapture)
             processHandler.addProcessListener(createProcessEmitter(messageEmitter))
+            messageEmitter.attachProcess(processHandler)
             processHandler.startNotify()
 
             monitorProcess(processHandler, context, ignoreCancellation)
@@ -89,6 +73,23 @@ abstract class CliBasedStep : Step() {
         }
     }
 
+    protected open fun createProcessHandler(commandLine: GeneralCommandLine, context: Context): ProcessHandler =
+        object : KillableColoredProcessHandler(commandLine) {
+            override fun startNotify() {
+                super.startNotify()
+                onProcessStart(context, this)
+            }
+
+            override fun doDestroyProcess() {
+                // send signal only if user explicitly requests termination
+                if (this.getUserData(ProcessHandler.TERMINATION_REQUESTED) == true) {
+                    super.doDestroyProcess()
+                } else {
+                    detachProcess()
+                }
+            }
+        }
+
     protected class CliOutputEmitter(private val messageEmitter: StepEmitter, private val printStdOut: Boolean = true) : ProcessAdapter() {
         override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
             LOG.debug {
@@ -111,7 +112,7 @@ abstract class CliBasedStep : Step() {
         }
     }
 
-    private fun monitorProcess(processHandler: OSProcessHandler, context: Context, ignoreCancellation: Boolean) {
+    private fun monitorProcess(processHandler: ProcessHandler, context: Context, ignoreCancellation: Boolean) {
         while (!processHandler.waitFor(WAIT_INTERVAL_MILLIS)) {
             if (!ignoreCancellation && context.isCancelled()) {
                 if (!processHandler.isProcessTerminating && !processHandler.isProcessTerminated) {

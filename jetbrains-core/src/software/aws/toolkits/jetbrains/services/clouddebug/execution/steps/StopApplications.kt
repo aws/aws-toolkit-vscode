@@ -58,7 +58,7 @@ class StopApplication(
 
     override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
         ClouddebugTelemetry.stopApplication(
-            project = context.project,
+            project = context.getAttribute(Context.PROJECT_ATTRIBUTE),
             result = result,
             workflowToken = context.workflowToken,
             value = Duration.between(startTime, Instant.now()).toMillis().toDouble()
@@ -71,6 +71,5 @@ class StopApplication(
         } else {
             messageEmitter.emitMessage(output, true)
             // suppress the error if stop fails
-            null
         }
 }

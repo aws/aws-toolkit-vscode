@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
 abstract class CloudDebugCliStep : CliBasedStep() {
     protected fun getCli(context: Context): GeneralCommandLine = context.getRequiredAttribute(CloudDebugCliValidate.EXECUTABLE_ATTRIBUTE).getCommandLine()
 
-    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: StepEmitter): Nothing? {
+    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: StepEmitter) {
         if (output.isNotEmpty()) {
             messageEmitter.emitMessage("Error details:\n", true)
             CliOutputParser.parseErrorOutput(output)?.run {

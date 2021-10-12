@@ -15,15 +15,19 @@ import java.io.OutputStream
  * Executor for a [StepWorkflow]
  */
 class StepExecutor(
-    project: Project,
+    project: Project?,
     private val workflow: StepWorkflow,
     private val messageEmitter: WorkflowEmitter
 ) {
     var onSuccess: ((Context) -> Unit)? = null
     var onError: ((Throwable) -> Unit)? = null
 
-    private val context = Context(project)
+    private val context = Context()
     private val processHandler = StepExecutorProcessHandler(context)
+
+    init {
+        project?.let { context.putAttribute(Context.PROJECT_ATTRIBUTE, project) }
+    }
 
     /**
      * Returns a pseudo process handler that coincides with the life cycle of the StepExecutors workflow

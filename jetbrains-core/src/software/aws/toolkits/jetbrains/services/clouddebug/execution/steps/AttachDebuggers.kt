@@ -97,7 +97,7 @@ class AttachDebugger(
             throw e.cause ?: e
         } finally {
             ClouddebugTelemetry.attachDebugger(
-                project = context.project,
+                project = context.getAttribute(Context.PROJECT_ATTRIBUTE),
                 result = result,
                 workflowToken = context.workflowToken,
                 cloudDebugPlatform = CloudDebugPlatform.from(containerOptions.platform.name),

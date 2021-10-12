@@ -56,7 +56,8 @@ class CloudDebugRunState(
         )
 
         val rootStep = CloudDebugWorkflow(settings, environment)
-        val context = Context(project)
+        val context = Context()
+        context.putAttribute(Context.PROJECT_ATTRIBUTE, project)
         val processHandler = CloudDebugProcessHandler(context)
 
         ApplicationManager.getApplication().executeOnPooledThread {

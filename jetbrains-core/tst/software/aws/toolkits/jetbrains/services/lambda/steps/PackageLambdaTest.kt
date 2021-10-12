@@ -49,7 +49,7 @@ class PackageLambdaTest {
         )
 
         assertThatThrownBy {
-            sut.run(Context(projectRule.project), ConsoleMessageEmitter("PackageLambdaTest"))
+            sut.run(Context(), ConsoleMessageEmitter("PackageLambdaTest"))
         }.hasMessageContaining("We broke it")
     }
 
@@ -140,7 +140,7 @@ class PackageLambdaTest {
             ecrRepo = ecrRepo
         )
 
-        val context = Context(projectRule.project)
+        val context = Context()
         sut.run(context, ConsoleMessageEmitter("PackageLambdaTest"))
 
         val uploadedCode = context.getRequiredAttribute(UPLOADED_CODE_LOCATION)

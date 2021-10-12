@@ -15,10 +15,10 @@ class ValidateDocker : CliBasedStep() {
 
     override fun constructCommandLine(context: Context): GeneralCommandLine = GeneralCommandLine("docker", "ps")
 
-    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: StepEmitter): Nothing? {
+    override fun handleErrorResult(exitCode: Int, output: String, stepEmitter: StepEmitter) {
         throw Exception(message("lambda.debug.docker.not_connected"))
     }
 
     // Change logger to not log std out since we dont actually want the output of docker
-    override fun createProcessEmitter(messageEmitter: StepEmitter): ProcessListener = CliOutputEmitter(messageEmitter, printStdOut = false)
+    override fun createProcessEmitter(stepEmitter: StepEmitter): ProcessListener = CliOutputEmitter(stepEmitter, printStdOut = false)
 }
