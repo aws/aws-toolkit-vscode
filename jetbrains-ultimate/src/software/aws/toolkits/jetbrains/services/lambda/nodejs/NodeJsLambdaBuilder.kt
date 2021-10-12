@@ -19,8 +19,8 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.HandlerRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.steps.BuildLambdaRequest
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import java.nio.file.Files
 import java.nio.file.Path
@@ -47,7 +47,7 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
             val buildWithTsStep = object : Step() {
                 override val stepName = message("lambda.build.typescript.compiler.step")
 
-                override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+                override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
                     // relative to source root so that SAM build can copy it over to the correct place
                     val tsOutput = sourceRoot.resolve(TS_BUILD_DIR).normalize().toAbsolutePath().toString()
                     // relative to existing tsconfig because there is no other option https://github.com/microsoft/TypeScript/issues/25430

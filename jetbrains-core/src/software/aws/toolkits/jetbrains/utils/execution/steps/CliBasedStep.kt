@@ -24,19 +24,19 @@ abstract class CliBasedStep : Step() {
     protected abstract fun constructCommandLine(context: Context): GeneralCommandLine
     protected open fun recordTelemetry(context: Context, startTime: Instant, result: Result) {}
     protected open fun onProcessStart(context: Context, processHandler: ProcessHandler) {}
-    protected open fun createProcessEmitter(messageEmitter: MessageEmitter): ProcessListener = CliOutputEmitter(messageEmitter)
+    protected open fun createProcessEmitter(stepEmitter: StepEmitter): ProcessListener = CliOutputEmitter(stepEmitter)
 
-    protected open fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {}
+    protected open fun handleSuccessResult(output: String, messageEmitter: StepEmitter, context: Context) {}
 
     /**
      * Processes the command's stdout and throws an exception after the CLI exits with failure.
      * @return null if the failure should be ignored. You're probably doing something wrong if you want this.
      */
-    protected open fun handleErrorResult(exitCode: Int, output: String, messageEmitter: MessageEmitter): Nothing? {
+    protected open fun handleErrorResult(exitCode: Int, output: String, stepEmitter: StepEmitter): Nothing? {
         throw IllegalStateException(message("general.execution.cli_error", exitCode))
     }
 
-    final override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+    final override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
         val startTime = Instant.now()
         var result = Result.Succeeded
         try {
@@ -89,7 +89,7 @@ abstract class CliBasedStep : Step() {
         }
     }
 
-    protected class CliOutputEmitter(private val messageEmitter: MessageEmitter, private val printStdOut: Boolean = true) : ProcessAdapter() {
+    protected class CliOutputEmitter(private val messageEmitter: StepEmitter, private val printStdOut: Boolean = true) : ProcessAdapter() {
         override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
             LOG.debug {
                 val prefix = if (outputType == ProcessOutputTypes.STDERR) {

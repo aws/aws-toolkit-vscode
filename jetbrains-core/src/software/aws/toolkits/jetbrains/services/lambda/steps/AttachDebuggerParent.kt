@@ -4,16 +4,16 @@
 package software.aws.toolkits.jetbrains.services.lambda.steps
 
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 
 class AttachDebuggerParent(private val childSteps: List<Step>) : Step() {
     override val stepName = message("sam.debug.attach")
     override val hidden = childSteps.size <= 1
-    override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
         childSteps.forEach {
-            it.run(context, messageEmitter, ignoreCancellation)
+            it.run(context, stepEmitter, ignoreCancellation)
         }
     }
 }

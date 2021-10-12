@@ -3,28 +3,17 @@
 
 package software.aws.toolkits.jetbrains.utils.execution.steps
 
-import com.intellij.build.BuildProgressListener
-import com.intellij.build.events.BuildEvent
-import com.intellij.build.events.FailureResult
-import com.intellij.build.events.FinishBuildEvent
-import com.intellij.build.events.FinishEvent
-import com.intellij.build.events.OutputBuildEvent
-import com.intellij.build.events.StartBuildEvent
-import com.intellij.build.events.SuccessResult
-import com.intellij.build.events.impl.SkippedResultImpl
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyZeroInteractions
-import software.aws.toolkits.core.utils.test.aString
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -33,13 +22,15 @@ class StepExecutorTest {
     @JvmField
     val projectRule = ProjectRule()
 
-    private lateinit var buildProgressListener: BuildProgressListener
+    private lateinit var workflowEmitter: WorkflowEmitter
     private lateinit var successCallback: (Context) -> Unit
     private lateinit var errorCallback: (Throwable) -> Unit
 
     @Before
     fun setUp() {
-        buildProgressListener = mock()
+        workflowEmitter = mock {
+            on { createStepEmitter() } doAnswer { createMockEmitter() }
+        }
         successCallback = mock()
         errorCallback = mock()
     }
@@ -56,14 +47,8 @@ class StepExecutorTest {
         verify(successCallback).invoke(any())
         verifyZeroInteractions(errorCallback)
 
-        argumentCaptor<BuildEvent> {
-            verify(buildProgressListener, times(2)).onEvent(any(), capture())
-
-            assertThat(firstValue).isInstanceOf(StartBuildEvent::class.java)
-            assertThat(secondValue).isInstanceOfSatisfying(FinishEvent::class.java) {
-                assertThat(it.result).isInstanceOf(SuccessResult::class.java)
-            }
-        }
+        verify(workflowEmitter).workflowStarted()
+        verify(workflowEmitter).workflowCompleted()
     }
 
     @Test
@@ -80,16 +65,8 @@ class StepExecutorTest {
         verifyZeroInteractions(successCallback)
         verify(errorCallback).invoke(any())
 
-        argumentCaptor<BuildEvent> {
-            verify(buildProgressListener, times(3)).onEvent(any(), capture())
-
-            assertThat(firstValue).isInstanceOf(StartBuildEvent::class.java)
-            assertThat(secondValue).isInstanceOf(OutputBuildEvent::class.java)
-            assertThat(thirdValue).isInstanceOfSatisfying(FinishBuildEvent::class.java) {
-                assertThat(it.result).isInstanceOf(FailureResult::class.java)
-                assertThat(it.message).contains("failed")
-            }
-        }
+        verify(workflowEmitter).workflowStarted()
+        verify(workflowEmitter).workflowFailed(any())
     }
 
     @Test
@@ -103,15 +80,8 @@ class StepExecutorTest {
         verify(successCallback).invoke(any())
         verify(errorCallback).invoke(any())
 
-        argumentCaptor<BuildEvent> {
-            verify(buildProgressListener, times(2)).onEvent(any(), capture())
-
-            assertThat(firstValue).isInstanceOf(StartBuildEvent::class.java)
-            assertThat(secondValue).isInstanceOfSatisfying(FinishBuildEvent::class.java) {
-                assertThat(it.result).isInstanceOf(FailureResult::class.java)
-                assertThat(it.message).contains("failed")
-            }
-        }
+        verify(workflowEmitter).workflowStarted()
+        verify(workflowEmitter).workflowFailed(any())
     }
 
     @Test
@@ -137,15 +107,8 @@ class StepExecutorTest {
         verifyZeroInteractions(successCallback)
         verify(errorCallback).invoke(any())
 
-        argumentCaptor<BuildEvent> {
-            verify(buildProgressListener, times(2)).onEvent(any(), capture())
-
-            assertThat(firstValue).isInstanceOf(StartBuildEvent::class.java)
-            assertThat(secondValue).isInstanceOfSatisfying(FinishBuildEvent::class.java) {
-                assertThat(it.result).isInstanceOf(SkippedResultImpl::class.java)
-                assertThat(it.message).contains("canceled")
-            }
-        }
+        verify(workflowEmitter).workflowStarted()
+        verify(workflowEmitter).workflowFailed(any())
     }
 
     @Test
@@ -163,18 +126,16 @@ class StepExecutorTest {
         verify(successCallback).invoke(any())
         verify(errorCallback).invoke(any())
 
-        argumentCaptor<BuildEvent> {
-            verify(buildProgressListener, times(2)).onEvent(any(), capture())
+        verify(workflowEmitter).workflowStarted()
+        verify(workflowEmitter).workflowFailed(any())
+    }
 
-            assertThat(firstValue).isInstanceOf(StartBuildEvent::class.java)
-            assertThat(secondValue).isInstanceOfSatisfying(FinishBuildEvent::class.java) {
-                assertThat(it.result).isInstanceOf(FailureResult::class.java)
-            }
-        }
+    private fun createMockEmitter(): StepEmitter = mock {
+        on { createChildEmitter(any(), any()) } doAnswer { createMockEmitter() }
     }
 
     private fun createExecutor(vararg steps: Step): StepExecutor {
-        val executor = StepExecutor(projectRule.project, aString(), StepWorkflow(*steps), aString(), buildProgressListener)
+        val executor = StepExecutor(projectRule.project, StepWorkflow(*steps), workflowEmitter)
         executor.onSuccess = successCallback
         executor.onError = errorCallback
         return executor

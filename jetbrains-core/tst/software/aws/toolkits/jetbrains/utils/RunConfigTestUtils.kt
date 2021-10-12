@@ -36,7 +36,6 @@ import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon.Companion.minImageVersion
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
-import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.io.File
@@ -60,10 +59,7 @@ fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: Stri
             val listener = object : OutputListener() {
                 override fun processTerminated(event: ProcessEvent) {
                     super.processTerminated(event)
-                    // if using the default step executor as the process handle, need to pull text from it or it will be empty
-                    // otherwise, pull the output from the process itself
-                    val output = (event.processHandler as? StepExecutor.StepExecutorProcessHandler)?.getFinalOutput() ?: this.output
-                    executionFuture.complete(output)
+                    executionFuture.complete(this.output)
                 }
             }
 

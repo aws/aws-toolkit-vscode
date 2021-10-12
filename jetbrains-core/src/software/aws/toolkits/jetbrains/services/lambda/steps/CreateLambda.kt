@@ -9,14 +9,14 @@ import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.steps.PackageLambda.Companion.UPLOADED_CODE_LOCATION
 import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 
 class CreateLambda(private val lambdaClient: LambdaClient, private val details: FunctionDetails) : Step() {
     override val stepName = message("lambda.create.step.create_lambda")
 
-    override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
         lambdaClient.createFunction {
             it.functionName(details.name)
             it.description(details.description)

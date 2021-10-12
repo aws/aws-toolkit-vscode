@@ -17,14 +17,14 @@ import software.aws.toolkits.jetbrains.services.clouddebug.asLogEvent
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.CloudDebugCliValidate
 import software.aws.toolkits.jetbrains.utils.execution.steps.CliBasedStep
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 import java.util.concurrent.atomic.AtomicReference
 
 abstract class CloudDebugCliStep : CliBasedStep() {
     protected fun getCli(context: Context): GeneralCommandLine = context.getRequiredAttribute(CloudDebugCliValidate.EXECUTABLE_ATTRIBUTE).getCommandLine()
 
-    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: MessageEmitter): Nothing? {
+    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: StepEmitter): Nothing? {
         if (output.isNotEmpty()) {
             messageEmitter.emitMessage("Error details:\n", true)
             CliOutputParser.parseErrorOutput(output)?.run {
@@ -37,9 +37,9 @@ abstract class CloudDebugCliStep : CliBasedStep() {
         throw IllegalStateException(message("cloud_debug.step.general.cli_error"))
     }
 
-    override fun createProcessEmitter(messageEmitter: MessageEmitter): ProcessListener = CliOutputEmitter(messageEmitter)
+    override fun createProcessEmitter(messageEmitter: StepEmitter): ProcessListener = CliOutputEmitter(messageEmitter)
 
-    private class CliOutputEmitter(private val messageEmitter: MessageEmitter) : ProcessAdapter() {
+    private class CliOutputEmitter(private val messageEmitter: StepEmitter) : ProcessAdapter() {
         val previousLevel = AtomicReference<Level>(null)
         override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
             if (outputType == ProcessOutputTypes.STDERR) {

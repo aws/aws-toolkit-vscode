@@ -3,11 +3,30 @@
 
 package software.aws.toolkits.jetbrains.utils.execution.steps
 
-import com.intellij.build.BuildProgressListener
 import com.intellij.util.ExceptionUtil
 
-class ConsoleMessageEmitter(private val stepName: String) : MessageEmitter {
-    override fun createChild(stepName: String, hidden: Boolean): MessageEmitter = ConsoleMessageEmitter(stepName)
+class ConsoleViewWorkflowEmitter private constructor(private val workflowTitle: String) : WorkflowEmitter {
+    override fun createStepEmitter(): StepEmitter = ConsoleMessageEmitter(workflowTitle)
+
+    override fun workflowStarted() {
+        println("Workflow '$workflowTitle' started")
+    }
+
+    override fun workflowCompleted() {
+        println("Workflow '$workflowTitle' completed")
+    }
+
+    override fun workflowFailed(e: Throwable) {
+        println("Workflow '$workflowTitle' failed: ${ExceptionUtil.getThrowableText(e)}")
+    }
+
+    companion object {
+        fun createEmitter(workflowTitle: String) = ConsoleViewWorkflowEmitter(workflowTitle)
+    }
+}
+
+class ConsoleMessageEmitter(private val stepName: String) : StepEmitter {
+    override fun createChildEmitter(stepName: String, hidden: Boolean): StepEmitter = ConsoleMessageEmitter(stepName)
 
     override fun startStep() {
         println("[$stepName] [Start Event]")
@@ -15,10 +34,6 @@ class ConsoleMessageEmitter(private val stepName: String) : MessageEmitter {
 
     override fun finishSuccessfully() {
         println("[$stepName] [Finish Event] Success")
-    }
-
-    override fun addListener(listener: BuildProgressListener) {
-        println("Added a listener $listener in step $stepName")
     }
 
     override fun finishExceptionally(e: Throwable) {

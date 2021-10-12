@@ -12,7 +12,7 @@ open class StepWorkflow(private val topLevelSteps: List<Step>) : Step() {
     override val stepName = "StepWorkflow"
     override val hidden = true
 
-    override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
         topLevelSteps.forEach {
             it.run(context, messageEmitter)
         }
