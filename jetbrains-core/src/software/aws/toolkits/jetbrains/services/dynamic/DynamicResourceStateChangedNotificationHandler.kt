@@ -24,12 +24,12 @@ class DynamicResourceStateChangedNotificationHandler(private val project: Projec
             notifyInfo(
                 message(
                     "dynamic_resources.operation_status_notification_title",
-                    state.resourceIdentifier ?: "",
+                    state.resourceIdentifier ?: state.resourceType,
                     state.operation.name.toLowerCase()
                 ),
                 message(
                     "dynamic_resources.operation_status_success",
-                    state.resourceIdentifier ?: "",
+                    state.resourceIdentifier ?: state.resourceType,
                     state.operation.name.toLowerCase()
                 ),
                 project
