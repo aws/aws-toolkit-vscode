@@ -46,7 +46,7 @@ class DynamicResourcesSettingsTest {
                 // Search for AWS because sometimes it is off the screen
                 search("AWS")
 
-                selectPreferencePage("Tools", "AWS", "Additional Explorer Resources")
+                selectPreferencePage("Tools", message("aws.settings.title"), message("aws.settings.dynamic_resources_configurable.title"))
 
                 val applyButton = button("Apply")
                 step("Clear all resources") {
