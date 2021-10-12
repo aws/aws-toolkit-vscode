@@ -18,7 +18,7 @@ import {
 } from '../../../shared/ui/pickerPrompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
-import { selectedPreviously } from '../../../shared/localizedText'
+import { lastSelected } from '../../../shared/localizedText'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -166,32 +166,34 @@ describe('QuickPickPrompter', function () {
         assert.strictEqual(await testPrompter.prompt(), testItems[0].data)
     })
 
-    it('returns last response', async function () {
+    it('returns last-selected item', async function () {
         testPrompter.onDidShow(() => (picker.selectedItems = [testItems[1]]))
         const result = testPrompter.prompt()
         assert.strictEqual(await result, testItems[1].data)
         assert.strictEqual(testPrompter.lastResponse, testItems[1])
     })
 
-    it('can set last response', async function () {
+    it('can set last-selected item', async function () {
         testPrompter.setLastResponse(testItems[2])
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
+        // setLastResponse() puts the item at the top of the list. #2148
+        assert.deepStrictEqual(picker.items[0], picker.activeItems[0])
     })
 
-    it('tries to recover last reponse from partial data', async function () {
+    it('tries to recover last-selected item from partial data', async function () {
         testPrompter.setLastResponse(2)
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
     })
 
-    it('shows first item if last response does not exist', async function () {
+    it('shows first item if last-selected item does not exist', async function () {
         testPrompter.setLastResponse({ label: 'item4', data: 3 })
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
     })
 
     it('adds a message to the description when an item has been previously selected', async function () {
-        testPrompter = new QuickPickPrompter(picker, { addSelectedPreviouslyText: true })
+        testPrompter = new QuickPickPrompter(picker, { lastSelectedText: true })
         testPrompter.setLastResponse({ label: 'item1', data: 0 })
-        const description = ` (${selectedPreviously})`
+        const description = ` (${lastSelected})`
         assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })
 

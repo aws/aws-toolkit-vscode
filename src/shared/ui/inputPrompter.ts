@@ -18,7 +18,6 @@ export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'validateInpu
     totalSteps?: number
     buttons?: PrompterButtons<string>
     validateInput?(value: string): string | undefined
-    onDidSelect?(value: string): void
 }
 
 export type InputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
@@ -99,9 +98,6 @@ export class InputBoxPrompter extends Prompter<string> {
             this.inputBox.onDidAccept(() => {
                 this.lastResponse = this.inputBox.value
                 if (!this.inputBox.validationMessage) {
-                    if (this.options.onDidSelect) {
-                        this.options.onDidSelect(this.inputBox.value)
-                    }
                     resolve(this.inputBox.value)
                 }
             })

@@ -67,6 +67,7 @@ export async function publishStateMachine(
     if (!region) {
         const r = await createRegionPrompter(undefined, {
             buttons: createCommonButtons(sfnCreateStateMachineUrl),
+            defaultRegion: awsContext.getCredentialDefaultRegion(),
         }).prompt()
         if (!isValidResponse(r)) {
             logger.error('publishStateMachine: invalid region selected: %O', r)

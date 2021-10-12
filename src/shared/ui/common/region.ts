@@ -25,15 +25,7 @@ export function createRegionPrompter(
 ): QuickPickPrompter<Region> {
     const lastRegionKey = 'lastSelectedRegion'
     if (!regions) {
-        const lastRegion = ext.context.globalState.get<string>(lastRegionKey)
         regions = getRegionsForActiveCredentials(ext.awsContext, ext.regionProvider)
-        for (let i = 0; lastRegion !== undefined && i < regions.length; i++) {
-            if (regions[i].id === lastRegion) {
-                regions.splice(0, 0, regions[i]) // prepend
-                regions.splice(i + 1, 1) // delete
-                break
-            }
-        }
     }
 
     const items = regions.map(region => ({
@@ -56,12 +48,23 @@ export function createRegionPrompter(
         compare: (a, b) => {
             return a.detail === options.defaultRegion ? -1 : b.detail === options.defaultRegion ? 1 : 0
         },
-        onDidSelect: item => {
-            getLogger().debug('createRegionPrompter: onDidSelect: selected %O', item)
-            const region = typeof item === 'string' ? item : (item as Region).id
-            ext.context.globalState.update(lastRegionKey, region)
-        },
     })
 
-    return prompter
+    const lastRegion = ext.context.globalState.get<Region>(lastRegionKey)
+    if (lastRegion !== undefined && (lastRegion as any).id) {
+        const found = regions.find(val => val.id === lastRegion.id)
+        if (found) {
+            prompter.lastResponse = {
+                label: lastRegion.name,
+                detail: lastRegion.id,
+                data: lastRegion,
+                // description: '',
+            }
+        }
+    }
+    return prompter.transform(item => {
+        getLogger().debug('createRegionPrompter: selected %O', item)
+        ext.context.globalState.update(lastRegionKey, item)
+        return item
+    })
 }
