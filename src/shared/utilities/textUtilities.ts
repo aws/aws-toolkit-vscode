@@ -82,3 +82,7 @@ export async function insertTextIntoFile(text: string, filePath: string, line: n
         }
     })
 }
+
+export function capitalize<S extends string>(s: S): Capitalize<S> {
+    return `${s[0].toUpperCase()}${s.slice(1)}` as any
+}

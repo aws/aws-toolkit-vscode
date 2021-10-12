@@ -16,7 +16,12 @@ import * as logger from './logger'
  */
 export type SettingsConfiguration = ClassToInterfaceType<DefaultSettingsConfiguration>
 
-export type AwsDevSetting = 'aws.forceCloud9' | 'aws.dev.forceTelemetry' | 'aws.dev.foo'
+export type AwsDevSetting =
+    | 'aws.forceCloud9'
+    | 'aws.dev.forceTelemetry'
+    | 'aws.developer.caws.apiKey'
+    | 'aws.developer.caws.betaEndpoint'
+    | 'aws.developer.mde.betaEndpoint'
 
 type JSPrimitiveTypeName =
     | 'undefined'
@@ -34,6 +39,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         private readonly extensionSettingsPrefix: string = 'aws',
         private readonly log: logger.Logger = logger.getLogger()
     ) {}
+
     public readSetting<T>(settingKey: string): T | undefined
     public readSetting<T>(settingKey: string, defaultValue: T): T
 

@@ -21,6 +21,7 @@ import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
+import { MdeRootNode } from '../mde/mdeRootNode'
 
 /**
  * An AWS Explorer node representing a region.
@@ -76,6 +77,9 @@ export class RegionNode extends AWSTreeNodeBase {
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
+
+        // TODO: make this conditional at release-time.
+        this.childNodes.push(new MdeRootNode(this.regionCode))
     }
 
     private tryClearChildren(): void {
