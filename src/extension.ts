@@ -259,11 +259,11 @@ export async function activate(context: vscode.ExtensionContext) {
                 context: extContext.extensionContext,
                 outputChannel: toolkitOutputChannel,
             })
-
-            setImmediate(async () => {
-                await activateStepFunctions(context, ext.awsContext, toolkitOutputChannel)
-            })
         }
+
+        setImmediate(async () => {
+            await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+        })
 
         caws.activate(extContext)
         mde.activate(extContext)

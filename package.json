@@ -808,27 +808,11 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.stepfunctions.createStateMachineFromTemplate",
-                    "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.stepfunctions.publishStateMachine",
-                    "when": "!isCloud9"
-                },
-                {
                     "command": "aws.ssmDocument.createLocalDocument",
                     "when": "!isCloud9"
                 },
                 {
                     "command": "aws.ssmDocument.publishDocument",
-                    "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.previewStateMachine",
-                    "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.cdk.renderStateMachineGraph",
                     "when": "!isCloud9"
                 },
                 {
@@ -875,7 +859,7 @@
             "editor/title": [
                 {
                     "command": "aws.previewStateMachine",
-                    "when": "(editorLangId == asl || editorLangId == asl-yaml) && !isCloud9",
+                    "when": "editorLangId == asl || editorLangId == asl-yaml",
                     "group": "navigation"
                 },
                 {
@@ -1133,17 +1117,17 @@
                 },
                 {
                     "command": "aws.stepfunctions.createStateMachineFromTemplate",
-                    "when": "view == aws.explorer && viewItem == awsStepFunctionsNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsStepFunctionsNode",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.downloadStateMachineDefinition",
-                    "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.renderStateMachineGraph",
-                    "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode",
                     "group": "0@2"
                 },
                 {
@@ -1158,7 +1142,7 @@
                 },
                 {
                     "command": "aws.executeStateMachine",
-                    "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode",
                     "group": "0@3"
                 },
                 {
@@ -2197,7 +2181,7 @@
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
-                "when": "editorTextFocus && (editorLangId == asl || editorLangId == asl-yaml) && !isCloud9"
+                "when": "editorTextFocus && (editorLangId == asl || editorLangId == asl-yaml)"
             }
         ],
         "grammars": [
