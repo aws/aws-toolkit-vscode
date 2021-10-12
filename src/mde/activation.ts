@@ -12,6 +12,7 @@ import { mdeConnectCommand, mdeCreateCommand, mdeDeleteCommand } from './mdeComm
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
+import { registerCreateMdeCommand } from './vue/backend'
 import { activateUriHandlers } from './mdeUriHandlers'
 import { promptDevFiles } from './wizards/devFiles'
 // import * as mde from '../shared/clients/mdeClient'
@@ -55,6 +56,7 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
             mdeConnectCommand(treenode.env)
         })
     )
+    ctx.extensionContext.subscriptions.push(registerCreateMdeCommand(ctx))
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.create', async (treenode: MdeRootNode) => {
             const testRemote = {

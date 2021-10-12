@@ -99,6 +99,7 @@ const vueConfig = {
     target: 'web',
     entry: {
         samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeEntry.ts'),
+        createMdeVue: path.resolve(__dirname, 'src', 'mde', 'vue', 'entry.ts'),
     },
     module: {
         rules: baseConfig.module.rules.concat(

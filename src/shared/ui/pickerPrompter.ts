@@ -106,7 +106,7 @@ export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'but
 
 export const CUSTOM_USER_INPUT = Symbol()
 
-function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
+export function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
     return typeof obj === 'object' && typeof (obj as vscode.QuickPickItem).label === 'string' && 'data' in obj
 }
 
@@ -243,7 +243,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
-    public set lastResponse(response: DataQuickPickItem<T> | undefined) {
+    public set lastResponse(response: T | DataQuickPickItem<T> | undefined) {
         this.setLastResponse(response)
     }
 
@@ -417,7 +417,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         return result instanceof Function ? await result() : result
     }
 
-    public setLastResponse(picked: T | DataQuickPickItem<T> | undefined): void {
+    protected setLastResponse(picked: T | DataQuickPickItem<T> | undefined): void {
         // TODO: figure out how to recover from implicit responses
         if (picked === undefined) {
             return
@@ -509,7 +509,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     private onChangeValue?: vscode.Disposable
 
-    public set lastResponse(response: DataQuickPickItem<T> | undefined) {
+    public set lastResponse(response: T | DataQuickPickItem<T> | undefined) {
         if (this.isUserInput(response)) {
             this.quickPick.value = response.description ?? ''
         } else {
