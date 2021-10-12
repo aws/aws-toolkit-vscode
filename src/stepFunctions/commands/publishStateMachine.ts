@@ -65,10 +65,13 @@ export async function publishStateMachine(
     }
 
     if (!region) {
-        const regionPrompt = await createRegionPrompter(undefined, {
+        const r = await createRegionPrompter(undefined, {
             buttons: createCommonButtons(sfnCreateStateMachineUrl),
         }).prompt()
-        region = isValidResponse(regionPrompt) ? regionPrompt.id : awsContext.getCredentialDefaultRegion()
+        if (!isValidResponse(r)) {
+            logger.error('publishStateMachine: invalid region selected: %O', r)
+        }
+        region = isValidResponse(r) ? r.id : awsContext.getCredentialDefaultRegion()
     }
 
     const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(region)

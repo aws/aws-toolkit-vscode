@@ -5,6 +5,7 @@
 
 import * as nls from 'vscode-nls'
 import { ext } from '../../extensionGlobals'
+import { getLogger } from '../../logger/logger'
 import { Region } from '../../regions/endpoints'
 import { getRegionsForActiveCredentials } from '../../regions/regionUtilities'
 import { PrompterButtons } from '../buttons'
@@ -19,10 +20,21 @@ type RegionPrompterOptions = {
 }
 
 export function createRegionPrompter(
-    regions: Region[] | undefined,
+    regions?: Region[],
     options: RegionPrompterOptions = {}
 ): QuickPickPrompter<Region> {
-    regions = regions ?? getRegionsForActiveCredentials(ext.awsContext, ext.regionProvider)
+    const lastRegionKey = 'lastSelectedRegion'
+    if (!regions) {
+        const lastRegion = ext.context.globalState.get<string>(lastRegionKey)
+        regions = getRegionsForActiveCredentials(ext.awsContext, ext.regionProvider)
+        for (let i = 0; lastRegion !== undefined && i < regions.length; i++) {
+            if (regions[i].id === lastRegion) {
+                regions.splice(0, 0, regions[i]) // prepend
+                regions.splice(i + 1, 1) // delete
+                break
+            }
+        }
+    }
 
     const items = regions.map(region => ({
         label: region.name,
@@ -44,8 +56,10 @@ export function createRegionPrompter(
         compare: (a, b) => {
             return a.detail === options.defaultRegion ? -1 : b.detail === options.defaultRegion ? 1 : 0
         },
-        onDidSelectItem: item => {
-            console.log(item)
+        onDidSelect: item => {
+            getLogger().debug('createRegionPrompter: onDidSelect: selected %O', item)
+            const region = typeof item === 'string' ? item : (item as Region).id
+            ext.context.globalState.update(lastRegionKey, region)
         },
     })
 

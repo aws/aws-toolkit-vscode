@@ -65,7 +65,7 @@ async function registerStepFunctionCommands(
 
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.stepfunctions.publishStateMachine', async (node?: any) => {
-            let region: string | undefined = node?.regionCode
+            const region: string | undefined = node?.regionCode
             await publishStateMachine(awsContext, outputChannel, region)
         })
     )

@@ -30,10 +30,13 @@ interface FilterBoxInputSettings<T> {
     validator?: (input: string) => string | undefined
 }
 
-// Note: 'placeHolder' and 'onDidSelectItem' are ommited since they do not make since in the context of the Prompter
+// NOTE: 'placeHolder' omitted since it does not make sense in a Prompter.
 // TODO: remove 'canPickMany' from the omitted properties and implement/test functionality with multiple QuickPick items
 /**  Additional options to configure the `QuickPick` beyond the standard API  */
-export type ExtendedQuickPickOptions<T> = Omit<vscode.QuickPickOptions, 'canPickMany' | 'placeHolder'> & {
+export type ExtendedQuickPickOptions<T> = Omit<
+    vscode.QuickPickOptions,
+    'canPickMany' | 'placeHolder' | 'onDidSelectItem'
+> & {
     title?: string
     value?: string
     step?: number
@@ -59,6 +62,10 @@ export type ExtendedQuickPickOptions<T> = Omit<vscode.QuickPickOptions, 'canPick
      * This currently mutates the item as it is expected that callers regenerate items every prompt
      */
     addSelectedPreviouslyText?: boolean
+    /**
+     * Optional hook, invoked whenever input is given or an item is selected.
+     */
+    onDidSelect?(item: QuickPickData<T> | string): void
 }
 
 /** See {@link ExtendedQuickPickOptions.noItemsFoundItem noItemsFoundItem} for setting a different item */
@@ -410,6 +417,9 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
         this._lastPicked = choices[0]
         const result = choices[0].data
+        if (this.options.onDidSelect) {
+            this.options.onDidSelect(result)
+        }
 
         return result instanceof Function ? await result() : result
     }
