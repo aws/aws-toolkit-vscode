@@ -27,6 +27,8 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 -   [`AWS:` Commands](#aws-commands)
 -   [Experimental Features](#experimental-features)
 
+See [Experimental Features](#experimental-features) for information about enabling experimental Toolkit features.
+
 ---
 
 ## <a id="ui-components-aws-expl"></a>AWS Explorer
