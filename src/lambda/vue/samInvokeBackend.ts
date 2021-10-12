@@ -115,7 +115,7 @@ export interface GetRuntimesResponse {
 }
 
 export interface SamInvokerBasicRequest {
-    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate' | 'feedback'
+    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate'
 }
 
 export interface SamInvokerLaunchRequest {
@@ -139,9 +139,6 @@ async function handleFrontendToBackendMessage(
     context: ExtContext
 ): Promise<any> {
     switch (message.command) {
-        case 'feedback':
-            vscode.commands.executeCommand('aws.submitFeedback')
-            break
         case 'loadSamLaunchConfig':
             loadSamLaunchConfig(postMessageFn)
             break
