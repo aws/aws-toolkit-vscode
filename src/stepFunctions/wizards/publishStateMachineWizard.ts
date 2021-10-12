@@ -23,11 +23,11 @@ import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
-    WIZARD_GOBACK,
-    WIZARD_TERMINATE,
     WizardContext,
     wizardContinue,
     WizardStep,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
 } from '../../shared/wizards/multiStepWizard'
 import { isStepFunctionsRole } from '../utils'
 const localize = nls.loadMessageBundle()
@@ -76,6 +76,7 @@ interface PublishActionQuickPickItem {
     detail: string
     action: PublishStateMachineAction
 }
+
 export class DefaultPublishStateMachineWizardContext extends WizardContext implements PublishStateMachineWizardContext {
     private readonly helpButton = createHelpButton()
     private iamRoles: IAM.roleListType | undefined

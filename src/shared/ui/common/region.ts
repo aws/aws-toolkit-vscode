@@ -4,7 +4,9 @@
  */
 
 import * as nls from 'vscode-nls'
+import { ext } from '../../extensionGlobals'
 import { Region } from '../../regions/endpoints'
+import { getRegionsForActiveCredentials } from '../../regions/regionUtilities'
 import { PrompterButtons } from '../buttons'
 import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
 
@@ -17,9 +19,11 @@ type RegionPrompterOptions = {
 }
 
 export function createRegionPrompter(
-    regions: Region[],
+    regions: Region[] | undefined,
     options: RegionPrompterOptions = {}
 ): QuickPickPrompter<Region> {
+    regions = regions ?? getRegionsForActiveCredentials(ext.awsContext, ext.regionProvider)
+
     const items = regions.map(region => ({
         label: region.name,
         detail: region.id,
@@ -39,6 +43,9 @@ export function createRegionPrompter(
         matchOnDetail: true,
         compare: (a, b) => {
             return a.detail === options.defaultRegion ? -1 : b.detail === options.defaultRegion ? 1 : 0
+        },
+        onDidSelectItem: item => {
+            console.log(item)
         },
     })
 

@@ -3,15 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { load } from 'js-yaml'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { load } from 'js-yaml'
-const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
-import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { sfnCreateStateMachineUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
+import { createCommonButtons } from '../../shared/ui/buttons'
+import { createRegionPrompter } from '../../shared/ui/common/region'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { isValidResponse } from '../../shared/wizards/wizard'
+import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
+import { refreshStepFunctionsTree } from '../explorer/stepFunctionsNodes'
 import {
     DefaultPublishStateMachineWizardContext,
     PublishStateMachineWizard,
@@ -20,11 +25,13 @@ import {
     PublishStateMachineWizardResponse,
     PublishStateMachineWizardUpdateResponse,
 } from '../wizards/publishStateMachineWizard'
+const localize = nls.loadMessageBundle()
 
-import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
-import { refreshStepFunctionsTree } from '../explorer/stepFunctionsNodes'
-
-export async function publishStateMachine(awsContext: AwsContext, outputChannel: vscode.OutputChannel) {
+export async function publishStateMachine(
+    awsContext: AwsContext,
+    outputChannel: vscode.OutputChannel,
+    region: string | undefined
+) {
     const logger: Logger = getLogger()
 
     const textDocument = vscode.window.activeTextEditor?.document
@@ -57,7 +64,12 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
         }
     }
 
-    const region = awsContext.getCredentialDefaultRegion()
+    if (!region) {
+        const regionPrompt = await createRegionPrompter(undefined, {
+            buttons: createCommonButtons(sfnCreateStateMachineUrl),
+        }).prompt()
+        region = isValidResponse(regionPrompt) ? regionPrompt.id : awsContext.getCredentialDefaultRegion()
+    }
 
     const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(region)
 

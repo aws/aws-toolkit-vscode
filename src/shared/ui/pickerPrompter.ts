@@ -33,10 +33,7 @@ interface FilterBoxInputSettings<T> {
 // Note: 'placeHolder' and 'onDidSelectItem' are ommited since they do not make since in the context of the Prompter
 // TODO: remove 'canPickMany' from the omitted properties and implement/test functionality with multiple QuickPick items
 /**  Additional options to configure the `QuickPick` beyond the standard API  */
-export type ExtendedQuickPickOptions<T> = Omit<
-    vscode.QuickPickOptions,
-    'canPickMany' | 'placeHolder' | 'onDidSelectItem'
-> & {
+export type ExtendedQuickPickOptions<T> = Omit<vscode.QuickPickOptions, 'canPickMany' | 'placeHolder'> & {
     title?: string
     value?: string
     step?: number

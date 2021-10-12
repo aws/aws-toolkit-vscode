@@ -9,6 +9,7 @@ import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
+import { RegionProvider } from './regions/regionProvider'
 import { CodelensRootRegistry } from './sam/codelensRootRegistry'
 import { SchemaService } from './schemas'
 import { TelemetryService } from './telemetry/telemetryService'
@@ -24,6 +25,7 @@ export namespace ext {
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
     export let awsContext: AwsContext
+    export let regionProvider: RegionProvider
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
