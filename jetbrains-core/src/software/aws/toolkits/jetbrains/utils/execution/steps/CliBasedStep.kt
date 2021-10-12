@@ -20,7 +20,7 @@ import software.aws.toolkits.telemetry.Result
 import java.time.Instant
 
 abstract class CliBasedStep : Step() {
-    protected abstract fun constructCommandLine(context: Context): GeneralCommandLine
+    protected abstract fun constructCommandLine(context: Context): GeneralCommandLine?
     protected open fun recordTelemetry(context: Context, startTime: Instant, result: Result) {}
     protected open fun onProcessStart(context: Context, processHandler: ProcessHandler) {}
     protected open fun createProcessEmitter(stepEmitter: StepEmitter): ProcessListener = CliOutputEmitter(stepEmitter)
@@ -40,6 +40,10 @@ abstract class CliBasedStep : Step() {
         var result = Result.Succeeded
         try {
             val commandLine = constructCommandLine(context)
+            if (commandLine == null) {
+                LOG.debug { "Command line not built, skipping step" }
+                throw SkipStepException()
+            }
 
             LOG.debug { "Built command line: ${commandLine.commandLineString}" }
 
@@ -62,6 +66,8 @@ abstract class CliBasedStep : Step() {
             }
 
             handleErrorResult(processCapture.output.exitCode, processCapture.output.stdout, messageEmitter)
+        } catch (e: SkipStepException) {
+            LOG.debug(e) { """Step "$stepName" skipped!""" }
         } catch (e: ProcessCanceledException) {
             LOG.debug(e) { """Step "$stepName" cancelled!""" }
             result = Result.Cancelled

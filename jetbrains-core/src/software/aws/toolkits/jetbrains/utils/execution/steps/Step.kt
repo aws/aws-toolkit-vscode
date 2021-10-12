@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.utils.execution.steps
 
+import com.intellij.openapi.progress.ProcessCanceledException
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 
@@ -18,19 +19,27 @@ abstract class Step {
         // If we are not hidden, we will create a new factory so that the parent node is correct, else pass the current factory so in effect
         // this node does not exist in the hierarchy
         val stepEmitter = parentEmitter.createChildEmitter(stepName, hidden)
-        stepEmitter.startStep()
+        stepEmitter.stepStarted()
         try {
             execute(context, stepEmitter, ignoreCancellation)
 
-            stepEmitter.finishSuccessfully()
+            stepEmitter.stepFinishSuccessfully()
+        } catch (e: SkipStepException) {
+            stepEmitter.stepSkipped()
         } catch (e: Throwable) {
             LOG.info(e) { "Step $stepName failed" }
-            stepEmitter.finishExceptionally(e)
+            stepEmitter.stepFinishExceptionally(e)
             throw e
         }
     }
 
     protected abstract fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean)
+
+    /**
+     * Exception used to abort out of a step and mark it as skipped. This may be used in the case that a step has to make a decision before it decides it
+     * wants to run in the workflow. This differs from throwing a [ProcessCanceledException] which will terminate the workflow.
+     */
+    protected class SkipStepException : RuntimeException()
 
     private companion object {
         val LOG = getLogger<Step>()

@@ -8,6 +8,7 @@ import com.intellij.build.events.BuildEvent
 import com.intellij.build.events.FailureResult
 import com.intellij.build.events.FinishEvent
 import com.intellij.build.events.OutputBuildEvent
+import com.intellij.build.events.SkippedResult
 import com.intellij.build.events.StartEvent
 import com.intellij.build.events.SuccessResult
 import com.intellij.openapi.progress.ProcessCanceledException
@@ -36,7 +37,7 @@ class BuildViewStepEmitterTest {
 
         val messageEmitter = rootEmitter.createChildEmitter(stepId, hidden = false)
 
-        messageEmitter.startStep()
+        messageEmitter.stepStarted()
 
         argumentCaptor<BuildEvent>().apply {
             verify(buildView).onEvent(eq(PARENT_ID), capture())
@@ -57,7 +58,7 @@ class BuildViewStepEmitterTest {
 
         val messageEmitter = rootEmitter.createChildEmitter(stepId, hidden = false)
 
-        messageEmitter.finishSuccessfully()
+        messageEmitter.stepFinishSuccessfully()
 
         argumentCaptor<BuildEvent>().apply {
             verify(buildView).onEvent(eq(PARENT_ID), capture())
@@ -80,7 +81,7 @@ class BuildViewStepEmitterTest {
 
         val messageEmitter = rootEmitter.createChildEmitter(stepId, hidden = false)
 
-        messageEmitter.finishExceptionally(NullPointerException("Test exception"))
+        messageEmitter.stepFinishExceptionally(NullPointerException("Test exception"))
 
         argumentCaptor<BuildEvent>().apply {
             verify(buildView, times(3)).onEvent(eq(PARENT_ID), capture())
@@ -115,7 +116,7 @@ class BuildViewStepEmitterTest {
     fun exceptionsWithoutAMessagePrintsStacktrace() {
         val parentId = "ParentStep"
 
-        rootEmitter.finishExceptionally(NullPointerException())
+        rootEmitter.stepFinishExceptionally(NullPointerException())
 
         argumentCaptor<BuildEvent>().apply {
             verify(buildView, times(2)).onEvent(eq(PARENT_ID), capture())
@@ -133,7 +134,7 @@ class BuildViewStepEmitterTest {
     fun cancelledExceptionsPrintHelpfulMessage() {
         val parentId = "ParentStep"
 
-        rootEmitter.finishExceptionally(ProcessCanceledException())
+        rootEmitter.stepFinishExceptionally(ProcessCanceledException())
 
         argumentCaptor<BuildEvent>().apply {
             verify(buildView, times(2)).onEvent(eq(PARENT_ID), capture())
@@ -143,6 +144,29 @@ class BuildViewStepEmitterTest {
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
                 assertThat(it.message).contains("ParentStep has been canceled")
                 assertThat(it.isStdOut).isFalse()
+            }
+        }
+    }
+
+    @Test
+    fun skippedTestIsReported() {
+        val parentId = "ParentStep"
+        val stepId = "ChildStep"
+
+        val messageEmitter = rootEmitter.createChildEmitter(stepId, hidden = false)
+
+        messageEmitter.stepSkipped()
+
+        argumentCaptor<BuildEvent>().apply {
+            verify(buildView).onEvent(eq(PARENT_ID), capture())
+
+            assertThat(allValues).hasSize(1)
+            assertThat(firstValue).satisfies {
+                assertThat(it.parentId).isEqualTo(parentId)
+                assertThat(it.id).isEqualTo(stepId)
+            }.isInstanceOfSatisfying(FinishEvent::class.java) {
+                assertThat(it.message).isEqualTo(stepId)
+                assertThat(it.result).isInstanceOf(SkippedResult::class.java)
             }
         }
     }
@@ -210,7 +234,7 @@ class BuildViewStepEmitterTest {
 
         val messageEmitter = rootEmitter.createChildEmitter(childId1, hidden = false).createChildEmitter(childId2, hidden = false)
 
-        messageEmitter.startStep()
+        messageEmitter.stepStarted()
 
         argumentCaptor<BuildEvent>().apply {
             verify(buildView).onEvent(eq(PARENT_ID), capture())

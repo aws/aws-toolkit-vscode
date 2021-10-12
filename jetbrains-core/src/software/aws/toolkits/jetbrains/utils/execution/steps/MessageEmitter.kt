@@ -14,9 +14,10 @@ interface WorkflowEmitter {
 
 interface StepEmitter {
     fun createChildEmitter(stepName: String, hidden: Boolean): StepEmitter
-    fun startStep() {}
-    fun finishSuccessfully() {}
-    fun finishExceptionally(e: Throwable) {}
+    fun stepStarted() {}
+    fun stepSkipped() {}
+    fun stepFinishSuccessfully() {}
+    fun stepFinishExceptionally(e: Throwable) {}
     fun emitMessage(message: String, isError: Boolean) {}
     fun emitMessageLine(message: String, isError: Boolean) = emitMessage("$message\n", isError)
     fun attachProcess(handler: ProcessHandler) {}
