@@ -26,6 +26,8 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 -   [AWS Systems Manager](#ssm-files)
 -   [`AWS:` Commands](#aws-commands)
 
+See [Experimental Features](#experimental-features) for information about enabling experimental Toolkit features.
+
 ---
 
 ## <a id="ui-components-aws-expl"></a>AWS Explorer
