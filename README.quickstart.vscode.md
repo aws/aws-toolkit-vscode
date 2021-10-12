@@ -25,8 +25,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 -   [AWS Step Functions](#sfn-files)
 -   [AWS Systems Manager](#ssm-files)
 -   [`AWS:` Commands](#aws-commands)
-
-See [Experimental Features](#experimental-features) for information about enabling experimental Toolkit features.
+-   [Experimental Features](#experimental-features)
 
 ---
 
@@ -244,6 +243,20 @@ palette_, available by selecting _View > Command Palette_ or by typing
 
 ---
 
+# <a id="experimental-features"></a>Experimental Features
+
+Sometimes we'll introduce experimental features that we're trying out. These may have bugs, usability problems or may not be fully functional, and because these
+aren't ready for prime-time we'll hide them behind an experimental feature flag.
+
+Experimental features can be enabled in the extension preferences
+(`Preferences -> Settings -> Extensions -> AWS Configuration -> Experiments`).
+
+Please note that experimental features may be disabled or removed at any time.
+
+{ [Return to Top](#top) }
+
+---
+
 # <a id="additional-setup-steps"></a>Setup
 
 To access most features of the AWS Toolkit, complete the [Setting Up](https://docs.aws.amazon.com/console/toolkit-for-vscode/getting-started) steps from the user guide.
@@ -257,20 +270,6 @@ To develop [serverless applications](https://aws.amazon.com/serverless/) with th
 1. Install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) (Command Line Interface).
 1. Install and start [Docker](https://docs.docker.com/install/).
 1. Install the AWS [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
-
-{ [Return to Top](#top) }
-
----
-
-# <a id="experimental-features"></a>Experimental Features
-
-Sometimes we'll introduce experimental features that we're trying out. These may have bugs, usability problems or may not be fully functional, and because these
-aren't ready for prime-time we'll hide them behind an experimental feature flag.
-
-Experimental features can be enabled in the extension preferences
-(`Preferences -> Settings -> Extensions -> AWS Configuration -> Experiments`).
-
-Please note that experimental features may be disabled or removed at any time.
 
 { [Return to Top](#top) }
 
