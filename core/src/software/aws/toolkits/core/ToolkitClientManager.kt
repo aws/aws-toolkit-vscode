@@ -104,8 +104,7 @@ abstract class ToolkitClientManager {
     companion object {
         private val GLOBAL_SERVICE_DENY_LIST = setOf(
             // sts is regionalized but does not identify as such in metadata
-            "sts",
-            "cloudcontrolapi" // TODO: Remove after launch
+            "sts"
         )
 
         fun <T : SdkClient> createNewClient(
