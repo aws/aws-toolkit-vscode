@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
+import software.aws.toolkits.jetbrains.core.experiments.ExperimentsActionGroup
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.resources.message
@@ -49,6 +50,7 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
                         )
                     )
                     add(actionManager.getAction("aws.toolkit.showFeedback"))
+                    add(ExperimentsActionGroup())
                     add(actionManager.getAction("aws.settings.show"))
                 }
             )
