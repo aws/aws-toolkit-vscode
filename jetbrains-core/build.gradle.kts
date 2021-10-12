@@ -72,6 +72,7 @@ dependencies {
     api("software.amazon.awssdk:ecr:$awsSdkVersion")
     api("software.amazon.awssdk:ecs:$awsSdkVersion")
     api("software.amazon.awssdk:cloudformation:$awsSdkVersion")
+    api("software.amazon.awssdk:cloudcontrol:$awsSdkVersion")
     api("software.amazon.awssdk:schemas:$awsSdkVersion")
     api("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
     api("software.amazon.awssdk:apache-client:$awsSdkVersion")
@@ -84,6 +85,7 @@ dependencies {
     api("software.amazon.awssdk:apprunner:$awsSdkVersion")
     api("software.amazon.awssdk:ec2:$awsSdkVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
+    implementation("com.flipkart.zjsonpatch:zjsonpatch:0.4.11")
 
     testImplementation(project(path = ":core", configuration = "testArtifacts"))
     testImplementation("com.github.tomakehurst:wiremock:2.27.2")

@@ -20,13 +20,13 @@ class AwsSettingsConfigurableTest : ExecutableDetectorTestBase() {
 
     @Test
     fun validate_ok_noOp() {
-        val settings = AwsSettingsConfigurable(projectRule.project)
+        val settings = AwsSettingsConfigurable()
         settings.apply()
     }
 
     @Test
     fun validate_ok_changedTelemetry() {
-        val settings = AwsSettingsConfigurable(projectRule.project)
+        val settings = AwsSettingsConfigurable()
         // explicit call to suppress compiling error
         settings.samExecutablePath.setText(null)
         settings.cloudDebugExecutablePath.setText(null)
@@ -38,14 +38,14 @@ class AwsSettingsConfigurableTest : ExecutableDetectorTestBase() {
 
     @Test
     fun validate_ok_setSamEmpty() {
-        val settings = AwsSettingsConfigurable(projectRule.project)
+        val settings = AwsSettingsConfigurable()
         settings.samExecutablePath.setText("")
         settings.apply()
     }
 
     @Test(expected = ConfigurationException::class)
     fun validate_fail_setBadSam() {
-        val settings = AwsSettingsConfigurable(projectRule.project)
+        val settings = AwsSettingsConfigurable()
         settings.samExecutablePath.text = "not_a_valid_path"
         settings.apply()
     }
@@ -54,7 +54,7 @@ class AwsSettingsConfigurableTest : ExecutableDetectorTestBase() {
     fun validate_ok_setValidSam() {
         val samPath = makeASam(SamCommonTestUtils.getMinVersionAsJson())
 
-        val settings = AwsSettingsConfigurable(projectRule.project)
+        val settings = AwsSettingsConfigurable()
         settings.samExecutablePath.text = samPath.toString()
         settings.apply()
     }
@@ -64,14 +64,14 @@ class AwsSettingsConfigurableTest : ExecutableDetectorTestBase() {
         // allow users to save if their autodetected sam executable is bad
         makeASam(SamCommonTestUtils.getMaxVersionAsJson())
 
-        val settings = AwsSettingsConfigurable(projectRule.project)
+        val settings = AwsSettingsConfigurable()
         settings.apply()
     }
 
     @Test
     fun validate_fail_autodetectBadSam_andManuallySetToBadSam() {
         val sam = makeASam(SamCommonTestUtils.getMaxVersionAsJson())
-        val settings = AwsSettingsConfigurable(projectRule.project)
+        val settings = AwsSettingsConfigurable()
         settings.apply()
 
         settings.samExecutablePath.text = sam.toAbsolutePath().toString()
@@ -84,7 +84,7 @@ class AwsSettingsConfigurableTest : ExecutableDetectorTestBase() {
     fun validate_ok_autodetectValidSam() {
         makeASam(SamCommonTestUtils.getMinVersionAsJson())
 
-        val settings = AwsSettingsConfigurable(projectRule.project)
+        val settings = AwsSettingsConfigurable()
         settings.apply()
     }
 

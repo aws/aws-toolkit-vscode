@@ -5,10 +5,30 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.project.Project
 import org.mockito.kotlin.mock
+import software.amazon.awssdk.services.apprunner.model.ServiceStatus
+import software.amazon.awssdk.services.apprunner.model.ServiceSummary
+import software.amazon.awssdk.services.cloudformation.model.StackStatus
+import software.amazon.awssdk.services.cloudformation.model.StackSummary
+import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup
+import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
+import software.amazon.awssdk.services.lambda.model.Runtime
+import software.amazon.awssdk.services.lambda.model.TracingConfigResponse
+import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.amazon.awssdk.services.s3.model.Bucket
+import software.amazon.awssdk.services.schemas.model.RegistrySummary
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.services.apprunner.resources.AppRunnerResources
+import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
+import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
+import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
+import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
+import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
+import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
+import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
+import java.util.concurrent.CompletableFuture
 
 fun MockResourceCacheRule.fillResourceCache(project: Project) {
     this.addEntry(
@@ -33,6 +53,67 @@ fun MockResourceCacheRule.fillResourceCache(project: Project) {
         project,
         makeMockList("arn3"),
         listOf("service1", "service2")
+    )
+
+    this.addEntry(
+        project,
+        CloudControlApiResources.listTypes(),
+        CompletableFuture.completedFuture(listOf("Aws::Sample::Resource"))
+    )
+
+    this.addEntry(
+        project,
+        AppRunnerResources.LIST_SERVICES,
+        listOf(ServiceSummary.builder().serviceName("sample-service").status(ServiceStatus.OPERATION_IN_PROGRESS).build())
+    )
+
+    this.addEntry(
+        project,
+        CloudFormationResources.ACTIVE_STACKS,
+        listOf(StackSummary.builder().stackName("sample-stack").stackId("sample-stack-ID").stackStatus(StackStatus.CREATE_COMPLETE).build())
+    )
+
+    this.addEntry(
+        project,
+        CloudWatchResources.LIST_LOG_GROUPS,
+        listOf(LogGroup.builder().arn("sample-arn").logGroupName("sample-lg-name").build())
+    )
+
+    this.addEntry(
+        project,
+        EcrResources.LIST_REPOS,
+        listOf(Repository("sample-repo-name", "sample-repo-arn", "sample-repo-uri"))
+    )
+
+    this.addEntry(
+        project,
+        LambdaResources.LIST_FUNCTIONS,
+        listOf(
+            FunctionConfiguration.builder()
+                .functionName("sample-function")
+                .functionArn("arn:aws:lambda:us-west-2:0123456789:function:sample-function")
+                .lastModified("A ways back")
+                .handler("blah:blah")
+                .runtime(Runtime.JAVA8)
+                .role("SomeRoleArn")
+                .environment { it.variables(emptyMap()) }
+                .timeout(60)
+                .memorySize(128)
+                .tracingConfig(TracingConfigResponse.builder().mode(TracingMode.PASS_THROUGH).build())
+                .build()
+        )
+    )
+
+    this.addEntry(
+        project,
+        SchemasResources.LIST_REGISTRIES,
+        listOf(RegistrySummary.builder().registryName("sample-registry-name").build())
+    )
+
+    this.addEntry(
+        project,
+        SqsResources.LIST_QUEUE_URLS,
+        listOf("https://sqs.us-east-1.amazonaws.com/123456789012/test1")
     )
 }
 
