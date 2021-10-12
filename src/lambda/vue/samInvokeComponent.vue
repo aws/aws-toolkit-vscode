@@ -4,7 +4,7 @@
 <template>
     <form class="invoke-lambda-form">
         <h1>SAM Debug Configuration Editor</h1>
-        <div>This feature is in <strong>beta</strong>. <a href="#" v-on:click="feedback">Provide Feedback...</a></div>
+        <div><a href="#" v-on:click="feedback">Send Feedback...</a></div>
         <button class="margin-top-16" v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
         <settings-panel id="config-panel" title="Configuration" description="">
             <label for="target-type-selector">Invoke Target Type</label>
