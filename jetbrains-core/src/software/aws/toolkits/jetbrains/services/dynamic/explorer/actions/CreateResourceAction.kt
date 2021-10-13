@@ -9,11 +9,12 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
-import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
+import software.aws.toolkits.jetbrains.services.dynamic.JsonResourceModificationExperiment
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceResourceTypeNode
 import software.aws.toolkits.resources.message
 
@@ -36,6 +37,6 @@ class CreateResourceAction :
     }
 
     override fun update(selected: DynamicResourceResourceTypeNode, e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = AwsToolkit.isMoreResourcesMutationEnabled()
+        e.presentation.isEnabledAndVisible = JsonResourceModificationExperiment.isEnabled()
     }
 }

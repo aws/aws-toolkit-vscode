@@ -5,8 +5,9 @@ package software.aws.toolkits.jetbrains.services.dynamic.explorer.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
-import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
+import software.aws.toolkits.jetbrains.services.dynamic.JsonResourceModificationExperiment
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceNode
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OpenResourceModelSourceAction
 import software.aws.toolkits.resources.message
@@ -19,6 +20,6 @@ class OpenFileForUpdateAction :
     }
 
     override fun update(selected: DynamicResourceNode, e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = AwsToolkit.isMoreResourcesMutationEnabled()
+        e.presentation.isEnabledAndVisible = JsonResourceModificationExperiment.isEnabled()
     }
 }

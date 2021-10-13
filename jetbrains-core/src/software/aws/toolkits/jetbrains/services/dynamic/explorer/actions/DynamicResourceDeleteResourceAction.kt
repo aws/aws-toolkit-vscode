@@ -8,12 +8,13 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
-import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.explorer.DeleteResourceDialog
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
+import software.aws.toolkits.jetbrains.services.dynamic.JsonResourceModificationExperiment
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceNode
 import software.aws.toolkits.resources.message
@@ -41,6 +42,6 @@ class DynamicResourceDeleteResourceAction :
     }
 
     override fun update(selected: DynamicResourceNode, e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = AwsToolkit.isMoreResourcesMutationEnabled()
+        e.presentation.isEnabledAndVisible = JsonResourceModificationExperiment.isEnabled()
     }
 }
