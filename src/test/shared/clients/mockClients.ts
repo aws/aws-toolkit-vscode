@@ -81,7 +81,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             cloudWatchLogsClient: new MockCloudWatchLogsClient(),
             ecsClient: new MockEcsClient({}),
             ecrClient: new MockEcrClient({}),
-            iamClient: new MockIamClient({}),
+            iamClient: new MockIamClient(),
             lambdaClient: new MockLambdaClient({}),
             schemaClient: new MockSchemaClient(),
             stepFunctionsClient: new MockStepFunctionsClient(),
@@ -394,10 +394,13 @@ export class MockEcsClient implements EcsClient {
 
 export class MockIamClient implements IamClient {
     public readonly regionCode = ''
-    public readonly listRoles: () => Promise<IAM.ListRolesResponse>
 
-    public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
-        this.listRoles = listRoles
+    public constructor() {}
+    public listRoles(request?: IAM.ListRolesRequest): Promise<IAM.Role[]> {
+        throw new Error('Method not implemented.')
+    }
+    public getRoles(request: IAM.ListRolesRequest = {}): AsyncIterableIterator<IAM.Role> {
+        throw new Error('Method not implemented.')
     }
     public createRole(request: IAM.CreateRoleRequest): Promise<IAM.CreateRoleResponse> {
         throw new Error('Method not implemented.')
