@@ -114,6 +114,7 @@ export async function activate(context: vscode.ExtensionContext) {
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
+        ext.regionProvider = regionProvider
         ext.awsContextCommands = new DefaultAWSContextCommands(
             awsContext,
             awsContextTrees,
