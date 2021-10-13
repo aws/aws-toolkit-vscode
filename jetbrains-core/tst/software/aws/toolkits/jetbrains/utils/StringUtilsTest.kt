@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.utils
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import software.aws.toolkits.core.utils.htmlWrap
 import software.aws.toolkits.core.utils.splitNoBlank
 
 class StringUtilsTest {
@@ -15,5 +16,10 @@ class StringUtilsTest {
         assertThat("a\nb\nc".splitNoBlank('\n')).isEqualTo(listOf("a", "b", "c"))
         assertThat("a\nb\nc\n   ".splitNoBlank('\n')).isEqualTo(listOf("a", "b", "c"))
         assertThat("a\nb\nc\n   \n".splitNoBlank('\n')).isEqualTo(listOf("a", "b", "c"))
+    }
+
+    @Test
+    fun htmlWrap() {
+        assertThat("thing".htmlWrap()).isEqualTo("<html>thing</html>")
     }
 }

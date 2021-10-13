@@ -10,3 +10,5 @@ fun String.splitNoBlank(vararg delimiters: Char, ignoreCase: Boolean = false, li
     split(*delimiters, ignoreCase = ignoreCase, limit = limit).filter { it.isNotBlank() }
 
 fun ByteArray.toHexString() = joinToString("") { "%02x".format(it) }
+
+fun String.htmlWrap() = """<html>$this</html>"""
