@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { anything } from 'ts-mockito'
-import { ResourcesNode, ResourceMetadata } from '../../../resources/explorer/nodes/resourcesNode'
-import { ResourceNode } from '../../../resources/explorer/nodes/resourceNode'
-import { ResourceTypeNode } from '../../../resources/explorer/nodes/resourceTypeNode'
+import { ResourcesNode, ResourceMetadata } from '../../../dynamicResources/explorer/nodes/resourcesNode'
+import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
+import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,

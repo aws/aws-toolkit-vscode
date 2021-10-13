@@ -7,8 +7,8 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsResourceManager } from '../../resources/awsResourceManager'
-import { ResourceNode } from '../../resources/explorer/nodes/resourceNode'
+import { AwsResourceManager } from '../../dynamicResources/awsResourceManager'
+import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode'
 
 export class ResourceCodeLensProvider implements vscode.CodeLensProvider {
     private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>()

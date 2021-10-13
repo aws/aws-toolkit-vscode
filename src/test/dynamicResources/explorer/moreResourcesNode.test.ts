@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { ResourcesNode } from '../../../resources/explorer/nodes/resourcesNode'
-import { ResourceTypeNode } from '../../../resources/explorer/nodes/resourceTypeNode'
+import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
+import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'

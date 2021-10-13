@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { configureResources } from '../../../resources/commands/configure'
+import { configureResources } from '../../../dynamicResources/commands/configure'
 
 describe('configureCommand', function () {
     let sandbox: sinon.SinonSandbox

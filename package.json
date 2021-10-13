@@ -207,10 +207,10 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "resourcesModification": false
+                        "jsonResourceModification": false
                     },
                     "properties": {
-                        "resourcesModification": {
+                        "jsonResourceModification": {
                             "type": "boolean",
                             "default": false
                         }
@@ -912,7 +912,7 @@
                 },
                 {
                     "command": "aws.resources.updateResourceInline",
-                    "when": "resourceScheme == awsResource && !isCloud9 && config.aws.experiments.resourcesModification",
+                    "when": "resourceScheme == awsResource && !isCloud9 && config.aws.experiments.jsonResourceModification",
                     "group": "navigation"
                 },
                 {
@@ -1280,22 +1280,22 @@
                 },
                 {
                     "command": "aws.resources.createResource",
-                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.resourcesModification",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.jsonResourceModification",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.resources.createResource",
-                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.resourcesModification",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.jsonResourceModification",
                     "group": "inline@1"
                 },
                 {
                     "command": "aws.resources.updateResource",
-                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Updatable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.resourcesModification",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Updatable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.jsonResourceModification",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.resources.deleteResource",
-                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Deletable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.resourcesModification",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Deletable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.jsonResourceModification",
                     "group": "2@2"
                 },
                 {

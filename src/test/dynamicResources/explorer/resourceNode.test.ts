@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { ResourceTypeNode } from '../../../resources/explorer/nodes/resourceTypeNode'
-import { ResourceNode } from '../../../resources/explorer/nodes/resourceNode'
+import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
+import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
 
 const FAKE_IDENTIFIER = 'someidentifier'
 const FAKE_ARN = 'arn:fooPartion:fooService:fooRegion:1234:fooType/someidentifier'

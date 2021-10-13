@@ -63,7 +63,7 @@ import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
-import { activate as activateCloudApi } from './resources/activation'
+import { activate as activateCloudApi } from './dynamicResources/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
@@ -72,7 +72,7 @@ import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsPr
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
-import { AwsResourceManager } from './resources/awsResourceManager'
+import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 
 let localize: nls.LocalizeFunc
 
