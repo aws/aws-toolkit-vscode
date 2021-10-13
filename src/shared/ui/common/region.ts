@@ -4,7 +4,10 @@
  */
 
 import * as nls from 'vscode-nls'
+import { ext } from '../../extensionGlobals'
+import { getLogger } from '../../logger/logger'
 import { Region } from '../../regions/endpoints'
+import { getRegionsForActiveCredentials } from '../../regions/regionUtilities'
 import { PrompterButtons } from '../buttons'
 import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
 
@@ -17,9 +20,14 @@ type RegionPrompterOptions = {
 }
 
 export function createRegionPrompter(
-    regions: Region[],
+    regions?: Region[],
     options: RegionPrompterOptions = {}
 ): QuickPickPrompter<Region> {
+    const lastRegionKey = 'lastSelectedRegion'
+    if (!regions) {
+        regions = getRegionsForActiveCredentials(ext.awsContext, ext.regionProvider)
+    }
+
     const items = regions.map(region => ({
         label: region.name,
         detail: region.id,
@@ -42,5 +50,16 @@ export function createRegionPrompter(
         },
     })
 
-    return prompter
+    const lastRegion = ext.context.globalState.get<Region>(lastRegionKey)
+    if (lastRegion !== undefined && (lastRegion as any).id) {
+        const found = regions.find(val => val.id === lastRegion.id)
+        if (found) {
+            prompter.recentItem = lastRegion
+        }
+    }
+    return prompter.transform(item => {
+        getLogger().debug('createRegionPrompter: selected %O', item)
+        ext.context.globalState.update(lastRegionKey, item)
+        return item
+    })
 }

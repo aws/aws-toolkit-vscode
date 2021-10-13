@@ -16,18 +16,18 @@ import {
 } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { getIdeProperties } from '../../shared/extensionUtilities'
-import { selectedPreviously } from '../../shared/localizedText'
+import { recentlySelectedItem } from '../../shared/localizedText'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
-    WIZARD_GOBACK,
-    WIZARD_TERMINATE,
     WizardContext,
     wizardContinue,
     WizardStep,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
 } from '../../shared/wizards/multiStepWizard'
 import { isStepFunctionsRole } from '../utils'
 const localize = nls.loadMessageBundle()
@@ -76,6 +76,7 @@ interface PublishActionQuickPickItem {
     detail: string
     action: PublishStateMachineAction
 }
+
 export class DefaultPublishStateMachineWizardContext extends WizardContext implements PublishStateMachineWizardContext {
     private readonly helpButton = createHelpButton()
     private iamRoles: IAM.roleListType | undefined
@@ -115,7 +116,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
             },
         ].map((item: PublishActionQuickPickItem) => {
             if (item.action === currPublishAction) {
-                item.description = selectedPreviously
+                item.description = recentlySelectedItem
             }
 
             return item
@@ -211,7 +212,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 label: iamRole.RoleName,
                 alwaysShow: iamRole.Arn === currRoleArn,
                 arn: iamRole.Arn,
-                description: iamRole.Arn === currRoleArn ? selectedPreviously : iamRole.Arn,
+                description: iamRole.Arn === currRoleArn ? recentlySelectedItem : iamRole.Arn,
             }))
         }
 

@@ -49,6 +49,8 @@ export const eventBridgeSchemasDocUrl: string =
 // URLs for Step Functions
 export const sfnCreateIamRoleUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/dg/procedure-create-iam-role.html'
+export const sfnCreateStateMachineUrl: string =
+    'https://docs.aws.amazon.com/step-functions/latest/apireference/API_CreateStateMachine.html'
 export const sfnCreateStateMachineNameParamUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/apireference/API_CreateStateMachine.html#StepFunctions-CreateStateMachine-request-name'
 export const sfnDeveloperGuideUrl: string = 'https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html'
