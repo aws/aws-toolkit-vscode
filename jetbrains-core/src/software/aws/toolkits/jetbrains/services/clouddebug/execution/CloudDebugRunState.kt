@@ -67,9 +67,11 @@ class CloudDebugRunState(
                 workflowEmitter.workflowStarted()
                 rootStep.run(context, messageEmitter)
                 workflowEmitter.workflowCompleted()
+                processHandler.notifyProcessTerminated(0)
             } catch (e: Throwable) {
                 result = Result.Failed
                 workflowEmitter.workflowFailed(e)
+                processHandler.notifyProcessTerminated(1)
             }
 
             try {
