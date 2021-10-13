@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import com.intellij.util.messages.Topic
@@ -94,7 +95,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         }
     }
 
-    fun createResource(connectionSettings: ConnectionSettings, dynamicResourceType: String, desiredState: String) {
+    fun createResource(connectionSettings: ConnectionSettings, dynamicResourceType: String, desiredState: String, file: VirtualFile) {
         coroutineScope.launch {
             try {
                 val client = connectionSettings.awsClient<CloudControlClient>()
@@ -102,6 +103,8 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
                 }.progressEvent()
+
+                CreateResourceFileStatusHandler.getInstance(project).recordResourceBeingCreated(progress.requestToken(), file)
                 startCheckingProgress(connectionSettings, progress, DynamicResourceTelemetryResources.getCurrentTime())
             } catch (e: Exception) {
                 e.notifyError(

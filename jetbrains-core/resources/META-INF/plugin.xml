@@ -90,6 +90,7 @@ with what features/services are supported.
                   topic="software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier"/>
         <listener class="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceStateChangedNotificationHandler"
                   topic="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceStateMutationHandler"/>
+
     </projectListeners>
     <extensionPoints>
         <extensionPoint name="credentialProviderFactory" interface="software.aws.toolkits.core.credentials.CredentialProviderFactory" dynamic="true"/>
@@ -165,6 +166,8 @@ with what features/services are supported.
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.CredentialsRegionHandler"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialsRegionHandler"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsRegionHandler"/>
+
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.CreateResourceFileStatusHandler"/>
 
         <statusBarWidgetFactory implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
 

@@ -3,16 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.psi.codeStyle.CodeStyleManager
-import com.intellij.psi.util.PsiUtilCore
 import com.intellij.ui.EditorNotifications
-import software.amazon.awssdk.services.cloudcontrol.CloudControlClient
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
@@ -26,8 +21,8 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifie
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager.Companion.isTerminal
+import software.aws.toolkits.jetbrains.services.dynamic.OpenViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
-import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
@@ -92,25 +87,12 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
             object : Task.Backgroundable(nodeProject, message("dynamic_resources.fetch.indicator_title", resource.identifier), true) {
                 override fun run(indicator: ProgressIndicator) {
                     indicator.text = message("dynamic_resources.fetch.fetch")
-                    val model = try {
-                        nodeProject.awsClient<CloudControlClient>()
-                            .getResource {
-                                it.typeName(resource.type.fullName)
-                                it.identifier(resource.identifier)
-                            }
-                            .resourceDescription()
-                            .properties()
-                    } catch (e: Exception) {
-                        LOG.error(e) { "Failed to retrieve resource model" }
-                        notifyError(
-                            project = nodeProject,
-                            title = message("dynamic_resources.fetch.fail.title"),
-                            content = message("dynamic_resources.fetch.fail.content", resource.identifier)
-                        )
-                        DynamicresourceTelemetry.getResource(nodeProject, success = false, resourceType = resource.type.fullName)
-                        null
-                    } ?: return
-
+                    val model = OpenViewEditableDynamicResourceVirtualFile.getResourceModel(
+                        nodeProject,
+                        nodeProject.awsClient(),
+                        resource.type.fullName,
+                        resource.identifier
+                    ) ?: return
                     val file = ViewEditableDynamicResourceVirtualFile(
                         dynamicResourceIdentifier,
                         model
@@ -118,16 +100,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                     DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
 
                     indicator.text = message("dynamic_resources.fetch.open")
-                    WriteCommandAction.runWriteCommandAction(nodeProject) {
-                        CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
-                        if (sourceAction == OpenResourceModelSourceAction.READ) {
-                            file.isWritable = false
-                            DynamicresourceTelemetry.getResource(nodeProject, success = true, resourceType = resource.type.fullName)
-                        } else if (sourceAction == OpenResourceModelSourceAction.EDIT) {
-                            file.isWritable = true
-                        }
-                        FileEditorManager.getInstance(nodeProject).openFile(file, true)
-                    }
+                    OpenViewEditableDynamicResourceVirtualFile.openFile(nodeProject, file, sourceAction, resource.type.fullName)
                 }
             }.queue()
         } else {

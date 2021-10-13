@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.dynamic.editor.actions
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.ui.Messages
 import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
@@ -31,14 +30,12 @@ class SubmitResourceCreationRequestAction : AnAction(message("general.create")) 
             ) == Messages.YES
         } else true
         if (continueWithContent) {
-            FileEditorManager.getInstance(psiFile.project).closeFile(file)
-            // TODO: Keep file open so that user can make changes in case creation fails
             notifyInfo(
                 message("dynamic_resources.resource_creation", resourceType),
                 message("dynamic_resources.begin_resource_creation", resourceType),
                 psiFile.project
             )
-            DynamicResourceUpdateManager.getInstance(psiFile.project).createResource(file.connectionSettings, file.dynamicResourceType, contentString)
+            DynamicResourceUpdateManager.getInstance(psiFile.project).createResource(file.connectionSettings, file.dynamicResourceType, contentString, file)
         }
     }
 }
