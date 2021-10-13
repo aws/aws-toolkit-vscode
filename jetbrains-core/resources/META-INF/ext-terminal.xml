@@ -2,10 +2,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin>
-    <extensions defaultExtensionNs="com.intellij">
-        <registryKey key="aws.feature.connectedLocalTerminal"
-                     defaultValue="false"
-                     description="(Experimental) Create a local Terminal instance injecting the current AWS Connection (credentials/region) as Environment Variables"/>
+    <extensions defaultExtensionNs="aws.toolkit">
+        <experiment implementation="software.aws.toolkits.jetbrains.core.terminal.AwsLocalTerminalExperiment"/>
     </extensions>
     <actions>
         <group id="aws.toolkit.explorer.titleBar.terminal">

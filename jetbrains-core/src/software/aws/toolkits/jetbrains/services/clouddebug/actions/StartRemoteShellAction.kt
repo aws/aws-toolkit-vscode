@@ -18,13 +18,13 @@ import org.jetbrains.plugins.terminal.TerminalView
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalProcess
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalRunner
 import software.aws.toolkits.core.credentials.toEnvironmentVariables
-import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
 import software.aws.toolkits.jetbrains.services.clouddebug.CliOutputParser
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
@@ -33,6 +33,7 @@ import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.services.clouddebug.InstrumentResponse
 import software.aws.toolkits.jetbrains.services.clouddebug.resources.CloudDebuggingResources
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
+import software.aws.toolkits.jetbrains.services.ecs.EcsCloudDebugExperiment
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -55,7 +56,7 @@ class StartRemoteShellAction(private val project: Project, private val container
     }
 
     override fun update(e: AnActionEvent) {
-        if (!AwsToolkit.isCloudDebugEnabled() || disabled) {
+        if (!EcsCloudDebugExperiment.isEnabled() || disabled) {
             e.presentation.isEnabled = false
             e.presentation.isVisible = false
         }

@@ -135,8 +135,8 @@ tasks.withType<RunIdeForUiTestTask>().all {
     systemProperty("aws.suppress_deprecation_prompt", true)
 
     // These are experiments to enable for UI tests
-    systemProperty("aws.feature.connectedLocalTerminal", true)
-    systemProperty("aws.feature.dynamoDb", true)
+    systemProperty("aws.experiment.connectedLocalTerminal", true)
+    systemProperty("aws.experiment.dynamoDb", true)
     ciOnly {
         systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
     }

@@ -7,9 +7,10 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
+import software.aws.toolkits.jetbrains.services.ecs.EcsCloudDebugExperiment
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.resources.message
@@ -33,7 +34,7 @@ class DeinstrumentResourceFromExplorerAction : SingleResourceNodeAction<EcsServi
 
     override fun update(selected: EcsServiceNode, e: AnActionEvent) {
         // If there are no supported debuggers, showing this will just be confusing
-        e.presentation.isVisible = if (!AwsToolkit.isCloudDebugEnabled() || DebuggerSupport.debuggers().isEmpty()) {
+        e.presentation.isVisible = if (!EcsCloudDebugExperiment.isEnabled() || DebuggerSupport.debuggers().isEmpty()) {
             false
         } else {
             EcsUtils.isInstrumented(selected.resourceArn())

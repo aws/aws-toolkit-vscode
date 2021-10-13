@@ -6,10 +6,11 @@ package software.aws.toolkits.jetbrains.core.execution
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.RunnerSettings
 import com.intellij.openapi.options.SettingsEditor
-import com.intellij.openapi.util.registry.Registry
 import com.jetbrains.python.run.AbstractPythonRunConfiguration
 import com.jetbrains.python.run.PythonRunConfigurationExtension
 import org.jdom.Element
+import software.aws.toolkits.jetbrains.core.experiments.ToolkitExperiment
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.resources.message
 
 class PythonAwsConnectionExtension : PythonRunConfigurationExtension() {
@@ -40,9 +41,11 @@ class PythonAwsConnectionExtension : PythonRunConfigurationExtension() {
         configuration
     )
 
-    private fun isEnabled() = Registry.`is`(FEATURE_ID)
-
-    companion object {
-        const val FEATURE_ID = "aws.feature.pythonRunConfigurationExtension"
-    }
+    private fun isEnabled() = PythonAwsConnectionExperiment.isEnabled()
 }
+
+object PythonAwsConnectionExperiment : ToolkitExperiment(
+    "pythonRunConfigurationExtension",
+    { message("run_configuration_extension.feature.python.title") },
+    { message("run_configuration_extension.feature.python.description") }
+)

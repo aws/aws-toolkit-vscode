@@ -3,13 +3,13 @@
 
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
-        <registryKey key="aws.feature.javaRunConfigurationExtension"
-                     defaultValue="false"
-                     description="(Experimental) Allow injection of AWS Credentials into some Java Run Configurations via the AWS Connection tab."/>
         <codeInsight.lineMarkerProvider language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
         <runConfigurationExtension implementation="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension"/>
     </extensions>
 
+    <extensions defaultExtensionNs="aws.toolkit">
+        <experiment implementation="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExperiment"/>
+    </extensions>
     <extensions defaultExtensionNs="aws.toolkit.lambda">
         <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaRuntimeGroup"/>
         <builder id="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaBuilder"/>

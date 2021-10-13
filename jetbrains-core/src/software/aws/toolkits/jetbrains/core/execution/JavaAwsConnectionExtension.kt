@@ -12,8 +12,9 @@ import com.intellij.openapi.externalSystem.service.execution.ExternalSystemRunCo
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.roots.ModuleRootManager
-import com.intellij.openapi.util.registry.Registry
 import org.jdom.Element
+import software.aws.toolkits.jetbrains.core.experiments.ToolkitExperiment
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.resources.message
 
 class JavaAwsConnectionExtension : RunConfigurationExtension() {
@@ -25,10 +26,10 @@ class JavaAwsConnectionExtension : RunConfigurationExtension() {
      * so that we don't encounter a similar situation with a different class based on it.
      */
     override fun isApplicableFor(configuration: RunConfigurationBase<*>): Boolean =
-        Registry.`is`(FEATURE_ID) && configuration !is ExternalSystemRunConfiguration
+        JavaAwsConnectionExperiment.isEnabled() && configuration !is ExternalSystemRunConfiguration
 
     override fun <T : RunConfigurationBase<*>?> updateJavaParameters(configuration: T, params: JavaParameters, runnerSettings: RunnerSettings?) {
-        if (Registry.`is`(FEATURE_ID)) {
+        if (JavaAwsConnectionExperiment.isEnabled()) {
             configuration ?: return
             val environment = params.env
 
@@ -51,8 +52,10 @@ class JavaAwsConnectionExtension : RunConfigurationExtension() {
     }?.let {
         JavaSdk.getInstance().getVersion(it)?.name
     }
-
-    companion object {
-        const val FEATURE_ID = "aws.feature.javaRunConfigurationExtension"
-    }
 }
+
+object JavaAwsConnectionExperiment : ToolkitExperiment(
+    "javaRunConfigurationExtension",
+    { message("run_configuration_extension.feature.java.title") },
+    { message("run_configuration_extension.feature.java.description") }
+)

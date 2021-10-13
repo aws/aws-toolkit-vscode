@@ -18,8 +18,8 @@ import org.junit.Test
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
+import software.aws.toolkits.jetbrains.utils.rules.ExperimentRule
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.utils.rules.RegistryRule
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import kotlin.test.assertNotNull
@@ -40,7 +40,7 @@ class PythonAwsConnectionExtensionIntegrationTest {
 
     @Rule
     @JvmField
-    val experiment = RegistryRule(PythonAwsConnectionExtension.FEATURE_ID)
+    val experiment = ExperimentRule(PythonAwsConnectionExperiment)
 
     @Test
     fun happyPathPythonConnectionInjection() {

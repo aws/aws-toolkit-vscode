@@ -9,9 +9,10 @@ import com.intellij.execution.configurations.SimpleConfigurationType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.NotNullLazyValue
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
+import software.aws.toolkits.jetbrains.services.ecs.EcsCloudDebugExperiment
 import software.aws.toolkits.resources.message
 
 class EcsCloudDebugRunConfigurationType : SimpleConfigurationType(
@@ -27,7 +28,7 @@ class EcsCloudDebugRunConfigurationType : SimpleConfigurationType(
 
     override fun isApplicable(project: Project): Boolean {
         // Note: This does not hide it, but instead moves it to the "Other" category at th bottom
-        if (!AwsToolkit.isCloudDebugEnabled()) {
+        if (!EcsCloudDebugExperiment.isEnabled()) {
             return false
         }
 

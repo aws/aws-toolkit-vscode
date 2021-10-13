@@ -8,9 +8,10 @@ import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
-import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
+import software.aws.toolkits.jetbrains.core.experiments.isEnabled
+import software.aws.toolkits.jetbrains.services.ecs.EcsCloudDebugExperiment
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 
 class EcsCloudDebugRunConfigurationProducer : LazyRunConfigurationProducer<EcsCloudDebugRunConfiguration>() {
@@ -18,7 +19,7 @@ class EcsCloudDebugRunConfigurationProducer : LazyRunConfigurationProducer<EcsCl
         configuration: EcsCloudDebugRunConfiguration,
         context: ConfigurationContext
     ): Boolean {
-        if (!AwsToolkit.isCloudDebugEnabled()) {
+        if (!EcsCloudDebugExperiment.isEnabled()) {
             return false
         }
 
@@ -37,7 +38,7 @@ class EcsCloudDebugRunConfigurationProducer : LazyRunConfigurationProducer<EcsCl
         context: ConfigurationContext,
         sourceElement: Ref<PsiElement>
     ): Boolean {
-        if (!AwsToolkit.isCloudDebugEnabled()) {
+        if (!EcsCloudDebugExperiment.isEnabled()) {
             return false
         }
 
