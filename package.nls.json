@@ -46,7 +46,7 @@
     "AWS.configuration.enableCodeLenses": "Enable SAM hints in source files",
     "AWS.configuration.description.resources.enabledResources": "AWS resources to display in the 'Resources' portion of the explorer.",
     "AWS.configuration.description.resources.maxItemsPerPage": "Controls how many resources are listed before showing a node to `Load More...`.",
-    "AWS.configuration.description.experiments": "Try experimental features and give feedback. Note that experimental features may be turned off or removed at any time.\n * `jsonResourceModification` - Enables basic JSON based create, update and delete support for cloud resources via the Resources node in the AWS Explorer",
+    "AWS.configuration.description.experiments": "Try experimental features and give feedback. Note that experimental features may be removed at any time.\n * `jsonResourceModification` - Enables basic JSON-based create, update, and delete support for cloud resources through the Resources node in the AWS Explorer",
     "AWS.stepFunctions.asl.format.enable.desc": "Enables the default formatter used with Amazon States Language files",
     "AWS.stepFunctions.asl.maxItemsComputed.desc": "The maximum number of outline symbols and folding regions computed (limited for performance reasons).",
     "AWS.stepFunctions.publish": "Publish to Step Functions",
