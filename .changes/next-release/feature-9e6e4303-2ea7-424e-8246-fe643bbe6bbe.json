@@ -1,4 +1,4 @@
 {
   "type" : "feature",
-  "description" : "Surface read-only support for hundreds more resources under the More Resources node in the AWS Explorer"
+  "description" : "Surface read-only support for hundreds of resources under the Resources node in the AWS Explorer"
 }
