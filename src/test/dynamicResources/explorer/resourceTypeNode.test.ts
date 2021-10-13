@@ -173,7 +173,6 @@ describe('ResourceTypeNode', function () {
             cloudControl.listResources(
                 deepEqual({
                     TypeName: FAKE_TYPE_NAME,
-                    MaxResults: anything(),
                     NextToken: anything(),
                 })
             )
