@@ -10,7 +10,7 @@ import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult, Transform } from './prompter'
 import { applyPrimitives, isAsyncIterable } from '../utilities/collectionUtils'
-import { lastSelected } from '../localizedText'
+import { recentlySelectedItem } from '../localizedText'
 import { getLogger } from '../logger/logger'
 
 const localize = nls.loadMessageBundle()
@@ -62,10 +62,10 @@ export type ExtendedQuickPickOptions<T> = Omit<
     /** Item to show if there was an error loading items */
     errorItem?: DataQuickPickItem<T>
     /**
-     * Appends 'Selected previously' to the last selected item's description text (default: true)
+     * Controls whether "Selected previously" is set as the description of the `recentItem` (default: true).
      * This currently mutates the item as it is expected that callers regenerate items every prompt
      */
-    lastSelectedText?: boolean
+    recentItemText?: boolean
 }
 
 /** See {@link ExtendedQuickPickOptions.noItemsFoundItem noItemsFoundItem} for setting a different item */
@@ -86,7 +86,7 @@ const DEFAULT_ERROR_ITEM = {
 
 export const DEFAULT_QUICKPICK_OPTIONS: ExtendedQuickPickOptions<any> = {
     ignoreFocusOut: true,
-    lastSelectedText: true,
+    recentItemText: true,
     noItemsFoundItem: DEFAULT_NO_ITEMS_ITEM,
     errorItem: DEFAULT_ERROR_ITEM,
 }
@@ -220,8 +220,8 @@ function promptUser<T>(
  * Atempts to recover a QuickPick item given an already processed response.
  *
  * This is generally required when the prompter is being used in a 'saved' state, such as when updating forms
- * that were already submitted. Failed recoveries simply return undefined, which means that the last selected
- * item is unknown (generally the default in this case is to select the first item).
+ * that were already submitted. Failed recoveries simply return undefined, which means that the recent item
+ * is unknown (generally the default in this case is to select the first item).
  */
 function recoverItemFromData<T>(data: T, items: readonly DataQuickPickItem<T>[]): DataQuickPickItem<T> | undefined {
     const stringified = JSON.stringify(data)
@@ -248,14 +248,14 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
     /**
-     * Sets the "last selected" item, moves it to the start of the items and
-     * makes it the active selection.
+     * Sets the "last selected/accepted" item or input, moves it to the start
+     * of the items and makes it the active selection.
      */
-    public set lastResponse(response: DataQuickPickItem<T> | undefined) {
-        this.setLastResponse(response, true)
+    public set recentItem(response: DataQuickPickItem<T> | undefined) {
+        this.setRecentItem(response, true)
     }
 
-    public get lastResponse() {
+    public get recentItem() {
         return this._lastPicked
     }
 
@@ -304,7 +304,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      */
     private appendItems(items: DataQuickPickItem<T>[]): void {
         const picker = this.quickPick
-        const lastSelected = picker.activeItems
+        const recent = picker.activeItems
 
         picker.items = picker.items.concat(items).sort(this.options.compare)
 
@@ -313,7 +313,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
         }
 
-        this.selectItems(...lastSelected)
+        this.selectItems(...recent)
     }
 
     // TODO: add options to this to clear items _before_ loading them
@@ -426,13 +426,13 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     /**
-     * Sets the "last selected" item, moves it to the start of the items and
-     * makes it the active selection.
+     * Sets the "last selected/accepted" item or input, moves it to the start
+     * of the items and makes it the active selection.
      *
-     * @param picked  "Last selected" item.
-     * @param sortOnTop Controls whether the "last selected" item is moved to the start of the items.
+     * @param picked  Recent item.
+     * @param first Controls whether the recent item is moved to the start of the items.
      */
-    public setLastResponse(picked: T | DataQuickPickItem<T> | undefined, sortOnTop: boolean = true): void {
+    public setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = true): void {
         // TODO: figure out how to recover from implicit responses
         if (picked === undefined) {
             return
@@ -443,21 +443,21 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === picked.label)
         }
 
-        if (this.options.lastSelectedText) {
+        if (this.options.recentItemText) {
             this.quickPick.activeItems.forEach(
-                item => (item.description = `${item.description ?? ''} (${lastSelected})`)
+                item => (item.description = `${item.description ?? ''} (${recentlySelectedItem})`)
             )
             // Needed to force a UI update.
             this.quickPick.items = [...this.quickPick.items]
         }
 
-        if (sortOnTop) {
+        if (first) {
             const activeItems = this.quickPick.activeItems
-            function lastSelectedOnTop(a: DataQuickPickItem<T>, b: DataQuickPickItem<T>): number {
-                const isLastSelected = activeItems.find(val => val.label === a.label)
-                return isLastSelected ? -1 : 0
+            function recentFirst(a: DataQuickPickItem<T>, b: DataQuickPickItem<T>): number {
+                const isRecent = activeItems.find(val => val.label === a.label)
+                return isRecent ? -1 : 0
             }
-            this.quickPick.items = [...this.quickPick.items].sort(lastSelectedOnTop)
+            this.quickPick.items = [...this.quickPick.items].sort(recentFirst)
             this.quickPick.activeItems = [this.quickPick.items[0]]
         }
 
@@ -535,11 +535,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     private onChangeValue?: vscode.Disposable
 
-    public set lastResponse(response: DataQuickPickItem<T> | undefined) {
+    public set recentItem(response: DataQuickPickItem<T> | undefined) {
         if (this.isUserInput(response)) {
             this.quickPick.value = response.description ?? ''
         } else {
-            super.lastResponse = response
+            super.recentItem = response
         }
     }
 
