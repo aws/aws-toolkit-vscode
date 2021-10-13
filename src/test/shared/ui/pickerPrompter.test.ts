@@ -174,25 +174,25 @@ describe('QuickPickPrompter', function () {
     })
 
     it('can set recent item', async function () {
-        testPrompter.setRecentItem(testItems[2])
+        testPrompter.recentItem = testItems[2]
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
         // setRecentItem() puts the item at the top of the list. #2148
         assert.deepStrictEqual(picker.items[0], picker.activeItems[0])
     })
 
     it('tries to recover recent item from partial data', async function () {
-        testPrompter.setRecentItem(2)
+        testPrompter.recentItem = 2
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
     })
 
     it('shows first item if recent item does not exist', async function () {
-        testPrompter.setRecentItem({ label: 'item4', data: 3 })
+        testPrompter.recentItem = { label: 'item4', data: 3 }
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
     })
 
     it('adds a message to the description when an item has been previously selected', async function () {
         testPrompter = new QuickPickPrompter(picker, { recentItemText: true })
-        testPrompter.setRecentItem({ label: 'item1', data: 0 })
+        testPrompter.recentItem = { label: 'item1', data: 0 }
         const description = ` (${recentlySelectedItem})`
         assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })

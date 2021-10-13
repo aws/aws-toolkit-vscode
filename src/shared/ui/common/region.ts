@@ -54,12 +54,7 @@ export function createRegionPrompter(
     if (lastRegion !== undefined && (lastRegion as any).id) {
         const found = regions.find(val => val.id === lastRegion.id)
         if (found) {
-            prompter.recentItem = {
-                label: lastRegion.name,
-                detail: lastRegion.id,
-                data: lastRegion,
-                // description: '',
-            }
+            prompter.recentItem = lastRegion
         }
     }
     return prompter.transform(item => {

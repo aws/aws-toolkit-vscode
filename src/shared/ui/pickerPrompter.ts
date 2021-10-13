@@ -251,7 +251,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * Sets the "last selected/accepted" item or input, moves it to the start
      * of the items and makes it the active selection.
      */
-    public set recentItem(response: DataQuickPickItem<T> | undefined) {
+    public set recentItem(response: T | DataQuickPickItem<T> | undefined) {
         this.setRecentItem(response, true)
     }
 
@@ -432,7 +432,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * @param picked  Recent item.
      * @param first Controls whether the recent item is moved to the start of the items.
      */
-    public setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = true): void {
+    protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = true): void {
         // TODO: figure out how to recover from implicit responses
         if (picked === undefined) {
             return
@@ -535,7 +535,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     private onChangeValue?: vscode.Disposable
 
-    public set recentItem(response: DataQuickPickItem<T> | undefined) {
+    public set recentItem(response: T | DataQuickPickItem<T> | undefined) {
         if (this.isUserInput(response)) {
             this.quickPick.value = response.description ?? ''
         } else {
