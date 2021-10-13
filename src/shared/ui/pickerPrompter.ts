@@ -433,6 +433,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * @param first Controls whether the recent item is moved to the start of the items.
      */
     protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = true): void {
+        const recentItemText = `(${recentlySelectedItem})`
+        // HACK: Scrub any "selected previously" descriptions, in case this is
+        // "backwards navigation". #2148
+        this.quickPick.items.forEach(item => item.description?.replace(recentItemText, ''))
+
         // TODO: figure out how to recover from implicit responses
         if (picked === undefined) {
             return
@@ -445,7 +450,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
         if (this.options.recentItemText) {
             this.quickPick.activeItems.forEach(
-                item => (item.description = `${item.description ?? ''} (${recentlySelectedItem})`)
+                item => (item.description = `${item.description ?? ''} ${recentItemText}`)
             )
             // Needed to force a UI update.
             this.quickPick.items = [...this.quickPick.items]
