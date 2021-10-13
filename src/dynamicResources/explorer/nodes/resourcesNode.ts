@@ -20,7 +20,7 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
-export class MoreResourcesNode extends AWSTreeNodeBase {
+export class ResourcesNode extends AWSTreeNodeBase {
     private readonly resourceTypeNodes: Map<string, ResourceTypeNode>
 
     public constructor(
@@ -30,12 +30,9 @@ export class MoreResourcesNode extends AWSTreeNodeBase {
         ),
         private readonly cloudControl: CloudControlClient = ext.toolkitClientBuilder.createCloudControlClient(region)
     ) {
-        super(
-            localize('AWS.explorerNode.moreResources.label', 'More resources'),
-            vscode.TreeItemCollapsibleState.Collapsed
-        )
+        super(localize('AWS.explorerNode.resources.label', 'Resources'), vscode.TreeItemCollapsibleState.Collapsed)
         this.resourceTypeNodes = new Map<string, ResourceTypeNode>()
-        this.contextValue = 'moreResourcesRootNode'
+        this.contextValue = 'resourcesRootNode'
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -48,11 +45,11 @@ export class MoreResourcesNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () => {
                 const placeholder = new PlaceholderNode(
                     this,
-                    localize('AWS.explorerNode.moreResources.noResourceTypes', '[Enable resource types...]')
+                    localize('AWS.explorerNode.resources.noResourceTypes', '[Enable resource types...]')
                 )
                 placeholder.command = {
-                    title: localize('AWS.command.moreResources.configure', 'Show Resources....'),
-                    command: 'aws.moreResources.configure',
+                    title: localize('AWS.command.resources.configure', 'Show Resources....'),
+                    command: 'aws.resources.configure',
                     arguments: [this],
                 }
                 return placeholder
@@ -63,7 +60,7 @@ export class MoreResourcesNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const enabledResources = !isCloud9()
-            ? vscode.workspace.getConfiguration('aws').get<string[]>('moreResources.enabledResources')
+            ? vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
             : Object.keys(supportedResources)
 
         if (enabledResources) {

@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { anything } from 'ts-mockito'
-import { MoreResourcesNode, ResourceMetadata } from '../../../moreResources/explorer/nodes/moreResourcesNode'
-import { ResourceNode } from '../../../moreResources/explorer/nodes/resourceNode'
-import { ResourceTypeNode } from '../../../moreResources/explorer/nodes/resourceTypeNode'
+import { ResourcesNode, ResourceMetadata } from '../../../dynamicResources/explorer/nodes/resourcesNode'
+import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
+import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
@@ -165,7 +165,7 @@ describe('ResourceTypeNode', function () {
             documentation,
             available: available ?? true,
         } as ResourceMetadata
-        return new ResourceTypeNode({} as MoreResourcesNode, FAKE_TYPE_NAME, client, metadata)
+        return new ResourceTypeNode({} as ResourcesNode, FAKE_TYPE_NAME, client, metadata)
     }
 
     function mockCloudControlClient(resourceIdentifiers: string[]): void {

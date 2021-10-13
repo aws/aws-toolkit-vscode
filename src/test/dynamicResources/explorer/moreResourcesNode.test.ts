@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { MoreResourcesNode } from '../../../moreResources/explorer/nodes/moreResourcesNode'
-import { ResourceTypeNode } from '../../../moreResources/explorer/nodes/resourceTypeNode'
+import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
+import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -17,32 +17,32 @@ import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
-describe('MoreResourcesNode', function () {
-    let testNode: MoreResourcesNode
+describe('ResourcesNode', function () {
+    let testNode: ResourcesNode
     let mockCloudFormation: CloudFormationClient
     let mockCloudControl: CloudControlClient
     let resourceTypes: string[]
 
     // These tests operate against the user's configuration.
     // Restore the initial value after testing is complete.
-    let originalMoreResourcesValue: any
+    let originalResourcesValue: any
     let settings: vscode.WorkspaceConfiguration
 
     before(async function () {
-        settings = vscode.workspace.getConfiguration('aws.moreResources')
-        originalMoreResourcesValue = settings.get('enabledResources')
+        settings = vscode.workspace.getConfiguration('aws.resources')
+        originalResourcesValue = settings.get('enabledResources')
         mockCloudFormation = mock()
         mockCloudControl = mock()
     })
 
     after(async function () {
-        await settings.update('enabledResources', originalMoreResourcesValue, vscode.ConfigurationTarget.Global)
+        await settings.update('enabledResources', originalResourcesValue, vscode.ConfigurationTarget.Global)
     })
 
     beforeEach(async function () {
         resourceTypes = ['type1', 'type2']
         prepareMock(resourceTypes)
-        testNode = new MoreResourcesNode('FAKE_REGION', instance(mockCloudFormation), instance(mockCloudControl))
+        testNode = new ResourcesNode('FAKE_REGION', instance(mockCloudFormation), instance(mockCloudControl))
 
         await setConfiguration(resourceTypes)
     })

@@ -7,10 +7,10 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { MoreResourcesNode, ResourceMetadata } from '../../moreResources/explorer/nodes/moreResourcesNode'
-import { ResourceNode } from '../../moreResources/explorer/nodes/resourceNode'
-import { ResourceTypeNode } from '../../moreResources/explorer/nodes/resourceTypeNode'
-import { formatResourceModel, AwsResourceManager } from '../../moreResources/awsResourceManager'
+import { ResourcesNode, ResourceMetadata } from '../../dynamicResources/explorer/nodes/resourcesNode'
+import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode'
+import { ResourceTypeNode } from '../../dynamicResources/explorer/nodes/resourceTypeNode'
+import { formatResourceModel, AwsResourceManager } from '../../dynamicResources/awsResourceManager'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
@@ -53,7 +53,7 @@ describe('ResourceManager', function () {
         mockClients()
         tempFolder = await makeTemporaryToolkitFolder()
 
-        const rootNode = new MoreResourcesNode(FAKE_REGION, instance(cloudFormation), cloudControl)
+        const rootNode = new ResourcesNode(FAKE_REGION, instance(cloudFormation), cloudControl)
         resourceTypeNode = new ResourceTypeNode(
             rootNode,
             FAKE_TYPE_NAME,

@@ -13,7 +13,7 @@ import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { MoreResourcesNode, ResourceMetadata } from './moreResourcesNode'
+import { ResourcesNode, ResourceMetadata } from './resourcesNode'
 import { ResourceNode } from './resourceNode'
 import { recordDynamicresourceListResource, Result } from '../../../shared/telemetry/telemetry'
 import { CloudControl } from 'aws-sdk'
@@ -30,7 +30,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childContextValue: string
 
     public constructor(
-        public readonly parent: MoreResourcesNode,
+        public readonly parent: ResourcesNode,
         public readonly typeName: string,
         public readonly cloudControl: CloudControlClient,
         public readonly metadata: ResourceMetadata
@@ -68,10 +68,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
                 return new ErrorNode(this, error, logID)
             },
             getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(
-                    this,
-                    localize('AWS.explorerNode.moreResources.noResources', '[No resources found]')
-                ),
+                new PlaceholderNode(this, localize('AWS.explorerNode.resources.noResources', '[No resources found]')),
             sort: (nodeA: AWSTreeNodeBase, nodeB: AWSTreeNodeBase) => {
                 if (nodeA instanceof ResourceNode && nodeB instanceof ResourceNode) {
                     return nodeA.identifier.localeCompare(nodeB.identifier)
@@ -125,7 +122,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
     }
 
     private getMaxItemsPerPage(): number | undefined {
-        return vscode.workspace.getConfiguration('aws').get<number>('moreResources.maxItemsPerPage')
+        return vscode.workspace.getConfiguration('aws').get<number>('resources.maxItemsPerPage')
     }
 
     private static getFriendlyName(typeName: string): string {

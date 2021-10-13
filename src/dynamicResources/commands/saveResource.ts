@@ -92,12 +92,7 @@ export async function createResource(
                 const identifier = result.ProgressEvent!.Identifier!
                 getLogger().info(`Created resource type ${typeName} identifier ${identifier}`)
                 window.showInformationMessage(
-                    localize(
-                        'aws.moreResources.createResource.success',
-                        'Created resource {0} ({1})',
-                        identifier,
-                        typeName
-                    )
+                    localize('aws.resources.createResource.success', 'Created resource {0} ({1})', identifier, typeName)
                 )
                 return identifier
             } catch (e) {
@@ -105,7 +100,7 @@ export async function createResource(
                 result = 'Failed'
                 getLogger().error(`Failed to create resource type ${typeName}: %O`, error.message)
                 showViewLogsMessage(
-                    localize('aws.moreResources.createResource.failure', 'Failed to create resource ({0})', typeName),
+                    localize('aws.resources.createResource.failure', 'Failed to create resource ({0})', typeName),
                     window
                 )
                 throw e
@@ -152,7 +147,7 @@ export async function updateResource(
                     result = 'Cancelled'
                     window.showWarningMessage(
                         localize(
-                            'aws.moreResources.updateResource.noDiff',
+                            'aws.resources.updateResource.noDiff',
                             'Update cancelled - no diff between local and remote definitions',
                             identifier,
                             typeName
@@ -169,12 +164,7 @@ export async function updateResource(
                 getLogger().info(`Updated resource type ${typeName} identifier ${identifier}`)
 
                 window.showInformationMessage(
-                    localize(
-                        'aws.moreResources.updateResource.success',
-                        'Updated resource {0} ({1})',
-                        identifier,
-                        typeName
-                    )
+                    localize('aws.resources.updateResource.success', 'Updated resource {0} ({1})', identifier, typeName)
                 )
                 return true
             } catch (e) {
@@ -186,7 +176,7 @@ export async function updateResource(
                 )
                 showViewLogsMessage(
                     localize(
-                        'aws.moreResources.updateResource.failure',
+                        'aws.resources.updateResource.failure',
                         'Failed to update resource {0} ({1})',
                         identifier,
                         typeName
