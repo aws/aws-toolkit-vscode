@@ -4,8 +4,6 @@
 <template>
     <form class="invoke-lambda-form">
         <h1>SAM Debug Configuration Editor</h1>
-        <div>This feature is in <strong>beta</strong>. <a href="#" v-on:click="feedback">Provide Feedback...</a></div>
-        <button class="margin-top-16" v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
         <settings-panel id="config-panel" title="Configuration" description="">
             <label for="target-type-selector">Invoke Target Type</label>
             <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
@@ -265,8 +263,9 @@
             <div class="input-validation" v-if="payload.errorMsg">Error parsing JSON: {{ payload.errorMsg }}</div>
         </settings-panel>
         <div class="container" id="invoke-button-container">
-            <button class="form-buttons" v-on:click.prevent="save">Save Debug Configuration</button>
-            <button class="form-buttons" v-on:click.prevent="launch">Invoke Debug Configuration</button>
+            <button class="" v-on:click.prevent="loadConfig">Load Existing Config</button>
+            <button class="form-buttons" v-on:click.prevent="launch">Invoke</button>
+            <button class="form-buttons" v-on:click.prevent="save">Save</button>
         </div>
     </form>
 </template>
