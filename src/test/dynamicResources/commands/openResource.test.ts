@@ -60,38 +60,50 @@ describe('openResource', function () {
     })
 
     it('handles opening ResourceNodes', async function () {
+        const window = new FakeWindow()
         when(mockResourceManager.open(fakeResourceNode, false)).thenResolve()
-        await openResource({
-            source: fakeResourceNode,
-            preview: false,
-            resourceManager: instance(mockResourceManager),
-            diagnostics: mockDiagnosticCollection,
-        })
+        await openResource(
+            {
+                source: fakeResourceNode,
+                preview: false,
+                resourceManager: instance(mockResourceManager),
+                diagnostics: mockDiagnosticCollection,
+            },
+            window
+        )
         verify(mockResourceManager.open(fakeResourceNode, false)).once()
     })
 
     it('handles opening uris', async function () {
+        const window = new FakeWindow()
         const fakeUri = vscode.Uri.parse('foo')
         when(mockResourceManager.fromUri(fakeUri)).thenReturn(fakeResourceNode)
         when(mockResourceManager.open(fakeResourceNode, false)).thenResolve()
-        await openResource({
-            source: fakeUri,
-            preview: false,
-            resourceManager: instance(mockResourceManager),
-            diagnostics: mockDiagnosticCollection,
-        })
+        await openResource(
+            {
+                source: fakeUri,
+                preview: false,
+                resourceManager: instance(mockResourceManager),
+                diagnostics: mockDiagnosticCollection,
+            },
+            window
+        )
         verify(mockResourceManager.fromUri(fakeUri)).once()
         verify(mockResourceManager.open(fakeResourceNode, false)).once()
     })
 
     it('can open in preview mode', async function () {
+        const window = new FakeWindow()
         when(mockResourceManager.open(fakeResourceNode, true)).thenResolve()
-        await openResource({
-            source: fakeResourceNode,
-            preview: true,
-            resourceManager: instance(mockResourceManager),
-            diagnostics: mockDiagnosticCollection,
-        })
+        await openResource(
+            {
+                source: fakeResourceNode,
+                preview: true,
+                resourceManager: instance(mockResourceManager),
+                diagnostics: mockDiagnosticCollection,
+            },
+            window
+        )
         verify(mockResourceManager.open(fakeResourceNode, true)).once()
     })
 
