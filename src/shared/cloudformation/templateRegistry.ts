@@ -30,7 +30,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         try {
             template = await CloudFormation.load(path)
         } catch (e) {
-            ext.schemaService.registerMapping({ path, schema: 'none' })
+            ext.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
             return undefined
         }
 
@@ -39,16 +39,16 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                ext.schemaService.registerMapping({ path, schema: 'sam' })
+                ext.schemaService.registerMapping({ path, type: 'yaml', schema: 'sam' })
             } else {
                 // apply cfn schema
-                ext.schemaService.registerMapping({ path, schema: 'cfn' })
+                ext.schemaService.registerMapping({ path, type: 'yaml', schema: 'cfn' })
             }
 
             return template
         }
 
-        ext.schemaService.registerMapping({ path, schema: 'none' })
+        ext.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
         return undefined
     }
 
@@ -56,7 +56,8 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
     public async remove(path: string | vscode.Uri): Promise<void> {
         ext.schemaService.registerMapping({
             path: typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
-            schema: 'none',
+            type: 'yaml',
+            schema: undefined,
         })
         await super.remove(path)
     }

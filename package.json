@@ -202,6 +202,27 @@
                         }
                     },
                     "additionalProperties": false
+                },
+                "aws.experiments": {
+                    "type": "object",
+                    "markdownDescription": "%AWS.configuration.description.experiments%",
+                    "default": {
+                        "jsonResourceModification": false
+                    },
+                    "properties": {
+                        "jsonResourceModification": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "aws.resources.enabledResources": {
+                    "type": "array",
+                    "description": "%AWS.configuration.description.resources.enabledResources%",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -828,6 +849,42 @@
                 {
                     "command": "aws.apprunner.createServiceFromEcr",
                     "when": "false"
+                },
+                {
+                    "command": "aws.resources.copyIdentifier",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.openResourcePreview",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.createResource",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.deleteResource",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.updateResource",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.updateResourceInline",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.saveResource",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.closeResource",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.viewDocs",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -844,6 +901,21 @@
                 {
                     "command": "aws.ssmDocument.publishDocument",
                     "when": "editorLangId =~ /^(ssm-yaml|ssm-json)$/",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.resources.updateResourceInline",
+                    "when": "resourceScheme == awsResource && !isCloud9 && config.aws.experiments.jsonResourceModification",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.resources.closeResource",
+                    "when": "resourcePath =~ /^.+(awsResource.json)$/",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.resources.saveResource",
+                    "when": "resourcePath =~ /^.+(awsResource.json)$/",
                     "group": "navigation"
                 }
             ],
@@ -1173,6 +1245,51 @@
                     "command": "aws.ssmDocument.deleteDocument",
                     "group": "3@2",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                },
+                {
+                    "command": "aws.resources.configure",
+                    "when": "view == aws.explorer && viewItem == resourcesRootNode && !isCloud9",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.resources.configure",
+                    "when": "view == aws.explorer && viewItem == resourcesRootNode && !isCloud9",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.resources.openResourcePreview",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(ResourceNode)$/",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.resources.copyIdentifier",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(ResourceNode)$/",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.resources.viewDocs",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Documented)(.*)(ResourceTypeNode)$/",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.resources.createResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.jsonResourceModification",
+                    "group": "2@1"
+                },
+                {
+                    "command": "aws.resources.createResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Creatable)(.*)(ResourceTypeNode)$/ && !isCloud9 && config.aws.experiments.jsonResourceModification",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.resources.updateResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Updatable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.jsonResourceModification",
+                    "group": "2@1"
+                },
+                {
+                    "command": "aws.resources.deleteResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(.*)(Deletable)(.*)(ResourceNode)$/ && !isCloud9 && config.aws.experiments.jsonResourceModification",
+                    "group": "2@2"
                 },
                 {
                     "command": "aws.apprunner.createServiceFromEcr",
@@ -1890,6 +2007,64 @@
                 }
             },
             {
+                "command": "aws.resources.copyIdentifier",
+                "title": "%AWS.command.resources.copyIdentifier%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.resources.openResourcePreview",
+                "title": "%AWS.generic.preview%",
+                "category": "%AWS.title%",
+                "icon": "$(open-preview)"
+            },
+            {
+                "command": "aws.resources.createResource",
+                "title": "%AWS.generic.create%",
+                "category": "%AWS.title%",
+                "icon": "$(add)"
+            },
+            {
+                "command": "aws.resources.deleteResource",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.resources.updateResource",
+                "title": "%AWS.generic.promptUpdate%",
+                "category": "%AWS.title%",
+                "icon": "$(pencil)"
+            },
+            {
+                "command": "aws.resources.updateResourceInline",
+                "title": "%AWS.generic.promptUpdate%",
+                "category": "%AWS.title%",
+                "icon": "$(pencil)"
+            },
+            {
+                "command": "aws.resources.saveResource",
+                "title": "%AWS.generic.save%",
+                "category": "%AWS.title%",
+                "icon": "$(save)"
+            },
+            {
+                "command": "aws.resources.closeResource",
+                "title": "%AWS.generic.close%",
+                "category": "%AWS.title%",
+                "icon": "$(close)"
+            },
+            {
+                "command": "aws.resources.viewDocs",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "icon": "$(book)"
+            },
+            {
+                "command": "aws.resources.configure",
+                "title": "%AWS.command.resources.configure%",
+                "category": "%AWS.title%",
+                "icon": "$(gear)"
+            },
+            {
                 "command": "aws.apprunner.createService",
                 "title": "%AWS.command.apprunner.createService%",
                 "category": "%AWS.title%",
@@ -2146,7 +2321,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.11",
+        "@aws-toolkits/telemetry": "1.0.21",
         "@sinonjs/fake-timers": "^7.0.5",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",
@@ -2213,13 +2388,15 @@
         "@aws-sdk/credential-provider-ini": "^3.33.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.16.0",
+        "@aws-sdk/util-arn-parser": "^3.18.0",
         "adm-zip": "^0.4.13",
         "amazon-states-language-service": "^1.6.4",
         "async-lock": "^1.3.0",
-        "aws-sdk": "^2.960.0",
+        "aws-sdk": "^2.998.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
         "cross-spawn": "^7.0.3",
+        "fast-json-patch": "^3.1.0",
         "fs-extra": "^10.0.0",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^4.1.0",
