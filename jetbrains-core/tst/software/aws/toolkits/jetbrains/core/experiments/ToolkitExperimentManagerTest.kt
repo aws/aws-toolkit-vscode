@@ -11,7 +11,9 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.utils.deserializeState
 import software.aws.toolkits.jetbrains.utils.rules.RegistryRule
+import software.aws.toolkits.jetbrains.utils.serializeState
 
 class ToolkitExperimentManagerTest {
 
@@ -107,9 +109,9 @@ class ToolkitExperimentManagerTest {
         ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
         experiment.setState(true)
 
-        assertThat(ToolkitExperimentManager.getInstance().state).containsEntry(experiment.id, true)
+        assertThat(ToolkitExperimentManager.getInstance().state.value).containsEntry(experiment.id, true)
         experiment.setState(false)
-        assertThat(ToolkitExperimentManager.getInstance().state).doesNotContainKey(experiment.id)
+        assertThat(ToolkitExperimentManager.getInstance().state.value).doesNotContainKey(experiment.id)
     }
 
     @Test
@@ -150,6 +152,20 @@ class ToolkitExperimentManagerTest {
         System.setProperty("aws.experiment.${experiment.id}", "false")
 
         assertThat(experiment.isEnabled()).isFalse
+    }
+
+    @Test
+    fun `it correctly persists`() {
+        val experiment = DummyExperiment()
+        ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
+
+        val sut = ToolkitExperimentManager.getInstance()
+
+        experiment.setState(true)
+        val serialized = serializeState("experiments", sut)
+        deserializeState(serialized, sut)
+
+        assertThat(experiment.isEnabled()).isTrue
     }
 }
 

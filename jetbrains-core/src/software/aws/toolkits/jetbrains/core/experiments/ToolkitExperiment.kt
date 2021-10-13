@@ -3,11 +3,13 @@
 
 package software.aws.toolkits.jetbrains.core.experiments
 
+import com.intellij.openapi.components.BaseState
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.util.xmlb.annotations.Property
 import software.aws.toolkits.jetbrains.AwsToolkit
 
 /**
@@ -47,7 +49,7 @@ fun ToolkitExperiment.isEnabled(): Boolean = ToolkitExperimentManager.getInstanc
 internal fun ToolkitExperiment.setState(enabled: Boolean) = ToolkitExperimentManager.getInstance().setState(this, enabled)
 
 @State(name = "experiments", storages = [Storage("aws.xml")])
-internal class ToolkitExperimentManager : PersistentStateComponent<Map<String, Boolean>> {
+internal class ToolkitExperimentManager : PersistentStateComponent<ExperimentState> {
     private val enabledState = mutableMapOf<String, Boolean>()
     fun isEnabled(experiment: ToolkitExperiment): Boolean =
         EP_NAME.extensionList.contains(experiment) && enabledState.getOrDefault(experiment.id, getDefault(experiment))
@@ -60,11 +62,11 @@ internal class ToolkitExperimentManager : PersistentStateComponent<Map<String, B
         }
     }
 
-    override fun getState(): Map<String, Boolean> = enabledState
+    override fun getState(): ExperimentState = ExperimentState().apply { value.putAll(enabledState) }
 
-    override fun loadState(state: Map<String, Boolean>) {
+    override fun loadState(state: ExperimentState) {
         enabledState.clear()
-        enabledState.putAll(state)
+        enabledState.putAll(state.value)
     }
 
     private fun getDefault(experiment: ToolkitExperiment): Boolean {
@@ -81,4 +83,9 @@ internal class ToolkitExperimentManager : PersistentStateComponent<Map<String, B
         internal fun getInstance(): ToolkitExperimentManager = service()
         internal fun visibileExperiments(): List<ToolkitExperiment> = EP_NAME.extensionList.filterNot { it.hidden }
     }
+}
+
+internal class ExperimentState : BaseState() {
+    @get:Property
+    val value by map<String, Boolean>()
 }
