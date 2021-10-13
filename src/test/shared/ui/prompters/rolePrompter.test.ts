@@ -37,7 +37,7 @@ describe('RolePrompter', function () {
         } as any
 
         mockIamClient = mock()
-        when(mockIamClient.listRoles()).thenResolve(roleResponse)
+        when(mockIamClient.listRoles()).thenResolve(roleResponse.Roles)
         prompterProvider = new RolePrompter(instance(mockIamClient), { createRole: () => Promise.resolve(newRole) })
         prompter = prompterProvider({ stepCache: {} } as any) as picker.QuickPickPrompter<IAM.Role>
         picker = exposeEmitters(prompter.quickPick, ['onDidTriggerButton'])
