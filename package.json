@@ -223,13 +223,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "aws.resources.maxItemsPerPage": {
-                    "type": "number",
-                    "default": 50,
-                    "minimum": 3,
-                    "maximum": 1000,
-                    "markdownDescription": "%AWS.configuration.description.resources.maxItemsPerPage%"
                 }
             }
         },

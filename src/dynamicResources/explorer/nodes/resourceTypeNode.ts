@@ -97,10 +97,8 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
 
     private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<ResourceNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
-        const maxResults = this.getMaxItemsPerPage()
         const response = await this.cloudControl.listResources({
             TypeName: this.typeName,
-            MaxResults: maxResults,
             NextToken: continuationToken,
         })
 
@@ -119,10 +117,6 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
             newContinuationToken: response.NextToken,
             newChildren: [...newResources],
         }
-    }
-
-    private getMaxItemsPerPage(): number | undefined {
-        return vscode.workspace.getConfiguration('aws').get<number>('resources.maxItemsPerPage')
     }
 
     private static getFriendlyName(typeName: string): string {
