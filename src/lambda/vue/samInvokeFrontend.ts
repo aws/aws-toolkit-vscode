@@ -196,11 +196,6 @@ export default defineComponent({
         save() {
             this.formatDataAndExecute('saveLaunchConfig')
         },
-        feedback() {
-            vscode.postMessage({
-                command: 'feedback',
-            })
-        },
         loadConfig() {
             vscode.postMessage({
                 command: 'loadSamLaunchConfig',
