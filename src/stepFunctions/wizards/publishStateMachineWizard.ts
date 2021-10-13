@@ -188,7 +188,12 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
 
     public async loadIamRoles() {
         if (!this.iamRoles) {
-            this.iamRoles = (await this.iamClient.listRoles()).Roles.filter(isStepFunctionsRole)
+            this.iamRoles = []
+            for await (const role of this.iamClient.getRoles()) {
+                if (isStepFunctionsRole(role)) {
+                    this.iamRoles.push(role)
+                }
+            }
         }
     }
 
