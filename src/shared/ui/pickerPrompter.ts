@@ -110,7 +110,7 @@ export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'but
 
 export const CUSTOM_USER_INPUT = Symbol()
 
-function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
+export function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
     return typeof obj === 'object' && typeof (obj as vscode.QuickPickItem).label === 'string' && 'data' in obj
 }
 

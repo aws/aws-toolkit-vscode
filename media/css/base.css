@@ -134,6 +134,54 @@ textarea {
     border: 1px solid var(--vscode-settings-textInputBorder);
 }
 
+/* Badge */
+.badge {
+    color: var(--vscode-activityBarBadge-foreground);
+    background-color: var(--vscode-activityBarBadge-background);
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    border-radius: 16px;
+    white-space: nowrap;
+}
+
+/* Layout */
+.ml-2 {
+    margin-left: 2px;
+}
+.ml-4 {
+    margin-left: 4px;
+}
+.ml-8 {
+    margin-left: 8px;
+}
+.mr-2 {
+    margin-right: 2px;
+}
+.mr-4 {
+    margin-right: 4px;
+}
+.mr-8 {
+    margin-right: 8px;
+}
+.mt-2 {
+    margin-top: 2px;
+}
+.mt-4 {
+    margin-top: 4px;
+}
+.mt-8 {
+    margin-top: 8px;
+}
+.mb-2 {
+    margin-bottom: 2px;
+}
+.mb-4 {
+    margin-bottom: 4px;
+}
+.mb-8 {
+    margin-bottom: 8px;
+}
+
 /* Misc. */
 .no-spacing {
     margin: 0;

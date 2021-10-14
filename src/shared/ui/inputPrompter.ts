@@ -56,7 +56,7 @@ export class InputBoxPrompter extends Prompter<string> {
     private validateEvents: vscode.Disposable[] = []
 
     public set recentItem(response: string | undefined) {
-        this._lastResponse = typeof response === 'string' ? response : this._lastResponse
+        this._lastResponse = response !== undefined ? response : this._lastResponse
         this.inputBox.value = this._lastResponse ?? ''
     }
 
