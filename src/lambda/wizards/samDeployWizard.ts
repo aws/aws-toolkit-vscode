@@ -39,6 +39,7 @@ import { validateBucketName } from '../../s3/util'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { recentlyUsed } from '../../shared/localizedText'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -417,7 +418,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 // this is the only way to get this to show on going back
                 // this will make it so it always shows even when searching for something else
                 alwaysShow: region.id === initialRegionCode,
-                description: region.id === initialRegionCode ? localizedText.recentlySelectedItem : '',
+                description: region.id === initialRegionCode ? localizedText.recentlyUsed : '',
             })),
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
@@ -1029,7 +1030,7 @@ async function populateS3QuickPick(
                 recent = existingBuckets[profile][selectedRegion]
                 baseItems.push({
                     label: recent,
-                    description: localize('AWS.profile.recentlyUsed', 'recently used'),
+                    description: recentlyUsed,
                 })
             }
         } catch (e) {

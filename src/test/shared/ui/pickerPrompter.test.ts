@@ -18,7 +18,7 @@ import {
 } from '../../../shared/ui/pickerPrompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
-import { recentlySelectedItem } from '../../../shared/localizedText'
+import { recentlyUsed } from '../../../shared/localizedText'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -193,7 +193,7 @@ describe('QuickPickPrompter', function () {
     it('adds a message to the description when an item has been previously selected', async function () {
         testPrompter = new QuickPickPrompter(picker, { recentItemText: true })
         testPrompter.recentItem = { label: 'item1', data: 0 }
-        const description = ` (${recentlySelectedItem})`
+        const description = ` (${recentlyUsed})`
         assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })
 
