@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
 import { createRegionPrompter } from '../../../../shared/ui/common/region'
-import { exposeEmitters } from '../../vscode/testUtils'
 import { createCommonButtons } from '../../../../shared/ui/buttons'
+import { createQuickPickTester } from '../testUtils'
 
 describe('createRegionPrompter', function () {
     it('prompts for region', async function () {
@@ -20,15 +19,9 @@ describe('createRegionPrompter', function () {
             buttons: createCommonButtons('https://aws.amazon.com/'),
             defaultRegion: 'foo-bar-1',
         })
-        const exposed = exposeEmitters(p.quickPick, ['onDidTriggerButton'])
-        p.quickPick.onDidChangeActive(items => {
-            if (items.length > 0) {
-                exposed.selectedItems = [items[0]]
-            }
-        })
-        p.selectItems({ label: regions[1].name, data: regions[1] })
-        const r = await p.prompt()
-
-        assert.strictEqual(r, regions[1])
+        const tester = createQuickPickTester(p)
+        tester.assertItems(['FOO', 'PDX', 'IAD'])
+        tester.acceptItem({ label: regions[1].name, detail: regions[1].id, data: regions[1], description: '' })
+        await tester.result(regions[1])
     })
 })

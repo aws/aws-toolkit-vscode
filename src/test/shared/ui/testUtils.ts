@@ -169,7 +169,7 @@ export function createQuickPickTester<T>(
                 const filteredItems = filterItems()
                 const match = matchItems(filteredItems, [action[1][0]])
                 if (match.length === 0) {
-                    throwError(`Unable to find item: ${action[1][0]}`)
+                    throwError(`Unable to find item: ${JSON.stringify(action[1][0])}`) // TODO: add ways to format
                 }
                 testPicker.selectedItems = match
                 break
