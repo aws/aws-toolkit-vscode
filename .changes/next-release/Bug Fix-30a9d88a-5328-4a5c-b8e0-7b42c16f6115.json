@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "StepFunctions: \"Publish\" command now asks for target region"
-}
