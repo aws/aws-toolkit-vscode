@@ -42,7 +42,7 @@ export abstract class Prompter<T> {
     /**
      * Type-helper, allows Prompters to be mapped to different shapes
      *
-     * ** This can potentially be called before the user responds. Use {@link Prompter.after} for attaching callbacks **
+     * ** This can potentially be called before the user responds. Use {@link Prompter.onResponse} for attaching callbacks **
      */
     public transform<R>(callback: Transform<T, R>): Prompter<R> {
         this.transforms.push(callback)
@@ -54,7 +54,7 @@ export abstract class Prompter<T> {
      * Attaches a callback that is invoked after the user provides a valid response of type `T`.
      * The return value of the callback is ignored.
      */
-    public after(callback: (result: Readonly<T>) => void): this {
+    public onResponse(callback: (result: Readonly<T>) => void): this {
         this.resultCallbacks.push((result: Readonly<T>) => (callback(result), undefined))
         return this
     }

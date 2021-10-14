@@ -38,7 +38,7 @@ export function createRegionPrompter(
     const defaultRegionItem = items.find(item => item.detail === options.defaultRegion)
 
     if (defaultRegionItem !== undefined) {
-        defaultRegionItem.description = `(${localize('AWS.generic.defaultRegion', 'Default region')})`
+        defaultRegionItem.description = localize('AWS.generic.defaultRegion', 'Default region')
     }
 
     const prompter = createQuickPick(items, {
@@ -57,7 +57,7 @@ export function createRegionPrompter(
             prompter.savedItem = lastRegion
         }
     }
-    return prompter.after(item => {
+    return prompter.onResponse(item => {
         getLogger().debug('createRegionPrompter: selected %O', item)
         ext.context.globalState.update(lastRegionKey, item)
     })

@@ -55,9 +55,9 @@ describe('Prompter', function () {
         let sum = 0
         const prompter = new SimplePrompter(1)
         prompter
-            .after(resp => (sum += resp))
-            .after(resp => (sum += resp))
-            .after(resp => (sum += resp))
+            .onResponse(resp => (sum += resp))
+            .onResponse(resp => (sum += resp))
+            .onResponse(resp => (sum += resp))
 
         const result = await prompter.prompt()
         assert.strictEqual(result, 1, 'Callbacks should not change the response')
@@ -68,9 +68,9 @@ describe('Prompter', function () {
         let sum = 0
         const prompter = new SimplePrompter(1)
         prompter
-            .after(resp => (sum += resp))
+            .onResponse(resp => (sum += resp))
             .transform(resp => resp * 2)
-            .after(resp => (sum += resp * 2))
+            .onResponse(resp => (sum += resp * 2))
 
         const result = await prompter.prompt()
         assert.strictEqual(result, 2)
