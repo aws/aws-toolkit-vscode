@@ -4,38 +4,35 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.ui.CheckBoxList
 import com.intellij.ui.FilterComponent
 import com.intellij.ui.ListSpeedSearch
 import com.intellij.ui.layout.panel
+import software.aws.toolkits.core.utils.replace
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OtherResourcesNode
 import software.aws.toolkits.resources.message
-import javax.swing.DefaultListModel
-import javax.swing.JCheckBox
 import javax.swing.ListSelectionModel
 
 class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dynamic_resources_configurable.title")) {
 
-    private val checklistModel = DefaultListModel<JCheckBox>()
-    private val checklist = CheckBoxList<String>(checklistModel)
-    private val changeSet = mutableSetOf<Int>()
-    private val checkboxListener = { idx: Int ->
-        if (idx in changeSet) {
-            changeSet.remove(idx)
-        } else {
-            changeSet.add(idx)
+    private val checklist = CheckBoxList<String>()
+    private val allResources = mutableSetOf<String>()
+    private val selected = mutableSetOf<String>()
+    private val filter = object : FilterComponent("filter", 5) {
+        override fun filter() {
+            updateCheckboxList()
         }
     }
 
     init {
         checklist.selectionMode = ListSelectionModel.MULTIPLE_INTERVAL_SELECTION
-        checklist.setCheckBoxListListener { idx, _ ->
-            checkboxListener(idx)
-        }
+        checklist.setCheckBoxListListener(::checkboxStateHandler)
 
         ListSpeedSearch(checklist) {
             it.text.substringAfter("::")
@@ -45,52 +42,27 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
     override fun getPreferredFocusedComponent() = checklist
 
     override fun createPanel() = panel {
-        val allCheckboxes = mutableListOf<JCheckBox>()
-        val selected = DynamicResourcesSettings.getInstance().selected
-
+        selected.replace(DynamicResourcesSettings.getInstance().selected)
         ApplicationManager.getApplication().executeOnPooledThread {
-            DynamicResourceSupportedTypes.getInstance().getSupportedTypes().forEach {
-                checklist.addItem(it, it, it in selected)
+            allResources.addAll(DynamicResourceSupportedTypes.getInstance().getSupportedTypes())
+            runInEdt(ModalityState.any()) {
+                updateCheckboxList()
             }
-            allCheckboxes.addAll(checklist.map { _, checkbox -> checkbox })
         }
 
+        row { filter(growX) }
         row {
-            // filter
-            val field = object : FilterComponent("filter", 5) {
-                override fun filter() {
-                    checklistModel.clear()
-                    checklistModel.addAll(allCheckboxes.filter { it.text.contains(filter, ignoreCase = true) })
-                }
-            }
-            field(growX)
-        }
-
-        row {
-            // scrollpane
             scrollPane(checklist)
                 .constraints(growX, pushX)
-                .onIsModified {
-                    // returns true if there is a change
-                    changeSet.size != 0
-                }
+                .onIsModified { selected != DynamicResourcesSettings.getInstance().selected }
                 .onApply {
-                    changeSet.clear()
-
-                    DynamicResourcesSettings.getInstance().selected = allCheckboxes.filter { it.isSelected }.map { it.text }.toSet()
-                    ProjectManager.getInstance().openProjects.forEach { project ->
-                        if (!project.isDisposed) {
-                            val toolWindow = ExplorerToolWindow.getInstance(project)
-                            toolWindow.findNode(OtherResourcesNode::class).then { node ->
-                                node?.let {
-                                    toolWindow.invalidateTree(it)
-                                }
-                            }
-                        }
-                    }
+                    DynamicResourcesSettings.getInstance().selected = selected
+                    refreshAwsExplorer()
                 }
-
-            // select/clearall
+                .onReset {
+                    selected.replace(DynamicResourcesSettings.getInstance().selected)
+                    updateCheckboxList()
+                }
             right {
                 cell(isVerticalFlow = true) {
                     val sizeGroup = "buttons"
@@ -107,33 +79,37 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
     }
 
     private fun CheckBoxList<*>.toggleAll(state: Boolean) {
-        this.forEachIndexed { index, checkbox ->
-            checkbox.isSelected = state
-            checkboxListener(index)
+        (0 until model.size).forEach { idx ->
+            checkboxStateHandler(idx, state)
         }
-        this.repaint()
+        updateCheckboxList()
     }
 
-    private companion object {
-        fun <T> CheckBoxList<*>.map(fn: (Int, JCheckBox) -> T): List<T> {
-            val size = this.model.size - 1
+    private fun updateCheckboxList() {
+        checklist.clear()
+        allResources.filter { it.contains(filter.filter, ignoreCase = true) }.sorted().forEach { checklist.addItem(it, it, it in selected) }
+    }
 
-            return (0..size).map {
-                fn(it, this.model.getElementAt(it))
+    private fun checkboxStateHandler(idx: Int, state: Boolean) {
+        checklist.getItemAt(idx)?.let { value ->
+            if (state) {
+                selected.add(value)
+            } else {
+                selected.remove(value)
             }
         }
+    }
 
-        fun CheckBoxList<*>.filter(fn: (JCheckBox) -> Boolean): List<JCheckBox> =
-            this.map { _, it ->
-                if (fn(it)) {
-                    it
-                } else {
-                    null
+    private fun refreshAwsExplorer() {
+        ProjectManager.getInstance().openProjects.forEach { project ->
+            if (!project.isDisposed) {
+                val toolWindow = ExplorerToolWindow.getInstance(project)
+                toolWindow.findNode(OtherResourcesNode::class).then { node ->
+                    node.let {
+                        toolWindow.invalidateTree(it)
+                    }
                 }
-            }.filterNotNull()
-
-        fun CheckBoxList<*>.forEachIndexed(fn: (Int, JCheckBox) -> Unit) {
-            this.map(fn)
+            }
         }
     }
 }
