@@ -67,17 +67,6 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     private promptCount: number = 0
     private name: string = 'Test Prompter'
 
-    public get recentItem(): PromptResult<T> {
-        return this._lastResponse
-    }
-    public set recentItem(response: PromptResult<T>) {
-        if (response !== this._lastResponse) {
-            this.fail(
-                makeExpectedError('Received unexpected cached response from wizard', response, this._lastResponse)
-            )
-        }
-    }
-
     public get totalSteps(): number {
         return this._totalSteps
     }
@@ -85,6 +74,17 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     constructor(...responses: TestResponse<T, S>[]) {
         super()
         this.responses = responses
+    }
+
+    public getRecentItem(): PromptResult<T> {
+        return this._lastResponse
+    }
+    public setRecentItem(response: PromptResult<T>): void {
+        if (response !== this._lastResponse) {
+            this.fail(
+                makeExpectedError('Received unexpected cached response from wizard', response, this._lastResponse)
+            )
+        }
     }
 
     public async prompt(): Promise<PromptResult<T>> {
