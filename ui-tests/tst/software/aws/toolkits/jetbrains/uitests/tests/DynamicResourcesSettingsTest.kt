@@ -49,15 +49,6 @@ class DynamicResourcesSettingsTest {
                 selectPreferencePage("Tools", message("aws.settings.title"), message("aws.settings.dynamic_resources_configurable.title"))
 
                 val applyButton = button("Apply")
-                step("Clear all resources") {
-                    button(message("aws.settings.dynamic_resources_configurable.clear_all")).click()
-                    waitFor { applyButton.isEnabled() }
-                    applyButton.click()
-
-                    awsExplorer {
-                        assertThat(explorerTree().findAllText { it.text.contains("AWS") }).isEmpty()
-                    }
-                }
 
                 step("Select all resources") {
                     button(message("aws.settings.dynamic_resources_configurable.select_all")).click()
@@ -66,6 +57,16 @@ class DynamicResourcesSettingsTest {
 
                     awsExplorer {
                         assertThat(explorerTree().findAllText { it.text.contains(message("aws.settings.title")) }).isNotEmpty()
+                    }
+                }
+
+                step("Clear all resources") {
+                    button(message("aws.settings.dynamic_resources_configurable.clear_all")).click()
+                    waitFor { applyButton.isEnabled() }
+                    applyButton.click()
+
+                    awsExplorer {
+                        assertThat(explorerTree().findAllText { it.text.contains("AWS") }).isEmpty()
                     }
                 }
             }
