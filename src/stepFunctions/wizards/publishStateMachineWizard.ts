@@ -16,7 +16,7 @@ import {
 } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { getIdeProperties } from '../../shared/extensionUtilities'
-import { recentlySelectedItem } from '../../shared/localizedText'
+import { recentlyUsed } from '../../shared/localizedText'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -116,7 +116,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
             },
         ].map((item: PublishActionQuickPickItem) => {
             if (item.action === currPublishAction) {
-                item.description = recentlySelectedItem
+                item.description = recentlyUsed
             }
 
             return item
@@ -217,7 +217,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 label: iamRole.RoleName,
                 alwaysShow: iamRole.Arn === currRoleArn,
                 arn: iamRole.Arn,
-                description: iamRole.Arn === currRoleArn ? recentlySelectedItem : iamRole.Arn,
+                description: iamRole.Arn === currRoleArn ? recentlyUsed : iamRole.Arn,
             }))
         }
 

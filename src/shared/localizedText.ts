@@ -17,7 +17,7 @@ export const invalidNumberWarning: string = localize(
     'Input must be a positive number'
 )
 export const viewDocs: string = localize('AWS.generic.viewDocs', 'View Documentation')
-export const recentlySelectedItem: string = localize('AWS.wizard.selectedPreviously', 'Selected Previously')
+export const recentlyUsed: string = localize('AWS.generic.recentlyUsed', 'recently used')
 
 export function checklogs(): string {
     const message = localize(
