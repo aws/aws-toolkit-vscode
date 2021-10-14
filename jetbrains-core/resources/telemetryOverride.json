@@ -1,5 +1,17 @@
 {
-    "types": [],
+    "types": [
+        {
+            "name": "experimentState",
+            "type": "string",
+            "allowedValues": ["activated", "deactivated"],
+            "description": "The experiment action taken action taken"
+        },
+        {
+            "name": "experimentId",
+            "type": "string",
+            "description": "The id of the experiment being activated or deactivated"
+        }
+    ],
     "metrics": [
         {
             "name": "aws_openLocalTerminal",
@@ -7,6 +19,18 @@
             "metadata": [
                 {
                     "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "aws_experimentActivation",
+            "description": "An experiment was activated or deactivated in the toolkit",
+            "metadata": [
+                {
+                    "type": "experimentId"
+                },
+                {
+                    "type": "experimentState"
                 }
             ]
         }

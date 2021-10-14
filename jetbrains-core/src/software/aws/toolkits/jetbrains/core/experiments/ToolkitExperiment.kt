@@ -11,6 +11,9 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.util.xmlb.annotations.Property
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.telemetry.AwsTelemetry
+import software.aws.toolkits.telemetry.ExperimentState.Activated
+import software.aws.toolkits.telemetry.ExperimentState.Deactivated
 
 /**
  * Used to control the state of an experimental feature.
@@ -60,6 +63,14 @@ internal class ToolkitExperimentManager : PersistentStateComponent<ExperimentSta
         } else {
             enabledState[experiment.id] = enabled
         }
+        AwsTelemetry.experimentActivation(
+            experimentId = experiment.id,
+            experimentState = if (enabled) {
+                Activated
+            } else {
+                Deactivated
+            }
+        )
     }
 
     override fun getState(): ExperimentState = ExperimentState().apply { value.putAll(enabledState) }
