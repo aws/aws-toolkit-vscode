@@ -1,6 +1,8 @@
 {
     "AWS.title": "AWS",
     "AWS.title.cn": "Amazon",
+    "AWS.productName": "AWS Toolkit",
+    "AWS.productName.cn": "Amazon Toolkit",
     "AWS.vscode.shortName": "VS Code",
     "AWS.vscode.longName": "Visual Studio Code",
     "AWS.vscode.commandPalette": "Command Palette",
@@ -32,7 +34,6 @@
     "AWS.codelens.failToInitialize": "Failed to activate template registry. {0} will not appear on SAM template files.",
     "AWS.codelens.failToInitializeCode": "Failed to activate Lambda handler {0}",
     "AWS.codelens.lambda.configEditor": "Edit Debug Configuration",
-    "AWS.configuration.title": "AWS Configuration",
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.logLevel": "The AWS Toolkit's log level (changes reflected on restart)",
     "AWS.configuration.description.logLevel.cn": "The Amazon Toolkit's log level (changes reflected on restart)",
@@ -599,7 +600,8 @@
     "AWS.picker.dynamic.noItemsFound.label": "[No items found]",
     "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items.",
     "AWS.walkthrough.gettingStarted.title": "Get Started with AWS",
-    "AWS.walkthrough.gettingStarted.description": "These walkthroughs help you set up the AWS Toolkit for Visual Studio Code.",
+    "AWS.walkthrough.gettingStarted.description": "These walkthroughs help you set up the AWS Toolkit.",
+    "AWS.walkthrough.gettingStarted.description.cn": "These walkthroughs help you set up the Amazon Toolkit.",
     "AWS.walkthrough.gettingStarted.connect": "Connect to AWS",
     "AWS.walkthrough.gettingStarted.changeRegions": "Change AWS Regions",
     "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain"
