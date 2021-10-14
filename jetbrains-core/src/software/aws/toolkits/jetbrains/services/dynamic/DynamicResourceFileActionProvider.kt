@@ -11,6 +11,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.intellij.ui.EditorNotifications
+import com.jetbrains.jsonSchema.ide.JsonSchemaService
 import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.resources.message
 
@@ -28,7 +29,7 @@ class DynamicResourceFileActionProvider :
                     file,
                     message("dynamic_resources.create_resource_instruction"),
                     "dynamic.resource.editor.submitResourceCreationRequest"
-                )
+                ).also { DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(project, file) }
             is ViewEditableDynamicResourceVirtualFile ->
                 when (file.isWritable) {
                     true -> DynamicResourceVirtualFilePanel(
@@ -36,13 +37,13 @@ class DynamicResourceFileActionProvider :
                         file,
                         message("dynamic_resources.update_resource_instruction"),
                         "dynamic.resource.editor.submitResourceUpdateRequest"
-                    )
+                    ).also { DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(project, file) }
                     false -> DynamicResourceVirtualFilePanel(
                         project,
                         file,
                         message("dynamic_resources.edit_resource_instruction"),
                         "dynamic.resource.editor.enableEditingResource"
-                    )
+                    ).also { JsonSchemaService.Impl.get(project).reset() }
                 }
             else -> null
         }

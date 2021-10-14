@@ -18,7 +18,6 @@ import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager.Companion.isTerminal
 import software.aws.toolkits.jetbrains.services.dynamic.OpenViewEditableDynamicResourceVirtualFile
@@ -97,7 +96,6 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                         dynamicResourceIdentifier,
                         model
                     )
-                    DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
 
                     indicator.text = message("dynamic_resources.fetch.open")
                     OpenViewEditableDynamicResourceVirtualFile.openFile(nodeProject, file, sourceAction, resource.type.fullName)

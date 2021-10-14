@@ -17,7 +17,7 @@ class ResourceSchemaProviderFactory : JsonSchemaProviderFactory {
         DynamicResourceSchemaMapping.getInstance().getCurrentlyActiveResourceTypes().forEach {
             val schemaFile = object : JsonSchemaFileProvider {
                 override fun isAvailable(file: VirtualFile): Boolean =
-                    file is DynamicResourceVirtualFile && file.dynamicResourceType == it
+                    file is DynamicResourceVirtualFile && file.dynamicResourceType == it && file.isWritable
 
                 override fun getName(): String = "$it schema"
 
