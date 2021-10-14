@@ -7,10 +7,10 @@ import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { localize } from '../utilities/vsCodeUtils'
 
-import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
+import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { ext } from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
-import { NoopWatcher } from '../fs/watchedFiles'
+import { NoopWatcher } from '../watchedFiles'
 import { createStarterTemplateFile } from './cloudformation'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
@@ -23,8 +23,6 @@ export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
  */
 export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
 
-export const DEVFILE_EXCLUDE_PATTERN = /.*devfile\.(yaml|yml)/i
-
 /**
  * Creates a CloudFormationTemplateRegistry which retains the state of CloudFormation templates in a workspace.
  * This also assigns a FileSystemWatcher which will update the registry on any change to tracked templates.
@@ -34,7 +32,6 @@ export const DEVFILE_EXCLUDE_PATTERN = /.*devfile\.(yaml|yml)/i
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     try {
         const registry = new CloudFormationTemplateRegistry()
-        await registry.addExcludedPattern(DEVFILE_EXCLUDE_PATTERN)
         await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
         await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
         ext.templateRegistry = registry

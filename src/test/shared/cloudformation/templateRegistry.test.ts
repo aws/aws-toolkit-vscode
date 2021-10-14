@@ -12,12 +12,12 @@ import {
     CloudFormationTemplateRegistry,
     getResourcesForHandler,
     getResourcesForHandlerFromTemplateDatum,
-} from '../../../shared/fs/templateRegistry'
+} from '../../../shared/cloudformation/templateRegistry'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from '../cloudformation/cloudformationTestUtils'
+import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
 import { assertEqualPaths, toFile } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import { WatchedItem } from '../../../shared/fs/watchedFiles'
+import { WatchedItem } from '../../../shared/watchedFiles'
 
 // TODO almost all of these tests should be moved to test WatchedFiles instead
 describe('CloudFormation Template Registry', async function () {

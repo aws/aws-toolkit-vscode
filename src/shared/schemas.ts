@@ -16,7 +16,6 @@ import { ResourceFetcher } from './resourcefetcher/resourcefetcher'
 import { normalizeSeparator } from './utilities/pathUtils'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
-const DEVFILE_MANIFEST_URL = 'https://api.github.com/repos/devfile/api/releases/latest'
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -121,12 +120,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
         const samSchemaUri = vscode.Uri.file(
             normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json'))
         )
-        const devfileSchemaUri = vscode.Uri.file(
-            normalizeSeparator(path.join(extensionContext.globalStoragePath, 'devfile.schema.json'))
-        )
-
         const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
-        const devfileSchemaVersion = await getPropertyFromJsonUrl(DEVFILE_MANIFEST_URL, 'tag_name')
 
         await getRemoteOrCachedFile({
             filepath: cfnSchemaUri.fsPath,
@@ -142,17 +136,9 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             cacheKey: 'samSchemaVersion',
             extensionContext,
         })
-        await getRemoteOrCachedFile({
-            filepath: devfileSchemaUri.fsPath,
-            version: devfileSchemaVersion,
-            url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
-            cacheKey: 'devfileSchemaVersion',
-            extensionContext,
-        })
         return {
             cfn: cfnSchemaUri,
             sam: samSchemaUri,
-            devfile: devfileSchemaUri,
         }
     } catch (e) {
         getLogger().error('Could not refresh schemas:', (e as Error).message)

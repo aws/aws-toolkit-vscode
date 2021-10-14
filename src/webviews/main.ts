@@ -41,7 +41,6 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
         isCloud9() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside,
         {
             enableScripts: true,
-            enableCommandUris: true,
             localResourceRoots: [
                 vscode.Uri.file(libsPath),
                 vscode.Uri.file(jsPath),
@@ -121,6 +120,7 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
             params.onDidReceiveMessageFunction(
                 message,
                 response => view.webview.postMessage(response),
+                // tslint:disable-next-line: no-unsafe-any
                 () => view.dispose()
             )
         },

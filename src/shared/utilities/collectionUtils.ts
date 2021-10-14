@@ -243,11 +243,10 @@ export class IteratorTransformer<TIteratorOutput, TTransformerOutput> {
  * @param condition conditional that determines if we will push to the array
  * @param elements The additional items to append to the array
  */
-export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]): T[] {
+export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]) {
     if (condition) {
         arr.push(...elements)
     }
-    return arr
 }
 
 /**

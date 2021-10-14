@@ -7,8 +7,6 @@ import { join } from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import * as caws from './caws/activation'
-import * as cawsStatusbar from './caws/cawsStatusbar'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
@@ -62,8 +60,6 @@ import {
     recordToolkitInit,
 } from './shared/telemetry/telemetry'
 import { ExtContext } from './shared/extensions'
-import { MdeClient } from './shared/clients/mdeClient'
-import * as mde from './mde/activation'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
@@ -72,13 +68,11 @@ import { activate as activateAppRunner } from './apprunner/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
-import { CawsClient } from './shared/clients/cawsClient'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
-import { UriHandler } from './shared/vscode/uriHandler'
 
 let localize: nls.LocalizeFunc
 
@@ -112,7 +106,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
-        const loginManager = new LoginManager(ext.awsContext, credentialsStore)
+        const loginManager = new LoginManager(awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
@@ -123,50 +117,40 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         ext.regionProvider = regionProvider
-        await cawsStatusbar.initStatusbar()
         ext.awsContextCommands = new DefaultAWSContextCommands(
-            ext.awsContext,
+            awsContext,
             awsContextTrees,
             regionProvider,
             loginManager
         )
-        ext.sdkClientBuilder = new DefaultAWSClientBuilder(ext.awsContext)
+        ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         ext.schemaService = new SchemaService(context)
         ext.resourceManager = new AwsResourceManager(context)
-        ext.caws = await CawsClient.create(toolkitSettings)
-        ext.mde = await MdeClient.create()
-
-        // temporary, move to activation later (if we even need it)
-        ext.awsContext.onDidChangeContext(ctx => ext.mde.onCredentialsChanged(ctx.cawsUsername))
 
         await initializeCredentials({
             extensionContext: context,
-            awsContext: ext.awsContext,
+            awsContext: awsContext,
             settingsConfiguration: toolkitSettings,
         })
 
         await activateTelemetry({
             extensionContext: context,
-            awsContext: ext.awsContext,
+            awsContext: awsContext,
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
         await ext.schemaService.start()
 
-        const uriHandler = new UriHandler()
-        context.subscriptions.push(vscode.window.registerUriHandler(uriHandler))
-
         const extContext: ExtContext = {
             extensionContext: context,
-            awsContext: ext.awsContext,
+            awsContext: awsContext,
             samCliContext: getSamCliContext,
             regionProvider: regionProvider,
             settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
             telemetryService: ext.telemetry,
             credentialsStore,
-            uriHandler,
         }
 
         // Used as a command for decoration-only codelenses.
@@ -231,7 +215,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await activateAwsExplorer({
-            awsContext: ext.awsContext,
+            awsContext,
             awsContextTrees,
             regionProvider,
             toolkitOutputChannel,
@@ -247,7 +231,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(extContext)
 
-        await activateSsmDocument(context, ext.awsContext, regionProvider, toolkitOutputChannel)
+        await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
 
         await activateSam(extContext)
 
@@ -269,9 +253,6 @@ export async function activate(context: vscode.ExtensionContext) {
         setImmediate(async () => {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)
         })
-
-        caws.activate(extContext)
-        mde.activate(extContext)
 
         showWelcomeMessage(context)
 

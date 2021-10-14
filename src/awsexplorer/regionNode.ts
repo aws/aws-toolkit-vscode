@@ -22,7 +22,6 @@ import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
-import { MdeRootNode } from '../mde/mdeRootNode'
 
 /**
  * An AWS Explorer node representing a region.
@@ -80,8 +79,6 @@ export class RegionNode extends AWSTreeNodeBase {
         }
 
         this.childNodes.push(new ResourcesNode(this.regionCode))
-        // TODO: make this conditional at release-time.
-        this.childNodes.push(new MdeRootNode(this.regionCode))
     }
 
     private tryClearChildren(): void {
