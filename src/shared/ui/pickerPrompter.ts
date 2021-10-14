@@ -10,7 +10,7 @@ import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult, Transform } from './prompter'
 import { applyPrimitives, isAsyncIterable } from '../utilities/collectionUtils'
-import { recentlySelectedItem } from '../localizedText'
+import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
 
 const localize = nls.loadMessageBundle()
@@ -433,7 +433,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * @param first Controls whether the recent item is moved to the start of the items.
      */
     protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = true): void {
-        const recentItemText = `(${recentlySelectedItem})`
+        const recentItemText = `(${recentlyUsed})`
         // HACK: Scrub any "selected previously" descriptions, in case this is
         // "backwards navigation". #2148
         this.quickPick.items.forEach(item => item.description?.replace(recentItemText, ''))
