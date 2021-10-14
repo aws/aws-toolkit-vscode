@@ -138,7 +138,7 @@ that is a net cost.
         })
         ```
 
-    -   [Testing Refresh Button](https://github.com/aws/aws-toolkit-vscode/blob/ece5077e52975f5d6673d939479aaa0c96373a18/src/test/shared/ui/prompters/rolePrompter.test.ts#L58-L64)
+    -   [Testing Refresh Button](https://github.com/aws/aws-toolkit-vscode/blob/b34c8f7650c862c388992781844695b014b5d974/src/test/shared/ui/prompters/rolePrompter.test.ts#L58-L65)
 
 ## Code guidelines
 
