@@ -54,7 +54,7 @@ export function createRegionPrompter(
     if (lastRegion !== undefined && (lastRegion as any).id) {
         const found = regions.find(val => val.id === lastRegion.id)
         if (found && found.id !== options.defaultRegion) {
-            prompter.savedItem = lastRegion
+            prompter.setRecentItem(lastRegion, true)
         }
     }
     return prompter.onResponse(item => {

@@ -170,46 +170,46 @@ describe('QuickPickPrompter', function () {
         testPrompter.onDidShow(() => (picker.selectedItems = [testItems[1]]))
         const result = testPrompter.prompt()
         assert.strictEqual(await result, testItems[1].data)
-        assert.strictEqual(testPrompter.recentItem, testItems[1])
+        assert.strictEqual(testPrompter.getRecentItem(), testItems[1])
     })
 
     it('can set recent item leaving it in-place', function () {
-        testPrompter.recentItem = testItems[2]
+        testPrompter.setRecentItem(testItems[2])
         testPrompter.prompt()
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
         assert.deepStrictEqual(picker.items[2], testItems[2])
     })
 
     it('tries to recover recent item from partial data', function () {
-        testPrompter.recentItem = 2
+        testPrompter.setRecentItem(2)
         testPrompter.prompt()
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
     })
 
     it('shows first item if recent item does not exist', function () {
-        testPrompter.recentItem = { label: 'item4', data: 3 }
+        testPrompter.setRecentItem({ label: 'item4', data: 3 })
         testPrompter.prompt()
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
     })
 
     it('adds a message to the description when an item has been previously selected', function () {
         testPrompter = new QuickPickPrompter(picker, { recentItemText: true })
-        testPrompter.recentItem = { label: 'item1', data: 0 }
+        testPrompter.setRecentItem({ label: 'item1', data: 0 })
         testPrompter.prompt()
         const description = ` (${recentlyUsed})`
         assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })
 
-    it('can set a saved item and places it at the top', function () {
-        testPrompter.savedItem = testItems[2]
+    it('can set a recent item and places it at the top', function () {
+        testPrompter.setRecentItem(testItems[2], true)
         testPrompter.prompt()
         // setRecentItem() puts the item at the top of the list. #2148
         assert.deepStrictEqual(picker.items[0], picker.activeItems[0])
     })
 
-    it('prioritizes the last set saved/recent item', function () {
-        testPrompter.savedItem = testItems[2]
-        testPrompter.recentItem = testItems[1]
+    it('prioritizes the last set recent item', function () {
+        testPrompter.setRecentItem(testItems[2], true)
+        testPrompter.setRecentItem(testItems[1])
         testPrompter.prompt()
         assert.deepStrictEqual(picker.items[1], picker.activeItems[0])
     })

@@ -11,17 +11,15 @@ import { Prompter, PromptResult } from './prompter'
  * wizards in their flows.
  */
 export class WizardPrompter<T> extends Prompter<T> {
-    public get recentItem(): any {
-        return undefined
-    }
-    public set recentItem(response: any) {}
-
     private stepOffset: number = 0
     private response: T | undefined
 
     constructor(private readonly wizard: Wizard<T>) {
         super()
     }
+
+    public setRecentItem(): void {}
+    public getRecentItem(): void {}
 
     public setSteps(current: number, total: number): void {
         if (this.wizard.currentStep === 1) {

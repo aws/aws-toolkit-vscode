@@ -16,10 +16,8 @@ export class SimplePrompter<T> extends Prompter<T> {
     }
     public setSteps(current: number, total: number): void {}
     public setStepEstimator(estimator: StepEstimator<T>): void {}
-    public set recentItem(response: any) {}
-    public get recentItem(): any {
-        return undefined
-    }
+    public setRecentItem(response: any) {}
+    public getRecentItem(): any {}
 }
 
 describe('Prompter', function () {

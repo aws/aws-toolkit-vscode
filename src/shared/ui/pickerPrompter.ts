@@ -33,7 +33,7 @@ interface FilterBoxInputSettings<T> {
 /**
  * Options to configure the `QuickPick` beyond `vscode.QuickPickOptions`.
  *
- * @note Use after() instead of onDidSelectItem().
+ * @note Use onResponse() instead of onDidSelectItem().
  *
  */
 export type ExtendedQuickPickOptions<T> = Omit<
@@ -249,30 +249,23 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
-    /**
-     * Sets the "last selected/accepted" item or input. Leaves the item in-place.
-     */
-    public set recentItem(response: T | DataQuickPickItem<T> | undefined) {
-        this.recentItemSelector = () => this.setRecentItem(response)
-    }
-
-    public get recentItem() {
-        return this._lastPicked
+    constructor(
+        public readonly quickPick: DataQuickPick<T>,
+        protected readonly options: ExtendedQuickPickOptions<T> = {}
+    ) {
+        super()
     }
 
     /**
      * Sets the "last selected/accepted" item or input that has been persisted between prompts.
      * This places the item at the top of the list.
      */
-    public set savedItem(response: T | DataQuickPickItem<T> | undefined) {
-        this.recentItemSelector = () => this.setRecentItem(response, true)
+    public setRecentItem(response: T | DataQuickPickItem<T> | undefined, first?: boolean): void {
+        this.recentItemSelector = () => this.selectRecentItem(response, first)
     }
 
-    constructor(
-        public readonly quickPick: DataQuickPick<T>,
-        protected readonly options: ExtendedQuickPickOptions<T> = {}
-    ) {
-        super()
+    public getRecentItem(): DataQuickPickItem<T> | undefined {
+        return this._lastPicked
     }
 
     public transform<R>(callback: Transform<T, R>): QuickPickPrompter<R> {
@@ -441,7 +434,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * @param picked  Recent item.
      * @param first Controls whether the recent item is moved to the start of the items.
      */
-    protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = false): void {
+    private selectRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = false): void {
         const recentItemText = `(${recentlyUsed})`
 
         // TODO: figure out how to recover from implicit responses
@@ -550,7 +543,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         if (this.isUserInput(response)) {
             this.quickPick.value = response.description ?? ''
         } else {
-            super.recentItem = response
+            super.setRecentItem(response)
         }
     }
 
