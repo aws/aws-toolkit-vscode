@@ -12,6 +12,7 @@ export type MultiQuickPickResult<T> = T[] | WizardControl | undefined
 export type PromptResult<T> = T | WizardControl | undefined
 
 export type Transform<T, R = T> = (result: T) => R
+export type ResultListener<T> = (result: Readonly<T>) => void
 
 /**
  * A generic abstraction of 'prompt' UIs. Returns the user's input by calling the {@link Prompter.prompt prompt}
@@ -20,6 +21,7 @@ export type Transform<T, R = T> = (result: T) => R
 export abstract class Prompter<T> {
     private disposed = false
     protected transforms: Transform<T, any>[] = []
+    protected resultCallbacks: (Transform<T, any> | ResultListener<T>)[] = []
 
     constructor() {}
 
@@ -37,15 +39,37 @@ export abstract class Prompter<T> {
     public abstract set recentItem(response: any)
 
     // TODO: we need the inverse transform to recover inputs across flows
-    /** Type-helper, allows Prompters to be mapped to different shapes */
+    /**
+     * Type-helper, allows Prompters to be mapped to different shapes
+     *
+     * ** This can potentially be called before the user responds. Use {@link Prompter.after} for attaching callbacks **
+     */
     public transform<R>(callback: Transform<T, R>): Prompter<R> {
         this.transforms.push(callback)
+        this.resultCallbacks.push(callback)
         return this as unknown as Prompter<R>
     }
 
-    /** Applies transformations to the user response in the order in which they were added */
+    /**
+     * Attaches a callback that is invoked after the user provides a valid response of type `T`.
+     * The return value of the callback is ignored.
+     */
+    public after(callback: (result: Readonly<T>) => void): this {
+        this.resultCallbacks.push((result: Readonly<T>) => (callback(result), undefined))
+        return this
+    }
+
+    /** Applies transformations to the user response. */
     protected applyTransforms(result: PromptResult<T>): PromptResult<T> {
-        for (const cb of this.transforms) {
+        return this.executeCallbacks(result, this.transforms)
+    }
+
+    /** Applies callbacks in the order they were added. Invalid responses immediately return. */
+    private executeCallbacks(
+        result: PromptResult<T>,
+        callbacks: (Transform<T, any> | ResultListener<T>)[]
+    ): PromptResult<T> {
+        for (const cb of callbacks) {
             if (!isValidResponse(result)) {
                 return result
             }
@@ -67,7 +91,7 @@ export abstract class Prompter<T> {
             throw new Error('Cannot call "prompt" multiple times')
         }
         this.disposed = true
-        return this.applyTransforms(await this.promptUser())
+        return this.executeCallbacks(await this.promptUser(), this.resultCallbacks)
     }
 
     /** Sets a 'step estimator' function used to predict how many steps are remaining in a given flow */

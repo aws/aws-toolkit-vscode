@@ -35,10 +35,10 @@ export function createRegionPrompter(
         description: '',
     }))
 
-    const defaultRegionItem = items.find(item => item.label === options.defaultRegion)
+    const defaultRegionItem = items.find(item => item.detail === options.defaultRegion)
 
     if (defaultRegionItem !== undefined) {
-        defaultRegionItem.description = localize('AWS.generic.defaultRegion', 'Default region')
+        defaultRegionItem.description = `(${localize('AWS.generic.defaultRegion', 'Default region')})`
     }
 
     const prompter = createQuickPick(items, {
@@ -46,18 +46,18 @@ export function createRegionPrompter(
         buttons: options.buttons,
         matchOnDetail: true,
         compare: (a, b) => {
-            return a.detail === options.defaultRegion ? -1 : b.detail === options.defaultRegion ? 1 : 0
+            return a === defaultRegionItem ? -1 : b === defaultRegionItem ? 1 : 0
         },
     })
 
     const lastRegion = ext.context.globalState.get<Region>(lastRegionKey)
     if (lastRegion !== undefined && (lastRegion as any).id) {
         const found = regions.find(val => val.id === lastRegion.id)
-        if (found) {
-            prompter.recentItem = lastRegion
+        if (found && found.id !== options.defaultRegion) {
+            prompter.savedItem = lastRegion
         }
     }
-    return prompter.transform(item => {
+    return prompter.after(item => {
         getLogger().debug('createRegionPrompter: selected %O', item)
         ext.context.globalState.update(lastRegionKey, item)
         return item

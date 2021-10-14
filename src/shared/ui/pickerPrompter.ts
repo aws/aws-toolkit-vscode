@@ -33,7 +33,7 @@ interface FilterBoxInputSettings<T> {
 /**
  * Options to configure the `QuickPick` beyond `vscode.QuickPickOptions`.
  *
- * @note Use transform() instead of onDidSelectItem().
+ * @note Use after() instead of onDidSelectItem().
  *
  */
 export type ExtendedQuickPickOptions<T> = Omit<
@@ -244,19 +244,28 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
     // Placeholder can be any 'ephemeral' item such as `noItemsItem` or `errorItem` that should be removed on refresh
     private isShowingPlaceholder?: boolean
+    // Temporarily store the most recent selection as a callback until we prompt. This gives priority to the most recent assignments
+    private recentItemSelector?: () => any
     /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
     /**
-     * Sets the "last selected/accepted" item or input, moves it to the start
-     * of the items and makes it the active selection.
+     * Sets the "last selected/accepted" item or input. Leaves the item in-place.
      */
     public set recentItem(response: T | DataQuickPickItem<T> | undefined) {
-        this.setRecentItem(response, true)
+        this.recentItemSelector = () => this.setRecentItem(response)
     }
 
     public get recentItem() {
         return this._lastPicked
+    }
+
+    /**
+     * Sets the "last selected/accepted" item or input that has been persisted between prompts.
+     * This places the item at the top of the list.
+     */
+    public set savedItem(response: T | DataQuickPickItem<T> | undefined) {
+        this.recentItemSelector = () => this.setRecentItem(response, true)
     }
 
     constructor(
@@ -411,6 +420,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     protected async promptUser(): Promise<PromptResult<T>> {
+        this.recentItemSelector?.()
         await this.setEstimatorHook()
         const choices = await promptUser(this.quickPick, this.onDidShowEmitter)
         this.onDidShowEmitter.dispose()
@@ -426,17 +436,13 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     /**
-     * Sets the "last selected/accepted" item or input, moves it to the start
-     * of the items and makes it the active selection.
+     * Sets the "last selected/accepted" item or input, making it the active selection.
      *
      * @param picked  Recent item.
      * @param first Controls whether the recent item is moved to the start of the items.
      */
-    protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = true): void {
+    protected setRecentItem(picked: T | DataQuickPickItem<T> | undefined, first: boolean = false): void {
         const recentItemText = `(${recentlySelectedItem})`
-        // HACK: Scrub any "selected previously" descriptions, in case this is
-        // "backwards navigation". #2148
-        this.quickPick.items.forEach(item => item.description?.replace(recentItemText, ''))
 
         // TODO: figure out how to recover from implicit responses
         if (picked === undefined) {

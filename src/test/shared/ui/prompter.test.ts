@@ -50,4 +50,30 @@ describe('Prompter', function () {
             .transform(resp => `result: ${resp}`)
         assert.strictEqual(await prompter.prompt(), 'result: 6')
     })
+
+    it('can attach callbacks after a response', async function () {
+        let sum = 0
+        const prompter = new SimplePrompter(1)
+        prompter
+            .after(resp => (sum += resp))
+            .after(resp => (sum += resp))
+            .after(resp => (sum += resp))
+
+        const result = await prompter.prompt()
+        assert.strictEqual(result, 1, 'Callbacks should not change the response')
+        assert.strictEqual(sum, 3)
+    })
+
+    it('applies callbacks in the correct order', async function () {
+        let sum = 0
+        const prompter = new SimplePrompter(1)
+        prompter
+            .after(resp => (sum += resp))
+            .transform(resp => resp * 2)
+            .after(resp => (sum += resp * 2))
+
+        const result = await prompter.prompt()
+        assert.strictEqual(result, 2)
+        assert.strictEqual(sum, 5)
+    })
 })
