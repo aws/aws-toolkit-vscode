@@ -241,11 +241,17 @@ function recoverItemFromData<T>(data: T, items: readonly DataQuickPickItem<T>[])
 export class QuickPickPrompter<T> extends Prompter<T> {
     protected _estimator?: StepEstimator<T>
     protected _lastPicked?: DataQuickPickItem<T>
-    private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    private onDidShowEmitter = new vscode.EventEmitter<void>()
+    private onDidChangeBusyEmitter = new vscode.EventEmitter<boolean>()
+    private onDidChangeEnablementEmitter = new vscode.EventEmitter<boolean>()
     // Placeholder can be any 'ephemeral' item such as `noItemsItem` or `errorItem` that should be removed on refresh
     private isShowingPlaceholder?: boolean
     /** Event that is fired immediately after the prompter is shown. */
-    public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
+    public onDidShow = this.onDidShowEmitter.event
+    /** Event that is fired whenever the prompter changes 'busy' state. */
+    public onDidChangeBusy = this.onDidChangeBusyEmitter.event
+    /** Event that is fired whenever the prompter changes 'enabled' state. */
+    public onDidChangeEnablement = this.onDidChangeEnablementEmitter.event
 
     /**
      * Sets the "last selected/accepted" item or input, moves it to the start
@@ -257,6 +263,30 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
     public get recentItem() {
         return this._lastPicked
+    }
+
+    public set busy(state: boolean) {
+        const prev = this.quickPick.busy
+        this.quickPick.busy = state
+        if (prev !== state) {
+            this.onDidChangeBusyEmitter.fire(state)
+        }
+    }
+
+    public get busy(): boolean {
+        return this.quickPick.busy
+    }
+
+    public set enabled(state: boolean) {
+        const prev = this.quickPick.enabled
+        this.quickPick.enabled = state
+        if (prev !== state) {
+            this.onDidChangeEnablementEmitter.fire(state)
+        }
+    }
+
+    public get enabled(): boolean {
+        return this.quickPick.enabled
     }
 
     constructor(
@@ -308,7 +338,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
         picker.items = picker.items.concat(items).sort(this.options.compare)
 
-        if (picker.items.length === 0 && !picker.busy) {
+        if (picker.items.length === 0 && !this.busy) {
             this.isShowingPlaceholder = true
             picker.items = this.options.noItemsFoundItem !== undefined ? [this.options.noItemsFoundItem] : []
         }
@@ -330,7 +360,6 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     public async loadItems(items: ItemLoadTypes<T>, disableInput: boolean = true): Promise<void> {
         // This code block assumes that callers never try to load items in parallel
         // For now this okay since we don't have any pickers that require that capability
-        const picker = this.quickPick
 
         if (this.isShowingPlaceholder) {
             this.clearItems()
@@ -345,8 +374,8 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.appendItems([errorWithMessage])
         }
 
-        picker.busy = true
-        picker.enabled = !disableInput
+        this.busy = true
+        this.enabled = !disableInput
 
         if (isAsyncIterable(items)) {
             // Technically AsyncIterators have three types: one for yield, one for return, and one
@@ -388,8 +417,8 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.appendItems(items)
         }
 
-        picker.busy = false
-        picker.enabled = true
+        this.busy = false
+        this.enabled = true
 
         // Currently needed for the cases where async loads did not load any items, forcing a `noItemsFoundItem`
         this.appendItems([])
