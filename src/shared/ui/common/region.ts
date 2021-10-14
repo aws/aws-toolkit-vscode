@@ -60,6 +60,5 @@ export function createRegionPrompter(
     return prompter.after(item => {
         getLogger().debug('createRegionPrompter: selected %O', item)
         ext.context.globalState.update(lastRegionKey, item)
-        return item
     })
 }
