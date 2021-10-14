@@ -38,19 +38,19 @@ class DynamicResourcesSettingsTest {
             awsExplorer {
                 step("Open dynamic resources settings") {
                     expandExplorerNode(otherResources)
-                    explorerTree().doubleClickPath(otherResources, "Add or Remove Resources", fullMatch = false)
+                    explorerTree().doubleClickPath(otherResources, message("explorer.node.other.add_remove"), fullMatch = false)
                 }
             }
 
             preferencesDialog {
                 // Search for AWS because sometimes it is off the screen
-                search("AWS")
+                search(message("aws.settings.title"))
 
                 selectPreferencePage("Tools", message("aws.settings.title"), message("aws.settings.dynamic_resources_configurable.title"))
 
                 val applyButton = button("Apply")
                 step("Clear all resources") {
-                    button("Clear All").click()
+                    button(message("aws.settings.dynamic_resources_configurable.clear_all")).click()
                     waitFor { applyButton.isEnabled() }
                     applyButton.click()
 
@@ -60,12 +60,12 @@ class DynamicResourcesSettingsTest {
                 }
 
                 step("Select all resources") {
-                    button("Select All").click()
+                    button(message("aws.settings.dynamic_resources_configurable.select_all")).click()
                     waitFor { applyButton.isEnabled() }
                     applyButton.click()
 
                     awsExplorer {
-                        assertThat(explorerTree().findAllText { it.text.contains("AWS") }).isNotEmpty()
+                        assertThat(explorerTree().findAllText { it.text.contains(message("aws.settings.title")) }).isNotEmpty()
                     }
                 }
             }
