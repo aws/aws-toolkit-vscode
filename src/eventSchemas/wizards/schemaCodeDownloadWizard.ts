@@ -25,7 +25,7 @@ import {
 import * as codeLang from '../models/schemaCodeLangs'
 
 import { SchemaItemNode } from '../explorer/schemaItemNode'
-import { recentlySelectedItem } from '../../shared/localizedText'
+import { recentlyUsed } from '../../shared/localizedText'
 
 export interface SchemaCodeDownloadWizardContext {
     readonly schemaLangs: ImmutableSet<codeLang.SchemaCodeLangs>
@@ -67,7 +67,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
             items: this.schemaLangs.toArray().map(language => ({
                 label: language,
                 alwaysShow: language === currLanguage,
-                description: language === currLanguage ? recentlySelectedItem : '',
+                description: language === currLanguage ? recentlyUsed : '',
             })),
         })
 
@@ -105,7 +105,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
             items: versions!.map(schemaVersion => ({
                 label: schemaVersion.SchemaVersion!,
                 alwaysShow: schemaVersion.SchemaVersion === currSchemaVersion,
-                description: schemaVersion === currSchemaVersion ? recentlySelectedItem : '',
+                description: schemaVersion === currSchemaVersion ? recentlyUsed : '',
             })),
         })
 
