@@ -11,23 +11,62 @@ import { PromptResult } from '../../../shared/ui/prompter'
 import { exposeEmitters } from '../vscode/testUtils'
 
 type QuickPickTesterMethods<T> = {
-    /** Presses button, can pass in a string to find a match using the tooltip. */
+    /**
+     * Presses a button.
+     * Can either use the exact button object or pass in a string to search for a tooltip.
+     * The tooltip string must be an exact match.
+     */
     pressButton(button: string | QuickInputButton<T>): void
-    /** Attempts to accept the given item. If a string is given, then the item will be matched based off label. */
+    /**
+     * Attempts to accept the given item.
+     * If a string is given, then the item will be matched based off label. Otherwise a deep compare will be performed.
+     * Only exact matches will be accepted.
+     */
     acceptItem(item: string | DataQuickPickItem<T>): void
-    /** Asserts that the given items are loaded in the QuickPick, in the given order. Must include all visible items. */
+    /**
+     * Asserts that the given items are loaded in the QuickPick, in the given order.
+     * Must include all visible items. Filtered items will not be considered.
+     */
     assertItems(items: string[] | DataQuickPickItem<T>[]): void
-    /** Asserts that the given items are loaded in the QuickPick, in the given order. Can be a partial match. */
+    /**
+     * Asserts that the given items are loaded in the QuickPick, in the given order.
+     * This can be a subset of the currently visible items.
+     */
     assertContainsItems(...items: (string | DataQuickPickItem<T>)[]): void
-    /** Asserts that the items are currently selected. Must be an exact match. */
+    /**
+     * Asserts that the items are currently selected. Not applicable to single-item pickers.
+     * Order does not matter, but it must be the same items. Filtering is not applied.
+     */
     assertSelectedItems(...items: (string | DataQuickPickItem<T>)[]): void
-    /** Hides the picker. */
+    /**
+     * Asserts that the items are currently active.
+     * Order does not matter, but it must be the same items.
+     */
+    assertActiveItems(...items: (string | DataQuickPickItem<T>)[]): void
+    /**
+     * Hides the picker.
+     */
     hide(): void
-    /** Runs the given inputs and waits for the result or timeout. */
+    /**
+     * Runs the given inputs and waits for the result or timeout.
+     * Can optionally pass in an expected return value.
+     *
+     * This **must** be called and awaited, otherwise errors will not be surfaced correctly.
+     */
     result(exptected?: PromptResult<T>): Promise<PromptResult<T>>
-    /** Executes the callback with a snapshot of the prompter in a given moment. */
+    /**
+     * Executes the callback with a snapshot of the prompter in a given moment.
+     *
+     * This can be used for things such as setting up external state, asserting side-effects, or
+     * inspecting the picker at test time.
+     */
     addCallback(callback: (prompter?: QuickPickPrompter<T>) => Promise<any> | any): void
-    /** Sets the Quick Pick's filter. `undefined` removes any applied filters. */
+    /**
+     * Sets the Quick Pick's filter. `undefined` removes any applied filters.
+     *
+     * This will affect what items are considered 'visible' by the tester depending on which
+     * 'matchOn___' fields have been set in the picker.
+     */
     setFilter(value?: string): void
 }
 
@@ -50,8 +89,14 @@ const TEST_DEFAULTS: Required<TestOptions> = {
 /**
  * Creates a tester for quick picks.
  *
+ * Tests are constructed as a series of 'actions' that are executed sequentially. Any action that
+ * fails will immediately stop the test. The first action will always occur after the prompter is
+ * both visible and enabled. Actions will always wait until the prompter is not busy/disabled before
+ * continuing.
+ *
  * @param prompter Prompter to test.
  * @param options Additional test options.
+ *
  * @returns A {@link QuickPickTester}
  */
 export function createQuickPickTester<T>(
@@ -200,6 +245,17 @@ export function createQuickPickTester<T>(
                 assertItems(sortedSelected, sortedExpected)
                 break
             }
+            case 'assertActiveItems': {
+                const filteredActive = filterItems().filter(i => testPicker.activeItems.includes(i))
+                const sortedActive = [...filteredActive].sort((a, b) => a.label.localeCompare(b.label))
+                const sortedExpected = [...action[1]].sort((a, b) => {
+                    const labelA = typeof a === 'string' ? a : a.label
+                    const labelB = typeof b === 'string' ? b : b.label
+                    return labelA.localeCompare(labelB)
+                })
+                assertItems(sortedActive, sortedExpected)
+                break
+            }
             case 'addCallback': {
                 try {
                     await action[1][0](prompter)
@@ -235,7 +291,7 @@ export function createQuickPickTester<T>(
             // TODO: combine errors into a single one
             throw errors[0]
         }
-        if (expected !== undefined) {
+        if (arguments.length > 0) {
             deepStrictEqual(result, expected)
         }
         return result
@@ -273,6 +329,7 @@ export function createQuickPickTester<T>(
                 assertItems: items => actions.push(['assertItems', [items]]),
                 assertContainsItems: (...items) => actions.push(['assertContainsItems', items]),
                 assertSelectedItems: (...items) => actions.push(['assertSelectedItems', items]),
+                assertActiveItems: (...items) => actions.push(['assertActiveItems', items]),
                 addCallback: callback => actions.push(['addCallback', [callback]]),
                 setFilter: value => actions.push(['setFilter', [value]]),
                 hide: () => actions.push(['hide', []]),
