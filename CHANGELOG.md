@@ -1,3 +1,14 @@
+# _1.33_ (2021-10-14)
+- **(Feature)** Surface read-only support for hundreds of resources under the Resources node in the AWS Explorer
+- **(Feature)** Amazon DynamoDB table viewer
+- **(Bug Fix)** Changed error message 'Command did not exist successfully' to 'Command did not exit successfully'
+- **(Bug Fix)** Fixed spelling and grammar in MessagesBundle.properties
+- **(Bug Fix)** Fix not being able to start Rider debugger against a Lambda running on a host ARM machine
+- **(Bug Fix)** Fix SSO login not being triggered when the auth code is invalid ([#2796](https://github.com/aws/aws-toolkit-jetbrains/issues/2796))
+- **(Removal)** Removed support for 2020.2.x IDEs
+- **(Removal)** Dropped support for the no longer supported Lambda runtime Python 2.7
+- **(Removal)** Dropped support for the no longer supported Lambda runtime Node.js 10.x
+
 # _1.32_ (2021-09-07)
 - **(Bug Fix)** Fix IDE error about context.module being null ([#2776](https://github.com/aws/aws-toolkit-jetbrains/issues/2776))
 - **(Bug Fix)** Fix NullPointerException calling isInTestSourceContent ([#2752](https://github.com/aws/aws-toolkit-jetbrains/issues/2752))

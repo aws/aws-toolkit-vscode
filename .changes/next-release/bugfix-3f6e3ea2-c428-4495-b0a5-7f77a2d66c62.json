@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix SSO login not being triggered when the auth code is invalid (#2796)"
-}

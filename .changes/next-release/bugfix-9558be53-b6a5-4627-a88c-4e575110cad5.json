@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Changed error message 'Command did not exist successfully' to 'Command did not exit successfully'"
-}

@@ -1,0 +1,32 @@
+{
+  "date" : "2021-10-14",
+  "version" : "1.33",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Surface read-only support for hundreds of resources under the Resources node in the AWS Explorer"
+  }, {
+    "type" : "feature",
+    "description" : "Amazon DynamoDB table viewer"
+  }, {
+    "type" : "bugfix",
+    "description" : "Changed error message 'Command did not exist successfully' to 'Command did not exit successfully'"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixed spelling and grammar in MessagesBundle.properties"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix not being able to start Rider debugger against a Lambda running on a host ARM machine"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix SSO login not being triggered when the auth code is invalid (#2796)"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for 2020.2.x IDEs"
+  }, {
+    "type" : "removal",
+    "description" : "Dropped support for the no longer supported Lambda runtime Python 2.7"
+  }, {
+    "type" : "removal",
+    "description" : "Dropped support for the no longer supported Lambda runtime Node.js 10.x"
+  } ]
+}
