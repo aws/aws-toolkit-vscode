@@ -88,7 +88,12 @@
     "contributes": {
         "configuration": {
             "type": "object",
-            "title": "%AWS.configuration.title%",
+            "title": "%AWS.productName%",
+            "cloud9": {
+                "cn": {
+                    "title": "%AWS.productName.cn%"
+                }
+            },
             "properties": {
                 "aws.profile": {
                     "type": "string",
@@ -2260,6 +2265,11 @@
                 "id": "getStarted",
                 "title": "%AWS.walkthrough.gettingStarted.title%",
                 "description": "%AWS.walkthrough.gettingStarted.description%",
+                "cloud9": {
+                    "cn": {
+                        "description": "%AWS.walkthrough.gettingStarted.description.cn%"
+                    }
+                },
                 "steps": [
                     {
                         "id": "connect",
