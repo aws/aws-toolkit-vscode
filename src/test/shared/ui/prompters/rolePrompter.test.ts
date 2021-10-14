@@ -4,32 +4,33 @@
  */
 
 import * as _ from 'lodash'
-import * as assert from 'assert'
-import * as picker from '../../../../shared/ui/pickerPrompter'
 import * as vscode from 'vscode'
+import * as sinon from 'sinon'
+import * as assert from 'assert'
 import { IAM } from 'aws-sdk'
 import { IamClient } from '../../../../shared/clients/iamClient'
 import { RolePrompter } from '../../../../shared/ui/common/rolePrompter'
-import { instance, mock, when } from 'ts-mockito'
-import { exposeEmitters, ExposeEmitters } from '../../vscode/testUtils'
+import { mock, when } from 'ts-mockito'
+import { createQuickPickTester, QuickPickTester } from '../testUtils'
+import { instance } from '../../../utilities/mockito'
+import { QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
+
+const TEST_HELP_URI = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
 describe('RolePrompter', function () {
-    let roleResponse: IAM.ListRolesResponse
+    const sandbox = sinon.createSandbox()
+    let roles: IAM.Role[]
     let newRole: IAM.Role
     let mockIamClient: IamClient
-    let prompterProvider: RolePrompter
-    let prompter: picker.QuickPickPrompter<IAM.Role>
-    let picker: ExposeEmitters<vscode.QuickPick<picker.DataQuickPickItem<IAM.Role>>, 'onDidTriggerButton'>
+    let tester: QuickPickTester<IAM.Role>
 
     beforeEach(function () {
-        roleResponse = {
-            Roles: [
-                {
-                    RoleName: 'test-role1',
-                    Arn: 'test-arn1',
-                } as any,
-            ],
-        }
+        roles = [
+            {
+                RoleName: 'test-role1',
+                Arn: 'test-arn1',
+            } as any,
+        ]
 
         newRole = {
             RoleName: 'new-role',
@@ -37,65 +38,44 @@ describe('RolePrompter', function () {
         } as any
 
         mockIamClient = mock()
-        when(mockIamClient.listRoles()).thenResolve(roleResponse.Roles)
-        prompterProvider = new RolePrompter(instance(mockIamClient), { createRole: () => Promise.resolve(newRole) })
-        prompter = prompterProvider({ stepCache: {} } as any) as picker.QuickPickPrompter<IAM.Role>
-        picker = exposeEmitters(prompter.quickPick, ['onDidTriggerButton'])
+        when(mockIamClient.listRoles()).thenResolve(roles)
+        const prompter = new RolePrompter(instance(mockIamClient), {
+            createRole: () => Promise.resolve(newRole),
+            helpUri: TEST_HELP_URI,
+        }).call({ estimator: () => 0, stepCache: {} }) as QuickPickPrompter<IAM.Role>
+        tester = createQuickPickTester(prompter)
+    })
+
+    after(function () {
+        sandbox.restore()
     })
 
     it('prompts for role', async function () {
-        picker.onDidChangeActive(items => {
-            if (items.length > 0) {
-                picker.selectedItems = [items[0]]
-            }
-        })
-
-        assert.strictEqual(await prompter.prompt(), roleResponse.Roles[0])
+        tester.acceptItem('test-role1')
+        await tester.result(roles[0])
     })
 
     it('can refresh', async function () {
-        picker.onDidChangeActive(() => {
-            if (picker.items.length === 2) {
-                picker.selectedItems = [picker.items[1]]
-            }
-        })
-
-        prompter.onDidShow(() => {
-            if (picker.items.length === 0) {
-                picker.onDidChangeActive(() => {
-                    if (picker.items.length === 1) {
-                        roleResponse.Roles.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
-                        picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Refresh')[0])
-                    }
-                })
-            } else {
-                roleResponse.Roles.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
-                picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Refresh')[0])
-            }
-        })
-
-        assert.strictEqual(await prompter.prompt(), roleResponse.Roles[1])
+        const role2 = { RoleName: 'test-role2', Arn: 'test-arn2' } as any
+        tester.addCallback(() => roles.push(role2))
+        tester.pressButton('Refresh')
+        tester.assertItems(['test-role1', 'test-role2'])
+        tester.acceptItem('test-role2')
+        await tester.result(role2)
     })
 
     it('can create a new role', async function () {
-        picker.onDidChangeActive(() => {
-            if (picker.items.length === 2) {
-                picker.selectedItems = [picker.items[1]]
-            }
-        })
+        tester.pressButton('Create Role...')
+        tester.assertItems(['test-role1', 'new-role'])
+        tester.acceptItem('new-role')
+        await tester.result(newRole)
+    })
 
-        prompter.onDidShow(() => {
-            if (picker.items.length === 0) {
-                picker.onDidChangeActive(() => {
-                    if (picker.items.length === 1) {
-                        picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Create Role...')[0])
-                    }
-                })
-            } else {
-                picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Create Role...')[0])
-            }
-        })
-
-        assert.strictEqual(await prompter.prompt(), newRole)
+    it('can open documentation', async function () {
+        const openStub = sandbox.stub(vscode.env, 'openExternal')
+        tester.pressButton('View Toolkit Documentation')
+        tester.addCallback(() => assert.ok(openStub.calledWith(TEST_HELP_URI)))
+        tester.hide()
+        await tester.result()
     })
 })
