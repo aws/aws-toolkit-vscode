@@ -8,13 +8,14 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.util.IconUtil
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
 class DynamicResourceSelectorNode(nodeProject: Project) : AwsExplorerNode<Unit>(nodeProject, Unit, IconUtil.getEditIcon()) {
-    override fun displayName() = message("explorer.node.other.add_remove", DynamicResourcesSettings.getInstance().resourcesAvailable())
+    override fun displayName() = message("explorer.node.other.add_remove")
 
     override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
 
@@ -24,6 +25,7 @@ class DynamicResourceSelectorNode(nodeProject: Project) : AwsExplorerNode<Unit>(
     }
 
     override fun update(presentation: PresentationData) {
-        presentation.tooltip = message("dynamic_resources.add_remove_resources_tooltip", DynamicResourcesSettings.getInstance().resourcesAvailable())
+        val remaining = DynamicResourceSupportedTypes.getInstance().getSupportedTypes().size - DynamicResourcesSettings.getInstance().selected.size
+        presentation.tooltip = message("dynamic_resources.add_remove_resources_tooltip", remaining)
     }
 }

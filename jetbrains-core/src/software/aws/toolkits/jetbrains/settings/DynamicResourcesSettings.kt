@@ -3,34 +3,35 @@
 
 package software.aws.toolkits.jetbrains.settings
 
-import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.BaseState
+import com.intellij.openapi.components.SimplePersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
+import com.intellij.openapi.components.service
+import com.intellij.util.xmlb.annotations.Property
+import software.aws.toolkits.core.utils.replace
 
-@State(name = "dynamic_resources", storages = [Storage("aws.xml")])
-class DynamicResourcesSettings : PersistentStateComponent<DynamicResourcesConfiguration> {
-    private var state = DynamicResourcesConfiguration()
+interface DynamicResourcesSettings {
     var selected: Set<String>
-        get() = state.selected
-        set(value) {
-            state.selected = value
-        }
-
-    fun resourcesAvailable() = DynamicResourceSupportedTypes.getInstance().getSupportedTypes().size - state.selected.size
-
-    override fun getState() = state
-
-    override fun loadState(state: DynamicResourcesConfiguration) {
-        this.state = state
-    }
 
     companion object {
-        fun getInstance(): DynamicResourcesSettings = ServiceManager.getService(DynamicResourcesSettings::class.java)
+        fun getInstance(): DynamicResourcesSettings = service()
     }
 }
 
-data class DynamicResourcesConfiguration(
-    var selected: Set<String> = emptySet()
-)
+@State(name = "resources", storages = [Storage("aws.xml")])
+internal class DefaultDynamicResourcesSettings :
+    DynamicResourcesSettings,
+    SimplePersistentStateComponent<DynamicResourcesConfiguration>(DynamicResourcesConfiguration()) {
+    override var selected: Set<String>
+        get() = state.selected.toSet()
+        set(value) {
+            state.selected.replace(value)
+        }
+}
+
+internal class DynamicResourcesConfiguration : BaseState() {
+    // using a list because `stringSet` doesn't automatically increment the modification counter and ends up not getting persisted
+    @get:Property
+    val selected by list<String>()
+}

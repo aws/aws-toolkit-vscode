@@ -13,3 +13,11 @@ fun <K, V> buildMap(builder: MutableMap<K, V>.() -> Unit): Map<K, V> = mutableMa
  * like settings, so make a version we get null back from that we can handle easier
  */
 inline fun <reified T : Enum<T>> valueOfOrNull(name: String): T? = enumValues<T>().find { it.name == name }
+
+/**
+ * Removes all items in this collection and replaces them with the items in the [other] collection
+ */
+fun <T> MutableCollection<T>.replace(other: Collection<T>) {
+    this.clear()
+    this.addAll(other)
+}

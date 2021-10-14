@@ -153,7 +153,8 @@ with what features/services are supported.
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.CloudDebugSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings"/>
 
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings"
+                            serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultDynamicResourcesSettings"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 

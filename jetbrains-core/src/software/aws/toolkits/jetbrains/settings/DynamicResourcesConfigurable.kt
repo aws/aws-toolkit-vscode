@@ -46,7 +46,7 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
 
     override fun createPanel() = panel {
         val allCheckboxes = mutableListOf<JCheckBox>()
-        val selected = DynamicResourcesSettings.getInstance().state.selected
+        val selected = DynamicResourcesSettings.getInstance().selected
 
         ApplicationManager.getApplication().executeOnPooledThread {
             DynamicResourceSupportedTypes.getInstance().getSupportedTypes().forEach {
@@ -77,7 +77,7 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
                 .onApply {
                     changeSet.clear()
 
-                    DynamicResourcesSettings.getInstance().state.selected = allCheckboxes.filter { it.isSelected }.map { it.text }.toSet()
+                    DynamicResourcesSettings.getInstance().selected = allCheckboxes.filter { it.isSelected }.map { it.text }.toSet()
                     ProjectManager.getInstance().openProjects.forEach { project ->
                         if (!project.isDisposed) {
                             val toolWindow = ExplorerToolWindow.getInstance(project)
