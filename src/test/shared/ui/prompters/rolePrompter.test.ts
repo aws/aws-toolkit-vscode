@@ -56,11 +56,12 @@ describe('RolePrompter', function () {
     })
 
     it('can refresh', async function () {
-        tester.addCallback(() => roles.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any))
+        const role2 = { RoleName: 'test-role2', Arn: 'test-arn2' } as any
+        tester.addCallback(() => roles.push(role2))
         tester.pressButton('Refresh')
         tester.assertItems(['test-role1', 'test-role2'])
         tester.acceptItem('test-role2')
-        await tester.result(roles[1])
+        await tester.result(role2)
     })
 
     it('can create a new role', async function () {
