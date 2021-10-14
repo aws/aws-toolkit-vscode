@@ -283,7 +283,7 @@ async function startDebugger(
     testDisposables: vscode.Disposable[],
     sessionLog: string[]
 ) {
-    function logSession(startEnd: 'START' | 'END', name: string) {
+    function logSession(startEnd: 'START' | 'END' | 'EXIT' | 'FAIL', name: string) {
         sessionLog.push(
             `scenario ${scenarioIndex}.${target.toString()[0]} ${startEnd.padEnd(5, ' ')} ${target}/${
                 scenario.displayName
@@ -312,23 +312,20 @@ async function startDebugger(
     })
 
     // Executes the 'F5' action
-    await vscode.debug.startDebugging(undefined, testConfig).then(
-        async () => {
-            logSession('START', vscode.debug.activeDebugSession!.name)
+    await vscode.debug.startDebugging(undefined, testConfig)
+    if (!vscode.debug.activeDebugSession) {
+        logSession('EXIT', `${testConfig.name} (exited immediately)`)
+        return
+    }
+    logSession('START', vscode.debug.activeDebugSession.name)
+    await sleep(400)
+    await continueDebugger()
+    await sleep(400)
+    await continueDebugger()
+    await sleep(400)
+    await continueDebugger()
 
-            await sleep(400)
-            await continueDebugger()
-            await sleep(400)
-            await continueDebugger()
-            await sleep(400)
-            await continueDebugger()
-
-            await success
-        },
-        err => {
-            throw err as Error
-        }
-    )
+    return success
 }
 
 async function continueDebugger(): Promise<void> {
@@ -559,17 +556,18 @@ describe('SAM Integration Tests', async function () {
 
                 async function testTarget(target: AwsSamTargetType, extraConfig: any = {}) {
                     // Allow previous sessions to go away.
-                    const noDebugSession: boolean | undefined = await waitUntil(
-                        async () => vscode.debug.activeDebugSession === undefined,
-                        { timeout: NO_DEBUG_SESSION_TIMEOUT, interval: NO_DEBUG_SESSION_INTERVAL, truthy: true }
-                    )
+                    await waitUntil(async () => vscode.debug.activeDebugSession === undefined, {
+                        timeout: NO_DEBUG_SESSION_TIMEOUT,
+                        interval: NO_DEBUG_SESSION_INTERVAL,
+                        truthy: true,
+                    })
 
                     // We exclude the Node debug type since it causes the most erroneous failures with CI.
                     // However, the fact that there are sessions from previous tests is still an issue, so
                     // a warning will be logged under the current session.
-                    if (!noDebugSession) {
+                    if (vscode.debug.activeDebugSession) {
                         assert.strictEqual(
-                            vscode.debug.activeDebugSession!.type,
+                            vscode.debug.activeDebugSession.type,
                             'pwa-node',
                             `unexpected debug session in progress: ${JSON.stringify(
                                 vscode.debug.activeDebugSession,
@@ -578,7 +576,7 @@ describe('SAM Integration Tests', async function () {
                             )}`
                         )
 
-                        sessionLog.push(`(WARNING) Unexpected debug session ${vscode.debug.activeDebugSession!.name}`)
+                        sessionLog.push(`(WARNING) Unexpected debug session ${vscode.debug.activeDebugSession.name}`)
                     }
 
                     const testConfig = {

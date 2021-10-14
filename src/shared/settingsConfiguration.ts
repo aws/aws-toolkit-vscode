@@ -16,7 +16,7 @@ import * as logger from './logger'
  */
 export type SettingsConfiguration = ClassToInterfaceType<DefaultSettingsConfiguration>
 
-export type AwsDevSetting = 'aws.forceCloud9' | 'aws.developer.foo1' | 'aws.developer.foo2'
+export type AwsDevSetting = 'aws.forceCloud9' | 'aws.dev.forceTelemetry' | 'aws.dev.foo'
 
 type JSPrimitiveTypeName =
     | 'undefined'

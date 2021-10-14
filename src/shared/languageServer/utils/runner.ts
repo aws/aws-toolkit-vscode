@@ -29,7 +29,7 @@ export function runSafeAsync<T>(
     errorVal: T,
     errorMessage: string,
     token: CancellationToken
-): Thenable<T | ResponseError<any>> {
+): Thenable<any | ResponseError<any>> {
     return new Promise<T | ResponseError<any>>(resolve => {
         setImmediate(() => {
             if (token.isCancellationRequested) {

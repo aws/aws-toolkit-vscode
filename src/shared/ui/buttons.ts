@@ -143,3 +143,14 @@ export function createPlusButton(tooltip?: string): QuickInputButton<void> {
         tooltip,
     }
 }
+
+/**
+ * Creates an array of buttons useful to most Quick Input prompts, especially in the context of a Wizard
+ * Currently has: 'help', 'exit', and 'back'
+ *
+ * @param helpUri optional URI to link to for the 'help' button (see {@link createHelpButton} for defaults)
+ * @returns An array of buttons
+ */
+export function createCommonButtons(helpUri?: string | vscode.Uri): PrompterButtons<WizardControl> {
+    return [createHelpButton(helpUri), createBackButton(), createExitButton()]
+}

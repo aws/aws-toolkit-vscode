@@ -143,7 +143,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                 throw error
             },
             getNoChildrenPlaceholderNode: async () => this.ROOT_NODE_ADD_REGION,
-            sort: (nodeA: RegionNode, nodeB: RegionNode) => nodeA.regionName.localeCompare(nodeB.regionName),
+            sort: (nodeA, nodeB) => nodeA.regionName.localeCompare(nodeB.regionName),
         })
     }
 }

@@ -25,7 +25,7 @@ import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
-import { APIGatewayProperties, CodeTargetProperties } from './debugger/awsSamDebugConfiguration.gen'
+import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
 import { ext } from '../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerContext'
@@ -113,8 +113,8 @@ export async function makeInputTemplate(
     if (config.lambda?.timeoutSec) {
         newTemplate = newTemplate.withTimeout(config.lambda?.timeoutSec)
     }
-    if ((config.invokeTarget as CodeTargetProperties).architecture) {
-        newTemplate = newTemplate.withArchitectures([(config.invokeTarget as CodeTargetProperties).architecture!])
+    if (config.invokeTarget.architecture) {
+        newTemplate = newTemplate.withArchitectures([config.invokeTarget.architecture])
     }
 
     await newTemplate.generate(inputTemplatePath)
@@ -212,7 +212,7 @@ async function invokeLambdaHandler(
             debugPort: debugPort,
             debuggerPath: config.debuggerPath,
             debugArgs: config.debugArgs,
-            skipPullImage: true, // We already built the image, but `sam local start-api` will try to build it again
+            skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
@@ -282,7 +282,7 @@ async function invokeLambdaHandler(
             debugArgs: config.debugArgs,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
-            skipPullImage: true, // We already built the image, but `sam local invoke` will try to build it again
+            skipPullImage: config.sam?.skipNewImageCheck ?? (isImageLambdaConfig(config) || config.sam?.containerBuild),
             parameterOverrides: config.parameterOverrides,
             name: config.name,
         }

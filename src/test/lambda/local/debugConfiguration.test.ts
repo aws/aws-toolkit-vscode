@@ -16,8 +16,9 @@ import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugge
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import * as path from 'path'
 import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
-import { isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
+import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
 describe('makeCoreCLRDebugConfiguration', function () {
     let tempFolder: string
@@ -213,5 +214,113 @@ describe('isImageLambdaConfig', function () {
         } as SamLaunchRequestArgs
 
         assert.strictEqual(isImageLambdaConfig(input), false)
+    })
+})
+
+describe('getArchitecture', function () {
+    it('returns a valid architecture from a template', function () {
+        const resource: CloudFormation.Resource = {
+            Type: 'AWS::Serverless::Function',
+            Properties: {
+                CodeUri: 'foo',
+                Handler: 'foo',
+                Architectures: ['arm64'],
+            },
+        }
+        const template: CloudFormation.Template = {
+            Resources: {
+                myResource: resource,
+            },
+        }
+        assert.strictEqual(
+            getArchitecture(template, resource, {
+                target: 'template',
+                logicalId: 'myResource',
+                templatePath: 'foo',
+            }),
+            'arm64'
+        )
+    })
+
+    it('returns x86_64 for an invalid architecture from a template', function () {
+        const resource: CloudFormation.Resource = {
+            Type: 'AWS::Serverless::Function',
+            Properties: {
+                CodeUri: 'foo',
+                Handler: 'foo',
+                Architectures: ['powerPc' as 'x86_64'],
+            },
+        }
+        const template: CloudFormation.Template = {
+            Resources: {
+                myResource: resource,
+            },
+        }
+        assert.strictEqual(
+            getArchitecture(template, resource, {
+                target: 'template',
+                logicalId: 'myResource',
+                templatePath: 'foo',
+            }),
+            'x86_64'
+        )
+    })
+
+    it('returns a valid architecture from CodeTargetProperties', function () {
+        assert.strictEqual(
+            getArchitecture(undefined, undefined, {
+                lambdaHandler: 'foo',
+                projectRoot: 'foo',
+                target: 'code',
+                architecture: 'arm64',
+            }),
+            'arm64'
+        )
+    })
+
+    it('returns x86_64 for an invalid architecture from CodeTargetProperties', function () {
+        assert.strictEqual(
+            getArchitecture(undefined, undefined, {
+                lambdaHandler: 'foo',
+                projectRoot: 'foo',
+                target: 'code',
+                architecture: 'powerPc' as 'x86_64',
+            }),
+            'x86_64'
+        )
+    })
+
+    it('returns undefined if no value is present in the template', function () {
+        const resource: CloudFormation.Resource = {
+            Type: 'AWS::Serverless::Function',
+            Properties: {
+                CodeUri: 'foo',
+                Handler: 'foo',
+            },
+        }
+        const template: CloudFormation.Template = {
+            Resources: {
+                myResource: resource,
+            },
+        }
+        assert.strictEqual(
+            getArchitecture(template, resource, {
+                target: 'template',
+                logicalId: 'myResource',
+                templatePath: 'foo',
+            }),
+            undefined
+        )
+    })
+
+    it('returns undefined if no value is present in CodeTargetProperties', function () {
+        assert.strictEqual(
+            getArchitecture(undefined, undefined, {
+                lambdaHandler: 'foo',
+                projectRoot: 'foo',
+                target: 'code',
+            }),
+            undefined
+        )
     })
 })

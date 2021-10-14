@@ -1,4 +1,0 @@
-{
-	"type": "Breaking Change",
-	"description": "SAM run/debug: The launch configuration options 'timeoutSec' and 'memoryMb' no longer apply to template or API targets"
-}

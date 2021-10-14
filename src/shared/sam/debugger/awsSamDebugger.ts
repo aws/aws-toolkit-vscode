@@ -5,6 +5,7 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import {
@@ -387,12 +388,14 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const template = getTemplate(folder, config)
         const templateResource = getTemplateResource(folder, config)
         const codeRoot = getCodeRoot(folder, config)
+        const architecture = getArchitecture(template, templateResource, config.invokeTarget)
         // Handler is the only field that we need to parse refs for.
         // This is necessary for Python debugging since we have to create the temporary entry file
         // Other refs can fail; SAM will handle them.
         const handlerName = getHandlerName(folder, config)
 
         config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
+        fs.ensureDir(config.baseBuildDir)
 
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.
@@ -530,7 +533,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
             useIkpdb: isCloud9() || !!(config as any).useIkpdb,
-            architecture: getArchitecture(template, templateResource, config.InvokeTarget),
+            architecture: architecture,
         }
 
         //

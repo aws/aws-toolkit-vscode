@@ -19,6 +19,7 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
+import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 
@@ -68,14 +69,16 @@ export class RegionNode extends AWSTreeNodeBase {
                 serviceId: 's3',
                 createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
             },
+            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
-            ...(isCloud9() ? [] : [{ serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }]),
             ...(isCloud9() ? [] : [{ serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) }]),
         ]
 
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
+
+        this.childNodes.push(new ResourcesNode(this.regionCode))
     }
 
     private tryClearChildren(): void {
