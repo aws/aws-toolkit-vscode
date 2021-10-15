@@ -16,14 +16,24 @@ export interface AwsContextCredentials {
     readonly defaultRegion?: string
 }
 
-// Carries the current context data on events
+/** AWS Toolkit context change */
 export interface ContextChangeEventsArgs {
+    /** AWS credentials profile name. */
     readonly profileName?: string
+    /** AWS account. */
     readonly accountId?: string
+    /** CODE.AWS username. */
+    readonly cawsUsername?: string
+    /** CODE.AWS secret. */
+    readonly cawsSecret?: string
+    /** Developer-mode settings */
     readonly developerMode: Set<string>
 }
 
-// Represents a credential profile and zero or more regions.
+/**
+ * Represents the current AWS credentials, CODE.AWS credentials, and zero or
+ * more regions.
+ */
 export type AwsContext = ClassToInterfaceType<DefaultAwsContext>
 
 export class NoActiveCredentialError extends Error {
@@ -45,7 +55,9 @@ export class DefaultAwsContext implements AwsContext {
     // the current workspace
     private readonly explorerRegions: string[]
 
-    private currentCredentials: AwsContextCredentials | undefined
+    private credentials: AwsContextCredentials | undefined
+    private cawsUsername: string | undefined
+    private cawsSecret: string | undefined
     private developerMode = new Set<string>()
 
     public constructor(private context: vscode.ExtensionContext) {
@@ -61,11 +73,11 @@ export class DefaultAwsContext implements AwsContext {
      * Passing in undefined represents that there are no active credentials.
      */
     public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
-        if (JSON.stringify(this.currentCredentials) === JSON.stringify(credentials)) {
+        if (JSON.stringify(this.credentials) === JSON.stringify(credentials)) {
             // Do nothing. Besides performance, this avoids infinite loops.
             return
         }
-        this.currentCredentials = credentials
+        this.credentials = credentials
         this.emitEvent()
     }
 
@@ -91,32 +103,44 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     /**
-     * @description Gets the Credentials currently used by the Toolkit.
+     * Gets the current AWS credentials.
      */
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
-        return this.currentCredentials?.credentials
+        return this.credentials?.credentials
+    }
+
+    /** Sets the current CODE.AWS credentials, or undefined to logout. */
+    public setCawsCredentials(username: string, secret: string): void {
+        this.cawsUsername = username
+        this.cawsSecret = secret
+        this.emitEvent()
+    }
+
+    /** Gets the current CODE.AWS credentials. */
+    public getCawsCredentials(): string | undefined {
+        return this.cawsUsername
     }
 
     // returns the configured profile, if any
     public getCredentialProfileName(): string | undefined {
-        return this.currentCredentials?.credentialsId
+        return this.credentials?.credentialsId
     }
 
     // returns the configured profile's account ID, if any
     public getCredentialAccountId(): string | undefined {
-        return this.currentCredentials?.accountId
+        return this.credentials?.accountId
     }
 
     public getCredentialDefaultRegion(): string {
-        const credId = this.currentCredentials?.credentialsId ?? ''
-        if (!logged.has(credId) && !this.currentCredentials?.defaultRegion) {
+        const credId = this.credentials?.credentialsId ?? ''
+        if (!logged.has(credId) && !this.credentials?.defaultRegion) {
             logged.add(credId)
             getLogger().warn(
                 `AwsContext: no default region in credentials profile, falling back to ${DEFAULT_REGION}: ${credId}`
             )
         }
 
-        return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
+        return this.credentials?.defaultRegion ?? DEFAULT_REGION
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -154,9 +178,11 @@ export class DefaultAwsContext implements AwsContext {
     private emitEvent() {
         // TODO(jmkeyes): skip this if the state did not actually change.
         this._onDidChangeContext.fire({
-            profileName: this.currentCredentials?.credentialsId,
-            accountId: this.currentCredentials?.accountId,
+            profileName: this.credentials?.credentialsId,
+            accountId: this.credentials?.accountId,
             developerMode: this.developerMode,
+            cawsUsername: this.cawsUsername,
+            cawsSecret: this.cawsSecret,
         })
     }
 }

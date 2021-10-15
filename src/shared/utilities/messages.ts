@@ -4,12 +4,14 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
-import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { ext } from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { Timeout } from './timeoutUtils'
+
+export const localize = nls.loadMessageBundle()
 
 export function makeFailedWriteMessage(filename: string): string {
     const message = localize('AWS.failedToWrite', '{0}: Failed to write "{1}".', getIdeProperties().company, filename)
