@@ -13,10 +13,11 @@ import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { ResourcesNode, ResourceMetadata } from './resourcesNode'
+import { ResourcesNode } from './resourcesNode'
 import { ResourceNode } from './resourceNode'
 import { recordDynamicresourceListResource, Result } from '../../../shared/telemetry/telemetry'
 import { CloudControl } from 'aws-sdk'
+import { ResourceTypeMetadata } from '../../model/resources'
 
 export const CONTEXT_VALUE_RESOURCE_OPERATIONS: any = {
     CREATE: 'Creatable',
@@ -33,7 +34,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
         public readonly parent: ResourcesNode,
         public readonly typeName: string,
         public readonly cloudControl: CloudControlClient,
-        public readonly metadata: ResourceMetadata
+        public readonly metadata: ResourceTypeMetadata
     ) {
         super(
             ResourceTypeNode.getFriendlyName(typeName),
@@ -102,15 +103,17 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
             NextToken: continuationToken,
         })
 
-        const newResources = response.ResourceDescriptions!.reduce(
-            (accumulator: ResourceNode[], current: CloudControl.ResourceDescription) => {
-                if (current.Identifier) {
-                    accumulator.push(new ResourceNode(this, current.Identifier, this.childContextValue))
-                }
-                return accumulator
-            },
-            []
-        )
+        const newResources = response.ResourceDescriptions
+            ? response.ResourceDescriptions.reduce(
+                  (accumulator: ResourceNode[], current: CloudControl.ResourceDescription) => {
+                      if (current.Identifier) {
+                          accumulator.push(new ResourceNode(this, current.Identifier, this.childContextValue))
+                      }
+                      return accumulator
+                  },
+                  []
+              )
+            : []
 
         getLogger().debug(`Loaded resources: %O`, newResources)
         return {
