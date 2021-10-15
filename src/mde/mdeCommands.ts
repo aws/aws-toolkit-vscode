@@ -24,6 +24,7 @@ import { createInputBox } from '../shared/ui/inputPrompter'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { invalidArn } from '../shared/localizedText'
 import { isValidResponse } from '../shared/wizards/wizard'
+import { SystemUtilities } from '../shared/systemUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -156,7 +157,19 @@ export async function mdeConnectCommand(
         return
     }
 
-    const vsc = `${vscode.env.appRoot}/bin/code`
+    const vsc = await SystemUtilities.getVscodeCliPath()
+    if (!vsc) {
+        showViewLogsMessage(
+            localize(
+                'AWS.mde.missingRequiredTool',
+                'Failed to connect to MDE environment, missing required tool: {0}',
+                'code'
+            ),
+            window
+        )
+        return
+    }
+
     const cmd = new ChildProcess(
         true,
         vsc,
@@ -184,7 +197,11 @@ export async function mdeConnectCommand(
         (stderr: string) => {
             getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
         }
-    )
+    ).then(o => {
+        if (o.exitCode !== 0) {
+            getLogger().error('MDE connect: failed to start: %O', cmd)
+        }
+    })
 }
 
 export async function mdeCreateCommand(
