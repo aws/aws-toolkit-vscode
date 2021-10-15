@@ -12,7 +12,6 @@ import { mdeConnectCommand, mdeCreateCommand, mdeDeleteCommand } from './mdeComm
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
-import { registerCreateMdeCommand } from './vue/backend'
 import { activateUriHandlers } from './mdeUriHandlers'
 import { promptDevFiles } from './wizards/devFiles'
 import { getLogger } from '../shared/logger'

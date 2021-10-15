@@ -38,7 +38,7 @@ export class MdeInstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         }
         return `Id: ${env.id}
 Status: ${env.status}
-Runtimes: ${env.ideRuntimes ?? ''}
+IDEs: ${env.ides ?? ''}
 Tags: ${tags}
 Created: ${env.createdAt ?? '?'}
 Started: ${env.lastStartedAt}

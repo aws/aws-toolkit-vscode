@@ -235,7 +235,7 @@ export async function mdeCreateCommand(
 
     try {
         const env = ext.mde.createEnvironment({
-            instanceType: 'mde.large',
+            instanceType: 'dev.standard1.large',
             // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
             persistentStorage: { sizeInGiB: 0 },
             roleArn: roleArn,
