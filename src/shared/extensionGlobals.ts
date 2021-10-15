@@ -4,12 +4,14 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
+import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { MdeClient } from './clients/mdeClient'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
 import { CawsClient } from './clients/cawsClient'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
+import { RegionProvider } from './regions/regionProvider'
 import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
 import { CodelensRootRegistry } from './fs/codelensRootRegistry'
 import { SchemaService } from './schemas'
@@ -27,12 +29,14 @@ export namespace ext {
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
     export let awsContext: AwsContext
+    export let regionProvider: RegionProvider
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
     export let templateRegistry: CloudFormationTemplateRegistry
     export let schemaService: SchemaService
     export let codelensRootRegistry: CodelensRootRegistry
+    export let resourceManager: AwsResourceManager
     export let caws: CawsClient
 
     let _didReload = false

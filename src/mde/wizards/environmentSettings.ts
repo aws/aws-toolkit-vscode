@@ -104,7 +104,7 @@ function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm) {
         detail: `${instanceDesc.name} (${instanceDesc.specs})`,
         data: async () => {
             const prompter = createInstancePrompt()
-            prompter.lastResponse = currentState.instanceType
+            prompter.recentItem = currentState.instanceType
             const result = await prompter.prompt()
 
             if (isValidResponse(result)) {
@@ -122,7 +122,7 @@ function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm) {
         detail: `${currentState.inactivityTimeoutMinutes} minutes`,
         data: async () => {
             const prompter = createTimeoutPrompt()
-            prompter.lastResponse = currentState.inactivityTimeoutMinutes
+            prompter.recentItem = currentState.inactivityTimeoutMinutes
             const result = await prompter.prompt()
 
             if (isValidResponse(result)) {
@@ -140,7 +140,7 @@ function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm) {
         detail: `${currentState.persistentStorage.sizeInGiB} GB`,
         data: async () => {
             const prompter = createStoragePrompt()
-            prompter.lastResponse = currentState.persistentStorage.sizeInGiB
+            prompter.recentItem = currentState.persistentStorage.sizeInGiB
             const result = await prompter.prompt()
 
             if (isValidResponse(result)) {
@@ -184,7 +184,7 @@ export class EnvironmentSettingsWizard extends Wizard<SettingsForm> {
 
         while (true) {
             const prompter = createMenuPrompt(this.initState, curr)
-            prompter.lastResponse = lastItem
+            prompter.recentItem = lastItem
             const response = await prompter.prompt()
 
             if (!isValidResponse(response)) {

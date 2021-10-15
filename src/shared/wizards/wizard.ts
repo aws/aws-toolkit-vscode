@@ -219,15 +219,15 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         prompter.setStepEstimator(state.estimator)
 
         if (state.stepCache.picked !== undefined) {
-            prompter.lastResponse = state.stepCache.picked
+            prompter.recentItem = state.stepCache.picked
         } else if (impliedResponse !== undefined) {
-            prompter.lastResponse = impliedResponse
+            prompter.recentItem = impliedResponse
         }
 
         const answer = await prompter.prompt()
 
         if (isValidResponse(answer)) {
-            state.stepCache.picked = prompter.lastResponse
+            state.stepCache.picked = prompter.recentItem
         }
 
         if (!isValidResponse(answer)) {

@@ -86,7 +86,7 @@ async function loadRoles(): Promise<IAM.Role[]> {
 
     // Not paginated, limit to 10 roles since the native dropdown box lists like 50 items at once
     try {
-        return (await client.listRoles({ MaxItems: 10 })).Roles
+        return await client.listRoles({ MaxItems: 10 })
     } catch (err) {
         vscode.window.showErrorMessage((err as Error).message)
         return []

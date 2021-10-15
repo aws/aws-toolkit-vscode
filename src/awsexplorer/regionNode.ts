@@ -19,6 +19,7 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
+import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { MdeRootNode } from '../mde/mdeRootNode'
@@ -78,6 +79,7 @@ export class RegionNode extends AWSTreeNodeBase {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
 
+        this.childNodes.push(new ResourcesNode(this.regionCode))
         // TODO: make this conditional at release-time.
         this.childNodes.push(new MdeRootNode(this.regionCode))
     }

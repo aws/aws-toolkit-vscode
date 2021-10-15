@@ -27,20 +27,21 @@ export class DevfileRegistry extends WatchedFiles<Devfile> {
             const devfile = yaml.load(templateAsYaml) as Devfile
             // legacy (1.x) Devfiles do not contain a schemaVersion
             if (devfile.schemaVersion) {
-                ext.schemaService.registerMapping({ path, schema: 'devfile' })
+                ext.schemaService.registerMapping({ path, type: 'yaml', schema: 'devfile' })
                 return devfile
             }
         } catch (e) {
             getLogger().warn(`could not load Devfile ${path}: ${e}`)
         }
-        ext.schemaService.registerMapping({ path, schema: 'none' })
+        ext.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
         return undefined
     }
 
     public async remove(path: string | vscode.Uri): Promise<void> {
         ext.schemaService.registerMapping({
             path: typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
-            schema: 'none',
+            type: 'yaml',
+            schema: undefined,
         })
         await super.remove(path)
     }
