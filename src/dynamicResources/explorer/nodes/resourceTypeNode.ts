@@ -103,15 +103,17 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
             NextToken: continuationToken,
         })
 
-        const newResources = response.ResourceDescriptions!.reduce(
-            (accumulator: ResourceNode[], current: CloudControl.ResourceDescription) => {
-                if (current.Identifier) {
-                    accumulator.push(new ResourceNode(this, current.Identifier, this.childContextValue))
-                }
-                return accumulator
-            },
-            []
-        )
+        const newResources = response.ResourceDescriptions
+            ? response.ResourceDescriptions.reduce(
+                  (accumulator: ResourceNode[], current: CloudControl.ResourceDescription) => {
+                      if (current.Identifier) {
+                          accumulator.push(new ResourceNode(this, current.Identifier, this.childContextValue))
+                      }
+                      return accumulator
+                  },
+                  []
+              )
+            : []
 
         getLogger().debug(`Loaded resources: %O`, newResources)
         return {
