@@ -23,6 +23,7 @@ import { CreateEnvironmentRequest } from '../../types/clientmde'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { invalidArn } from '../shared/localizedText'
+import { isValidResponse } from '../shared/wizards/wizard'
 
 const localize = nls.loadMessageBundle()
 
@@ -64,7 +65,7 @@ export async function startMde(
                 })
             }
 
-            return resp?.actions?.devfile?.status === 'RUNNING' ? resp : undefined
+            return resp?.status === 'RUNNING' ? resp : undefined
         },
         { interval: 5000, timeout: TIMEOUT_LENGTH, truthy: true }
     )
@@ -116,7 +117,7 @@ export async function mdeConnectCommand(
                 })
             }
 
-            if (mdeMeta?.actions?.devfile?.status !== 'RUNNING') {
+            if (mdeMeta?.status !== 'RUNNING') {
                 return undefined
             }
 
@@ -211,7 +212,7 @@ export async function mdeCreateCommand(
         validateInput: s => (arnparse.validate(s) ? undefined : invalidArn),
     })
     const roleArn = (await inputbox.prompt())?.toString()
-    if (!roleArn) {
+    if (!isValidResponse(roleArn)) {
         return
     }
 
@@ -245,7 +246,7 @@ export async function mdeCreateCommand(
         // recordEcrCreateRepository({ result: 'Failed' })
     } finally {
         if (node !== undefined) {
-            await commands.execute('aws.refreshAwsExplorerNode', node)
+            node.refresh()
         } else {
             await commands.execute('aws.refreshAwsExplorer', true)
         }
@@ -260,7 +261,7 @@ export async function mdeDeleteCommand(
     const r = await ext.mde.deleteEnvironment({ environmentId: env.id })
     getLogger().info('%O', r?.status)
     if (node !== undefined) {
-        await commands.execute('aws.refreshAwsExplorerNode', node)
+        node.refresh()
     } else {
         await commands.execute('aws.refreshAwsExplorer', true)
     }
