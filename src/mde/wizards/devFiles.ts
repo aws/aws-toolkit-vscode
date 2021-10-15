@@ -28,8 +28,7 @@ type RemoteWithBranch = Omit<GitTypes.Remote, 'isReadOnly'> & {
 const PUBLIC_REGISTRY_URI = vscode.Uri.parse('https://registry.devfile.io')
 
 async function getDevFiles(remote: RemoteWithBranch): Promise<string[]> {
-    // TODO: pipe `GitExtension` through for testing purposes
-    const git = new GitExtension()
+    const git = GitExtension.instance
     const result = await git.listAllRemoteFiles(remote)
 
     const devFiles = result.files.map(f => f.name).filter(f => f.match(/^(.*[\/\\])?devfile.(yaml|yml)$/))
