@@ -75,7 +75,7 @@ export async function activate(args: {
             } catch (err) {
                 getLogger().error('credentials: failed to auto-connect: %O', err)
                 showViewLogsMessage(
-                    localize('AWS.credentials.autoconnect.fatal', 'Unexpected occurred while connecting')
+                    localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting')
                 )
             }
         })
