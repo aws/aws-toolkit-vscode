@@ -56,7 +56,7 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
             mdeConnectCommand(treenode.env, treenode.parent.regionCode)
         })
     )
-    ctx.extensionContext.subscriptions.push(registerCreateMdeCommand(ctx))
+    // ctx.extensionContext.subscriptions.push(registerCreateMdeCommand(ctx))
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.create', async (treenode: MdeRootNode) => {
             const testRemote = {
