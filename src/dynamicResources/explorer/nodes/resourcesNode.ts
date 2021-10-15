@@ -16,7 +16,7 @@ import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { isCloud9 } from '../../../shared/extensionUtilities'
-import { getResourceTypes, ResourceTypeMetadata } from '../../model/resources'
+import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 
 const localize = nls.loadMessageBundle()
 
@@ -59,7 +59,7 @@ export class ResourcesNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const resourceTypes = getResourceTypes()
+        const resourceTypes = memoizedGetResourceTypes()
         const enabledResources = !isCloud9()
             ? vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
             : resourceTypes.keys()

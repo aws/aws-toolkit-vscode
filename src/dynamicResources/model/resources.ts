@@ -5,21 +5,23 @@
 
 import supportedResources = require('./supported_resources.json')
 
-let resourceTypes: Map<string, ResourceTypeMetadata>
+export const memoizedGetResourceTypes = memoize(getResourceTypes)
 
 export function getResourceTypes(resources: any = supportedResources): Map<string, ResourceTypeMetadata> {
-    if (!resourceTypes) {
-        const typesNames = Object.keys(resources)
-        const types = new Map<string, ResourceTypeMetadata>()
-        for (const typeName of typesNames) {
-            const metadata = resources[typeName as keyof typeof resources] as ResourceTypeMetadata
-            if (metadata.operations?.includes('LIST')) {
-                types.set(typeName, metadata)
-            }
+    const typesNames = Object.keys(resources)
+    const resourceTypes = new Map<string, ResourceTypeMetadata>()
+    for (const typeName of typesNames) {
+        const metadata = resources[typeName as keyof typeof resources] as ResourceTypeMetadata
+        if (metadata.operations?.includes('LIST')) {
+            resourceTypes.set(typeName, metadata)
         }
-        resourceTypes = types
     }
     return resourceTypes
+}
+
+function memoize<F extends (...args: any[]) => R, R>(fn: F): F {
+    const store: { [key: string]: R } = {}
+    return ((...args) => (store[JSON.stringify(args)] ??= fn(...args))) as F
 }
 
 export interface ResourceTypeMetadata {
