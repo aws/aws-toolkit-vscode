@@ -23,7 +23,7 @@ We want your feedback!
 - Code contributions. See [our contributing guide](CONTRIBUTING.md) for how to get started.
 
 ## Supported IDEs
-All JetBrains IDEs 2020.1+
+All JetBrains IDEs 2020.3+
 
 ## Installation
 
