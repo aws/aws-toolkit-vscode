@@ -7,6 +7,8 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { ParsedUrlQuery as Query } from 'querystring'
 import { UriHandler } from '../../../shared/vscode/uriHandler'
+import * as mdeUriHandlers from '../../../mde/mdeUriHandlers'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('UriHandler', function () {
     const TEST_PATH = '/my/path'
@@ -68,5 +70,23 @@ describe('UriHandler', function () {
 
         uriHandler.registerHandler(TEST_PATH, handler)
         return assert.doesNotReject(uriHandler.handleUri(makeUri()))
+    })
+})
+
+describe('MDE, CAWS UriHandlers', function () {
+    let uriHandler: UriHandler
+
+    beforeEach(function () {
+        uriHandler = new UriHandler()
+    })
+
+    it.only('xxx', async function () {
+        const ctx = await FakeExtensionContext.getFakeExtContext()
+        mdeUriHandlers.activateUriHandlers(ctx.extensionContext, uriHandler)
+        return uriHandler.handleUri(
+            vscode.Uri.parse(
+                'vscode://amazonwebservices.aws-toolkit-vscode/remote?url=https%3A%2F%2Fcode.aws%2Ffoo%2Fbar.git'
+            )
+        )
     })
 })

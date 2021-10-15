@@ -4,13 +4,14 @@
  */
 
 /** The 'path' for external URIs attempting to open an MDE within VS Code */
-const MDE_URI_PATH = '/mde' as const
+const MDE_URI_PATH = '/remote' as const
 
 import { EnvironmentId } from '../../types/clientmde'
 import * as vscode from 'vscode'
 import { ParsedUrlQuery } from 'querystring'
 import { cloneToMde, mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
-import { ExtContext } from '../shared/extensions'
+import { UriHandler } from '../shared/vscode/uriHandler'
+import { MdeClient, mdeEndpoint, MDE_REGION } from '../shared/clients/mdeClient'
 
 interface MdeUriParams {
     /** If no ID is provided, a new MDE is created */
@@ -21,10 +22,8 @@ interface MdeUriParams {
     branch?: string
 }
 
-export function activateUriHandlers(ctx: ExtContext): void {
-    ctx.extensionContext.subscriptions.push(
-        ctx.uriHandler.registerHandler(MDE_URI_PATH, handleMdeUriParams, parseMdeUriParams)
-    )
+export function activateUriHandlers(ctx: vscode.ExtensionContext, uriHandler: UriHandler): void {
+    ctx.subscriptions.push(uriHandler.registerHandler(MDE_URI_PATH, handleMdeUriParams, parseMdeUriParams))
 }
 
 export function parseMdeUriParams(query: ParsedUrlQuery): MdeUriParams {
@@ -42,6 +41,9 @@ export function parseMdeUriParams(query: ParsedUrlQuery): MdeUriParams {
 }
 
 export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
+    // TODO: get region from URI params.
+    const region = 'us-west-2'
+    const mdeClient = await MdeClient.create(region, mdeEndpoint())
     if (params.id === undefined) {
         const newMde = await mdeCreateCommand(undefined)
         // mde create command swallows the exception
@@ -51,7 +53,7 @@ export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
         params.id = newMde.id
     }
 
-    const mde = await startMde(params as { id: EnvironmentId })
+    const mde = await startMde(params as { id: EnvironmentId }, mdeClient)
 
     if (mde === undefined) {
         return
@@ -63,5 +65,5 @@ export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
         await cloneToMde(mde, params.cloneUrl)
     }
 
-    return mdeConnectCommand(mde)
+    return mdeConnectCommand(mde, MDE_REGION)
 }

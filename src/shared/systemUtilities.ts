@@ -9,8 +9,12 @@ import * as os from 'os'
 import * as path from 'path'
 import { EnvironmentVariables } from './environmentVariables'
 import { ChildProcess } from './utilities/childProcess'
+import { getLogger } from './logger/logger'
 
 export class SystemUtilities {
+    /** Full path to VSCode CLI. */
+    private static vscPath: string
+
     public static getHomeDirectory(): string {
         const env = process.env as EnvironmentVariables
 
@@ -39,6 +43,35 @@ export class SystemUtilities {
                 resolve(true)
             })
         })
+    }
+
+    /**
+     * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
+     * absolute) if it works.
+     */
+    public static async getVscodeCliPath(): Promise<string | undefined> {
+        if (SystemUtilities.vscPath) {
+            return SystemUtilities.vscPath
+        }
+        const vscs = [
+            `${vscode.env.appRoot}/bin/code`, // macOS, Linux
+            `${vscode.env.appRoot}/../../bin/code`, // Windows
+            'code', // $PATH
+        ]
+        for (const vsc of vscs) {
+            if (!fs.existsSync(vsc)) {
+                continue
+            }
+            const proc = new ChildProcess(true, vsc, undefined, '--version')
+            const r = await proc.run()
+            if (r.exitCode === 0) {
+                SystemUtilities.vscPath = vsc
+                return vsc
+            }
+            getLogger().warn('getVscodeCliPath: failed: %O', proc)
+        }
+
+        return undefined
     }
 
     /**

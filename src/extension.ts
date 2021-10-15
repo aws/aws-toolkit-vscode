@@ -154,8 +154,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await ext.telemetry.start()
         await ext.schemaService.start()
 
-        const uriHandler = new UriHandler()
-        context.subscriptions.push(vscode.window.registerUriHandler(uriHandler))
+        ext.uriHandler = new UriHandler()
+        context.subscriptions.push(vscode.window.registerUriHandler(ext.uriHandler))
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -165,8 +165,8 @@ export async function activate(context: vscode.ExtensionContext) {
             settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
             telemetryService: ext.telemetry,
-            credentialsStore,
-            uriHandler,
+            credentialsStore: credentialsStore,
+            uriHandler: ext.uriHandler,
         }
 
         // Used as a command for decoration-only codelenses.

@@ -12,6 +12,7 @@ import * as treeNodeUtil from '../shared/treeview/treeNodeUtilities'
 import { PlaceholderNode } from '../shared/treeview/nodes/placeholderNode'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { updateInPlace } from '../shared/utilities/collectionUtils'
+import { getStatusIcon } from './mdeModel'
 
 const localize = nls.loadMessageBundle()
 
@@ -67,7 +68,8 @@ export class MdeRootNode extends AWSTreeNodeBase {
                 const env = envs.get(key)
                 if (n && env) {
                     const status = env.status === 'RUNNING' ? '' : env.status
-                    n.label = `${env.id.substring(0, 7)}… ${env.userArn} ${status}`
+                    n.iconPath = getStatusIcon(env.status ?? '')
+                    n.label = `${env.id.substring(0, 7)}… ${status}`
                 }
             },
             key => {

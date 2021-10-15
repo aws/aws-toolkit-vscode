@@ -16,6 +16,7 @@ export const invalidNumberWarning: string = localize(
     'AWS.validateTime.error.invalidNumber',
     'Input must be a positive number'
 )
+export const invalidArn: string = localize('AWS.error.invalidArn', 'Invalid ARN')
 export const viewDocs: string = localize('AWS.generic.viewDocs', 'View Documentation')
 export const recentlyUsed: string = localize('AWS.generic.recentlyUsed', 'recently used')
 
