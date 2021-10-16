@@ -2412,7 +2412,7 @@
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.0.0",
         "lodash": "^4.17.21",
-        "mime-types": "^2.1.32",
+        "mime-types": "^2.1.33",
         "moment": "^2.29.1",
         "portfinder": "^1.0.25",
         "request": "^2.88.0",
