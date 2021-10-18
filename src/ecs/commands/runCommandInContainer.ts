@@ -30,35 +30,21 @@ export async function runCommandInContainer(
         return
     }
 
-    // Check to see if there are any deployments in process
-    const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0].deployments
-    if (deployments) {
-        for (let i = 0; i < deployments.length; i++) {
-            if (deployments[i].status === 'ACTIVE' || deployments[i].rolloutState === 'IN_PROGRESS') {
-                window.showWarningMessage(
-                    localize(
-                        'AWS.command.ecs.runCommandInContainer.warnDeploymentInProgress',
-                        'A deployment for this service may still be in progress. Not all containers may be running.'
-                    )
-                )
-            }
-            break
-        }
+    // Check to see if there are any deployments in progress
+    const activeDeployments = await deploymentsInProgress(node)
+    if (activeDeployments.ACTIVE > 0 || activeDeployments.IN_PROGRESS > 0) {
+        window.showWarningMessage(
+            localize(
+                'AWS.command.ecs.runCommandInContainer.warnDeploymentInProgress',
+                'Service is currently deploying (ACTIVE={0}, IN_PROGRESS={1})',
+                activeDeployments.ACTIVE,
+                activeDeployments.IN_PROGRESS
+            )
+        )
     }
 
     // Quick pick to choose from the tasks in that service
-    const taskArns = await node.listTasks()
-    // Filter for only 'Running' tasks
-    const runningTasks = (await node.describeTasks(taskArns)).filter(t => {
-        return t.lastStatus === 'RUNNING' && t.desiredStatus === 'RUNNING'
-    })
-    const quickPickItems: vscode.QuickPickItem[] = runningTasks.map(task => {
-        // The last 32 digits of the task arn is the task identifier
-        return {
-            label: task.taskArn!.substr(-32),
-            detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
-        }
-    })
+    const quickPickItems = await getTaskItems(node)
     if (quickPickItems.length === 0) {
         window.showInformationMessage(
             localize(
@@ -135,32 +121,7 @@ export async function runCommandInContainer(
         return
     }
 
-    const cmd = new ChildProcess(
-        true,
-        'aws',
-        undefined,
-        'ecs',
-        'execute-command',
-        '--cluster',
-        node.clusterArn,
-        '--task',
-        task,
-        '--container',
-        node.containerName,
-        '--command',
-        command,
-        '--interactive'
-    )
-    const processResponse = await cmd.run()
-
-    if (processResponse.exitCode !== 0) {
-        showOutputMessage(processResponse.stderr, outputChannel)
-        getLogger().error('ECS command failed: %O: %O', cmd, processResponse.stderr)
-        recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
-    } else {
-        showOutputMessage(processResponse.stdout, outputChannel)
-        recordEcsRunExecuteCommand({ result: 'Succeeded', ecsExecuteCommandType: 'command' })
-    }
+    await runCliCommandInEcsContainer(node, task, command, outputChannel)
 }
 
 async function verifyCliAndPlugin(window: Window): Promise<boolean> {
@@ -186,4 +147,69 @@ async function verifyCliAndPlugin(window: Window): Promise<boolean> {
         return false
     }
     return true
+}
+
+async function deploymentsInProgress(node: EcsContainerNode): Promise<{ ACTIVE: number; IN_PROGRESS: number }> {
+    let activeCount = 0
+    let inProgressCount = 0
+    const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0]?.deployments
+    if (deployments) {
+        for (const deployment of deployments) {
+            if (deployment.status === 'ACTIVE') {
+                activeCount++
+            }
+            if (deployment.rolloutState === 'IN_PROGRESS') {
+                inProgressCount++
+            }
+        }
+    }
+    return { ACTIVE: activeCount, IN_PROGRESS: inProgressCount }
+}
+
+async function getTaskItems(node: EcsContainerNode): Promise<vscode.QuickPickItem[]> {
+    const taskArns = await node.listTasks()
+    // Filter for only 'Running' tasks
+    const runningTasks = (await node.describeTasks(taskArns)).filter(t => {
+        return t.lastStatus === 'RUNNING' && t.desiredStatus === 'RUNNING'
+    })
+    return runningTasks.map(task => {
+        // The last 32 digits of the task arn is the task identifier
+        return {
+            label: task.taskArn!.substr(-32),
+            detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
+        }
+    })
+}
+
+async function runCliCommandInEcsContainer(
+    node: EcsContainerNode,
+    task: string,
+    command: string,
+    outputChannel: vscode.OutputChannel
+): Promise<void> {
+    const cmd = new ChildProcess(
+        true,
+        'aws',
+        undefined,
+        'ecs',
+        'execute-command',
+        '--cluster',
+        node.clusterArn,
+        '--task',
+        task,
+        '--container',
+        node.containerName,
+        '--command',
+        command,
+        '--interactive'
+    )
+    const processResponse = await cmd.run()
+    if (processResponse.exitCode !== 0) {
+        showOutputMessage(processResponse.stderr, outputChannel)
+        getLogger().error('ECS command failed: %O: %O', cmd, processResponse.stderr)
+        recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
+    } else {
+        showOutputMessage(processResponse.stdout, outputChannel)
+        recordEcsRunExecuteCommand({ result: 'Succeeded', ecsExecuteCommandType: 'command' })
+    }
 }

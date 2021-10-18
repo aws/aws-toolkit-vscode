@@ -1189,17 +1189,17 @@
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
                 },
                 {
-                    "command": "aws.command.runCommandInContainer",
+                    "command": "aws.ecs.runCommandInContainer",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
                 },
                 {
-                    "command": "aws.command.enableEcsExec",
+                    "command": "aws.ecs.enableEcsExec",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
                 },
                 {
-                    "command": "aws.command.disableEcsExec",
+                    "command": "aws.ecs.disableEcsExec",
                     "group": "0@2",
                     "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
                 },
@@ -1919,8 +1919,8 @@
                 }
             },
             {
-                "command": "aws.command.runCommandInContainer",
-                "title": "%AWS.command.runCommandInContainer%",
+                "command": "aws.ecs.runCommandInContainer",
+                "title": "%AWS.ecs.runCommandInContainer%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -1929,8 +1929,8 @@
                 }
             },
             {
-                "command": "aws.command.enableEcsExec",
-                "title": "%AWS.command.enableEcsExec%",
+                "command": "aws.ecs.enableEcsExec",
+                "title": "%AWS.ecs.enableEcsExec%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -1949,8 +1949,8 @@
                 }
             },
             {
-                "command": "aws.command.disableEcsExec",
-                "title": "%AWS.command.disableEcsExec%",
+                "command": "aws.ecs.disableEcsExec",
+                "title": "%AWS.ecs.disableEcsExec%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

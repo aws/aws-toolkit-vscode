@@ -19,60 +19,54 @@ export async function updateEnableExecuteCommandFlag(
     commands = Commands.vscode(),
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
-    const hasExecEnabled = node.service.enableExecuteCommand
-
-    const enableWarning = localize(
-        'AWS.command.ecs.runCommandInContainer.warning.enableExecuteFlag',
-        'Enabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\nAltering the state of resources while the Execute Command is enabled can lead to unpredictable results.\n Continue?'
-    )
-    const disableWarning = localize(
-        'AWS.command.ecs.runCommandInContainer.warning.disableExecuteFlag',
-        'Disabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\n Continue?'
-    )
     const yes = localize('AWS.generic.response.yes', 'Yes')
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
 
-    if (enable) {
-        if (hasExecEnabled) {
-            window.showInformationMessage(
-                localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
-            )
-            return
-        }
-        if (await settings.isPromptEnabled('ecsRunCommandEnable')) {
-            const choice = await window.showWarningMessage(enableWarning, yes, yesDontAskAgain, no)
+    const prompt = enable ? 'ecsRunCommandEnable' : 'ecsRunCommandDisable'
+    const hasExecEnabled = node.service.enableExecuteCommand
+
+    const warningMessage = enable
+        ? localize(
+              'AWS.command.ecs.runCommandInContainer.warning.enableExecuteFlag',
+              'Enabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\nAltering the state of resources while the Execute Command is enabled can lead to unpredictable results.\n Continue?'
+          )
+        : localize(
+              'AWS.command.ecs.runCommandInContainer.warning.disableExecuteFlag',
+              'Disabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\n Continue?'
+          )
+    const redundantActionMessage = enable
+        ? localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
+        : localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
+
+    let result: 'Succeeded' | 'Failed' | 'Cancelled'
+    if (enable === hasExecEnabled) {
+        result = 'Cancelled'
+        window.showInformationMessage(redundantActionMessage)
+        recordEcsEnableExecuteCommand({ result: result, passive: false })
+        return
+    }
+    try {
+        if (await settings.isPromptEnabled(prompt)) {
+            const choice = await window.showWarningMessage(warningMessage, yes, yesDontAskAgain, no)
             if (choice === undefined || choice === no) {
                 return
             } else if (choice === yesDontAskAgain) {
-                settings.disablePrompt('ecsRunCommandEnable')
+                settings.disablePrompt(prompt)
             }
         }
-        await node.ecs.updateService(node.service.clusterArn!, node.name, true)
-        recordEcsEnableExecuteCommand({ result: 'Succeeded', passive: false })
+        await node.ecs.updateService(node.service.clusterArn!, node.name, enable)
+        result = 'Succeeded'
         node.parent.clearChildren()
-        commands.execute('aws.refreshAwsExplorer', node.parent)
-        return
-    }
-
-    if (!hasExecEnabled) {
-        window.showInformationMessage(
-            localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
-        )
-        return
-    }
-
-    if (await settings.isPromptEnabled('ecsRunCommandDisable')) {
-        const choice = await window.showWarningMessage(disableWarning, yes, yesDontAskAgain, no)
-        if (choice === undefined || choice === no) {
-            return
-        } else if (choice === yesDontAskAgain) {
-            settings.disablePrompt('ecsRunCommandDisable')
+        commands.execute('aws.refreshAwsExplorerNode', node.parent)
+    } catch (e) {
+        result = 'Failed'
+        window.showErrorMessage((e as Error).message)
+    } finally {
+        if (enable) {
+            recordEcsEnableExecuteCommand({ result: result!, passive: false })
+        } else {
+            recordEcsDisableExecuteCommand({ result: result!, passive: false })
         }
     }
-    await node.ecs.updateService(node.service.clusterArn!, node.name, false)
-    recordEcsDisableExecuteCommand({ result: 'Succeeded', passive: false })
-
-    node.parent.clearChildren()
-    commands.execute('aws.refreshAwsExplorer', node.parent)
 }

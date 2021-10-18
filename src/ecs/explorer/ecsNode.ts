@@ -47,7 +47,7 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
 
     private async loadPage(nextToken: string | undefined): Promise<ChildNodePage> {
         getLogger().debug(`ecs: Loading page for %O using continuationToken %s`, this, nextToken)
-        const response = await this.ecs.listClusters(nextToken)
+        const response = await this.ecs.getClusters(nextToken)
         const clusters = response.resource.map(c => new EcsClusterNode(c, this, this.ecs))
 
         getLogger().debug(
