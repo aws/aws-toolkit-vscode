@@ -7,8 +7,9 @@ import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import { AwsContextCredentials } from '../../shared/awsContext'
 import { regionSettingKey } from '../../shared/constants'
-import { DefaultAwsContext } from '../../shared/defaultAwsContext'
+import { DefaultAwsContext } from '../../shared/awsContext'
 import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContext'
+import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
 
 describe('DefaultAwsContext', function () {
     const testRegion1Value: string = 're-gion-1'
@@ -153,9 +154,51 @@ describe('DefaultAwsContext', function () {
         })
     })
 
+    it('setDeveloperMode()', async function () {
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        let result: Set<string> | undefined
+        /** How many times did the event fire? */
+        let count = 0
+        testContext.onDidChangeContext(ev => {
+            result = ev.developerMode
+            count = count + 1
+        })
+
+        // Enable "developer mode".
+        await testContext.setDeveloperMode(true, 'aws.forceCloud9')
+        // Attempt redundant trigger.
+        await testContext.setDeveloperMode(true, 'aws.forceCloud9')
+        // Attempt redundant trigger.
+        await testContext.setDeveloperMode(true, 'aws.forceCloud9')
+        await testContext.setDeveloperMode(true, 'aws.developer.foo1')
+
+        await timeoutUtils.waitUntil(async () => result !== undefined && result.size >= 2, {
+            timeout: 1000,
+            interval: 100,
+            truthy: true,
+        })
+
+        assert(result !== undefined)
+        assert.deepStrictEqual(Array.from(result), ['aws.forceCloud9', 'aws.developer.foo1'])
+        assert.deepStrictEqual(2, count)
+
+        // Disable "developer mode".
+        await testContext.setDeveloperMode(false, undefined)
+        // Attempt redundant trigger.
+        await testContext.setDeveloperMode(false, undefined)
+        await timeoutUtils.waitUntil(async () => result === undefined || result.size === 0, {
+            timeout: 1000,
+            interval: 100,
+            truthy: true,
+        })
+
+        assert.deepStrictEqual(Array.from(result), [])
+        assert.deepStrictEqual(3, count)
+    })
+
     function makeSampleAwsContextCredentials(): AwsContextCredentials {
         return {
-            credentials: ({} as any) as AWS.Credentials,
+            credentials: {} as any as AWS.Credentials,
             credentialsId: 'qwerty',
             accountId: testAccountIdValue,
         }
