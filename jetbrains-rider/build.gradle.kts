@@ -276,7 +276,7 @@ tasks.test {
 }
 
 tasks.integrationTest {
-    enabled = false
+    enabled = ideProfile.name != "2020.3"
     useTestNG()
     environment("LOCAL_ENV_RUN", true)
     maxHeapSize = "1024m"
