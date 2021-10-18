@@ -149,10 +149,10 @@ async function verifyCliAndPlugin(window: Window): Promise<boolean> {
     return true
 }
 
-async function deploymentsInProgress(node: EcsContainerNode) {
+async function deploymentsInProgress(node: EcsContainerNode): Promise<{ ACTIVE: number; IN_PROGRESS: number }> {
     let activeCount = 0
     let inProgressCount = 0
-    const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0].deployments
+    const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0]?.deployments
     if (deployments) {
         for (const deployment of deployments) {
             if (deployment.status === 'ACTIVE') {
@@ -186,7 +186,7 @@ async function runCliCommandInEcsContainer(
     task: string,
     command: string,
     outputChannel: vscode.OutputChannel
-) {
+): Promise<void> {
     const cmd = new ChildProcess(
         true,
         'aws',
