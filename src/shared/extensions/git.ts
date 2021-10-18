@@ -22,7 +22,7 @@ interface GitFile {
     read: () => Promise<string>
 }
 
-export interface WrappedRepository extends GitTypes.Repository {
+export interface ExtendedRepository extends GitTypes.Repository {
     /**
      * Fires whenever the repository's head changes.
      */
@@ -64,27 +64,44 @@ function formatBranch(branch?: GitTypes.Branch): string {
  * check the `enabled` field to decisively determine if the extension is active.
  */
 export class GitExtension {
-    private onDidOpenRepositoryEmitter = new vscode.EventEmitter<WrappedRepository>()
+    private onDidOpenRepositoryEmitter = new vscode.EventEmitter<ExtendedRepository>()
     private api?: GitTypes.API
-    private wrappedRepositories = new Map<string, WrappedRepository>()
+    private wrappedRepositories = new Map<string, ExtendedRepository>()
     private static _instance?: GitExtension
 
-    public onDidOpenRepository = this.onDidOpenRepositoryEmitter.event
+    public readonly onDidOpenRepository = this.onDidOpenRepositoryEmitter.event
 
     public get enabled(): boolean {
         return this.api !== undefined
+    }
+
+    // TODO: implement more functionality exposed by git extension
+    /**
+     * The underlying Git extension API.
+     *
+     * It is recommended to not use this for production code since it is more difficult to mock/stub.
+     * Favor using the wrapped methods as they fail gracefully in scenarios where the user has disabled
+     * the git extension or does not have it installed (e.g. unit tests).
+     *
+     * @throws If the git extension is disabled or not installed
+     */
+    public get $api(): GitTypes.API {
+        if (this.api === undefined) {
+            throw new Error('Git extension is not installed or enabled.')
+        }
+        return this.api
     }
 
     public static get instance(): GitExtension {
         return GitExtension._instance ?? new GitExtension()
     }
 
-    public get repositories(): WrappedRepository[] {
+    public get repositories(): ExtendedRepository[] {
         if (this.api === undefined) {
             getLogger().verbose('git: api is disabled, returning empty array of repositories')
             return []
         }
-        return this.api.repositories.map(repo => this.wrapRepository(repo))
+        return this.api.repositories.map(repo => this.extendRepository(repo))
     }
 
     private constructor() {
@@ -114,6 +131,9 @@ export class GitExtension {
         GitExtension._instance = this
     }
 
+    // TODO: use `ChildProcess` to execute git
+    public executeCommand(): void {}
+
     /**
      * Wrapper for the git extension's `onDidOpenRepository` event.
      *
@@ -121,7 +141,7 @@ export class GitExtension {
      */
     private registerOpenRepositoryListener(api: GitTypes.API): vscode.Disposable {
         return api.onDidOpenRepository(repo => {
-            this.onDidOpenRepositoryEmitter.fire(this.wrapRepository(repo))
+            this.onDidOpenRepositoryEmitter.fire(this.extendRepository(repo))
         })
     }
 
@@ -130,7 +150,7 @@ export class GitExtension {
      *
      * @param repo Repository from the git extension API
      */
-    private wrapRepository(repo: GitTypes.Repository): WrappedRepository {
+    private extendRepository(repo: GitTypes.Repository): ExtendedRepository {
         const repoPath = repo.rootUri.fsPath.toString()
 
         if (this.wrappedRepositories.has(repoPath)) {
