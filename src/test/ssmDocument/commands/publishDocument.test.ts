@@ -60,7 +60,7 @@ const mockDoc: vscode.TextDocument = {
 }
 
 describe('publishSSMDocument', async function () {
-    let sandbox = sinon.createSandbox()
+    let sandbox: sinon.SinonSandbox
     const fakeAwsContext = new FakeAwsContext()
     const fakeRegionProvider = new FakeRegionProvider()
 
@@ -142,7 +142,7 @@ describe('publishSSMDocument', async function () {
             createSsmClient: sandbox.stub().returns(ssmDocumentClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
 
