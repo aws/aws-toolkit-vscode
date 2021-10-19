@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ResourcesNode, ResourceMetadata } from '../../dynamicResources/explorer/nodes/resourcesNode'
+import { ResourcesNode } from '../../dynamicResources/explorer/nodes/resourcesNode'
 import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { formatResourceModel, AwsResourceManager } from '../../dynamicResources/awsResourceManager'
@@ -20,6 +20,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { SchemaService } from '../../shared/schemas'
 import { remove } from 'fs-extra'
 import { existsSync } from 'fs'
+import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 
 describe('ResourceManager', function () {
     let sandbox: sinon.SinonSandbox
@@ -58,7 +59,7 @@ describe('ResourceManager', function () {
             rootNode,
             FAKE_TYPE_NAME,
             instance(cloudControl),
-            {} as ResourceMetadata
+            {} as ResourceTypeMetadata
         )
         resourceNode = new ResourceNode(resourceTypeNode, FAKE_IDENTIFIER)
         const fakeContext = new FakeExtensionContext()

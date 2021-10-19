@@ -36,8 +36,12 @@ import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { RegionNode } from './regionNode'
 import { extensionSettingsPrefix } from '../shared/constants'
 import { CredentialsStore } from '../credentials/credentialsStore'
+import { showViewLogsMessage } from '../shared/utilities/messages'
 
 let didTryAutoConnect = false
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -61,11 +65,18 @@ export async function activate(args: {
 
     ext.context.subscriptions.push(
         view.onDidChangeVisibility(async e => {
-            if (!didTryAutoConnect && e.visible && !(await args.awsContext.getCredentials())) {
-                didTryAutoConnect = true
-                const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-                const loginManager = new LoginManager(args.awsContext, new CredentialsStore())
-                await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+            try {
+                if (!didTryAutoConnect && e.visible && !(await args.awsContext.getCredentials())) {
+                    didTryAutoConnect = true
+                    const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+                    const loginManager = new LoginManager(args.awsContext, new CredentialsStore())
+                    await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+                }
+            } catch (err) {
+                getLogger().error('credentials: failed to auto-connect: %O', err)
+                showViewLogsMessage(
+                    localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting')
+                )
             }
         })
     )

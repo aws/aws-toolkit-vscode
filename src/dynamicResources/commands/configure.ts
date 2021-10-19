@@ -5,24 +5,20 @@
 
 import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import supportedResources = require('../model/supported_resources.json')
 import { recordDynamicresourceSelectResources } from '../../shared/telemetry/telemetry'
-import { ResourceMetadata } from '../explorer/nodes/resourcesNode'
-const types = Object.keys(supportedResources)
+import { memoizedGetResourceTypes } from '../model/resources'
 
 export async function configureResources(): Promise<boolean> {
     const window = vscode.window
     const configuration = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
 
     const quickPickItems: vscode.QuickPickItem[] = []
-    for (const typeName of types) {
-        const resource = supportedResources[typeName as keyof typeof supportedResources] as ResourceMetadata
-        if (resource.operations?.includes('LIST')) {
-            quickPickItems.push({
-                label: typeName,
-                picked: configuration ? configuration.includes(typeName) : false,
-            })
-        }
+    const resourceTypes = memoizedGetResourceTypes().keys()
+    for (const type of resourceTypes) {
+        quickPickItems.push({
+            label: type,
+            picked: configuration ? configuration.includes(type) : false,
+        })
     }
 
     const result = await window.showQuickPick(quickPickItems, {
