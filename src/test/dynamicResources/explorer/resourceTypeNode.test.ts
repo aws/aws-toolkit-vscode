@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { anything } from 'ts-mockito'
-import { ResourcesNode, ResourceMetadata } from '../../../dynamicResources/explorer/nodes/resourcesNode'
+import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
 import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import {
@@ -16,6 +16,7 @@ import {
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { CloudControl } from 'aws-sdk'
+import { ResourceTypeMetadata } from '../../../dynamicResources/model/resources'
 
 const FAKE_TYPE_NAME = 'sometype'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
@@ -164,7 +165,7 @@ describe('ResourceTypeNode', function () {
             operations: supportedOperations,
             documentation,
             available: available ?? true,
-        } as ResourceMetadata
+        } as ResourceTypeMetadata
         return new ResourceTypeNode({} as ResourcesNode, FAKE_TYPE_NAME, client, metadata)
     }
 

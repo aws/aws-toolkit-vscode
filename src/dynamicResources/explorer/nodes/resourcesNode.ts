@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import supportedResources = require('../../model/supported_resources.json')
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -17,6 +16,7 @@ import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 
 const localize = nls.loadMessageBundle()
 
@@ -59,9 +59,10 @@ export class ResourcesNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
+        const resourceTypes = memoizedGetResourceTypes()
         const enabledResources = !isCloud9()
             ? vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
-            : Object.keys(supportedResources)
+            : resourceTypes.keys()
 
         if (enabledResources) {
             const availableTypes: Map<string, CloudFormation.TypeSummary> = toMap(
@@ -73,19 +74,11 @@ export class ResourcesNode extends AWSTreeNodeBase {
                 enabledResources,
                 key => this.resourceTypeNodes.get(key)!.clearChildren(),
                 key => {
-                    const metadata =
-                        (supportedResources[key as keyof typeof supportedResources] as ResourceMetadata) ?? {}
+                    const metadata = resourceTypes.get(key) ?? ({} as ResourceTypeMetadata)
                     metadata.available = availableTypes.has(key)
                     return new ResourceTypeNode(this, key, this.cloudControl, metadata)
                 }
             )
         }
     }
-}
-
-export interface ResourceMetadata {
-    [x: string]: any
-    operations: string[]
-    documentation: string
-    available: boolean
 }
