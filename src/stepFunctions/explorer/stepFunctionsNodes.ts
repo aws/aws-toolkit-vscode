@@ -42,6 +42,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     public constructor(private readonly regionCode: string) {
         super('Step Functions', vscode.TreeItemCollapsibleState.Collapsed)
         this.stateMachineNodes = new Map<string, StateMachineNode>()
+        this.contextValue = 'awsStepFunctionsNode'
 
         sfnNodeMap.set(regionCode, this)
     }
@@ -59,8 +60,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
                     this,
                     localize('AWS.explorerNode.stepfunctions.noStateMachine', '[No State Machines found]')
                 ),
-            sort: (nodeA: StateMachineNode, nodeB: StateMachineNode) =>
-                nodeA.functionName.localeCompare(nodeB.functionName),
+            sort: (nodeA, nodeB) => nodeA.functionName.localeCompare(nodeB.functionName),
         })
     }
 

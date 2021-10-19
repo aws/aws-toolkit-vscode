@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Credentials: SSO profiles will reconnect on startup if the token is still valid"
-}

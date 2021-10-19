@@ -75,8 +75,7 @@ export async function updateCredentialsStatusBarItem(
         resolve =>
             (timeoutID = setTimeout(() => {
                 const company = getIdeProperties().company
-                statusBarItem.text = (credentialsId ? `${company}: ${credentialsId}` : company),
-                resolve()
+                ;(statusBarItem.text = credentialsId ? `${company}: ${credentialsId}` : company), resolve()
             }, delay))
     )
 }

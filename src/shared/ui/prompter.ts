@@ -31,10 +31,10 @@ export abstract class Prompter<T> {
     // TODO: add this to have a standard title across prompts
     // public abstract set title(title: string)
 
-    /** Implementing classes should use the argument to show the user what they last selected (if applicable) */
-    public abstract get lastResponse(): any
-    /** Implementing classes should return the user's response _before_ transforming into into type T */
-    public abstract set lastResponse(response: any)
+    /** Implementing classes should use this to show the user what they previously selected (if applicable). */
+    public abstract get recentItem(): any
+    /** Implementing classes should return the user's response _before_ transforming into into type T. */
+    public abstract set recentItem(response: any)
 
     // TODO: we need the inverse transform to recover inputs across flows
     /** Type-helper, allows Prompters to be mapped to different shapes */

@@ -11,11 +11,11 @@ import { Prompter, CachedPrompter, PromptResult } from '../prompter'
 class BasicExitPrompter extends Prompter<boolean> {
     private _isStart = true
 
-    public get lastResponse(): any {
+    public get recentItem(): any {
         return undefined
     }
 
-    public set lastResponse(response: any) {}
+    public set recentItem(response: any) {}
     protected async promptUser(): Promise<PromptResult<boolean>> {
         if (this._isStart) {
             return true
