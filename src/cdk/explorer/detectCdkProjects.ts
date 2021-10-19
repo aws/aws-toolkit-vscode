@@ -32,11 +32,15 @@ async function detectCdkProjectsFromWorkspaceFolder(
     const result = []
 
     for await (const cdkJson of detectLocalCdkProjects({ workspaceUris: [workspaceFolder.uri] })) {
-        const cdkJsonDoc = await vscode.workspace.openTextDocument(cdkJson)
-        const { output = 'cdk.out' } = JSON.parse(cdkJsonDoc.getText())
-        const treeJsonPath = path.resolve(path.dirname(cdkJson.fsPath), path.join(output, 'tree.json'))
-        const project = { workspaceFolder: workspaceFolder, cdkJsonPath: cdkJson.fsPath, treePath: treeJsonPath }
-        result.push(project)
+        try {
+            const cdkJsonDoc = await vscode.workspace.openTextDocument(cdkJson)
+            const { output = 'cdk.out' } = JSON.parse(cdkJsonDoc.getText())
+            const treeJsonPath = path.resolve(path.dirname(cdkJson.fsPath), path.join(output, 'tree.json'))
+            const project = { workspaceFolder: workspaceFolder, cdkJsonPath: cdkJson.fsPath, treePath: treeJsonPath }
+            result.push(project)
+        } catch (err) {
+            getLogger().error(`Failed to parse cdk.json from %s: %O`, cdkJson.fsPath, err)
+        }
     }
 
     return result
