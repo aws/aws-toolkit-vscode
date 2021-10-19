@@ -45,8 +45,7 @@ export class LambdaNode extends AWSTreeNodeBase {
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.lambda.noFunctions', '[No Functions found]')),
-            sort: (nodeA: LambdaFunctionNode, nodeB: LambdaFunctionNode) =>
-                nodeA.functionName.localeCompare(nodeB.functionName),
+            sort: (nodeA, nodeB) => nodeA.functionName.localeCompare(nodeB.functionName),
         })
     }
 

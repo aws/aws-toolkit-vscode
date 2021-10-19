@@ -67,10 +67,10 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     private promptCount: number = 0
     private name: string = 'Test Prompter'
 
-    public get lastResponse(): PromptResult<T> {
+    public get recentItem(): PromptResult<T> {
         return this._lastResponse
     }
-    public set lastResponse(response: PromptResult<T>) {
+    public set recentItem(response: PromptResult<T>) {
         if (response !== this._lastResponse) {
             this.fail(
                 makeExpectedError('Received unexpected cached response from wizard', response, this._lastResponse)

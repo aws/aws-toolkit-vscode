@@ -11,8 +11,8 @@ import { ChildNodePage } from './childNodeLoader'
  *
  * Allows for easier appending to the node's children and less error-prone (resetting) of the node's internal state.
  */
-export class ChildNodeCache {
-    private _children: AWSTreeNodeBase[] = []
+export class ChildNodeCache<T extends AWSTreeNodeBase = AWSTreeNodeBase> {
+    private _children: T[] = []
     private _continuationToken: string | undefined = undefined
     private _isPristine: boolean = true
 
@@ -22,7 +22,7 @@ export class ChildNodeCache {
      * Once this has been called, the cache is no longer considered pristine ({@link isPristine} will return false).
      * This is true even if the original state of the cache remains unchanged (all items appended are empty/undefined).
      */
-    public appendPage(page: ChildNodePage): void {
+    public appendPage(page: ChildNodePage<T>): void {
         this._children = [...this._children, ...page.newChildren]
         this._continuationToken = page.newContinuationToken
         this._isPristine = false
@@ -31,7 +31,7 @@ export class ChildNodeCache {
     /**
      * The list of children nodes previously appended to the cache.
      */
-    public get children(): AWSTreeNodeBase[] {
+    public get children(): T[] {
         return this._children
     }
 

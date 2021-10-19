@@ -55,16 +55,16 @@ export class InputBoxPrompter extends Prompter<string> {
     private _lastResponse?: string
     private validateEvents: vscode.Disposable[] = []
 
-    public set lastResponse(response: string | undefined) {
+    public set recentItem(response: string | undefined) {
         this._lastResponse = typeof response === 'string' ? response : this._lastResponse
         this.inputBox.value = this._lastResponse ?? ''
     }
 
-    public get lastResponse(): string | undefined {
+    public get recentItem(): string | undefined {
         return this._lastResponse
     }
 
-    constructor(public readonly inputBox: InputBox) {
+    constructor(public readonly inputBox: InputBox, protected readonly options: ExtendedInputBoxOptions = {}) {
         super()
     }
 
@@ -96,7 +96,7 @@ export class InputBoxPrompter extends Prompter<string> {
     protected async promptUser(): Promise<PromptResult<string>> {
         const promptPromise = new Promise<PromptResult<string>>(resolve => {
             this.inputBox.onDidAccept(() => {
-                this.lastResponse = this.inputBox.value
+                this.recentItem = this.inputBox.value
                 if (!this.inputBox.validationMessage) {
                     resolve(this.inputBox.value)
                 }

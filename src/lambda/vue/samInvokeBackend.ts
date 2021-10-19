@@ -62,6 +62,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
                               command: 'loadSamLaunchConfig',
                               data: {
                                   launchConfig: launchConfig,
+                                  initialCall: true,
                               },
                           },
                       ]
@@ -71,11 +72,6 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
             recordSamOpenConfigUi()
         }
     )
-}
-
-export interface SamInvokeVueState {
-    launchConfig: AwsSamDebuggerConfigurationLoose
-    payload: { value: string; errorMsg: string }
 }
 
 export interface AwsSamDebuggerConfigurationLoose extends AwsSamDebuggerConfiguration {
@@ -92,6 +88,7 @@ export interface LoadSamLaunchConfigResponse {
     command: 'loadSamLaunchConfig'
     data: {
         launchConfig: AwsSamDebuggerConfiguration
+        initialCall?: boolean
     }
 }
 
@@ -118,7 +115,7 @@ export interface GetRuntimesResponse {
 }
 
 export interface SamInvokerBasicRequest {
-    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate' | 'feedback'
+    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate'
 }
 
 export interface SamInvokerLaunchRequest {
@@ -142,9 +139,6 @@ async function handleFrontendToBackendMessage(
     context: ExtContext
 ): Promise<any> {
     switch (message.command) {
-        case 'feedback':
-            vscode.commands.executeCommand('aws.submitFeedback')
-            break
         case 'loadSamLaunchConfig':
             loadSamLaunchConfig(postMessageFn)
             break
@@ -421,6 +415,11 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     if (path.isAbsolute(targetPath)) {
         return vscode.Uri.file(targetPath)
     }
+    // TODO: rework this logic (and config variables in general)
+    // we have too many places where we try to resolve these paths when it realistically can be
+    // in a single place. Much less bug-prone when it's centralized.
+    // the following line is a quick-fix for a very narrow edge-case
+    targetPath = targetPath.replace('${workspaceFolder}/', '')
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     for (const workspaceFolder of workspaceFolders) {
         const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)

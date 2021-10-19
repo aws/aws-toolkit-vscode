@@ -17,12 +17,17 @@ import { normalizeSeparator } from './utilities/pathUtils'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
-export type Schemas = { [key in SchemaType]?: vscode.Uri }
-export type SchemaType = 'cfn' | 'sam' | 'none'
+export type Schemas = { [key: string]: vscode.Uri }
+export type SchemaType = 'yaml' | 'json'
 
 export interface SchemaMapping {
     path: string
-    schema: SchemaType
+    type: SchemaType
+    schema?: string | vscode.Uri
+}
+
+export interface SchemaHandler {
+    handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void>
 }
 
 /**
@@ -36,21 +41,29 @@ export class SchemaService {
 
     private updateQueue: SchemaMapping[] = []
     private schemas?: Schemas
+    private handlers: Map<SchemaType, SchemaHandler>
 
     public constructor(
         private readonly extensionContext: vscode.ExtensionContext,
-        private yamlExtension?: YamlExtension,
         opts?: {
             schemas?: Schemas
             updatePeriod?: number
+            handlers?: Map<SchemaType, SchemaHandler>
         }
     ) {
         this.updatePeriod = opts?.updatePeriod ?? SchemaService.DEFAULT_UPDATE_PERIOD_MILLIS
         this.schemas = opts?.schemas
+        this.handlers =
+            opts?.handlers ??
+            new Map<SchemaType, SchemaHandler>([
+                ['json', new JsonSchemaHandler()],
+                ['yaml', new YamlSchemaHandler()],
+            ])
     }
 
     public async start(): Promise<void> {
-        getSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
+        getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
+        await cleanResourceMappings()
         await this.startTimer()
     }
 
@@ -63,26 +76,14 @@ export class SchemaService {
             return
         }
 
-        if (!this.yamlExtension) {
-            const ext = await activateYamlExtension()
-            if (!ext) {
-                return
-            }
-            addCustomTags()
-            this.yamlExtension = ext
-        }
-
         const batch = this.updateQueue.splice(0, this.updateQueue.length)
         for (const mapping of batch) {
-            const path = vscode.Uri.file(normalizeSeparator(mapping.path))
-            const type = mapping.schema
-            if (type !== 'none') {
-                getLogger().debug('schema service: add: %s', path)
-                this.yamlExtension.assignSchema(path, this.schemas[type]!)
-            } else {
-                getLogger().debug('schema service: remove: %s', path)
-                this.yamlExtension.removeSchema(path)
+            const handler = this.handlers.get(mapping.type)
+            if (!handler) {
+                throw new Error(`no registered handler for type ${mapping.type}`)
             }
+            getLogger().debug('schema service: handle %s mapping: %s -> %$s', mapping.type, path, mapping.path)
+            await handler.handleUpdate(mapping, this.schemas)
         }
     }
 
@@ -104,13 +105,13 @@ export class SchemaService {
 }
 
 /**
- * Loads JSON schemas for CFN and SAM templates.
+ * Loads default JSON schemas for CFN and SAM templates.
  * Checks manifest and downloads new schemas if the manifest version has been bumped.
  * Uses local, predownloaded version if up-to-date or network call fails
  * If the user has not previously used the toolkit and cannot pull the manifest, does not provide template autocomplete.
  * @param extensionContext VSCode extension context
  */
-export async function getSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
+export async function getDefaultSchemas(extensionContext: vscode.ExtensionContext): Promise<Schemas | undefined> {
     try {
         // Convert the paths to URIs which is what the YAML extension expects
         const cfnSchemaUri = vscode.Uri.file(
@@ -240,4 +241,96 @@ function addCustomTags(): void {
         const updateTags = currentTags.concat(missingTags)
         vscode.workspace.getConfiguration().update('yaml.customTags', updateTags, vscode.ConfigurationTarget.Global)
     }
+}
+
+/**
+ * Registers YAML schema mappings with the Red Hat YAML extension
+ */
+export class YamlSchemaHandler implements SchemaHandler {
+    public constructor(private yamlExtension?: YamlExtension) {}
+
+    async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
+        if (!this.yamlExtension) {
+            const ext = await activateYamlExtension()
+            if (!ext) {
+                return
+            }
+            addCustomTags()
+            this.yamlExtension = ext
+        }
+
+        const path = vscode.Uri.file(normalizeSeparator(mapping.path))
+        if (mapping.schema) {
+            this.yamlExtension.assignSchema(path, resolveSchema(mapping.schema, schemas))
+        } else {
+            this.yamlExtension.removeSchema(path)
+        }
+    }
+}
+
+/**
+ * Registers JSON schema mappings with the built-in VSCode JSON schema language server
+ */
+export class JsonSchemaHandler implements SchemaHandler {
+    public constructor(private config?: vscode.WorkspaceConfiguration) {}
+
+    async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
+        let settings = getJsonSettings(this.config)
+
+        if (mapping.schema) {
+            const uri = resolveSchema(mapping.schema, schemas).toString()
+            const existing = settings.find(schema => schema.url === uri)
+            if (existing) {
+                existing.fileMatch?.push(mapping.path)
+            } else {
+                settings.push({
+                    fileMatch: [mapping.path],
+                    url: uri,
+                })
+            }
+        } else {
+            settings = filterJsonSettings(settings, file => file !== mapping.path)
+        }
+
+        await setJsonSettings(settings, this.config)
+    }
+}
+
+function resolveSchema(schema: string | vscode.Uri, schemas: Schemas): vscode.Uri {
+    if (schema instanceof vscode.Uri) {
+        return schema
+    }
+    return schemas[schema]
+}
+
+/**
+ * Attempts to find and remove orphaned resource mappings for AWS Resource documents
+ */
+export async function cleanResourceMappings(config?: vscode.WorkspaceConfiguration): Promise<void> {
+    let settings = getJsonSettings(config)
+    settings = filterJsonSettings(settings, file => !file.endsWith('.awsResource.json'))
+    await setJsonSettings(settings, config)
+}
+
+function getJsonSettings(workspaceConfig?: vscode.WorkspaceConfiguration): JSONSchemaSettings[] {
+    const config = workspaceConfig ?? vscode.workspace.getConfiguration('json')
+    return config.get('schemas') ?? []
+}
+
+async function setJsonSettings(settings: JSONSchemaSettings[], workspaceConfig?: vscode.WorkspaceConfiguration) {
+    const config = workspaceConfig ?? vscode.workspace.getConfiguration('json')
+    await config.update('schemas', settings, vscode.ConfigurationTarget.Global)
+}
+
+function filterJsonSettings(settings: JSONSchemaSettings[], predicate: (fileName: string) => boolean) {
+    return settings.filter(schema => {
+        schema.fileMatch = schema.fileMatch?.filter(file => predicate(file))
+        return schema.fileMatch && schema.fileMatch.length > 0
+    })
+}
+
+export interface JSONSchemaSettings {
+    fileMatch?: string[]
+    url?: string
+    schema?: any
 }
