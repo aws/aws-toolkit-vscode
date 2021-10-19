@@ -169,6 +169,13 @@ export async function mdeConnectCommand(
         )
         return
     }
+    getLogger('channel').info(
+        `AWS_REGION='${region}' AWS_MDE_ENDPOINT='${mde.mdeEndpoint()}' AWS_MDE_SESSION='${
+            session.id
+        }' AWS_MDE_STREAMURL='${session.accessDetails.streamUrl}' AWS_MDE_TOKEN='${
+            session.accessDetails.tokenValue
+        }' ssh 'aws-mde-${args.id}'`
+    )
 
     const cmd = new ChildProcess(
         true,

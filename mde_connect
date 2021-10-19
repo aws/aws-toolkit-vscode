@@ -1,16 +1,23 @@
 #!/bin/bash
 
 # Usage:
-#   AWS_MDE_ENDPOINT="https://r2g9qfgh3d.execute-api.us-east-1.amazonaws.com/prod" ./mde_connect
+#   AWS_REGION=… AWS_MDE_ENDPOINT=… AWS_MDE_SESSION=… AWS_MDE_STREAMURL=… AWS_MDE_TOKEN=… ./mde_connect <env-id>
 
 set -e
 set -u
 
 _LOGFILE="${HOME:-}/aws-toolkit-vscode.ssh.log"
+_DATE_CMD=true
+
+if command > /dev/null 2>&1 -v date; then
+    _DATE_CMD=date
+elif command > /dev/null 2>&1 -v /bin/date; then
+    _DATE_CMD=/bin/date
+fi
 
 _log() {
     # >&2 echo "$@"
-    echo "$(date '+%Y%m%d')" "$@" >> "$_LOGFILE"
+    echo "$("$_DATE_CMD" '+%Y%m%d')" "$@" >> "$_LOGFILE"
 }
 
 _require_nolog() {
@@ -37,6 +44,7 @@ _main() {
     _require_nolog AWS_MDE_STREAMURL "${AWS_MDE_STREAMURL:-}"
     _require_nolog AWS_MDE_TOKEN "${AWS_MDE_TOKEN:-}"
 
+    # TODO: remove this
     _log xxxx "AWS_REGION='$AWS_REGION' AWS_MDE_ENDPOINT='$AWS_MDE_ENDPOINT' AWS_MDE_SESSION='$AWS_MDE_SESSION' AWS_MDE_STREAMURL='$AWS_MDE_STREAMURL' AWS_MDE_TOKEN='$AWS_MDE_TOKEN' ssh '$_HOST'"
 
     exec session-manager-plugin \

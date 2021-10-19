@@ -112,4 +112,10 @@ describe('SystemUtilities', function () {
         testutil.assertEqualPaths(result, tscNodemodules)
         fs.removeSync(tscNodemodules)
     })
+
+    it('getVscodeCliPath()', async function () {
+        const vscPath = await SystemUtilities.getVscodeCliPath()
+        assert(vscPath)
+        assert.ok(/bin\/code$/.test(vscPath))
+    })
 })

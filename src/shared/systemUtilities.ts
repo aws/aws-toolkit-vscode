@@ -54,8 +54,8 @@ export class SystemUtilities {
             return SystemUtilities.vscPath
         }
         const vscs = [
-            `${vscode.env.appRoot}/bin/code`, // macOS, Linux
-            `${vscode.env.appRoot}/../../bin/code`, // Windows
+            path.resolve(`${vscode.env.appRoot}/bin/code`), // macOS, Linux
+            path.resolve(`${vscode.env.appRoot}/../../bin/code`), // Windows
             'code', // $PATH
         ]
         for (const vsc of vscs) {
