@@ -18,13 +18,14 @@ import { QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
 const TEST_HELP_URI = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
 describe('RolePrompter', function () {
-    const sandbox = sinon.createSandbox()
+    let sandbox: sinon.SinonSandbox
     let roles: IAM.Role[]
     let newRole: IAM.Role
     let mockIamClient: IamClient
     let tester: QuickPickTester<IAM.Role>
 
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
         roles = [
             {
                 RoleName: 'test-role1',
@@ -46,7 +47,7 @@ describe('RolePrompter', function () {
         tester = createQuickPickTester(prompter)
     })
 
-    after(function () {
+    afterEach(function () {
         sandbox.restore()
     })
 
