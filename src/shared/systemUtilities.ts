@@ -48,14 +48,28 @@ export class SystemUtilities {
     /**
      * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
      * absolute) if it works.
+     *
+     * @see https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
      */
     public static async getVscodeCliPath(): Promise<string | undefined> {
         if (SystemUtilities.vscPath) {
             return SystemUtilities.vscPath
         }
+
+        const vscExe = process.argv0
+        // https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
         const vscs = [
-            path.resolve(`${vscode.env.appRoot}/bin/code`), // macOS, Linux
+            // Note: macOS does not have a separate "code-insiders" binary.
+            path.resolve(`${vscode.env.appRoot}/bin/code`), // macOS
             path.resolve(`${vscode.env.appRoot}/../../bin/code`), // Windows
+            path.resolve(`${vscode.env.appRoot}/../../bin/code-insiders`), // Windows
+            // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
+            path.resolve(`${vscode.env.appRoot}/code`),
+            path.resolve(vscExe, '../bin/code-insiders'),
+            path.resolve(vscExe, '../bin/code'),
+            path.resolve(vscExe, '../../bin/code-insiders'),
+            path.resolve(vscExe, '../../bin/code'),
+            '/usr/bin/code',
             'code', // $PATH
         ]
         for (const vsc of vscs) {
