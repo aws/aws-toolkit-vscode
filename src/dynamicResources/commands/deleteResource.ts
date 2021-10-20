@@ -58,6 +58,22 @@ export async function deleteResource(
                 )
                 return true
             } catch (e) {
+                const error = e as Error
+                if (error.name === 'UnsupportedActionException') {
+                    result = 'Cancelled'
+                    getLogger().warn(
+                        `Resource type ${typeName} does not support DELETE action in ${cloudControl.regionCode}`
+                    )
+                    window.showWarningMessage(
+                        localize(
+                            'aws.resources.deleteResource.unsupported',
+                            'Resource type {0} does not currently support delete in {1}',
+                            typeName,
+                            cloudControl.regionCode
+                        )
+                    )
+                    return false
+                }
                 result = 'Failed'
                 getLogger().error(`Failed to delete resource type ${typeName} identifier ${identifier}: %O`, e)
                 showViewLogsMessage(
