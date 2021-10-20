@@ -120,6 +120,17 @@ describe('ResourceTypeNode', function () {
         assertNodeListOnlyContainsErrorNode(childNodes)
     })
 
+    it('has a placeholder node for a child if unsupported action', async function () {
+        cloudControl = mock()
+        const error = new Error('foo')
+        error.name = 'UnsupportedActionException'
+        when(cloudControl.listResources(anything())).thenThrow(error)
+        testNode = generateTestNode(instance(cloudControl))
+
+        const childNodes = await testNode.getChildren()
+        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+    })
+
     it('has Documented contextValue if documentation available', function () {
         mockCloudControlClient(resourceIdentifiers)
 
