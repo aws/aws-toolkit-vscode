@@ -12,6 +12,7 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { saveCdkJson } from './treeTestUtils'
 import { createTestWorkspaceFolder } from '../testUtil'
 import { FakeExtensionContext } from '../fakeExtensionContext'
+import { writeJSON } from 'fs-extra'
 
 describe('detectCdkProjects', function () {
     const workspacePaths: string[] = []
@@ -66,7 +67,21 @@ describe('detectCdkProjects', function () {
         assert.ok(project)
         assert.strictEqual(project.cdkJsonPath, cdkJsonPath)
         assert.strictEqual(project.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
-        assert.strictEqual(project.treePath, path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json'))
+        assert.strictEqual(project.treePath, path.normalize(path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json')))
+    })
+
+    it('takes into account `output` from cdk.json to build tree.json path', async function () {
+        const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
+        await writeJSON(cdkJsonPath, { app: 'npx ts-node bin/demo-nov7.ts', output: 'build/cdk.out' })
+        const actual = await detectCdkProjects(workspaceFolders)
+
+        assert.ok(actual)
+
+        const project = actual[0]
+        assert.ok(project)
+        assert.strictEqual(project.cdkJsonPath, cdkJsonPath)
+        assert.strictEqual(project.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
+        assert.strictEqual(project.treePath, path.normalize(path.join(cdkJsonPath, '..', 'build/cdk.out', 'tree.json')))
     })
 
     it('detects CDK projects in multi-folder workspace', async function () {
