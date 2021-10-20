@@ -114,12 +114,12 @@ describe('SystemUtilities', function () {
     })
 
     it('getVscodeCliPath()', async function () {
-        // xxx: Test fails on windows + linux
-        if (os.platform() === 'win32' || os.platform() === 'linux') {
+        if (os.platform() === 'linux') {
             this.skip()
         }
         const vscPath = await SystemUtilities.getVscodeCliPath()
         assert(vscPath)
-        assert.ok(/bin\/code$/.test(vscPath))
+        const regex = /bin[\\\/](code|code-insiders)$/
+        assert.ok(regex.test(vscPath), `expected regex ${regex} to match: "${vscPath}"`)
     })
 })
