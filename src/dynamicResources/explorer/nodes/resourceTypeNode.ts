@@ -27,6 +27,8 @@ export const CONTEXT_VALUE_RESOURCE_OPERATIONS: any = {
 }
 export const CONTEXT_VALUE_RESOURCE = 'ResourceNode'
 
+const UNAVAILABLE_RESOURCE = localize('AWS.explorerNode.resources.unavailable', 'Unavailable in region')
+
 export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader: ChildNodeLoader = new ChildNodeLoader(this, token => this.loadPage(token))
     private readonly childContextValue: string
@@ -48,7 +50,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
 
         if (!metadata.available) {
             this.contextValue = 'UnavailableResourceTypeNode'
-            this.description = !metadata.available ? 'Unavailable in region' : ''
+            this.description = !metadata.available ? UNAVAILABLE_RESOURCE : ''
         } else {
             const documentedContextValue = metadata.documentation ? 'Documented' : ''
             const createContextValue = supportedOperations.includes('Creatable') ? 'Creatable' : ''
@@ -66,8 +68,16 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
         const children = await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getErrorNode: async (error: Error, logID: number) => {
-                result = 'Failed'
-                return new ErrorNode(this, error, logID)
+                if (error.name === 'UnsupportedActionException') {
+                    result = 'Cancelled'
+                    getLogger().warn(
+                        `Resource type ${this.typeName} does not support LIST action in ${this.parent.region}`
+                    )
+                    return new PlaceholderNode(this, `[${UNAVAILABLE_RESOURCE}]`)
+                } else {
+                    result = 'Failed'
+                    return new ErrorNode(this, error, logID)
+                }
             },
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.resources.noResources', '[No resources found]')),

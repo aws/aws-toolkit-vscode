@@ -86,6 +86,24 @@ describe('createResource', function () {
         }
         assert.fail('Expected exception, but none was thrown.')
     })
+
+    it('shows a warning if unsupported action', async function () {
+        const error = new Error('fake exception')
+        error.name = 'UnsupportedActionException'
+        when(
+            mockCloudControl.createResource(
+                deepEqual({
+                    TypeName: FAKE_TYPE,
+                    DesiredState: FAKE_DEFINITION,
+                })
+            )
+        ).thenReject(error)
+        const window = new FakeWindow()
+
+        await createResource(FAKE_TYPE, FAKE_DEFINITION, instance(mockCloudControl), window)
+
+        assert.ok(window.message.warning?.startsWith(`${FAKE_TYPE} does not currently support resource creation`))
+    })
 })
 
 describe('updateResource', function () {
@@ -171,5 +189,23 @@ describe('updateResource', function () {
 
         verify(mockCloudControl.updateResource(anything())).never()
         assert.ok(window.message.warning?.startsWith(`Update cancelled`))
+    })
+
+    it('shows a warning if unsupported action', async function () {
+        const patchJson = JSON.stringify(FAKE_DIFF)
+        const error = new Error('fake exception')
+        error.name = 'UnsupportedActionException'
+        when(
+            mockCloudControl.updateResource(
+                deepEqual({
+                    TypeName: FAKE_TYPE,
+                    Identifier: FAKE_IDENTIFIER,
+                    PatchDocument: patchJson,
+                })
+            )
+        ).thenReject(error)
+        const window = new FakeWindow()
+        await updateResource(FAKE_TYPE, FAKE_IDENTIFIER, FAKE_DEFINITION, instance(mockCloudControl), window, FAKE_DIFF)
+        assert.ok(window.message.warning?.startsWith(`${FAKE_TYPE} does not currently support resource updating`))
     })
 })
