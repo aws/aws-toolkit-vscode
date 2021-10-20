@@ -8,9 +8,11 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.ui.EditorNotifications
+import software.amazon.awssdk.services.cloudcontrol.model.UnsupportedActionException
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
@@ -24,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.dynamic.OpenViewEditableDynamicR
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
+import software.aws.toolkits.telemetry.Result
 
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
@@ -43,8 +46,16 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
             .map { DynamicResourceNode(nodeProject, it) }
             .also { DynamicresourceTelemetry.listResource(project = nodeProject, success = true, resourceType = resourceType) }
     } catch (e: Exception) {
-        DynamicresourceTelemetry.listResource(project = nodeProject, success = false, resourceType = resourceType)
-        throw e
+        when (e) {
+            is UnsupportedActionException -> {
+                DynamicresourceTelemetry.listResource(project = nodeProject, result = Result.Cancelled, resourceType = resourceType)
+                listOf(AwsExplorerEmptyNode(nodeProject, message("dynamic_resources.unavailable_in_region", region.id)))
+            }
+            else -> {
+                DynamicresourceTelemetry.listResource(project = nodeProject, success = false, resourceType = resourceType)
+                throw e
+            }
+        }
     }
 
     override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.resource.type"
