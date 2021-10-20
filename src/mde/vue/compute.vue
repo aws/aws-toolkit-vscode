@@ -5,7 +5,7 @@
                 <span class="label-context soft">Size</span>
                 <b>{{ instance.name }}</b
                 ><br />
-                {{ instance.specs }} 64GB ephemeral storage
+                {{ instance.specs }}
             </div>
             <div id="timeout-length" style="grid-area: timeout">
                 <span class="label-context soft">Timeout length</span>
@@ -25,48 +25,56 @@
 <script lang="ts">
 import { WebviewApi } from 'vscode-webview'
 import { defineComponent } from 'vue'
-import { PersistentStorageConfiguration } from '../../../types/clientmde'
+import { WebviewClientFactory } from '../../webviews/client'
+import saveData from '../../webviews/mixins/saveData'
+import { createClass } from '../../webviews/util'
 import { DEFAULT_COMPUTE_SETTINGS } from '../constants'
-import { InstanceType, SettingsForm } from '../wizards/environmentSettings'
+import { SettingsForm } from '../wizards/environmentSettings'
+import { Commands } from './create/backend'
 
-declare const vscode: WebviewApi<VueModel>
+declare const vscode: WebviewApi<typeof VueModel>
+const client = WebviewClientFactory.create<Commands>()
 
-class VueModel implements SettingsForm {
-    inactivityTimeoutMinutes?: number | undefined
-    instanceType!: InstanceType
-    persistentStorage!: PersistentStorageConfiguration
-}
+export const VueModel = createClass(DEFAULT_COMPUTE_SETTINGS)
 
 export default defineComponent({
     name: 'compute-panel',
     props: {
-        modelValue: VueModel,
+        modelValue: {
+            type: VueModel,
+            default: new VueModel(),
+        },
+    },
+    data() {
+        return {
+            descriptions: {} as Record<string, { name: string; specs: string } | undefined>,
+        }
+    },
+    mixins: [saveData],
+    created() {
+        client.getAllInstanceDescriptions().then(desc => (this.descriptions = desc))
     },
     computed: {
         instance() {
-            const type = this.modelValue?.instanceType ?? DEFAULT_COMPUTE_SETTINGS.instanceType
-            const desc = {
-                name: type as string,
-                specs: ``,
-            }
+            const type = this.modelValue.instanceType
+            const desc = this.descriptions[type] ? { ...this.descriptions[type] } : { name: '', specs: '' }
             desc.name = type === DEFAULT_COMPUTE_SETTINGS.instanceType ? `${desc.name} (default)` : desc.name
             return desc
         },
         timeout() {
-            const time = this.modelValue?.inactivityTimeoutMinutes ?? DEFAULT_COMPUTE_SETTINGS.inactivityTimeoutMinutes
+            const time = this.modelValue.inactivityTimeoutMinutes
             const timeDesc = `${time} mins`
             return time === DEFAULT_COMPUTE_SETTINGS.inactivityTimeoutMinutes ? `${timeDesc} (default)` : timeDesc
         },
     },
     methods: {
         emitEdit() {
-            this.$emit('editSettings', this.modelValue ?? DEFAULT_COMPUTE_SETTINGS)
+            this.$emit('editSettings', this.modelValue)
         },
     },
     emits: {
         editSettings: (current: SettingsForm) => current !== undefined,
     },
-    created() {},
 })
 </script>
 

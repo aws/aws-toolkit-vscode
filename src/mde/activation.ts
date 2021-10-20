@@ -13,8 +13,8 @@ import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
 import { activateUriHandlers } from './mdeUriHandlers'
-import { promptDevFiles } from './wizards/devFiles'
 import { getLogger } from '../shared/logger'
+import { createMdeConfigureWebview } from './vue/configure/backend'
 
 /**
  * Activates MDE functionality.
@@ -55,18 +55,9 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
             mdeConnectCommand(treenode.env, treenode.parent.regionCode)
         })
     )
-    // ctx.extensionContext.subscriptions.push(registerCreateMdeCommand(ctx))
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.create', async (treenode: MdeRootNode) => {
-            const testRemote = {
-                name: 'Test Remote',
-                fetchUrl: 'https://github.com/devfile/registry',
-            }
-            const devfileLocation = await promptDevFiles(testRemote).catch(e => console.log(e))
-            if (devfileLocation === undefined) {
-                return
-            }
-            mdeCreateCommand(treenode)
+            mdeCreateCommand(treenode, undefined, ctx)
         })
     )
     ctx.extensionContext.subscriptions.push(
@@ -77,6 +68,11 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
             }
             // TODO: refresh explorer and poll
             mdeDeleteCommand(treenode.env)
+        })
+    )
+    ctx.extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('aws.mde.configure', async (treenode: MdeInstanceNode) => {
+            createMdeConfigureWebview(ctx, treenode.env.id)
         })
     )
 }

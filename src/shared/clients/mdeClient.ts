@@ -10,11 +10,18 @@ import apiConfig = require('../../../types/REMOVED.normal.json')
 import { ext } from '../../shared/extensionGlobals'
 import * as settings from '../../shared/settingsConfiguration'
 import * as logger from '../logger/logger'
+import * as vscode from 'vscode'
 
 export const MDE_REGION = 'us-west-2'
 export function mdeEndpoint(): string {
     const s = new settings.DefaultSettingsConfiguration()
-    return s.readDevSetting('aws.dev.mde.betaEndpoint')
+    try {
+        return s.readDevSetting('aws.dev.mde.betaEndpoint')
+    } catch (err) {
+        // temporary code
+        vscode.window.showErrorMessage('MDE beta endpoint not set')
+        return ''
+    }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -109,6 +116,11 @@ export class MdeClient {
         args: mde.StartEnvironmentRequest
     ): Promise<mde.StartEnvironmentResponse | undefined> {
         const r = await this.call(this.sdkClient.startEnvironment(args))
+        return r
+    }
+
+    public async stopEnvironment(args: mde.StopEnvironmentRequest): Promise<mde.StopEnvironmentResponse | undefined> {
+        const r = await this.call(this.sdkClient.stopEnvironment(args))
         return r
     }
 

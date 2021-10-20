@@ -1,5 +1,5 @@
 <template>
-    <div class="button-container">
+    <div class="button-container mt-0">
         <input
             class="radio"
             type="radio"
@@ -56,25 +56,22 @@
 import { IAM } from 'aws-sdk'
 import { WebviewApi } from 'vscode-webview'
 import { defineComponent } from 'vue'
+import { createClass } from '../../webviews/util'
 
-declare const webviewApi: WebviewApi<VueModel>
+declare const webviewApi: WebviewApi<typeof VueModel>
 
-class VueModel {
-    public roles!: IAM.Role[]
-    public roleMode!: 'new-role' | 'select-role'
-    public selectedRoleName?: string
-}
+export const VueModel = createClass({
+    roles: [] as IAM.Role[],
+    roleMode: 'new-role' as 'new-role' | 'select-role',
+    selectedRoleName: '',
+})
 
 export default defineComponent({
     name: 'definition-file',
     props: {
         modelValue: {
             type: VueModel,
-            default: {
-                roles: [],
-                roleMode: 'new-role',
-                selectedRoleName: '',
-            },
+            default: new VueModel(),
         },
     },
     methods: {
@@ -83,13 +80,13 @@ export default defineComponent({
         },
     },
 })
-// --vscode-editor-font-family
-// --vscode-editor-font-weight
-// --vscode-editor-font-size
-// https://code.visualstudio.com/api/extension-guides/webview#theming-webview-content
 </script>
 
-<style>
+<style scoped>
+.config-item {
+    display: inline;
+    margin-left: 8px;
+}
 body.vscode-dark .config-item[data-disabled='true'] {
     filter: brightness(0.8);
 }

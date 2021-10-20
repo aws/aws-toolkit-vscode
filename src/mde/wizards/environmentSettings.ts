@@ -45,18 +45,22 @@ export function getInstanceDescription(type: InstanceType): InstanceDescription 
     const desc = environmentOptions.instanceType[type]
 
     return {
-        name: capitalize(type.slice(4)),
-        specs: `${desc.vcpus} vCPUs, ${desc.ram.value}${abbreviateUnit(desc.ram.unit)} RAM`,
+        name: capitalize(type.split('.').pop()!),
+        specs: `${desc.vcpus} vCPUs, ${desc.ram.value}${abbreviateUnit(desc.ram.unit)} RAM, 64 GiB ephemeral storage`,
     }
 }
 
+export function getAllInstanceDescriptions(): { [key: string]: InstanceDescription } {
+    const desc: { [key: string]: InstanceDescription } = {}
+    entries(environmentOptions.instanceType).forEach(([k]) => (desc[k] = getInstanceDescription(k)))
+    return desc
+}
+
 function createInstancePrompt(): QuickPickPrompter<InstanceType> {
-    const items = entries(environmentOptions.instanceType)
-        .filter(([name]) => !name.startsWith('dev'))
-        .map(([name, desc]) => ({
-            data: name,
-            label: `${getInstanceDescription(name).name} (${getInstanceDescription(name).specs})`,
-        }))
+    const items = entries(environmentOptions.instanceType).map(([name, desc]) => ({
+        data: name,
+        label: `${getInstanceDescription(name).name} (${getInstanceDescription(name).specs})`,
+    }))
 
     return createQuickPick(items, {
         title: 'Compute Size',
@@ -67,6 +71,7 @@ function createTimeoutPrompt(): Prompter<number> {
     return createInputBox({
         title: 'Timeout Length',
         placeholder: 'Timeout length in minutes',
+        validateInput: resp => (Number.isNaN(Number(resp)) ? 'Timeout must be a number' : undefined),
     }).transform(r => Number(r))
 }
 
@@ -122,7 +127,7 @@ function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm) {
         detail: `${currentState.inactivityTimeoutMinutes} minutes`,
         data: async () => {
             const prompter = createTimeoutPrompt()
-            prompter.recentItem = currentState.inactivityTimeoutMinutes
+            prompter.recentItem = currentState.inactivityTimeoutMinutes.toString()
             const result = await prompter.prompt()
 
             if (isValidResponse(result)) {
@@ -161,14 +166,13 @@ function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm) {
 
     return createQuickPick<SettingsForm | DataQuickPickItem<any>>([saveItem, ...items], {
         title: 'Environment Settings',
+        recentItemText: false,
     })
 }
 
-export type SettingsForm = Pick<
-    mde.CreateEnvironmentRequest,
-    'inactivityTimeoutMinutes' | 'instanceType' | 'persistentStorage'
-> & {
+export type SettingsForm = Pick<mde.CreateEnvironmentRequest, 'instanceType' | 'persistentStorage'> & {
     instanceType: InstanceType
+    inactivityTimeoutMinutes: number
 }
 
 // TODO: don't extend wizard, just make a separate class

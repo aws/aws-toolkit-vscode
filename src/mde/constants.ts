@@ -8,6 +8,6 @@ import { SettingsForm } from './wizards/environmentSettings'
 // these need to be separate otherwise many node files will get bundled into the Vue build
 export const DEFAULT_COMPUTE_SETTINGS: SettingsForm & { inactivityTimeoutMinutes: number } = {
     inactivityTimeoutMinutes: 30,
-    instanceType: 'mde.medium',
-    persistentStorage: { sizeInGiB: 0 },
+    instanceType: 'dev.standard1.medium',
+    persistentStorage: { sizeInGiB: 16 },
 }

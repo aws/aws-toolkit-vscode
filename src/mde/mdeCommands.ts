@@ -7,7 +7,6 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import * as mde from '../shared/clients/mdeClient'
 import * as nls from 'vscode-nls'
-import * as arnparse from '@aws-sdk/util-arn-parser'
 import { ext } from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
@@ -18,13 +17,10 @@ import { MdeRootNode } from './mdeRootNode'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { Timeout, waitTimeout, waitUntil } from '../shared/utilities/timeoutUtils'
 import { execFileSync } from 'child_process'
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { CreateEnvironmentRequest } from '../../types/clientmde'
-import { createInputBox } from '../shared/ui/inputPrompter'
-import { createCommonButtons } from '../shared/ui/buttons'
-import { invalidArn } from '../shared/localizedText'
-import { isValidResponse } from '../shared/wizards/wizard'
 import { SystemUtilities } from '../shared/systemUtilities'
+import { createMdeWebview } from './vue/create/backend'
 
 const localize = nls.loadMessageBundle()
 
@@ -42,7 +38,7 @@ export async function startMde(
     mdeClient: mde.MdeClient
 ): Promise<mde.MdeEnvironment | undefined> {
     // hard-coded timeout for now
-    const TIMEOUT_LENGTH = 120000
+    const TIMEOUT_LENGTH = 300000
 
     const timeout = new Timeout(TIMEOUT_LENGTH)
     const progress = await showMessageWithCancel(localize('AWS.mde.startMde.message', 'MDE'), timeout)
@@ -66,7 +62,10 @@ export async function startMde(
                 })
             }
 
-            return resp?.status === 'RUNNING' ? resp : undefined
+            return resp?.status === 'RUNNING' &&
+                (resp?.actions?.devfile?.status === 'RUNNING' || resp?.actions?.devfile?.message !== undefined)
+                ? resp
+                : undefined
         },
         { interval: 5000, timeout: TIMEOUT_LENGTH, truthy: true }
     )
@@ -215,7 +214,8 @@ export async function mdeCreateCommand(
     node?: MdeRootNode,
     // this is just partial for now for testing
     // it should instead be pass-through to the create API
-    options?: Partial<CreateEnvironmentRequest>,
+    options?: Partial<CreateEnvironmentRequest> & { repo?: string },
+    ctx?: ExtContext,
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<mde.MdeEnvironment | undefined> {
@@ -228,24 +228,16 @@ export async function mdeCreateCommand(
     getLogger().debug('MDE: mdeCreateCommand called on node: %O', node)
     const label = `created-${dateStr}`
 
-    const inputbox = createInputBox({
-        value: '',
-        placeholder: 'arn:aws:iam::541201481031:role/test-mde-1',
-        title: localize('AWS.mde.inputRole', 'Enter a role ARN'),
-        buttons: createCommonButtons(),
-        validateInput: s => (arnparse.validate(s) ? undefined : invalidArn),
-    })
-    const roleArn = (await inputbox.prompt())?.toString()
-    if (!isValidResponse(roleArn)) {
-        return
-    }
+    const response = await createMdeWebview(ctx!)
+    const repo = response?.sourceCode
+    // We will always perform the clone
+    delete response?.sourceCode
 
     try {
-        const env = ext.mde.createEnvironment({
+        const env = await ext.mde.createEnvironment({
             instanceType: 'dev.standard1.large',
             // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
             persistentStorage: { sizeInGiB: 0 },
-            roleArn: roleArn,
             // sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
             // definition: {
             //     shellImage: `"{"\"shellImage\"": "\"mcr.microsoft.com/vscode/devcontainers/go\""}"`,
@@ -256,9 +248,20 @@ export async function mdeCreateCommand(
             // instanceType: ...  // TODO?
             // ideRuntimes: ...  // TODO?
             ...options,
+            ...response,
         })
 
         getLogger().info('MDE: created environment: %O', env)
+
+        // Clone repo to MDE
+        // TODO: show notification while cloning?
+        if (options?.start !== false && repo?.[0] && env?.id) {
+            const mde = await startMde(env, ext.mde)
+            if (!mde) {
+                return
+            }
+            await cloneToMde(mde, vscode.Uri.parse(repo[0].uri, true))
+        }
 
         // TODO: MDE telemetry
         // recordEcrCreateRepository({ result: 'Succeeded' })

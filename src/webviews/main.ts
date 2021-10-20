@@ -5,34 +5,30 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { ExtContext } from '../shared/extensions'
 import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
+import { Commands, registerWebviewServer } from './server'
 
-interface WebviewParams<TRequest, TResponse> {
+interface WebviewParams<T, U> {
     id: string
     name: string
     webviewJs: string
-    context: vscode.ExtensionContext
-    /** Initial calls are posted whenever the webview is regenerated (e.g. the webview was moved to another panel) */
-    initialCalls?: TResponse[]
-    persistSessions?: boolean
+    context: ExtContext
     persistWithoutFocus?: boolean
     cssFiles?: string[]
     jsFiles?: string[]
     libFiles?: string[]
-    onDidReceiveMessageFunction(
-        request: TRequest,
-        postMessageFn: (response: TResponse) => Thenable<boolean>,
-        destroyWebviewFn: () => any
-    ): void
-    onDidDisposeFunction?(): void
+    onSubmit?: (result?: U) => void
+    commands?: Commands<T, U>
 }
 
-export async function createVueWebview<TRequest, TResponse>(params: WebviewParams<TRequest, TResponse>) {
-    const libsPath: string = path.join(params.context.extensionPath, 'media', 'libs')
-    const jsPath: string = path.join(params.context.extensionPath, 'media', 'js')
-    const cssPath: string = path.join(params.context.extensionPath, 'media', 'css')
-    const webviewPath: string = path.join(params.context.extensionPath, 'dist')
-    const resourcesPath: string = path.join(params.context.extensionPath, 'resources')
+export async function createVueWebview<T, U = void>(params: WebviewParams<T, U>): Promise<vscode.WebviewPanel> {
+    const context = params.context.extensionContext
+    const libsPath: string = path.join(context.extensionPath, 'media', 'libs')
+    const jsPath: string = path.join(context.extensionPath, 'media', 'js')
+    const cssPath: string = path.join(context.extensionPath, 'media', 'css')
+    const webviewPath: string = path.join(context.extensionPath, 'dist')
+    const resourcesPath: string = path.join(context.extensionPath, 'resources')
 
     const view = vscode.window.createWebviewPanel(
         params.id,
@@ -79,10 +75,52 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
         stylesheets = stylesheets.concat(`<link rel="stylesheet" href="${element}">\n\n`)
     })
 
-    const mainScript: vscode.Uri = view.webview.asWebviewUri(vscode.Uri.file(path.join(webviewPath, params.webviewJs)))
+    const mainScript = view.webview.asWebviewUri(vscode.Uri.file(path.join(webviewPath, params.webviewJs)))
 
     view.title = params.name
-    view.webview.html = `<html>
+    view.webview.html = resolveWebviewHtml({
+        scripts,
+        stylesheets,
+        main: mainScript,
+        webviewJs: params.webviewJs,
+        cspSource: view.webview.cspSource,
+    })
+
+    if (params.commands) {
+        const submitCb = params.commands.submit
+        params.commands.submit = async result => {
+            await submitCb?.(result)
+            params.onSubmit?.(result)
+            view.dispose()
+        }
+        const modifiedWebview = Object.assign(view.webview, { dispose: () => view.dispose(), context: params.context })
+        registerWebviewServer(modifiedWebview, params.commands)
+    }
+
+    return view
+}
+
+/**
+ * Resolves the webview HTML based off whether we're running from a development server or bundled extension.
+ */
+function resolveWebviewHtml(params: {
+    scripts: string
+    stylesheets: string
+    cspSource: string
+    webviewJs: string
+    main: vscode.Uri
+}): string {
+    const resolvedParams = { ...params, connectSource: 'none' }
+    const LOCAL_SERVER = process.env.WEBPACK_DEVELOPER_SERVER
+
+    if (LOCAL_SERVER) {
+        const local = vscode.Uri.parse(LOCAL_SERVER)
+        resolvedParams.cspSource = `${params.cspSource} ${local.toString()}`
+        resolvedParams.main = local.with({ path: `/${params.webviewJs}` })
+        resolvedParams.connectSource = `'self' ws:`
+    }
+
+    return `<html>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -91,50 +129,20 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
             http-equiv="Content-Security-Policy"
             content=
                 "default-src 'none';
-                img-src ${view.webview.cspSource} https:;
-                script-src ${view.webview.cspSource};
-                style-src ${view.webview.cspSource} 'unsafe-inline';
+                connect-src ${resolvedParams.connectSource};
+                img-src ${resolvedParams.cspSource} https:;
+                script-src ${resolvedParams.cspSource};
+                style-src ${resolvedParams.cspSource} 'unsafe-inline';
                 font-src 'self' data:;"
         >
     </head>
     <body>
         <div id="vue-app"></div>
         <!-- Dependencies -->
-        ${scripts}
-        ${stylesheets}
+        ${resolvedParams.scripts}
+        ${resolvedParams.stylesheets}
         <!-- Main -->
-        <script src="${mainScript}"></script>
+        <script src="${resolvedParams.main}"></script>
     </body>
 </html>`
-
-    if (params.initialCalls) {
-        view.webview.onDidReceiveMessage((message: any) => {
-            if (message.command === 'initialized') {
-                for (const call of params.initialCalls!) view.webview.postMessage(call)
-            }
-        })
-    }
-
-    view.webview.onDidReceiveMessage(
-        // type the any if necessary
-        (message: any) => {
-            params.onDidReceiveMessageFunction(
-                message,
-                response => view.webview.postMessage(response),
-                () => view.dispose()
-            )
-        },
-        undefined,
-        params.context.subscriptions
-    )
-
-    view.onDidDispose(
-        () => {
-            if (params.onDidDisposeFunction) {
-                params.onDidDisposeFunction()
-            }
-        },
-        undefined,
-        params.context.subscriptions
-    )
 }

@@ -9,7 +9,7 @@ const MDE_URI_PATH = '/remote' as const
 import { EnvironmentId } from '../../types/clientmde'
 import * as vscode from 'vscode'
 import { ParsedUrlQuery } from 'querystring'
-import { cloneToMde, mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
+import { mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
 import { UriHandler } from '../shared/vscode/uriHandler'
 import { MdeClient, mdeEndpoint, MDE_REGION } from '../shared/clients/mdeClient'
 
@@ -45,7 +45,7 @@ export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
     const region = 'us-west-2'
     const mdeClient = await MdeClient.create(region, mdeEndpoint())
     if (params.id === undefined) {
-        const newMde = await mdeCreateCommand(undefined)
+        const newMde = await mdeCreateCommand(undefined, { repo: params.cloneUrl?.toString() })
         // mde create command swallows the exception
         if (newMde === undefined) {
             return
@@ -57,12 +57,6 @@ export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
 
     if (mde === undefined) {
         return
-    }
-
-    // Clone repo to MDE
-    // TODO: show notification while cloning?
-    if (params.cloneUrl) {
-        await cloneToMde(mde, params.cloneUrl)
     }
 
     return mdeConnectCommand(mde, MDE_REGION)

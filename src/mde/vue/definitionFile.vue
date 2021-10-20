@@ -1,135 +1,129 @@
 <template>
-    <div class="button-container">
+    <label class="option-label" for="devfile-url" v-if="environment === 'local'">
+        <div class="mb-0">Devfile URL:</div>
+    </label>
+    <p v-else>
+        You can use the IDE to edit the Devfile for your environment, which needs to be restarted to apply changes. To
+        designate another file as your environment's Devfile, right-click the file and choose
+        <b>Make Devfile for environment</b> from the menu. <a>Learn more about Devfiles.</a>
+    </p>
+    <div id="definition-file-grid">
         <input
-            class="radio"
-            type="radio"
-            name="mode"
-            id="definition-template"
-            v-model="modelValue.mode"
-            value="template"
-            @input="update('mode', $event.target.value)"
+            id="devfile-url"
+            name="devfile-url"
+            type="text"
+            style="grid-area: input"
+            v-model="modelValue.url"
+            :data-invalid="!!urlError"
+            placeholder="ex: https://registry.devfile.io/devfiles/go"
+            @input="updateModel"
         />
-        <div class="config-item" :data-disabled="modelValue.mode === 'repository'">
-            <label class="option-label" for="definition-template">
-                <div class="mb-2">Use a definition file template</div>
-                <span class="soft">
-                    Choose from the many templates in the DevFile public registry. This file can be edited in your IDE
-                    after creation.
-                </span>
-            </label>
-            <select
-                name="template-selector"
-                v-model="modelValue.definitionFile"
-                :disabled="modelValue.mode === 'repository'"
-                required
-                @input="update('definitionFile', $event.target.value)"
-            >
-                <option disabled selected value="">Choose a template...</option>
-                <option v-for="(template, index) in modelValue.templates" v-bind:value="template.name" :key="index">
-                    {{ template.name }}
-                </option>
-            </select>
-        </div>
+        <p class="input-validation mt-0 mb-0" style="grid-area: error" v-if="urlError">
+            {{ urlError }}
+        </p>
+        <button
+            id="preview-devfile"
+            class="button-theme-secondary no-wrap ml-16"
+            type="button"
+            style="grid-area: button"
+            @click="preview"
+        >
+            {{ environment === 'local' ? 'Preview file' : 'Open in editor' }}
+        </button>
     </div>
-
-    <div class="button-container">
-        <input
-            class="radio"
-            type="radio"
-            name="mode"
-            id="repository"
-            v-model="modelValue.mode"
-            value="repository"
-            @input="update('mode', $event.target.value)"
-        />
-        <div class="config-item" :data-disabled="modelValue.mode === 'template'">
-            <label class="option-label" for="repository">
-                <div class="mb-2">Clone repository with a custom defintion file</div>
-                <span class="soft">
-                    We'll attempt to automatically detect a definition file from your selected repository.
-                </span>
-            </label>
-            <label class="label-context soft" for="repository-url">GitHub repository URL:</label>
-            <input
-                id="repository-url"
-                name="repository-url"
-                type="text"
-                v-model="modelValue.repositoryUrl"
-                :disabled="modelValue.mode === 'template'"
-                placeholder="ex: https://github.com/repo-name"
-                @input="update('repositoryUrl', $event.target.value)"
-            />
-        </div>
+    <div class="mt-16">
+        <a> Browse and choose another Devfile </a>
+        <br />
+        <span class="label-context soft"> Copy the Devfile page URL into the field above to update. </span>
     </div>
 </template>
 
 <script lang="ts">
 import { WebviewApi } from 'vscode-webview'
-import { defineComponent } from 'vue'
-import { DefinitionTemplate } from './backend'
+import { defineComponent, PropType } from 'vue'
+import { WebviewClientFactory } from '../../webviews/client'
+import { createClass } from '../../webviews/util'
+import { Commands } from './create/backend'
 
-declare const webviewApi: WebviewApi<VueModel>
+declare const webviewApi: WebviewApi<typeof VueModel>
+const client = WebviewClientFactory.create<Commands>()
 
-class VueModel {
-    public templates!: DefinitionTemplate[]
-    public mode!: 'template' | 'repository'
-    public definitionFile!: string
-    public repositoryUrl!: string
-}
+const PUBLIC_REGISTRY_URL = 'https://registry.devfile.io'
+const VALID_SCHEMES = ['https://', 'http://', 'ssh://']
+
+export const VueModel = createClass({
+    url: '',
+    urlError: '',
+    mode: 'registry' as 'registry' | 'repository' | 'path',
+})
+
+// TODO: write directive to bind one tag's width to another
 
 export default defineComponent({
     name: 'definition-file',
     props: {
         modelValue: {
             type: VueModel,
-            default: {
-                mode: 'template',
-                templates: [],
-                definitionFile: '',
-                repositoryUrl: '',
-            },
+            default: new VueModel(),
+        },
+        environment: {
+            type: String as PropType<'local' | 'remote'>,
+            default: 'local',
+        },
+    },
+    computed: {
+        url() {
+            return this.modelValue.url
+        },
+        mode() {
+            return this.url.startsWith(PUBLIC_REGISTRY_URL) ? 'registry' : 'repository'
+        },
+        urlError() {
+            const schemes = this.environment === 'remote' ? VALID_SCHEMES.concat('file://') : VALID_SCHEMES
+
+            if (!this.url || (this.environment === 'remote' && this.url.startsWith('/'))) {
+                return ''
+            }
+
+            if (!schemes.some(scheme => this.url.startsWith(scheme))) {
+                return `URL must use one of the following schemes: ${schemes.join(', ')}`
+            }
+
+            return ''
         },
     },
     methods: {
-        update(key: string, value: string) {
-            this.$emit('update:modelValue', { ...this.modelValue, [key]: value })
+        updateModel(event: Event) {
+            const target = event.target as HTMLInputElement | undefined
+            if (!target) {
+                return
+            }
+            this.$emit('update:modelValue', {
+                url: this.url,
+                mode: this.mode,
+                urlError: this.urlError,
+            })
+        },
+        preview() {
+            if (this.mode !== 'registry' || this.urlError) {
+                return
+            }
+            client.openUrl(this.url)
         },
     },
 })
-// --vscode-editor-font-family
-// --vscode-editor-font-weight
-// --vscode-editor-font-size
-// https://code.visualstudio.com/api/extension-guides/webview#theming-webview-content
 </script>
 
-<style>
-.settings-panel {
-    /* https://code.visualstudio.com/api/references/theme-color#menu-bar-colors */
-    background: var(--vscode-menu-background);
-    margin: 16px 0;
+<style scoped>
+#definition-file-grid {
+    display: grid;
+    justify-content: left;
+    grid-template-areas:
+        'input button'
+        'error .';
+    grid-template-columns: minmax(auto, 400px) auto;
 }
-.label-context {
-    display: block;
-    padding: 0 0 4px 0;
-}
-.option-label {
-    display: block;
-    max-width: 560px;
-    padding: 0 0 8px 0;
-}
-.button-container {
-    display: flex;
-    align-items: flex-start;
-    flex-direction: row;
-    margin: 16px 0 0 0;
-}
-.config-item {
-    display: inline;
-    margin-left: 8px;
-    /* margin-top: 2px */
-}
-#repository-url {
-    width: 80%;
-    max-width: 320px;
+#devfile-url {
+    max-height: 32px;
 }
 </style>

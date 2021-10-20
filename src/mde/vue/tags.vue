@@ -7,7 +7,7 @@
         </p>
         <div class="tags-container" v-for="(tag, index) in tags" :key="index">
             <div class="tag-grid">
-                <div class="input-grid-container">
+                <div class="display-contents">
                     <label class="label-context soft" v-if="index === 0">Key</label>
                     <div v-else style="height: 1px"></div>
                     <input
@@ -15,16 +15,15 @@
                         class="label-input"
                         type="text"
                         :id="`tag-key-input-${index}`"
-                        :data-invalid="tag.keyError !== undefined"
+                        :data-invalid="!!tag.keyError"
                         @keyup="validateTag(index)"
-                        @keydown="updateMap(index)"
                     />
-                    <p class="input-validation tag-error-offset" v-if="tag.keyError !== undefined">
+                    <p class="input-validation tag-error-offset" v-if="tag.keyError">
                         {{ tag.keyError }}
                     </p>
-                    <div v-if="tag.keyError === undefined" style="height: 1px"></div>
+                    <div v-else style="height: 1px"></div>
                 </div>
-                <div class="input-grid-container">
+                <div class="display-contents">
                     <label class="label-context soft" v-if="index === 0">Value - optional</label>
                     <div v-else style="height: 1px"></div>
                     <input
@@ -32,10 +31,10 @@
                         class="label-input"
                         type="text"
                         :id="`tag-value-input-${index}`"
-                        :data-invalid="tag.valueError !== undefined"
+                        :data-invalid="!!tag.valueError"
                         @keyup="validateTag(index)"
                     />
-                    <p class="input-validation tag-error-offset" v-if="tag.valueError !== undefined">
+                    <p class="input-validation tag-error-offset" v-if="tag.valueError">
                         {{ tag.valueError }}
                     </p>
                     <div v-else style="height: 1px"></div>
@@ -73,7 +72,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, watchEffect } from 'vue'
+import { createClass } from '../../webviews/util'
 
 const MAX_TAGS = 50
 const MAX_KEY_LENGTH = 128
@@ -87,9 +87,12 @@ export interface TagWithErrors {
     valueError?: string
 }
 
-class VueModel {
-    public tags!: TagWithErrors[]
-}
+// TODO: add a preview mode?
+// for now the config panel will be 1:1 with the create
+// they're functionally equivalent, it's just a 'style' thing
+export const VueModel = createClass({
+    tags: [] as TagWithErrors[],
+})
 
 function matchInvalid(s: string, regex: RegExp): string | undefined {
     const matches = s.match(regex)
@@ -101,7 +104,7 @@ function matchInvalid(s: string, regex: RegExp): string | undefined {
 }
 
 // TODO: share these somehow (probably just build them into both packs)
-function validateKey(key: string, tagMap: Map<string, Set<TagWithErrors>>): string | undefined {
+function validateKey(key: string, tagMap: Set<string>): string | undefined {
     if (!key) {
         return 'Key cannot be empty'
     }
@@ -111,7 +114,7 @@ function validateKey(key: string, tagMap: Map<string, Set<TagWithErrors>>): stri
     if (key.startsWith('aws:')) {
         return "Key cannot start with 'aws:'"
     }
-    if (tagMap.get(key) !== undefined && tagMap.get(key)!.size > 1) {
+    if (tagMap.has(key)) {
         return `Key name "${key}" already exists`
     }
     return matchInvalid(key, INVALID_CHARACTER_REGEX)
@@ -127,63 +130,58 @@ function validateValue(value: string): string | undefined {
 export default defineComponent({
     name: 'tags-panel',
     props: {
-        modelValue: VueModel,
+        modelValue: {
+            type: VueModel,
+            default: new VueModel(),
+        },
     },
     data() {
-        return {
-            tags: this.modelValue?.tags ?? [],
-            tagSet: new Map<string, Set<TagWithErrors>>(),
-            maxTags: MAX_TAGS,
-        }
+        return { maxTags: MAX_TAGS }
     },
     methods: {
         update(key: string, value: any) {
             this.$emit('update:modelValue', { ...this.modelValue, [key]: value })
         },
         removeTag(index: number) {
-            this.updateMap(index)
             this.tags.splice(index, 1)
             this.update('tags', this.tags)
         },
+        watchTag(tag: TagWithErrors) {
+            watchEffect(() => !this.duplicates.has(tag.key) && (tag.keyError = validateKey(tag.key, this.duplicates)))
+        },
         addTag() {
-            const key = `new-label-${this.tags.length + 1}`
-            this.tags.push({ key, value: '' })
+            this.tags.push({ key: `new-label-${this.tags.length + 1}`, value: '' })
+            this.watchTag(this.tags[this.tags.length - 1])
             this.validateTag(this.tags.length - 1)
             this.update('tags', this.tags)
         },
-        updateMap(index: number) {
-            const tag = this.tags[index]
-            const set = this.tagSet.get(tag.key)
-            if (!set) {
-                return
-            }
-            // TODO: just use unique IDs generated per tag...
-            set.delete(tag)
-            if (set.size === 1) {
-                const first = Array.from(set.values()).pop()!
-                first.keyError = validateKey(first.key, this.tagSet)
-            }
-        },
         validateTag(index: number) {
             const tag = this.tags[index]
-            this.tagSet.set(tag.key, (this.tagSet.get(tag.key) ?? new Set()).add(tag))
-            tag.keyError = validateKey(tag.key, this.tagSet)
+            tag.keyError = validateKey(tag.key, this.duplicates)
             tag.valueError = validateValue(tag.value)
             this.update('tags', this.tags)
         },
     },
     computed: {
+        tags() {
+            this.modelValue.tags.forEach(t => this.watchTag(t))
+            return this.modelValue.tags
+        },
         labels() {
             return this.tags.filter(t => t.value === '' && t.key !== '')
+        },
+        duplicates() {
+            const seen = new Set<string>()
+            const dupes = new Set<string>()
+            // tags can be undefined on init throwing an error. In production builds this is ok, but in dev this will break Vue
+            this.tags?.forEach(({ key }) => (seen.has(key) ? dupes.add(key) : seen.add(key)))
+            return dupes
         },
     },
 })
 </script>
 
-<style>
-.inline-block {
-    display: inline-block;
-}
+<style scoped>
 .label-input {
     margin: 0 8px 8px 0;
 }
@@ -220,9 +218,6 @@ body.vscode-light .remove-label {
     grid-template-columns: 45% 45% auto;
     grid-template-rows: auto auto auto;
     grid-auto-flow: column;
-}
-.input-grid-container {
-    display: contents;
 }
 .tags-container {
     max-width: max(731px, 80%);

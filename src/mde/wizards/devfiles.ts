@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as GitTypes from '../../../types/git.d'
+import * as GitTypes from '../../../types/git'
 import { GitExtension } from '../../shared/extensions/git'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { createBackButton } from '../../shared/ui/buttons'
@@ -25,9 +25,9 @@ type RemoteWithBranch = Omit<GitTypes.Remote, 'isReadOnly'> & {
     branch?: string
 }
 
-const PUBLIC_REGISTRY_URI = vscode.Uri.parse('https://registry.devfile.io')
+export const PUBLIC_REGISTRY_URI = vscode.Uri.parse('https://registry.devfile.io')
 
-async function getDevFiles(remote: RemoteWithBranch): Promise<string[]> {
+export async function getDevFiles(remote: RemoteWithBranch): Promise<string[]> {
     const git = GitExtension.instance
     const result = await git.listAllRemoteFiles(remote)
 
@@ -37,7 +37,7 @@ async function getDevFiles(remote: RemoteWithBranch): Promise<string[]> {
     return devFiles
 }
 
-export async function getRegistryDevFiles(registry: vscode.Uri): Promise<string[]> {
+export async function getRegistryDevFiles(registry: vscode.Uri = PUBLIC_REGISTRY_URI): Promise<string[]> {
     const index = await new HttpResourceFetcher(registry.with({ path: 'index' }).toString(), { showUrl: true }).get()
 
     if (index === undefined) {
@@ -47,19 +47,22 @@ export async function getRegistryDevFiles(registry: vscode.Uri): Promise<string[
     return Array.from(JSON.parse(index)).map(f => (f as any).name)
 }
 
-export async function promptDevFiles(remote?: RemoteWithBranch): Promise<DevfileConfiguration | undefined> {
+export async function promptDevFiles(
+    remote?: RemoteWithBranch,
+    noTemplate?: boolean
+): Promise<DevfileConfiguration | undefined> {
     // TODO: add an option to 'prompter' to auto-return when there's only one option
     // may need to add a small amount of logic to the wizard flow to remove the prompt from the step-count
 
     // fill with options from the public registry
 
-    const options: DataQuickPickItem<DevfileConfiguration>[] = (await getRegistryDevFiles(PUBLIC_REGISTRY_URI)).map(
-        name => ({
-            label: name,
-            description: PUBLIC_REGISTRY_URI.toString(),
-            data: { uri: { uri: PUBLIC_REGISTRY_URI.with({ path: `devfiles/${name}` }).toString() } },
-        })
-    )
+    const options: DataQuickPickItem<DevfileConfiguration>[] = noTemplate
+        ? []
+        : (await getRegistryDevFiles()).map(name => ({
+              label: name,
+              description: PUBLIC_REGISTRY_URI.toString(),
+              data: { uri: { uri: PUBLIC_REGISTRY_URI.with({ path: `devfiles/${name}` }).toString() } },
+          }))
 
     if (remote) {
         const remoteFiles = await getDevFiles(remote).catch(err => {

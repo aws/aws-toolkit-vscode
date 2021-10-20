@@ -9,6 +9,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
+// TODO: this component is not being used at all, though I think it would be worth investing time into it
 // TODO: just make this component have an input box + error box self-contained w/ relevant validation callbacks
 // it can also emit 'error' events and what not
 

@@ -79,6 +79,7 @@ import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsPr
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import { UriHandler } from './shared/vscode/uriHandler'
+import { GitExtension } from './shared/extensions/git'
 
 let localize: nls.LocalizeFunc
 
@@ -139,6 +140,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // temporary, move to activation later (if we even need it)
         ext.awsContext.onDidChangeContext(ctx => ext.mde.onCredentialsChanged(ctx.cawsUsername))
+
+        // TODO: wait until git extension fully activates
+        GitExtension.instance
 
         await initializeCredentials({
             extensionContext: context,

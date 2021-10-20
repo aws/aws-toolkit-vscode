@@ -4,6 +4,6 @@
  */
 
 import { createApp } from 'vue'
-import component from './parent.vue'
+import component from './root.vue'
 const app = createApp(component)
 app.mount('#vue-app')
