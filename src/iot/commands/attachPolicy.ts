@@ -51,14 +51,13 @@ export async function attachPolicyCommand(
         }
     } while (nextToken != undefined)
 
-    //const policies = (await node.iot.listPolicies({})).policies
-    const policyItems: DataQuickPickItem<IotPolicy | undefined>[] = policies.map(policy => {
+    const policyItems: DataQuickPickItem<IotPolicy>[] = policies.map(policy => {
         return {
             label: policy.name,
             data: policy,
         }
     })
-    const placeHolder: DataQuickPickItem<IotPolicy | undefined> = {
+    const placeHolder: DataQuickPickItem<IotPolicy> = {
         label: 'No policies found',
         data: undefined,
     }
@@ -74,7 +73,7 @@ export async function attachPolicyCommand(
         return undefined
     }
     getLogger().info('Picker returned: %O', result)
-    const policy = result as IotPolicy
+    const policy = result
     try {
         await node.iot.attachPolicy({ policyName: policy.name, target: certArn })
     } catch (e) {

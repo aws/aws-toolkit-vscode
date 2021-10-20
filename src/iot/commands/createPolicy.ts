@@ -58,7 +58,6 @@ export async function promptForPolicyLocation(window: Window): Promise<vscode.Ur
         canSelectFiles: true,
         canSelectMany: false,
         filters: { JSON: ['json'] },
-        defaultUri: vscode.window.activeTextEditor?.document.uri,
     })
 
     if (!fileLocation || fileLocation.length == 0) {
