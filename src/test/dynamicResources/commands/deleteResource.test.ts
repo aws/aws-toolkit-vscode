@@ -72,4 +72,18 @@ describe('deleteResource', function () {
 
         assert.ok(window.message.error?.startsWith(`Failed to delete resource ${FAKE_IDENTIFIER} (${FAKE_TYPE})`))
     })
+
+    it('shows a warning if unsupported action', async function () {
+        sandbox.stub(cloudControl, 'deleteResource').callsFake(async () => {
+            const error = new Error('fake exception')
+            error.name = 'UnsupportedActionException'
+            throw error
+        })
+
+        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
+
+        await deleteResource(cloudControl, FAKE_TYPE, FAKE_IDENTIFIER, window)
+
+        assert.ok(window.message.warning?.startsWith(`Resource type ${FAKE_TYPE} does not currently support delete`))
+    })
 })
