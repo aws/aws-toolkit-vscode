@@ -97,13 +97,28 @@ export async function createResource(
                 return identifier
             } catch (e) {
                 const error = e as Error
-                result = 'Failed'
-                getLogger().error(`Failed to create resource type ${typeName}: %O`, error.message)
-                showViewLogsMessage(
-                    localize('aws.resources.createResource.failure', 'Failed to create resource ({0})', typeName),
-                    window
-                )
-                throw e
+                if (error.name === 'UnsupportedActionException') {
+                    result = 'Cancelled'
+                    getLogger().warn(
+                        `Resource type ${typeName} does not support CREATE action in ${cloudControl.regionCode}`
+                    )
+                    window.showWarningMessage(
+                        localize(
+                            'aws.resources.createResource.unsupported',
+                            '{0} does not currently support resource creation in {1}',
+                            typeName,
+                            cloudControl.regionCode
+                        )
+                    )
+                } else {
+                    result = 'Failed'
+                    getLogger().error(`Failed to create resource type ${typeName}: %O`, error.message)
+                    showViewLogsMessage(
+                        localize('aws.resources.createResource.failure', 'Failed to create resource ({0})', typeName),
+                        window
+                    )
+                    throw e
+                }
             } finally {
                 recordDynamicresourceMutateResource({
                     dynamicResourceOperation: 'Create',
@@ -169,21 +184,37 @@ export async function updateResource(
                 return true
             } catch (e) {
                 const error = e as Error
-                result = 'Failed'
-                getLogger().error(
-                    `Failed to update resource type ${typeName} identifier ${identifier}: %O`,
-                    error.message
-                )
-                showViewLogsMessage(
-                    localize(
-                        'aws.resources.updateResource.failure',
-                        'Failed to update resource {0} ({1})',
-                        identifier,
-                        typeName
-                    ),
-                    window
-                )
-                throw e
+                if (error.name === 'UnsupportedActionException') {
+                    result = 'Cancelled'
+                    getLogger().warn(
+                        `Resource type ${typeName} does not support UPDATE action in ${cloudControl.regionCode}`
+                    )
+                    window.showWarningMessage(
+                        localize(
+                            'aws.resources.createResource.unsupported',
+                            '{0} does not currently support resource updating in {1}',
+                            typeName,
+                            cloudControl.regionCode
+                        )
+                    )
+                    return false
+                } else {
+                    result = 'Failed'
+                    getLogger().error(
+                        `Failed to update resource type ${typeName} identifier ${identifier}: %O`,
+                        error.message
+                    )
+                    showViewLogsMessage(
+                        localize(
+                            'aws.resources.updateResource.failure',
+                            'Failed to update resource {0} ({1})',
+                            identifier,
+                            typeName
+                        ),
+                        window
+                    )
+                    throw e
+                }
             } finally {
                 recordDynamicresourceMutateResource({
                     dynamicResourceOperation: 'Update',
