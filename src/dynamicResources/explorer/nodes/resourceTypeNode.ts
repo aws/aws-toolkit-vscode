@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { ext } from '../../../shared/extensionGlobals'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { getLogger } from '../../../shared/logger'
@@ -98,26 +99,38 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
 
     private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<ResourceNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
-        const response = await this.cloudControl.listResources({
-            TypeName: this.typeName,
-            NextToken: continuationToken,
-        })
 
-        const newResources = response.ResourceDescriptions
-            ? response.ResourceDescriptions.reduce(
-                  (accumulator: ResourceNode[], current: CloudControl.ResourceDescription) => {
-                      if (current.Identifier) {
-                          accumulator.push(new ResourceNode(this, current.Identifier, this.childContextValue))
-                      }
-                      return accumulator
-                  },
-                  []
-              )
-            : []
+        let newResources: ResourceNode[]
+        let nextToken: string | undefined
+
+        // S3::Bucket's resource handler LIST is not regionalized at this time
+        if (this.typeName === 'AWS::S3::Bucket') {
+            const s3 = ext.toolkitClientBuilder.createS3Client(this.parent.region)
+            const buckets = await s3.listBuckets()
+            newResources = buckets.buckets.map(bucket => new ResourceNode(this, bucket.name, this.childContextValue))
+        } else {
+            const response = await this.cloudControl.listResources({
+                TypeName: this.typeName,
+                NextToken: continuationToken,
+            })
+
+            newResources = response.ResourceDescriptions
+                ? response.ResourceDescriptions.reduce(
+                      (accumulator: ResourceNode[], current: CloudControl.ResourceDescription) => {
+                          if (current.Identifier) {
+                              accumulator.push(new ResourceNode(this, current.Identifier, this.childContextValue))
+                          }
+                          return accumulator
+                      },
+                      []
+                  )
+                : []
+            nextToken = response.NextToken
+        }
 
         getLogger().debug(`Loaded resources: %O`, newResources)
         return {
-            newContinuationToken: response.NextToken,
+            newContinuationToken: nextToken,
             newChildren: [...newResources],
         }
     }
