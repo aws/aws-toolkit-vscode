@@ -70,8 +70,8 @@ export class RegionNode extends AWSTreeNodeBase {
                 createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
             },
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
-            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
+            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
         ]
 
         for (const serviceCandidate of serviceCandidates) {
