@@ -1,0 +1,26 @@
+{
+	"date": "2021-10-21",
+	"version": "1.32.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "DEPRECATION: SAM actions using `dotnetcore2.1` runtime (Phase 2 Lambda deprecation)"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Resources: Better handling of unsupported resource actions"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Resources: Filter S3 bucket resources by region in list view"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Resources: Exclude resource types that do not support LIST in Cloud9"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Resources: Handle undefined type schema properties"
+		}
+	]
+}
