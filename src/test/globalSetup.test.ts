@@ -7,6 +7,7 @@
  * Before/After hooks for all "unit" tests
  */
 import * as assert from 'assert'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
@@ -31,6 +32,7 @@ const testLogOutput = join(testReportDir, 'testLog.log')
 let testLogger: TestLogger | undefined
 
 before(async function () {
+    patchFakeTimers()
     // Clean up and set up test logs
     try {
         await remove(testLogOutput)
@@ -120,3 +122,44 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
         `Expected to find "${text}" in the logs as type "${severity}"`
     )
 }
+
+/**
+ * Patches `FakeTimers` to use the real `clearTimeout` in case there are any previous
+ * timers prior to patching the clocks.
+ *
+ * Fixes #1233, #1281, #2189
+ */
+function patchFakeTimers() {
+    const realClearTimeout = global.clearTimeout
+    const install = FakeTimers.install
+    Object.defineProperty(FakeTimers, 'install', {
+        value: (config?: any) => {
+            const clock = install(config)
+            const fakeClearTimeout = global.clearTimeout
+
+            const patchedClear = (arg: any) => {
+                realClearTimeout(arg)
+                fakeClearTimeout(arg)
+            }
+            // `clearTimeout` won't be restored if this field is missing (or false)
+            // https://github.com/sinonjs/fake-timers/blob/679214eb0aa6702b65162608bb117b83f04947fe/src/fake-timers-src.js#L843
+            Object.assign(patchedClear, { hadOwnProperty: true })
+            global.clearTimeout = patchedClear
+
+            return clock
+        },
+    })
+}
+
+describe('Global Setup', function () {
+    it('patches `FakeTimers` to clear old timers', function () {
+        return new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('This should be cleared')), 1)
+            setTimeout(resolve, 1)
+            const clock = FakeTimers.install()
+            clearTimeout(timer)
+            clock.uninstall()
+            assert.doesNotThrow(() => clearTimeout(0), 'Expected global timers to be restored')
+        })
+    })
+})
