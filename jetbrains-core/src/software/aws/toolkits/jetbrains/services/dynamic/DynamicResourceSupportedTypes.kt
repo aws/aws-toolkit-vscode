@@ -6,29 +6,26 @@ package software.aws.toolkits.jetbrains.services.dynamic
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
+import software.aws.toolkits.resources.message
 
 class DynamicResourceSupportedTypes {
 
-    private val docs = mutableMapOf<String, String>()
-    private val mapper = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-    private val supportedTypes = if (ApplicationManager.getApplication().isDispatchThread) {
-        throw IllegalStateException("Access from Event Dispatch Thread")
-    } else {
-        this.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
-            val resourceDetails = mapper.readValue<Map<String, ResourceDetails>>(resourceStream)
-                .filter { it.value.operations.contains(PermittedOperation.LIST) }
-            resourceDetails.forEach { docs[it.key] = it.value.documentation.toString() }
-            resourceDetails.map { it.key }
-        } ?: throw RuntimeException("dynamic resource manifest not found")
+    private val supportedTypes by lazy {
+        runUnderProgressIfNeeded(null, message("dynamic_resources.loading_manifest"), cancelable = false) {
+            this.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
+                MAPPER.readValue<Map<String, ResourceDetails>>(resourceStream)
+            } ?: throw RuntimeException("dynamic resource manifest not found")
+        }
     }
 
-    fun getSupportedTypes(): List<String> = supportedTypes
+    fun getSupportedTypes(): List<String> = supportedTypes.filterValues { it.operations.contains(PermittedOperation.LIST) }.keys.toList()
 
-    fun getDocs(resourceType: String): String = docs[resourceType] ?: throw RuntimeException("dynamic resource manifest doesn't have doc link")
+    fun getDocs(resourceType: String) = supportedTypes[resourceType]?.documentation
 
     companion object {
         fun getInstance(): DynamicResourceSupportedTypes = service()
+        private val MAPPER = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
     }
 }

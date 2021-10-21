@@ -52,9 +52,12 @@ class DynamicResourceFileActionProvider :
     class DynamicResourceVirtualFilePanel(project: Project, file: DynamicResourceVirtualFile, text: String, actionId: String) : EditorNotificationPanel() {
         init {
             text(text)
-            createActionLabel(message("dynamic_resources.type.explorer.view_documentation")) {
-                openBrowser(file.dynamicResourceType, project)
+            DynamicResourceSupportedTypes.getInstance().getDocs(file.dynamicResourceType)?.let { docUrl ->
+                createActionLabel(message("dynamic_resources.type.explorer.view_documentation")) {
+                    BrowserLauncher.instance.browse(docUrl, project = project)
+                }
             }
+
             val action = ActionManager.getInstance().getAction(actionId)
             createActionLabel(action.templateText) {
                 executeAction(actionId)
@@ -65,8 +68,5 @@ class DynamicResourceFileActionProvider :
 
     companion object {
         val KEY = Key.create<DynamicResourceVirtualFilePanel>("software.aws.toolkits.jetbrains.core.dynamic.resource.file.actions")
-
-        fun openBrowser(resourceType: String, project: Project) =
-            BrowserLauncher.instance.browse(DynamicResourceSupportedTypes.getInstance().getDocs(resourceType), project = project)
     }
 }

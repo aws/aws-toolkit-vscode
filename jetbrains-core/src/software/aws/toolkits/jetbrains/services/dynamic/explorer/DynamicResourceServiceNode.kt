@@ -28,7 +28,7 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 import software.aws.toolkits.telemetry.Result
 
-class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
+class DynamicResourceResourceTypeNode(project: Project, val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
     ResourceParentNode,
     ResourceActionNode {

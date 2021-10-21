@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix null exception when view documentation action executed for types with missing doc urls"
+}
