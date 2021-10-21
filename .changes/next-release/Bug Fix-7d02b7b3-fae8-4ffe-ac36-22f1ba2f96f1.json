@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Resources: Filter S3 bucket resources by region in list view"
+}
