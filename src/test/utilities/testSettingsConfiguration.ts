@@ -22,6 +22,10 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
         return {}
     }
 
+    public ensureToolkitInVscodeRemoteSsh(): boolean {
+        throw new Error('Method not implemented.')
+    }
+
     public readSetting<T>(settingKey: string, defaultValue?: T | undefined): T | undefined {
         return this._data[settingKey] as T
     }

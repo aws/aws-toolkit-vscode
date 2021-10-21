@@ -9,6 +9,7 @@ import { ClassToInterfaceType } from './utilities/tsUtils'
 import { ext } from './extensionGlobals'
 import { isReleaseVersion } from './vscode/env'
 import * as logger from './logger'
+import { VSCODE_EXTENSION_ID } from './extensions'
 
 /**
  * Wraps the VSCode configuration API and provides Toolkit-related
@@ -246,5 +247,41 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             ext.awsContext.setDeveloperMode(true, key)
         }
         return val
+    }
+
+    /**
+     * Ensures AWS Toolkit is in the `remote.SSH.defaultExtensions` setting.
+     *
+     * @returns false if the setting has an invalid shape, or if the user's settings already include AWS Toolkit.
+     */
+    public ensureToolkitInVscodeRemoteSsh(): boolean {
+        const settingName = 'remote.SSH.defaultExtensions'
+        const msg = 'MDE: setting value "%s" has unexpected type (expected array)'
+        const msgWriteFail = 'MDE: failed to write setting "%s": %O'
+        let setting: string[]
+        try {
+            const val = this.getSetting<unknown>(settingName, 'object') ?? []
+            if (!Array.isArray(val)) {
+                this.log.error(msg, settingName)
+                return false
+            }
+            setting = val as string[]
+            if (setting.includes(VSCODE_EXTENSION_ID.awstoolkit)) {
+                // Nothing to do.
+                return false
+            }
+            setting.push(VSCODE_EXTENSION_ID.awstoolkit)
+        } catch (e) {
+            this.log.error(msg, settingName)
+            return false
+        }
+
+        try {
+            this.updateSetting(settingName, setting, vscode.ConfigurationTarget.Global)
+            return true
+        } catch (e) {
+            this.log.error(msgWriteFail, settingName, e)
+            return false
+        }
     }
 }

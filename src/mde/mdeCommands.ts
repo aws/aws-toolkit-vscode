@@ -21,6 +21,7 @@ import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { CreateEnvironmentRequest } from '../../types/clientmde'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { createMdeWebview } from './vue/create/backend'
+import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -90,6 +91,7 @@ export async function mdeConnectCommand(
         return
     }
 
+    const settings = new DefaultSettingsConfiguration()
     const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
 
     const TIMEOUT_LENGTH = 120000
@@ -194,6 +196,8 @@ export async function mdeConnectCommand(
         '--folder-uri',
         `vscode-remote://ssh-remote+aws-mde-${args.id}/projects`
     )
+
+    settings.ensureToolkitInVscodeRemoteSsh()
 
     // Note: `await` is intentionally not used.
     cmd.run(
