@@ -2344,7 +2344,7 @@
         "@types/marked": "^3.0.1",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^9.0.0",
-        "@types/node": "^10.14.22",
+        "@types/node": "^16.11.2",
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
         "@types/semver": "^7.3.6",
