@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as utils from '../../shared/extensionUtilities'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
@@ -225,6 +226,34 @@ describe('DefaultSettingsConfiguration', function () {
         it('validates', async function () {
             await assert.rejects(sut.isPromptEnabled('invalidPrompt'))
             await assert.rejects(sut.getSuppressPromptSetting('invalidPrompt'))
+        })
+    })
+
+    describe('readDevSetting', async function () {
+        const TEST_SETTING = 'aws.dev.forceTelemetry'
+        let prevMethod: (() => boolean) | undefined
+        let prevVar: string | undefined
+
+        before(function () {
+            prevMethod = utils.isReleaseVersion
+            prevVar = process.env['CODEBUILD_BUILD_ID']
+        })
+
+        after(function () {
+            Object.defineProperty(utils, 'isReleaseVersion', { value: prevMethod })
+            process.env['CODEBUILD_BUILD_ID'] = prevVar
+        })
+
+        it('throws if not production and in CI if key does not exist (silent=false)', function () {
+            process.env['CODEBUILD_BUILD_ID'] = prevVar ?? '123'
+            Object.defineProperty(utils, 'isReleaseVersion', { value: () => false })
+            assert.throws(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
+        })
+
+        it('does not throw in producton if key does not exist (silent=false)', function () {
+            delete process.env['CODEBUILD_BUILD_ID']
+            Object.defineProperty(utils, 'isReleaseVersion', { value: () => true })
+            assert.doesNotThrow(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
         })
     })
 })
