@@ -2006,60 +2006,110 @@
             {
                 "command": "aws.resources.copyIdentifier",
                 "title": "%AWS.command.resources.copyIdentifier%",
-                "category": "%AWS.title%"
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.openResourcePreview",
                 "title": "%AWS.generic.preview%",
                 "category": "%AWS.title%",
-                "icon": "$(open-preview)"
+                "icon": "$(open-preview)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.createResource",
                 "title": "%AWS.generic.create%",
                 "category": "%AWS.title%",
-                "icon": "$(add)"
+                "icon": "$(add)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.deleteResource",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.title%"
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.updateResource",
                 "title": "%AWS.generic.promptUpdate%",
                 "category": "%AWS.title%",
-                "icon": "$(pencil)"
+                "icon": "$(pencil)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.updateResourceInline",
                 "title": "%AWS.generic.promptUpdate%",
                 "category": "%AWS.title%",
-                "icon": "$(pencil)"
+                "icon": "$(pencil)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.saveResource",
                 "title": "%AWS.generic.save%",
                 "category": "%AWS.title%",
-                "icon": "$(save)"
+                "icon": "$(save)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.closeResource",
                 "title": "%AWS.generic.close%",
                 "category": "%AWS.title%",
-                "icon": "$(close)"
+                "icon": "$(close)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.viewDocs",
                 "title": "%AWS.generic.viewDocs%",
                 "category": "%AWS.title%",
-                "icon": "$(book)"
+                "icon": "$(book)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.configure",
                 "title": "%AWS.command.resources.configure%",
                 "category": "%AWS.title%",
-                "icon": "$(gear)"
+                "icon": "$(gear)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.apprunner.createService",
