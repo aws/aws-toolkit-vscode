@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { EcsClient } from '../../shared/clients/ecsClient'
+import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class EcsContainerNode extends AWSTreeNodeBase {
@@ -16,6 +18,11 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         super(containerName)
         this.tooltip = containerName
         this.contextValue = 'awsEcsContainerNode'
+
+        this.iconPath = {
+            dark: vscode.Uri.file(ext.iconPaths.dark.container),
+            light: vscode.Uri.file(ext.iconPaths.light.container),
+        }
     }
 
     public listTasks() {
