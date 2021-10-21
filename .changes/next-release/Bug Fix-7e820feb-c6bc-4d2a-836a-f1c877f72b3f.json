@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Resources: Exclude resource types that do not support LIST in Cloud9"
-}
