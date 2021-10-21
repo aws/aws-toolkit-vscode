@@ -1,0 +1,4 @@
+{
+	"type": "Breaking Change",
+	"description": "DEPRECATION: SAM actions using `dotnetcore2.1` runtime (Phase 2 Lambda deprecation)"
+}
