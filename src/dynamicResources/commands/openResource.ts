@@ -79,38 +79,43 @@ export async function openResource(
 export function getDiagnostics(schema: TypeSchema, doc: vscode.TextDocument): vscode.Diagnostic[] {
     const diagnostics: vscode.Diagnostic[] = []
     const text = doc.getText()
-    for (const property of schema.createOnlyProperties) {
-        const propertyName = getPropertyName(property)
-        const range = getPropertyRange(propertyName, text, doc)
-        if (range) {
-            diagnostics.push(
-                new vscode.Diagnostic(
-                    range,
-                    localize(
-                        'AWS.message.information.resources.createOnlyProperty',
-                        '"{0}" is a create-only property and cannot be modified on an existing resource',
-                        propertyName
-                    ),
-                    vscode.DiagnosticSeverity.Information
+    if (schema.createOnlyProperties) {
+        for (const property of schema.createOnlyProperties) {
+            const propertyName = getPropertyName(property)
+            const range = getPropertyRange(propertyName, text, doc)
+            if (range) {
+                diagnostics.push(
+                    new vscode.Diagnostic(
+                        range,
+                        localize(
+                            'AWS.message.information.resources.createOnlyProperty',
+                            '"{0}" is a create-only property and cannot be modified on an existing resource',
+                            propertyName
+                        ),
+                        vscode.DiagnosticSeverity.Information
+                    )
                 )
-            )
+            }
         }
     }
-    for (const property of schema.readOnlyProperties) {
-        const propertyName = getPropertyName(property)
-        const range = getPropertyRange(propertyName, text, doc)
-        if (range) {
-            diagnostics.push(
-                new vscode.Diagnostic(
-                    range,
-                    localize(
-                        'AWS.message.information.resources.readOnlyProperty',
-                        '"{0}" is a read-only property and cannot be modified',
-                        propertyName
-                    ),
-                    vscode.DiagnosticSeverity.Information
+
+    if (schema.readOnlyProperties) {
+        for (const property of schema.readOnlyProperties) {
+            const propertyName = getPropertyName(property)
+            const range = getPropertyRange(propertyName, text, doc)
+            if (range) {
+                diagnostics.push(
+                    new vscode.Diagnostic(
+                        range,
+                        localize(
+                            'AWS.message.information.resources.readOnlyProperty',
+                            '"{0}" is a read-only property and cannot be modified',
+                            propertyName
+                        ),
+                        vscode.DiagnosticSeverity.Information
+                    )
                 )
-            )
+            }
         }
     }
     return diagnostics

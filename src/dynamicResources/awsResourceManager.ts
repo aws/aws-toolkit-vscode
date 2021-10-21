@@ -221,13 +221,13 @@ type Schema = {
 }
 
 export interface TypeSchema {
-    typeName: string
-    description: string
-    properties: any
-    definitions: any
-    readOnlyProperties: string[]
-    createOnlyProperties: string[]
-    writeOnlyProperties: string[]
-    required: string[]
-    primaryIdentifier: string[]
+    typeName?: string
+    description?: string
+    properties?: any
+    primaryIdentifier?: string[]
+    definitions?: any
+    readOnlyProperties?: string[]
+    createOnlyProperties?: string[]
+    writeOnlyProperties?: string[]
+    required?: string[]
 }

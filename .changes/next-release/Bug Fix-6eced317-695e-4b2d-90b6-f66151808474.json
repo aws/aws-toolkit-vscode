@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Resources: Better handling of unsupported resource actions"
+}
