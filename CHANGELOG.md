@@ -1,3 +1,8 @@
+# _1.34_ (2021-10-21)
+- **(Bug Fix)** Fix issue in Resources where some S3 Buckets fail to open
+- **(Bug Fix)** Fix null exception when view documentation action executed for types with missing doc urls
+- **(Bug Fix)** Fix uncaught exception when a resource does not support LIST in a certain region.
+
 # _1.33_ (2021-10-14)
 - **(Feature)** Surface read-only support for hundreds of resources under the Resources node in the AWS Explorer
 - **(Feature)** Amazon DynamoDB table viewer

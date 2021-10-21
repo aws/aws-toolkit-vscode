@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix issue in Resources where some S3 Buckets fail to open"
-}

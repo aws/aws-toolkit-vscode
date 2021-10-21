@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix uncaught exception when a resource does not support LIST in a certain region."
-}

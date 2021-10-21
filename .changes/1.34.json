@@ -1,0 +1,14 @@
+{
+  "date" : "2021-10-21",
+  "version" : "1.34",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix issue in Resources where some S3 Buckets fail to open"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix null exception when view documentation action executed for types with missing doc urls"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix uncaught exception when a resource does not support LIST in a certain region."
+  } ]
+}
