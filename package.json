@@ -827,14 +827,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.ssmDocument.createLocalDocument",
-                    "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.ssmDocument.publishDocument",
-                    "when": "!isCloud9"
-                },
-                {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
                 },
