@@ -1,3 +1,11 @@
+## 1.32.0 2021-10-21
+
+- **Breaking Change** DEPRECATION: SAM actions using `dotnetcore2.1` runtime (Phase 2 Lambda deprecation)
+- **Bug Fix** Resources: Better handling of unsupported resource actions
+- **Bug Fix** Resources: Filter S3 bucket resources by region in list view
+- **Bug Fix** Resources: Exclude resource types that do not support LIST in Cloud9
+- **Bug Fix** Resources: Handle undefined type schema properties
+
 ## 1.31.0 2021-10-14
 
 - **Bug Fix** StepFunctions: "Publish" command now asks for target region
