@@ -39,6 +39,8 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
 
     /**
      * Reads a vscode setting.
+     *
+     * @deprecated use getSetting
      */
     public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
         const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix)
@@ -49,6 +51,51 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
 
         const val = settings.get<T>(settingKey)
         return val ?? defaultValue
+    }
+
+    /**
+     * Gets the value of a VSCode setting.
+     *
+     * @param key Setting name.
+     * @param type Setting type.
+     * @param opt.silent When to silently return undefined (default: "notfound"). notfound/undefined="nonexistent setting is not an error", yes="always silent", no="always error"
+     * @param opt.logging Enable logging (default: true).
+     */
+    public getSetting<T>(
+        key: string,
+        type: JSPrimitiveTypeName = 'string',
+        opt: {
+            silent?: 'no' | 'yes' | 'notfound'
+            logging?: boolean
+        } = {
+            silent: 'notfound',
+            logging: true,
+        }
+    ): T | undefined {
+        const config = vscode.workspace.getConfiguration()
+        const val = config.get<T>(key)
+        if (val === undefined) {
+            const msg = `settings: getSetting(): setting "${key}": not found`
+            if (opt.silent !== undefined && opt.silent === 'no') {
+                throw Error(`AWS Toolkit: ${msg}`)
+            }
+            // Caller is expected to log in the rare case that a nonexistent
+            // setting is noteworthy.
+            return undefined
+        }
+
+        const actualType = typeof val
+        if (actualType !== type) {
+            const msg = `settings: getSetting(): setting "${key}": got ${actualType}, expected ${type}`
+            if (opt.silent === undefined || opt.silent !== 'yes') {
+                throw Error(`AWS Toolkit: ${msg}`)
+            }
+            if (opt.logging === undefined || opt.logging) {
+                this.log.error(msg)
+            }
+            return undefined
+        }
+        return val
     }
 
     /**
@@ -162,37 +209,19 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
 
     /**
      * Gets the value of a developer only setting.
-     *
-     * TODO: show a dialog if this is used, and/or make a UI change (such as
-     * changing the AWS Explorer color) so that it's obvious that Toolkit is in
-     * "Developer mode". Throw an error in CI.
      */
     public readDevSetting<T>(
         key: AwsDevSetting,
         type: JSPrimitiveTypeName = 'string',
         silent: boolean = false
     ): T | undefined {
-        const config = vscode.workspace.getConfiguration()
-        const val = config.get<T>(key)
+        const val = this.getSetting<T>(key, type, {
+            silent: silent ? 'yes' : isCI() ? 'no' : 'notfound',
+            logging: true,
+        })
         if (val === undefined) {
-            const msg = `settings: readDevSetting(): setting "${key}": not found`
-            if (!silent && !isCI()) {
-                throw Error(`AWS Toolkit: ${msg}`)
-            }
-            // Do not log; the common case is that a developer setting does _not_ exist.
             return undefined
         }
-
-        const actualType = typeof val
-        if (actualType !== type) {
-            const msg = `settings: readDevSetting(): setting "${key}": got ${actualType}, expected ${type}`
-            if (!silent) {
-                throw Error(`AWS Toolkit: ${msg}`)
-            }
-            this.log.error(msg)
-            return undefined
-        }
-
         if (ext.awsContext) {
             ext.awsContext.setDeveloperMode(true, key)
         }

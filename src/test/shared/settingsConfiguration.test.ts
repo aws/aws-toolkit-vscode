@@ -68,6 +68,61 @@ describe('DefaultSettingsConfiguration', function () {
         })
     })
 
+    describe('getSetting', async function () {
+        let settings: vscode.WorkspaceConfiguration
+
+        beforeEach(async function () {
+            settings = vscode.workspace.getConfiguration()
+        })
+
+        scenarios.forEach(scenario => {
+            it(scenario.desc, async () => {
+                await settings.update('aws.telemetry', scenario.testValue, vscode.ConfigurationTarget.Global)
+                const actualValue = sut.getSetting('aws.telemetry', typeof scenario.testValue as any)
+                assert.deepStrictEqual(actualValue, scenario.testValue)
+            })
+        })
+
+        it('failure modes', async () => {
+            //
+            // Missing setting:
+            //
+            const testSetting = 'aws.bogusSetting'
+            assert.deepStrictEqual(sut.getSetting<boolean>(testSetting, 'boolean'), undefined)
+            assert.throws(function () {
+                sut.getSetting<boolean>(testSetting, 'boolean', { silent: 'no' })
+            })
+            assert.deepStrictEqual(sut.getSetting(testSetting, 'string', { silent: 'notfound' }), undefined)
+            assert.deepStrictEqual(sut.getSetting(testSetting, 'string', { silent: 'yes' }), undefined)
+            assert.deepStrictEqual(sut.getSetting(testSetting, undefined, {}), undefined)
+            assert.deepStrictEqual(sut.getSetting(testSetting), undefined)
+
+            //
+            // Setting exists but has wrong type:
+            //
+            await settings.update('aws.telemetry', true, vscode.ConfigurationTarget.Global)
+            assert.deepStrictEqual(sut.getSetting<boolean>('aws.telemetry', 'function', { silent: 'yes' }), undefined)
+            assert.throws(function () {
+                sut.getSetting<boolean>('aws.telemetry', 'object', { silent: 'notfound' })
+            })
+            assert.throws(function () {
+                sut.getSetting<boolean>('aws.telemetry', 'string', { silent: 'no' })
+            })
+            assert.throws(function () {
+                assert.deepStrictEqual(
+                    sut.getSetting<boolean>('aws.telemetry', 'bigint', { silent: 'notfound' }),
+                    undefined
+                )
+            })
+            assert.throws(function () {
+                assert.deepStrictEqual(sut.getSetting<boolean>('aws.telemetry', 'symbol', {}), undefined)
+            })
+            assert.throws(function () {
+                assert.deepStrictEqual(sut.getSetting<boolean>('aws.telemetry', 'string'), undefined)
+            })
+        })
+    })
+
     describe('writeSetting', async function () {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
