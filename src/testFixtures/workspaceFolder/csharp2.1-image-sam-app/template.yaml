@@ -23,6 +23,6 @@ Resources:
                         Path: /hello
                         Method: get
         Metadata:
-            DockerTag: dotnetcore2.1-v1
+            DockerTag: dotnetcore3.1-v1
             DockerContext: ./src/HelloWorld
             Dockerfile: Dockerfile
