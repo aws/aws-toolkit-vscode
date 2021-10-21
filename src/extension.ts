@@ -63,7 +63,7 @@ import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
-import { activate as activateCloudApi } from './dynamicResources/activation'
+import { activate as activateDynamicResources } from './dynamicResources/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
@@ -240,7 +240,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateEcr(context)
 
         await activateCloudWatchLogs(context, toolkitSettings)
-        await activateCloudApi(context)
+
+        await activateDynamicResources(context)
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
