@@ -210,17 +210,22 @@ sealed class Resource<T> {
      * in order to return the desired type [Output]. The [transform] result is not cached, [transform]s are re-applied on each fetch - thus should
      * should be relatively cheap.
      */
-    class View<Input, Output>(val underlying: Resource<Input>, private val transform: Input.() -> Output) : Resource<Output>() {
+    class View<Input, Output>(val underlying: Resource<Input>, private val transform: (Input, AwsRegion) -> Output) : Resource<Output>() {
         @Suppress("UNCHECKED_CAST")
-        fun doMap(input: Any) = transform(input as Input)
+        fun doMap(input: Any, region: AwsRegion) = transform(input as Input, region)
+    }
+
+    companion object {
+        fun <Input, Output> view(underlying: Resource<Input>, transform: Input.() -> Output): Resource<Output> =
+            View(underlying) { input, _ -> transform(input) }
     }
 }
 
-fun <Input, Output> Resource<out Iterable<Input>>.map(transform: (Input) -> Output): Resource<List<Output>> = Resource.View(this) { map(transform) }
+fun <Input, Output> Resource<out Iterable<Input>>.map(transform: (Input) -> Output): Resource<List<Output>> = Resource.view(this) { map(transform) }
 
-fun <T> Resource<out Iterable<T>>.filter(predicate: (T) -> Boolean): Resource<List<T>> = Resource.View(this) { filter(predicate) }
+fun <T> Resource<out Iterable<T>>.filter(predicate: (T) -> Boolean): Resource<List<T>> = Resource.view(this) { filter(predicate) }
 
-fun <T> Resource<out Iterable<T>>.find(predicate: (T) -> Boolean): Resource<T?> = Resource.View(this) { find(predicate) }
+fun <T> Resource<out Iterable<T>>.find(predicate: (T) -> Boolean): Resource<T?> = Resource.view(this) { find(predicate) }
 
 class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
     private val sdkClientClass: KClass<ClientType>,
@@ -294,7 +299,13 @@ class DefaultAwsResourceCache(
         useStale: Boolean,
         forceFetch: Boolean
     ): CompletionStage<T> = when (resource) {
-        is Resource.View<*, T> -> getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
+        is Resource.View<*, T> -> getResource(
+            resource.underlying,
+            region,
+            credentialProvider,
+            useStale,
+            forceFetch
+        ).thenApply { resource.doMap(it as Any, region) }
         is Resource.Cached<T> -> Context(resource, region, credentialProvider, useStale, forceFetch).also { getCachedResource(it) }.future
     }
 
@@ -360,7 +371,12 @@ class DefaultAwsResourceCache(
                     else -> null
                 }
             }
-            is Resource.View<*, T> -> getResourceIfPresent(resource.underlying, region, credentialProvider, useStale)?.let { resource.doMap(it) }
+            is Resource.View<*, T> -> getResourceIfPresent(resource.underlying, region, credentialProvider, useStale)?.let {
+                resource.doMap(
+                    it,
+                    region
+                )
+            }
         }
 
     override fun clear(resource: Resource<*>, connectionSettings: ConnectionSettings) {

@@ -3,11 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.s3.resources
 
-import com.intellij.openapi.project.Project
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.jetbrains.annotations.TestOnly
 import org.slf4j.event.Level
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
@@ -18,9 +18,6 @@ import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.filter
-import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import java.time.Instant
 import java.time.LocalDateTime
@@ -31,7 +28,8 @@ object S3Resources {
     private val LOG = getLogger<S3Resources>()
     private val regions by lazy { AwsRegionProvider.getInstance().allRegions() }
 
-    val LIST_REGIONALIZED_BUCKETS = ClientBackedCachedResource(S3Client::class, "s3.list_buckets") {
+    @TestOnly
+    internal val LIST_REGIONALIZED_BUCKETS = ClientBackedCachedResource(S3Client::class, "s3.list_buckets") {
         val buckets = listBuckets().buckets()
         // TODO when the resource cache is coroutine based, remove the runBlocking and withContext
         runBlocking {
@@ -50,15 +48,9 @@ object S3Resources {
         }
     }
 
-    val LIST_BUCKETS: Resource<List<Bucket>> = LIST_REGIONALIZED_BUCKETS.map { it.bucket }
-
-    fun listBucketsByActiveRegion(project: Project): Resource<List<Bucket>> {
-        val activeRegion = AwsConnectionManager.getInstance(project).activeRegion
-        return LIST_REGIONALIZED_BUCKETS.filter { it.region == activeRegion }.map { it.bucket }
+    val LIST_BUCKETS: Resource<List<Bucket>> = Resource.View(LIST_REGIONALIZED_BUCKETS) { bucketList, region ->
+        bucketList.filter { it.region == region }.map { it.bucket }
     }
-
-    @JvmStatic
-    fun listBucketNamesByActiveRegion(project: Project): Resource<List<String>> = listBucketsByActiveRegion(project).map { it.name() }
 
     @JvmStatic
     fun formatDate(date: Instant): String {

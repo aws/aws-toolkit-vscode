@@ -8,11 +8,12 @@ import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SimpleListCellRenderer
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.ecr.CreateEcrRepoDialog
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
-import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources.listBucketNamesByActiveRegion
+import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources.LIST_BUCKETS
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.ui.validationInfo
 import software.aws.toolkits.resources.message
@@ -74,7 +75,7 @@ class CodeStoragePanel(private val project: Project) : JPanel(BorderLayout()) {
     }
 
     private fun createUIComponents() {
-        sourceBucket = ResourceSelector.builder().resource(listBucketNamesByActiveRegion(project)).awsConnection(project).build()
+        sourceBucket = ResourceSelector.builder().resource(LIST_BUCKETS.map { it.name() }).awsConnection(project).build()
         ecrRepo = ResourceSelector.builder()
             .resource(EcrResources.LIST_REPOS)
             .customRenderer(SimpleListCellRenderer.create("") { it.repositoryName })

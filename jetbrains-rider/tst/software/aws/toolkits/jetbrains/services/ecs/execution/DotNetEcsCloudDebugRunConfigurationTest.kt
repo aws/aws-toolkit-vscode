@@ -93,8 +93,8 @@ class DotNetEcsCloudDebugRunConfigurationTest : AwsReuseSolutionTestBase() {
                 }
             )
             .build()
-        resourceCache.addEntry(EcsResources.describeService(clusterArn, serviceArn), regionId, credentialsIdentifier.id, fakeService)
-        resourceCache.addEntry(EcsResources.describeTaskDefinition(taskDefinitionName), regionId, credentialsIdentifier.id, fakeTaskDefinition)
+        resourceCache.addEntry(EcsResources.describeService(clusterArn, serviceArn).id, regionId, credentialsIdentifier.id, fakeService)
+        resourceCache.addEntry(EcsResources.describeTaskDefinition(taskDefinitionName).id, regionId, credentialsIdentifier.id, fakeTaskDefinition)
     }
 
     private val mockCredentials: CredentialIdentifier

@@ -129,7 +129,7 @@ class CreateFunctionIntegrationTest {
         val s3Bucket = temporaryBucket.createBucket()
         resourceCache.addEntry(
             projectRule.project,
-            S3Resources.LIST_REGIONALIZED_BUCKETS,
+            "s3.list_buckets",
             listOf(S3Resources.RegionalizedBucket(Bucket.builder().name(s3Bucket).build(), projectRule.project.activeRegion()))
         )
 

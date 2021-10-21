@@ -28,6 +28,7 @@ import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
+import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
 import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
@@ -90,7 +91,7 @@ class DeployServerlessApplicationDialog(
         .build()
 
     private val s3BucketSelector = ResourceSelector.builder()
-        .resource(S3Resources.listBucketNamesByActiveRegion(project))
+        .resource(S3Resources.LIST_BUCKETS.map { it.name() })
         .awsConnection(project)
         .apply {
             if (!loadResourcesOnCreate) {

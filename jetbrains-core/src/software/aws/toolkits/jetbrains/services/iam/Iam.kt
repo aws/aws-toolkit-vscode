@@ -31,12 +31,12 @@ object IamResources {
     }
 
     @JvmField
-    val LIST_ALL: Resource<List<IamRole>> = Resource.View(LIST_RAW_ROLES) {
+    val LIST_ALL: Resource<List<IamRole>> = Resource.view(LIST_RAW_ROLES) {
         map { IamRole(it.arn()) }.toList()
     }
 
     @JvmField
-    val LIST_LAMBDA_ROLES: Resource<List<IamRole>> = Resource.View(LIST_RAW_ROLES) {
+    val LIST_LAMBDA_ROLES: Resource<List<IamRole>> = Resource.view(LIST_RAW_ROLES) {
         filter { it.assumeRolePolicyDocument().contains(LAMBDA_PRINCIPAL) }
             .map { IamRole(it.arn()) }
             .toList()

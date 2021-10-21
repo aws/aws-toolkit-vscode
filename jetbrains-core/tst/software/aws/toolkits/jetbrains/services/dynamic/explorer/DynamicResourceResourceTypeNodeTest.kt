@@ -13,11 +13,9 @@ import software.aws.toolkits.core.utils.test.hasOnlyOneElementOfType
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
+import software.aws.toolkits.jetbrains.core.id
 import software.aws.toolkits.jetbrains.services.dynamic.CloudControlApiResources
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
-import software.aws.toolkits.jetbrains.services.dynamic.ResourceType
 import software.aws.toolkits.resources.message
-import java.util.concurrent.CompletableFuture
 
 class DynamicResourceResourceTypeNodeTest {
 
@@ -31,10 +29,9 @@ class DynamicResourceResourceTypeNodeTest {
 
     @Test
     fun returnsListFromProvider() {
-        val type = aString()
+        val type = "AWS::${aString()}::${aString()}"
         val identifier = aString()
-        val resources = listOf(DynamicResource(ResourceType(type, "foo", "bah"), identifier))
-        resourceCache.addEntry(projectRule.project, CloudControlApiResources.listResources(type), resources)
+        resourceCache.addEntry(projectRule.project, CloudControlApiResources.listResources(type).id, listOf(identifier))
 
         val sut = DynamicResourceResourceTypeNode(projectRule.project, type)
 
@@ -46,11 +43,7 @@ class DynamicResourceResourceTypeNodeTest {
     @Test
     fun unsupportedExceptionResultsInEmptyNode() {
         val type = aString()
-        resourceCache.addEntry(
-            projectRule.project,
-            CloudControlApiResources.listResources(type),
-            CompletableFuture.failedFuture(UnsupportedActionException.builder().build())
-        )
+        resourceCache.addEntry(projectRule.project, CloudControlApiResources.listResources(type).id, throws = UnsupportedActionException.builder().build())
 
         val sut = DynamicResourceResourceTypeNode(projectRule.project, type)
 
@@ -62,7 +55,7 @@ class DynamicResourceResourceTypeNodeTest {
     @Test
     fun otherExceptionsBubble() {
         val type = aString()
-        resourceCache.addEntry(projectRule.project, CloudControlApiResources.listResources(type), CompletableFuture.failedFuture(RuntimeException()))
+        resourceCache.addEntry(projectRule.project, CloudControlApiResources.listResources(type).id, throws = RuntimeException())
 
         val sut = DynamicResourceResourceTypeNode(projectRule.project, type)
 

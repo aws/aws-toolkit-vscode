@@ -43,5 +43,5 @@ object EcsResources {
     fun listTaskIds(clusterArn: String, serviceArn: String) = listTasks(clusterArn, serviceArn).map { it.substringAfterLast("/") }
 
     fun listContainers(taskDefinitionArn: String): Resource<List<ContainerDefinition>> =
-        Resource.View(describeTaskDefinition(taskDefinitionArn)) { containerDefinitions() }
+        Resource.view(describeTaskDefinition(taskDefinitionArn)) { containerDefinitions() }
 }

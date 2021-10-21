@@ -26,7 +26,7 @@ class MockResourceCache : AwsResourceCache {
         credentialProvider: ToolkitCredentialsProvider,
         useStale: Boolean
     ): T? = when (resource) {
-        is Resource.View<*, T> -> getResourceIfPresent(resource.underlying, region, credentialProvider)?.let { resource.doMap(it) }
+        is Resource.View<*, T> -> getResourceIfPresent(resource.underlying, region, credentialProvider)?.let { resource.doMap(it, region) }
         is Resource.Cached<T> -> mockResourceIfPresent(resource, region, credentialProvider)
     }
 
@@ -37,7 +37,9 @@ class MockResourceCache : AwsResourceCache {
         useStale: Boolean,
         forceFetch: Boolean
     ): CompletionStage<T> = when (resource) {
-        is Resource.View<*, T> -> getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply { resource.doMap(it as Any) }
+        is Resource.View<*, T> -> getResource(resource.underlying, region, credentialProvider, useStale, forceFetch).thenApply {
+            resource.doMap(it as Any, region)
+        }
         is Resource.Cached<T> -> {
             mockResource(resource, region, credentialProvider)
         }
@@ -85,12 +87,8 @@ class MockResourceCache : AwsResourceCache {
 
     fun entryCount() = map.size
 
-    fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: T) {
-        map[CacheKey(resource.id, regionId, credentialsId)] = value as Any
-    }
-
-    fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: CompletableFuture<T>) {
-        map[CacheKey(resource.id, regionId, credentialsId)] = value as Any
+    fun addEntry(resourceId: String, regionId: String, credentialsId: String, value: Any) {
+        map[CacheKey(resourceId, regionId, credentialsId)] = value
     }
 
     companion object {
@@ -108,26 +106,42 @@ class MockResourceCacheRule : ApplicationRule() {
         runBlocking { cache.clear() }
     }
 
-    fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: T) {
+    fun addEntry(resourceId: String, regionId: String, credentialsId: String, value: Any) {
+        cache.addEntry(resourceId, regionId, credentialsId, value)
+    }
+
+    fun addEntry(project: Project, resourceId: String, value: Any) {
         val connectionManager = AwsConnectionManager.getInstance(project)
-        cache.addEntry(resource, connectionManager.selectedRegion!!.id, connectionManager.selectedCredentialIdentifier!!.id, value)
+        addEntry(resourceId, connectionManager.selectedRegion!!.id, connectionManager.selectedCredentialIdentifier!!.id, value)
+    }
+
+    fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: T) {
+        addEntry(project, resource.id, value as Any)
+    }
+
+    fun <T> addEntry(project: Project, resourceId: String, value: CompletableFuture<T>) {
+        val connectionManager = AwsConnectionManager.getInstance(project)
+        addEntry(resourceId, connectionManager.selectedRegion!!.id, connectionManager.selectedCredentialIdentifier!!.id, value)
     }
 
     fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: CompletableFuture<T>) {
-        val connectionManager = AwsConnectionManager.getInstance(project)
-        cache.addEntry(resource, connectionManager.selectedRegion!!.id, connectionManager.selectedCredentialIdentifier!!.id, value)
+        addEntry(project, resource.id, value)
+    }
+
+    fun addEntry(project: Project, resourceId: String, throws: Exception) {
+        addEntry(project, resourceId, CompletableFuture.failedFuture<Any>(throws))
     }
 
     fun <T> addEntry(connectionSettings: ConnectionSettings, resource: Resource.Cached<T>, value: CompletableFuture<T>) {
-        cache.addEntry(resource, connectionSettings.region.id, connectionSettings.credentials.id, value)
+        addEntry(resource, connectionSettings.region.id, connectionSettings.credentials.id, value)
     }
 
     fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: T) {
-        cache.addEntry(resource, regionId, credentialsId, value)
+        addEntry(resource.id, regionId, credentialsId, value as Any)
     }
 
     fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: CompletableFuture<T>) {
-        cache.addEntry(resource, regionId, credentialsId, value)
+        addEntry(resource.id, regionId, credentialsId, value)
     }
 
     fun size() = cache.entryCount()

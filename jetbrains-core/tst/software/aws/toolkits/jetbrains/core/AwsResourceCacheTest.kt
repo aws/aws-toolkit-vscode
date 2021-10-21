@@ -226,7 +226,7 @@ class AwsResourceCacheTest {
     @Test
     fun viewsCanBeCreatedOnTopOfOtherCachedItems() {
         whenever(mockResource.fetch(any(), any())).thenReturn("hello")
-        val viewResource = Resource.View(mockResource) { toList() }
+        val viewResource = Resource.view(mockResource) { toList() }
 
         assertThat(sut.getResource(mockResource, connectionSettings)).hasValue("hello")
         assertThat(sut.getResource(viewResource, connectionSettings)).hasValue(listOf('h', 'e', 'l', 'l', 'o'))
@@ -236,7 +236,7 @@ class AwsResourceCacheTest {
     @Test
     fun mapFilterAndFindExtensionsToEasilyCreateViews() {
         whenever(mockResource.fetch(any(), any())).thenReturn("hello")
-        val viewResource = Resource.View(mockResource) { toList() }
+        val viewResource = Resource.view(mockResource) { toList() }
 
         val filteredAndMapped = viewResource.filter { it != 'l' }.map { it.toUpperCase() }
         assertThat(sut.getResource(filteredAndMapped, connectionSettings)).hasValue(listOf('H', 'E', 'O'))
@@ -248,12 +248,20 @@ class AwsResourceCacheTest {
     @Test
     fun clearingViewsClearTheUnderlyingCachedResource() {
         whenever(mockResource.fetch(any(), any())).thenReturn("hello")
-        val viewResource = Resource.View(mockResource) { toList() }
+        val viewResource = Resource.view(mockResource) { toList() }
         sut.getResource(viewResource, connectionSettings).value
         sut.clear(viewResource, connectionSettings)
         sut.getResource(viewResource, connectionSettings).value
 
         verifyResourceCalled(times = 2)
+    }
+
+    @Test
+    fun viewsCanBeRegionAware() {
+        whenever(mockResource.fetch(any(), any())).thenReturn("hello")
+        val viewResource = Resource.View(mockResource) { _, region -> region }
+
+        assertThat(sut.getResource(viewResource, connectionSettings)).hasValue(connectionSettings.region)
     }
 
     @Test
@@ -450,7 +458,7 @@ class AwsResourceCacheTest {
     @Test
     fun canConditionallyFetchViewOnlyIfAvailableInCache() {
         whenever(mockResource.fetch(any(), any())).thenReturn("hello")
-        val viewResource = Resource.View(mockResource) { reversed() }
+        val viewResource = Resource.view(mockResource) { reversed() }
 
         assertThat(sut.getResourceIfPresent(viewResource, US_WEST_1, cred1Provider)).isNull()
         sut.getResource(viewResource, US_WEST_1, cred1Provider).value
@@ -516,3 +524,9 @@ class AwsResourceCacheTest {
         fun dummyResource(value: String = aString()): Resource.Cached<String> = StringResource(value)
     }
 }
+
+val Resource<*>.id: String
+    get() = when (this) {
+        is Resource.Cached -> this.id
+        is Resource.View<*, *> -> this.underlying.id
+    }
