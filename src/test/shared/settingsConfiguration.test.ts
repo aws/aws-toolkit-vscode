@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as env from '../../shared/vscode/env'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
@@ -225,6 +226,29 @@ describe('DefaultSettingsConfiguration', function () {
         it('validates', async function () {
             await assert.rejects(sut.isPromptEnabled('invalidPrompt'))
             await assert.rejects(sut.getSuppressPromptSetting('invalidPrompt'))
+        })
+    })
+
+    describe('readDevSetting', async function () {
+        const TEST_SETTING = 'aws.dev.forceTelemetry'
+        let prevReleaseMethod: (() => boolean) | undefined
+
+        before(function () {
+            prevReleaseMethod = env.isReleaseVersion
+        })
+
+        after(function () {
+            Object.defineProperty(env, 'isReleaseVersion', { value: prevReleaseMethod })
+        })
+
+        it('throws if not production if key does not exist (silent=false)', function () {
+            Object.defineProperty(env, 'isReleaseVersion', { value: () => false })
+            assert.throws(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
+        })
+
+        it('does not throw in producton if key does not exist (silent=false)', function () {
+            Object.defineProperty(env, 'isReleaseVersion', { value: () => true })
+            assert.doesNotThrow(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
         })
     })
 })
