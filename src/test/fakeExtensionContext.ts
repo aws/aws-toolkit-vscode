@@ -39,10 +39,10 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public workspaceState: vscode.Memento = new FakeMemento()
     public globalState: vscode.Memento = new FakeMemento()
     public storagePath: string | undefined
-    public globalStoragePath: string = '.'
     public logPath: string = ''
 
     private _extensionPath: string = ''
+    private _globalStoragePath: string = '.'
 
     public constructor(preload?: FakeExtensionState) {
         if (preload) {
@@ -57,6 +57,14 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
 
     public set extensionPath(path: string) {
         this._extensionPath = path
+    }
+
+    public get globalStoragePath(): string {
+        return this._globalStoragePath
+    }
+
+    public set globalStoragePath(path: string) {
+        this._globalStoragePath = path
     }
 
     public asAbsolutePath(relativePath: string): string {

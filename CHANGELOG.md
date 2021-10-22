@@ -1,3 +1,18 @@
+## 1.32.0 2021-10-21
+
+- **Breaking Change** DEPRECATION: SAM actions using `dotnetcore2.1` runtime (Phase 2 Lambda deprecation)
+- **Bug Fix** Resources: Better handling of unsupported resource actions
+- **Bug Fix** Resources: Filter S3 bucket resources by region in list view
+- **Bug Fix** Resources: Exclude resource types that do not support LIST in Cloud9
+- **Bug Fix** Resources: Handle undefined type schema properties
+
+## 1.31.0 2021-10-14
+
+- **Bug Fix** StepFunctions: "Publish" command now asks for target region
+- **Feature** SAM "Edit Debug Configuration" UI is no longer "Beta"
+- **Feature** Surface read-only support for hundreds of resources under the Resources node in the AWS Explorer
+- **Feature** Create new Step Functions state machine template from AWS Explorer
+
 ## 1.30.0 2021-10-04
 
 - **Breaking Change** DEPRECATION:  SAM actions using `python2.7` and `nodejs10.x` runtimes (Phase 2 Lambda deprecation)

@@ -2,9 +2,23 @@
  * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { AppRunner, S3 } from 'aws-sdk'
-import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
+
+import {
+    APIGateway,
+    AppRunner,
+    CloudControl,
+    CloudFormation,
+    CloudWatchLogs,
+    IAM,
+    Lambda,
+    Schemas,
+    S3,
+    StepFunctions,
+    STS,
+    SSM,
+} from 'aws-sdk'
 import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
@@ -42,6 +56,7 @@ import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 
 interface Clients {
     apiGatewayClient: ApiGatewayClient
+    cloudControlClient: CloudControlClient
     cloudFormationClient: CloudFormationClient
     cloudWatchLogsClient: CloudWatchLogsClient
     ecrClient: EcrClient
@@ -61,11 +76,12 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
     public constructor(overrideClients?: Partial<Clients>) {
         this.clients = {
             apiGatewayClient: new MockApiGatewayClient(),
+            cloudControlClient: new MockCloudControlClient(),
             cloudFormationClient: new MockCloudFormationClient(),
             cloudWatchLogsClient: new MockCloudWatchLogsClient(),
             ecsClient: new MockEcsClient({}),
             ecrClient: new MockEcrClient({}),
-            iamClient: new MockIamClient({}),
+            iamClient: new MockIamClient(),
             lambdaClient: new MockLambdaClient({}),
             schemaClient: new MockSchemaClient(),
             stepFunctionsClient: new MockStepFunctionsClient(),
@@ -83,6 +99,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createApiGatewayClient(regionCode: string): ApiGatewayClient {
         return this.clients.apiGatewayClient
+    }
+
+    public createCloudControlClient(regionCode: string): CloudControlClient {
+        return this.clients.cloudControlClient
     }
 
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
@@ -170,7 +190,53 @@ export class MockCloudFormationClient implements CloudFormationClient {
             name: string
         ) => Promise<CloudFormation.DescribeStackResourcesOutput> = async (name: string) => ({
             StackResources: [],
-        })
+        }),
+
+        public readonly describeType: (typeName: string) => Promise<CloudFormation.DescribeTypeOutput> = async (
+            typeName: string
+        ) =>
+            ({
+                TypeName: '',
+            } as CloudFormation.DescribeTypeOutput),
+
+        public readonly listTypes: () => AsyncIterableIterator<CloudFormation.TypeSummary> = () => asyncGenerator([])
+    ) {}
+}
+
+export class MockCloudControlClient implements CloudControlClient {
+    public constructor(
+        public readonly regionCode: string = '',
+
+        public readonly createResource: (
+            request: CloudControl.CreateResourceInput
+        ) => Promise<CloudControl.CreateResourceOutput> = async (request: CloudControl.CreateResourceInput) =>
+            ({
+                ProgressEvent: '',
+            } as CloudControl.CreateResourceOutput),
+        public readonly deleteResource: (request: CloudControl.DeleteResourceInput) => Promise<void> = async (
+            request: CloudControl.DeleteResourceInput
+        ) => {},
+        public readonly listResources: (
+            request: CloudControl.ListResourcesInput
+        ) => Promise<CloudControl.ListResourcesOutput> = async (request: CloudControl.ListResourcesInput) => ({
+            TypeName: '',
+            ResourceDescriptions: [],
+            NextToken: '',
+        }),
+        public readonly getResource: (
+            request: CloudControl.GetResourceInput
+        ) => Promise<CloudControl.GetResourceOutput> = async (request: CloudControl.GetResourceInput) =>
+            ({
+                TypeName: '',
+                ResourceDescription: {
+                    Identifier: '',
+                    ResourceModel: '',
+                },
+            } as CloudControl.GetResourceOutput),
+
+        public readonly updateResource: (request: CloudControl.UpdateResourceInput) => Promise<void> = async (
+            request: CloudControl.UpdateResourceInput
+        ) => {}
     ) {}
 }
 
@@ -328,10 +394,13 @@ export class MockEcsClient implements EcsClient {
 
 export class MockIamClient implements IamClient {
     public readonly regionCode = ''
-    public readonly listRoles: () => Promise<IAM.ListRolesResponse>
 
-    public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
-        this.listRoles = listRoles
+    public constructor() {}
+    public listRoles(request?: IAM.ListRolesRequest): Promise<IAM.Role[]> {
+        throw new Error('Method not implemented.')
+    }
+    public getRoles(request: IAM.ListRolesRequest = {}): AsyncIterableIterator<IAM.Role> {
+        throw new Error('Method not implemented.')
     }
     public createRole(request: IAM.CreateRoleRequest): Promise<IAM.CreateRoleResponse> {
         throw new Error('Method not implemented.')

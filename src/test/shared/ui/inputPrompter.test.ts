@@ -61,11 +61,11 @@ describe('InputBoxPrompter', function () {
         const result = testPrompter.prompt()
         accept('input')
         assert.strictEqual(await result, 'input')
-        assert.strictEqual(testPrompter.lastResponse, 'input')
+        assert.strictEqual(testPrompter.recentItem, 'input')
     })
 
     it('can set last response', async function () {
-        testPrompter.lastResponse = 'last response'
+        testPrompter.recentItem = 'last response'
         assert.strictEqual(inputBox.value, 'last response')
     })
 

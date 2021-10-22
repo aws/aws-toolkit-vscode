@@ -1589,7 +1589,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'src/HelloWorld',
                 },
                 lambda: {
-                    runtime: 'dotnetcore2.1',
+                    runtime: 'dotnetcore3.1',
                 },
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
@@ -1598,7 +1598,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1665,7 +1665,7 @@ describe('SamDebugConfigurationProvider', async function () {
       Handler: HelloWorld::HelloWorld.Function::FunctionHandler
       CodeUri: >-
         ${input.invokeTarget.projectRoot}
-      Runtime: dotnetcore2.1
+      Runtime: dotnetcore3.1
 `
             )
 
@@ -1764,7 +1764,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1896,7 +1896,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     logicalId: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'dotnetcore2.1',
+                    runtime: 'dotnetcore3.1',
                     environmentVariables: {
                         'test-envvar-1': 'test value 1',
                     },
@@ -1917,7 +1917,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,

@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as env from '../../shared/vscode/env'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
@@ -64,6 +65,61 @@ describe('DefaultSettingsConfiguration', function () {
 
                 const actualValue = sut.readSetting(SETTING_KEY)
                 assert.deepStrictEqual(actualValue, scenario.testValue)
+            })
+        })
+    })
+
+    describe('getSetting', async function () {
+        let settings: vscode.WorkspaceConfiguration
+
+        beforeEach(async function () {
+            settings = vscode.workspace.getConfiguration()
+        })
+
+        scenarios.forEach(scenario => {
+            it(scenario.desc, async () => {
+                await settings.update('aws.telemetry', scenario.testValue, vscode.ConfigurationTarget.Global)
+                const actualValue = sut.getSetting('aws.telemetry', typeof scenario.testValue as any)
+                assert.deepStrictEqual(actualValue, scenario.testValue)
+            })
+        })
+
+        it('failure modes', async () => {
+            //
+            // Missing setting:
+            //
+            const testSetting = 'aws.bogusSetting'
+            assert.deepStrictEqual(sut.getSetting<boolean>(testSetting, 'boolean'), undefined)
+            assert.throws(function () {
+                sut.getSetting<boolean>(testSetting, 'boolean', { silent: 'no' })
+            })
+            assert.deepStrictEqual(sut.getSetting(testSetting, 'string', { silent: 'notfound' }), undefined)
+            assert.deepStrictEqual(sut.getSetting(testSetting, 'string', { silent: 'yes' }), undefined)
+            assert.deepStrictEqual(sut.getSetting(testSetting, undefined, {}), undefined)
+            assert.deepStrictEqual(sut.getSetting(testSetting), undefined)
+
+            //
+            // Setting exists but has wrong type:
+            //
+            await settings.update('aws.telemetry', true, vscode.ConfigurationTarget.Global)
+            assert.deepStrictEqual(sut.getSetting<boolean>('aws.telemetry', 'function', { silent: 'yes' }), undefined)
+            assert.throws(function () {
+                sut.getSetting<boolean>('aws.telemetry', 'object', { silent: 'notfound' })
+            })
+            assert.throws(function () {
+                sut.getSetting<boolean>('aws.telemetry', 'string', { silent: 'no' })
+            })
+            assert.throws(function () {
+                assert.deepStrictEqual(
+                    sut.getSetting<boolean>('aws.telemetry', 'bigint', { silent: 'notfound' }),
+                    undefined
+                )
+            })
+            assert.throws(function () {
+                assert.deepStrictEqual(sut.getSetting<boolean>('aws.telemetry', 'symbol', {}), undefined)
+            })
+            assert.throws(function () {
+                assert.deepStrictEqual(sut.getSetting<boolean>('aws.telemetry', 'string'), undefined)
             })
         })
     })
@@ -170,6 +226,29 @@ describe('DefaultSettingsConfiguration', function () {
         it('validates', async function () {
             await assert.rejects(sut.isPromptEnabled('invalidPrompt'))
             await assert.rejects(sut.getSuppressPromptSetting('invalidPrompt'))
+        })
+    })
+
+    describe('readDevSetting', async function () {
+        const TEST_SETTING = 'aws.dev.forceTelemetry'
+        let prevReleaseMethod: (() => boolean) | undefined
+
+        before(function () {
+            prevReleaseMethod = env.isReleaseVersion
+        })
+
+        after(function () {
+            Object.defineProperty(env, 'isReleaseVersion', { value: prevReleaseMethod })
+        })
+
+        it('throws if not production if key does not exist (silent=false)', function () {
+            Object.defineProperty(env, 'isReleaseVersion', { value: () => false })
+            assert.throws(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
+        })
+
+        it('does not throw in producton if key does not exist (silent=false)', function () {
+            Object.defineProperty(env, 'isReleaseVersion', { value: () => true })
+            assert.doesNotThrow(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
         })
     })
 })
