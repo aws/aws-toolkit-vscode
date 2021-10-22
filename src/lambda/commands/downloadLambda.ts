@@ -160,7 +160,7 @@ async function downloadAndUnzipLambda(
             showUrl: false,
             friendlyName: 'Lambda Function .zip file',
         })
-        const streams = await fetcher.get(downloadLocation)
+        const streams = fetcher.get(downloadLocation)
 
         let last: number = 0
         streams.requestStream.on('downloadProgress', (p: Progress) => {

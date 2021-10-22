@@ -32,8 +32,11 @@ const MIN_VERSION_FOR_GOT = '1.47.0'
 
 // Minimal interface for hooking into download + file write streams
 interface FetcherStreams {
+    /** Download stream piped to `fsStream`. */
     requestStream: Request // `got` doesn't add the correct types to 'on' for some reason
+    /** Stream writing to the file system. */
     fsStream: fs.WriteStream
+    /** Promise that resolves when all streams have closed, */
     done: Promise<void>
 }
 
@@ -59,10 +62,12 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
     /**
      * Returns the contents of the resource, or undefined if the resource could not be retrieved.
+     *
+     * @param pipeLocation Optionally pipe the download to a file system location
      */
-    public async get(): Promise<string | undefined>
-    public async get(pipeLocation: string): Promise<FetcherStreams>
-    public async get(pipeLocation?: string): Promise<FetcherStreams | string | undefined> {
+    public get(): Promise<string | undefined>
+    public get(pipeLocation: string): FetcherStreams
+    public get(pipeLocation?: string): Promise<string | undefined> | FetcherStreams {
         this.logger.verbose(`Downloading ${this.logText()}`)
 
         if (pipeLocation) {
@@ -73,6 +78,10 @@ export class HttpResourceFetcher implements ResourceFetcher {
             return streams
         }
 
+        return this.downloadRequest()
+    }
+
+    private async downloadRequest(): Promise<string | undefined> {
         try {
             const contents = (await this.getResponseFromGetRequest()).body
             if (this.params.onSuccess) {
