@@ -6,7 +6,7 @@
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
-import { pluginVersion } from './extensionUtilities'
+import { extensionVersion } from './vscode/env'
 
 export interface AWSClientBuilder {
     /**
@@ -52,7 +52,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         if (userAgent && !opt.customUserAgent) {
             const platformName = env.appName.replace(/\s/g, '-')
-            opt.customUserAgent = `AWS-Toolkit-For-VSCode/${pluginVersion} ${platformName}/${version}`
+            opt.customUserAgent = `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${version}`
         }
 
         const service = new type(opt)

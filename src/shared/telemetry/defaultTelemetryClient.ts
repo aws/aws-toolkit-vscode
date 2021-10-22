@@ -6,7 +6,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { isReleaseVersion, pluginVersion } from '../extensionUtilities'
+import { isReleaseVersion, extensionVersion } from '../vscode/env'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
@@ -46,7 +46,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 await this.client
                     .postMetrics({
                         AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                        AWSProductVersion: pluginVersion,
+                        AWSProductVersion: extensionVersion,
                         ClientID: this.clientId,
                         OS: os.platform(),
                         OSVersion: os.release(),
@@ -73,7 +73,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
             await this.client
                 .postFeedback({
                     AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                    AWSProductVersion: pluginVersion,
+                    AWSProductVersion: extensionVersion,
                     OS: os.platform(),
                     OSVersion: os.release(),
                     ParentProduct: vscode.env.appName,
