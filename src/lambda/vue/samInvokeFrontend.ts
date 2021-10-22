@@ -76,7 +76,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDe
         },
         api: {
             path: '',
-            httpMethod: '',
+            httpMethod: 'get',
             clientCertificateId: '',
             querystring: '',
             headers: {},
