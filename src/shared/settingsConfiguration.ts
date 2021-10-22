@@ -23,6 +23,7 @@ export type AwsDevSetting =
     | 'aws.dev.caws.apiKey'
     | 'aws.dev.caws.betaEndpoint'
     | 'aws.dev.mde.betaEndpoint'
+    | 'aws.dev.mde.emailFilter'
 
 type JSPrimitiveTypeName =
     | 'undefined'

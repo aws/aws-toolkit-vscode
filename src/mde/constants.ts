@@ -12,6 +12,16 @@ export const DEFAULT_COMPUTE_SETTINGS: SettingsForm & { inactivityTimeoutMinutes
     persistentStorage: { sizeInGiB: 16 },
 }
 
+/**
+ * maps friendly names to tag names
+ */
+export const VSCODE_MDE_TAGS = {
+    repository: 'mde:repository',
+    repositoryBranch: 'mde:repository-branch',
+    email: 'mde:email-hash',
+    tool: 'mde:created-by-tool',
+}
+
 /** Fields that can only be changed on creation */
 export const CREATE_ONLY_FIELDS: (keyof SettingsForm)[] = ['persistentStorage']
 /** Used in global state */

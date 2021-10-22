@@ -79,11 +79,13 @@
 </template>
 
 <script lang="ts">
+import { defineComponent } from 'vue'
+import { VSCODE_MDE_TAGS } from '../constants'
 import { defineComponent, watchEffect, PropType } from 'vue'
 import { createClass } from '../../webviews/util'
 import { EnvironmentProp } from './shared'
 
-const MAX_TAGS = 50
+const MAX_TAGS = 50 - Object.keys(VSCODE_MDE_TAGS).length
 const MAX_KEY_LENGTH = 128
 const MAX_VALUE_LENGTH = 256
 const INVALID_CHARACTER_REGEX = /[^a-zA-Z0-9\s_.:/=+-@]/g

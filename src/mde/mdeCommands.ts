@@ -18,9 +18,12 @@ import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { Timeout, waitTimeout, waitUntil } from '../shared/utilities/timeoutUtils'
 import { execFileSync } from 'child_process'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { CreateEnvironmentRequest, DeleteEnvironmentResponse } from '../../types/clientmde'
+import { CreateEnvironmentRequest, DeleteEnvironmentResponse, TagMap } from '../../types/clientmde'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { createMdeWebview } from './vue/create/backend'
+import { getEmailHash } from './mdeModel'
+import { productName } from '../shared/constants'
+import { VSCODE_MDE_TAGS } from './constants'
 import { localizedDelete } from '../shared/localizedText'
 import { MDE_RESTART_KEY } from './constants'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
@@ -257,19 +260,32 @@ export async function mdeCreateCommand(
     delete options?.repo
 
     try {
+        const defaultTags = {
+            [VSCODE_MDE_TAGS.tool]: productName,
+        }
+        if (repo && repo[0]) {
+            defaultTags[VSCODE_MDE_TAGS.repository] = repo[0].uri
+            defaultTags[VSCODE_MDE_TAGS.repositoryBranch] = repo[0].branch ?? 'master' // TODO: better fallback?
+        }
+        const emailHash = await getEmailHash()
+        if (emailHash) {
+            defaultTags[VSCODE_MDE_TAGS.email] = emailHash
+        }
         const env = await ext.mde.createEnvironment({
             // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
             // sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
             // definition: {
             //     shellImage: `"{"\"shellImage\"": "\"mcr.microsoft.com/vscode/devcontainers/go\""}"`,
             // },
-            tags: {
-                label: '', // Label = "tag with no value".
-            },
             // instanceType: ...  // TODO?
             // ideRuntimes: ...  // TODO?
             ...options,
             ...response,
+            tags: {
+                // label: '', // Label = "tag with no value".
+                ...defaultTags,
+                ...(response?.tags ?? {}),
+            },
         })
 
         getLogger().info('MDE: created environment: %O', env)
@@ -460,4 +476,8 @@ export async function installToolkit(mde: Pick<mde.MdeEnvironment, 'id'>): Promi
         stdout => getLogger().verbose(`MDE install toolkit: ${mde.id}: ${stdout}`),
         stderr => getLogger().verbose(`MDE install toolkit: ${mde.id}: ${stderr}`)
     )
+}
+
+export async function tagMde(arn: string, tagMap: TagMap) {
+    await ext.mde.tagResource(arn, tagMap)
 }

@@ -8,13 +8,16 @@ import { ExtContext } from '../shared/extensions'
 import { MdeDevfileCodeLensProvider } from '../shared/codelens/devfileCodeLensProvider'
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
 import { localize } from '../shared/utilities/messages'
-import { mdeConnectCommand, mdeCreateCommand, mdeDeleteCommand, resumeEnvironments } from './mdeCommands'
+import { mdeConnectCommand, mdeCreateCommand, mdeDeleteCommand, tagMde, resumeEnvironments } from './mdeCommands'
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
 import { activateUriHandlers } from './mdeUriHandlers'
 import { getLogger } from '../shared/logger'
+import { GitExtension } from '../shared/extensions/git'
+import { createTagMapFromRepo } from './mdeModel'
 import { createMdeConfigureWebview } from './vue/configure/backend'
+import { getEnvArn } from '../shared/clients/mdeEnvironmentClient'
 import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { MDE_RESTART_KEY } from './constants'
 
@@ -26,6 +29,20 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     const devfileRegistry = new DevfileRegistry()
     await devfileRegistry.addWatchPattern(DEVFILE_GLOB_PATTERN)
+
+    const arn = getEnvArn()
+    if (arn) {
+        const git = GitExtension.instance
+        const repos = git.repositories
+        // assume that only 1 repository is open for now
+        if (repos.length > 0) {
+            // need to pull from the repo (and ignore branch) in order to get a remote url
+            repos[0].onDidChangeBranch(async branch => {
+                const tags = await createTagMapFromRepo(repos[0])
+                await tagMde(arn, tags)
+            })
+        }
+    }
 
     ctx.extensionContext.subscriptions.push(
         vscode.languages.registerCodeLensProvider(
