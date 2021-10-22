@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as utils from '../../shared/extensionUtilities'
+import * as env from '../../shared/vscode/env'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
@@ -231,28 +231,23 @@ describe('DefaultSettingsConfiguration', function () {
 
     describe('readDevSetting', async function () {
         const TEST_SETTING = 'aws.dev.forceTelemetry'
-        let prevMethod: (() => boolean) | undefined
-        let prevVar: string | undefined
+        let prevReleaseMethod: (() => boolean) | undefined
 
         before(function () {
-            prevMethod = utils.isReleaseVersion
-            prevVar = process.env['CODEBUILD_BUILD_ID']
+            prevReleaseMethod = env.isReleaseVersion
         })
 
         after(function () {
-            Object.defineProperty(utils, 'isReleaseVersion', { value: prevMethod })
-            process.env['CODEBUILD_BUILD_ID'] = prevVar
+            Object.defineProperty(env, 'isReleaseVersion', { value: prevReleaseMethod })
         })
 
-        it('throws if not production and in CI if key does not exist (silent=false)', function () {
-            process.env['CODEBUILD_BUILD_ID'] = prevVar ?? '123'
-            Object.defineProperty(utils, 'isReleaseVersion', { value: () => false })
+        it('throws if not production if key does not exist (silent=false)', function () {
+            Object.defineProperty(env, 'isReleaseVersion', { value: () => false })
             assert.throws(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
         })
 
         it('does not throw in producton if key does not exist (silent=false)', function () {
-            delete process.env['CODEBUILD_BUILD_ID']
-            Object.defineProperty(utils, 'isReleaseVersion', { value: () => true })
+            Object.defineProperty(env, 'isReleaseVersion', { value: () => true })
             assert.doesNotThrow(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
         })
     })

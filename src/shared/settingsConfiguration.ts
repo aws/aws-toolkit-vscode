@@ -7,9 +7,8 @@ import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { ext } from './extensionGlobals'
-import { isCI } from './vscode/env'
+import { isReleaseVersion } from './vscode/env'
 import * as logger from './logger'
-import { isReleaseVersion } from './extensionUtilities'
 
 /**
  * Wraps the VSCode configuration API and provides Toolkit-related
@@ -218,7 +217,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     ): T | undefined {
         const val = this.getSetting<T>(key, type, {
             // Never throw in a release environment, but throw in CI
-            silent: silent ? 'yes' : !isCI() || isReleaseVersion() ? 'notfound' : 'no',
+            silent: silent ? 'yes' : isReleaseVersion() ? 'notfound' : 'no',
             logging: true,
         })
         if (val === undefined) {
