@@ -3,20 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
-import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
+import * as telemetry from '../telemetry/telemetry'
 import * as nls from 'vscode-nls'
+import * as pathutil from '../utilities/pathUtils'
+import got, { OptionsOfTextResponseBody, RequestError } from 'got'
+import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { getLogger } from '../logger'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
-import * as telemetry from '../telemetry/telemetry'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
-import * as pathutil from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
@@ -376,7 +376,7 @@ export async function runLambdaFunction(
         if (config.invokeTarget.target === 'api') {
             const payload =
                 config.eventPayloadFile === undefined
-                    ? {}
+                    ? undefined
                     : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
             // Send the request to the local API server.
             await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
@@ -453,65 +453,52 @@ vscode.debug.onDidTerminateDebugSession(session => {
  * Sends an HTTP request to the local API webserver, which invokes the backing
  * Lambda, which will then enter debugging.
  */
-function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: number, payload: any): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const reqMethod = api?.httpMethod?.toUpperCase() ?? 'GET'
-        const qs = (api?.querystring?.startsWith('?') ? '' : '?') + (api?.querystring ?? '')
-        const reqOpts = {
-            // Sets body to JSON value and adds Content-type: application/json header.
-            json: true,
-            uri: `http://127.0.0.1:${apiPort}${api?.path}${qs}`,
-            method: reqMethod,
-            timeout: 4000,
-            headers: api?.headers,
-            body: payload,
-            // TODO: api?.stageVariables,
-        }
-        getLogger('channel').info(
-            localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', reqOpts.uri)
-        )
+async function requestLocalApi(
+    ctx: ExtContext,
+    api: APIGatewayProperties,
+    apiPort: number,
+    payload: any
+): Promise<void> {
+    const RETRY_LIMIT = 30
+    const RETRY_DELAY = 200
+    const reqMethod = api?.httpMethod || 'GET'
+    const qs = (api?.querystring?.startsWith('?') ? '' : '?') + (api?.querystring ?? '')
+    const uri = `http://127.0.0.1:${apiPort}${api?.path}${qs}`
+    const reqOpts: OptionsOfTextResponseBody = {
+        json: payload,
+        timeout: { socket: 1000 },
+        headers: api?.headers,
+        method: reqMethod,
+        retry: {
+            limit: RETRY_LIMIT,
+            statusCodes: [],
+            methods: [reqMethod],
+            calculateDelay: obj => {
+                if (obj.error.response !== undefined) {
+                    getLogger().debug('Local API response: %s : %O', uri, JSON.stringify(obj.error.response))
+                }
+                if (obj.error.code === 'ETIMEDOUT') {
+                    return 0
+                }
+                getLogger().debug(`Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error}`)
+                return RETRY_DELAY
+            },
+        },
+        // TODO: api?.stageVariables,
+    }
 
-        const retryRequest = async (retries: number, retriesRemaining: number) => {
-            if (retriesRemaining !== retries) {
-                await new Promise<void>(r => setTimeout(r, 200))
-            }
-            request(reqOpts)
-                .on('response', resp => {
-                    getLogger().debug('Local API response: %s : %O', reqOpts.uri, JSON.stringify(resp))
-                    if (resp.statusCode === 403) {
-                        const msg = `Local API failed to respond to path: ${api?.path}`
-                        getLogger().error(msg)
-                        reject(msg)
-                    } else {
-                        resolve()
-                    }
-                })
-                .on('complete', () => {
-                    resolve()
-                })
-                .on('error', e => {
-                    const code = (e as any).code
-                    if (code === 'ESOCKETTIMEDOUT') {
-                        // HACK: request timeout (as opposed to ECONNREFUSED)
-                        // is a hint that debugger is attached, so we can stop requesting now.
-                        getLogger().info('Local API is alive (code: %s): %s', code, reqOpts.uri)
-                        resolve()
-                        return
-                    }
-                    getLogger().debug(
-                        `Local API: retry (${retries - retriesRemaining} of ${retries}): ${reqOpts.uri}: ${e.name}`
-                    )
-                    if (retriesRemaining > 0) {
-                        retryRequest(retries, retriesRemaining - 1)
-                    } else {
-                        // Timeout: local APIGW took too long to respond.
-                        const msg = `Local API failed to respond (${code}) after ${retries} retries, path: ${api?.path}`
-                        getLogger().error(msg)
-                        reject(msg)
-                    }
-                })
+    getLogger('channel').info(localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', uri))
+
+    await got(uri, reqOpts).catch((err: RequestError) => {
+        if (err.code === 'ETIMEDOUT') {
+            // HACK: request timeout (as opposed to ECONNREFUSED)
+            // is a hint that debugger is attached, so we can stop requesting now.
+            getLogger().info('Local API is alive: %s', uri)
+            return
         }
-        retryRequest(30, 30)
+        const msg = `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err}`
+        getLogger('channel').error(msg)
+        throw new Error(msg)
     })
 }
 
