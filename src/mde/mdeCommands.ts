@@ -10,7 +10,7 @@ import * as nls from 'vscode-nls'
 import { ext } from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
-import { showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
+import { showConfirmationMessage, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
 import { Commands } from '../shared/vscode/commands'
 import { Window } from '../shared/vscode/window'
 import { MdeRootNode } from './mdeRootNode'
@@ -18,9 +18,11 @@ import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { Timeout, waitTimeout, waitUntil } from '../shared/utilities/timeoutUtils'
 import { execFileSync } from 'child_process'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { CreateEnvironmentRequest } from '../../types/clientmde'
+import { CreateEnvironmentRequest, DeleteEnvironmentResponse } from '../../types/clientmde'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { createMdeWebview } from './vue/create/backend'
+import { localizedDelete } from '../shared/localizedText'
+import { MDE_RESTART_KEY } from './constants'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
@@ -113,6 +115,10 @@ export async function mdeConnectCommand(
             if (mdeMeta?.status === 'STOPPED') {
                 progress.report({ message: localize('AWS.mde.startMde.stopStart', 'resuming environment...') })
                 await mdeClient.startEnvironment({ environmentId: args.id })
+            } else if (mdeMeta?.status === 'STOPPING') {
+                progress.report({
+                    message: localize('AWS.mde.startMde.resuming', 'waiting for environment to stop...'),
+                })
             } else {
                 progress.report({
                     message: localize('AWS.mde.startMde.starting', 'waiting for environment...'),
@@ -194,6 +200,7 @@ export async function mdeConnectCommand(
             ),
         },
         '--folder-uri',
+        // TODO: save user's previous project and try to re-open
         `vscode-remote://ssh-remote+aws-mde-${args.id}/projects`
     )
 
@@ -218,7 +225,7 @@ export async function mdeCreateCommand(
     node?: MdeRootNode,
     // this is just partial for now for testing
     // it should instead be pass-through to the create API
-    options?: Partial<CreateEnvironmentRequest> & { repo?: string },
+    options?: Partial<CreateEnvironmentRequest> & { repo?: { url: string; branch?: string } },
     ctx?: ExtContext,
     window = Window.vscode(),
     commands = Commands.vscode()
@@ -232,16 +239,26 @@ export async function mdeCreateCommand(
     getLogger().debug('MDE: mdeCreateCommand called on node: %O', node)
     const label = `created-${dateStr}`
 
-    const response = await createMdeWebview(ctx!)
+    if (!ctx) {
+        getLogger().debug('MDE: mdeCreateCommand should be called with extension context')
+        return
+    }
+
+    const response = await createMdeWebview(ctx, options?.repo)
+    if (!response) {
+        getLogger().debug('MDE: user cancelled create environment webview')
+        return
+    }
+
     const repo = response?.sourceCode
     // We will always perform the clone
     delete response?.sourceCode
+    // API will reject our extra data
+    delete options?.repo
 
     try {
         const env = await ext.mde.createEnvironment({
-            instanceType: 'dev.standard1.large',
             // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
-            persistentStorage: { sizeInGiB: 0 },
             // sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
             // definition: {
             //     shellImage: `"{"\"shellImage\"": "\"mcr.microsoft.com/vscode/devcontainers/go\""}"`,
@@ -264,7 +281,7 @@ export async function mdeCreateCommand(
             if (!mde) {
                 return
             }
-            await cloneToMde(mde, vscode.Uri.parse(repo[0].uri, true))
+            await cloneToMde(mde, vscode.Uri.parse(repo[0].uri, true), repo[0].branch)
         }
 
         // TODO: MDE telemetry
@@ -288,25 +305,45 @@ export async function mdeDeleteCommand(
     env: Pick<mde.MdeEnvironment, 'id'>,
     node?: MdeRootNode,
     commands = Commands.vscode()
-): Promise<void> {
-    const r = await ext.mde.deleteEnvironment({ environmentId: env.id })
-    getLogger().info('%O', r?.status)
-    if (node !== undefined) {
-        node.refresh()
-    } else {
-        await commands.execute('aws.refreshAwsExplorer', true)
+): Promise<DeleteEnvironmentResponse | undefined> {
+    // TODO: add suppress option
+    const prompt = localize('AWS.mde.delete.confirm.message', 'Are you sure you want to delete this environment?')
+    const response = await showConfirmationMessage({ prompt, confirm: localizedDelete })
+
+    if (response) {
+        const r = await ext.mde.deleteEnvironment({ environmentId: env.id })
+        getLogger().info('%O', r?.status)
+        if (node !== undefined) {
+            node.refresh()
+        } else {
+            await commands.execute('aws.refreshAwsExplorer', true)
+        }
+        return r
     }
 }
 
 const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
 
-export async function cloneToMde(mde: mde.MdeEnvironment & { id: string }, repo: vscode.Uri): Promise<void> {
+export async function cloneToMde(
+    mde: mde.MdeEnvironment & { id: string },
+    repo: vscode.Uri,
+    branch?: string
+): Promise<void> {
     const agentSock = startSshAgent()
 
     // For some reason git won't accept URIs with the 'ssh' scheme?
     const target = repo.scheme === 'ssh' ? `${repo.authority}${repo.path}` : repo.toString()
     // TODO: let user name the project (if they want)
     const repoName = repo.path.split('/').pop()?.split('.')[0]
+
+    const gitArgs = (branch ? ['-b', branch] : []).concat(`/projects/'${repoName}'`)
+    const sshCommands = [
+        'mkdir -p ~/.ssh',
+        'mkdir -p /projects',
+        'touch ~/.ssh/known_hosts',
+        'ssh-keyscan github.com >> ~/.ssh/known_hosts',
+        `git clone '${target}' ${gitArgs.join(' ')}`,
+    ]
 
     // TODO: could we parse for 'Permission denied (publickey).' and then tell user they need to add their SSH key to the agent?
     // TODO: handle different ports with the URI
@@ -319,7 +356,7 @@ export async function cloneToMde(mde: mde.MdeEnvironment & { id: string }, repo:
         '-o',
         'StrictHostKeyChecking=no',
         'AddKeysToAgent=yes',
-        `mkdir -p ~/.ssh && mkdir -p /projects && touch ~/.ssh/known_hosts && ssh-keyscan github.com >> ~/.ssh/known_hosts && git clone '${target}' /projects/'${repoName}'`
+        sshCommands.join(' && ')
     ).run(
         (stdout: string) => {
             getLogger().verbose(`MDE clone: ${mde.id}: ${stdout}`)
@@ -364,6 +401,47 @@ function startSshAgent(): string | undefined {
         return (execFileSync('ssh-agent', ['-s']).match(/$SSH_AGENT_VAR=(.*?);/) ?? [])[1]
     } catch (err) {
         getLogger().error('mde: failed to start SSH agent, clones may not work as expected: %O', err)
+    }
+}
+
+export async function resumeEnvironments(ctx: ExtContext) {
+    const memento = ctx.extensionContext.globalState
+    const pendingRestarts = memento.get<Record<string, boolean>>(MDE_RESTART_KEY, {})
+
+    // filter out stale environments
+    // TODO: write some utility code for mementos
+    const activeEnvironments: mde.MdeEnvironment[] = []
+    const ids = new Set<string>()
+    for await (const env of ext.mde.listEnvironments({})) {
+        env && activeEnvironments.push(env) && ids.add(env.id)
+    }
+    Object.keys(pendingRestarts).forEach(k => {
+        if (!ids.has(k) || !pendingRestarts[k]) {
+            delete pendingRestarts[k]
+        }
+    })
+    memento.update(MDE_RESTART_KEY, pendingRestarts)
+
+    const parseRegionFromArn = (arn: string) => {
+        // arn:aws:moontide:{REGION}:{ACCOUNT_ID}:/...
+        const region = arn.split('/')[0]?.split(':').slice(-3)[0]
+        if (!region) {
+            throw new Error('Failed to parse region from ARN')
+        }
+        return region
+    }
+
+    getLogger().debug('MDEs waiting to be resumed: %O', pendingRestarts)
+
+    // TODO: if multiple MDEs are in a 'restart' state, prompt user
+    const target = Object.keys(pendingRestarts).pop()
+    const env = activeEnvironments.find(env => env.id === target)
+    if (env) {
+        mdeConnectCommand(env, parseRegionFromArn(env.arn)).then(() => {
+            // TODO: we can mark this environment as 'attemptedRestart'
+            // should be left up to the target environment to remove itself from the
+            // pending restart global state
+        })
     }
 }
 

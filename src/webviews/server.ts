@@ -26,8 +26,8 @@ export interface Commands<U = any, S = any> {
      * Initial data to load. This is called only once, even if the view is refreshed.
      * Further calls result in a rejected Promise.
      */
-    init?: () => Promise<U>
-    [key: string]: Command<any, any> | undefined //CommandWithOptions<any, any> | undefined
+    init?: () => Promise<U> | U
+    [key: string]: Command<any, any> | vscode.EventEmitter<any> | undefined //CommandWithOptions<any, any> | undefined
 }
 
 export type WebviewServer = vscode.Webview & {
@@ -73,8 +73,8 @@ export function compileCommands<T extends Commands<U, S>, U extends any[] = any,
         if (command === undefined) {
             return
         }
-        const result = typeof command === 'function' ? { command } : command
-        compiled[k] = { memoize: false, once: false, ...result }
+        //const result = typeof command === 'function' ? { command } : command
+        //compiled[k] = { memoize: false, once: false, ...result }
     })
     return {
         // TODO: throw an error is someone tries to access this
@@ -103,6 +103,16 @@ export function registerWebviewServer<S>(webview: WebviewServer, commands: Comma
         if (!fn) {
             return getLogger().warn(`Received invalid message from client: ${command}`)
         }
+
+        if (fn instanceof vscode.EventEmitter) {
+            // TODO: make server dipose of event if client calls `dispose`
+            fn.event(e => webview.postMessage({ command, event: true, data: e }))
+            getLogger().verbose(`Registered event handler for: ${command}`)
+            return webview.postMessage({ id, command, event: true })
+        }
+
+        // TODO: these commands could potentially have sensitive data, we don't want to log in that case
+        getLogger().debug(`Webview called command "${command}" with args: %O`, data)
 
         let result: any
         try {

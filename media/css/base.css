@@ -62,6 +62,10 @@ input[type='number'][data-invalid='true'] {
     border: 1px solid var(--vscode-inputValidation-errorBorder);
     border-bottom: 0;
 }
+input:disabled {
+    /* TODO: use VSC webcomponent library instead */
+    filter: brightness(0.8);
+}
 .input-validation {
     color: var(--vscode-inputValidation-errorForeground);
     background: var(--vscode-inputValidation-errorBackground);
@@ -111,7 +115,7 @@ button,
     padding: 8px;
 }
 button,
-.button-theme-primary:hover {
+.button-theme-primary:hover:not(:disabled) {
     background: var(--vscode-button-hoverBackground);
 }
 .button-theme-secondary {
@@ -119,14 +123,15 @@ button,
     background: var(--vscode-button-secondaryBackground);
     border: 1px solid var(--vscode-button-border);
 }
-.button-theme-secondary:hover {
+.button-theme-secondary:hover:not(:disabled) {
     background: var(--vscode-button-secondaryHoverBackground);
 }
 .button-theme-soft {
     color: var(--vscode-settings-textInputForeground);
     background: var(--vscode-settings-textInputBackground);
 }
-.button:disabled {
+button:disabled {
+    /* TODO: use VSC webcomponent library instead */
     filter: brightness(0.8);
 }
 
@@ -154,7 +159,7 @@ textarea {
 }
 .option-label {
     display: block;
-    max-width: 560px;
+    /* max-width: 560px; */
     padding: 0 0 8px 0;
 }
 

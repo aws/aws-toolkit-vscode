@@ -2,7 +2,7 @@
     <label class="option-label" for="devfile-url" v-if="environment === 'local'">
         <div class="mb-0">Devfile URL:</div>
     </label>
-    <p v-else>
+    <p class="mt-0" v-else>
         You can use the IDE to edit the Devfile for your environment, which needs to be restarted to apply changes. To
         designate another file as your environment's Devfile, right-click the file and choose
         <b>Make Devfile for environment</b> from the menu. <a>Learn more about Devfiles.</a>
@@ -26,6 +26,7 @@
             class="button-theme-secondary no-wrap ml-16"
             type="button"
             style="grid-area: button"
+            :disabled="!!urlError || !url"
             @click="preview"
         >
             {{ environment === 'local' ? 'Preview file' : 'Open in editor' }}
@@ -40,21 +41,22 @@
 
 <script lang="ts">
 import { WebviewApi } from 'vscode-webview'
-import { defineComponent, PropType } from 'vue'
+import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import { createClass } from '../../webviews/util'
 import { Commands } from './create/backend'
+import { EnvironmentProp } from './shared'
 
 declare const webviewApi: WebviewApi<typeof VueModel>
 const client = WebviewClientFactory.create<Commands>()
 
 const PUBLIC_REGISTRY_URL = 'https://registry.devfile.io'
-const VALID_SCHEMES = ['https://', 'http://', 'ssh://']
+const VALID_SCHEMES = ['https://', 'http://']
 
 export const VueModel = createClass({
     url: '',
     urlError: '',
-    mode: 'registry' as 'registry' | 'repository' | 'path',
+    mode: 'registry' as 'registry' | 'path',
 })
 
 // TODO: write directive to bind one tag's width to another
@@ -66,17 +68,14 @@ export default defineComponent({
             type: VueModel,
             default: new VueModel(),
         },
-        environment: {
-            type: String as PropType<'local' | 'remote'>,
-            default: 'local',
-        },
+        environment: EnvironmentProp,
     },
     computed: {
         url() {
             return this.modelValue.url
         },
         mode() {
-            return this.url.startsWith(PUBLIC_REGISTRY_URL) ? 'registry' : 'repository'
+            return this.url.startsWith(PUBLIC_REGISTRY_URL) ? 'registry' : 'path'
         },
         urlError() {
             const schemes = this.environment === 'remote' ? VALID_SCHEMES.concat('file://') : VALID_SCHEMES
@@ -105,10 +104,13 @@ export default defineComponent({
             })
         },
         preview() {
-            if (this.mode !== 'registry' || this.urlError) {
+            if (this.urlError) {
                 return
             }
-            client.openUrl(this.url)
+            if (this.mode === 'path' && !this.url.startsWith('file://')) {
+                return client.openDevfile(`file://${this.url}`)
+            }
+            client.openDevfile(this.url)
         },
     },
 })

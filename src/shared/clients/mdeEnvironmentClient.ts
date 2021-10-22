@@ -4,13 +4,18 @@
  */
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-const got = require('got')
+import got from 'got'
 
+const ENVIRONMENT_ARN_KEY = '__ENVIRONMENT_ARN'
 export const MDE_ENVIRONMENT_ENDPOINT = 'http://127.0.0.1:1339'
 
 export type MdeEnvironmentClient = ClassToInterfaceType<DefaultMdeEnvironmentClient>
 export class DefaultMdeEnvironmentClient {
     public constructor(private endpoint: string = MDE_ENVIRONMENT_ENDPOINT) {}
+
+    public get arn(): string | undefined {
+        return process.env[ENVIRONMENT_ARN_KEY]
+    }
 
     // Start an action
     public async startDevfile(request: StartDevfileRequest): Promise<any> {
@@ -22,7 +27,7 @@ export class DefaultMdeEnvironmentClient {
 
     // Create a devfile for the project
     public async createDevfile(request: CreateDevfileRequest): Promise<CreateDevfileResponse> {
-        const response = await got.post(`${this.endpoint}/devfile/create`, {
+        const response = await got.post<CreateDevfileResponse>(`${this.endpoint}/devfile/create`, {
             json: request,
             responseType: 'json',
         })
@@ -31,7 +36,7 @@ export class DefaultMdeEnvironmentClient {
 
     // Get status and action type
     public async getStatus(): Promise<GetStatusResponse> {
-        const response = await got(`${this.endpoint}/status`, { responseType: 'json' })
+        const response = await got<GetStatusResponse>(`${this.endpoint}/status`, { responseType: 'json' })
         return response.body
     }
 }
@@ -59,4 +64,4 @@ export interface StartDevfileRequest {
     recreateHomeVolumes?: boolean
 }
 
-export type Status = 'PENDING' | 'STABLE' | 'CHANGED' | string
+export type Status = 'PENDING' | 'STABLE' | 'CHANGED'

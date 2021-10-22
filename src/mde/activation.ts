@@ -8,13 +8,15 @@ import { ExtContext } from '../shared/extensions'
 import { MdeDevfileCodeLensProvider } from '../shared/codelens/devfileCodeLensProvider'
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
 import { localize } from '../shared/utilities/messages'
-import { mdeConnectCommand, mdeCreateCommand, mdeDeleteCommand } from './mdeCommands'
+import { mdeConnectCommand, mdeCreateCommand, mdeDeleteCommand, resumeEnvironments } from './mdeCommands'
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
 import { activateUriHandlers } from './mdeUriHandlers'
 import { getLogger } from '../shared/logger'
 import { createMdeConfigureWebview } from './vue/configure/backend'
+import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
+import { MDE_RESTART_KEY } from './constants'
 
 /**
  * Activates MDE functionality.
@@ -46,7 +48,28 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
-    activateUriHandlers(ctx.extensionContext, ctx.uriHandler)
+    activateUriHandlers(ctx, ctx.uriHandler)
+
+    // Namespacing the clause context since I believe they are shared across extensions
+    vscode.commands.executeCommand('setContext', 'aws.isMde', !!new DefaultMdeEnvironmentClient().arn)
+
+    handleRestart(ctx)
+}
+
+function handleRestart(ctx: ExtContext) {
+    const envClient = new DefaultMdeEnvironmentClient()
+    if (envClient.arn !== undefined) {
+        // Remove this environment
+        const memento = ctx.extensionContext.globalState
+        const pendingRestarts = memento.get<Record<string, boolean>>(MDE_RESTART_KEY, {})
+        delete pendingRestarts[envClient.arn.split('/').pop() ?? '']
+        memento.update(MDE_RESTART_KEY, pendingRestarts)
+    } else {
+        // Resume environments (if coming from a restart)
+        resumeEnvironments(ctx).catch(err => {
+            getLogger().error(`Error while resuming environments: ${err}`)
+        })
+    }
 }
 
 async function registerCommands(ctx: ExtContext): Promise<void> {
@@ -73,6 +96,12 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.configure', async (treenode: MdeInstanceNode) => {
             createMdeConfigureWebview(ctx, treenode.env.id)
+        })
+    )
+    // TODO: may be better to pass an explicit variable saying this is the MDE we're connected to
+    ctx.extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('aws.mde.configure.current', async () => {
+            createMdeConfigureWebview(ctx)
         })
     )
 }

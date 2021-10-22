@@ -100,7 +100,7 @@ export default defineComponent({
     padding: 1rem;
     overflow: hidden;
 }
-.sub-pane .button-container:first-child {
+:deep(.sub-pane div:first-child) {
     margin-top: 0;
 }
 .collapse-leave-from {

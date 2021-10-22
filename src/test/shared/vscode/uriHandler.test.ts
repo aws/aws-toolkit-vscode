@@ -82,7 +82,7 @@ describe('MDE, CAWS UriHandlers', function () {
 
     it('xxx', async function () {
         const ctx = await FakeExtensionContext.getFakeExtContext()
-        mdeUriHandlers.activateUriHandlers(ctx.extensionContext, uriHandler)
+        mdeUriHandlers.activateUriHandlers(ctx, uriHandler)
         // TODO: this will open a prompt, causing tests to stall
         uriHandler.handleUri(
             vscode.Uri.parse(

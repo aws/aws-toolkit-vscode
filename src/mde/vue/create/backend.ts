@@ -7,8 +7,6 @@ import * as vscode from 'vscode'
 import { IAM } from 'aws-sdk'
 import { ExtContext } from '../../../shared/extensions'
 import { createVueWebview } from '../../../webviews/main'
-//import { FrontendCommand } from './parent.vue'
-
 import * as nls from 'vscode-nls'
 import { ext } from '../../../shared/extensionGlobals'
 import { EnvironmentSettingsWizard, getAllInstanceDescriptions, SettingsForm } from '../../wizards/environmentSettings'
@@ -40,15 +38,17 @@ const commands = createCommands({
             }))
         )
     },
-    openUrl,
+    openDevfile,
     getAllInstanceDescriptions,
 })
 
-export type Commands = typeof commands & { submit: (result: CreateEnvironmentRequest) => void }
+export type Commands = typeof commands & { submit: (result: CreateEnvironmentRequest) => void } & {
+    init: () => { url: string; branch?: string } | undefined
+}
 
 export async function createMdeWebview(
     context: ExtContext,
-    repo?: string
+    repo?: { url: string; branch?: string }
 ): Promise<CreateEnvironmentRequest | undefined> {
     const submit = new Promise<CreateEnvironmentRequest | undefined>(async resolve => {
         await createVueWebview({
@@ -58,7 +58,10 @@ export async function createMdeWebview(
             webviewJs: 'createMdeVue.js',
             context,
             onSubmit: resolve,
-            commands,
+            commands: {
+                ...commands,
+                init: () => repo,
+            },
         })
     })
     return submit
@@ -76,7 +79,7 @@ async function editSettings(data: SettingsForm) {
 }
 
 async function submit(data: CreateEnvironmentRequest) {
-    if (data.sourceCode && data.sourceCode[0]) {
+    if (data.sourceCode?.[0]?.uri) {
         const target = data.sourceCode[0]
         // TODO: remove this or have the git extension wrapper do it
         const targetNoSsh = target.uri.startsWith('ssh') ? target.uri.slice(6) : target.uri
@@ -88,6 +91,8 @@ async function submit(data: CreateEnvironmentRequest) {
                       filesystem: { path: devFiles[0] },
                   }
         data.devfile ??= devFiles.length > 0 ? file : undefined
+    } else {
+        delete data.sourceCode
     }
     // Empty strings are not automatically stripped out
     if (data.devfile?.uri?.uri === '') {
@@ -111,7 +116,7 @@ async function loadRoles(): Promise<IAM.Role[]> {
     }
 }
 
-async function openUrl(url: string | vscode.Uri) {
+async function openDevfile(url: string | vscode.Uri) {
     url = typeof url === 'string' ? vscode.Uri.parse(url, true) : url
     if (url.scheme === 'http' || url.scheme === 'https') {
         const fetcher = new HttpResourceFetcher(url.toString(), { showUrl: true })

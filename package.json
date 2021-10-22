@@ -907,6 +907,14 @@
                 {
                     "command": "aws.mde.delete",
                     "when": "false"
+                },
+                {
+                    "command": "aws.mde.configure",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.mde.configure.current",
+                    "when": "aws.isMde"
                 }
             ],
             "editor/title": [
@@ -2243,6 +2251,16 @@
             {
                 "command": "aws.mde.configure",
                 "title": "%AWS.command.mde.configure%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.mde.configure.current",
+                "title": "%AWS.command.mde.configure.current%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

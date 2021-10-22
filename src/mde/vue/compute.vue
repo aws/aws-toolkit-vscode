@@ -13,7 +13,8 @@
             </div>
             <div id="ebs-volume" style="grid-area: volume">
                 <span class="label-context soft">EBS Volume</span>
-                <b>5 GB (default)</b>
+                <b>{{ storage }}</b>
+                <p v-if="type === 'configure'" class="mt-0 mb-0">{{ readonlyText }}</p>
             </div>
         </div>
         <button id="edit-compute-settings" class="button-size button-theme-secondary" type="button" @click="emitEdit">
@@ -23,8 +24,7 @@
 </template>
 
 <script lang="ts">
-import { WebviewApi } from 'vscode-webview'
-import { defineComponent } from 'vue'
+import { defineComponent, PropType } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { createClass } from '../../webviews/util'
@@ -32,7 +32,6 @@ import { DEFAULT_COMPUTE_SETTINGS } from '../constants'
 import { SettingsForm } from '../wizards/environmentSettings'
 import { Commands } from './create/backend'
 
-declare const vscode: WebviewApi<typeof VueModel>
 const client = WebviewClientFactory.create<Commands>()
 
 export const VueModel = createClass(DEFAULT_COMPUTE_SETTINGS)
@@ -44,9 +43,14 @@ export default defineComponent({
             type: VueModel,
             default: new VueModel(),
         },
+        type: {
+            type: String as PropType<'create' | 'configure'>,
+            default: 'create',
+        },
     },
     data() {
         return {
+            readonlyText: "Can't be changed after creation.",
             descriptions: {} as Record<string, { name: string; specs: string } | undefined>,
         }
     },
@@ -65,6 +69,13 @@ export default defineComponent({
             const time = this.modelValue.inactivityTimeoutMinutes
             const timeDesc = `${time} mins`
             return time === DEFAULT_COMPUTE_SETTINGS.inactivityTimeoutMinutes ? `${timeDesc} (default)` : timeDesc
+        },
+        storage() {
+            const storage = this.modelValue.persistentStorage.sizeInGiB
+            const storageDesc = `${storage} GiB`
+            return storage === DEFAULT_COMPUTE_SETTINGS.persistentStorage.sizeInGiB
+                ? `${storageDesc} (default)`
+                : storageDesc
         },
     },
     methods: {

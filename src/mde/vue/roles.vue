@@ -1,5 +1,5 @@
 <template>
-    <div class="button-container mt-0">
+    <div class="button-container">
         <input
             class="radio"
             type="radio"
@@ -13,8 +13,8 @@
             <label class="option-label" for="create-iam-role">
                 <div class="mb-2">AWSCloud9EnvironmentRole</div>
                 <span class="soft">
-                    If this role doesn't already exist, we will create a new role in your account and use it for your
-                    Cloud9 environment. This role will have the Developer user policy.
+                    This role has the PowerUserAccess managed policy, which grants permissions for AWS aware application
+                    development in the Cloud9 environment.
                 </span>
             </label>
             <input :disabled="modelValue.roleMode === 'select-role'" type="hidden" id="create-iam-role" />
@@ -54,11 +54,8 @@
 
 <script lang="ts">
 import { IAM } from 'aws-sdk'
-import { WebviewApi } from 'vscode-webview'
 import { defineComponent } from 'vue'
 import { createClass } from '../../webviews/util'
-
-declare const webviewApi: WebviewApi<typeof VueModel>
 
 export const VueModel = createClass({
     roles: [] as IAM.Role[],

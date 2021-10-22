@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import * as localizedText from '../localizedText'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { Window } from '../../shared/vscode/window'
 import { ext } from '../extensionGlobals'
@@ -68,11 +69,11 @@ export async function showViewLogsMessage(
  * @param window the window.
  */
 export async function showConfirmationMessage(
-    { prompt, confirm, cancel }: { prompt: string; confirm: string; cancel: string },
-    window: Window
+    { prompt, confirm, cancel }: { prompt: string; confirm?: string; cancel?: string },
+    window: Window = vscode.window
 ): Promise<boolean> {
-    const confirmItem: vscode.MessageItem = { title: confirm }
-    const cancelItem: vscode.MessageItem = { title: cancel, isCloseAffordance: true }
+    const confirmItem: vscode.MessageItem = { title: confirm ?? localizedText.confirm }
+    const cancelItem: vscode.MessageItem = { title: cancel ?? localizedText.cancel, isCloseAffordance: true }
 
     const selection = await window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
     return selection === confirmItem

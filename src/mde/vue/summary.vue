@@ -12,8 +12,8 @@
             <div id="status" style="grid-area: status" :data-connected="connected">
                 <span class="label-context soft">Status</span>
                 <b>
-                    <i id="connected-icon" class="icon" v-if="connected && summary.status === 'RUNNING'"></i>
-                    {{ connected ? 'Connected' : summary.status }}
+                    <i id="connected-icon" class="icon mr-2" v-if="connected"></i>
+                    {{ connected ? 'Connected' : status }}
                 </b>
             </div>
         </div>
@@ -21,26 +21,37 @@
             id="toggle-state"
             class="button-size button-theme-secondary mt-8"
             type="button"
-            :disabled="summary.status !== 'RUNNING' && summary.status !== 'STOPPED'"
+            :disabled="!stable"
             @click="toggleState"
         >
+            <i id="stop-icon" class="icon mr-2" v-if="summary.status === 'RUNNING'"></i>
+            <i id="start-icon" class="icon mr-2" v-if="summary.status === 'STOPPED'"></i>
             {{ summary.status === 'RUNNING' ? 'Stop' : 'Start' }}
+        </button>
+        <button
+            id="delete-environment"
+            class="button-size button-theme-secondary ml-8 mt-8"
+            type="button"
+            :disabled="!stable"
+            @click="deleteEnvironment"
+        >
+            Delete Environment
         </button>
     </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue'
+import { defineComponent } from 'vue'
 import { GetEnvironmentMetadataResponse } from '../../../types/clientmde'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { createClass } from '../../webviews/util'
-import { SettingsForm } from '../wizards/environmentSettings'
 import { Commands } from './configure/backend'
+import { EnvironmentProp } from './shared'
 
 const client = WebviewClientFactory.create<Commands>()
 
-export const VueModel = createClass<GetEnvironmentMetadataResponse>({}, true)
+export const VueModel = createClass<GetEnvironmentMetadataResponse>({ status: '' }, true)
 
 export default defineComponent({
     name: 'environment-summary',
@@ -49,14 +60,17 @@ export default defineComponent({
             type: VueModel,
             required: true,
         },
-        environment: {
-            type: String as PropType<'local' | 'remote'>,
-            default: 'local',
-        },
+        environment: EnvironmentProp,
     },
     computed: {
+        status() {
+            return this.summary.status.charAt(0).concat(this.summary.status.slice(1).toLowerCase())
+        },
         connected() {
             return this.environment === 'remote'
+        },
+        stable() {
+            return this.summary.status === 'RUNNING' || this.summary.status === 'STOPPED'
         },
         summary() {
             return this.modelValue
@@ -64,15 +78,20 @@ export default defineComponent({
     },
     mixins: [saveData],
     methods: {
+        update(key: keyof InstanceType<typeof VueModel>, value: any) {
+            this.$emit('update:modelValue', { ...this.modelValue, [key]: value })
+        },
         toggleState() {
             client.toggleMdeState(this.summary).then(resp => {
                 this.summary.status = resp?.status ?? this.summary.status
             })
             this.summary.status = 'PENDING'
         },
-    },
-    emits: {
-        editSettings: (current: SettingsForm) => current !== undefined,
+        deleteEnvironment() {
+            client.deleteEnvironment(this.summary).then(resp => {
+                resp && this.update('status', resp.status)
+            })
+        },
     },
 })
 </script>
@@ -89,10 +108,31 @@ export default defineComponent({
 #edit-compute-settings {
     margin-top: 16px;
 }
-#status[data-connected='true'] {
-    color: #00aa00;
+body.vscode-dark #status[data-connected='true'] {
+    color: #73c991;
+}
+/* TODO: darker green for light-theme */
+body.vscode-light #status[data-connected='true'] {
+    color: #73c991;
 }
 #connected-icon {
-    background-image: url('/resources/light/expand-less.svg');
+    /* TODO: use an in-line svg loader */
+    background-image: url('/resources/generic/pass.svg');
+}
+body.vscode-dark #start-icon {
+    /* TODO: use an in-line svg loader */
+    background-image: url('/resources/dark/play-circle.svg');
+}
+body.vscode-light #start-icon {
+    /* TODO: use an in-line svg loader */
+    background-image: url('/resources/light/play-circle.svg');
+}
+body.vscode-dark #stop-icon {
+    /* TODO: use an in-line svg loader */
+    background-image: url('/resources/dark/stop-circle.svg');
+}
+body.vscode-light #stop-icon {
+    /* TODO: use an in-line svg loader */
+    background-image: url('/resources/light/stop-circle.svg');
 }
 </style>

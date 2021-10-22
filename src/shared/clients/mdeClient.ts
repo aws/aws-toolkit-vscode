@@ -135,4 +135,22 @@ export class MdeClient {
         const r = await this.call(this.sdkClient.deleteEnvironment(args))
         return r
     }
+
+    public async tagResource(resourceArn: string, tags: mde.TagMap): Promise<void> {
+        await this.call(
+            this.sdkClient.tagResource({
+                resourceArn,
+                tags,
+            })
+        )
+    }
+
+    public async untagResource(resourceArn: string, tagKeys: string[]): Promise<void> {
+        await this.call(
+            this.sdkClient.untagResource({
+                resourceArn,
+                tagKeys,
+            })
+        )
+    }
 }

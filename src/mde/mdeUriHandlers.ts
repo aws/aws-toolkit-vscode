@@ -12,18 +12,20 @@ import { ParsedUrlQuery } from 'querystring'
 import { mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
 import { UriHandler } from '../shared/vscode/uriHandler'
 import { MdeClient, mdeEndpoint, MDE_REGION } from '../shared/clients/mdeClient'
+import { ExtContext } from '../shared/extensions'
 
 interface MdeUriParams {
     /** If no ID is provided, a new MDE is created */
     // TODO: rename to 'environmentId'? all consumers use that, but responses produce 'id'
     id?: EnvironmentId
     cloneUrl?: vscode.Uri
-    /** Not implemented */
     branch?: string
 }
 
-export function activateUriHandlers(ctx: vscode.ExtensionContext, uriHandler: UriHandler): void {
-    ctx.subscriptions.push(uriHandler.registerHandler(MDE_URI_PATH, handleMdeUriParams, parseMdeUriParams))
+export function activateUriHandlers(ctx: ExtContext, uriHandler: UriHandler): void {
+    ctx.extensionContext.subscriptions.push(
+        uriHandler.registerHandler(MDE_URI_PATH, handleMdeUriParams.bind(ctx), parseMdeUriParams)
+    )
 }
 
 export function parseMdeUriParams(query: ParsedUrlQuery): MdeUriParams {
@@ -40,12 +42,13 @@ export function parseMdeUriParams(query: ParsedUrlQuery): MdeUriParams {
     return result
 }
 
-export async function handleMdeUriParams(params: MdeUriParams): Promise<void> {
+export async function handleMdeUriParams(this: ExtContext, params: MdeUriParams): Promise<void> {
     // TODO: get region from URI params.
     const region = 'us-west-2'
     const mdeClient = await MdeClient.create(region, mdeEndpoint())
     if (params.id === undefined) {
-        const newMde = await mdeCreateCommand(undefined, { repo: params.cloneUrl?.toString() })
+        const repo = params.cloneUrl ? { url: params.cloneUrl.toString(), branch: params.branch } : undefined
+        const newMde = await mdeCreateCommand(undefined, { repo }, this)
         // mde create command swallows the exception
         if (newMde === undefined) {
             return

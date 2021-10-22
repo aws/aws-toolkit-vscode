@@ -5,6 +5,7 @@
 
 import * as settings from './parameterDescriptions.json'
 import * as mde from '../../../types/clientmde'
+import * as _ from 'lodash'
 import { isValidResponse, Wizard } from '../../shared/wizards/wizard'
 import {
     createQuickPick,
@@ -15,9 +16,9 @@ import {
 import { capitalize } from '../../shared/utilities/textUtilities'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { Prompter } from '../../shared/ui/prompter'
+import { applyOperation, compare, deepClone } from 'fast-json-patch'
 
 export type InstanceType = keyof typeof environmentOptions['instanceType']
-
 interface InstanceDescription {
     name: string
     specs: string
@@ -77,7 +78,7 @@ function createTimeoutPrompt(): Prompter<number> {
 
 function createStoragePrompt(): QuickPickPrompter<typeof environmentOptions['persistentStorageSize'][number]> {
     const items = environmentOptions.persistentStorageSize.map(v => ({
-        label: `${v} GB`,
+        label: `${v} GiB`,
         data: v,
     }))
 
@@ -86,19 +87,21 @@ function createStoragePrompt(): QuickPickPrompter<typeof environmentOptions['per
     })
 }
 
-// TODO: replace with JSON patch when DSC is merged
-function diff<T>(obj1: T, obj2: T): Partial<T> {
+/**
+ * Generates a difference between two objects, ignoring the 'type' of operation that
+ * would produce the object. We only care about the cumalative difference.
+ */
+function diff<T extends Record<string, any>>(obj1: T, obj2: T): Partial<T> {
     const d = {} as T
-    entries(obj1)
-        .concat(entries(obj2))
-        .filter(([k, v]) =>
-            typeof v !== 'object' ? obj1[k] !== obj2[k] : Object.keys(diff(obj1[k], obj2[k])).length > 0
-        )
-        .forEach(([k, v]) => (d[k] = typeof v === 'object' ? (diff(obj1[k], obj2[k]) as any) : v))
+    compare(obj1, obj2).forEach(operation => {
+        const parent = operation.path.split('/').slice(1, -1)
+        _.set(d, parent, _.get(d, parent, {}))
+        applyOperation(d, operation)
+    })
     return d
 }
 
-function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm) {
+function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm, type: 'create' | 'configure') {
     const diffState = diff(initState, currentState)
 
     const instanceDesc = getInstanceDescription(currentState.instanceType)
@@ -156,7 +159,7 @@ function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm) {
         },
     }
 
-    const items = [instanceItem, timeoutItem, storageItem]
+    const items = [instanceItem, timeoutItem].concat(type === 'create' ? [storageItem] : [])
 
     const saveItem = {
         label: 'Save Settings',
@@ -178,16 +181,16 @@ export type SettingsForm = Pick<mde.CreateEnvironmentRequest, 'instanceType' | '
 // TODO: don't extend wizard, just make a separate class
 // There's clearly an abstraction here, though not worth pursuing currently
 export class EnvironmentSettingsWizard extends Wizard<SettingsForm> {
-    constructor(private readonly initState: SettingsForm) {
+    constructor(private readonly initState: SettingsForm, private readonly type: 'create' | 'configure' = 'create') {
         super()
     }
 
     public async run(): Promise<SettingsForm | undefined> {
-        const curr = Object.assign({}, this.initState)
+        const curr = deepClone(this.initState)
         let lastItem: DataQuickPickItem<any> | undefined
 
         while (true) {
-            const prompter = createMenuPrompt(this.initState, curr)
+            const prompter = createMenuPrompt(this.initState, curr, this.type)
             prompter.recentItem = lastItem
             const response = await prompter.prompt()
 

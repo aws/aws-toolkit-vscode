@@ -246,6 +246,7 @@
     "AWS.command.mde.connect": "Connect",
     "AWS.command.mde.create": "Create",
     "AWS.command.mde.configure": "Configure",
+    "AWS.command.mde.configure.current": "Configure current MDE",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.error.during.sam.local": "Failed to run SAM application locally: {0}",
     "AWS.error.endpoint.load.failure": "The {0} Toolkit was unable to load endpoints data.",

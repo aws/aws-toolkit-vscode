@@ -1,30 +1,42 @@
 <template>
-    <h2>Environment Settings for {{ details.id }}</h2>
-    <a>More info</a>
+    <h2 style="display: inline">Environment Settings for {{ details.id }}</h2>
+    <a class="ml-16">More info</a>
+    <br />
+    <div id="restart-notification" class="notification" v-if="needsRestart">
+        <span id="notification-span">
+            <i id="info-notification-icon" class="icon"></i>
+            <span>Restart your environment to update with setting changes.</span>
+        </span>
+        <button id="restart-button" type="button" class="button-theme-primary ml-16" @click="restart">Restart</button>
+    </div>
     <settings-panel id="summary-panel" title="Details">
-        <summary-panel v-model="details"></summary-panel>
+        <summary-panel v-model="details" :environment="environment"></summary-panel>
     </settings-panel>
     <settings-panel
         id="dev-file-panel"
         title="DevFile"
-        description="Contains the definition to build your application libraries and toolchain. Can be updated later in your IDE."
+        description="Contains the definition to build your application libraries and toolchain. You can change the currently 
+        configured definition file."
+        v-if="environment === 'remote'"
     >
-        <definition-file v-model="definitionFile"></definition-file>
+        <definition-file v-model="definitionFile" :environment="environment"></definition-file>
     </settings-panel>
     <settings-panel
         id="tags-and-labels-panel"
         title="Tags and labels"
         description="Use tags (key and value) to track resources and costs. Use labels (key only) to identify your environment."
     >
-        <tags-panel v-model="tags"></tags-panel>
+        <tags-panel v-model="tags" type="configure" :readonly="readonly"></tags-panel>
     </settings-panel>
+    <!-- We currently cannot update environments after creation, leaving this here disabled for now -->
     <settings-panel
         id="compute-settings-panel"
         vscode-id=""
         title="Compute settings"
-        description="All settings except EBS Volume can be modified in settings after creation."
+        description="All settings except EBS Volume can be changed in settings after creation."
+        v-show="false"
     >
-        <compute-panel v-model="compute" @edit-settings="editCompute"></compute-panel>
+        <compute-panel v-model="compute" type="configure" @edit-settings="editCompute"></compute-panel>
     </settings-panel>
 </template>
 
@@ -34,25 +46,30 @@ import definitionFile, { VueModel as DevFileModel } from '../definitionFile.vue'
 import tagsPanel, { VueModel as TagsModel } from '../tags.vue'
 import computePanel, { VueModel as ComputeModel } from '../compute.vue'
 import settingsPanel from '../../../webviews/components/settingsPanel.vue'
-import { defineComponent } from 'vue'
+import { defineComponent, PropType } from 'vue'
 import { Commands } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { SettingsForm } from '../../wizards/environmentSettings'
 import saveData from '../../../webviews/mixins/saveData'
+import { GetEnvironmentMetadataResponse } from '../../../../types/clientmde'
+import { EnvironmentProp } from '../shared'
+import { Status } from '../../../shared/clients/mdeEnvironmentClient'
 
 const client = WebviewClientFactory.create<Commands>()
 
+type ExtractPropType<T> = T extends PropType<infer U> ? U : never
+
+const SAVE_DEBOUNCE_TIME = 5000 // How long to wait until sending a real update
 const model = {
     details: new EnvironmentDetailsModel({}),
     definitionFile: new DevFileModel(),
+    devfileStatus: 'STABLE' as Status,
     tags: new TagsModel(),
     compute: new ComputeModel(),
+    environment: EnvironmentProp.default as ExtractPropType<typeof EnvironmentProp.type>,
+    saveDebounceHandle: undefined as number | undefined,
 }
 
-// key design ideas:
-// 1. only store state in a component if there is no two-way communication between parent/child
-// 2. if there is two-way communication, store state in the parent
-// 3. children can act independently to update their own models
 export default defineComponent({
     name: 'configure',
     components: {
@@ -66,20 +83,42 @@ export default defineComponent({
     data() {
         return model
     },
+    computed: {
+        readonly() {
+            return ['DELETING', 'DELETED', 'FAILED'].includes(this.details.status)
+        },
+        needsRestart() {
+            return this.devfileStatus === 'CHANGED'
+        },
+    },
     created() {
-        client.init().then(s => {
-            this.details = s
-            this.compute = s as any
-            const tags = [] as any[]
-            Object.keys(s.tags ?? {}).forEach(k => {
-                tags.push({ key: k, value: (s.tags ?? {})[k] })
-            })
-            this.tags.tags = tags
+        client.onEnvironmentUpdate(env => this.updateEnvironment(env))
+        client.onDevfileUpdate(event => (this.devfileStatus = event.status ?? 'STABLE'))
+        client.init().then(env => {
+            this.updateEnvironment(env)
+            this.definitionFile.url = env.actions?.devfile?.location ?? ''
         })
     },
+    watch: {
+        tags() {
+            this.saveConfiguration()
+        },
+    },
     methods: {
+        updateEnvironment(env: GetEnvironmentMetadataResponse & { connected: boolean }) {
+            this.environment = env.connected ? 'remote' : 'local'
+            this.details = env
+            // TODO: this will remove anything the user has configured, however, this means
+            // the environment has been updated externally. There is now potentially a conflict.
+            this.compute = env as any
+            const tags = [] as any[]
+            Object.keys(env.tags ?? {}).forEach(k => {
+                tags.push({ key: k, value: (env.tags ?? {})[k] })
+            })
+            this.tags.tags = tags.sort((a, b) => a.key.localeCompare(b.key))
+        },
         editCompute(current: SettingsForm) {
-            client.editSettings(current).then(settings => {
+            client.editSettings(current, 'configure').then(settings => {
                 this.compute = settings ?? this.compute
             })
         },
@@ -89,6 +128,28 @@ export default defineComponent({
             return !this.tags.tags
                 .map(({ keyError, valueError }) => keyError || valueError)
                 .reduce((a, b) => a || b, '')
+        },
+        saveConfiguration() {
+            clearTimeout(this.saveDebounceHandle)
+            // TODO: declare ambient module to make `setTimeout` return type number for Vue files
+            this.saveDebounceHandle = setTimeout(() => {
+                if (!this.isValid()) {
+                    return
+                }
+                // only thing we can save is 'tags' for now
+                const tagMap: Record<string, string> = {}
+                this.tags.tags.forEach(({ key, value }) => (tagMap[key] = value))
+                client.updateTags(this.details.arn, tagMap)
+            }, SAVE_DEBOUNCE_TIME) as unknown as number
+        },
+        restart() {
+            // restart flow
+            // 1. store MDE env-id as 'restarting' in global memento
+            // 2. spawn local toolkit (if possible)
+            // 3. send stop request
+            // 4. local toolkit sees environment in 'restarting' state, restarts MDE and starts to poll
+            // 5. once MDE is started back up, just auto-connect
+            client.restartEnvironment(this.details)
         },
     },
 })
@@ -105,5 +166,30 @@ body {
 .flex-right {
     display: flex;
     justify-content: flex-end;
+}
+/* TODO: make into component? */
+.notification {
+    color: var(--vscode-notifications-foreground);
+    background-color: var(--vscode-notifications-background);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin: 16px 0;
+    padding: 12px;
+}
+#notification-span {
+    display: flex;
+    justify-content: left;
+    align-items: inherit;
+    width: 100%;
+    flex-grow: 0;
+}
+#restart-button {
+    font-size: small;
+    width: 100px;
+    flex-grow: 1;
+}
+#info-notification-icon {
+    background-image: url('/resources/generic/info.svg');
 }
 </style>

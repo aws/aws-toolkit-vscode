@@ -11,3 +11,8 @@ export const DEFAULT_COMPUTE_SETTINGS: SettingsForm & { inactivityTimeoutMinutes
     instanceType: 'dev.standard1.medium',
     persistentStorage: { sizeInGiB: 16 },
 }
+
+/** Fields that can only be changed on creation */
+export const CREATE_ONLY_FIELDS: (keyof SettingsForm)[] = ['persistentStorage']
+/** Used in global state */
+export const MDE_RESTART_KEY = 'MDE_RESTART'

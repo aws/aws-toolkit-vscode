@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { EventEmitter } from 'vscode'
 import { WebviewApi } from 'vscode-webview'
 import { Commands } from './server'
 
@@ -12,13 +13,22 @@ export interface Message<T = any, U extends string = string> {
     id: string
     data: T | Error
     command: U
+    event?: false
     // TODO: implement
     memoize?: boolean
     once?: boolean
 }
 
+interface EventMessage<T = any, U extends string = string> {
+    event: true
+    data: T
+    command: U
+}
+
 type ClientCommands<T> = {
-    readonly [P in keyof T]: OmitThisParameter<T[P]> extends (...args: infer P) => infer R
+    readonly [P in keyof T]: T[P] extends EventEmitter<infer P>
+        ? (listener: (e: P) => void) => Promise<{ dispose: () => void }>
+        : OmitThisParameter<T[P]> extends (...args: infer P) => infer R
         ? (...args: P) => R extends Promise<any> ? R : Promise<R>
         : never
 }
@@ -39,9 +49,13 @@ type ClientCommands<T> = {
  *
  * @returns The backend's response as a Promise.
  */
-function sendRequest<T extends any[], R, U extends string>(id: string, command: U, args: T): Promise<R> {
+function sendRequest<T extends any[], R, U extends string>(
+    id: string,
+    command: U,
+    args: T
+): Promise<R | { dispose: () => void }> {
     const deproxied = JSON.parse(JSON.stringify(args))
-    const response = new Promise<R>((resolve, reject) => {
+    const response = new Promise<R | { dispose: () => void }>((resolve, reject) => {
         const listener = (event: { data: Message<R, U> }) => {
             const message = event.data
 
@@ -53,6 +67,11 @@ function sendRequest<T extends any[], R, U extends string>(id: string, command: 
 
             if (message.data instanceof Error) {
                 reject(message.data)
+            } else if (message.event) {
+                if (typeof args[0] !== 'function') {
+                    reject(new Error(`Expected frontend event handler to be a function: ${command}`))
+                }
+                resolve(registerEventHandler(command, args[0]))
             } else {
                 resolve(message.data)
             }
@@ -67,6 +86,28 @@ function sendRequest<T extends any[], R, U extends string>(id: string, command: 
 
     vscode.postMessage({ id, command, data: deproxied } as Message<T, U>)
     return response
+}
+
+function registerEventHandler<T extends (e: R) => void, R, U extends string>(
+    command: U,
+    args: T
+): { dispose: () => void } {
+    const listener = (event: { data: Message<R, U> | EventMessage<R, U> }) => {
+        const message = event.data
+
+        if (message.command !== command) {
+            return
+        }
+
+        if (!message.event) {
+            throw new Error(`Expected backend handler to be an event emitter: ${command}`)
+        }
+
+        args(message.data)
+    }
+    window.addEventListener('message', listener)
+
+    return { dispose: () => window.removeEventListener('message', listener) }
 }
 
 export type WebviewClient<T extends Commands<any>> = ClientCommands<T>

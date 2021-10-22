@@ -1,10 +1,22 @@
 <template>
     <h2>Create new environment</h2>
-    Just some filler text
+    <div id="header-description">
+        Use Cloud9's fully managed environments to power your development without worrying about servers or local
+        environment setup. Visit the <a>Cloud9 Environments site</a> to learn more about pricing and additional
+        features.
+    </div>
+    <settings-panel
+        id="repository-panel"
+        title="Git Repository"
+        description="Enter a git repository URL to automatically clone into your new environment."
+    >
+        <repository-item v-model="repo"></repository-item>
+    </settings-panel>
     <settings-panel
         id="role-panel"
-        title="IAM Role"
-        description="This environment requires an associated IAM role. If you do not have one, we will create a default role."
+        title="AWS Identity and Access Management (IAM) role"
+        description="Choose an IAM role that allows applications running in your development environment to interact with
+        AWS services. If you do not have one we, will create a default role."
     >
         <role-panel v-model="roles"></role-panel>
     </settings-panel>
@@ -37,7 +49,7 @@
         id="compute-settings-panel"
         vscode-id=""
         title="Compute settings"
-        description="All settings except EBS Volume can be modified in settings after creation."
+        description="All settings except EBS Volume can be changed in settings after creation."
         start-collapsed
     >
         <compute-panel v-model="compute" @edit-settings="editCompute"></compute-panel>
@@ -45,6 +57,7 @@
 </template>
 
 <script lang="ts">
+import repositoryItem, { VueModel as RepositoryModel } from './repository.vue'
 import definitionFile, { VueModel as DevFileModel } from '../definitionFile.vue'
 import rolePanel, { VueModel as RolesModel } from '../roles.vue'
 import tagsPanel, { VueModel as TagsModel } from '../tags.vue'
@@ -59,19 +72,17 @@ import saveData from '../../../webviews/mixins/saveData'
 const client = WebviewClientFactory.create<Commands>()
 
 const model = {
+    repo: new RepositoryModel(),
     roles: new RolesModel(),
     definitionFile: new DevFileModel(),
     tags: new TagsModel(),
     compute: new ComputeModel(),
 }
 
-// key design ideas:
-// 1. only store state in a component if there is no two-way communication between parent/child
-// 2. if there is two-way communication, store state in the parent
-// 3. children can act independently to update their own models
 export default defineComponent({
     name: 'create',
     components: {
+        repositoryItem,
         definitionFile,
         tagsPanel,
         settingsPanel,
@@ -83,6 +94,7 @@ export default defineComponent({
         return model
     },
     created() {
+        client.init().then(repo => (this.repo.url = repo?.url ?? ''))
         client.loadRoles().then(r => (this.roles.roles = r))
     },
     methods: {
@@ -96,7 +108,7 @@ export default defineComponent({
                 tags: this.tags.tags.reduce((prev, cur) => Object.assign(prev, { [cur.key]: cur.value }), {}),
                 devfile:
                     this.definitionFile.mode === 'registry' ? { uri: { uri: this.definitionFile.url } } : undefined,
-                sourceCode: this.definitionFile.mode === 'repository' ? [{ uri: this.definitionFile.url }] : undefined,
+                sourceCode: this.repo.error === '' ? [{ uri: this.repo.url }] : undefined,
             })
         },
         cancel() {
@@ -130,5 +142,9 @@ body {
 .flex-right {
     display: flex;
     justify-content: flex-end;
+}
+
+#header-description {
+    max-width: 80%;
 }
 </style>
