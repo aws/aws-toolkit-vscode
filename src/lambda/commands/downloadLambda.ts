@@ -19,12 +19,12 @@ import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFe
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as pathutils from '../../shared/utilities/pathUtils'
-import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
+import { Progress } from 'got/dist/source'
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runDownloadLambda(functionNode)
@@ -154,41 +154,26 @@ async function downloadAndUnzipLambda(
         const codeLocation = response.Code!.Location!
 
         // arbitrary increments since there's no "busy" state for progress bars
-        progress.report({ increment: 10 })
+        progress.report({ message: 'Starting download' })
 
         const fetcher = new HttpResourceFetcher(codeLocation, {
-            pipeLocation: downloadLocation,
             showUrl: false,
             friendlyName: 'Lambda Function .zip file',
         })
-        await fetcher.get()
+        const streams = fetcher.get(downloadLocation)
 
-        progress.report({ increment: 70 })
+        let last: number = 0
+        streams.requestStream.on('downloadProgress', (p: Progress) => {
+            // I think these are bytes...
+            const message = p.total ? `Downloading ${p.transferred}/${p.total} bytes` : 'Downloading...'
+            const increment = p.total ? ((p.transferred - last) / p.total) * 100 : 0
+            last = p.transferred
+            progress.report({ message, increment })
+        })
 
-        // HACK: `request` (currently implemented by the `fetcher.get()` call) doesn't necessarily close the pipe before returning.
-        // Brings up issues in less performant systems.
-        // keep attempting the unzip until the zip is fully built or fail after 5 seconds
-        let zipErr: Error | undefined
-        const val = await waitUntil(
-            async () => {
-                return await new Promise<boolean | undefined>(resolve => {
-                    try {
-                        new AdmZip(downloadLocation).extractAllTo(extractLocation, true)
-                        progress.report({ increment: 10 })
-                        resolve(true)
-                    } catch (err) {
-                        // err loading zip into AdmZip, prior to attempting an unzip
-                        zipErr = err as Error
-                        resolve(false)
-                    }
-                })
-            },
-            { timeout: 10000, interval: 1000, truthy: true }
-        )
-
-        if (!val) {
-            throw zipErr
-        }
+        await streams.done
+        progress.report({ message: 'Extracting...' })
+        new AdmZip(downloadLocation).extractAllTo(extractLocation, true)
     } finally {
         tryRemoveFolder(tempDir)
     }
