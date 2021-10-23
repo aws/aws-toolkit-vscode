@@ -2385,7 +2385,7 @@
         "@types/marked": "^3.0.1",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^9.0.0",
-        "@types/node": "^10.14.22",
+        "@types/node": "^16.11.4",
         "@types/readline-sync": "^1.4.3",
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.0",
