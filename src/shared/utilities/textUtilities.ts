@@ -5,7 +5,7 @@
 
 import * as crypto from 'crypto'
 import * as fs from 'fs'
-import { default as stripAnsi } from 'strip-ansi'
+import stripAnsi from 'strip-ansi'
 import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 

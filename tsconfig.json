@@ -6,7 +6,7 @@
             "@sinonjs/fake-timers": ["node_modules/@types/sinonjs__fake-timers"]
         },
         "incremental": true,
-        "module": "commonjs",
+        "module": "es2020",
         "target": "es6",
         "outDir": "dist",
         "lib": ["dom", "es6", "esnext.asynciterable"],

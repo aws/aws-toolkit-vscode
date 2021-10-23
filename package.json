@@ -1,5 +1,6 @@
 {
     "name": "aws-toolkit-vscode",
+    "type": "module",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
     "version": "1.33.0-SNAPSHOT",
