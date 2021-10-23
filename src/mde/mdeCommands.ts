@@ -44,7 +44,7 @@ export async function startMde(
     mdeClient: mde.MdeClient
 ): Promise<mde.MdeEnvironment | undefined> {
     // hard-coded timeout for now
-    const TIMEOUT_LENGTH = 300000
+    const TIMEOUT_LENGTH = 600000
 
     const timeout = new Timeout(TIMEOUT_LENGTH)
     const progress = await showMessageWithCancel(localize('AWS.mde.startMde.message', 'MDE'), timeout)
@@ -68,12 +68,9 @@ export async function startMde(
                 })
             }
 
-            return resp?.status === 'RUNNING' &&
-                (resp?.actions?.devfile?.status === 'SUCCESSFUL' || resp?.actions?.devfile?.message !== undefined)
-                ? resp
-                : undefined
+            return resp?.status === 'RUNNING' ? resp : undefined
         },
-        { interval: 5000, timeout: TIMEOUT_LENGTH, truthy: true }
+        { interval: 1500, timeout: TIMEOUT_LENGTH, truthy: true }
     )
 
     return waitTimeout(pollMde, timeout, {
@@ -364,11 +361,12 @@ export async function cloneToMde(
     // TODO: could we parse for 'Permission denied (publickey).' and then tell user they need to add their SSH key to the agent?
     // TODO: handle different ports with the URI
     // TODO: test on windows?
+    // TODO: handle failures
     await new ChildProcess(
         true,
         `ssh`,
         { env: Object.assign({ [SSH_AGENT_SOCKET_VARIABLE]: agentSock }, process.env) },
-        mde.id,
+        `aws-mde-${mde.id}`,
         '-o',
         'StrictHostKeyChecking=no',
         'AddKeysToAgent=yes',
