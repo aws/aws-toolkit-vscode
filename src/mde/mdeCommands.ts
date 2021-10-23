@@ -69,7 +69,7 @@ export async function startMde(
             }
 
             return resp?.status === 'RUNNING' &&
-                (resp?.actions?.devfile?.status === 'RUNNING' || resp?.actions?.devfile?.message !== undefined)
+                (resp?.actions?.devfile?.status === 'SUCCESSFUL' || resp?.actions?.devfile?.message !== undefined)
                 ? resp
                 : undefined
         },
