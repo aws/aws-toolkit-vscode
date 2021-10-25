@@ -2422,7 +2422,7 @@
         "sinon": "^11.1.2",
         "source-map-support": "^0.5.19",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^10.3.0",
+        "ts-node": "^10.4.0",
         "umd-compat-loader": "^2.1.2",
         "vsce": "^1.99.0",
         "vscode-nls-dev": "^3.3.1",
