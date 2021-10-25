@@ -14,6 +14,7 @@ import { CreateEnvironmentRequest } from '../../../../types/clientmde'
 import { getDevFiles, getRegistryDevFiles, promptDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import { createCommands } from '../../../webviews/server'
+import { GitExtension } from '../../../shared/extensions/git'
 const localize = nls.loadMessageBundle()
 
 export interface DefinitionTemplate {
@@ -40,6 +41,7 @@ const commands = createCommands({
     },
     openDevfile,
     getAllInstanceDescriptions,
+    listBranches,
 })
 
 export type Commands = typeof commands & { submit: (result: CreateEnvironmentRequest) => void } & {
@@ -83,13 +85,23 @@ async function submit(data: CreateEnvironmentRequest) {
         const target = data.sourceCode[0]
         // TODO: remove this or have the git extension wrapper do it
         const targetNoSsh = target.uri.startsWith('ssh') ? target.uri.slice(6) : target.uri
-        const devFiles = await getDevFiles({ name: 'origin', fetchUrl: targetNoSsh, branch: target.branch })
+        const devFiles = await getDevFiles({ name: 'origin', fetchUrl: targetNoSsh, branch: target.branch }).catch(
+            () => {
+                // swallow the error since prompting for devfiles is currently out-of-scope
+                // later on we can refine this (display the error)
+                return []
+            }
+        )
         const file =
             devFiles.length > 1
                 ? await promptDevFiles({ name: 'origin', fetchUrl: targetNoSsh, branch: target.branch }, true)
                 : {
                       filesystem: { path: devFiles[0] },
                   }
+        // returns to webview
+        if (!file) {
+            throw new Error('User cancelled devfile prompt')
+        }
         data.devfile ??= devFiles.length > 0 ? file : undefined
     } else {
         delete data.sourceCode
@@ -126,4 +138,11 @@ async function openDevfile(url: string | vscode.Uri) {
     } else if (url.scheme === 'file') {
         vscode.workspace.openTextDocument(url)
     }
+}
+
+async function listBranches(url: string) {
+    const git = GitExtension.instance
+    const targetNoSsh = url.startsWith('ssh://') ? url.slice(6) : url
+    const branches = await git.getBranchesForRemote({ name: 'User Input', fetchUrl: targetNoSsh, isReadOnly: true })
+    return branches.filter(b => b.name !== undefined).map(b => b.name?.split('/').slice(1).join('/')) as string[]
 }

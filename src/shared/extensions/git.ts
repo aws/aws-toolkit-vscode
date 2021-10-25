@@ -245,6 +245,7 @@ export class GitExtension {
                         remote: remote.name,
                         type: GitTypes.RefType.RemoteHead,
                     }))
+                    .filter(branch => !!branch.name)
             } catch (err) {
                 getLogger().verbose(`git: failed to get branches for remote "${remote.fetchUrl}": %O`, err)
                 return []

@@ -108,7 +108,7 @@ export default defineComponent({
                 tags: this.tags.tags.reduce((prev, cur) => Object.assign(prev, { [cur.key]: cur.value }), {}),
                 devfile:
                     this.definitionFile.mode === 'registry' ? { uri: { uri: this.definitionFile.url } } : undefined,
-                sourceCode: this.repo.error === '' ? [{ uri: this.repo.url }] : undefined,
+                sourceCode: this.repo.error === '' ? [{ uri: this.repo.url, branch: this.repo.branch }] : undefined,
             })
         },
         cancel() {
