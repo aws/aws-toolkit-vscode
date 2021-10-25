@@ -29,6 +29,8 @@ fun <T : Version> T.isValid(range: VersionRange<T>?): Validity = when {
  * @property minVersion The minimum version supported, inclusive.
  * @property maxVersion The maximum version supported, exclusive.
  */
-data class VersionRange<T : Version>(val minVersion: T, val maxVersion: T)
+data class VersionRange<T : Version>(val minVersion: T, val maxVersion: T) {
+    fun displayValue() = "${minVersion.displayValue()} ≤ X < ${maxVersion.displayValue()}"
+}
 
 infix fun <T : Version> T.until(that: T): VersionRange<T> = VersionRange(this, that)

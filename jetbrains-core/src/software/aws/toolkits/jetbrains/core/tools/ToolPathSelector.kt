@@ -71,8 +71,8 @@ open class ToolPathSelector<T : ToolType<*>>(private val type: T, private val va
     private fun getConfiguredPath(): String? = pathSelector.text.trim().nullize()
 
     open fun checkExecutable(toolExecutablePath: Path, type: T): Validity = ToolManager.getInstance().validateCompatability(
-        project = null,
         path = toolExecutablePath,
-        type = this.type
+        type = this.type,
+        project = null
     )
 }

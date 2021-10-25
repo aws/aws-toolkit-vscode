@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.tools
 
+import com.intellij.openapi.progress.ProgressIndicator
 import java.nio.file.Path
 
 /**
@@ -35,7 +36,7 @@ interface ToolType<VersionScheme : Version> {
 /**
  * Indicates that a [ToolType] can be auto-detected for the user on their system
  */
-interface AutoDetectableTool<VersionScheme : Version> : ToolType<VersionScheme> {
+interface AutoDetectableToolType<VersionScheme : Version> : ToolType<VersionScheme> {
     /**
      * Attempt to automatically detect the tool's binary file
      *
@@ -43,4 +44,11 @@ interface AutoDetectableTool<VersionScheme : Version> : ToolType<VersionScheme> 
      * @throws Exception if an exception occurred attempting to resolve the path
      */
     fun resolve(): Path?
+}
+
+interface ManagedToolType<VersionScheme : Version> : ToolType<VersionScheme> {
+    fun determineLatestVersion(): VersionScheme
+    fun downloadVersion(version: VersionScheme, destinationDir: Path, indicator: ProgressIndicator?): Path
+    fun installVersion(downloadArtifact: Path, destinationDir: Path, indicator: ProgressIndicator?)
+    fun toTool(installDir: Path): Tool<ToolType<VersionScheme>>
 }
