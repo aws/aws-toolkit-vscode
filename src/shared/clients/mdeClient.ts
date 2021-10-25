@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as AWS from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as mde from '../../../types/clientmde'
@@ -10,7 +11,12 @@ import apiConfig = require('../../../types/REMOVED.normal.json')
 import { ext } from '../../shared/extensionGlobals'
 import * as settings from '../../shared/settingsConfiguration'
 import * as logger from '../logger/logger'
-import * as vscode from 'vscode'
+import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
+import { showMessageWithCancel, showViewLogsMessage } from '../utilities/messages'
+import * as nls from 'vscode-nls'
+import { Window } from '../vscode/window'
+
+const localize = nls.loadMessageBundle()
 
 export const MDE_REGION = 'us-west-2'
 export function mdeEndpoint(): string {
@@ -26,7 +32,7 @@ export function mdeEndpoint(): string {
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface MdeEnvironment extends mde.EnvironmentSummary {}
-export interface MdeSession extends mde.SessionSummary, mde.StartSessionResponse {}
+export interface MdeSession extends mde.SessionSummary, Omit<mde.StartSessionResponse, 'id'> {}
 
 async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string = mdeEndpoint()): Promise<mde> {
     const c = (await ext.sdkClientBuilder.createAwsService(AWS.Service, {
@@ -44,7 +50,7 @@ async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string
 export class MdeClient {
     private readonly log: logger.Logger
 
-    public constructor(private readonly regionCode: string, private readonly endpoint: string, private sdkClient: mde) {
+    public constructor(public readonly regionCode: string, private readonly endpoint: string, private sdkClient: mde) {
         this.log = logger.getLogger()
     }
 
@@ -124,9 +130,89 @@ export class MdeClient {
         return r
     }
 
-    public async startSession(args: mde.StartSessionRequest): Promise<MdeSession | undefined> {
-        const r = await this.call(this.sdkClient.startSession(args))
-        return r
+    /**
+     * Waits for the MDE environment to be available (and starts it if needed),
+     * creaes a new session, and returns the session when available.
+     */
+    public async startSession(
+        args: Pick<MdeEnvironment, 'id'>,
+        window = Window.vscode()
+    ): Promise<MdeSession | undefined> {
+        const TIMEOUT_LENGTH = 120000
+        const timeout = new Timeout(TIMEOUT_LENGTH)
+        const progress = await showMessageWithCancel(localize('AWS.mde.startMde.message', 'MDE'), timeout)
+        progress.report({ message: localize('AWS.mde.startMde.checking', 'checking status...') })
+
+        let startErr: Error
+        const pollMde = waitUntil(
+            async () => {
+                // Technically this will continue to be called until it reaches its
+                // own timeout, need a better way to 'cancel' a `waitUntil`.
+                if (timeout.completed) {
+                    return
+                }
+
+                const mdeMeta = await this.getEnvironmentMetadata({ environmentId: args.id })
+
+                if (mdeMeta?.status === 'STOPPED') {
+                    progress.report({ message: localize('AWS.mde.startMde.stopStart', 'resuming environment...') })
+                    await this.startEnvironment({ environmentId: args.id })
+                } else if (mdeMeta?.status === 'STOPPING') {
+                    progress.report({
+                        message: localize('AWS.mde.startMde.resuming', 'waiting for environment to stop...'),
+                    })
+                } else {
+                    progress.report({
+                        message: localize('AWS.mde.startMde.starting', 'waiting for environment...'),
+                    })
+                }
+
+                if (mdeMeta?.status !== 'RUNNING') {
+                    return undefined
+                }
+
+                try {
+                    const session = await this.call(
+                        this.sdkClient.startSession({
+                            environmentId: args.id,
+                            sessionConfiguration: {
+                                ssh: {},
+                            },
+                        })
+                    )
+                    return session
+                } catch (e) {
+                    startErr = e as Error
+                    return undefined
+                }
+            },
+            { interval: 5000, timeout: TIMEOUT_LENGTH, truthy: true }
+        )
+
+        const session = await waitTimeout(pollMde, timeout, {
+            onExpire: () => {
+                if (startErr) {
+                    showViewLogsMessage(
+                        localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', args.id),
+                        window
+                    )
+                } else {
+                    window.showErrorMessage(
+                        localize('AWS.mde.startFailed', 'Timeout waiting for MDE environment: {0}', args.id)
+                    )
+                }
+            },
+            onCancel: () => undefined,
+        })
+
+        return !session
+            ? undefined
+            : {
+                  ...session,
+                  id: session.id,
+                  startedAt: new Date(),
+                  status: 'CONNECTED',
+              }
     }
 
     public async deleteEnvironment(
