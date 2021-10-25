@@ -88,6 +88,7 @@ export async function createVueWebview<T, U = void>(params: WebviewParams<T, U>)
 
     if (params.commands) {
         const submitCb = params.commands.submit
+        // When the user closes the document/editor tab.
         const onDispose = view.onDidDispose(() => params.onSubmit?.())
         params.commands.submit = async result => {
             await submitCb?.(result)
