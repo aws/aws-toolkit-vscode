@@ -17,7 +17,8 @@ import { getMinVsCodeVersion } from '../../../../test-scripts/launchTestUtilitie
 
 const TEST_REMOTE_NAME = 'test-origin'
 const TEST_REMOTE_URL = 'https://github.com/aws/aws-toolkit-vscode'
-const TEST_REMOTE_BRANCH = 'gitTest' // TODO: change to a release tag (e.g. 1.30.0)
+const TEST_REMOTE_BRANCH = 'master'
+const TEST_REMOTE_HEAD = 'v1.32.0'
 const TEST_TIMEOUT = 1000
 
 const CONFIG_KEY = 'aws.test'
@@ -159,7 +160,7 @@ describe('GitExtension', function () {
 
     it('can list files from a remote', async function () {
         this.timeout(LIST_REMOTE_TIMEOUT)
-        const result = await git.listAllRemoteFiles({ fetchUrl: TEST_REMOTE_URL, branch: TEST_REMOTE_BRANCH })
+        const result = await git.listAllRemoteFiles({ fetchUrl: TEST_REMOTE_URL, branch: TEST_REMOTE_HEAD })
 
         const readme = result.files.find(f => f.name === 'NOTICE')
         assert.ok(readme, 'Expected to find NOTICE file in repository root')
