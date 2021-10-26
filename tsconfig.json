@@ -3,10 +3,8 @@
         "baseUrl": ".",
         "paths": {
             "*": ["types/*"],
-            "@sinonjs/fake-timers": ["node_modules/@types/sinonjs__fake-timers"],
-            "ssh-config": ["node_modules/ssh-config/types"]
+            "@sinonjs/fake-timers": ["node_modules/@types/sinonjs__fake-timers"]
         },
-        "typeRoots": ["./node_modules/ssh-config/types"],
         "incremental": true,
         "module": "commonjs",
         "target": "es6",
