@@ -14,6 +14,8 @@ import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
 import { activateUriHandlers } from './mdeUriHandlers'
 import { getLogger } from '../shared/logger'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../shared/settingsConfiguration'
+import { AWS_CLIS, getCliCommand, installCli } from '../shared/utilities/cliUtils'
 import { GitExtension } from '../shared/extensions/git'
 import { createTagMapFromRepo } from './mdeModel'
 import { createMdeConfigureWebview } from './vue/configure/backend'
@@ -89,7 +91,24 @@ function handleRestart(ctx: ExtContext) {
     }
 }
 
-async function registerCommands(ctx: ExtContext): Promise<void> {
+async function registerCommands(
+    ctx: ExtContext,
+    // TODO: REMOVE
+    settings: SettingsConfiguration = new DefaultSettingsConfiguration('aws')
+): Promise<void> {
+    // TODO: REMOVE
+    ctx.extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('bryceito-test-install-cli', async () => {
+            let ssmPath: string | undefined
+            if (!settings.readDevSetting<boolean>('aws.developer.mde.forceInstallClis', 'boolean', true)) {
+                ssmPath = await getCliCommand(AWS_CLIS.ssm)
+            }
+            if (!ssmPath) {
+                ssmPath = await installCli('ssm')
+            }
+            getLogger().info(ssmPath ?? '')
+        })
+    )
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.connect', async (treenode: MdeInstanceNode) => {
             mdeConnectCommand(treenode.env, treenode.parent.regionCode)
