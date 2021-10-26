@@ -10,10 +10,12 @@ import * as path from 'path'
 import { EnvironmentVariables } from './environmentVariables'
 import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
+import { DefaultSettingsConfiguration } from './settingsConfiguration'
 
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
     private static vscPath: string
+    private static sshPath: string
 
     public static getHomeDirectory(): string {
         const env = process.env as EnvironmentVariables
@@ -73,7 +75,7 @@ export class SystemUtilities {
             'code', // $PATH
         ]
         for (const vsc of vscs) {
-            if (!fs.existsSync(vsc)) {
+            if (vsc !== 'code' && !fs.existsSync(vsc)) {
                 continue
             }
             const proc = new ChildProcess(true, vsc, undefined, '--version')
@@ -112,6 +114,37 @@ export class SystemUtilities {
 
         return undefined
     }
+
+    /**
+     * Gets the configured `ssh` path, or falls back to "ssh" (not absolute),
+     * or tries common locations, or returns undefined.
+     */
+    public static async findSshPath(): Promise<string | undefined> {
+        if (SystemUtilities.sshPath !== undefined) {
+            return SystemUtilities.sshPath
+        }
+
+        const settings = new DefaultSettingsConfiguration()
+        const sshSettingPath = settings.getSetting<string>('remote.SSH.path', 'string', { silent: 'yes' })
+        const paths = [
+            sshSettingPath,
+            'ssh', // Try $PATH _before_ falling back to common paths.
+            '/usr/bin/ssh',
+        ]
+        for (const p of paths) {
+            if (!p || ('ssh' !== p && !fs.existsSync(p))) {
+                continue
+            }
+            const proc = new ChildProcess(true, p, undefined, '-G', 'x')
+            const r = await proc.run()
+            if (r.exitCode === 0) {
+                SystemUtilities.sshPath = p
+                return p
+            }
+            getLogger().warn('findSshPath: failed: %O', proc)
+        }
+    }
+
     /**
      * Returns true if the current build is running on CI (build server).
      */

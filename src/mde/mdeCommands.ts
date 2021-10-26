@@ -5,6 +5,7 @@
 
 import * as os from 'os'
 import * as vscode from 'vscode'
+import * as awsArn from '@aws-sdk/util-arn-parser'
 import * as mde from '../shared/clients/mdeClient'
 import * as nls from 'vscode-nls'
 import { ext } from '../shared/extensionGlobals'
@@ -21,7 +22,7 @@ import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { CreateEnvironmentRequest, DeleteEnvironmentResponse, TagMap } from '../../types/clientmde'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { createMdeWebview } from './vue/create/backend'
-import { getEmailHash } from './mdeModel'
+import * as mdeModel from './mdeModel'
 import { productName } from '../shared/constants'
 import { VSCODE_MDE_TAGS } from './constants'
 import { localizedDelete } from '../shared/localizedText'
@@ -29,6 +30,19 @@ import { MDE_RESTART_KEY } from './constants'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
+
+export function getMdeSsmEnv(region: string, endpoint: string, session: mde.MdeSession): NodeJS.ProcessEnv {
+    return Object.assign(
+        {
+            AWS_REGION: region,
+            AWS_MDE_ENDPOINT: endpoint,
+            AWS_MDE_SESSION: session.id,
+            AWS_MDE_STREAMURL: session.accessDetails.streamUrl,
+            AWS_MDE_TOKEN: session.accessDetails.tokenValue,
+        },
+        process.env
+    )
+}
 
 /**
  * Best-effort attempt to start an MDE given an ID, showing a progress notifcation with a cancel button
@@ -106,6 +120,11 @@ export async function mdeConnectCommand(
         return
     }
 
+    const hasSshConfig = await mdeModel.ensureMdeSshConfig()
+    if (!hasSshConfig.ok) {
+        return
+    }
+
     const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
     const session = await mdeClient.startSession(args, window)
     if (!session) {
@@ -124,16 +143,7 @@ export async function mdeConnectCommand(
         true,
         vsc,
         {
-            env: Object.assign(
-                {
-                    AWS_REGION: region,
-                    AWS_MDE_ENDPOINT: mde.mdeEndpoint(),
-                    AWS_MDE_SESSION: session.id,
-                    AWS_MDE_STREAMURL: session.accessDetails.streamUrl,
-                    AWS_MDE_TOKEN: session.accessDetails.tokenValue,
-                },
-                process.env
-            ),
+            env: getMdeSsmEnv(region, mde.mdeEndpoint(), session),
         },
         '--folder-uri',
         // TODO: save user's previous project and try to re-open
@@ -203,7 +213,7 @@ export async function mdeCreateCommand(
             defaultTags[VSCODE_MDE_TAGS.repository] = repo[0].uri
             defaultTags[VSCODE_MDE_TAGS.repositoryBranch] = repo[0].branch ?? 'master' // TODO: better fallback?
         }
-        const emailHash = await getEmailHash()
+        const emailHash = await mdeModel.getEmailHash()
         if (emailHash) {
             defaultTags[VSCODE_MDE_TAGS.email] = emailHash
         }
@@ -309,16 +319,7 @@ export async function cloneToMde(
         'ssh-keyscan github.com >> ~/.ssh/known_hosts',
         `git clone '${target}' ${gitArgs.join(' ')}`,
     ]
-    const env = Object.assign(
-        {
-            AWS_REGION: region,
-            AWS_MDE_ENDPOINT: mde.mdeEndpoint(),
-            AWS_MDE_SESSION: session.id,
-            AWS_MDE_STREAMURL: session.accessDetails.streamUrl,
-            AWS_MDE_TOKEN: session.accessDetails.tokenValue,
-        },
-        process.env
-    )
+    const env = getMdeSsmEnv(region, mde.mdeEndpoint(), session)
 
     // TODO: could we parse for 'Permission denied (publickey).' and then tell user they need to add their SSH key to the agent?
     // TODO: handle different ports with the URI
@@ -398,22 +399,14 @@ export async function resumeEnvironments(ctx: ExtContext) {
     })
     memento.update(MDE_RESTART_KEY, pendingRestarts)
 
-    const parseRegionFromArn = (arn: string) => {
-        // arn:aws:moontide:{REGION}:{ACCOUNT_ID}:/...
-        const region = arn.split('/')[0]?.split(':').slice(-3)[0]
-        if (!region) {
-            throw new Error('Failed to parse region from ARN')
-        }
-        return region
-    }
-
     getLogger().debug('MDEs waiting to be resumed: %O', pendingRestarts)
 
     // TODO: if multiple MDEs are in a 'restart' state, prompt user
     const target = Object.keys(pendingRestarts).pop()
     const env = activeEnvironments.find(env => env.id === target)
     if (env) {
-        mdeConnectCommand(env, parseRegionFromArn(env.arn)).then(() => {
+        const region = awsArn.parse(env.arn).region
+        mdeConnectCommand(env, region).then(() => {
             // TODO: we can mark this environment as 'attemptedRestart'
             // should be left up to the target environment to remove itself from the
             // pending restart global state
