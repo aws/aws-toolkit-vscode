@@ -103,7 +103,10 @@ export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }
     const mdeScript = path.join(ext.context.globalStoragePath, 'mde_connect')
     try {
         const contents1 = await readFileAsString(mdeScriptRes)
-        const contents2 = await readFileAsString(mdeScript)
+        let contents2 = ''
+        if (fs.existsSync(mdeScript)) {
+            contents2 = await readFileAsString(mdeScript)
+        }
         const isOutdated = contents1 !== contents2
         if (isOutdated) {
             fs.copyFileSync(mdeScriptRes, mdeScript)
