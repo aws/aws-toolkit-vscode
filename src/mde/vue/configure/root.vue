@@ -1,14 +1,26 @@
 <template>
-    <h2 style="display: inline">Environment Settings for {{ details.id }}</h2>
-    <a class="ml-16">More info</a>
-    <br />
-    <div id="restart-notification" class="notification" v-if="needsRestart">
-        <span id="notification-span">
-            <i id="info-notification-icon" class="icon"></i>
-            <span>Restart your environment to update with setting changes.</span>
-        </span>
-        <button id="restart-button" type="button" class="button-theme-primary ml-16" @click="restart">Restart</button>
+    <div id="configure-header">
+        <h2 style="display: inline">Environment Settings for {{ details.id }}</h2>
+        <a class="ml-16">More info</a>
+        <br />
     </div>
+    <transition name="slide-down">
+        <div id="restart-notification" class="notification" v-if="needsRestart">
+            <span id="notification-span">
+                <i id="info-notification-icon" class="icon"></i>
+                <span>Restart your environment to update with setting changes.</span>
+            </span>
+            <button
+                id="restart-button"
+                type="button"
+                class="button-theme-primary ml-16"
+                :disabled="restarting"
+                @click="restart()"
+            >
+                {{ restarting ? 'Restarting...' : 'Restart' }}
+            </button>
+        </div>
+    </transition>
     <settings-panel id="summary-panel" title="Details">
         <summary-panel v-model="details" :environment="environment"></summary-panel>
     </settings-panel>
@@ -47,7 +59,7 @@ import tagsPanel, { VueModel as TagsModel } from '../tags.vue'
 import computePanel, { VueModel as ComputeModel } from '../compute.vue'
 import settingsPanel from '../../../webviews/components/settingsPanel.vue'
 import { defineComponent, PropType } from 'vue'
-import { Commands } from './backend'
+import { MdeConfigureWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { SettingsForm } from '../../wizards/environmentSettings'
 import saveData from '../../../webviews/mixins/saveData'
@@ -55,7 +67,13 @@ import { GetEnvironmentMetadataResponse } from '../../../../types/clientmde'
 import { EnvironmentProp } from '../shared'
 import { Status } from '../../../shared/clients/mdeEnvironmentClient'
 
-const client = WebviewClientFactory.create<Commands>()
+// TODO: every webview should get only a single client
+// children components will specify the type of client they need (via its 'protocol')
+// this will finalize the decoupling between vue components as now child components
+// will not need to know which webview they are in
+//
+// caveat: there is still an issue that method/function names need to be unique
+const client = WebviewClientFactory.create<MdeConfigureWebview>()
 
 type ExtractPropType<T> = T extends PropType<infer U> ? U : never
 
@@ -68,6 +86,7 @@ const model = {
     compute: new ComputeModel(),
     environment: EnvironmentProp.default as ExtractPropType<typeof EnvironmentProp.type>,
     saveDebounceHandle: undefined as number | undefined,
+    restarting: false,
 }
 
 export default defineComponent({
@@ -113,7 +132,7 @@ export default defineComponent({
             this.compute = env as any
             const tags = [] as any[]
             Object.keys(env.tags ?? {}).forEach(k => {
-                tags.push({ key: k, value: (env.tags ?? {})[k] })
+                tags.push({ key: k, value: (env.tags ?? {})[k], generated: !!k.match(/^(aws|mde):/) })
             })
             this.tags.tags = tags.sort((a, b) => a.key.localeCompare(b.key))
         },
@@ -131,8 +150,7 @@ export default defineComponent({
         },
         saveConfiguration() {
             clearTimeout(this.saveDebounceHandle)
-            // TODO: declare ambient module to make `setTimeout` return type number for Vue files
-            this.saveDebounceHandle = setTimeout(() => {
+            this.saveDebounceHandle = window.setTimeout(() => {
                 if (!this.isValid()) {
                     return
                 }
@@ -140,16 +158,21 @@ export default defineComponent({
                 const tagMap: Record<string, string> = {}
                 this.tags.tags.forEach(({ key, value }) => (tagMap[key] = value))
                 client.updateTags(this.details.arn, tagMap)
-            }, SAVE_DEBOUNCE_TIME) as unknown as number
+            }, SAVE_DEBOUNCE_TIME)
         },
-        restart() {
+        restart(location?: string) {
             // restart flow
             // 1. store MDE env-id as 'restarting' in global memento
             // 2. spawn local toolkit (if possible)
             // 3. send stop request
             // 4. local toolkit sees environment in 'restarting' state, restarts MDE and starts to poll
             // 5. once MDE is started back up, just auto-connect
-            client.restartEnvironment(this.details)
+            this.restarting = true
+            if (location) {
+                client.startDevfile(location).catch(() => (this.restarting = false))
+            } else {
+                client.restartEnvironment(this.details).catch(() => (this.restarting = false))
+            }
         },
     },
 })
@@ -191,5 +214,28 @@ body {
 }
 #info-notification-icon {
     background-image: url('/resources/generic/info.svg');
+}
+.slide-down-enter-active {
+    transition: all 0.4s ease-in-out;
+}
+.slide-down-leave-active {
+    transition: none;
+}
+.slide-down-enter-from {
+    margin-bottom: -70px;
+    transform: translateY(-70px);
+}
+.slide-down-enter-to {
+    margin-bottom: 0px;
+}
+#restart-notification {
+    z-index: 0;
+    position: relative;
+}
+#configure-header {
+    padding: 16px 0 0 0;
+    background-color: var(--vscode-editor-background);
+    z-index: 1;
+    position: relative;
 }
 </style>

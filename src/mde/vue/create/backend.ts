@@ -6,14 +6,13 @@
 import * as vscode from 'vscode'
 import { IAM } from 'aws-sdk'
 import { ExtContext } from '../../../shared/extensions'
-import { createVueWebview } from '../../../webviews/main'
+import { compileVueWebview } from '../../../webviews/main'
 import * as nls from 'vscode-nls'
 import { ext } from '../../../shared/extensionGlobals'
 import { EnvironmentSettingsWizard, getAllInstanceDescriptions, SettingsForm } from '../../wizards/environmentSettings'
 import { CreateEnvironmentRequest } from '../../../../types/clientmde'
 import { getDevFiles, getRegistryDevFiles, promptDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
-import { createCommands } from '../../../webviews/server'
 import { GitExtension } from '../../../shared/extensions/git'
 const localize = nls.loadMessageBundle()
 
@@ -22,51 +21,43 @@ export interface DefinitionTemplate {
     source: string
 }
 
-// TODO: make submit a special case (the only method that is generic)
-// that way we can compose commands and still be type-safe
-const commands = createCommands({
-    loadRoles,
-    submit,
-    cancel() {
-        this.dispose()
+const VueWebview = compileVueWebview({
+    id: 'createMde',
+    cssFiles: ['base.css'],
+    name: localize('AWS.command.createMdeForm.title', 'Create new development environment'),
+    webviewJs: 'createMdeVue.js',
+    validateData: (repo?: { url: string; branch?: string }) => true,
+    validateSubmit: async (result: CreateEnvironmentRequest) => {
+        await submit(result)
+        return true
     },
-    editSettings,
-    async loadTemplates() {
-        return getRegistryDevFiles().then(t =>
-            t.map(name => ({
-                name,
-                source: PUBLIC_REGISTRY_URI.with({ path: `devfiles/${name}` }).toString(),
-            }))
-        )
+    commands: {
+        loadRoles,
+        cancel() {
+            this.dispose()
+        },
+        editSettings,
+        async loadTemplates() {
+            return getRegistryDevFiles().then(t =>
+                t.map(name => ({
+                    name,
+                    source: PUBLIC_REGISTRY_URI.with({ path: `devfiles/${name}` }).toString(),
+                }))
+            )
+        },
+        openDevfile,
+        getAllInstanceDescriptions,
+        listBranches,
     },
-    openDevfile,
-    getAllInstanceDescriptions,
-    listBranches,
 })
 
-export type Commands = typeof commands & { submit: (result: CreateEnvironmentRequest) => void } & {
-    init: () => { url: string; branch?: string } | undefined
-}
+export class MdeCreateWebview extends VueWebview {}
 
 export async function createMdeWebview(
     context: ExtContext,
     repo?: { url: string; branch?: string }
 ): Promise<CreateEnvironmentRequest | undefined> {
-    const submit = new Promise<CreateEnvironmentRequest | undefined>(async resolve => {
-        await createVueWebview({
-            id: 'createMde',
-            cssFiles: ['base.css'],
-            name: localize('AWS.command.createMdeForm.title', 'Create new development environment'),
-            webviewJs: 'createMdeVue.js',
-            context,
-            onSubmit: resolve,
-            commands: {
-                ...commands,
-                init: () => repo,
-            },
-        })
-    })
-    return submit
+    return new MdeCreateWebview(context).show(repo)
 }
 
 // TODO: where should we present errors?
@@ -83,8 +74,15 @@ async function editSettings(data: SettingsForm) {
 async function submit(data: CreateEnvironmentRequest) {
     if (data.sourceCode?.[0]?.uri) {
         const target = data.sourceCode[0]
+        // a URI always needs a scheme, but git parses things differently if you drop the scheme
+        // so for now we will make sure the scheme exists, but give git the scheme-less version
+        if (vscode.Uri.parse(target.uri).scheme === '') {
+            target.uri = `ssh://${target.uri}`
+        }
+
         // TODO: remove this or have the git extension wrapper do it
         const targetNoSsh = target.uri.startsWith('ssh') ? target.uri.slice(6) : target.uri
+
         const devFiles = await getDevFiles({ name: 'origin', fetchUrl: targetNoSsh, branch: target.branch }).catch(
             () => {
                 // swallow the error since prompting for devfiles is currently out-of-scope
@@ -92,13 +90,13 @@ async function submit(data: CreateEnvironmentRequest) {
                 return []
             }
         )
+
         const file =
             devFiles.length > 1
-                ? await promptDevFiles({ name: 'origin', fetchUrl: targetNoSsh, branch: target.branch }, true)
+                ? await promptDevFiles({ name: 'origin', fetchUrl: targetNoSsh, branch: target.branch })
                 : {
                       filesystem: { path: devFiles[0] },
                   }
-        // returns to webview
         if (!file) {
             throw new Error('User cancelled devfile prompt')
         }

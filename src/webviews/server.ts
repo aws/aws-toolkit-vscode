@@ -8,16 +8,18 @@ import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { Message } from './client'
 
-interface Command<T extends any[], R> {
-    (this: WebviewServer, ...args: T): R | never
+interface Command<T extends any[] = any, R = any> {
+    (...args: T): R | never
 }
 
 interface CommandWithOptions<T extends any[], R> extends CommandOptions {
-    command(this: WebviewServer, ...args: T): R | never
+    command: (this: void, ...args: T) => R | never
 }
 
-// TODO: rename to `Protocol` and incorporate events
-export interface Commands<U = any, S = any> {
+/** Dummy class just in-case someone tries to do some weird things with the emitters. */
+// export class WebviewEventEmitter<T> {}
+
+export interface Protocol<U = any, S = any> {
     /**
      * Called when the frontend wants to submit the webview. If the result is valid, the webview is closed.
      */
@@ -27,8 +29,47 @@ export interface Commands<U = any, S = any> {
      * Further calls result in a rejected Promise.
      */
     init?: () => Promise<U> | U
-    [key: string]: Command<any, any> | vscode.EventEmitter<any> | undefined //CommandWithOptions<any, any> | undefined
+    [key: string]: Command<any, any> | CommandWithOptions<any, any> | vscode.EventEmitter<any> | undefined
 }
+
+export interface Commands {
+    [key: string]: Command<any, any> | undefined | CommandWithOptions<any, any>
+}
+
+export interface Events {
+    [key: string]: vscode.EventEmitter<any>
+}
+
+export interface WebviewCompileOptions<C extends Commands, E extends Events, D = any, S = any> {
+    /**
+     * Events emitters provided by the backend. Note that whatever is passed into this option is
+     * only used for type and key generation. Do not assume the same reference will exist on instantiation.
+     */
+    events?: E
+    /**
+     * Commands provided by the backend. These are called with a `this` type with the following shape:
+     * ```ts
+     * interface {
+     *    emitters: typeof events
+     *    arguments: typeof validateData
+     * }
+     * ```
+     * Merged with {@link WebviewServer}
+     */
+    commands?: C & ThisType<WebviewServer & { emitters: E } & { arguments: D }>
+    /** Validates the input from `show` is correct. Used to infer the type returned by `init`. */
+    validateData?: (data?: D) => Promise<boolean> | boolean
+    /** Validates the output from `submit` is correct. Used to infer the type returned by `show`. */
+    validateSubmit?: (result: S) => Promise<boolean> | boolean
+}
+
+export type OptionsToProtocol<O> = O extends WebviewCompileOptions<infer C, infer E, infer D, infer S>
+    ? {
+          submit: (result: S) => Promise<void> | void | never
+          init: () => Promise<D> | D
+      } & C &
+          E
+    : never
 
 export type WebviewServer = vscode.Webview & {
     context: ExtContext
@@ -42,51 +83,8 @@ interface CommandOptions {
     memoize?: boolean
 }
 
-type CreateCommandsOptions<T extends Commands<any>> = {
-    [P in keyof T]+?: CommandOptions
-}
-
-/**
- * Creates commands for the webview server + client.
- *
- * Currently just pass-through to extract the correct type and apply a `this` context to methods.
- *
- * @param commands
- * @param options
- * @returns
- */
-export function createCommands<T extends Commands<U, S>, U = any, S = any>(
-    commands: T & ThisType<WebviewServer>,
-    options: CreateCommandsOptions<T> = {}
-): OmitThisParameter<T> & { submit: (result: S) => Promise<void> } & { init: () => Promise<U> } {
-    return commands as any
-}
-
-// TODO: finish this
-export function compileCommands<T extends Commands<U, S>, U extends any[] = any, S = any>(
-    commands: T & ThisType<WebviewServer>,
-    options: CreateCommandsOptions<T> = {}
-): CompiledCommands<T, U, S> {
-    const compiled: Record<string, CommandWithOptions<U, S>> = {}
-    Object.keys(commands).forEach(k => {
-        const command = commands[k]
-        if (command === undefined) {
-            return
-        }
-        //const result = typeof command === 'function' ? { command } : command
-        //compiled[k] = { memoize: false, once: false, ...result }
-    })
-    return {
-        // TODO: throw an error is someone tries to access this
-        client: {} as any,
-        server: compiled,
-    }
-}
-
-interface CompiledCommands<T extends Commands<U, S>, U extends any[] = any, S = any> {
-    client: OmitThisParameter<T> & { submit: (result: S) => Promise<void> } & { init: () => Promise<U> }
-    server: { [key: string]: CommandWithOptions<any, any> | undefined }
-}
+// TODO:
+// add readonly props on webview create rather than `init`
 
 /**
  * Sets up an event listener for the webview to call registered commands.
@@ -94,21 +92,31 @@ interface CompiledCommands<T extends Commands<U, S>, U extends any[] = any, S = 
  * @param webview
  * @param commands
  */
-export function registerWebviewServer<S>(webview: WebviewServer, commands: Commands<S>) {
+export function registerWebviewServer(webview: WebviewServer, commands: Protocol) {
     webview.onDidReceiveMessage(async (event: Message) => {
         const { id, command, data } = event
 
-        const fn = commands[command]
+        const handler = commands[command]
 
-        if (!fn) {
+        if (!handler) {
             return getLogger().warn(`Received invalid message from client: ${command}`)
         }
 
-        if (fn instanceof vscode.EventEmitter) {
+        if (handler instanceof vscode.EventEmitter) {
             // TODO: make server dipose of event if client calls `dispose`
-            fn.event(e => webview.postMessage({ command, event: true, data: e }))
+            handler.event(e => webview.postMessage({ command, event: true, data: e }))
             getLogger().verbose(`Registered event handler for: ${command}`)
             return webview.postMessage({ id, command, event: true })
+        }
+
+        let fn: Command
+        if (typeof handler !== 'function') {
+            fn = handler.command
+            const partial = { ...handler } as Partial<typeof handler>
+            delete partial.command
+            Object.assign(data, partial)
+        } else {
+            fn = handler
         }
 
         // TODO: these commands could potentially have sensitive data, we don't want to log in that case

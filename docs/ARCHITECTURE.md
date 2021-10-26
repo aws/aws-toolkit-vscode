@@ -20,8 +20,8 @@ The VS Code API restricts our Webviews to a single `postMessage` function. To si
 
 Webview (frontend) clients can be created via `WebviewClientFactory`. This generates a very simple Proxy to send messages to the extension, mapping the function name to the command name. Unique IDs are also generated to stop requests from receiving extraneous responses.
 
-Commands are defined on the backend via `createCommands`. This takes a single argument:
-an object where each key is the name of the command and each value is the handler. The return-type of this function should be used in the frontend code.
+Commands and events are defined on the backend via `compileVueWebview`. This takes a configuration object that contains information about the webview, such as the
+name of the main script, the panel id, and the commands/events that the backend provides. This returns a class that can be instantiating into the webview.
 
 A basic request/response with error handling:
 

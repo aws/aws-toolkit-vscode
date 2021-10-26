@@ -5,12 +5,12 @@
 
 import { defineComponent } from 'vue'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { AwsSamDebuggerConfigurationLoose, Commands } from './samInvokeBackend'
+import { AwsSamDebuggerConfigurationLoose, SamInvokeWebview } from './samInvokeBackend'
 import settingsPanel from '../../webviews/components/settingsPanel.vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 
-const client = WebviewClientFactory.create<Commands>()
+const client = WebviewClientFactory.create<SamInvokeWebview>()
 
 interface VueDataLaunchPropertyObject {
     value: string

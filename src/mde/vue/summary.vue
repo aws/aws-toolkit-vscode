@@ -37,19 +37,41 @@
         >
             Delete Environment
         </button>
+        <button
+            id="connect-environment"
+            class="button-size button-theme-secondary ml-8 mt-8"
+            type="button"
+            :disabled="!stable"
+            v-if="!connected"
+            @click="connect"
+        >
+            Connect
+        </button>
     </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { GetEnvironmentMetadataResponse } from '../../../types/clientmde'
+import {
+    DeleteEnvironmentResponse,
+    GetEnvironmentMetadataResponse,
+    StartEnvironmentResponse,
+    StopEnvironmentResponse,
+} from '../../../types/clientmde'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
-import { createClass } from '../../webviews/util'
-import { Commands } from './configure/backend'
+import { createClass, createType } from '../../webviews/util'
 import { EnvironmentProp } from './shared'
 
-const client = WebviewClientFactory.create<Commands>()
+declare class Protocol {
+    connect(): Promise<void>
+    toggleMdeState: (
+        mde: GetEnvironmentMetadataResponse
+    ) => Promise<StartEnvironmentResponse | StopEnvironmentResponse | undefined>
+    deleteEnvironment: (mde: GetEnvironmentMetadataResponse) => Promise<DeleteEnvironmentResponse | undefined>
+}
+
+const client = WebviewClientFactory.create<Protocol>()
 
 export const VueModel = createClass<GetEnvironmentMetadataResponse>({ status: '' }, true)
 
@@ -57,9 +79,15 @@ export default defineComponent({
     name: 'environment-summary',
     props: {
         modelValue: {
-            type: VueModel,
+            type: createType(VueModel),
             required: true,
         },
+        /*
+        client: {
+            type: createType(Protocol),
+            required: true,
+        },
+        */
         environment: EnvironmentProp,
     },
     computed: {
@@ -92,6 +120,9 @@ export default defineComponent({
                 resp && this.update('status', resp.status)
             })
         },
+        connect() {
+            client.connect()
+        },
     },
 })
 </script>
@@ -120,19 +151,15 @@ body.vscode-light #status[data-connected='true'] {
     background-image: url('/resources/generic/pass.svg');
 }
 body.vscode-dark #start-icon {
-    /* TODO: use an in-line svg loader */
     background-image: url('/resources/dark/play-circle.svg');
 }
 body.vscode-light #start-icon {
-    /* TODO: use an in-line svg loader */
     background-image: url('/resources/light/play-circle.svg');
 }
 body.vscode-dark #stop-icon {
-    /* TODO: use an in-line svg loader */
     background-image: url('/resources/dark/stop-circle.svg');
 }
 body.vscode-light #stop-icon {
-    /* TODO: use an in-line svg loader */
     background-image: url('/resources/light/stop-circle.svg');
 }
 </style>

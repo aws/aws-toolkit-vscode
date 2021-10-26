@@ -5,20 +5,19 @@
 
 import * as vscode from 'vscode'
 import { ExtContext } from '../../../shared/extensions'
-import { createVueWebview } from '../../../webviews/main'
+import { compileVueWebview } from '../../../webviews/main'
 import * as nls from 'vscode-nls'
 import { ext } from '../../../shared/extensionGlobals'
 import { EnvironmentSettingsWizard, getAllInstanceDescriptions, SettingsForm } from '../../wizards/environmentSettings'
 import { CreateEnvironmentRequest, GetEnvironmentMetadataResponse } from '../../../../types/clientmde'
 import { getRegistryDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
-import { createCommands } from '../../../webviews/server'
 import { DefaultMdeEnvironmentClient, GetStatusResponse } from '../../../shared/clients/mdeEnvironmentClient'
 import { sleep } from '../../../shared/utilities/promiseUtilities'
 import { compare } from 'fast-json-patch'
-import { mdeDeleteCommand } from '../../mdeCommands'
-import { MDE_RESTART_KEY } from '../../constants'
+import { mdeConnectCommand, mdeDeleteCommand } from '../../mdeCommands'
 import { getLogger } from '../../../shared/logger/logger'
+import { parse } from '@aws-sdk/util-arn-parser'
 
 const localize = nls.loadMessageBundle()
 export interface DefinitionTemplate {
@@ -26,39 +25,68 @@ export interface DefinitionTemplate {
     source: string
 }
 
-// TODO: make submit a special case (the only method that is generic)
-// that way we can compose commands and still be type-safe
-const commands = createCommands({
-    getEnvironmentSummary,
-    editSettings,
-    async loadTemplates() {
-        return getRegistryDevFiles().then(t =>
-            t.map(name => ({
-                name,
-                source: PUBLIC_REGISTRY_URI.with({ path: `devfiles/${name}` }).toString(),
-            }))
-        )
+const VueWebview = compileVueWebview({
+    id: 'configureMde',
+    cssFiles: ['base.css'],
+    name: localize('AWS.command.configureMdeForm.title', 'Environment settings'),
+    webviewJs: 'createMdeConfigureVue.js',
+    events: {
+        onEnvironmentUpdate: new vscode.EventEmitter<GetEnvironmentMetadataResponse & { connected: boolean }>(),
+        onDevfileUpdate: new vscode.EventEmitter<GetStatusResponse & { actionId: 'devfile' }>(),
     },
-    openDevfile,
-    getAllInstanceDescriptions,
-    toggleMdeState,
-    updateDevfile,
-    updateTags: (arn: string, tags: Record<string, string>) => {
-        return computeTagDiff(arn, tags).then(diff => updateTags(arn, diff))
+    commands: {
+        editSettings,
+        async loadTemplates() {
+            return getRegistryDevFiles().then(t =>
+                t.map(name => ({
+                    name,
+                    source: PUBLIC_REGISTRY_URI.with({ path: `devfiles/${name}` }).toString(),
+                }))
+            )
+        },
+        openDevfile,
+        getAllInstanceDescriptions,
+        toggleMdeState,
+        updateDevfile,
+        updateTags: (arn: string, tags: Record<string, string>) => {
+            return computeTagDiff(arn, tags).then(diff => updateTags(arn, diff))
+        },
+        async restartEnvironment(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'arn'>) {
+            return tryRestart(mde.arn, async () => {
+                await ext.mde.stopEnvironment({ environmentId: mde.id })
+            })
+        },
+        async startDevfile(location: string) {
+            const envClient = new DefaultMdeEnvironmentClient()
+            if (!envClient.arn) {
+                throw new Error('Cannot start devfile when not in environment')
+            }
+            return tryRestart(envClient.arn, async () => {
+                await envClient.startDevfile({ location, recreateHomeVolumes: true })
+            })
+        },
+        getEnvironmentSummary() {
+            return getEnvironmentSummary.bind(undefined, this.arguments.id)
+        },
+        async deleteEnvironment(mde: GetEnvironmentMetadataResponse) {
+            const deleted = await mdeDeleteCommand(mde)
+            if (!deleted) {
+                return
+            }
+            pollDelete(mde).then(() => {
+                this.emitters.onEnvironmentUpdate.fire({ ...mde, status: 'DELETED', connected: false })
+            })
+            return deleted
+        },
+        connect() {
+            return mdeConnectCommand(this.arguments, parse(this.arguments.arn).region)
+        },
     },
-    onEnvironmentUpdate: new vscode.EventEmitter<GetEnvironmentMetadataResponse>(),
-    onDevfileUpdate: new vscode.EventEmitter<GetStatusResponse & { actionId: 'devfile' }>(),
-    deleteEnvironment: (mde: Pick<GetEnvironmentMetadataResponse, 'id'>) => mdeDeleteCommand(mde),
-    async restartEnvironment(mde: Pick<GetEnvironmentMetadataResponse, 'id'>) {
-        return await restartEnvironment(this.context, mde)
-    },
+    validateSubmit: (data: CreateEnvironmentRequest) => true,
+    validateData: (env?: GetEnvironmentMetadataResponse & { connected: boolean }) => true,
 })
 
-export type Commands = typeof commands & {
-    submit: (result: CreateEnvironmentRequest) => void
-    init: () => Promise<GetEnvironmentMetadataResponse & { connected: boolean }>
-    onEnvironmentUpdate: vscode.EventEmitter<GetEnvironmentMetadataResponse & { connected: boolean }>
-}
+export class MdeConfigureWebview extends VueWebview {}
 
 export async function createMdeConfigureWebview(
     context: ExtContext,
@@ -69,49 +97,21 @@ export async function createMdeConfigureWebview(
     if (!environmentId) {
         throw new Error('Unable to resolve id for MDE environment')
     }
-    const onEnvironmentUpdateEmitter = new vscode.EventEmitter<GetEnvironmentMetadataResponse>()
-    const onDevfileUpdateEmitter = new vscode.EventEmitter<GetStatusResponse & { actionId: 'devfile' }>()
-    const submit = new Promise<CreateEnvironmentRequest | undefined>(async resolve => {
-        await createVueWebview({
-            id: 'configureMde',
-            cssFiles: ['base.css'],
-            name: localize('AWS.command.configureMdeForm.title', 'Environment settings'),
-            webviewJs: 'createMdeConfigureVue.js',
-            context,
-            onSubmit: resolve,
-            commands: {
-                ...commands,
-                onEnvironmentUpdate: onEnvironmentUpdateEmitter,
-                onDevfileUpdate: onDevfileUpdateEmitter,
-                getEnvironmentSummary: getEnvironmentSummary.bind(undefined, environmentId),
-                init: getEnvironmentSummary.bind(undefined, environmentId),
-                deleteEnvironment: async (mde: GetEnvironmentMetadataResponse) => {
-                    const deleted = await mdeDeleteCommand(mde)
-                    if (!deleted) {
-                        return
-                    }
-                    pollDelete(mde).then(result => {
-                        result && onEnvironmentUpdateEmitter.fire({ ...mde, status: 'DELETED' })
-                    })
-                    return deleted
-                },
-            },
-        })
-    })
+
+    const webview = new VueWebview(context)
 
     let done: boolean | undefined
 
-        // Poll for devfile status changes
+    // Poll for devfile status changes
+    const DEVFILE_POLL_RATE = 1000
     ;(async function () {
-        let previous: GetStatusResponse | undefined
         while (!done) {
-            const resp = await envClient.getStatus()
+            const resp = await new DefaultMdeEnvironmentClient().getStatus()
             getLogger().debug('poll for environment status')
-            if (resp.status !== previous?.status) {
-                onDevfileUpdateEmitter.fire({ ...resp, actionId: 'devfile' })
+            if (resp.status === 'CHANGED') {
+                webview.emitters.onDevfileUpdate.fire({ ...resp, actionId: 'devfile' })
             }
-            previous = resp
-            await sleep(10000)
+            await sleep(DEVFILE_POLL_RATE)
         }
     })()
 
@@ -119,18 +119,19 @@ export async function createMdeConfigureWebview(
     ;(async function () {
         let previous: GetEnvironmentMetadataResponse | undefined
         while (!done) {
-            const response = await ext.mde.getEnvironmentMetadata({ environmentId })
+            const response = await getEnvironmentSummary(environmentId)
             if (response?.status === 'DELETING') {
                 break
             }
             if (!previous || response?.status !== previous.status) {
-                onEnvironmentUpdateEmitter.fire(response)
+                webview.emitters.onEnvironmentUpdate.fire(response)
             }
             previous = response
             await sleep(10000)
         }
     })()
-    return submit.finally(() => (done = true))
+
+    return webview.show(await getEnvironmentSummary(environmentId)).finally(() => (done = true))
 }
 
 // TODO: move to shared file
@@ -196,11 +197,11 @@ async function updateDevfile(location: string): Promise<void> {
 }
 
 // Poll a prop until it changes
-async function pollStatus<T, K extends keyof T>(initial: T, provider: () => Promise<T>, prop: K): Promise<T[K]> {
+async function pollStatus<T, K extends keyof T>(prop: K, target: T[K], provider: () => Promise<T>): Promise<void> {
     while (true) {
         const next = await provider()
-        if (next[prop] !== initial[prop]) {
-            return next[prop]
+        if (next[prop] === target) {
+            break
         }
         await sleep(10000)
     }
@@ -223,8 +224,7 @@ async function pollDelete(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'stat
                 throw err
             })
 
-    const result = await pollStatus({ status: mde.status }, provider, 'status')
-    return !result
+    await pollStatus('status', 'DELETED', provider)
 }
 
 // Easier to compute the object diff here than on the frontend, although it requires one extra API call
@@ -280,23 +280,27 @@ async function updateTags(arn: string, tags: Record<string, string | undefined>)
     ])
 }
 
-/**
- * Restarts the environment. This stores context in global state.
- *
- * @param ctx
- * @param mde
- */
-async function restartEnvironment(ctx: ExtContext, mde: Pick<GetEnvironmentMetadataResponse, 'id'>): Promise<void> {
-    const memento = ctx.extensionContext.globalState
-    const prev = memento.get<Record<string, boolean>>(MDE_RESTART_KEY, {})
-    memento.update(MDE_RESTART_KEY, { ...prev, [mde.id]: true })
+async function tryRestart(arn: string, restarter: () => Promise<void>) {
+    const canAutoConnect = new DefaultMdeEnvironmentClient().arn === arn
+    if (canAutoConnect && checkUnsavedChanges()) {
+        // TODO: show confirmation prompt instead?
+        vscode.window.showErrorMessage('Cannot stop current environment with unsaved changes')
+        throw new Error('Cannot stop environment with unsaved changes')
+    }
 
-    // TODO: store which folder the user entered from??
-    const home = vscode.Uri.parse('vscode://folder/Users/')
-    await vscode.commands.executeCommand('vscode.openFolder', home)
-
-    await ext.mde.stopEnvironment({ environmentId: mde.id }).catch(err => {
-        memento.update(MDE_RESTART_KEY, prev)
-        throw err
-    })
+    return restarter()
+        .then(() => {
+            // TODO: find way to open local workspace from remote window (or even better, open no workspace)
+            /*
+            const state = memento.get(arn)
+            if (state.localSessionHome) {
+                const home = vscode.Uri.parse(`vscode://folder/${state.localSessionHome}`)
+                vscode.commands.executeCommand('vscode.openFolder', home)
+            }
+            */
+        })
+        .catch(async err => {
+            //await memento.with(arn, { previousRemoteWorkspace: undefined, pendingResume: false, canAutoConnect: false })
+            throw err
+        })
 }

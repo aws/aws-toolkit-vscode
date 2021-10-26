@@ -228,7 +228,6 @@ export async function mdeCreateCommand(
             ...options,
             ...response,
             tags: {
-                // label: '', // Label = "tag with no value".
                 ...defaultTags,
                 ...(response?.tags ?? {}),
             },

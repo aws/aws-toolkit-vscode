@@ -55,7 +55,7 @@
 <script lang="ts">
 import { IAM } from 'aws-sdk'
 import { defineComponent } from 'vue'
-import { createClass } from '../../webviews/util'
+import { createClass, createType } from '../../webviews/util'
 
 export const VueModel = createClass({
     roles: [] as IAM.Role[],
@@ -67,7 +67,7 @@ export default defineComponent({
     name: 'definition-file',
     props: {
         modelValue: {
-            type: VueModel,
+            type: createType(VueModel),
             default: new VueModel(),
         },
     },

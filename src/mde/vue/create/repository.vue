@@ -38,8 +38,8 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
-import { createClass } from '../../../webviews/util'
-import { Commands } from './backend'
+import { createClass, createType } from '../../../webviews/util'
+import { MdeCreateWebview } from './backend'
 
 export const VueModel = createClass({
     url: '',
@@ -48,14 +48,14 @@ export const VueModel = createClass({
 })
 const BRANCH_DEBOUNCE_TIME = 1000
 
-const client = WebviewClientFactory.create<Commands>()
+const client = WebviewClientFactory.create<MdeCreateWebview>()
 const VALID_SCHEMES = ['https://', 'http://', 'ssh://']
 
 export default defineComponent({
     name: 'repository-url',
     props: {
         modelValue: {
-            type: VueModel,
+            type: createType(VueModel),
             default: new VueModel(),
         },
     },
@@ -65,6 +65,10 @@ export default defineComponent({
             loadingBranches: false,
             branches: [] as string[],
         }
+    },
+    created() {
+        // override saved state in case user refreshes during a load
+        this.loadingBranches = false
     },
     mixins: [saveData],
     computed: {

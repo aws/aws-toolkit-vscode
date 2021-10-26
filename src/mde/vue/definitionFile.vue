@@ -43,12 +43,12 @@
 import { WebviewApi } from 'vscode-webview'
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
-import { createClass } from '../../webviews/util'
-import { Commands } from './create/backend'
+import { createClass, createType } from '../../webviews/util'
+import { MdeCreateWebview } from './create/backend'
 import { EnvironmentProp } from './shared'
 
 declare const webviewApi: WebviewApi<typeof VueModel>
-const client = WebviewClientFactory.create<Commands>()
+const client = WebviewClientFactory.create<MdeCreateWebview>()
 
 const PUBLIC_REGISTRY_URL = 'https://registry.devfile.io'
 const VALID_SCHEMES = ['https://', 'http://']
@@ -65,7 +65,7 @@ export default defineComponent({
     name: 'definition-file',
     props: {
         modelValue: {
-            type: VueModel,
+            type: createType(VueModel),
             default: new VueModel(),
         },
         environment: EnvironmentProp,
@@ -78,14 +78,12 @@ export default defineComponent({
             return this.url.startsWith(PUBLIC_REGISTRY_URL) ? 'registry' : 'path'
         },
         urlError() {
-            const schemes = this.environment === 'remote' ? VALID_SCHEMES.concat('file://') : VALID_SCHEMES
-
-            if (!this.url || (this.environment === 'remote' && this.url.startsWith('/'))) {
+            if (!this.url || this.environment === 'remote') {
                 return ''
             }
 
-            if (!schemes.some(scheme => this.url.startsWith(scheme))) {
-                return `URL must use one of the following schemes: ${schemes.join(', ')}`
+            if (!VALID_SCHEMES.some(scheme => this.url.startsWith(scheme))) {
+                return `URL must use one of the following schemes: ${VALID_SCHEMES.join(', ')}`
             }
 
             return ''

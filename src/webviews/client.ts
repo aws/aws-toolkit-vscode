@@ -5,7 +5,8 @@
 
 import { EventEmitter } from 'vscode'
 import { WebviewApi } from 'vscode-webview'
-import { Commands } from './server'
+import { ProtocolFromWeview, VueWebview } from './main'
+import { Protocol } from './server'
 
 declare const vscode: WebviewApi<any>
 
@@ -29,6 +30,8 @@ type ClientCommands<T> = {
     readonly [P in keyof T]: T[P] extends EventEmitter<infer P>
         ? (listener: (e: P) => void) => Promise<{ dispose: () => void }>
         : OmitThisParameter<T[P]> extends (...args: infer P) => infer R
+        ? (...args: P) => R extends Promise<any> ? R : Promise<R>
+        : T[P] extends { command: (...args: infer P) => infer R }
         ? (...args: P) => R extends Promise<any> ? R : Promise<R>
         : never
 }
@@ -110,7 +113,7 @@ function registerEventHandler<T extends (e: R) => void, R, U extends string>(
     return { dispose: () => window.removeEventListener('message', listener) }
 }
 
-export type WebviewClient<T extends Commands<any>> = ClientCommands<T>
+export type WebviewClient<T> = ClientCommands<T>
 /**
  * Used to create a new 'WebviewClient' to communicate with the backend.
  *
@@ -124,7 +127,10 @@ export class WebviewClientFactory {
      * Creates a new client. These clients are defined by their types; they do not have any knowledge
      * of the backend protocol other than the specified type.
      */
-    public static create<T extends Commands<any>>(): WebviewClient<T> {
+    public static create<T extends VueWebview<any, any, any, any>>(): WebviewClient<ProtocolFromWeview<T>>
+    public static create<T extends Protocol<any, any>>(): WebviewClient<T>
+    public static create<T extends ClientCommands<T>>(): WebviewClient<T>
+    public static create<T extends Protocol<any, any>>(): WebviewClient<T> {
         return new Proxy(
             {},
             {

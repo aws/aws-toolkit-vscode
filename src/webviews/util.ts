@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { PropType } from 'vue'
+
 /**
  * Creates an anonymous class whose constructor automatically applies default values.
  *
@@ -33,9 +35,7 @@ export function createClass<T>(defaults: T): { new (initial?: Partial<T>): T } |
 
 // Creates a 'safe' Vue type using the anonymous class from `createClass`
 // We don't really need to use this, but if you don't Vue will warn about type checking.
-export function createType<T extends new (obj: Record<string, any>) => any>(Model: T) {
-    return {
-        type: [Model, Object],
-        coerce: (obj: any) => new Model(obj),
-    }
+// Alternatively, use 'PropType' and ditch any kind of runtime type-checking
+export function createType<T extends new (obj: any) => any>(Model: T): PropType<InstanceType<T>> {
+    return Object
 }

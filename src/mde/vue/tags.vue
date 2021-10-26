@@ -7,49 +7,51 @@
         </p>
         <div class="tags-container" v-for="(tag, index) in tags" :key="index">
             <div class="tag-grid">
-                <div class="display-contents">
-                    <label class="label-context soft" v-if="index === 0">Key</label>
-                    <div v-else style="height: 1px"></div>
-                    <input
-                        v-model="tag.key"
-                        class="label-input"
-                        type="text"
-                        :id="`tag-key-input-${index}`"
-                        :data-invalid="!!tag.keyError"
-                        :disabled="readonly"
-                        @keyup="validateTag(index)"
-                    />
-                    <p class="input-validation tag-error-offset" v-if="tag.keyError">
-                        {{ tag.keyError }}
-                    </p>
-                    <div v-else style="height: 1px"></div>
-                </div>
-                <div class="display-contents">
-                    <label class="label-context soft" v-if="index === 0">Value - optional</label>
-                    <div v-else style="height: 1px"></div>
-                    <input
-                        v-model="tag.value"
-                        class="label-input"
-                        type="text"
-                        :id="`tag-value-input-${index}`"
-                        :data-invalid="!!tag.valueError"
-                        :disabled="readonly"
-                        @keyup="validateTag(index)"
-                    />
-                    <p class="input-validation tag-error-offset" v-if="tag.valueError">
-                        {{ tag.valueError }}
-                    </p>
-                    <div v-else style="height: 1px"></div>
-                </div>
+                <div class="display-contents" v-if="!tag.hidden">
+                    <div class="display-contents">
+                        <label class="label-context soft" v-if="index === 0">Key</label>
+                        <div v-else style="height: 1px"></div>
+                        <input
+                            v-model="tag.key"
+                            class="label-input"
+                            type="text"
+                            :id="`tag-key-input-${index}`"
+                            :data-invalid="!!tag.keyError"
+                            :disabled="readonly"
+                            @keyup="validateTag(index)"
+                        />
+                        <p class="input-validation tag-error-offset" v-if="tag.keyError">
+                            {{ tag.keyError }}
+                        </p>
+                        <div v-else style="height: 1px"></div>
+                    </div>
+                    <div class="display-contents">
+                        <label class="label-context soft" v-if="index === 0">Value - optional</label>
+                        <div v-else style="height: 1px"></div>
+                        <input
+                            v-model="tag.value"
+                            class="label-input"
+                            type="text"
+                            :id="`tag-value-input-${index}`"
+                            :data-invalid="!!tag.valueError"
+                            :disabled="readonly"
+                            @keyup="validateTag(index)"
+                        />
+                        <p class="input-validation tag-error-offset" v-if="tag.valueError">
+                            {{ tag.valueError }}
+                        </p>
+                        <div v-else style="height: 1px"></div>
+                    </div>
 
-                <button
-                    style="grid-column: 3; grid-row: 2"
-                    class="remove-label"
-                    type="button"
-                    aria-label="Remove Tag"
-                    :disabled="readonly"
-                    @click="removeTag(index)"
-                ></button>
+                    <button
+                        style="grid-column: 3; grid-row: 2"
+                        class="remove-label"
+                        type="button"
+                        aria-label="Remove Tag"
+                        :disabled="readonly"
+                        @click="removeTag(index)"
+                    ></button>
+                </div>
             </div>
         </div>
         <button
@@ -79,22 +81,27 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
-import { VSCODE_MDE_TAGS } from '../constants'
 import { defineComponent, watchEffect, PropType } from 'vue'
-import { createClass } from '../../webviews/util'
+import { createClass, createType } from '../../webviews/util'
 import { EnvironmentProp } from './shared'
 
-const MAX_TAGS = 50 - Object.keys(VSCODE_MDE_TAGS).length
+const MAX_TAGS = 50
 const MAX_KEY_LENGTH = 128
 const MAX_VALUE_LENGTH = 256
 const INVALID_CHARACTER_REGEX = /[^a-zA-Z0-9\s_.:/=+-@]/g
+const HIDE_GENERATED_TAGS = true
 
 export interface TagWithErrors {
     key: string
     value: string
     keyError?: string
     valueError?: string
+    /**
+     * True if this tag was not created by the user.
+     * These are hidden by default.
+     */
+    generated?: boolean
+    hidden?: boolean
 }
 
 // TODO: add a preview mode?
@@ -141,7 +148,7 @@ export default defineComponent({
     name: 'tags-panel',
     props: {
         modelValue: {
-            type: VueModel,
+            type: createType(VueModel),
             default: new VueModel(),
         },
         type: {
@@ -183,11 +190,10 @@ export default defineComponent({
         },
     },
     computed: {
-        tags() {
-            // Parent component could potentially give us 'aws:' tags which cannot be modified
-            const filteredTags = this.modelValue.tags.filter(t => !t.key.startsWith('aws:'))
-            filteredTags.forEach(t => this.watchTag(t))
-            return filteredTags
+        tags(): TagWithErrors[] {
+            const applyHidden = this.modelValue.tags.map(t => ({ ...t, hidden: t.generated && HIDE_GENERATED_TAGS }))
+            applyHidden.forEach(t => this.watchTag(t))
+            return applyHidden
         },
         labels() {
             return this.tags.filter(t => t.value === '' && t.key !== '')

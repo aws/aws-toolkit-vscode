@@ -21,11 +21,17 @@
         <role-panel v-model="roles"></role-panel>
     </settings-panel>
     <div class="flex-right">
-        <button id="cancel-submit" class="ml-8 mr-8 button-theme-secondary" type="button" @click="cancel">
+        <button
+            id="cancel-submit"
+            class="ml-8 mr-8 button-theme-secondary"
+            :disabled="submitting"
+            type="button"
+            @click="cancel"
+        >
             Cancel
         </button>
-        <button id="submit-create" class="button-theme-primary" type="button" @click="submit">
-            Create environment
+        <button id="submit-create" class="button-theme-primary" type="button" :disabled="submitting" @click="submit">
+            {{ submitting ? 'Creating...' : 'Create environment' }}
         </button>
     </div>
     <p>More configurations</p>
@@ -41,6 +47,7 @@
         id="tags-and-labels-panel"
         title="Tags and labels - optional"
         description="Use tags (key and value) to track resources and costs. Use labels (key only) to identify your environment."
+        :max-tags="maxTags"
         start-collapsed
     >
         <tags-panel v-model="tags"></tags-panel>
@@ -64,12 +71,13 @@ import tagsPanel, { VueModel as TagsModel } from '../tags.vue'
 import computePanel, { VueModel as ComputeModel } from '../compute.vue'
 import settingsPanel from '../../../webviews/components/settingsPanel.vue'
 import { defineComponent } from 'vue'
-import { Commands } from './backend'
+import { MdeCreateWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { SettingsForm } from '../../wizards/environmentSettings'
 import saveData from '../../../webviews/mixins/saveData'
+import { VSCODE_MDE_TAGS } from '../../constants'
 
-const client = WebviewClientFactory.create<Commands>()
+const client = WebviewClientFactory.create<MdeCreateWebview>()
 
 const model = {
     repo: new RepositoryModel(),
@@ -77,6 +85,8 @@ const model = {
     definitionFile: new DevFileModel(),
     tags: new TagsModel(),
     compute: new ComputeModel(),
+    submitting: false,
+    repoTag: { key: '', value: '' },
 }
 
 export default defineComponent({
@@ -89,27 +99,48 @@ export default defineComponent({
         computePanel,
         rolePanel,
     },
-    mixins: [saveData],
+    mixins: [saveData], // TODO: make mixin for non-persistent state
     data() {
         return model
     },
+    computed: {
+        maxTags() {
+            return 50 - Object.keys(VSCODE_MDE_TAGS).length
+        },
+    },
     created() {
-        client.init().then(repo => (this.repo.url = repo?.url ?? ''))
+        this.submitting = false
+        client.init().then(repo => {
+            this.repo = new RepositoryModel(repo)
+            if (repo.url) {
+                this.tags.tags.push(this.repoTag)
+                // simplistic tag that 'tracks' the users input until they edit it
+                this.$watch('repo', (val: InstanceType<typeof RepositoryModel>) => {
+                    if (!val.error) {
+                        const name = val.url.split('/').pop()?.replace('.git', '')
+                        this.repoTag.key = name ?? this.repoTag.key
+                    }
+                })
+            }
+        })
         client.loadRoles().then(r => (this.roles.roles = r))
     },
     methods: {
         submit() {
-            if (!this.isValid()) {
+            if (!this.isValid() || this.submitting) {
                 return
             }
-            client.submit({
-                ...this.compute,
-                roleArn: this.roles.roles.find(r => r.RoleName === this.roles.selectedRoleName)?.Arn,
-                tags: this.tags.tags.reduce((prev, cur) => Object.assign(prev, { [cur.key]: cur.value }), {}),
-                devfile:
-                    this.definitionFile.mode === 'registry' ? { uri: { uri: this.definitionFile.url } } : undefined,
-                sourceCode: this.repo.error === '' ? [{ uri: this.repo.url, branch: this.repo.branch }] : undefined,
-            })
+            this.submitting = true
+            client
+                .submit({
+                    ...this.compute,
+                    roleArn: this.roles.roles.find(r => r.RoleName === this.roles.selectedRoleName)?.Arn,
+                    tags: this.tags.tags.reduce((prev, cur) => Object.assign(prev, { [cur.key]: cur.value }), {}),
+                    devfile:
+                        this.definitionFile.mode === 'registry' ? { uri: { uri: this.definitionFile.url } } : undefined,
+                    sourceCode: this.repo.error === '' ? [{ uri: this.repo.url, branch: this.repo.branch }] : undefined,
+                })
+                .finally(() => (this.submitting = false))
         },
         cancel() {
             client.cancel()

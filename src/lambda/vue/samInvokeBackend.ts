@@ -24,7 +24,7 @@ import {
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { createVueWebview } from '../../webviews/main'
+import { compileVueWebview } from '../../webviews/main'
 import { sampleRequestPath } from '../constants'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
@@ -34,41 +34,36 @@ import { getSampleLambdaPayloads } from '../utils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import { samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
-import { createCommands } from '../../webviews/server'
 
 const localize = nls.loadMessageBundle()
 
-const commands = createCommands({
-    getRuntimes: () => {
-        return samLambdaCreatableRuntimes().toArray().sort()
+const VueWebview = compileVueWebview({
+    id: 'createLambda',
+    name: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
+    webviewJs: 'samInvokeVue.js',
+    cssFiles: [isCloud9() ? 'base-cloud9.css' : 'base.css'],
+    commands: {
+        getRuntimes: () => {
+            return samLambdaCreatableRuntimes().toArray().sort()
+        },
+        getTemplate,
+        getSamplePayload,
+        loadSamLaunchConfig,
+        saveLaunchConfig,
+        invokeLaunchConfig(config) {
+            return invokeLaunchConfig(config, this.context)
+        },
     },
-    getTemplate,
-    getSamplePayload,
-    loadSamLaunchConfig,
-    saveLaunchConfig,
-    invokeLaunchConfig(config) {
-        return invokeLaunchConfig(config, this.context)
-    },
+    validateData: (param?: AwsSamDebuggerConfiguration) => true,
 })
 
-export type Commands = typeof commands & { init: () => Promise<AwsSamDebuggerConfiguration | undefined> }
+export class SamInvokeWebview extends VueWebview {}
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return vscode.commands.registerCommand(
         'aws.launchConfigForm',
         async (launchConfig?: AwsSamDebuggerConfiguration) => {
-            await createVueWebview({
-                id: 'createLambda',
-                name: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
-                webviewJs: 'samInvokeVue.js',
-                cssFiles: [isCloud9() ? 'base-cloud9.css' : 'base.css'],
-                context,
-                commands: {
-                    ...commands,
-                    init: async () => launchConfig,
-                },
-            })
-
+            new SamInvokeWebview(context).show(launchConfig)
             recordSamOpenConfigUi()
         }
     )

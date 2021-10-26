@@ -27,12 +27,12 @@
 import { defineComponent, PropType } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
-import { createClass } from '../../webviews/util'
+import { createClass, createType } from '../../webviews/util'
 import { DEFAULT_COMPUTE_SETTINGS } from '../constants'
 import { SettingsForm } from '../wizards/environmentSettings'
-import { Commands } from './create/backend'
+import { MdeCreateWebview } from './create/backend'
 
-const client = WebviewClientFactory.create<Commands>()
+const client = WebviewClientFactory.create<MdeCreateWebview>()
 
 export const VueModel = createClass(DEFAULT_COMPUTE_SETTINGS)
 
@@ -40,7 +40,7 @@ export default defineComponent({
     name: 'compute-panel',
     props: {
         modelValue: {
-            type: VueModel,
+            type: createType(VueModel),
             default: new VueModel(),
         },
         type: {
