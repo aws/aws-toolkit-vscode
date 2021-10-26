@@ -12,6 +12,7 @@ import { Repository } from '../../types/git'
 import { productName } from '../shared/constants'
 import { GitExtension } from '../shared/extensions/git'
 import { getStringHash } from '../shared/utilities/textUtilities'
+import { readFileAsString } from '../shared/filesystemUtilities'
 import { VSCODE_MDE_TAGS } from './constants'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { ChildProcess } from '../shared/utilities/childProcess'
@@ -96,12 +97,27 @@ export function getStatusIcon(status: string): vscode.ThemeIcon {
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
 export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }> {
-    const mdeScript = ext.context.asAbsolutePath(path.join('resources', 'mde_connect'))
+    // Script resource path. Includes the Toolkit version string so it changes with each release.
+    const mdeScriptRes = ext.context.asAbsolutePath(path.join('resources', 'mde_connect'))
+    // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
+    const mdeScript = path.join(ext.context.globalStoragePath, 'mde_connect')
+    try {
+        const contents1 = await readFileAsString(mdeScriptRes)
+        const contents2 = await readFileAsString(mdeScript)
+        const isOutdated = contents1 !== contents2
+        if (isOutdated) {
+            fs.copyFileSync(mdeScriptRes, mdeScript)
+        }
+    } catch (e) {
+        getLogger().error('ensureMdeSshConfig: failed to update: %O\n%O', mdeScript, e)
+        return { ok: false, err: 'failed to copy mde_connect' }
+    }
+
     const mdeSshConfig = `
 Host aws-mde-*
 ForwardAgent yes
 ProxyCommand bash -c "'${mdeScript}' %h"
-    `
+`
     const ssh = await SystemUtilities.findSshPath()
     if (!ssh) {
         return { ok: false, err: 'ssh not found' }
@@ -129,7 +145,7 @@ ProxyCommand bash -c "'${mdeScript}' %h"
 
         const confirmTitle = localize(
             'AWS.mde.confirm.installSshConfig.title',
-            '{0} Toolkit will add the "aws-mde-*" SSH host specification to your ~/.ssh/config. This one-time setup allows you to use SSH with your AWS MDE environments.',
+            '{0} Toolkit will add the "aws-mde-*" host to ~/.ssh/config. This one-time setup allows you to use SSH with your AWS MDE environments.',
             getIdeProperties().company
         )
         const confirmText = localize('AWS.mde.confirm.installSshConfig.button', 'Update ~/.ssh/config')
@@ -142,6 +158,7 @@ ProxyCommand bash -c "'${mdeScript}' %h"
         try {
             fs.appendFileSync(sshConfigPath, mdeSshConfig)
         } catch (e) {
+            getLogger().error('ensureMdeSshConfig: failed to write: %O', sshConfigPath)
             return { ok: false, err: 'write failed' }
         }
     }
