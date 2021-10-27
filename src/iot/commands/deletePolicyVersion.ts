@@ -24,7 +24,7 @@ export async function deletePolicyVersionCommand(
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
-    getLogger().debug('DeletePolicy called for %O', node)
+    getLogger().debug('DeletePolicyVersion called for %O', node)
 
     if (node.isDefault) {
         window.showInformationMessage(

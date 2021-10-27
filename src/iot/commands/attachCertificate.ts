@@ -12,7 +12,7 @@ import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../shared/ui/prompter'
-import { DefaultIotCertificate, IotCertificate } from '../../shared/clients/iotClient'
+import { IotCertificate } from '../../shared/clients/iotClient'
 import { WizardControl } from '../../shared/wizards/wizard'
 import { Iot } from 'aws-sdk'
 
@@ -43,15 +43,12 @@ export async function attachCertificateCommand(
             const newCerts =
                 certResponse.certificates
                     ?.filter(cert => cert.certificateArn && cert.certificateId && cert.status && cert.creationDate)
-                    .map(
-                        cert =>
-                            new DefaultIotCertificate({
-                                arn: cert.certificateArn!,
-                                id: cert.certificateId!,
-                                activeStatus: cert.status!,
-                                creationDate: cert.creationDate!,
-                            })
-                    ) ?? []
+                    .map(cert => ({
+                        arn: cert.certificateArn!,
+                        id: cert.certificateId!,
+                        activeStatus: cert.status!,
+                        creationDate: cert.creationDate!,
+                    })) ?? []
 
             certificates = certificates.concat(newCerts)
         } catch (e) {

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as moment from 'moment'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import { IotClient, IotCertificate, DefaultIotPolicy } from '../../shared/clients/iotClient'
+import { IotClient, IotCertificate } from '../../shared/clients/iotClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -134,11 +134,7 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
                 ?.filter(policy => policy.policyArn && policy.policyName)
                 .map(
                     policy =>
-                        new IotPolicyCertNode(
-                            new DefaultIotPolicy({ arn: policy.policyArn!, name: policy.policyName! }),
-                            this,
-                            this.iot
-                        )
+                        new IotPolicyCertNode({ arn: policy.policyArn!, name: policy.policyName! }, this, this.iot)
                 ) ?? []
 
         getLogger().debug(`Loaded policies: %O`, newPolicies)

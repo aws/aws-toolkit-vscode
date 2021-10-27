@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { DefaultIotPolicy, IotClient } from '../../shared/clients/iotClient'
+import { IotClient } from '../../shared/clients/iotClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
@@ -68,7 +68,7 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
                 .map(
                     policy =>
                         new IotPolicyWithVersionsNode(
-                            new DefaultIotPolicy({ arn: policy.policyArn!, name: policy.policyName! }),
+                            { arn: policy.policyArn!, name: policy.policyName! },
                             this,
                             this.iot
                         )

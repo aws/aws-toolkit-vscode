@@ -10,7 +10,7 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 
-export async function editPolicyVersion(node: IotPolicyVersionNode) {
+export async function editPolicyVersionCommand(node: IotPolicyVersionNode) {
     getLogger().debug('EditPolicyVersion called for %O', node)
 
     const policyVersionId = node.version.versionId!

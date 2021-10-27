@@ -32,7 +32,7 @@ import { IotPolicyVersionNode } from './explorer/iotPolicyVersionNode'
 import { deletePolicyVersionCommand } from './commands/deletePolicyVersion'
 import { setDefaultPolicy } from './commands/setDefaultPolicy'
 import { createPolicyVersionCommand } from './commands/createPolicyVersion'
-import { editPolicyVersion } from './commands/editPolicy'
+import { editPolicyVersionCommand } from './commands/editPolicyVersion'
 
 /**
  * Activate IoT components.
@@ -90,7 +90,7 @@ export async function activate(context: ExtContext): Promise<void> {
             await setDefaultPolicy(node)
         }),
         vscode.commands.registerCommand('aws.iot.editPolicyVersion', async (node: IotPolicyVersionNode) => {
-            await editPolicyVersion(node)
+            await editPolicyVersionCommand(node)
         }),
         vscode.commands.registerCommand('aws.iot.copyEndpoint', async (node: IotNode) => {
             await copyEndpointCommand(node)

@@ -10,7 +10,8 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { DefaultIotPolicy, IotPolicy } from '../../shared/clients/iotClient'
+import { PromptResult } from '../../shared/ui/prompter'
+import { IotPolicy } from '../../shared/clients/iotClient'
 import { WizardControl } from '../../shared/wizards/wizard'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 import { Iot } from 'aws-sdk'
@@ -24,6 +25,7 @@ import { Iot } from 'aws-sdk'
  */
 export async function attachPolicyCommand(
     node: IotCertWithPoliciesNode,
+    promptFun = promptForPolicy,
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
@@ -41,7 +43,7 @@ export async function attachPolicyCommand(
             const newPolicies =
                 policyResponse.policies
                     ?.filter(policy => policy.policyArn && policy.policyName)
-                    .map(policy => new DefaultIotPolicy({ arn: policy.policyArn!, name: policy.policyName! })) ?? []
+                    .map(policy => ({ arn: policy.policyArn!, name: policy.policyName! })) ?? []
 
             policies = policies.concat(newPolicies)
         } catch (e) {
@@ -57,17 +59,8 @@ export async function attachPolicyCommand(
             data: policy,
         }
     })
-    const placeHolder: DataQuickPickItem<IotPolicy> = {
-        label: 'No policies found',
-        data: undefined,
-    }
 
-    const picker = createQuickPick(policyItems, {
-        title: localize('AWS.iot.attachPolicy', 'Select a policy'),
-        noItemsFoundItem: placeHolder,
-        buttons: [vscode.QuickInputButtons.Back],
-    })
-    const result = await picker.prompt()
+    const result = await promptFun(policyItems)
     if (!result || !isPolicy(result)) {
         getLogger().info('No policy chosen')
         return undefined
@@ -85,6 +78,19 @@ export async function attachPolicyCommand(
     getLogger().debug('Attached policy %O', policy.name)
 
     await refreshNode(node, commands)
+}
+
+async function promptForPolicy(policyItems: DataQuickPickItem<IotPolicy>[]): Promise<PromptResult<IotPolicy>> {
+    const placeHolder: DataQuickPickItem<IotPolicy> = {
+        label: 'No policies found',
+        data: undefined,
+    }
+    const picker = createQuickPick(policyItems, {
+        title: localize('AWS.iot.attachPolicy', 'Select a policy'),
+        noItemsFoundItem: placeHolder,
+        buttons: [vscode.QuickInputButtons.Back],
+    })
+    return picker.prompt()
 }
 
 function isPolicy(policy: IotPolicy | WizardControl): policy is IotPolicy {

@@ -12,7 +12,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
-describe('createBucketCommand', function () {
+describe('createThingCommand', function () {
     const thingName = 'newIotThing'
     let iot: IotClient
     let node: IotThingFolderNode
