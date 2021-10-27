@@ -75,7 +75,7 @@ object SsmPlugin : ManagedToolType<FourPartVersion> {
 
     override fun installVersion(downloadArtifact: Path, destinationDir: Path, indicator: ProgressIndicator?) {
         when (val extension = downloadArtifact.fileName.toString().substringAfterLast(".")) {
-            "zip" -> Decompressor.Zip(downloadArtifact).withZipExtensions().extract(destinationDir)
+            "zip" -> extractZip(downloadArtifact, destinationDir)
             "rpm" -> runInstall(GeneralCommandLine("sh", "-c", """rpm2cpio "$downloadArtifact" | (cd "$destinationDir" && cpio -idmv)"""))
             "deb" -> runInstall(GeneralCommandLine("dpkg-deb", "-x", downloadArtifact.toString(), destinationDir.toString()))
             else -> throw IllegalStateException("Unknown extension $extension")
@@ -88,6 +88,21 @@ object SsmPlugin : ManagedToolType<FourPartVersion> {
         if (!processOutput.checkSuccess(LOGGER)) {
             throw IllegalStateException("Failed to extract $displayName")
         }
+    }
+
+    private fun extractZip(downloadArtifact: Path, destinationDir: Path) {
+        val decompressor = Decompressor.Zip(downloadArtifact).withZipExtensions()
+        if (!SystemInfo.isWindows) {
+            decompressor.extract(destinationDir)
+            return
+        }
+
+        // on windows there is a zip inside a zip :(
+        val tempDir = Files.createTempDirectory(id)
+        decompressor.extract(tempDir)
+
+        val intermediateZip = tempDir.resolve("package.zip")
+        Decompressor.Zip(intermediateZip).withZipExtensions().extract(destinationDir)
     }
 
     override fun determineLatestVersion(): FourPartVersion = FourPartVersion.parse(getTextFromUrl(VERSION_FILE))

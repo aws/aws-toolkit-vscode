@@ -8,7 +8,6 @@ import com.intellij.testFramework.ApplicationRule
 import com.intellij.util.io.HttpRequests
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
-import org.junit.Assume.assumeFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -29,7 +28,7 @@ class SsmPluginTest {
         val latest = SsmPlugin.determineLatestVersion()
         SoftAssertions.assertSoftly { softly ->
             listOf(
-//                sut.windowsUrl(latest), TODO: Windows Zip not available yet!
+                SsmPlugin.windowsUrl(latest),
                 SsmPlugin.linuxArm64Url(latest),
                 SsmPlugin.linuxI64Url(latest),
                 SsmPlugin.ubuntuArm64Url(latest),
@@ -43,8 +42,6 @@ class SsmPluginTest {
 
     @Test
     fun `end to end install works`() {
-        assumeFalse(SystemInfo.isWindows) // TODO: Validate Windows support
-
         val executableName = if (SystemInfo.isWindows) {
             "session-manager-plugin.exe"
         } else {
