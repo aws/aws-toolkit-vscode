@@ -40,7 +40,7 @@ export interface Events {
     [key: string]: vscode.EventEmitter<any>
 }
 
-export interface WebviewCompileOptions<C extends Commands, E extends Events, D = any, S = any> {
+export interface WebviewCompileOptions<C extends Commands, E extends Events, D = any, S = any, O = any> {
     /**
      * Events emitters provided by the backend. Note that whatever is passed into this option is
      * only used for type and key generation. Do not assume the same reference will exist on instantiation.
@@ -60,7 +60,7 @@ export interface WebviewCompileOptions<C extends Commands, E extends Events, D =
     /** Validates the input from `show` is correct. Used to infer the type returned by `init`. */
     validateData?: (data?: D) => Promise<boolean> | boolean
     /** Validates the output from `submit` is correct. Used to infer the type returned by `show`. */
-    validateSubmit?: (result: S) => Promise<boolean> | boolean
+    validateSubmit?: (result: S) => Promise<O> | O
 }
 
 export type OptionsToProtocol<O> = O extends WebviewCompileOptions<infer C, infer E, infer D, infer S>
@@ -95,6 +95,7 @@ interface CommandOptions {
 export function registerWebviewServer(webview: WebviewServer, commands: Protocol) {
     webview.onDidReceiveMessage(async (event: Message) => {
         const { id, command, data } = event
+        const metadata: Omit<Message, 'id' | 'command' | 'data'> = {}
 
         const handler = commands[command]
 
@@ -114,7 +115,7 @@ export function registerWebviewServer(webview: WebviewServer, commands: Protocol
             fn = handler.command
             const partial = { ...handler } as Partial<typeof handler>
             delete partial.command
-            Object.assign(data, partial)
+            Object.assign(metadata, partial)
         } else {
             fn = handler
         }
@@ -125,11 +126,22 @@ export function registerWebviewServer(webview: WebviewServer, commands: Protocol
         let result: any
         try {
             result = await fn.call(webview, ...data)
+            // For now undefined means we should not send any data back
+            // Later on the commands should specify how undefined is handled
+            if (result === undefined) {
+                return
+            }
         } catch (err) {
-            result = err
-            getLogger().error(`Server failed on command "${command}": %O`, err)
+            if (!(err instanceof Error)) {
+                getLogger().debug(`Webview server threw on comamnd "${command}" but it was not an error: `, err)
+                return
+            }
+            result = JSON.stringify(err, Object.getOwnPropertyNames(err))
+            delete result.stack // Already being logged anyway
+            metadata.error = true
+            getLogger().error(`Webview server failed on command "${command}": %O`, err)
         }
 
-        webview.postMessage({ id, command, data: result })
+        webview.postMessage({ id, command, data: result, ...metadata })
     })
 }

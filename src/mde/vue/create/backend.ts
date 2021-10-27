@@ -8,12 +8,16 @@ import { IAM } from 'aws-sdk'
 import { ExtContext } from '../../../shared/extensions'
 import { compileVueWebview } from '../../../webviews/main'
 import * as nls from 'vscode-nls'
+import * as mdeModel from '../../mdeModel'
 import { ext } from '../../../shared/extensionGlobals'
 import { EnvironmentSettingsWizard, getAllInstanceDescriptions, SettingsForm } from '../../wizards/environmentSettings'
 import { CreateEnvironmentRequest } from '../../../../types/clientmde'
 import { getDevFiles, getRegistryDevFiles, promptDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import { GitExtension } from '../../../shared/extensions/git'
+import { MdeEnvironment } from '../../../shared/clients/mdeClient'
+import { VSCODE_MDE_TAGS } from '../../constants'
+import { productName } from '../../../shared/constants'
 const localize = nls.loadMessageBundle()
 
 export interface DefinitionTemplate {
@@ -26,10 +30,10 @@ const VueWebview = compileVueWebview({
     cssFiles: ['base.css'],
     name: localize('AWS.command.createMdeForm.title', 'Create new development environment'),
     webviewJs: 'createMdeVue.js',
+    viewColumn: vscode.ViewColumn.Active,
     validateData: (repo?: { url: string; branch?: string }) => true,
     validateSubmit: async (result: CreateEnvironmentRequest) => {
-        await submit(result)
-        return true
+        return await submit(result)
     },
     commands: {
         loadRoles,
@@ -56,7 +60,7 @@ export class MdeCreateWebview extends VueWebview {}
 export async function createMdeWebview(
     context: ExtContext,
     repo?: { url: string; branch?: string }
-): Promise<CreateEnvironmentRequest | undefined> {
+): Promise<MdeEnvironment | undefined> {
     return new MdeCreateWebview(context).show(repo)
 }
 
@@ -71,6 +75,8 @@ async function editSettings(data: SettingsForm) {
     return response
 }
 
+// This currently mutates the argument.
+// TODO: don't mutate it, put this logic somewhere else
 async function submit(data: CreateEnvironmentRequest) {
     if (data.sourceCode?.[0]?.uri) {
         const target = data.sourceCode[0]
@@ -108,6 +114,8 @@ async function submit(data: CreateEnvironmentRequest) {
     if (data.devfile?.uri?.uri === '') {
         delete data.devfile
     }
+
+    return createMdeWithTags(data)
 }
 
 // TODO: make this more robust by parsing the document then checking principals
@@ -143,4 +151,37 @@ async function listBranches(url: string) {
     const targetNoSsh = url.startsWith('ssh://') ? url.slice(6) : url
     const branches = await git.getBranchesForRemote({ name: 'User Input', fetchUrl: targetNoSsh, isReadOnly: true })
     return branches.filter(b => b.name !== undefined).map(b => b.name?.split('/').slice(1).join('/')) as string[]
+}
+
+/**
+ * This will live here for now to stop circular depedencies
+ * But realistically it should belong somewhere else.
+ */
+async function createMdeWithTags(request: CreateEnvironmentRequest): Promise<MdeEnvironment | undefined> {
+    const mdeClient = ext.mde
+
+    const repo = request?.sourceCode
+    // We will always perform the clone
+    delete request?.sourceCode
+
+    const defaultTags = {
+        [VSCODE_MDE_TAGS.tool]: productName,
+    }
+    if (repo && repo[0]) {
+        defaultTags[VSCODE_MDE_TAGS.repository] = repo[0].uri
+        defaultTags[VSCODE_MDE_TAGS.repositoryBranch] = repo[0].branch ?? 'master' // TODO: better fallback?
+    }
+    const emailHash = await mdeModel.getEmailHash()
+    if (emailHash) {
+        defaultTags[VSCODE_MDE_TAGS.email] = emailHash
+    }
+    const env = await mdeClient.createEnvironment({
+        ...request,
+        tags: {
+            ...defaultTags,
+            ...(request?.tags ?? {}),
+        },
+    })
+
+    return env
 }

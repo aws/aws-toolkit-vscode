@@ -10,19 +10,30 @@ import { Protocol } from './server'
 
 declare const vscode: WebviewApi<any>
 
-export interface Message<T = any, U extends string = string> {
+interface MessageBase<U extends string = string> {
     id: string
-    data: T | Error
     command: U
+}
+
+export interface Message<T = any, U extends string = string> extends MessageBase<U> {
+    data: T | Error
     event?: false
+    error?: boolean
     // TODO: implement
     memoize?: boolean
     once?: boolean
 }
 
-interface EventMessage<T = any, U extends string = string> {
+interface EventMessage<T = any, U extends string = string> extends MessageBase<U> {
     event: true
     data: T
+    command: U
+}
+
+// For now this will just resolve to only 'Error' classes
+interface ErrorMessage<U extends string = string> extends MessageBase<U> {
+    error: true
+    data: string // stringified error
     command: U
 }
 
@@ -59,7 +70,7 @@ function sendRequest<T extends any[], R, U extends string>(
 ): Promise<R | { dispose: () => void }> {
     const deproxied = JSON.parse(JSON.stringify(args))
     const response = new Promise<R | { dispose: () => void }>((resolve, reject) => {
-        const listener = (event: { data: Message<R, U> }) => {
+        const listener = (event: { data: Message<R, U> | ErrorMessage<U> }) => {
             const message = event.data
 
             if (id !== message.id) {
@@ -68,15 +79,16 @@ function sendRequest<T extends any[], R, U extends string>(
 
             window.removeEventListener('message', listener)
 
-            if (message.data instanceof Error) {
-                reject(message.data)
+            if (message.error === true) {
+                const revived = JSON.parse(message.data as string)
+                reject(new Error(revived.message))
             } else if (message.event) {
                 if (typeof args[0] !== 'function') {
                     reject(new Error(`Expected frontend event handler to be a function: ${command}`))
                 }
                 resolve(registerEventHandler(command, args[0]))
             } else {
-                resolve(message.data)
+                resolve(message.data as R) // TODO: interfaces need a bit of refinement in terms of types
             }
         }
         window.addEventListener('message', listener)
@@ -127,7 +139,7 @@ export class WebviewClientFactory {
      * Creates a new client. These clients are defined by their types; they do not have any knowledge
      * of the backend protocol other than the specified type.
      */
-    public static create<T extends VueWebview<any, any, any, any>>(): WebviewClient<ProtocolFromWeview<T>>
+    public static create<T extends VueWebview<any, any, any, any, any>>(): WebviewClient<ProtocolFromWeview<T>>
     public static create<T extends Protocol<any, any>>(): WebviewClient<T>
     public static create<T extends ClientCommands<T>>(): WebviewClient<T>
     public static create<T extends Protocol<any, any>>(): WebviewClient<T> {

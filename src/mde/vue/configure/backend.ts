@@ -30,6 +30,7 @@ const VueWebview = compileVueWebview({
     cssFiles: ['base.css'],
     name: localize('AWS.command.configureMdeForm.title', 'Environment settings'),
     webviewJs: 'createMdeConfigureVue.js',
+    viewColumn: vscode.ViewColumn.Active,
     events: {
         onEnvironmentUpdate: new vscode.EventEmitter<GetEnvironmentMetadataResponse & { connected: boolean }>(),
         onDevfileUpdate: new vscode.EventEmitter<GetStatusResponse & { actionId: 'devfile' }>(),
@@ -82,7 +83,7 @@ const VueWebview = compileVueWebview({
             return mdeConnectCommand(this.arguments, parse(this.arguments.arn).region)
         },
     },
-    validateSubmit: (data: CreateEnvironmentRequest) => true,
+    validateSubmit: (data: CreateEnvironmentRequest) => data,
     validateData: (env?: GetEnvironmentMetadataResponse & { connected: boolean }) => true,
 })
 

@@ -2541,7 +2541,7 @@
         "serve": "webpack serve --config-name vue-hmr --mode development"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.21",
+        "@aws-toolkits/telemetry": "1.0.22",
         "@sinonjs/fake-timers": "^8.0.1",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",

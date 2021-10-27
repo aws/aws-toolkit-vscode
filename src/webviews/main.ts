@@ -16,14 +16,30 @@ interface WebviewParams {
     persistWithoutFocus?: boolean
     cssFiles?: string[]
     libFiles?: string[]
+    /** View column to initally show the view in. Defaults to split view. */
+    viewColumn?: vscode.ViewColumn
 }
 
 /**
- * Webviews are 'compiled'
+ * A compiled webview. This is the base interface from which all views are derived from.
  */
-export interface VueWebview<C extends Commands, E extends Events, D, S> {
-    show(data?: D): Promise<S | undefined>
+export interface VueWebview<C extends Commands, E extends Events, D, S, O> {
+    /**
+     * Shows the webview with the given parameters.
+     *
+     * @param data Data to initialize the view with. The exact meaning of this is highly dependent on the view type.
+     *
+     * @returns A Promise that is resolved once the view is closed. Can return an object if the view supports `submit`.
+     */
+    show(data?: D): Promise<O | undefined>
+    /**
+     * Event emitters registered by the view. Can be used by backend logic to trigger events in the view.
+     */
     readonly emitters: E
+    /**
+     * This exists only for use by the client.
+     * Trying to access it on the backend will result in an error.
+     */
     readonly protocol: OptionsToProtocol<WebviewCompileOptions<C, E, D, S>>
 }
 
@@ -38,32 +54,30 @@ export interface VueWebview<C extends Commands, E extends Events, D, S> {
  * ```
  *
  * @param params Required parameters are defined by {@link WebviewParams}, optional parameters are defined by {@link WebviewCompileOptions}
- * @returns
+ *
+ * @returns An anonymous class that can instantiate instances of {@link VueWebview}.
  */
-export function compileVueWebview<C extends Commands, E extends Events, D, S>(
-    params: WebviewParams & WebviewCompileOptions<C, E, D, S>
-): { new (context: ExtContext): VueWebview<C, E, D, S> } {
-    return class implements VueWebview<C, E, D, S> {
-        public readonly protocol = {
-            submit: () => {},
-            init: () => ({} as D),
-            ...params.commands,
-            ...params.events,
-        } as any
+export function compileVueWebview<C extends Commands, E extends Events, D, S, O>(
+    params: WebviewParams & WebviewCompileOptions<C, E, D, S, O>
+): { new (context: ExtContext): VueWebview<C, E, D, S, O> } {
+    return class implements VueWebview<C, E, D, S, O> {
+        public get protocol(): OptionsToProtocol<WebviewCompileOptions<C, E, D, S>> {
+            throw new Error('Cannot access the webview protocol on the backend.')
+        }
         public readonly emitters: E
-        public async show(data?: D): Promise<S | undefined> {
+        public async show(data?: D): Promise<O | undefined> {
             await params.validateData?.(data)
             const panel = createVueWebview({ ...params, context: this.context })
-            return new Promise<S | undefined>((resolve, reject) => {
+            return new Promise<O | undefined>((resolve, reject) => {
                 const onDispose = panel.onDidDispose(() => resolve(undefined))
 
                 if (params.commands) {
                     const submit = async (response: S) => {
-                        const validate = params.validateSubmit?.(response)
-                        if (validate && (await validate)) {
+                        const result = await params.validateSubmit?.(response)
+                        if (result) {
                             onDispose.dispose()
                             panel.dispose()
-                            resolve(response)
+                            resolve(result)
                         }
                     }
                     const init = async () => data
@@ -87,7 +101,7 @@ export function compileVueWebview<C extends Commands, E extends Events, D, S>(
     } as any
 }
 
-export type ProtocolFromWeview<W> = W extends VueWebview<any, any, any, any> ? W['protocol'] : never
+export type ProtocolFromWeview<W> = W extends VueWebview<any, any, any, any, any> ? W['protocol'] : never
 
 function createVueWebview(params: WebviewParams & { context: ExtContext }): vscode.WebviewPanel {
     const context = params.context.extensionContext
@@ -101,7 +115,7 @@ function createVueWebview(params: WebviewParams & { context: ExtContext }): vsco
         params.id,
         params.name,
         // Cloud9 opens the webview in the bottom pane unless a second pane already exists on the main level.
-        isCloud9() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside,
+        isCloud9() ? vscode.ViewColumn.Two : params.viewColumn ?? vscode.ViewColumn.Beside,
         {
             enableScripts: true,
             enableCommandUris: true,

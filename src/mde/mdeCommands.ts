@@ -23,8 +23,6 @@ import { CreateEnvironmentRequest, DeleteEnvironmentResponse, TagMap } from '../
 import { SystemUtilities } from '../shared/systemUtilities'
 import { createMdeWebview } from './vue/create/backend'
 import * as mdeModel from './mdeModel'
-import { productName } from '../shared/constants'
-import { VSCODE_MDE_TAGS } from './constants'
 import { localizedDelete } from '../shared/localizedText'
 import { MDE_RESTART_KEY } from './constants'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
@@ -183,69 +181,21 @@ export async function mdeCreateCommand(
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<mde.MdeEnvironment | undefined> {
-    const mdeClient = ext.mde
-    const d = new Date()
-    const dateYear = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d)
-    const dateMonth = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(d)
-    const dateDay = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(d)
-    const dateStr = `${dateYear}-${dateMonth}-${dateDay}`
-
     getLogger().debug('MDE: mdeCreateCommand called on node: %O', node)
-    const label = `created-${dateStr}`
-    const failMsg = localize('AWS.mde.createFailed', 'Failed to create MDE environment: {0}', label)
+    const mdeClient = ext.mde
 
     if (!ctx) {
         getLogger().debug('MDE: mdeCreateCommand should be called with extension context')
         return
     }
 
-    const response = await createMdeWebview(ctx, options?.repo)
-    if (!response) {
+    const env = await createMdeWebview(ctx, options?.repo)
+    if (!env) {
         getLogger().debug('MDE: user cancelled create environment webview')
         return
     }
 
-    const repo = response?.sourceCode
-    // We will always perform the clone
-    delete response?.sourceCode
-    // API will reject our extra data
-    delete options?.repo
-
     try {
-        const defaultTags = {
-            [VSCODE_MDE_TAGS.tool]: productName,
-        }
-        if (repo && repo[0]) {
-            defaultTags[VSCODE_MDE_TAGS.repository] = repo[0].uri
-            defaultTags[VSCODE_MDE_TAGS.repositoryBranch] = repo[0].branch ?? 'master' // TODO: better fallback?
-        }
-        const emailHash = await mdeModel.getEmailHash()
-        if (emailHash) {
-            defaultTags[VSCODE_MDE_TAGS.email] = emailHash
-        }
-        const env = await mdeClient.createEnvironment({
-            // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
-            // sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
-            // definition: {
-            //     shellImage: `"{"\"shellImage\"": "\"mcr.microsoft.com/vscode/devcontainers/go\""}"`,
-            // },
-            // instanceType: ...  // TODO?
-            // ideRuntimes: ...  // TODO?
-            ...options,
-            ...response,
-            tags: {
-                ...defaultTags,
-                ...(response?.tags ?? {}),
-            },
-        })
-
-        if (!env) {
-            showViewLogsMessage(failMsg, window)
-            return
-        }
-
-        getLogger().info('MDE: created environment: %O', env)
-
         const session = await mdeClient.startSession({ id: env.id }, window)
         if (!session) {
             return
@@ -253,20 +203,25 @@ export async function mdeCreateCommand(
 
         // Clone repo to MDE
         // TODO: show notification while cloning?
-        if (options?.start !== false && repo?.[0] && env?.id) {
+        if (options?.start !== false && options?.repo && env?.id) {
             const mde = await startMde(env, mdeClient)
             if (!mde) {
                 return
             }
-            await cloneToMde(mde, session, mdeClient.regionCode, vscode.Uri.parse(repo[0].uri, true), repo[0].branch)
+            await cloneToMde(
+                mde,
+                session,
+                mdeClient.regionCode,
+                vscode.Uri.parse(options?.repo.url, true),
+                options?.repo.branch
+            )
         }
 
         // TODO: MDE telemetry
         // recordEcrCreateRepository({ result: 'Succeeded' })
         return env
     } catch (e) {
-        getLogger().error('MDE: failed to create %O: %O', label, e)
-        showViewLogsMessage(failMsg, window)
+        getLogger().error('MDE: failed to clone %O: %O', env.id, e)
         // TODO: MDE telemetry
         // recordEcrCreateRepository({ result: 'Failed' })
     } finally {

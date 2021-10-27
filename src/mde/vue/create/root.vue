@@ -1,10 +1,25 @@
 <template>
-    <h2>Create new environment</h2>
-    <div id="header-description">
-        Use Cloud9's fully managed environments to power your development without worrying about servers or local
-        environment setup. Visit the <a>Cloud9 Environments site</a> to learn more about pricing and additional
-        features.
+    <div id="create-header">
+        <h2>Create new environment</h2>
+        <div id="header-description">
+            Use Cloud9's fully managed environments to power your development without worrying about servers or local
+            environment setup. Visit the <a>Cloud9 Environments site</a> to learn more about pricing and additional
+            features.
+        </div>
     </div>
+    <!-- TODO: dedupe this with the `configure` panel -->
+    <transition name="slide-down">
+        <div id="error-notification" class="notification" v-if="submitError">
+            <span id="error-notification-span">
+                <i id="error-notification-icon" class="icon"></i>
+                <span>There was an issue while creating your environment: {{ submitError }} </span>
+            </span>
+            <button id="dismiss-button" type="button" class="button-theme-secondary ml-16" @click="submitError = ''">
+                <!-- TODO: extract 'delete' button from tags -->
+                Dismiss
+            </button>
+        </div>
+    </transition>
     <settings-panel
         id="repository-panel"
         title="Git Repository"
@@ -30,7 +45,13 @@
         >
             Cancel
         </button>
-        <button id="submit-create" class="button-theme-primary" type="button" :disabled="submitting" @click="submit">
+        <button
+            id="submit-create"
+            class="button-theme-primary"
+            type="button"
+            :disabled="submitting || !isValid"
+            @click="submit"
+        >
             {{ submitting ? 'Creating...' : 'Create environment' }}
         </button>
     </div>
@@ -87,6 +108,7 @@ const model = {
     compute: new ComputeModel(),
     submitting: false,
     repoTag: { key: '', value: '' },
+    submitError: '',
 }
 
 export default defineComponent({
@@ -107,12 +129,21 @@ export default defineComponent({
         maxTags() {
             return 50 - Object.keys(VSCODE_MDE_TAGS).length
         },
+        isValid() {
+            // TODO: just have components emit an 'error' event to notifiy containers that they should not submit
+            // we should also just provide the offending element id so we can link to it
+            return !(
+                this.tags.tags.map(({ keyError, valueError }) => keyError || valueError).reduce((a, b) => a || b, '') ||
+                this.definitionFile.urlError ||
+                this.repo.error
+            )
+        },
     },
     created() {
         this.submitting = false
         client.init().then(repo => {
             this.repo = new RepositoryModel(repo)
-            if (repo.url) {
+            if (this.repo.url) {
                 this.tags.tags.push(this.repoTag)
                 // simplistic tag that 'tracks' the users input until they edit it
                 this.$watch('repo', (val: InstanceType<typeof RepositoryModel>) => {
@@ -127,9 +158,7 @@ export default defineComponent({
     },
     methods: {
         submit() {
-            if (!this.isValid() || this.submitting) {
-                return
-            }
+            this.submitError = ''
             this.submitting = true
             client
                 .submit({
@@ -140,7 +169,8 @@ export default defineComponent({
                         this.definitionFile.mode === 'registry' ? { uri: { uri: this.definitionFile.url } } : undefined,
                     sourceCode: this.repo.error === '' ? [{ uri: this.repo.url, branch: this.repo.branch }] : undefined,
                 })
-                .finally(() => (this.submitting = false))
+                .catch(err => (this.submitError = err.message))
+                .finally(() => setTimeout(() => (this.submitting = false), 250)) // little debounce to stop jitters
         },
         cancel() {
             client.cancel()
@@ -149,14 +179,6 @@ export default defineComponent({
             client.editSettings(current).then(settings => {
                 this.compute = settings ?? this.compute
             })
-        },
-        isValid() {
-            // TODO: just have components emit an 'error' event to notifiy containers that they should not submit
-            // we should also just provide the offending element id so we can link to it
-            return !(
-                this.tags.tags.map(({ keyError, valueError }) => keyError || valueError).reduce((a, b) => a || b, '') ||
-                this.definitionFile.urlError
-            )
         },
     },
 })
@@ -177,5 +199,55 @@ body {
 
 #header-description {
     max-width: 80%;
+}
+
+/* This **really** needs to be made into a component */
+/* Should be combined with the header since it's kind of dependent on it */
+.notification {
+    color: var(--vscode-notifications-foreground);
+    background-color: var(--vscode-notifications-background);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin: 16px 0;
+    padding: 12px;
+}
+#error-notification-span {
+    display: flex;
+    justify-content: left;
+    align-items: inherit;
+    width: 100%;
+    flex-grow: 0;
+}
+#dismiss-button {
+    font-size: small;
+    width: 100px;
+    flex-grow: 1;
+}
+#error-notification-icon {
+    background-image: url('/resources/generic/info-error.svg');
+}
+.slide-down-enter-active {
+    transition: all 0.4s ease-in-out;
+}
+.slide-down-leave-active {
+    transition: none;
+}
+.slide-down-enter-from {
+    margin-bottom: -70px;
+    transform: translateY(-70px);
+}
+.slide-down-enter-to {
+    margin-bottom: 0px;
+}
+#error-notification {
+    z-index: 0;
+    position: relative;
+}
+#create-header {
+    padding: 16px 0 0 0;
+    background-color: var(--vscode-editor-background);
+    z-index: 1;
+    position: relative;
 }
 </style>

@@ -174,7 +174,12 @@ export default defineComponent({
             this.update('tags', this.tags)
         },
         watchTag(tag: TagWithErrors) {
-            watchEffect(() => !this.duplicates.has(tag.key) && (tag.keyError = validateKey(tag.key, this.duplicates)))
+            watchEffect(
+                () =>
+                    !tag.hidden &&
+                    !this.duplicates.has(tag.key) &&
+                    (tag.keyError = validateKey(tag.key, this.duplicates))
+            )
         },
         addTag() {
             this.tags.push({ key: `new-label-${this.tags.length + 1}`, value: '' })
@@ -184,6 +189,11 @@ export default defineComponent({
         },
         validateTag(index: number) {
             const tag = this.tags[index]
+
+            if (tag.hidden) {
+                return
+            }
+
             tag.keyError = validateKey(tag.key, this.duplicates)
             tag.valueError = validateValue(tag.value)
             this.update('tags', this.tags)

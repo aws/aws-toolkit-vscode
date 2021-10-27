@@ -101,7 +101,10 @@ export default defineComponent({
                     if (branches.length === 0) {
                         if (this.url.match(/^([\w]+@|ssh:\/\/)/)) {
                             // TODO: we can just test if it's running
-                            this.update('error', 'Is your SSH agent running?')
+                            this.update(
+                                'error',
+                                'Failed to connect. Check if your SSH agent is running and the correct keys are added.'
+                            )
                         } else {
                             this.update('error', 'No branches found')
                         }
