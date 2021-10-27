@@ -112,7 +112,7 @@ async function submit(data: CreateEnvironmentRequest) {
 
 // TODO: make this more robust by parsing the document then checking principals
 // TODO: check 'Action' to see that the role can be assumed
-const MDE_SERVICE_PRINCIPAL = 'moontide.aws.internal'
+const MDE_SERVICE_PRINCIPAL = 'moontide'
 
 async function loadRoles(): Promise<IAM.Role[]> {
     const client = ext.toolkitClientBuilder.createIamClient('us-east-1') // hard-coded region for now
