@@ -20,6 +20,10 @@ import { getIdeProperties } from '../shared/extensionUtilities'
 import { ext } from '../shared/extensionGlobals'
 import { showConfirmationMessage, showViewLogsMessage } from '../shared/utilities/messages'
 import { getLogger } from '../shared/logger/logger'
+import * as settings from '../shared/settingsConfiguration'
+import { AWS_CLIS, installCli } from '../shared/utilities/cliUtils'
+import { getCliCommand } from '../shared/utilities/cliUtils'
+import { normalize } from '../shared/utilities/pathUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -97,10 +101,17 @@ export function getStatusIcon(status: string): vscode.ThemeIcon {
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
 export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }> {
+    const iswin = process.platform === 'win32'
+
+    const bash = await SystemUtilities.findBashPath()
+    if (!bash) {
+        return { ok: false, err: 'bash not found' }
+    }
+
     // Script resource path. Includes the Toolkit version string so it changes with each release.
     const mdeScriptRes = ext.context.asAbsolutePath(path.join('resources', 'mde_connect'))
     // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
-    const mdeScript = path.join(ext.context.globalStoragePath, 'mde_connect')
+    const mdeScript = normalize(path.join(ext.context.globalStoragePath, 'mde_connect'))
     try {
         const contents1 = await readFileAsString(mdeScriptRes)
         let contents2 = ''
@@ -117,16 +128,19 @@ export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }
     }
 
     const mdeSshConfig = `
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host aws-mde-*
 ForwardAgent yes
-ProxyCommand bash -c "'${mdeScript}' %h"
+ProxyCommand "${bash}" -c "'${mdeScript}' %h"
 `
     const ssh = await SystemUtilities.findSshPath()
-    if (!ssh) {
+    if (!ssh && !iswin) {
         return { ok: false, err: 'ssh not found' }
     }
     // Check if the "aws-mde-*" hostname pattern is working.
-    const proc = new ChildProcess(true, ssh, undefined, '-G', 'aws-mde-test')
+    const proc = iswin
+        ? new ChildProcess(true, bash, undefined, '-c', '/usr/bin/ssh -G aws-mde-test')
+        : new ChildProcess(true, ssh!, undefined, '-G', 'aws-mde-test')
     const r = await proc.run()
     if (r.exitCode !== 0) {
         // Should never happen...
@@ -148,10 +162,11 @@ ProxyCommand bash -c "'${mdeScript}' %h"
 
         const confirmTitle = localize(
             'AWS.mde.confirm.installSshConfig.title',
-            '{0} Toolkit will add the "aws-mde-*" host to ~/.ssh/config. This one-time setup allows you to use SSH with your AWS MDE environments.',
+            '{0} Toolkit will add host "aws-mde-*" to ~/.ssh/config. This allows you to use SSH with your {1} MDE environments.',
+            getIdeProperties().company,
             getIdeProperties().company
         )
-        const confirmText = localize('AWS.mde.confirm.installSshConfig.button', 'Update ~/.ssh/config')
+        const confirmText = localize('AWS.mde.confirm.installSshConfig.button', 'Update SSH config')
         const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
         if (!response) {
             return { ok: false, err: 'user canceled' }
@@ -167,4 +182,33 @@ ProxyCommand bash -c "'${mdeScript}' %h"
     }
 
     return { ok: true, err: '' }
+}
+
+/**
+ * Checks if the SSM plugin CLI `session-manager-plugin` is available and
+ * working, else prompts user to install it.
+ *
+ * @returns Result object indicating whether the SSH config is working, or failure reason.
+ */
+export async function ensureSsmCli(): Promise<{ ok: boolean; result: string }> {
+    const s = new settings.DefaultSettingsConfiguration()
+    let ssmPath: string | undefined
+    if (!s.readDevSetting<boolean>('aws.developer.mde.forceInstallClis', 'boolean', true)) {
+        ssmPath = await getCliCommand(AWS_CLIS.ssm)
+    }
+    if (!ssmPath) {
+        try {
+            await installCli('ssm')
+        } catch {
+            const failMsg = localize('AWS.mde.installSsmCli.failed', 'Failed to install SSM plugin')
+            showViewLogsMessage(failMsg, vscode.window)
+            return { ok: false, result: 'failed to install ssm' }
+        }
+    }
+    ssmPath = await getCliCommand(AWS_CLIS.ssm)
+    if (!ssmPath) {
+        // Should never happen.
+        return { ok: false, result: 'failed to find ssm after install' }
+    }
+    return { ok: true, result: ssmPath }
 }

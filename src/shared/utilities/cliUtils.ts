@@ -90,7 +90,7 @@ export async function installCli(cli: AwsClis, window: Window = Window.vscode())
         const selection = await window.showInformationMessage(
             localize(
                 'AWS.mde.installCliPrompt',
-                'The {0} could not find the {1} CLI. The toolkit will attempt to install a local copy. Continue?',
+                '{0} could not find {1} CLI. Install a local copy?',
                 localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
                 AWS_CLIS[cli].name
             ),

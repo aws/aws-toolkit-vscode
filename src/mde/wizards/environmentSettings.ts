@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as settings from './parameterDescriptions.json'
+import * as settings from '../parameterDescriptions.json'
 import * as mde from '../../../types/clientmde'
 import * as _ from 'lodash'
 import { isValidResponse, Wizard } from '../../shared/wizards/wizard'

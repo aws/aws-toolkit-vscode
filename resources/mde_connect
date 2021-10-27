@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage:
-#   AWS_REGION=… AWS_MDE_ENDPOINT=… AWS_MDE_SESSION=… AWS_MDE_STREAMURL=… AWS_MDE_TOKEN=… ./mde_connect <env-id>
+#   AWS_REGION=… AWS_MDE_ENDPOINT=… AWS_SSM_CLI=… AWS_MDE_SESSION=… AWS_MDE_STREAMURL=… AWS_MDE_TOKEN=… ./mde_connect <env-id>
 
 set -e
 set -u
@@ -37,11 +37,12 @@ _main() {
     _log "=============================================================================="
     _require AWS_MDE_ENDPOINT "${AWS_MDE_ENDPOINT:-}"
     _require AWS_REGION "${AWS_REGION:-}"
+    _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
     _require AWS_MDE_SESSION "${AWS_MDE_SESSION:-}"
     _require_nolog AWS_MDE_STREAMURL "${AWS_MDE_STREAMURL:-}"
     _require_nolog AWS_MDE_TOKEN "${AWS_MDE_TOKEN:-}"
 
-    exec session-manager-plugin \
+    exec "$AWS_SSM_CLI" \
         "{\"streamUrl\":\"$AWS_MDE_STREAMURL\",\"tokenValue\":\"$AWS_MDE_TOKEN\",\"sessionId\":\"$AWS_MDE_SESSION\"}" \
         "$AWS_REGION" \
         "StartSession"

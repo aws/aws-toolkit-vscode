@@ -96,6 +96,10 @@ export class GitExtension {
         return GitExtension._instance ?? new GitExtension()
     }
 
+    public get gitPath(): string | undefined {
+        return this.api?.git.path
+    }
+
     public get repositories(): ExtendedRepository[] {
         if (this.api === undefined) {
             getLogger().verbose('git: api is disabled, returning empty array of repositories')

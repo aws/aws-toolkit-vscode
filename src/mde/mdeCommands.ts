@@ -31,10 +31,16 @@ import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
-export function getMdeSsmEnv(region: string, endpoint: string, session: mde.MdeSession): NodeJS.ProcessEnv {
+export function getMdeSsmEnv(
+    region: string,
+    endpoint: string,
+    ssmPath: string,
+    session: mde.MdeSession
+): NodeJS.ProcessEnv {
     return Object.assign(
         {
             AWS_REGION: region,
+            AWS_SSM_CLI: ssmPath,
             AWS_MDE_ENDPOINT: endpoint,
             AWS_MDE_SESSION: session.id,
             AWS_MDE_STREAMURL: session.accessDetails.streamUrl,
@@ -107,21 +113,24 @@ export async function mdeConnectCommand(
         return
     }
 
+    function showMissingToolMsg(s: string) {
+        const m = localize(
+            'AWS.mde.missingRequiredTool',
+            'Failed to connect to MDE environment, missing required tool: {0}',
+            s
+        )
+        showViewLogsMessage(m, window)
+    }
+
     const vsc = await SystemUtilities.getVscodeCliPath()
     if (!vsc) {
-        showViewLogsMessage(
-            localize(
-                'AWS.mde.missingRequiredTool',
-                'Failed to connect to MDE environment, missing required tool: {0}',
-                'code'
-            ),
-            window
-        )
+        showMissingToolMsg('code')
         return
     }
 
     const hasSshConfig = await mdeModel.ensureMdeSshConfig()
     if (!hasSshConfig.ok) {
+        showMissingToolMsg('ssh')
         return
     }
 
@@ -131,19 +140,16 @@ export async function mdeConnectCommand(
         return
     }
 
-    getLogger('channel').info(
-        `AWS_REGION='${region}' AWS_MDE_ENDPOINT='${mde.mdeEndpoint()}' AWS_MDE_SESSION='${
-            session.id
-        }' AWS_MDE_STREAMURL='${session.accessDetails.streamUrl}' AWS_MDE_TOKEN='${
-            session.accessDetails.tokenValue
-        }' ssh 'aws-mde-${args.id}'`
-    )
+    const ssmPath = await mdeModel.ensureSsmCli()
+    if (!ssmPath.ok) {
+        return
+    }
 
     const cmd = new ChildProcess(
         true,
         vsc,
         {
-            env: getMdeSsmEnv(region, mde.mdeEndpoint(), session),
+            env: getMdeSsmEnv(region, mde.mdeEndpoint(), ssmPath.result, session),
         },
         '--folder-uri',
         // TODO: save user's previous project and try to re-open
@@ -303,7 +309,10 @@ export async function cloneToMde(
     branch?: string
 ): Promise<void> {
     const agentSock = startSshAgent()
-    // const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
+    const ssmPath = await mdeModel.ensureSsmCli()
+    if (!ssmPath.ok) {
+        return
+    }
 
     // For some reason git won't accept URIs with the 'ssh' scheme?
     const target = repo.scheme === 'ssh' ? `${repo.authority}${repo.path}` : repo.toString()
@@ -318,7 +327,7 @@ export async function cloneToMde(
         'ssh-keyscan github.com >> ~/.ssh/known_hosts',
         `git clone '${target}' ${gitArgs.join(' ')}`,
     ]
-    const env = getMdeSsmEnv(region, mde.mdeEndpoint(), session)
+    const env = getMdeSsmEnv(region, mde.mdeEndpoint(), ssmPath.result, session)
 
     // TODO: could we parse for 'Permission denied (publickey).' and then tell user they need to add their SSH key to the agent?
     // TODO: handle different ports with the URI

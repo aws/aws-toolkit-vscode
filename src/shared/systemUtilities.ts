@@ -11,11 +11,14 @@ import { EnvironmentVariables } from './environmentVariables'
 import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
 import { DefaultSettingsConfiguration } from './settingsConfiguration'
+import { GitExtension } from './extensions/git'
 
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
     private static vscPath: string
     private static sshPath: string
+    private static gitPath: string
+    private static bashPath: string
 
     public static getHomeDirectory(): string {
         const env = process.env as EnvironmentVariables
@@ -84,7 +87,7 @@ export class SystemUtilities {
                 SystemUtilities.vscPath = vsc
                 return vsc
             }
-            getLogger().warn('getVscodeCliPath: failed: %O', proc)
+            getLogger().warn('getVscodeCliPath: failed: %s', proc)
         }
 
         return undefined
@@ -130,6 +133,7 @@ export class SystemUtilities {
             sshSettingPath,
             'ssh', // Try $PATH _before_ falling back to common paths.
             '/usr/bin/ssh',
+            'C:/Windows/System32/OpenSSH/ssh.exe',
         ]
         for (const p of paths) {
             if (!p || ('ssh' !== p && !fs.existsSync(p))) {
@@ -141,7 +145,55 @@ export class SystemUtilities {
                 SystemUtilities.sshPath = p
                 return p
             }
-            getLogger().warn('findSshPath: failed: %O', proc)
+            getLogger().warn('findSshPath: failed: %s', proc)
+        }
+    }
+
+    /**
+     * Gets the configured `git` path, or falls back to "ssh" (not absolute),
+     * or tries common locations, or returns undefined.
+     */
+    public static async findGitPath(): Promise<string | undefined> {
+        if (SystemUtilities.gitPath !== undefined) {
+            return SystemUtilities.gitPath
+        }
+        const git = GitExtension.instance
+
+        const paths = [git.gitPath, 'git']
+        for (const p of paths) {
+            if (!p || ('git' !== p && !fs.existsSync(p))) {
+                continue
+            }
+            const proc = new ChildProcess(true, p, undefined, '--version')
+            const r = await proc.run()
+            if (r.exitCode === 0) {
+                SystemUtilities.gitPath = p
+                return p
+            }
+            getLogger().warn('findGitPath: failed: %s', proc)
+        }
+    }
+
+    /**
+     * Gets a working `bash`, or undefined.
+     */
+    public static async findBashPath(): Promise<string | undefined> {
+        if (SystemUtilities.bashPath !== undefined) {
+            return SystemUtilities.bashPath
+        }
+
+        const paths = ['bash', 'C:/Program Files/Git/usr/bin/bash.exe', 'C:/Program Files (x86)/Git/usr/bin/bash.exe']
+        for (const p of paths) {
+            if (!p || ('bash' !== p && !fs.existsSync(p))) {
+                continue
+            }
+            const proc = new ChildProcess(true, p, undefined, '--version')
+            const r = await proc.run()
+            if (r.exitCode === 0) {
+                SystemUtilities.bashPath = p
+                return p
+            }
+            getLogger().warn('findBashPath: failed: %s', proc)
         }
     }
 

@@ -1420,16 +1420,6 @@
         },
         "commands": [
             {
-                "command": "bryceito-test-install-cli",
-                "title": "TEMPORARY (REMOVE): Get/Install SSM CLI",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
                 "category": "%AWS.title%",
