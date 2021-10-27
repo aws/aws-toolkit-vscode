@@ -5,6 +5,7 @@
 
 import * as _ from 'lodash'
 import { Iot } from 'aws-sdk'
+import { parse } from '@aws-sdk/util-arn-parser'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
@@ -20,8 +21,9 @@ export type IotCertificate = InterfaceNoSymbol<DefaultIotCertificate>
 export type IotPolicy = InterfaceNoSymbol<DefaultIotPolicy>
 export type IotClient = InterfaceNoSymbol<DefaultIotClient>
 
-//ARN Pattern for certificates. FIXME import @aws-sdk/util-arn-parser instead.
-const CERT_ARN_PATTERN = /arn:aws:iot:\S+?:\d+:cert\/(\w+)/
+const IOT_SERVICE_ARN = 'iot'
+//Pattern to extract the certificate ID from the parsed ARN resource.
+const CERT_ARN_RESOURCE_PATTERN = /cert\/(\w+)/
 
 export interface ListThingCertificatesResponse {
     readonly certificates: Iot.CertificateDescription[]
@@ -200,8 +202,9 @@ export class DefaultIotClient {
         const nextToken = output.nextToken
 
         const describedCerts = iotPrincipals.map(async iotPrincipal => {
-            const certIdFound = iotPrincipal.match(CERT_ARN_PATTERN)
-            if (!certIdFound) {
+            const principalArn = parse(iotPrincipal)
+            const certIdFound = principalArn.resource.match(CERT_ARN_RESOURCE_PATTERN)
+            if (principalArn.service != IOT_SERVICE_ARN || !certIdFound) {
                 return undefined
             }
             const certId = certIdFound[1]
