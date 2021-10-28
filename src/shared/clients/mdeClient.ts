@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as AWS from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as mde from '../../../types/clientmde'
@@ -24,9 +23,8 @@ export function mdeEndpoint(): string {
     try {
         return s.readDevSetting('aws.dev.mde.betaEndpoint')
     } catch (err) {
-        // temporary code
-        vscode.window.showErrorMessage('MDE beta endpoint not set')
-        return ''
+        // XXX: hardcode this for Cloud9/Hightide testing.
+        return 'https://gamma.moontide.us-west-2.amazonaws.com/'
     }
 }
 
