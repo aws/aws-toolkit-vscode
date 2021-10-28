@@ -198,7 +198,7 @@ export async function ensureSsmCli(): Promise<{ ok: boolean; result: string }> {
     }
     if (!ssmPath) {
         try {
-            await installCli('ssm')
+            await installCli('ssm', false)
         } catch {
             const failMsg = localize('AWS.mde.installSsmCli.failed', 'Failed to install SSM plugin')
             showViewLogsMessage(failMsg, vscode.window)

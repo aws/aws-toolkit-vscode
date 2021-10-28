@@ -17,7 +17,12 @@ import { ChildProcess } from '../utilities/childProcess'
 import { Window } from '../vscode/window'
 
 import * as nls from 'vscode-nls'
+import { Timeout } from './timeoutUtils'
+import { showMessageWithCancel } from './messages'
 const localize = nls.loadMessageBundle()
+
+const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
+const msgInstallingLocal = localize('AWS.installProgress.installingLocal', 'installing local copy...')
 
 export class InstallerError extends Error {}
 export class InvalidPlatformError extends Error {}
@@ -78,25 +83,32 @@ export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
 /**
  * Installs a selected CLI: wraps confirmation, cleanup, and telemetry logic.
  * @param cli CLI to install
+ * @param confirmBefore Prompt before starting install?
  * @returns Dir containing CLI
  */
-export async function installCli(cli: AwsClis, window: Window = Window.vscode()): Promise<string | undefined> {
+export async function installCli(
+    cli: AwsClis,
+    confirm: boolean,
+    window: Window = Window.vscode()
+): Promise<string | undefined> {
     let result: telemetry.Result = 'Succeeded'
 
     let tempDir: string | undefined
     const manualInstall = localize('AWS.cli.manualInstall', 'Install manually...')
     try {
         const install = localize('AWS.generic.install', 'Install')
-        const selection = await window.showInformationMessage(
-            localize(
-                'AWS.mde.installCliPrompt',
-                '{0} could not find {1} CLI. Install a local copy?',
-                localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
-                AWS_CLIS[cli].name
-            ),
-            install,
-            manualInstall
-        )
+        const selection = !confirm
+            ? install
+            : await window.showInformationMessage(
+                  localize(
+                      'AWS.mde.installCliPrompt',
+                      '{0} could not find {1} CLI. Install a local copy?',
+                      localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
+                      AWS_CLIS[cli].name
+                  ),
+                  install,
+                  manualInstall
+              )
 
         if (selection !== install) {
             if (selection === manualInstall) {
@@ -107,15 +119,25 @@ export async function installCli(cli: AwsClis, window: Window = Window.vscode())
             return undefined
         }
 
+        const timeout = new Timeout(600000)
+        const progress = await showMessageWithCancel(
+            localize('AWS.cli.installProgress', 'Installing: {0} CLI', AWS_CLIS[cli].name),
+            timeout
+        )
+
         tempDir = await makeTemporaryToolkitFolder()
         let cliPath: string
-        switch (cli) {
-            case 'aws':
-                cliPath = await installAwsCli(tempDir)
-                break
-            case 'ssm':
-                cliPath = await installSsmCli(tempDir)
-                break
+        try {
+            switch (cli) {
+                case 'aws':
+                    cliPath = await installAwsCli(tempDir, progress)
+                    break
+                case 'ssm':
+                    cliPath = await installSsmCli(tempDir, progress)
+                    break
+            }
+        } finally {
+            timeout.complete()
         }
         // validate
         if (!(await hasCliCommand(AWS_CLIS[cli], false))) {
@@ -286,7 +308,7 @@ async function installToolkitLocalLinuxAwsCli(archivePath: string): Promise<stri
 }
 
 function getToolkitCliDir(): string {
-    return path.join(ext.context.globalStoragePath, 'cli')
+    return path.join(ext.context.globalStoragePath, 'tools')
 }
 
 /**
@@ -300,11 +322,16 @@ function getToolkitLocalCliPath(): string {
 /**
  * TODO: AWS CLI install on Linux requires sudo!!!
  */
-async function installAwsCli(tempDir: string): Promise<string> {
+async function installAwsCli(
+    tempDir: string,
+    progress: vscode.Progress<{ message?: string; increment?: number }>
+): Promise<string> {
+    progress.report({ message: msgDownloading })
     const awsInstaller = await downloadCliSource(AWS_CLIS.aws, tempDir)
     fs.chmodSync(awsInstaller, 0o700)
 
     getLogger('channel').info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
+    progress.report({ message: msgInstallingLocal })
     switch (process.platform) {
         case 'win32': {
             return await installToolkitLocalMsi(awsInstaller)
@@ -347,11 +374,16 @@ async function installAwsCli(tempDir: string): Promise<string> {
     }
 }
 
-async function installSsmCli(tempDir: string): Promise<string> {
+async function installSsmCli(
+    tempDir: string,
+    progress: vscode.Progress<{ message?: string; increment?: number }>
+): Promise<string> {
+    progress.report({ message: msgDownloading })
     const ssmInstaller = await downloadCliSource(AWS_CLIS.ssm, tempDir)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
+    progress.report({ message: msgInstallingLocal })
     switch (process.platform) {
         case 'darwin': {
             return new Promise<string>(async (resolve, reject) => {

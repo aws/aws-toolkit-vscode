@@ -54,7 +54,7 @@ describe('cliUtils', async function () {
         }
 
         it('downloads and installs the SSM CLI', async function () {
-            const ssmCli = await installCli('ssm', acceptInstallWindow)
+            const ssmCli = await installCli('ssm', true, acceptInstallWindow)
             assert.ok(ssmCli)
             assert.ok(hasFunctionalCli(ssmCli))
         })
@@ -67,7 +67,7 @@ describe('cliUtils', async function () {
         // })
 
         it('does not install if the user opts out', async function () {
-            const awsCli = await installCli('aws', new FakeWindow({}))
+            const awsCli = await installCli('aws', true, new FakeWindow({}))
             assert.strictEqual(awsCli, undefined)
         })
     })
