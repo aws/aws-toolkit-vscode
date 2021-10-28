@@ -29,10 +29,9 @@ export type WizardState<T> = {
     [Property in ObjectKeys<T>]-?: T[Property] extends Record<string, unknown>
         ? WizardState<Required<T[Property]>>
         : never
-} &
-    {
-        [Property in NonObjectKeys<T>]+?: T[Property] extends Record<string, unknown> ? never : T[Property]
-    }
+} & {
+    [Property in NonObjectKeys<T>]+?: T[Property] extends Record<string, unknown> ? never : T[Property]
+}
 
 // We use a symbol to safe-guard against collisions (alternatively this can be a class and use 'instanceof')
 const WIZARD_CONTROL = Symbol()
