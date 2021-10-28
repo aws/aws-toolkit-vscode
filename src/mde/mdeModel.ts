@@ -193,7 +193,7 @@ ProxyCommand "${bash}" -c "'${mdeScript}' %h"
 export async function ensureSsmCli(): Promise<{ ok: boolean; result: string }> {
     const s = new settings.DefaultSettingsConfiguration()
     let ssmPath: string | undefined
-    if (!s.readDevSetting<boolean>('aws.developer.mde.forceInstallClis', 'boolean', true)) {
+    if (!s.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)) {
         ssmPath = await getCliCommand(AWS_CLIS.ssm)
     }
     if (!ssmPath) {

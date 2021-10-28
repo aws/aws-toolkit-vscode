@@ -19,7 +19,7 @@ export type SettingsConfiguration = ClassToInterfaceType<DefaultSettingsConfigur
 
 export type AwsDevSetting =
     | 'aws.forceCloud9'
-    | 'aws.developer.mde.forceInstallClis'
+    | 'aws.dev.forceInstallTools'
     | 'aws.dev.forceTelemetry'
     | 'aws.dev.caws.apiKey'
     | 'aws.dev.caws.betaEndpoint'

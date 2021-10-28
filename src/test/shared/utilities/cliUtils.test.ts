@@ -27,7 +27,7 @@ describe('cliUtils', async function () {
     })
 
     before(async function () {
-        settingsConfig.writeSetting('aws.developer.mde.forceInstallClis', true)
+        settingsConfig.writeSetting('aws.dev.forceInstallTools', true)
         tempFolder = await makeTemporaryToolkitFolder()
         testLogger = makeLogger({ staticLogLevel: 'debug', logPaths: [path.join(tempFolder, 'log.txt')] })
     })
