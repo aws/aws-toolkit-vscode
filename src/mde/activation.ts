@@ -19,6 +19,7 @@ import { createTagMapFromRepo } from './mdeModel'
 import { createMdeConfigureWebview } from './vue/configure/backend'
 import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { MDE_RESTART_KEY } from './constants'
+import { initStatusBar } from './mdeStatusBarItem'
 import { getMdeEnvArn } from '../shared/vscode/env'
 
 /**
@@ -42,6 +43,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 await tagMde(arn, tags)
             })
         }
+        initStatusBar()
     }
 
     ctx.extensionContext.subscriptions.push(
