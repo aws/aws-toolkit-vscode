@@ -113,7 +113,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     }
 
                     // Forces debugger to disconnect (sometimes it fails to disconnect on its own)
-                    // Note that VSCode 1.42 only allows us to get the active debug session, so
+                    // Note that VSCode 1.44 only allows us to get the active debug session, so
                     // the user will have to manually disconnect if using multiple debug sessions
                     const debugSession: vscode.DebugSession | undefined = vscode.debug.activeDebugSession
                     if (debugSession && debugSession.name === params.name) {
