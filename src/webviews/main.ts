@@ -158,7 +158,7 @@ function createVueWebview(params: WebviewParams & { context: ExtContext }): vsco
         stylesheets,
         main: mainScript,
         webviewJs: params.webviewJs,
-        cspSource: panel.webview.cspSource,
+        cspSource: updateCspSource(panel.webview.cspSource),
     })
 
     return panel
@@ -188,7 +188,7 @@ function resolveWebviewHtml(params: {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        
+
         <meta
             http-equiv="Content-Security-Policy"
             content=
@@ -209,4 +209,11 @@ function resolveWebviewHtml(params: {
         <script src="${resolvedParams.main}"></script>
     </body>
 </html>`
+}
+
+// Updates the CSP source for webviews with an allowed source for AWS endpoints when running in
+// Cloud9 environments. Possible this can be further scoped to specific C9 CDNs or removed entirely
+// if C9 injects this.
+export function updateCspSource(baseSource: string) {
+    return isCloud9() ? `https://*.amazonaws.com ${baseSource}` : baseSource
 }

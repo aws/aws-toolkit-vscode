@@ -24,6 +24,7 @@ import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaTemplates } from '../templates/searchSchemasTemplates'
+import { updateCspSource } from '../../webviews/main'
 
 export async function createSearchSchemasWebView(params: {
     node: RegistryItemNode | SchemasNode
@@ -58,7 +59,7 @@ export async function createSearchSchemasWebView(params: {
         const loadStylesheets = ExtensionUtilities.getCssForHtml(['searchSchemas.css'], view.webview)
 
         view.webview.html = baseTemplateFn({
-            cspSource: view.webview.cspSource,
+            cspSource: updateCspSource(view.webview.cspSource),
             content: searchTemplate({
                 Header: getPageHeader(registryNames),
                 SearchInputPlaceholder: localize(
@@ -247,7 +248,11 @@ export async function getSearchListForSingleRegistry(
     return results
 }
 
-export async function getSearchResults(schemaClient: SchemaClient, registries: string[], keyword: string): Promise<SchemaVersionedSummary[]> {
+export async function getSearchResults(
+    schemaClient: SchemaClient,
+    registries: string[],
+    keyword: string
+): Promise<SchemaVersionedSummary[]> {
     let results: SchemaVersionedSummary[] = []
 
     await Promise.all(
