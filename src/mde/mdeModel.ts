@@ -172,8 +172,10 @@ ProxyCommand "${bash}" -c "'${mdeScript}' %h"
             return { ok: false, err: 'user canceled' }
         }
 
-        const sshConfigPath = path.join(SystemUtilities.getHomeDirectory(), '.ssh/config')
+        const sshConfigDir = path.join(SystemUtilities.getHomeDirectory(), '.ssh')
+        const sshConfigPath = path.join(sshConfigDir, 'config')
         try {
+            fs.mkdirpSync(sshConfigDir)
             fs.appendFileSync(sshConfigPath, mdeSshConfig)
         } catch (e) {
             getLogger().error('ensureMdeSshConfig: failed to write: %O', sshConfigPath)
