@@ -11,6 +11,7 @@ import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../../shared/logger'
 import { isDocumentValid } from '../../utils'
+import { updateCspSource } from '../../../webviews/main'
 import * as yaml from 'yaml'
 
 import { YAML_FORMATS } from '../../constants/aslFormats'
@@ -117,7 +118,7 @@ export class AslVisualization {
             panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryScript),
             panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryCSS),
             panel.webview.asWebviewUri(ext.visualizationResourcePaths.stateMachineCustomThemeCSS),
-            panel.webview.cspSource,
+            updateCspSource(panel.webview.cspSource),
             {
                 inSync: localize(
                     'AWS.stepFunctions.graph.status.inSync',

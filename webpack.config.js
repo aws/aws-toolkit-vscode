@@ -99,6 +99,8 @@ const vueConfig = {
     target: 'web',
     entry: {
         samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeEntry.ts'),
+        createMdeVue: path.resolve(__dirname, 'src', 'mde', 'vue', 'create', 'entry.ts'),
+        createMdeConfigureVue: path.resolve(__dirname, 'src', 'mde', 'vue', 'configure', 'entry.ts'),
     },
     module: {
         rules: baseConfig.module.rules.concat(
@@ -115,4 +117,22 @@ const vueConfig = {
     plugins: baseConfig.plugins.concat(new VueLoaderPlugin()),
 }
 
-module.exports = [baseConfig, vueConfig]
+// TODO: pipe port from environment variable WEBPACK_DEVELOPER_SERVER to here
+const vueHotReload = {
+    ...vueConfig,
+    name: 'vue-hmr',
+    devServer: {
+        static: {
+            directory: path.resolve(__dirname, 'dist'),
+        },
+        // This is not ideal, but since we're only running the server locally it's not too bad
+        // The webview debugger tries to establish a websocket with a GUID as its origin, so not much of a workaround
+        allowedHosts: 'all',
+    },
+    // Normally we want to exclude Vue from the bundle, but for hot reloads we need it
+    externals: {
+        vscode: 'commonjs vscode',
+    },
+}
+
+module.exports = [baseConfig, vueConfig, vueHotReload]

@@ -5,22 +5,26 @@
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
+import { MdeClient } from './clients/mdeClient'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
+import { CawsClient } from './clients/cawsClient'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
-import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { RegionProvider } from './regions/regionProvider'
-import { CodelensRootRegistry } from './sam/codelensRootRegistry'
+import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
+import { CodelensRootRegistry } from './fs/codelensRootRegistry'
 import { SchemaService } from './schemas'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
+import { UriHandler } from './vscode/uriHandler'
 
 /**
  * Namespace for common variables used globally in the extension.
  * All variables here must be initialized in the activate() method of extension.ts
  */
 export namespace ext {
+    export let mde: MdeClient
     export let context: ExtensionContext
     export let window: Window
     export let outputChannel: OutputChannel
@@ -34,6 +38,8 @@ export namespace ext {
     export let schemaService: SchemaService
     export let codelensRootRegistry: CodelensRootRegistry
     export let resourceManager: AwsResourceManager
+    export let caws: CawsClient
+    export let uriHandler: UriHandler
 
     let _didReload = false
 
@@ -49,6 +55,16 @@ export namespace ext {
      */
     export function didReload(): boolean {
         return _didReload
+    }
+
+    /**
+     * Shows a message if client credentials are invalid/expired/logged out.
+     */
+    export function checkCaws(): boolean {
+        if (!caws.connected()) {
+            window.showErrorMessage('AWS: Not connected to CODE.AWS')
+        }
+        return caws.connected()
     }
 
     export namespace iconPaths {

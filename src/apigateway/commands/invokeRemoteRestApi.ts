@@ -16,6 +16,7 @@ import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { APIG_REMOTE_INVOKE_TEMPLATE } from '../templates/apigTemplates'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { recordApigatewayInvokeRemote, Result } from '../../shared/telemetry/telemetry'
+import { updateCspSource } from '../../webviews/main'
 
 // All the commands that we receive
 interface Command {
@@ -81,7 +82,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
         const sortResources = (a: [string, Resource], b: [string, Resource]) => a[1].path!.localeCompare(b[1].path!)
 
         view.webview.html = baseTemplateFn({
-            cspSource: view.webview.cspSource,
+            cspSource: updateCspSource(view.webview.cspSource),
             content: invokeTemplateFn({
                 ApiName: apiNode.name,
                 ApiId: apiNode.id,

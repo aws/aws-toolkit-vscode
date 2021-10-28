@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ConfigurationTarget } from 'vscode'
 import { AwsDevSetting, SettingsConfiguration } from '../../shared/settingsConfiguration'
 
 /**
@@ -21,6 +22,10 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
         return {}
     }
 
+    public ensureToolkitInVscodeRemoteSsh(): boolean {
+        throw new Error('Method not implemented.')
+    }
+
     public readSetting<T>(settingKey: string, defaultValue?: T | undefined): T | undefined {
         return this._data[settingKey] as T
     }
@@ -33,12 +38,16 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
         throw new Error('Method not implemented.')
     }
 
+    public updateSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<boolean> {
+        throw new Error('Method not implemented.')
+    }
+
     public async writeSetting<T>(settingKey: string, value: T, target?: any): Promise<boolean> {
         this._data[settingKey] = value
         return true
     }
 
     public readDevSetting<T>(key: AwsDevSetting, type: string = 'string', silent: boolean = false): T | undefined {
-        return undefined
+        return this._data[key] as T
     }
 }

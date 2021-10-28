@@ -9,9 +9,10 @@ import { openSsoPortalLink, SsoAccessToken } from './sso'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
 import { sleep } from '../../shared/utilities/promiseUtilities'
+import { productName } from '../../shared/constants'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
-const CLIENT_NAME = 'aws-toolkit-vscode'
+const CLIENT_NAME = productName
 // Grant type specified by the 'SSO Login Token Flow' spec.
 const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
 const MS_PER_SECOND = 1000
