@@ -38,16 +38,16 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
                 getLogger().warn(
                     `credentials: no role (or invalid) attached to EC2 instance. metadata service /iam/info response: ${iamInfo.Code}`
                 )
+            } else {
+                const identity = await this.metadata.getInstanceIdentity()
+                if (identity && identity.region) {
+                    this.region = identity.region
+                    getLogger().verbose(`credentials: EC2 metadata region: ${this.region}`)
+                }
+                this.available = true
             }
-            const identity = await this.metadata.getInstanceIdentity()
-            if (identity && identity.region) {
-                this.region = identity.region
-                getLogger().verbose(`credentials: EC2 metadata region: ${this.region}`)
-            }
-            this.available = true
         } catch (err) {
             getLogger().verbose(`credentials: EC2 metadata service unavailable: ${err}`)
-            return false
         } finally {
             const elapsed = Date.now() - start
             getLogger().verbose(`credentials: EC2 metadata service call took ${elapsed}ms`)
