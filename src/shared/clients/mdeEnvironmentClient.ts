@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EnvironmentVariables } from '../environmentVariables'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import got from 'got'
 
@@ -66,8 +65,3 @@ export interface StartDevfileRequest {
 }
 
 export type Status = 'PENDING' | 'STABLE' | 'CHANGED'
-
-export function getEnvArn(): string | undefined {
-    const env = process.env as EnvironmentVariables
-    return env.__ENVIRONMENT_ARN ? (env.__ENVIRONMENT_ARN as string) : undefined
-}

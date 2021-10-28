@@ -394,7 +394,6 @@
     "AWS.message.prompt.selectCDKWorkspace.placeholder": "Select CDK workspace",
     "AWS.message.prompt.selectCDKApplication.placeholder": "Select CDK application",
     "AWS.message.prompt.selectCDKStateMachine.placeholder": "Select a State Machine",
-    "AWS.message.prompt.quickStart.toastMessage": "You are now using {0} Toolkit version {1}",
     "AWS.message.prompt.region.hide.title": "Select a region to hide from the {0} Explorer",
     "AWS.message.prompt.region.show.title": "Select a region to show in the {0} Explorer",
     "AWS.message.prompt.copyButtonLabel": "Copy",
