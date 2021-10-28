@@ -135,5 +135,5 @@ _main() {
     )
 }
 
-_setglobals
+_setglobals "$@"
 _main
