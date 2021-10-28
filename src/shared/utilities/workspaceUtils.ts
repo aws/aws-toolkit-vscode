@@ -148,7 +148,7 @@ export async function openTextDocument(filenameGlob: vscode.GlobPattern): Promis
 export function getWorkspaceRelativePath(
     childPath: string,
     override: {
-        workspaceFolders: vscode.WorkspaceFolder[] | undefined
+        workspaceFolders?: readonly vscode.WorkspaceFolder[]
     } = {
         workspaceFolders: vscode.workspace.workspaceFolders,
     }
