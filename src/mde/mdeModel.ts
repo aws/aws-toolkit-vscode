@@ -172,8 +172,10 @@ ProxyCommand "${bash}" -c "'${mdeScript}' %h"
             return { ok: false, err: 'user canceled' }
         }
 
-        const sshConfigPath = path.join(SystemUtilities.getHomeDirectory(), '.ssh/config')
+        const sshConfigDir = path.join(SystemUtilities.getHomeDirectory(), '.ssh')
+        const sshConfigPath = path.join(sshConfigDir, 'config')
         try {
+            fs.mkdirpSync(sshConfigDir)
             fs.appendFileSync(sshConfigPath, mdeSshConfig)
         } catch (e) {
             getLogger().error('ensureMdeSshConfig: failed to write: %O', sshConfigPath)
@@ -193,12 +195,12 @@ ProxyCommand "${bash}" -c "'${mdeScript}' %h"
 export async function ensureSsmCli(): Promise<{ ok: boolean; result: string }> {
     const s = new settings.DefaultSettingsConfiguration()
     let ssmPath: string | undefined
-    if (!s.readDevSetting<boolean>('aws.developer.mde.forceInstallClis', 'boolean', true)) {
+    if (!s.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)) {
         ssmPath = await getCliCommand(AWS_CLIS.ssm)
     }
     if (!ssmPath) {
         try {
-            await installCli('ssm')
+            await installCli('ssm', false)
         } catch {
             const failMsg = localize('AWS.mde.installSsmCli.failed', 'Failed to install SSM plugin')
             showViewLogsMessage(failMsg, vscode.window)

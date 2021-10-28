@@ -58,3 +58,7 @@ export function isReleaseVersion(): boolean {
 }
 
 export { extensionVersion }
+
+export function getMdeEnvArn(): string | undefined {
+    return process.env['__ENVIRONMENT_ARN']
+}

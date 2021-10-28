@@ -17,9 +17,9 @@ import { getLogger } from '../shared/logger'
 import { GitExtension } from '../shared/extensions/git'
 import { createTagMapFromRepo } from './mdeModel'
 import { createMdeConfigureWebview } from './vue/configure/backend'
-import { getEnvArn } from '../shared/clients/mdeEnvironmentClient'
 import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { MDE_RESTART_KEY } from './constants'
+import { getMdeEnvArn } from '../shared/vscode/env'
 
 /**
  * Activates MDE functionality.
@@ -30,7 +30,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const devfileRegistry = new DevfileRegistry()
     await devfileRegistry.addWatchPattern(DEVFILE_GLOB_PATTERN)
 
-    const arn = getEnvArn()
+    const arn = getMdeEnvArn()
     if (arn) {
         const git = GitExtension.instance
         const repos = git.repositories
