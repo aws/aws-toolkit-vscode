@@ -25,6 +25,14 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
         return this._data[settingKey] as T
     }
 
+    public getSetting<T>(
+        key: string,
+        type?: 'string',
+        opt?: { silent?: 'no' | 'yes' | 'notfound' | undefined; logging?: boolean | undefined }
+    ): T | undefined {
+        throw new Error('Method not implemented.')
+    }
+
     public async writeSetting<T>(settingKey: string, value: T, target?: any): Promise<boolean> {
         this._data[settingKey] = value
         return true

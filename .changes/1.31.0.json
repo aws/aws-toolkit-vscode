@@ -1,0 +1,22 @@
+{
+	"date": "2021-10-14",
+	"version": "1.31.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "StepFunctions: \"Publish\" command now asks for target region"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM \"Edit Debug Configuration\" UI is no longer \"Beta\""
+		},
+		{
+			"type": "Feature",
+			"description": "Surface read-only support for hundreds of resources under the Resources node in the AWS Explorer"
+		},
+		{
+			"type": "Feature",
+			"description": "Create new Step Functions state machine template from AWS Explorer"
+		}
+	]
+}

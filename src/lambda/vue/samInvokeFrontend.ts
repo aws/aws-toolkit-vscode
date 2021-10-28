@@ -75,7 +75,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDe
         },
         api: {
             path: '',
-            httpMethod: '',
+            httpMethod: 'get',
             clientCertificateId: '',
             querystring: '',
             headers: {},
@@ -195,11 +195,6 @@ export default defineComponent({
         },
         save() {
             this.formatDataAndExecute('saveLaunchConfig')
-        },
-        feedback() {
-            vscode.postMessage({
-                command: 'feedback',
-            })
         },
         loadConfig() {
             vscode.postMessage({

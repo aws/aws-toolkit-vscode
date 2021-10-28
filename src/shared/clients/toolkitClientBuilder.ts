@@ -20,6 +20,7 @@ import { RegionProvider } from '../regions/regionProvider'
 import { DEFAULT_PARTITION } from '../regions/regionUtilities'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { AppRunnerClient, DefaultAppRunnerClient } from './apprunnerClient'
+import { CloudControlClient, DefaultCloudControlClient } from './cloudControlClient'
 
 export type ToolkitClientBuilder = ClassToInterfaceType<DefaultToolkitClientBuilder>
 export class DefaultToolkitClientBuilder {
@@ -27,6 +28,10 @@ export class DefaultToolkitClientBuilder {
 
     public createApiGatewayClient(regionCode: string): ApiGatewayClient {
         return new DefaultApiGatewayClient(regionCode)
+    }
+
+    public createCloudControlClient(regionCode: string): CloudControlClient {
+        return new DefaultCloudControlClient(regionCode)
     }
 
     public createCloudFormationClient(regionCode: string): CloudFormationClient {

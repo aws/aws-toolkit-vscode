@@ -13,7 +13,7 @@ import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
 
 describe('SsoAccessTokenProvider', function () {
-    const sandbox = sinon.createSandbox()
+    let sandbox: sinon.SinonSandbox
 
     const ssoRegion = 'fakeRegion'
     const ssoUrl = 'fakeUrl'
@@ -66,6 +66,10 @@ describe('SsoAccessTokenProvider', function () {
 
     before(function () {
         clock = FakeTimers.install()
+    })
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
     })
 
     afterEach(async function () {

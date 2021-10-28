@@ -141,7 +141,6 @@ const scenarios: TestScenario[] = [
         language: 'go',
         dependencyManager: 'mod',
     },
-    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
     // images
@@ -236,7 +235,6 @@ const scenarios: TestScenario[] = [
         language: 'java',
         dependencyManager: 'maven',
     },
-    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
 

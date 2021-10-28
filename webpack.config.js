@@ -67,7 +67,7 @@ const baseConfig = {
                 ],
             },
             {
-                test: /node_modules[\\|/](amazon-states-language-service)/,
+                test: /node_modules[\\|/](amazon-states-language-service|vscode-json-languageservice)/,
                 use: { loader: 'umd-compat-loader' },
             },
         ],
@@ -75,7 +75,7 @@ const baseConfig = {
     plugins: [
         new NLSBundlePlugin(packageId),
         new webpack.DefinePlugin({
-            PLUGINVERSION: JSON.stringify(packageJson.version),
+            EXTENSION_VERSION: JSON.stringify(packageJson.version),
         }),
         new CircularDependencyPlugin({
             exclude: /node_modules|testFixtures/,

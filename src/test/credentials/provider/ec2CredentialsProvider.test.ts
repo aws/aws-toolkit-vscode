@@ -50,11 +50,9 @@ describe('Ec2CredentialsProvider', function () {
             identity: mockIdentity,
             validIam: true,
         })
-        try {
-            await credentialsProvider.isAvailable()
-            await credentialsProvider.isAvailable()
-            verify(mockMetadata.getIamInfo()).once()
-        } catch (err) {}
+        await credentialsProvider.isAvailable()
+        await credentialsProvider.isAvailable()
+        verify(mockMetadata.getIamInfo()).once()
     })
 
     it('returns EC2 retrieved region if available', async function () {
