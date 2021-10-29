@@ -26,6 +26,7 @@ import { getMdeEnvArn } from '../shared/vscode/env'
  * Activates MDE functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
+    const client = new DefaultMdeEnvironmentClient()
     await registerCommands(ctx)
 
     const devfileRegistry = new DevfileRegistry()
@@ -70,7 +71,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     activateUriHandlers(ctx, ctx.uriHandler)
 
     // Namespacing the clause context since I believe they are shared across extensions
-    vscode.commands.executeCommand('setContext', 'aws.isMde', !!new DefaultMdeEnvironmentClient().arn)
+    vscode.commands.executeCommand('setContext', 'aws.isMde', !!client.arn)
 
     handleRestart(ctx)
 }
@@ -109,7 +110,7 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
                 return
             }
             // TODO: refresh explorer and poll
-            mdeDeleteCommand(treenode.env)
+            mdeDeleteCommand(treenode.env, treenode.parent)
         })
     )
     ctx.extensionContext.subscriptions.push(

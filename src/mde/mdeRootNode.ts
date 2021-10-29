@@ -13,17 +13,21 @@ import { PlaceholderNode } from '../shared/treeview/nodes/placeholderNode'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { updateInPlace } from '../shared/utilities/collectionUtils'
 import { VSCODE_MDE_TAGS } from './constants'
-import { getEmailHash, getStatusIcon } from './mdeModel'
+import { getEmailHash, makeLabelsString, MDE_STATUS_PRIORITY } from './mdeModel'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
+const POLLING_INTERVAL = 20000
 /**
  * Toplevel "MDE" node in the AWS treeview of services.
  */
 export class MdeRootNode extends AWSTreeNodeBase {
     private readonly nodes: Map<string, MdeInstanceNode>
     private mdeClient: mde.MdeClient | undefined
+    private pollTimer: NodeJS.Timeout | undefined
+    private POLLING_STATUSES = new Set<string>(['PENDING', 'STARTING', 'STOPPING', 'DELETING'])
+    private sortType: 'createdAt' | 'lastStartedAt' = 'lastStartedAt'
 
     public constructor(public readonly regionCode: string) {
         super(localize('AWS.mde.title', 'MDE'), vscode.TreeItemCollapsibleState.Collapsed)
@@ -40,28 +44,12 @@ export class MdeRootNode extends AWSTreeNodeBase {
             },
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () => new PlaceholderNode(this, localize('AWS.empty', '[Empty]')),
-            sort: (nodeA: MdeInstanceNode, nodeB: MdeInstanceNode) => {
-                // sort by: userId, envId
-                const compareStatus = (nodeA.env.userArn ?? '').localeCompare(nodeB.env.userArn ?? '')
-                if (compareStatus !== 0) {
-                    return compareStatus
-                }
-                return (nodeA.label ?? '').localeCompare(nodeB.label ?? '')
-            },
+            sort: (a, b) => this.sortMdeNodes(a.env, b.env),
         })
     }
 
     public async updateChildren(): Promise<void> {
-        this.mdeClient = this.mdeClient ?? (await mde.MdeClient.create(this.regionCode))
-        const items = this.mdeClient.listEnvironments({})
-        const envs = new Map<string, mde.MdeEnvironment>()
-        for await (const i of items) {
-            if (!i || !i.id) {
-                continue
-            }
-            envs.set(i.id, i)
-        }
-
+        const envs = await this.generateCurrentEnvs()
         let keys = [...envs.keys()]
         const settings = new DefaultSettingsConfiguration('aws')
         // TODO: Enable this or other filters?
@@ -80,15 +68,13 @@ export class MdeRootNode extends AWSTreeNodeBase {
         }
         updateInPlace(
             this.nodes,
-            keys.sort((a, b) => this.sortMdeNodes(a, b, envs)),
+            keys,
             key => {
                 // this.nodes.get(key)!.clearChildren(),
                 const n = this.nodes.get(key)
                 const env = envs.get(key)
                 if (n && env) {
-                    const status = env.status === 'RUNNING' ? '' : env.status
-                    n.iconPath = getStatusIcon(env.status ?? '')
-                    n.label = `${env.id.substring(0, 7)}… ${status}`
+                    n.update(env)
                 }
             },
             key => {
@@ -108,34 +94,70 @@ export class MdeRootNode extends AWSTreeNodeBase {
      * * Else return whatever has a repo first
      * * Lastly, return a sort by name if repo doesn't exist or all comparables are matches
      */
-    private sortMdeNodes(a: string, b: string, envs: Map<string, mde.MdeEnvironment>): number {
-        const valsA = this.getMdeNodeComparables(envs.get(a)!)
-        const valsB = this.getMdeNodeComparables(envs.get(b)!)
-        if (valsA.repo && valsB.repo) {
-            if (valsA.repo === valsB.repo) {
-                if (valsA.branch && valsB.branch && valsA.branch !== valsB.branch) {
-                    return valsA.branch.localeCompare(valsB.branch)
-                }
-            } else {
-                return valsA.repo.localeCompare(valsB.repo)
+    private sortMdeNodes(envA: mde.MdeEnvironment, envB: mde.MdeEnvironment): number {
+        if (envA.status !== envB.status) {
+            const val =
+                (MDE_STATUS_PRIORITY.get(envA.status ?? 'FAILED') ?? 2) -
+                (MDE_STATUS_PRIORITY.get(envB.status ?? 'FAILED') ?? 2)
+            return val
+        }
+        if (envA && envB) {
+            const dateA = envA[this.sortType]?.getTime() ?? Infinity
+            const dateB = envB[this.sortType]?.getTime() ?? Infinity
+            if (dateA !== dateB) {
+                return dateB - dateA
             }
-        } else if (valsA.repo && !valsB.repo) {
+        }
+
+        // Compare labels and env names if neither have a comparable date
+        const labelA = makeLabelsString(envA)
+        const labelB = makeLabelsString(envB)
+        if (labelA && labelB) {
+            return labelA.localeCompare(labelB)
+        }
+        if (labelA && !labelB) {
             return -1
-        } else if (valsB.repo && !valsA.repo) {
+        }
+        if (!labelA && labelB) {
             return 1
         }
 
-        // no comparable tags or all comparable tags are equal
-        return a.localeCompare(b)
+        return envA.id.localeCompare(envB.id)
     }
 
-    private getMdeNodeComparables(env: mde.MdeEnvironment): { repo: string | undefined; branch: string | undefined } {
-        const val: { repo: string | undefined; branch: string | undefined } = { repo: undefined, branch: undefined }
-        if (env.tags) {
-            val.repo = env.tags[VSCODE_MDE_TAGS.repository]
-            val.branch = env.tags[VSCODE_MDE_TAGS.repositoryBranch]
+    private clearPollTimer(): void {
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer)
+            this.pollTimer = undefined
+        }
+    }
+
+    public startPolling(): void {
+        this.pollTimer = this.pollTimer ?? setInterval(this.refresh.bind(this), POLLING_INTERVAL)
+    }
+
+    private stopPolling(): void {
+        this.clearPollTimer()
+    }
+
+    private async generateCurrentEnvs(): Promise<Map<string, mde.MdeEnvironment>> {
+        let shouldPoll: boolean = false
+        this.mdeClient = this.mdeClient ?? (await mde.MdeClient.create(this.regionCode))
+        const items = this.mdeClient.listEnvironments({})
+        const envs = new Map<string, mde.MdeEnvironment>()
+        for await (const i of items) {
+            if (!i || !i.id) {
+                continue
+            }
+            envs.set(i.id, i)
+            if (this.POLLING_STATUSES.has(i.status ?? '')) {
+                shouldPoll = true
+            }
+        }
+        if (!shouldPoll) {
+            this.stopPolling()
         }
 
-        return val
+        return envs
     }
 }

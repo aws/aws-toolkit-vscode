@@ -59,7 +59,8 @@ export function getMdeSsmEnv(
  */
 export async function startMde(
     env: Pick<mde.MdeEnvironment, 'id'>,
-    mdeClient: mde.MdeClient
+    mdeClient: mde.MdeClient,
+    node?: MdeRootNode
 ): Promise<mde.MdeEnvironment | undefined> {
     // hard-coded timeout for now
     const TIMEOUT_LENGTH = 600000
@@ -67,6 +68,10 @@ export async function startMde(
     const timeout = new Timeout(TIMEOUT_LENGTH)
     const progress = await showMessageWithCancel(localize('AWS.mde.startMde.message', 'MDE'), timeout)
     progress.report({ message: localize('AWS.mde.startMde.checking', 'checking status...') })
+
+    if (node) {
+        node.startPolling()
+    }
 
     const pollMde = waitUntil(
         async () => {
@@ -201,10 +206,12 @@ export async function mdeCreateCommand(
             return
         }
 
+        getLogger().info('MDE: created environment: %O', env)
+
         // Clone repo to MDE
         // TODO: show notification while cloning?
         if (options?.start !== false && options?.repo && env?.id) {
-            const mde = await startMde(env, mdeClient)
+            const mde = await startMde(env, mdeClient, node)
             if (!mde) {
                 return
             }
@@ -225,7 +232,7 @@ export async function mdeCreateCommand(
         // TODO: MDE telemetry
         // recordEcrCreateRepository({ result: 'Failed' })
     } finally {
-        if (node !== undefined) {
+        if (node) {
             node.refresh()
         } else {
             await commands.execute('aws.refreshAwsExplorer', true)
@@ -243,9 +250,12 @@ export async function mdeDeleteCommand(
     const response = await showConfirmationMessage({ prompt, confirm: localizedDelete })
 
     if (response) {
+        if (node) {
+            node.startPolling()
+        }
         const r = await ext.mde.deleteEnvironment({ environmentId: env.id })
         getLogger().info('%O', r?.status)
-        if (node !== undefined) {
+        if (node) {
             node.refresh()
         } else {
             await commands.execute('aws.refreshAwsExplorer', true)

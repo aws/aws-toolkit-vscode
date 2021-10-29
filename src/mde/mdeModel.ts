@@ -11,6 +11,7 @@ import { TagMap } from '../../types/clientmde'
 import { Repository } from '../../types/git'
 import { productName } from '../shared/constants'
 import { GitExtension } from '../shared/extensions/git'
+import * as mde from '../shared/clients/mdeClient'
 import { getStringHash } from '../shared/utilities/textUtilities'
 import { readFileAsString } from '../shared/filesystemUtilities'
 import { VSCODE_MDE_TAGS } from './constants'
@@ -84,17 +85,56 @@ export async function getEmailHash(
     }
 }
 
+// TODO: Get Cloud9 icons, don't return vscode.ThemeIcon?
+//       add second parameter for theme color when VS Code minver is bumped, e.g. new vscode.ThemeColor('charts.green')
 export function getStatusIcon(status: string): vscode.ThemeIcon {
     switch (status) {
         case 'RUNNING':
             return new vscode.ThemeIcon('pass')
         case 'STOPPED':
-            return new vscode.ThemeIcon('stop')
+            return new vscode.ThemeIcon('stop-circle')
+        case 'FAILED':
+            return new vscode.ThemeIcon('error')
+        case 'DELETING':
+        case 'DELETED':
+            return new vscode.ThemeIcon('trash')
         default:
             return new vscode.ThemeIcon('sync~spin')
     }
 }
 
+export function makeLabelsString(env: Pick<mde.MdeEnvironment, 'tags'>): string {
+    const labels = getTagsAndLabels(env).labels
+
+    return labels.sort((a, b) => a.localeCompare(b)).join(' | ')
+}
+
+export function getTagsAndLabels(env: Pick<mde.MdeEnvironment, 'tags'>): { tags: TagMap; labels: string[] } {
+    const vals = { tags: {} as TagMap, labels: [] as string[] }
+    if (env.tags) {
+        for (const key of Object.keys(env.tags)) {
+            const val = env.tags[key]
+            if (val) {
+                vals.tags[key] = val
+            } else {
+                vals.labels.push(key)
+            }
+        }
+    }
+
+    return vals
+}
+
+export const MDE_STATUS_PRIORITY = new Map<string, number>([
+    ['PENDING', 1],
+    ['RUNNING', 0],
+    ['STARTING', 3],
+    ['STOPPING', 4],
+    ['STOPPED', 5],
+    ['FAILED', 2],
+    ['DELETING', 6],
+    ['DELETED', 7],
+])
 /**
  * Checks if the "aws-mde-*" SSH config hostname pattern is working, else prompts user to add it.
  *

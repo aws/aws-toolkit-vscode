@@ -1123,7 +1123,7 @@
                 },
                 {
                     "command": "aws.mde.connect",
-                    "when": "view == aws.explorer && viewItem == awsMdeInstanceNode",
+                    "when": "view == aws.explorer && viewItem =~ /^awsMdeInstanceNode.(RUNNING|PENDING|STARTING|STOPPING|STOPPED|FAILED)$/",
                     "group": "inline@1"
                 },
                 {
@@ -1133,18 +1133,18 @@
                 },
                 {
                     "command": "aws.mde.connect",
-                    "when": "view == aws.explorer && viewItem == awsMdeInstanceNode",
+                    "when": "view == aws.explorer && viewItem =~ /^awsMdeInstanceNode.(RUNNING|PENDING|STARTING|STOPPING|STOPPED|FAILED)$/",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.mde.configure",
-                    "when": "view == aws.explorer && viewItem == awsMdeInstanceNode",
-                    "group": "0@2"
+                    "when": "view == aws.explorer && viewItem =~ /^awsMdeInstanceNode.(RUNNING|PENDING|STARTING|STOPPING|STOPPED)$/",
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.mde.delete",
-                    "when": "view == aws.explorer && viewItem == awsMdeInstanceNode",
-                    "group": "0@3"
+                    "when": "view == aws.explorer && viewItem =~ /^awsMdeInstanceNode.(PENDING|RUNNING|STARTING|STOPPING|STOPPED|FAILED)$/",
+                    "group": "z@1"
                 },
                 {
                     "command": "aws.mde.create",
@@ -1258,7 +1258,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$|^awsAppRunnerServiceNode/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$|^(awsAppRunnerServiceNode|awsMdeInstanceNode)/",
                     "group": "2@2"
                 },
                 {
@@ -2218,6 +2218,16 @@
                 "title": "%AWS.command.resources.configure%",
                 "category": "%AWS.title%",
                 "icon": "$(gear)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.mde.start",
+                "title": "%AWS.command.mde.start%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
