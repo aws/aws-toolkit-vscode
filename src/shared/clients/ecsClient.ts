@@ -5,7 +5,6 @@
 
 import { ECS } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
-import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
