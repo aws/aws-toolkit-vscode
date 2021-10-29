@@ -27,17 +27,12 @@ export class DefaultEcsClient {
         if (clusterArnList.clusterArns?.length === 0) {
             return { resource: [] }
         }
-        try {
-            const clusterResponse = await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns }).promise()
-            const response: EcsResourceAndToken = {
-                resource: clusterResponse.clusters!,
-                nextToken: clusterArnList.nextToken,
-            }
-            return response
-        } catch (error) {
-            getLogger().error('ecs: Failed to list clusters: %s', error)
-            throw error
+        const clusterResponse = await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns }).promise()
+        const response: EcsResourceAndToken = {
+            resource: clusterResponse.clusters!,
+            nextToken: clusterArnList.nextToken,
         }
+        return response
     }
 
     public async getServices(cluster: string, nextToken?: string): Promise<EcsResourceAndToken> {
@@ -48,46 +43,29 @@ export class DefaultEcsClient {
         if (serviceArnList.serviceArns?.length === 0) {
             return { resource: [] }
         }
-        try {
-            const services = await this.describeServices(cluster, serviceArnList.serviceArns!)
-            const response: EcsResourceAndToken = {
-                resource: services,
-                nextToken: serviceArnList.nextToken,
-            }
-            return response
-        } catch (error) {
-            getLogger().error('ecs: Failed to list services for cluster %s: %O', cluster, error)
-            throw error
+        const services = await this.describeServices(cluster, serviceArnList.serviceArns!)
+        const response: EcsResourceAndToken = {
+            resource: services,
+            nextToken: serviceArnList.nextToken,
         }
+        return response
     }
 
     public async getContainerNames(taskDefinition: string): Promise<string[]> {
         const sdkClient = await this.createSdkClient()
-        try {
-            const describeTaskDefinitionResponse = await sdkClient.describeTaskDefinition({ taskDefinition }).promise()
-            const containerNames = describeTaskDefinitionResponse.taskDefinition?.containerDefinitions?.map(cd => {
-                return cd.name ?? ''
-            })
-            return containerNames ?? []
-        } catch (error) {
-            getLogger().error('ecs: Failed to list containers for task definition %s: %O', taskDefinition, error)
-            throw error
-        }
+        const describeTaskDefinitionResponse = await sdkClient.describeTaskDefinition({ taskDefinition }).promise()
+        const containerNames = describeTaskDefinitionResponse.taskDefinition?.containerDefinitions?.map(cd => {
+            return cd.name ?? ''
+        })
+        return containerNames ?? []
     }
 
     public async listTasks(cluster: string, serviceName: string): Promise<string[]> {
         const sdkClient = await this.createSdkClient()
 
         const params: ECS.ListTasksRequest = { cluster: cluster, serviceName: serviceName }
-        try {
-            const listTasksResponse = await sdkClient.listTasks(params).promise()
-            return listTasksResponse.taskArns ?? []
-        } catch (error) {
-            getLogger().error(
-                `ecs: Failed to get tasks for Cluster "${cluster}" and Service "${serviceName}": ${error}`
-            )
-            throw error
-        }
+        const listTasksResponse = await sdkClient.listTasks(params).promise()
+        return listTasksResponse.taskArns ?? []
     }
 
     public async updateService(cluster: string, serviceName: string, enable: boolean): Promise<void> {
@@ -99,25 +77,15 @@ export class DefaultEcsClient {
             enableExecuteCommand: enable,
             forceNewDeployment: true,
         }
-        try {
-            await sdkClient.updateService(params).promise()
-        } catch (error) {
-            getLogger().error(`ecs: Failed to update service: ${error} `)
-            throw error
-        }
+        await sdkClient.updateService(params).promise()
     }
 
     public async describeTasks(cluster: string, tasks: string[]): Promise<ECS.Task[]> {
         const sdkClient = await this.createSdkClient()
 
         const params: ECS.DescribeTasksRequest = { cluster, tasks }
-        try {
-            const describedTasks = await sdkClient.describeTasks(params).promise()
-            return describedTasks.tasks ?? []
-        } catch (error) {
-            getLogger().error(error as Error)
-            throw error
-        }
+        const describedTasks = await sdkClient.describeTasks(params).promise()
+        return describedTasks.tasks ?? []
     }
 
     public async describeServices(cluster: string, services: string[]): Promise<ECS.Service[]> {

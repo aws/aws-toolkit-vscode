@@ -15,7 +15,7 @@ import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { getIdeProperties } from '../../shared/extensionUtilities'
-import { showOutputMessage } from '../../shared/utilities/messages'
+import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { ext } from '../../shared/extensionGlobals'
 
 export async function runCommandInContainer(
@@ -26,102 +26,107 @@ export async function runCommandInContainer(
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
 
-    if (!(await verifyCliAndPlugin(window))) {
-        return
-    }
+    try {
+        if (!(await verifyCliAndPlugin(window))) {
+            return
+        }
 
-    // Check to see if there are any deployments in progress
-    const activeDeployments = await deploymentsInProgress(node)
-    if (activeDeployments.ACTIVE > 0 || activeDeployments.IN_PROGRESS > 0) {
-        window.showWarningMessage(
-            localize(
-                'AWS.command.ecs.runCommandInContainer.warnDeploymentInProgress',
-                'Service is currently deploying (ACTIVE={0}, IN_PROGRESS={1})',
-                activeDeployments.ACTIVE,
-                activeDeployments.IN_PROGRESS
+        // Check to see if there are any deployments in progress
+        const activeDeployments = await deploymentsInProgress(node)
+        if (activeDeployments.ACTIVE > 0 || activeDeployments.IN_PROGRESS > 0) {
+            window.showWarningMessage(
+                localize(
+                    'AWS.command.ecs.runCommandInContainer.warnDeploymentInProgress',
+                    'Service is currently deploying (ACTIVE={0}, IN_PROGRESS={1})',
+                    activeDeployments.ACTIVE,
+                    activeDeployments.IN_PROGRESS
+                )
             )
-        )
-    }
+        }
 
-    // Quick pick to choose from the tasks in that service
-    const quickPickItems = await getTaskItems(node)
-    if (quickPickItems.length === 0) {
-        window.showInformationMessage(
-            localize(
-                'AWS.command.ecs.runCommandInContainer.noTasks',
-                'No running tasks for service: {0}',
-                node.serviceName
+        // Quick pick to choose from the tasks in that service
+        const quickPickItems = await getTaskItems(node)
+        if (quickPickItems.length === 0) {
+            window.showInformationMessage(
+                localize(
+                    'AWS.command.ecs.runCommandInContainer.noTasks',
+                    'No running tasks for service: {0}',
+                    node.serviceName
+                )
             )
-        )
-        return
-    }
+            return
+        }
 
-    const quickPick = picker.createQuickPick({
-        options: {
-            title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
-            ignoreFocusOut: true,
-        },
-        items: quickPickItems,
-        buttons: [vscode.QuickInputButtons.Back],
-    })
-
-    let taskChoice
-
-    if (quickPickItems.length === 1) {
-        taskChoice = quickPickItems
-    } else {
-        taskChoice = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
+        const quickPick = picker.createQuickPick({
+            options: {
+                title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
+                ignoreFocusOut: true,
             },
+            items: quickPickItems,
+            buttons: [vscode.QuickInputButtons.Back],
         })
-    }
 
-    if (!taskChoice) {
-        return
-    }
+        let taskChoice
 
-    const task = taskChoice[0].label
+        if (quickPickItems.length === 1) {
+            taskChoice = quickPickItems
+        } else {
+            taskChoice = await picker.promptUser({
+                picker: quickPick,
+                onDidTriggerButton: (button, resolve, reject) => {
+                    if (button === vscode.QuickInputButtons.Back) {
+                        resolve(undefined)
+                    }
+                },
+            })
+        }
 
-    // Warn the user that commands may modify the container, give the option to dismiss future prompts
-    const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
-    if (await settings.isPromptEnabled('ecsRunCommand')) {
-        const choice = await window.showInformationMessage(
-            localize(
-                'AWS.command.ecs.runCommandInContainer.warnBeforeExecute',
-                'Command may modify the running container {0}. Are you sure?',
+        if (!taskChoice) {
+            return
+        }
+
+        const task = taskChoice[0].label
+
+        // Warn the user that commands may modify the container, give the option to dismiss future prompts
+        const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
+        if (await settings.isPromptEnabled('ecsRunCommand')) {
+            const choice = await window.showInformationMessage(
+                localize(
+                    'AWS.command.ecs.runCommandInContainer.warnBeforeExecute',
+                    'Command may modify the running container {0}. Are you sure?',
+                    node.containerName
+                ),
+                { modal: true },
+                localize('AWS.generic.response.yes', 'Yes'),
+                yesDontAskAgain
+            )
+            if (choice === undefined) {
+                getLogger().debug('ecs: Cancelled runCommandInContainer')
+                return
+            } else if (choice === yesDontAskAgain) {
+                settings.disablePrompt('ecsRunCommand')
+            }
+        }
+
+        //Get command line text from user to run in the container
+        const command = await window.showInputBox({
+            prompt: localize(
+                'AWS.command.ecs.runCommandInContainer.prompt',
+                'Enter the command to run in container: {0}',
                 node.containerName
             ),
-            { modal: true },
-            localize('AWS.generic.response.yes', 'Yes'),
-            yesDontAskAgain
-        )
-        if (choice === undefined) {
-            getLogger().debug('ecs: Cancelled runCommandInContainer')
+            placeHolder: localize('AWS.command.ecs.runCommandInContainer.placeHolder', 'Command to run'),
+            ignoreFocusOut: true,
+        })
+        if (!command) {
             return
-        } else if (choice === yesDontAskAgain) {
-            settings.disablePrompt('ecsRunCommand')
         }
-    }
 
-    //Get command line text from user to run in the container
-    const command = await window.showInputBox({
-        prompt: localize(
-            'AWS.command.ecs.runCommandInContainer.prompt',
-            'Enter the command to run in container: {0}',
-            node.containerName
-        ),
-        placeHolder: localize('AWS.command.ecs.runCommandInContainer.placeHolder', 'Command to run'),
-        ignoreFocusOut: true,
-    })
-    if (!command) {
-        return
+        await runCliCommandInEcsContainer(node, task, command, outputChannel)
+    } catch (error) {
+        getLogger().error('Failed to execute command in container, %O', error)
+        showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
     }
-
-    await runCliCommandInEcsContainer(node, task, command, outputChannel)
 }
 
 async function verifyCliAndPlugin(window: Window): Promise<boolean> {
