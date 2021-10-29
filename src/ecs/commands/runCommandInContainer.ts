@@ -57,20 +57,20 @@ export async function runCommandInContainer(
             return
         }
 
-        const quickPick = picker.createQuickPick({
-            options: {
-                title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
-                ignoreFocusOut: true,
-            },
-            items: quickPickItems,
-            buttons: [vscode.QuickInputButtons.Back],
-        })
-
         let taskChoice
 
         if (quickPickItems.length === 1) {
             taskChoice = quickPickItems
         } else {
+            const quickPick = picker.createQuickPick({
+                options: {
+                    title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
+                    ignoreFocusOut: true,
+                },
+                items: quickPickItems,
+                buttons: [vscode.QuickInputButtons.Back],
+            })
+
             taskChoice = await picker.promptUser({
                 picker: quickPick,
                 onDidTriggerButton: (button, resolve, reject) => {
