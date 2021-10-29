@@ -10,8 +10,6 @@ import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.io.Decompressor
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.getTextFromUrl
-import software.aws.toolkits.jetbrains.core.isArm64
-import software.aws.toolkits.jetbrains.core.isIntel64
 import software.aws.toolkits.jetbrains.core.saveFileFromUrl
 import software.aws.toolkits.jetbrains.core.tools.FourPartVersion
 import software.aws.toolkits.jetbrains.core.tools.ManagedToolType
@@ -52,10 +50,10 @@ object SsmPlugin : ManagedToolType<FourPartVersion> {
         val downloadUrl = when {
             SystemInfo.isWindows -> windowsUrl(version)
             SystemInfo.isMac -> macUrl(version)
-            SystemInfo.isLinux && hasDpkg && isArm64() -> ubuntuArm64Url(version)
-            SystemInfo.isLinux && hasDpkg && isIntel64() -> ubuntuI64Url(version)
-            SystemInfo.isLinux && hasRpm2Cpio && isArm64() -> linuxArm64Url(version)
-            SystemInfo.isLinux && hasRpm2Cpio && isIntel64() -> linuxI64Url(version)
+            SystemInfo.isLinux && hasDpkg && SystemInfo.isArm64 -> ubuntuArm64Url(version)
+            SystemInfo.isLinux && hasDpkg && SystemInfo.isIntel64 -> ubuntuI64Url(version)
+            SystemInfo.isLinux && hasRpm2Cpio && SystemInfo.isArm64 -> linuxArm64Url(version)
+            SystemInfo.isLinux && hasRpm2Cpio && SystemInfo.isIntel64 -> linuxI64Url(version)
             else -> throw IllegalStateException("Failed to find compatible SSM plugin: SystemInfo=${SystemInfo.OS_NAME}, Arch=${SystemInfo.OS_ARCH}")
         }
 
