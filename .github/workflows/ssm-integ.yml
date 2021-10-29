@@ -1,0 +1,38 @@
+# This workflow tests the SSM plugin resolution and installation
+
+name: SSM Integration Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master, feature/* ]
+    # PRs only need to run this if the SSM plugin logic has changed
+    paths:
+      - 'jetbrains-core/src/software/aws/toolkits/jetbrains/services/ssm/SsmPlugin.kt'
+      - 'jetbrains-core/it/software/aws/toolkits/jetbrains/services/ssm/SsmPluginTest.kt'
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+        if: ${{ matrix.os == 'windows-latest' }}
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Build with Gradle
+        run: ./gradlew :jetbrains-core:integrationTest --info --full-stacktrace --console plain --tests "software.aws.toolkits.jetbrains.services.ssm.SsmPluginTest"

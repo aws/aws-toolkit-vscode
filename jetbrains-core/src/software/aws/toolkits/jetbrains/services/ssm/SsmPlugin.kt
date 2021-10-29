@@ -24,12 +24,12 @@ import java.time.Duration
 import kotlin.streams.asSequence
 
 object SsmPlugin : ManagedToolType<FourPartVersion> {
-    private val isUbuntu by lazy {
-        ExecUtil.execAndGetOutput(GeneralCommandLine("uname", "-a"), VERSION_TIMEOUT.toMillis().toInt()).stdout.contains("Ubuntu", ignoreCase = true)
-    }
+    private val hasDpkg by lazy { hasCommand("dpkg-deb") }
+
+    private val hasRpm2Cpio by lazy { hasCommand("rpm2cpio") }
+
     override val id: String = "SSM-Plugin"
     override val displayName: String = "AWS Session Manager Plugin"
-
     override fun supportedVersions(): VersionRange<FourPartVersion> = FourPartVersion(1, 2, 0, 0) until FourPartVersion(2, 0, 0, 0)
 
     override fun determineVersion(path: Path): FourPartVersion {
@@ -50,10 +50,10 @@ object SsmPlugin : ManagedToolType<FourPartVersion> {
         val downloadUrl = when {
             SystemInfo.isWindows -> windowsUrl(version)
             SystemInfo.isMac -> macUrl(version)
-            SystemInfo.isLinux && isUbuntu && SystemInfo.isArm64 -> ubuntuArm64Url(version)
-            SystemInfo.isLinux && isUbuntu && SystemInfo.isIntel64 -> ubuntuI64Url(version)
-            SystemInfo.isLinux && SystemInfo.isArm64 -> linuxArm64Url(version)
-            SystemInfo.isLinux && SystemInfo.isIntel64 -> linuxI64Url(version)
+            SystemInfo.isLinux && hasDpkg && SystemInfo.isArm64 -> ubuntuArm64Url(version)
+            SystemInfo.isLinux && hasDpkg && SystemInfo.isIntel64 -> ubuntuI64Url(version)
+            SystemInfo.isLinux && hasRpm2Cpio && SystemInfo.isArm64 -> linuxArm64Url(version)
+            SystemInfo.isLinux && hasRpm2Cpio && SystemInfo.isIntel64 -> linuxI64Url(version)
             else -> throw IllegalStateException("Failed to find compatible SSM plugin: SystemInfo=${SystemInfo.OS_NAME}, Arch=${SystemInfo.OS_ARCH}")
         }
 
@@ -86,7 +86,7 @@ object SsmPlugin : ManagedToolType<FourPartVersion> {
         val processOutput = ExecUtil.execAndGetOutput(cmd, INSTALL_TIMEOUT.toMillis().toInt())
 
         if (!processOutput.checkSuccess(LOGGER)) {
-            throw IllegalStateException("Failed to extract $displayName")
+            throw IllegalStateException("Failed to extract $displayName\nSTDOUT:${processOutput.stdout}\nSTDERR:${processOutput.stderr}")
         }
     }
 
@@ -103,6 +103,11 @@ object SsmPlugin : ManagedToolType<FourPartVersion> {
 
         val intermediateZip = tempDir.resolve("package.zip")
         Decompressor.Zip(intermediateZip).withZipExtensions().extract(destinationDir)
+    }
+
+    private fun hasCommand(cmd: String): Boolean {
+        val output = ExecUtil.execAndGetOutput(GeneralCommandLine("sh", "-c", "command -v $cmd"), VERSION_TIMEOUT.toMillis().toInt())
+        return output.exitCode == 0
     }
 
     override fun determineLatestVersion(): FourPartVersion = FourPartVersion.parse(getTextFromUrl(VERSION_FILE))
