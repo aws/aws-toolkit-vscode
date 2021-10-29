@@ -27,6 +27,7 @@ export class MdeInstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
             title: localize('AWS.command.mde.configure', 'Configure', _env.id),
             arguments: [this],
         }
+        this.update(_env)
     }
 
     public update(env: mde.MdeEnvironment): void {
