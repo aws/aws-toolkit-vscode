@@ -15,6 +15,7 @@ import { anything, mock, instance, when, deepEqual, verify } from '../../utiliti
 
 describe('deleteBucketCommand', function () {
     const bucketName = 'bucket-name'
+    const region = 'region'
 
     let s3: S3Client
     let parentNode: S3Node
@@ -22,8 +23,8 @@ describe('deleteBucketCommand', function () {
 
     beforeEach(function () {
         s3 = mock()
-        parentNode = new S3Node(instance(s3))
-        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, parentNode, instance(s3))
+        parentNode = new S3Node(instance(s3), region)
+        node = new S3BucketNode({ name: bucketName, region, arn: 'arn' }, parentNode, instance(s3))
     })
 
     it('confirms deletion, deletes bucket, shows progress bar, and refreshes parent node', async function () {

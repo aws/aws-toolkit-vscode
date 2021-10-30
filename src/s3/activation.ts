@@ -9,6 +9,7 @@ import { createBucketCommand } from './commands/createBucket'
 import { createFolderCommand } from './commands/createFolder'
 import { deleteBucketCommand } from './commands/deleteBucket'
 import { deleteFileCommand } from './commands/deleteFile'
+import { showBucketCommand } from './commands/showBucket'
 import { downloadFileAsCommand } from './commands/downloadFileAs'
 import { presignedURLCommand } from './commands/presignedURL'
 import { uploadFileCommand } from './commands/uploadFile'
@@ -47,6 +48,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.s3.uploadFileToParent', async (node: S3FileNode) => {
             await uploadFileToParentCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.s3.showBucket', async (node: S3Node) => {
+            await showBucketCommand(node)
         }),
         vscode.commands.registerCommand('aws.s3.createBucket', async (node: S3Node) => {
             await createBucketCommand(node)

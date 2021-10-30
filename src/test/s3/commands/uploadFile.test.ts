@@ -20,6 +20,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
+    const region = 'region'
     const key = 'file.jpg'
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
@@ -38,7 +39,7 @@ describe('uploadFileCommand', function () {
         commands = new FakeCommands()
         bucketNode = new S3BucketNode(
             { name: bucketName, region: 'region', arn: 'arn' },
-            new S3Node(instance(s3)),
+            new S3Node(instance(s3), region),
             instance(s3)
         )
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
@@ -51,7 +52,7 @@ describe('uploadFileCommand', function () {
             commands = new FakeCommands()
             bucketNode = new S3BucketNode(
                 { name: bucketName, region: 'region', arn: 'arn' },
-                new S3Node(instance(s3)),
+                new S3Node(instance(s3), region),
                 instance(s3)
             )
             window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })

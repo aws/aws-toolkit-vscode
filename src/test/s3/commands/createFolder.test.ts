@@ -21,6 +21,7 @@ describe('createFolderCommand', function () {
     const folderName = 'foo'
     const folderPath = 'foo/'
     const bucketName = 'bucket-name'
+    const region = 'region'
 
     let s3: S3Client
     let node: S3BucketNode
@@ -28,8 +29,8 @@ describe('createFolderCommand', function () {
     beforeEach(function () {
         s3 = mock()
         node = new S3BucketNode(
-            { name: bucketName, region: 'region', arn: 'arn' },
-            new S3Node(instance(s3)),
+            { name: bucketName, region, arn: 'arn' },
+            new S3Node(instance(s3), region),
             instance(s3)
         )
     })
