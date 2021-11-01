@@ -38,9 +38,7 @@ import { editPolicyVersionCommand } from './commands/editPolicyVersion'
  * Activate IoT components.
  */
 export async function activate(context: ExtContext): Promise<void> {
-    const extensionContext = context.extensionContext
-
-    extensionContext.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.iot.createThing', async (node: IotThingFolderNode) => {
             await createThingCommand(node)
         }),

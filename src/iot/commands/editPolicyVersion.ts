@@ -18,11 +18,8 @@ export async function editPolicyVersionCommand(node: IotPolicyVersionNode) {
 
     try {
         const policy = await node.iot.getPolicyVersion({ policyName, policyVersionId })
-        const document = policy.policyDocument
+        const document = policy.policyDocument!
 
-        if (!document) {
-            return
-        }
         await showPolicyContent(document)
     } catch (e) {
         getLogger().error('Failed to retrieve policy document')

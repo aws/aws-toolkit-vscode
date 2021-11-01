@@ -14,7 +14,7 @@ import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utili
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../shared/filesystemUtilities'
 
-const MODE_RW_R_R = 420 //File permission 0644 rw-r--r-- for PEM files.
+const MODE_RW_R_R = 0o644 //File permission 0644 rw-r--r-- for PEM files.
 const PEM_FILE_ENCODING = 'ascii'
 
 /**
@@ -69,18 +69,14 @@ export async function createCertificateCommand(
         return undefined
     }
 
-    let certId: string | undefined
-    let certPem: string | undefined
-    let privateKey: string | undefined
-    let publicKey: string | undefined
     try {
         const certificate = await node.iot.createCertificateAndKeys({
             setAsActive: false,
         })
-        certId = certificate.certificateId
-        certPem = certificate.certificatePem
-        privateKey = certificate.keyPair?.PrivateKey
-        publicKey = certificate.keyPair?.PublicKey
+        const certId = certificate.certificateId
+        const certPem = certificate.certificatePem
+        const privateKey = certificate.keyPair?.PrivateKey
+        const publicKey = certificate.keyPair?.PublicKey
 
         if (!certPem || !privateKey || !publicKey) {
             getLogger().error('Could not download certificate')

@@ -47,17 +47,6 @@ describe('deletePolicyVersionCommand', function () {
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
     })
 
-    it('does nothing when called for default version', async function () {
-        node.isDefault = true
-        const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
-        const commands = new FakeCommands()
-        await deletePolicyVersionCommand(node, window, commands)
-
-        assert.strictEqual(window.message.information, 'Cannot delete default version of a policy')
-
-        verify(iot.deletePolicyVersion(anything())).never()
-    })
-
     it('does nothing when deletion is cancelled', async function () {
         const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
         await deletePolicyVersionCommand(node, window, new FakeCommands())

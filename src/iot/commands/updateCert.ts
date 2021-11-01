@@ -184,9 +184,8 @@ function getBaseNode(node: IotThingNode | IotCertsFolderNode): IotNode {
 }
 
 async function refreshNode(node: LoadMoreNode | undefined, commands: Commands): Promise<void> {
-    if (!node) {
-        return
+    if (node) {
+        node.clearChildren()
+        return commands.execute('aws.refreshAwsExplorerNode', node)
     }
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
 }

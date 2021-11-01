@@ -26,12 +26,6 @@ export async function deletePolicyVersionCommand(
 ): Promise<void> {
     getLogger().debug('DeletePolicyVersion called for %O', node)
 
-    if (node.isDefault) {
-        window.showInformationMessage(
-            localize('AWS.iot.deletePolicyVersion.error', 'Cannot delete default version of a policy')
-        )
-        return undefined
-    }
     const policyName = node.policy.name
     const versionId = node.version.versionId ?? ''
 
