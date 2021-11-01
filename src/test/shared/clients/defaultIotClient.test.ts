@@ -49,17 +49,6 @@ describe('DefaultIotClient', function () {
         return new DefaultIotClient(regionCode, () => Promise.resolve(instance(mockIot)))
     }
 
-    async function testSuccess<T, R>(
-        input: T,
-        output: R,
-        testFun: (arg: T) => Promise<R>,
-        mockedFun: (params: T, callback?: any) => Request<R, AWSError>
-    ) {
-        when(mockedFun(deepEqual(input))).thenReturn(success(output))
-        const response = await testFun(input)
-        assert.deepStrictEqual(response, output)
-    }
-
     /* Functions that create or retrieve resources. */
 
     describe('createThing', function () {
@@ -76,13 +65,6 @@ describe('DefaultIotClient', function () {
             const response = await createClient().createThing({ thingName })
 
             assert.deepStrictEqual(response, expectedResponse)
-        })
-
-        it('creates a generic thing', async function () {
-            const input = { thingName }
-
-            // eslint-disable-next-line @typescript-eslint/unbound-method
-            await testSuccess(input, expectedResponse, createClient().createThing, mockIot.createThing)
         })
 
         it('throws an Error on failure', async function () {
