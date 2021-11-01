@@ -8,6 +8,7 @@ import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.io.Decompressor
+import org.jetbrains.annotations.VisibleForTesting
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.getTextFromUrl
 import software.aws.toolkits.jetbrains.core.isArm64
@@ -67,12 +68,17 @@ object SsmPlugin : ManagedToolType<FourPartVersion> {
         return destination
     }
 
-    // Visible for test
+    @VisibleForTesting
     fun windowsUrl(version: FourPartVersion) = "$BASE_URL/${version.displayValue()}/windows/SessionManagerPlugin.zip"
+    @VisibleForTesting
     fun macUrl(version: FourPartVersion) = "$BASE_URL/${version.displayValue()}/mac/sessionmanager-bundle.zip"
+    @VisibleForTesting
     fun ubuntuArm64Url(version: FourPartVersion) = "$BASE_URL/${version.displayValue()}/ubuntu_arm64/session-manager-plugin.deb"
+    @VisibleForTesting
     fun ubuntuI64Url(version: FourPartVersion) = "$BASE_URL/${version.displayValue()}/ubuntu_64bit/session-manager-plugin.deb"
+    @VisibleForTesting
     fun linuxArm64Url(version: FourPartVersion) = "$BASE_URL/${version.displayValue()}/linux_arm64/session-manager-plugin.rpm"
+    @VisibleForTesting
     fun linuxI64Url(version: FourPartVersion) = "$BASE_URL/${version.displayValue()}/linux_64bit/session-manager-plugin.rpm"
 
     override fun installVersion(downloadArtifact: Path, destinationDir: Path, indicator: ProgressIndicator?) {

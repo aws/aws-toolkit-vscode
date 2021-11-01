@@ -29,8 +29,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.stubbing.Answer
 import software.aws.toolkits.core.utils.test.aString
-import software.aws.toolkits.jetbrains.core.tools.ToolManager.Companion.managedToolInstallDir
-import software.aws.toolkits.jetbrains.core.tools.ToolManager.Companion.managedToolMarkerFile
+import software.aws.toolkits.jetbrains.core.tools.DefaultToolManager.Companion.managedToolInstallDir
+import software.aws.toolkits.jetbrains.core.tools.DefaultToolManager.Companion.managedToolMarkerFile
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.isInstanceOfSatisfying
@@ -53,7 +53,7 @@ class ToolManagerTest {
     @JvmField
     val tempFolder = TemporaryFolder()
 
-    private lateinit var sut: ToolManager
+    private lateinit var sut: DefaultToolManager
     private lateinit var clock: Clock
 
     @Before
@@ -61,7 +61,7 @@ class ToolManagerTest {
         clock = mock {
             on { instant() } doReturn Instant.MIN
         }
-        sut = ToolManager(clock)
+        sut = DefaultToolManager(clock)
     }
 
     @Test

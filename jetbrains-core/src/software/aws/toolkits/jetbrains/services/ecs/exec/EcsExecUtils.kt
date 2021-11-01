@@ -3,11 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.ecs.exec
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ec2.Ec2Client
 import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.ecs.model.DeploymentRolloutState
@@ -17,20 +20,28 @@ import software.amazon.awssdk.services.ecs.model.LaunchType
 import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.iam.model.PolicyEvaluationDecisionType
+import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.getResourceNow
+import software.aws.toolkits.jetbrains.core.tools.getOrInstallTool
+import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
+import software.aws.toolkits.jetbrains.services.ssm.SsmPlugin
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
+import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsTelemetry
 import software.aws.toolkits.telemetry.Result
 import software.amazon.awssdk.services.ecs.model.Task as EcsTask
 
 object EcsExecUtils {
+    private val MAPPER = jacksonObjectMapper()
     private const val SESSION_MANAGER_CREATE_CONTROL_CHANNEL_PERMISSION = "ssmmessages:CreateControlChannel"
     private const val SESSION_MANAGER_CREATE_DATA_CHANNEL_PERMISSION = "ssmmessages:CreateDataChannel"
     private const val SESSION_MANAGER_OPEN_CONTROL_CHANNEL_PERMISSION = "ssmmessages:OpenControlChannel"
@@ -204,4 +215,59 @@ object EcsExecUtils {
         val serviceStateChangeInProgress = response.services().first().deployments().first().rolloutState() == DeploymentRolloutState.IN_PROGRESS
         return !serviceStateChangeInProgress
     }
+
+    /**
+     * Start a session with ECS (calling ECS execute-command) and then pass the resulting
+     * session information (along with some other pieces) to the SSM Session Manager Plugin.
+     *
+     * This replicates logic from the AWS CLI:
+     * https://github.com/aws/aws-cli/blob/63f3fcf368805d14848769feae4bbf87cc359739/awscli/customizations/ecs/executecommand.py
+     */
+    fun createCommand(
+        project: Project,
+        connection: ConnectionSettings,
+        container: ContainerDetails,
+        task: String,
+        command: String
+    ): GeneralCommandLine {
+        val client = connection.awsClient<EcsClient>()
+        val path = SsmPlugin.getOrInstallTool(project).path.toAbsolutePath().toString()
+
+        val (containerRuntimeId, session) = runUnderProgressIfNeeded(project, message("ecs.execute_command_call_service"), cancelable = false) {
+            val runtimeId = client.getContainerRuntimeId(container.service.clusterArn(), task, container.containerDefinition.name())
+
+            val session = client.executeCommand {
+                it.cluster(container.service.clusterArn())
+                it.task(task)
+                it.container(container.containerDefinition.name())
+                it.interactive(true)
+                it.command(command)
+            }
+
+            runtimeId to session
+        }
+
+        return GeneralCommandLine()
+            .withExePath(path)
+            .withParameters(
+                MAPPER.writeValueAsString(session.session().toBuilder()),
+                connection.region.id,
+                "StartSession",
+                "",
+                """{"Target": "ecs:${container.service.clusterArn()}_${task}_$containerRuntimeId"}""",
+                ecsHostName(connection.region)
+            )
+            .withEnvironment(connection.toEnvironmentVariables())
+    }
+
+    private fun EcsClient.getContainerRuntimeId(cluster: String, task: String, container: String): String {
+        val taskDescription = describeTasks { it.cluster(cluster).tasks(task) }.tasks().first()
+            ?: throw IllegalArgumentException("Task $task not found in cluster $cluster")
+
+        return taskDescription.containers().find { it.name() == container }?.runtimeId()
+            ?: throw IllegalArgumentException("Cannot find runtime ID for container $container in task $task")
+    }
+
+    private fun ecsHostName(region: AwsRegion) =
+        EcsClient.serviceMetadata().endpointFor(Region.of(region.id))?.toString() ?: throw RuntimeException("Cannot determine ECS host for $region")
 }

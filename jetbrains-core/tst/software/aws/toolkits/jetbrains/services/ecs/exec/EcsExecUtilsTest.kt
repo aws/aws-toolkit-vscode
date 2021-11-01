@@ -12,7 +12,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.ec2.Ec2Client
 import software.amazon.awssdk.services.ec2.model.DescribeInstancesRequest
 import software.amazon.awssdk.services.ec2.model.DescribeInstancesResponse
@@ -20,6 +24,8 @@ import software.amazon.awssdk.services.ec2.model.IamInstanceProfile
 import software.amazon.awssdk.services.ec2.model.Instance
 import software.amazon.awssdk.services.ec2.model.Reservation
 import software.amazon.awssdk.services.ecs.EcsClient
+import software.amazon.awssdk.services.ecs.model.Container
+import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.ContainerInstance
 import software.amazon.awssdk.services.ecs.model.Deployment
 import software.amazon.awssdk.services.ecs.model.DeploymentRolloutState
@@ -29,6 +35,8 @@ import software.amazon.awssdk.services.ecs.model.DescribeServicesRequest
 import software.amazon.awssdk.services.ecs.model.DescribeServicesResponse
 import software.amazon.awssdk.services.ecs.model.DescribeTasksRequest
 import software.amazon.awssdk.services.ecs.model.DescribeTasksResponse
+import software.amazon.awssdk.services.ecs.model.ExecuteCommandRequest
+import software.amazon.awssdk.services.ecs.model.ExecuteCommandResponse
 import software.amazon.awssdk.services.ecs.model.LaunchType
 import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.ecs.model.Task
@@ -43,9 +51,19 @@ import software.amazon.awssdk.services.iam.model.PolicyEvaluationDecisionType
 import software.amazon.awssdk.services.iam.model.Role
 import software.amazon.awssdk.services.iam.model.SimulatePrincipalPolicyRequest
 import software.amazon.awssdk.services.iam.model.SimulatePrincipalPolicyResponse
+import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
+import software.aws.toolkits.jetbrains.core.region.US_EAST_1
+import software.aws.toolkits.jetbrains.core.tools.MockToolManagerRule
+import software.aws.toolkits.jetbrains.core.tools.Tool
+import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
+import software.aws.toolkits.jetbrains.services.ecs.exec.EcsExecUtils.createCommand
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
+import software.aws.toolkits.jetbrains.services.ssm.SsmPlugin
+import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 
 class EcsExecUtilsTest {
@@ -64,6 +82,10 @@ class EcsExecUtilsTest {
     @JvmField
     @Rule
     val resourceCache = MockResourceCacheRule()
+
+    @JvmField
+    @Rule
+    val toolManager = MockToolManagerRule()
 
     private lateinit var ecsClient: EcsClient
     private lateinit var iamClient: IamClient
@@ -316,5 +338,84 @@ class EcsExecUtilsTest {
             EcsExecUtils.ensureServiceIsInStableState(projectRule.project, ecsService)
         }
         assertThat(serviceStateStable).isTrue
+    }
+
+    @Test
+    fun `SSM command is created correctly`() {
+        val credentials = AwsBasicCredentials.create(aString(), aString())
+        val mockCredentialProvider = mock<AwsCredentialsProvider> {
+            on {
+                resolveCredentials()
+            }.thenAnswer { credentials }
+        }
+        val connection = ConnectionSettings(aToolkitCredentialsProvider(delegate = mockCredentialProvider), US_EAST_1)
+        val cluster = aString()
+        val taskId = aString()
+        val containerName = aString()
+        val containerRuntimeId = aString()
+        val command = aString()
+        val sessionId = aString()
+        val token = aString()
+        val streamUrl = aString()
+        val cliPath = Path.of("dummy", "file", "path")
+
+        val mockTool = mock<Tool<SsmPlugin>> {
+            on {
+                path
+            }.doReturn(cliPath)
+        }
+
+        toolManager.registerTool(SsmPlugin, mockTool)
+
+        ecsClient.stub {
+            on {
+                describeTasks(DescribeTasksRequest.builder().cluster(cluster).tasks(taskId).build())
+            } doReturn (
+                DescribeTasksResponse.builder().tasks(
+                    Task.builder().containers(
+                        Container.builder()
+                            .name(containerName)
+                            .runtimeId(containerRuntimeId)
+                            .build()
+                    ).build()
+                ).build()
+                )
+
+            on {
+                executeCommand(
+                    ExecuteCommandRequest.builder()
+                        .cluster(cluster)
+                        .task(taskId)
+                        .container(containerName)
+                        .interactive(true)
+                        .command(command)
+                        .build()
+                )
+            }.thenReturn(
+                ExecuteCommandResponse.builder().session {
+                    it.sessionId(sessionId)
+                    it.tokenValue(token)
+                    it.streamUrl(streamUrl)
+                }.build()
+            )
+
+            val cmd = createCommand(
+                projectRule.project,
+                connection,
+                ContainerDetails(Service.builder().clusterArn(cluster).build(), ContainerDefinition.builder().name(containerName).build()),
+                taskId,
+                command
+            )
+
+            val expectedSession = """{\"sessionId\":\"$sessionId\",\"streamUrl\":\"$streamUrl\",\"tokenValue\":\"$token\"}"""
+            val expectedTarget = """{\"Target\": \"ecs:${cluster}_${taskId}_$containerRuntimeId\"}"""
+            assertThat(cmd.commandLineString).isEqualTo(
+                """${cliPath.toAbsolutePath()} $expectedSession us-east-1 StartSession "" "$expectedTarget" ecs.us-east-1.amazonaws.com"""
+            )
+
+            assertThat(cmd.environment).containsEntry("AWS_REGION", "us-east-1")
+                .containsEntry("AWS_ACCESS_KEY_ID", credentials.accessKeyId())
+                .containsEntry("AWS_SECRET_ACCESS_KEY", credentials.secretAccessKey())
+        }
     }
 }

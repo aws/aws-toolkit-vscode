@@ -31,7 +31,6 @@ import software.aws.toolkits.jetbrains.services.ecs.exec.EcsExecUtils
 import software.aws.toolkits.jetbrains.services.ecs.exec.OpenShellInContainerDialog
 import software.aws.toolkits.jetbrains.services.ecs.exec.RunCommandDialog
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
-import software.aws.toolkits.jetbrains.services.ecs.resources.SessionManagerPluginInstallationVerification
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
@@ -140,11 +139,9 @@ class ExecuteCommandAction(
     override fun actionPerformed(e: AnActionEvent) {
         coroutineScope.launch {
             if (EcsExecUtils.ensureServiceIsInStableState(project, container.service)) {
-                SessionManagerPluginInstallationVerification.requiresSessionManager(project) {
-                    runInEdt {
-                        project.withAwsConnection {
-                            RunCommandDialog(project, container, it).show()
-                        }
+                runInEdt {
+                    project.withAwsConnection {
+                        RunCommandDialog(project, container, it).show()
                     }
                 }
             } else {
@@ -167,11 +164,9 @@ class ExecuteCommandInShellAction(
     override fun actionPerformed(e: AnActionEvent) {
         coroutineScope.launch {
             if (EcsExecUtils.ensureServiceIsInStableState(project, container.service)) {
-                SessionManagerPluginInstallationVerification.requiresSessionManager(project) {
-                    runInEdt {
-                        project.withAwsConnection {
-                            OpenShellInContainerDialog(project, container, it).show()
-                        }
+                runInEdt {
+                    project.withAwsConnection {
+                        OpenShellInContainerDialog(project, container, it).show()
                     }
                 }
             } else {

@@ -185,7 +185,9 @@ with what features/services are supported.
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.tools.ToolSettings"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.core.tools.ToolManager"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.tools.ToolManager"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.tools.DefaultToolManager"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.core.tools.MockToolManager"/>
 
         <applicationService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
@@ -276,7 +278,6 @@ with what features/services are supported.
         <!-- Executables -->
         <executable implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable"/>
         <executable implementation="software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable"/>
-        <executable implementation="software.aws.toolkits.jetbrains.services.ecs.exec.AwsCliExecutable"/>
 
         <explorer.nodeProcessor implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerProcessor" />
         <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerTreeStructureProvider"/>

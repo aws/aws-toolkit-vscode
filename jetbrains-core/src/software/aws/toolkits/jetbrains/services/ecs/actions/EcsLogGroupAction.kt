@@ -19,8 +19,7 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
 class EcsLogGroupAction :
-    SingleResourceNodeAction<EcsClusterNode>(message("cloudwatch.logs.view_log_streams"), null, AwsIcons.Resources.CloudWatch.LOGS),
-    DumbAware {
+    SingleResourceNodeAction<EcsClusterNode>(message("cloudwatch.logs.view_log_streams"), null, AwsIcons.Resources.CloudWatch.LOGS), DumbAware {
     override fun actionPerformed(selected: EcsClusterNode, e: AnActionEvent) {
         val project = selected.nodeProject
         val client = project.awsClient<CloudWatchLogsClient>()

@@ -3,14 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.ecs.exec
 
+import com.intellij.execution.configurations.PtyCommandLine
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.layout.GrowPolicy
+import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.panel
-import com.pty4j.PtyProcess
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.plugins.terminal.TerminalTabState
@@ -18,15 +19,13 @@ import org.jetbrains.plugins.terminal.TerminalView
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalProcess
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalRunner
 import software.aws.toolkits.core.ConnectionSettings
-import software.aws.toolkits.core.toEnvironmentVariables
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
-import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
-import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
-import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
-import software.aws.toolkits.jetbrains.ui.ResourceSelector
+import software.aws.toolkits.jetbrains.ui.resourceSelector
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsExecuteCommandType
 import software.aws.toolkits.telemetry.EcsTelemetry
@@ -39,39 +38,10 @@ class OpenShellInContainerDialog(
     private val connectionSettings: ConnectionSettings
 ) : DialogWrapper(project) {
     private val coroutineScope = projectCoroutineScope(project)
-    private val tasks = ResourceSelector
-        .builder()
-        .resource(
-            EcsResources.listTasks(
-                container.service.clusterArn(),
-                container.service.serviceArn()
-            )
-        )
-        .awsConnection(project)
-        .build()
+    private var task: String? = null
     private val shellList = listOf("/bin/bash", "/bin/sh", "/bin/zsh")
     private val shellOption = CollectionComboBoxModel(shellList)
-    private var shell = shellList.first()
-    private val component by lazy {
-        panel {
-            row(message("ecs.execute_command_task.label")) {
-                tasks(growX, pushX).growPolicy(GrowPolicy.MEDIUM_TEXT)
-                    .withErrorOnApplyIf(message("ecs.execute_command_task_comboBox_empty")) { it.item.isNullOrEmpty() }
-            }
-            row(message("ecs.execute_command_shell.label")) {
-                comboBox(
-                    shellOption, { shell },
-                    {
-                        if (it != null) {
-                            shell = it
-                        }
-                    }
-                ).constraints(grow)
-                    .withErrorOnApplyIf(message("ecs.execute_command_shell_comboBox_empty")) { it.editor.item.toString().isNullOrBlank() }
-                    .also { it.component.isEditable = true }
-            }
-        }
-    }
+    private var shell: String = ""
 
     init {
         super.init()
@@ -79,15 +49,30 @@ class OpenShellInContainerDialog(
         setOKButtonText(message("general.execute_button"))
     }
 
-    override fun createCenterPanel(): JComponent? = component
+    override fun createCenterPanel(): JComponent = panel {
+        row(message("ecs.execute_command_task.label")) {
+            resourceSelector(
+                EcsResources.listTasks(container.service.clusterArn(), container.service.serviceArn()),
+                connectionSettings,
+                ::task
+            ).constraints(growX, pushX)
+                .growPolicy(GrowPolicy.MEDIUM_TEXT)
+                .withErrorOnApplyIf(message("ecs.execute_command_task_comboBox_empty")) { it.selected().isNullOrEmpty() }
+        }
+        row(message("ecs.execute_command_shell.label")) {
+            comboBox(shellOption, ::shell).constraints(grow)
+                .withErrorOnApplyIf(message("ecs.execute_command_shell_comboBox_empty")) { it.editor.item.toString().isBlank() }
+                .applyToComponent { isEditable = true }
+        }
+    }
 
     override fun doOKAction() {
         super.doOKAction()
-        val task = tasks.selected() ?: throw IllegalStateException("Task not Selected")
+        val task = task ?: throw IllegalStateException("Task not Selected")
         coroutineScope.launch {
             val taskRoleFound: Boolean = EcsExecUtils.checkRequiredPermissions(project, container.service.clusterArn(), task)
             if (taskRoleFound) {
-                runExecCommand()
+                runExecCommand(task)
             } else {
                 withContext(getCoroutineUiContext()) {
                     TaskRoleNotFoundWarningDialog(project).show()
@@ -101,38 +86,23 @@ class OpenShellInContainerDialog(
         EcsTelemetry.runExecuteCommand(project, Result.Cancelled, EcsExecuteCommandType.Shell)
     }
 
-    private fun runExecCommand() {
+    private fun runExecCommand(task: String) {
         try {
-            ExecutableManager.getInstance().getExecutable<AwsCliExecutable>().thenAccept { awsCliExecutable ->
-                when (awsCliExecutable) {
-                    is ExecutableInstance.Executable -> {} // noop
-                    is ExecutableInstance.UnresolvedExecutable -> throw Exception(message("executableCommon.missing_executable", "AWS CLI"))
-                    is ExecutableInstance.InvalidExecutable -> throw Exception(awsCliExecutable.validationError)
-                }
+            val commandLine = EcsExecUtils.createCommand(project, connectionSettings, container, task, shell)
+            val ptyProcess = PtyCommandLine(commandLine).createProcess()
+            val process = CloudTerminalProcess(ptyProcess.outputStream, ptyProcess.inputStream)
+            val runner = CloudTerminalRunner(project, container.containerDefinition.name(), process)
 
-                val ptyProcess = constructExecCommand(awsCliExecutable)
-                val process = CloudTerminalProcess(ptyProcess.outputStream, ptyProcess.inputStream)
-                val runner = CloudTerminalRunner(project, container.containerDefinition.name(), process)
-
-                runInEdt(ModalityState.any()) {
-                    TerminalView.getInstance(project).createNewSession(runner, TerminalTabState().also { it.myTabName = container.containerDefinition.name() })
-                }
-                EcsTelemetry.runExecuteCommand(project, Result.Succeeded, EcsExecuteCommandType.Shell)
+            runInEdt(ModalityState.any()) {
+                TerminalView.getInstance(project).createNewSession(runner, TerminalTabState().also { it.myTabName = container.containerDefinition.name() })
             }
+            EcsTelemetry.runExecuteCommand(project, Result.Succeeded, EcsExecuteCommandType.Shell)
         } catch (e: Exception) {
+            LOG.error(e) { "Failed to start interactive shell" }
             EcsTelemetry.runExecuteCommand(project, Result.Failed, EcsExecuteCommandType.Shell)
         }
     }
-
-    private fun constructExecCommand(executable: ExecutableInstance.Executable): PtyProcess {
-        val task = tasks.selected() ?: throw IllegalStateException("No tasks selected")
-        val commandLine = executable.getCommandLine().execCommand(
-            connectionSettings.toEnvironmentVariables(),
-            container.service.clusterArn(),
-            task,
-            ('"' + shell + '"'),
-            container.containerDefinition.name()
-        )
-        return PtyProcess.exec(commandLine.getCommandLineList(null).toTypedArray(), commandLine.effectiveEnvironment, null)
+    companion object {
+        private val LOG = getLogger<OpenShellInContainerDialog>()
     }
 }

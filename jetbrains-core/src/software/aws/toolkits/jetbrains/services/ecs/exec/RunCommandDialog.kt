@@ -15,66 +15,24 @@ import com.intellij.ui.layout.panel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.aws.toolkits.core.ConnectionSettings
-import software.aws.toolkits.core.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
-import software.aws.toolkits.jetbrains.ui.ResourceSelector
+import software.aws.toolkits.jetbrains.ui.resourceSelector
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsExecuteCommandType
 import software.aws.toolkits.telemetry.EcsTelemetry
 import software.aws.toolkits.telemetry.Result
 import javax.swing.JComponent
-import javax.swing.JTextField
 import javax.swing.plaf.basic.BasicComboBoxEditor
 
 class RunCommandDialog(private val project: Project, private val container: ContainerDetails, private val connectionSettings: ConnectionSettings) :
     DialogWrapper(project) {
     private val coroutineScope = projectCoroutineScope(project)
-    private val tasks = ResourceSelector
-        .builder()
-        .resource(
-            EcsResources.listTasks(
-                container.service.clusterArn(),
-                container.service.serviceArn()
-            )
-        )
-        .awsConnection(project)
-        .build()
     private val commandList = CollectionComboBoxModel(commandsEnteredPreviously.toMutableList())
-    var command = ""
-    private val component by lazy {
-        panel {
-            row(message("ecs.execute_command_task.label")) {
-                tasks(growX, pushX).growPolicy(GrowPolicy.MEDIUM_TEXT)
-                    .withErrorOnApplyIf(message("ecs.execute_command_task_comboBox_empty")) { it.item.isNullOrEmpty() }
-            }
-            row(message("ecs.execute_command.label")) {
-                comboBox(
-                    commandList, { command },
-                    {
-                        if (it != null) {
-                            command = it
-                        }
-                    }
-                ).constraints(grow)
-                    .withErrorOnApplyIf(message("ecs.execute_command_no_command")) { it.editor.item.toString().isNullOrBlank() }
-                    .also {
-                        it.component.isEditable = true
-                        it.component.selectedIndex = -1
-                    }.applyToComponent {
-                        editor = object : BasicComboBoxEditor.UIResource() {
-                            override fun createEditorComponent(): JTextField {
-                                val noCommandEntered = JBTextField()
-                                noCommandEntered.emptyText.text = message("ecs.execute_command_run_command_default_text")
-                                return noCommandEntered
-                            }
-                        }
-                    }
-            }
-        }
-    }
+    private var command = ""
+    private var task: String? = null
 
     init {
         super.init()
@@ -82,16 +40,39 @@ class RunCommandDialog(private val project: Project, private val container: Cont
         setOKButtonText(message("general.execute_button"))
     }
 
-    override fun createCenterPanel(): JComponent? = component
+    override fun createCenterPanel(): JComponent = panel {
+        row(message("ecs.execute_command_task.label")) {
+            resourceSelector(
+                EcsResources.listTasks(container.service.clusterArn(), container.service.serviceArn()),
+                connectionSettings,
+                ::task
+            ).constraints(growX, pushX)
+                .growPolicy(GrowPolicy.MEDIUM_TEXT)
+                .withErrorOnApplyIf(message("ecs.execute_command_task_comboBox_empty")) { it.selected().isNullOrEmpty() }
+        }
+        row(message("ecs.execute_command.label")) {
+            comboBox(commandList, ::command)
+                .constraints(grow)
+                .withErrorOnApplyIf(message("ecs.execute_command_no_command")) { it.item.isNullOrEmpty() }
+                .applyToComponent {
+                    isEditable = true
+                    selectedIndex = -1
+                    editor = object : BasicComboBoxEditor.UIResource() {
+                        override fun createEditorComponent() =
+                            JBTextField().also { it.emptyText.text = message("ecs.execute_command_run_command_default_text") }
+                    }
+                }
+        }
+    }
 
     override fun doOKAction() {
         super.doOKAction()
         commandsEnteredPreviously.add(command)
-        val task = tasks.selected() ?: throw IllegalStateException("Task not Selected")
+        val task = task ?: throw IllegalStateException("Task not Selected")
         coroutineScope.launch {
             val taskRoleFound: Boolean = EcsExecUtils.checkRequiredPermissions(project, container.service.clusterArn(), task)
             if (taskRoleFound) {
-                runCommand()
+                runCommand(task)
             } else {
                 withContext(getCoroutineUiContext()) {
                     TaskRoleNotFoundWarningDialog(project).show()
@@ -105,32 +86,13 @@ class RunCommandDialog(private val project: Project, private val container: Cont
         EcsTelemetry.runExecuteCommand(project, Result.Cancelled, EcsExecuteCommandType.Command)
     }
 
-    fun constructExecCommandParameters(commandToExecute: String) =
-        tasks.selected()?.let {
-            message(
-                "ecs.execute_command_parameters",
-                container.service.clusterArn(),
-                it,
-                commandToExecute,
-                container.containerDefinition.name()
-            )
-        }
-
-    private suspend fun runCommand() {
+    private suspend fun runCommand(task: String) {
         try {
-            val awsCliPath = AwsCliExecutable().resolve() ?: throw IllegalStateException(message("executableCommon.missing_executable", "AWS CLI"))
-            val environment = ExecutionEnvironmentBuilder
-                .create(
-                    project,
-                    DefaultRunExecutor.getRunExecutorInstance(),
-                    RunCommandRunProfile(
-                        connectionSettings.toEnvironmentVariables(),
-                        constructExecCommandParameters(('"' + command + '"')),
-                        container.containerDefinition.name(),
-                        awsCliPath.toAbsolutePath().toString()
-                    )
-                )
-                .build()
+            val environment = ExecutionEnvironmentBuilder.create(
+                project,
+                DefaultRunExecutor.getRunExecutorInstance(),
+                RunCommandRunProfile(project, connectionSettings, container, task, command)
+            ).build()
 
             withContext(getCoroutineUiContext()) {
                 environment.runner.execute(environment)
@@ -143,6 +105,6 @@ class RunCommandDialog(private val project: Project, private val container: Cont
     }
 
     companion object {
-        val commandsEnteredPreviously = mutableSetOf<String>()
+        private val commandsEnteredPreviously = mutableSetOf<String>()
     }
 }
