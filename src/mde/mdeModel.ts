@@ -21,10 +21,9 @@ import { getIdeProperties } from '../shared/extensionUtilities'
 import { ext } from '../shared/extensionGlobals'
 import { showConfirmationMessage, showViewLogsMessage } from '../shared/utilities/messages'
 import { getLogger } from '../shared/logger/logger'
-import * as settings from '../shared/settingsConfiguration'
 import { AWS_CLIS, installCli } from '../shared/utilities/cliUtils'
 import { getCliCommand } from '../shared/utilities/cliUtils'
-import { normalize } from '../shared/utilities/pathUtils'
+import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -144,14 +143,15 @@ export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }
     const iswin = process.platform === 'win32'
 
     const bash = await SystemUtilities.findBashPath()
-    if (!bash) {
+    if (!bash && !iswin) {
         return { ok: false, err: 'bash not found' }
     }
 
+    const scriptName = `mde_connect${iswin ? '.ps1' : ''}`
     // Script resource path. Includes the Toolkit version string so it changes with each release.
-    const mdeScriptRes = ext.context.asAbsolutePath(path.join('resources', 'mde_connect'))
+    const mdeScriptRes = ext.context.asAbsolutePath(path.join('resources', scriptName))
     // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
-    const mdeScript = normalize(path.join(ext.context.globalStoragePath, 'mde_connect'))
+    const mdeScript = path.join(ext.context.globalStoragePath, scriptName)
     try {
         const contents1 = await readFileAsString(mdeScriptRes)
         let contents2 = ''
@@ -167,26 +167,28 @@ export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }
         return { ok: false, err: 'failed to copy mde_connect' }
     }
 
+    const proxyCommand = iswin
+        ? `powershell.exe -ExecutionPolicy Bypass -File "${mdeScript}" %h`
+        : `"${bash}" -c "'${mdeScript}' %h"`
+
     const mdeSshConfig = `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host aws-mde-*
-ForwardAgent yes
-ProxyCommand "${bash}" -c "'${mdeScript}' %h"
+    ForwardAgent yes
+    ProxyCommand ${proxyCommand}"
 `
     const ssh = await SystemUtilities.findSshPath()
-    if (!ssh && !iswin) {
+    if (!ssh) {
         return { ok: false, err: 'ssh not found' }
     }
     // Check if the "aws-mde-*" hostname pattern is working.
-    const proc = iswin
-        ? new ChildProcess(true, bash, undefined, '-c', '/usr/bin/ssh -G aws-mde-test')
-        : new ChildProcess(true, ssh!, undefined, '-G', 'aws-mde-test')
+    const proc = new ChildProcess(true, ssh, undefined, '-G', 'aws-mde-test')
     const r = await proc.run()
     if (r.exitCode !== 0) {
         // Should never happen...
         return { ok: false, err: 'ssh failed' }
     }
-    const matches = r.stdout.match(/proxycommand.*mde_connect/i)
+    const matches = r.stdout.match(/proxycommand.*mde_connect(.ps1)?/i)
     const hasMdeProxyCommand = matches && matches[0].includes(mdeScript)
 
     if (!hasMdeProxyCommand) {
@@ -233,7 +235,7 @@ ProxyCommand "${bash}" -c "'${mdeScript}' %h"
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
 export async function ensureSsmCli(): Promise<{ ok: boolean; result: string }> {
-    const s = new settings.DefaultSettingsConfiguration()
+    const s = new DefaultSettingsConfiguration()
     let ssmPath: string | undefined
     if (!s.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)) {
         ssmPath = await getCliCommand(AWS_CLIS.ssm)

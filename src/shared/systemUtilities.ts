@@ -124,6 +124,7 @@ export class SystemUtilities {
      */
     public static async findSshPath(): Promise<string | undefined> {
         if (SystemUtilities.sshPath !== undefined) {
+            // TODO: cache the fs call rather than use a single variable
             return SystemUtilities.sshPath
         }
 
@@ -135,6 +136,7 @@ export class SystemUtilities {
             '/usr/bin/ssh',
             'C:/Windows/System32/OpenSSH/ssh.exe',
         ]
+
         for (const p of paths) {
             if (!p || ('ssh' !== p && !fs.existsSync(p))) {
                 continue
