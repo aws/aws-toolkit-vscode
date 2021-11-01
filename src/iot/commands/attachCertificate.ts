@@ -13,7 +13,7 @@ import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../shared/ui/prompter'
 import { IotCertificate } from '../../shared/clients/iotClient'
-import { WizardControl } from '../../shared/wizards/wizard'
+import { isValidResponse } from '../../shared/wizards/wizard'
 import { Iot } from 'aws-sdk'
 
 /**
@@ -66,7 +66,7 @@ export async function attachCertificateCommand(
     })
 
     const result = await promptFun(certItems)
-    if (!result || !isCert(result)) {
+    if (!isValidResponse(result)) {
         getLogger().info('No certificate chosen')
         return undefined
     }
@@ -98,10 +98,6 @@ async function promptForCert(
         buttons: [vscode.QuickInputButtons.Back],
     })
     return picker.prompt()
-}
-
-function isCert(cert: IotCertificate | WizardControl): cert is IotCertificate {
-    return (cert as IotCertificate).arn != undefined
 }
 
 async function refreshNode(node: IotThingNode, commands: Commands): Promise<void> {

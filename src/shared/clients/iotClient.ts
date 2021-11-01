@@ -223,6 +223,9 @@ export class DefaultIotClient {
     /**
      * Lists Things attached to specified certificate.
      *
+     * The nextToken output is discarded, since this function is only used
+     * to determine if the number of attached Things is nonzero.
+     *
      * @throws Error if there is an error calling IoT.
      */
     public async listThingsForCert(request: Iot.ListPrincipalThingsRequest): Promise<string[]> {
@@ -411,6 +414,9 @@ export class DefaultIotClient {
 
     /**
      * Lists certificates attached to specified policy.
+     *
+     * The nextMarker output value is discarded, since this function is only
+     * used to determine if the number of attached targets is nonzero.
      *
      * @throws Error if there is an error calling IoT.
      */

@@ -12,7 +12,7 @@ import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../shared/ui/prompter'
 import { IotPolicy } from '../../shared/clients/iotClient'
-import { WizardControl } from '../../shared/wizards/wizard'
+import { isValidResponse } from '../../shared/wizards/wizard'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 import { Iot } from 'aws-sdk'
 
@@ -61,7 +61,7 @@ export async function attachPolicyCommand(
     })
 
     const result = await promptFun(policyItems)
-    if (!result || !isPolicy(result)) {
+    if (!isValidResponse(result)) {
         getLogger().info('No policy chosen')
         return undefined
     }
@@ -91,10 +91,6 @@ async function promptForPolicy(policyItems: DataQuickPickItem<IotPolicy>[]): Pro
         buttons: [vscode.QuickInputButtons.Back],
     })
     return picker.prompt()
-}
-
-function isPolicy(policy: IotPolicy | WizardControl): policy is IotPolicy {
-    return (policy as IotPolicy).arn != undefined
 }
 
 async function refreshNode(node: IotCertWithPoliciesNode, commands: Commands): Promise<void> {
