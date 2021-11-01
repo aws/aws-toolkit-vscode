@@ -65,7 +65,7 @@ class EcrPushIntegrationTest {
             val imageId = dockerAdapter.buildLocalImage(dockerfile)!!
 
             // gross transform because we only have the short SHA right now
-            val localImage = serverInstance.agent.getImages(null).first { it.imageId.startsWith("sha256:$imageId") }
+            val localImage = serverInstance.agent.getImages(null).first { it.imageId.startsWith(EcrIntegrationTestUtils.getImagePrefix(imageId)) }
             val localImageId = localImage.imageId
             val pushRequest = ImageEcrPushRequest(
                 serverInstance,

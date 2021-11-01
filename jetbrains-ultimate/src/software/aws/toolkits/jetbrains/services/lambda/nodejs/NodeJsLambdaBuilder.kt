@@ -83,7 +83,7 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
                     val tsService = TypeScriptCompilerService.getServiceForFile(project, handlerElement.containingFile.virtualFile)
 
                     messageEmitter.emitMessageLine(message("lambda.build.typescript.compiler.running", tsConfig), false)
-                    val compilerFuture = tsService.compileConfigProjectAndGetErrors(tsConfigVirtualFile)
+                    val compilerFuture = tsService?.compileConfigProjectAndGetErrors(tsConfigVirtualFile)
                     val results = compilerFuture?.get()
                         ?: throw RuntimeException(message("lambda.build.typescript.compiler.ide_error"))
 

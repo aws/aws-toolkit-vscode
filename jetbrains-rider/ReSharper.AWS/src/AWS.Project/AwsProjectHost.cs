@@ -35,8 +35,8 @@ namespace AWS.Project
                         {
                             var assembly = project.GetOutputAssemblyInfo(targetFramework.FrameworkId);
                             if (assembly == null) continue;
-
-                            if (assembly.Location.StartsWith(assemblyPathPrefix))
+                            
+                            if(assembly.Location.FullPath.StartsWith(assemblyPathPrefix.FullPath))
                             {
                                 task.Set(new AwsProjectOutput(assembly.AssemblyNameInfo.Name, assembly.Location.FullPath));
                                 return task;

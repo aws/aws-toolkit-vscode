@@ -21,8 +21,6 @@ class SsmPluginTest {
     @JvmField
     val tempFolder = TemporaryFolder()
 
-    private val sut = SsmPlugin
-
     @Test
     fun `download URLs all work`() {
         val latest = SsmPlugin.determineLatestVersion()
