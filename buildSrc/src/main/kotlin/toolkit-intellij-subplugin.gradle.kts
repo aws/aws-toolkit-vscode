@@ -101,6 +101,7 @@ tasks.withType<JavaExec> {
 
 tasks.runIde {
     systemProperty("aws.toolkit.developerMode", true)
+    systemProperty("ide.plugins.snapshot.on.unload.fail", true)
 
     val alternativeIde = providers.environmentVariable("ALTERNATIVE_IDE").forUseAtConfigurationTime()
     if (alternativeIde.isPresent) {
