@@ -14,6 +14,7 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { EcsClusterNode } from './ecsClusterNode'
 import { EcsContainerNode } from './ecsContainerNode'
+import { ext } from '../../shared/extensionGlobals'
 
 export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
@@ -24,6 +25,11 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
         super(service.serviceName!, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = `${service.serviceArn}\nTask Definition: ${service.taskDefinition}`
         this.contextValue = 'awsEcsServiceNode'
+
+        this.iconPath = {
+            dark: vscode.Uri.file(ext.iconPaths.dark.service),
+            light: vscode.Uri.file(ext.iconPaths.light.service),
+        }
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {

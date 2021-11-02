@@ -336,6 +336,15 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.bucket = context.asAbsolutePath('resources/dark/s3/bucket.svg')
     ext.iconPaths.light.bucket = context.asAbsolutePath('resources/light/s3/bucket.svg')
 
+    ext.iconPaths.light.cluster = context.asAbsolutePath('resources/light/ecs/cluster.svg')
+    ext.iconPaths.dark.cluster = context.asAbsolutePath('resources/dark/ecs/cluster.svg')
+
+    ext.iconPaths.light.service = context.asAbsolutePath('resources/light/ecs/service.svg')
+    ext.iconPaths.dark.service = context.asAbsolutePath('resources/dark/ecs/service.svg')
+
+    ext.iconPaths.light.container = context.asAbsolutePath('resources/light/ecs/container.svg')
+    ext.iconPaths.dark.container = context.asAbsolutePath('resources/dark/ecs/container.svg')
+
     // temporary icons while Cloud9 does not have Codicon support
     ext.iconPaths.dark.plus = context.asAbsolutePath('resources/dark/plus.svg')
     ext.iconPaths.light.plus = context.asAbsolutePath('resources/light/plus.svg')
