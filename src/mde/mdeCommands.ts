@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as os from 'os'
 import * as vscode from 'vscode'
 import * as awsArn from '@aws-sdk/util-arn-parser'
 import * as mde from '../shared/clients/mdeClient'
@@ -17,15 +16,14 @@ import { Window } from '../shared/vscode/window'
 import { MdeRootNode } from './mdeRootNode'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { Timeout, waitTimeout, waitUntil } from '../shared/utilities/timeoutUtils'
-import { execFileSync } from 'child_process'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { CreateEnvironmentRequest, DeleteEnvironmentResponse, TagMap } from '../../types/clientmde'
+import { DeleteEnvironmentResponse, TagMap } from '../../types/clientmde'
 import { SystemUtilities } from '../shared/systemUtilities'
-import { createMdeWebview } from './vue/create/backend'
 import * as mdeModel from './mdeModel'
 import { localizedDelete } from '../shared/localizedText'
 import { MDE_RESTART_KEY } from './constants'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
+import { parse } from '@aws-sdk/util-arn-parser'
 
 const localize = nls.loadMessageBundle()
 
@@ -138,7 +136,7 @@ export async function mdeConnectCommand(
     }
 
     const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
-    const session = await mdeClient.startSession(args, window)
+    const session = await mdeClient.startSession(args)
     if (!session) {
         return
     }
@@ -148,6 +146,12 @@ export async function mdeConnectCommand(
         return
     }
 
+    // BIG HACK, VERY FRAGILE
+    // XXX: if the environment has a non-default devfile, use `/project` until an environment variable is available
+    const envMetadata = await mdeClient.getEnvironmentMetadata({ environmentId: args.id })
+    const projectDir =
+        envMetadata?.actions?.devfile?.location === '/aws/mde/.mde.devfile.yaml' ? '/projects' : '/project'
+
     const cmd = new ChildProcess(
         true,
         vsc,
@@ -155,8 +159,7 @@ export async function mdeConnectCommand(
             env: getMdeSsmEnv(region, mde.mdeEndpoint(), ssmPath.result, session),
         },
         '--folder-uri',
-        // TODO: save user's previous project and try to re-open
-        `vscode-remote://ssh-remote+aws-mde-${args.id}/projects`
+        `vscode-remote://ssh-remote+aws-mde-${args.id}${projectDir}`
     )
 
     const settings = new DefaultSettingsConfiguration()
@@ -175,69 +178,6 @@ export async function mdeConnectCommand(
             getLogger().error('MDE connect: failed to start: %O', cmd)
         }
     })
-}
-
-export async function mdeCreateCommand(
-    node?: MdeRootNode,
-    // this is just partial for now for testing
-    // it should instead be pass-through to the create API
-    options?: Partial<CreateEnvironmentRequest> & { repo?: { url: string; branch?: string } },
-    ctx?: ExtContext,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<mde.MdeEnvironment | undefined> {
-    getLogger().debug('MDE: mdeCreateCommand called on node: %O', node)
-    const mdeClient = ext.mde
-
-    if (!ctx) {
-        getLogger().debug('MDE: mdeCreateCommand should be called with extension context')
-        return
-    }
-
-    const env = await createMdeWebview(ctx, options?.repo)
-    if (!env) {
-        getLogger().debug('MDE: user cancelled create environment webview')
-        return
-    }
-
-    try {
-        const session = await mdeClient.startSession({ id: env.id }, window)
-        if (!session) {
-            return
-        }
-
-        getLogger().info('MDE: created environment: %O', env)
-
-        // Clone repo to MDE
-        // TODO: show notification while cloning?
-        if (options?.start !== false && options?.repo && env?.id) {
-            const mde = await startMde(env, mdeClient, node)
-            if (!mde) {
-                return
-            }
-            await cloneToMde(
-                mde,
-                session,
-                mdeClient.regionCode,
-                vscode.Uri.parse(options?.repo.url, true),
-                options?.repo.branch
-            )
-        }
-
-        // TODO: MDE telemetry
-        // recordEcrCreateRepository({ result: 'Succeeded' })
-        return env
-    } catch (e) {
-        getLogger().error('MDE: failed to clone %O: %O', env.id, e)
-        // TODO: MDE telemetry
-        // recordEcrCreateRepository({ result: 'Failed' })
-    } finally {
-        if (node) {
-            node.refresh()
-        } else {
-            await commands.execute('aws.refreshAwsExplorer', true)
-        }
-    }
 }
 
 export async function mdeDeleteCommand(
@@ -264,50 +204,31 @@ export async function mdeDeleteCommand(
     }
 }
 
-const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
-
 export async function cloneToMde(
-    mdeEnv: mde.MdeEnvironment & { id: string },
-    session: mde.MdeSession,
-    region: string,
-    repo: vscode.Uri,
-    branch?: string
+    mdeEnv: mde.MdeEnvironment,
+    repo: { uri: vscode.Uri; branch?: string },
+    projectDir: string = '/projects'
 ): Promise<void> {
-    const agentSock = startSshAgent()
-    const ssmPath = await mdeModel.ensureSsmCli()
-    if (!ssmPath.ok) {
-        return
-    }
+    getLogger().debug(`MDE: cloning ${repo.uri} to ${mdeEnv.id}`)
 
     // For some reason git won't accept URIs with the 'ssh' scheme?
-    const target = repo.scheme === 'ssh' ? `${repo.authority}${repo.path}` : repo.toString()
+    const target = repo.uri.scheme === 'ssh' ? `${repo.uri.authority}${repo.uri.path}` : repo.uri.toString()
     // TODO: let user name the project (if they want)
-    const repoName = repo.path.split('/').pop()?.split('.')[0]
+    const repoName = repo.uri.path.split('/').pop()?.split('.')[0]
 
-    const gitArgs = (branch ? ['-b', branch] : []).concat(`/projects/'${repoName}'`)
-    const sshCommands = [
+    const gitArgs = (repo.branch ? ['-b', repo.branch] : []).concat(`${projectDir}/'${repoName}'`)
+    const commands = [
         'mkdir -p ~/.ssh',
-        'mkdir -p /projects',
+        `mkdir -p ${projectDir}`, // Try to create the directory, though we might not have permissions
         'touch ~/.ssh/known_hosts',
         'ssh-keyscan github.com >> ~/.ssh/known_hosts',
         `git clone '${target}' ${gitArgs.join(' ')}`,
     ]
-    const env = getMdeSsmEnv(region, mde.mdeEndpoint(), ssmPath.result, session)
 
-    // TODO: could we parse for 'Permission denied (publickey).' and then tell user they need to add their SSH key to the agent?
+    const process = await createMdeSshCommand(mdeEnv, commands, { useAgent: repo.uri.scheme === 'ssh' })
     // TODO: handle different ports with the URI
-    // TODO: test on windows?
-    // TODO: handle failures
-    await new ChildProcess(
-        true,
-        `ssh`,
-        { env: Object.assign({ [SSH_AGENT_SOCKET_VARIABLE]: agentSock }, env) },
-        `aws-mde-${mdeEnv.id}`,
-        '-o',
-        'StrictHostKeyChecking=no',
-        'AddKeysToAgent=yes',
-        sshCommands.join(' && ')
-    ).run(
+
+    const result = await process.run(
         (stdout: string) => {
             getLogger().verbose(`MDE clone: ${mdeEnv.id}: ${stdout}`)
         },
@@ -315,43 +236,64 @@ export async function cloneToMde(
             getLogger().verbose(`MDE clone: ${mdeEnv.id}: ${stderr}`)
         }
     )
+
+    if (result.exitCode !== 0) {
+        throw new Error('Failed to clone repository')
+    }
 }
 
+interface MdeSshCommandOptions {
+    /** Uses this session to inject environment variables, otherwise creates a new one. */
+    session?: mde.MdeSession
+    /** Whether or not to forward an SSH agent. This will attempt to start the agent if not already running. (default: false) */
+    useAgent?: boolean
+}
+
+// TODO: use this for connect as well
 /**
- * Only mac has the agent running by default, other OS we need to start manually
- *
- * @returns `undefined` if agent is already running or on Windows, otherwise a shell script to set-up the agent
+ * Creates a new base ChildProcess with configured SSH arguments.
+ * The SSH agent socket will be added as an environment variable if applicable.
  */
-function startSshAgent(): string | undefined {
-    if (process.env[SSH_AGENT_SOCKET_VARIABLE] !== undefined) {
-        return
+export async function createMdeSshCommand(
+    mdeEnv: Pick<mde.MdeEnvironment, 'id' | 'arn'>,
+    commands: string[],
+    options: MdeSshCommandOptions = {}
+): Promise<ChildProcess> {
+    const useAgent = options.useAgent ?? false
+    const agentSock = useAgent ? await mdeModel.startSshAgent() : undefined
+    const ssmPath = await mdeModel.ensureSsmCli()
+
+    if (!ssmPath.ok) {
+        throw new Error('Unable to create MDE SSH command: SSM Plugin not found')
     }
 
-    try {
-        if (os.platform() === 'win32') {
-            // First check if it's running
-            // if not, try to start it
-            // if that fails, try to set the start-up type to manual
-            // if that fails, then no agent
-            const script = `
-            $status = (Get-Service ssh-agent).Status
-            if (status -eq "Running") { exit 0 }
-            Start-Service ssh-agent
-            if (!$?) {
-                (Get-Service -Name ssh-agent | Set-Service -StartupType Manual) && Start-Service ssh-agent
-            }
-            exit $?
-            `
-            execFileSync('powershell.exe', ['Invoke-Expression', script])
-            return
-        }
+    const region = parse(mdeEnv.arn).region
+    const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
+    const session = options.session ?? (await mdeClient.startSession(mdeEnv))
 
-        // TODO: this command outputs a shell command that you're supposed to execute, for now
-        // we'll just parse the socket out and inject it into the ssh command
-        return (execFileSync('ssh-agent', ['-s']).match(/$SSH_AGENT_VAR=(.*?);/) ?? [])[1]
-    } catch (err) {
-        getLogger().error('mde: failed to start SSH agent, clones may not work as expected: %O', err)
+    if (!session) {
+        throw new Error('Unable to create MDE SSH command: could not start remote session')
     }
+
+    // TODO: check SSH version to verify 'accept-new' is available
+    const mdeEnvVars = getMdeSsmEnv(region, mde.mdeEndpoint(), ssmPath.result, session)
+    const env = { [mdeModel.SSH_AGENT_SOCKET_VARIABLE]: agentSock, ...mdeEnvVars }
+
+    const sshPath = await SystemUtilities.findSshPath()
+    if (!sshPath) {
+        throw new Error('Unable to create MDE SSH command: could not find ssh executable')
+    }
+
+    const sshArgs = [
+        `aws-mde-${mdeEnv.id}`,
+        `${useAgent ? '-A' : ''}`,
+        '-o',
+        'StrictHostKeyChecking=accept-new',
+        'AddKeysToAgent=yes',
+        commands.join(' && '),
+    ].filter(c => !!c)
+
+    return new ChildProcess(true, sshPath, { env }, ...sshArgs)
 }
 
 export async function resumeEnvironments(ctx: ExtContext) {

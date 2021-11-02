@@ -23,6 +23,7 @@ import { showConfirmationMessage, showViewLogsMessage } from '../shared/utilitie
 import { getLogger } from '../shared/logger/logger'
 import { AWS_CLIS, installCli } from '../shared/utilities/cliUtils'
 import { getCliCommand } from '../shared/utilities/cliUtils'
+import { execFileSync } from 'child_process'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
@@ -255,4 +256,52 @@ export async function ensureSsmCli(): Promise<{ ok: boolean; result: string }> {
         return { ok: false, result: 'failed to find ssm after install' }
     }
     return { ok: true, result: ssmPath }
+}
+
+export const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
+
+/**
+ * Only mac has the agent running by default, other OS we need to start manually
+ *
+ * @returns `undefined` if agent is already running or on Windows, otherwise the SSH agent socket
+ */
+export async function startSshAgent(): Promise<string | undefined> {
+    if (process.env[SSH_AGENT_SOCKET_VARIABLE] !== undefined) {
+        return
+    }
+
+    getLogger().info('Starting SSH agent...')
+
+    try {
+        // TODO: if users are using
+        if (process.platform === 'win32') {
+            // First check if it's running
+            // if not, try to start it
+            // if that fails, try to set the start-up type to automatic
+            // if that fails, then no agent
+            const script = `
+$info = Get-Service ssh-agent
+if ($info.Status -eq "Running") { exit 0 }
+Start-Service ssh-agent
+if (!$?) {
+    Get-Service -Name ssh-agent | Set-Service -StartupType Manual
+    if ($?) { Start-Service ssh-agent }
+}
+exit $?
+`
+            execFileSync('powershell.exe', ['Invoke-Expression', script])
+            // TODO: we should verify that the agent is active (or not) prior to running this codepath
+            // On unix machines the environment variable is set, but on windows we might have to execute something to check
+            vscode.window.showInformationMessage(localize('AWS.mde.ssh-agent.start', 'The SSH agent has been started.'))
+            return
+        }
+
+        // note: using 'sync' callbacks since `promisify` is inconsistent
+        // TODO: this command outputs a shell command that you're supposed to execute, for now
+        // we'll just parse the socket out and inject it into the ssh command
+        const result = execFileSync('ssh-agent', ['-s'])
+        return (result.match(/$SSH_AGENT_VAR=(.*?);/) ?? [])[1]
+    } catch (err) {
+        getLogger().error('mde: failed to start SSH agent, clones may not work as expected: %O', err)
+    }
 }

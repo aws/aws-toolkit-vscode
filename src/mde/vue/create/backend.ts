@@ -18,6 +18,9 @@ import { GitExtension } from '../../../shared/extensions/git'
 import { MdeEnvironment } from '../../../shared/clients/mdeClient'
 import { VSCODE_MDE_TAGS } from '../../constants'
 import { productName } from '../../../shared/constants'
+import { cloneToMde } from '../../mdeCommands'
+import { showViewLogsMessage } from '../../../shared/utilities/messages'
+
 const localize = nls.loadMessageBundle()
 
 export interface DefinitionTemplate {
@@ -31,10 +34,14 @@ const VueWebview = compileVueWebview({
     name: localize('AWS.command.createMdeForm.title', 'Create new development environment'),
     webviewJs: 'createMdeVue.js',
     viewColumn: vscode.ViewColumn.Active,
+    // TODO: rename to `showHandler` ?
     validateData: (repo?: { url: string; branch?: string }) => true,
+    // TODO: rename to `submitHandler` ?
     validateSubmit: async (result: CreateEnvironmentRequest) => {
         return await submit(result)
     },
+    // TODO: typescript can't verify if `commands` is passed with a function that has an invalid `this` type
+    // not a big deal, it's rare to define a function with an explicit `this` type
     commands: {
         loadRoles,
         cancel() {
@@ -82,7 +89,8 @@ async function submit(data: CreateEnvironmentRequest) {
         const target = data.sourceCode[0]
         // a URI always needs a scheme, but git parses things differently if you drop the scheme
         // so for now we will make sure the scheme exists, but give git the scheme-less version
-        if (vscode.Uri.parse(target.uri).scheme === '') {
+        // Temporary for now
+        if (!target.uri.match(/^[\w]+:/)) {
             target.uri = `ssh://${target.uri}`
         }
 
@@ -160,16 +168,16 @@ async function listBranches(url: string) {
 async function createMdeWithTags(request: CreateEnvironmentRequest): Promise<MdeEnvironment | undefined> {
     const mdeClient = ext.mde
 
-    const repo = request?.sourceCode
+    const repo = request?.sourceCode?.[0]
     // We will always perform the clone
     delete request?.sourceCode
 
     const defaultTags = {
         [VSCODE_MDE_TAGS.tool]: productName,
     }
-    if (repo && repo[0]) {
-        defaultTags[VSCODE_MDE_TAGS.repository] = repo[0].uri
-        defaultTags[VSCODE_MDE_TAGS.repositoryBranch] = repo[0].branch ?? 'master' // TODO: better fallback?
+    if (repo) {
+        defaultTags[VSCODE_MDE_TAGS.repository] = repo.uri
+        defaultTags[VSCODE_MDE_TAGS.repositoryBranch] = repo.branch ?? 'master' // TODO: better fallback?
     }
     const emailHash = await mdeModel.getEmailHash()
     if (emailHash) {
@@ -182,6 +190,34 @@ async function createMdeWithTags(request: CreateEnvironmentRequest): Promise<Mde
             ...(request?.tags ?? {}),
         },
     })
+
+    if (env && repo) {
+        // TODO: this can be moved somewhere else, but the webview needs to expose more information
+        ;(async function () {
+            try {
+                const repoUri = vscode.Uri.parse(repo.uri, true)
+                const runningEnv = await mdeClient.startEnvironmentWithProgress(env)
+                if (!runningEnv) {
+                    throw new Error('Environment should not be undefined')
+                }
+                if (request.devfile) {
+                    await mdeClient.waitForDevfile(runningEnv)
+                    // XXX: most devfiles specify mounting the 'project' directory, not 'projects'
+                    await cloneToMde(runningEnv, { ...repo, uri: repoUri }, '/project')
+                } else {
+                    await cloneToMde(runningEnv, { ...repo, uri: repoUri })
+                }
+            } catch (err) {
+                showViewLogsMessage(
+                    localize(
+                        'AWS.command.createMde.clone.failed',
+                        'Failed to clone repository to environment: {0}',
+                        (err as Error).message
+                    )
+                )
+            }
+        })()
+    }
 
     return env
 }

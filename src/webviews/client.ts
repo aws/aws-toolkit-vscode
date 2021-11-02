@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'vscode'
 import { WebviewApi } from 'vscode-webview'
-import { ProtocolFromWeview, VueWebview } from './main'
+import { VueWebview } from './main'
 import { Protocol } from './server'
 
 declare const vscode: WebviewApi<any>
@@ -139,7 +139,7 @@ export class WebviewClientFactory {
      * Creates a new client. These clients are defined by their types; they do not have any knowledge
      * of the backend protocol other than the specified type.
      */
-    public static create<T extends VueWebview<any, any, any, any, any>>(): WebviewClient<ProtocolFromWeview<T>>
+    public static create<T extends VueWebview<any>>(): WebviewClient<T['protocol']>
     public static create<T extends Protocol<any, any>>(): WebviewClient<T>
     public static create<T extends ClientCommands<T>>(): WebviewClient<T>
     public static create<T extends Protocol<any, any>>(): WebviewClient<T> {

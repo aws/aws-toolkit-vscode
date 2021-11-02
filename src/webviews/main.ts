@@ -7,7 +7,15 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ExtContext } from '../shared/extensions'
 import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
-import { Commands, Events, OptionsToProtocol, registerWebviewServer, WebviewCompileOptions } from './server'
+import {
+    CompileContext,
+    DataFromOptions,
+    OptionsToProtocol,
+    OutputFromOptions,
+    registerWebviewServer,
+    SubmitFromOptions,
+    WebviewCompileOptions,
+} from './server'
 
 interface WebviewParams {
     id: string
@@ -23,7 +31,7 @@ interface WebviewParams {
 /**
  * A compiled webview. This is the base interface from which all views are derived from.
  */
-export interface VueWebview<C extends Commands, E extends Events, D, S, O> {
+export interface VueWebview<Options extends WebviewCompileOptions> {
     /**
      * Shows the webview with the given parameters.
      *
@@ -31,16 +39,16 @@ export interface VueWebview<C extends Commands, E extends Events, D, S, O> {
      *
      * @returns A Promise that is resolved once the view is closed. Can return an object if the view supports `submit`.
      */
-    show(data?: D): Promise<O | undefined>
+    show(data?: DataFromOptions<Options>): Promise<OutputFromOptions<Options> | undefined>
     /**
      * Event emitters registered by the view. Can be used by backend logic to trigger events in the view.
      */
-    readonly emitters: E
+    readonly emitters: Options['events']
     /**
      * This exists only for use by the client.
      * Trying to access it on the backend will result in an error.
      */
-    readonly protocol: OptionsToProtocol<WebviewCompileOptions<C, E, D, S>>
+    readonly protocol: OptionsToProtocol<Options>
 }
 
 /**
@@ -57,22 +65,22 @@ export interface VueWebview<C extends Commands, E extends Events, D, S, O> {
  *
  * @returns An anonymous class that can instantiate instances of {@link VueWebview}.
  */
-export function compileVueWebview<C extends Commands, E extends Events, D, S, O>(
-    params: WebviewParams & WebviewCompileOptions<C, E, D, S, O>
-): { new (context: ExtContext): VueWebview<C, E, D, S, O> } {
-    return class implements VueWebview<C, E, D, S, O> {
-        public get protocol(): OptionsToProtocol<WebviewCompileOptions<C, E, D, S>> {
+export function compileVueWebview<Options extends WebviewCompileOptions>(
+    params: WebviewParams & Options & { commands?: CompileContext<Options> }
+): { new (context: ExtContext): VueWebview<Options> } {
+    return class implements VueWebview<Options> {
+        public get protocol(): OptionsToProtocol<Options> {
             throw new Error('Cannot access the webview protocol on the backend.')
         }
-        public readonly emitters: E
-        public async show(data?: D): Promise<O | undefined> {
+        public readonly emitters: Options['events']
+        public async show(data?: DataFromOptions<Options>): Promise<OutputFromOptions<Options> | undefined> {
             await params.validateData?.(data)
             const panel = createVueWebview({ ...params, context: this.context })
-            return new Promise<O | undefined>((resolve, reject) => {
+            return new Promise<OutputFromOptions<Options> | undefined>((resolve, reject) => {
                 const onDispose = panel.onDidDispose(() => resolve(undefined))
 
                 if (params.commands) {
-                    const submit = async (response: S) => {
+                    const submit = async (response: SubmitFromOptions<Options>) => {
                         const result = await params.validateSubmit?.(response)
                         if (result) {
                             onDispose.dispose()
@@ -92,7 +100,7 @@ export function compileVueWebview<C extends Commands, E extends Events, D, S, O>
             })
         }
         constructor(private readonly context: ExtContext) {
-            const copyEmitters = {} as E
+            const copyEmitters = {} as Options['events']
             Object.keys(params.events ?? {}).forEach(k => {
                 Object.assign(copyEmitters, { [k]: new vscode.EventEmitter() })
             })
@@ -100,8 +108,6 @@ export function compileVueWebview<C extends Commands, E extends Events, D, S, O>
         }
     } as any
 }
-
-export type ProtocolFromWeview<W> = W extends VueWebview<any, any, any, any, any> ? W['protocol'] : never
 
 function createVueWebview(params: WebviewParams & { context: ExtContext }): vscode.WebviewPanel {
     const context = params.context.extensionContext

@@ -50,7 +50,7 @@ const VueWebview = compileVueWebview({
         getSamplePayload,
         loadSamLaunchConfig,
         saveLaunchConfig,
-        invokeLaunchConfig(config) {
+        invokeLaunchConfig(config: AwsSamDebuggerConfiguration) {
             return invokeLaunchConfig(config, this.context)
         },
     },

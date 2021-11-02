@@ -215,18 +215,22 @@ export class GitExtension {
         }
 
         const branches: GitTypes.Branch[] = []
+        const remotes = this.api.repositories
+            .map(repo => repo.state.remotes.filter(other => other.fetchUrl === remote.fetchUrl))
+            .reduce((a, b) => a.concat(b), [])
 
-        const repos = this.api.repositories.filter(
-            repo => repo.state.remotes.filter(other => other.fetchUrl === remote.fetchUrl).length > 0
-        )
-
-        repos.forEach(repo =>
+        this.api.repositories.forEach(repo =>
             branches.push(
                 ...repo.state.refs.filter(
-                    (ref: GitTypes.Ref) => ref.type === GitTypes.RefType.RemoteHead && !ref.name?.endsWith('HEAD')
+                    (ref: GitTypes.Ref) =>
+                        ref.type === GitTypes.RefType.RemoteHead &&
+                        !ref.name?.endsWith('HEAD') &&
+                        remotes.some(remote => remote.name === ref.remote)
                 )
             )
         )
+
+        getLogger().debug(`git: found ${branches.length} branches from local repositories`)
 
         // We'll be 'smart' and try to get branches directly if the user is using a URL not associated with
         // their current workspace. Currently no way to sort by the latest commited branch using 'ls-remote'

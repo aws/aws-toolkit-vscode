@@ -45,6 +45,8 @@ async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string
     return c
 }
 
+const DEFAULT_START_TIMEOUT_LENGTH = 120000
+
 export class MdeClient {
     private readonly log: logger.Logger
 
@@ -129,33 +131,82 @@ export class MdeClient {
     }
 
     /**
-     * Waits for the MDE environment to be available (and starts it if needed),
-     * creaes a new session, and returns the session when available.
+     * Waits for environment's devfile to finish successfully. A failure usually means we won't be able to connect, so best
+     * to abort early and notify the user that the environment failed. We then need to either restart or recreate the
+     * environment depending on the context.
      */
-    public async startSession(
+    public async waitForDevfile(
         args: Pick<MdeEnvironment, 'id'>,
-        window = Window.vscode()
-    ): Promise<MdeSession | undefined> {
-        const TIMEOUT_LENGTH = 120000
-        const timeout = new Timeout(TIMEOUT_LENGTH)
+        timeout: Timeout = new Timeout(60000)
+    ): Promise<mde.GetEnvironmentMetadataResponse> {
+        const poll = waitUntil(
+            async () => {
+                if (timeout.completed) {
+                    throw new Error('Timed out waiting for devfile')
+                }
+
+                const resp = await this.getEnvironmentMetadata({ environmentId: args.id })
+
+                if (resp?.status !== 'RUNNING') {
+                    throw new Error('Cannot wait for devfile to finish when environment is not running')
+                }
+
+                const devfile = resp?.actions?.devfile
+
+                if (devfile?.status === 'FAILED' && devfile.message) {
+                    throw new Error(`Devfile action failed: ${devfile.message}`)
+                }
+
+                return devfile?.status === 'SUCCESSFUL' ? resp : undefined
+            },
+            { interval: 5000, timeout: timeout.remainingTime, truthy: true }
+        )
+
+        const mdeEnv = await poll
+        if (!mdeEnv) {
+            throw new Error('Environment returned undefined')
+        }
+
+        return mdeEnv
+    }
+
+    /**
+     * Best-effort attempt to start an MDE given an ID, showing a progress notifcation with a cancel button
+     * TODO: may combine this progress stuff into some larger construct
+     *
+     * The cancel button does not abort the start, but rather alerts any callers that any operations that rely
+     * on the MDE starting should not progress.
+     *
+     * @returns the environment on success, undefined otherwise
+     */
+    public async startEnvironmentWithProgress(
+        args: Pick<MdeEnvironment, 'id' | 'status'>,
+        timeout: Timeout = new Timeout(DEFAULT_START_TIMEOUT_LENGTH)
+    ): Promise<MdeEnvironment | undefined> {
+        // 'debounce' in case caller did not check if the environment was already running
+        if (args.status === 'RUNNING') {
+            const resp = await this.getEnvironmentMetadata({ environmentId: args.id })
+            if (resp && resp.status === 'RUNNING') {
+                return resp
+            }
+        }
+
         const progress = await showMessageWithCancel(localize('AWS.mde.startMde.message', 'MDE'), timeout)
         progress.report({ message: localize('AWS.mde.startMde.checking', 'checking status...') })
 
-        let startErr: Error
         const pollMde = waitUntil(
             async () => {
-                // Technically this will continue to be called until it reaches its
-                // own timeout, need a better way to 'cancel' a `waitUntil`.
+                // technically this will continue to be called until it reaches its own timeout, need a better way to 'cancel' a `waitUntil`
                 if (timeout.completed) {
                     return
                 }
 
-                const mdeMeta = await this.getEnvironmentMetadata({ environmentId: args.id })
+                const resp = await this.getEnvironmentMetadata({ environmentId: args.id })
 
-                if (mdeMeta?.status === 'STOPPED') {
+                if (resp?.status === 'STOPPED') {
                     progress.report({ message: localize('AWS.mde.startMde.stopStart', 'resuming environment...') })
                     await this.startEnvironment({ environmentId: args.id })
-                } else if (mdeMeta?.status === 'STOPPING') {
+                } else if (resp?.status === 'STOPPING') {
                     progress.report({
                         message: localize('AWS.mde.startMde.resuming', 'waiting for environment to stop...'),
                     })
@@ -165,52 +216,55 @@ export class MdeClient {
                     })
                 }
 
-                if (mdeMeta?.status !== 'RUNNING') {
-                    return undefined
-                }
-
-                try {
-                    const session = await this.call(
-                        this.sdkClient.startSession({
-                            environmentId: args.id,
-                            sessionConfiguration: {
-                                ssh: {},
-                            },
-                        })
-                    )
-                    return session
-                } catch (e) {
-                    startErr = e as Error
-                    return undefined
-                }
+                return resp?.status === 'RUNNING' ? resp : undefined
             },
-            { interval: 5000, timeout: TIMEOUT_LENGTH, truthy: true }
+            // note: the `waitUntil` will resolve prior to the real timeout if it is refreshed
+            { interval: 5000, timeout: timeout.remainingTime, truthy: true }
         )
 
-        const session = await waitTimeout(pollMde, timeout, {
-            onExpire: () => {
-                if (startErr) {
-                    showViewLogsMessage(
-                        localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', args.id),
-                        window
-                    )
-                } else {
-                    window.showErrorMessage(
-                        localize('AWS.mde.startFailed', 'Timeout waiting for MDE environment: {0}', args.id)
-                    )
-                }
-            },
+        return waitTimeout(pollMde, timeout, {
+            onExpire: () => (
+                Window.vscode().showErrorMessage(
+                    localize('AWS.mde.startFailed', 'Timeout waiting for MDE environment: {0}', args.id)
+                ),
+                undefined
+            ),
             onCancel: () => undefined,
         })
+    }
 
-        return !session
-            ? undefined
-            : {
-                  ...session,
-                  id: session.id,
-                  startedAt: new Date(),
-                  status: 'CONNECTED',
-              }
+    /**
+     * Waits for the MDE environment to be available (and starts it if needed),
+     * creaes a new session, and returns the session when available.
+     */
+    public async startSession(args: Pick<MdeEnvironment, 'id'>): Promise<MdeSession | undefined> {
+        const runningMde = await this.startEnvironmentWithProgress(args)
+
+        if (!runningMde) {
+            return
+        }
+
+        try {
+            const session = await this.call(
+                this.sdkClient.startSession({
+                    environmentId: runningMde.id,
+                    sessionConfiguration: {
+                        ssh: {},
+                    },
+                })
+            )
+
+            return {
+                ...session,
+                id: session.id,
+                startedAt: new Date(),
+                status: 'CONNECTED',
+            }
+        } catch (err) {
+            showViewLogsMessage(
+                localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', args.id)
+            )
+        }
     }
 
     public async deleteEnvironment(

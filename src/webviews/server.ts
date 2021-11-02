@@ -10,10 +10,11 @@ import { Message } from './client'
 
 interface Command<T extends any[] = any, R = any> {
     (...args: T): R | never
+    (this: WebviewServer, ...args: T): R | never
 }
 
 interface CommandWithOptions<T extends any[], R> extends CommandOptions {
-    command: (this: void, ...args: T) => R | never
+    command: ((...args: T) => R | never) | ((this: WebviewServer, ...args: T) => R | never)
 }
 
 /** Dummy class just in-case someone tries to do some weird things with the emitters. */
@@ -33,14 +34,14 @@ export interface Protocol<U = any, S = any> {
 }
 
 export interface Commands {
-    [key: string]: Command<any, any> | undefined | CommandWithOptions<any, any>
+    [key: string]: Command<any, any> | CommandWithOptions<any, any> | undefined
 }
 
 export interface Events {
     [key: string]: vscode.EventEmitter<any>
 }
 
-export interface WebviewCompileOptions<C extends Commands, E extends Events, D = any, S = any, O = any> {
+export interface WebviewCompileOptions<C extends Commands = any, E extends Events = any, D = any, S = any, O = any> {
     /**
      * Events emitters provided by the backend. Note that whatever is passed into this option is
      * only used for type and key generation. Do not assume the same reference will exist on instantiation.
@@ -56,12 +57,19 @@ export interface WebviewCompileOptions<C extends Commands, E extends Events, D =
      * ```
      * Merged with {@link WebviewServer}
      */
-    commands?: C & ThisType<WebviewServer & { emitters: E } & { arguments: D }>
+    commands?: C
     /** Validates the input from `show` is correct. Used to infer the type returned by `init`. */
     validateData?: (data?: D) => Promise<boolean> | boolean
     /** Validates the output from `submit` is correct. Used to infer the type returned by `show`. */
     validateSubmit?: (result: S) => Promise<O> | O
 }
+
+export type CompileContext<T> = T extends WebviewCompileOptions<any, infer E, infer D>
+    ? ThisType<WebviewServer & { emitters: E } & { arguments: D }>
+    : never
+export type SubmitFromOptions<O> = O extends WebviewCompileOptions<any, any, any, infer S> ? S : never
+export type DataFromOptions<O> = O extends WebviewCompileOptions<any, any, infer D> ? D : never
+export type OutputFromOptions<O> = O extends WebviewCompileOptions<any, any, any, any, infer O> ? O : never
 
 export type OptionsToProtocol<O> = O extends WebviewCompileOptions<infer C, infer E, infer D, infer S>
     ? {

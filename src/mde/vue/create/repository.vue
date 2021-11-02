@@ -46,7 +46,7 @@ export const VueModel = createClass({
     error: '',
     branch: '',
 })
-const BRANCH_DEBOUNCE_TIME = 1000
+const BRANCH_DEBOUNCE_TIME = 500
 
 const client = WebviewClientFactory.create<MdeCreateWebview>()
 const VALID_SCHEMES = ['https://', 'http://', 'ssh://']
@@ -101,16 +101,17 @@ export default defineComponent({
                     if (branches.length === 0) {
                         if (this.url.match(/^([\w]+@|ssh:\/\/)/)) {
                             // TODO: we can just test if it's running
-                            this.update(
+                            return this.update(
                                 'error',
                                 'Failed to connect. Check if your SSH agent is running and the correct keys are added.'
                             )
                         } else {
-                            this.update('error', 'No branches found')
+                            return this.update('error', 'No branches found')
                         }
                     } else if (!this.modelValue.branch || !branches.includes(this.modelValue.branch)) {
                         this.update('branch', branches[0])
                     }
+                    this.update('error', '')
                 })
             }, BRANCH_DEBOUNCE_TIME)
         },
@@ -120,7 +121,10 @@ export default defineComponent({
     },
     methods: {
         update(key: keyof InstanceType<typeof VueModel>, value: string) {
-            this.$emit('update:modelValue', { ...this.modelValue, [key]: value })
+            // TODO: need a better way to emit updates from objects
+            // this works but not a big fan
+            this.modelValue[key] = value
+            this.$emit('update:modelValue', { ...this.modelValue })
         },
     },
 })

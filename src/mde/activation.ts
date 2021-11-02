@@ -8,7 +8,7 @@ import { ExtContext } from '../shared/extensions'
 import { MdeDevfileCodeLensProvider } from '../shared/codelens/devfileCodeLensProvider'
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
 import { localize } from '../shared/utilities/messages'
-import { mdeConnectCommand, mdeCreateCommand, mdeDeleteCommand, tagMde, resumeEnvironments } from './mdeCommands'
+import { mdeConnectCommand, mdeDeleteCommand, tagMde, resumeEnvironments } from './mdeCommands'
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
@@ -21,6 +21,7 @@ import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentCli
 import { MDE_RESTART_KEY } from './constants'
 import { initStatusBar } from './mdeStatusBarItem'
 import { getMdeEnvArn } from '../shared/vscode/env'
+import { createMdeWebview } from './vue/create/backend'
 
 /**
  * Activates MDE functionality.
@@ -99,8 +100,26 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
         })
     )
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.mde.create', async (treenode: MdeRootNode) => {
-            mdeCreateCommand(treenode, undefined, ctx)
+        vscode.commands.registerCommand('aws.mde.create', async (treenode?: MdeRootNode) => {
+            getLogger().debug('MDE: mdeCreateCommand called on node: %O', treenode)
+
+            try {
+                const env = await createMdeWebview(ctx)
+
+                if (!env) {
+                    getLogger().error('MDE: user cancelled create environment')
+                    return
+                }
+
+                await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', treenode)
+
+                // TODO: MDE telemetry
+            } catch (e) {
+                getLogger().error('MDE: create failed: %O', e)
+                // TODO: MDE telemetry
+            } finally {
+                // TODO: MDE telemetry
+            }
         })
     )
     ctx.extensionContext.subscriptions.push(

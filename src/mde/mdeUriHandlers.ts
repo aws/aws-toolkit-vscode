@@ -9,10 +9,10 @@ const MDE_URI_PATH = '/remote' as const
 import { EnvironmentId } from '../../types/clientmde'
 import * as vscode from 'vscode'
 import { ParsedUrlQuery } from 'querystring'
-import { mdeConnectCommand, mdeCreateCommand, startMde } from './mdeCommands'
+import { mdeConnectCommand } from './mdeCommands'
 import { UriHandler } from '../shared/vscode/uriHandler'
-import { MdeClient, mdeEndpoint, MDE_REGION } from '../shared/clients/mdeClient'
 import { ExtContext } from '../shared/extensions'
+import { createMdeWebview } from './vue/create/backend'
 
 interface MdeUriParams {
     /** If no ID is provided, a new MDE is created */
@@ -45,22 +45,16 @@ export function parseMdeUriParams(query: ParsedUrlQuery): MdeUriParams {
 export async function handleMdeUriParams(this: ExtContext, params: MdeUriParams): Promise<void> {
     // TODO: get region from URI params.
     const region = 'us-west-2'
-    const mdeClient = await MdeClient.create(region, mdeEndpoint())
+
     if (params.id === undefined) {
         const repo = params.cloneUrl ? { url: params.cloneUrl.toString(), branch: params.branch } : undefined
-        const newMde = await mdeCreateCommand(undefined, { repo }, this)
-        // mde create command swallows the exception
+        const newMde = await createMdeWebview(this, repo)
+
         if (newMde === undefined) {
             return
         }
         params.id = newMde.id
+    } else {
+        await mdeConnectCommand({ id: params.id }, region)
     }
-
-    const mde = await startMde(params as { id: EnvironmentId }, mdeClient)
-
-    if (mde === undefined) {
-        return
-    }
-
-    return mdeConnectCommand(mde, MDE_REGION)
 }
