@@ -204,7 +204,7 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator" />
-        <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager" />
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudformation.toolwindow.CloudFormationToolWindow" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
 
@@ -214,6 +214,12 @@ with what features/services are supported.
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
+
+        <toolWindow id="aws.cloudformation" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
+                    factoryClass="software.aws.toolkits.jetbrains.services.cloudformation.toolwindow.CloudFormationToolWindowFactory" icon="AwsIcons.Logos.CLOUD_FORMATION_TOOL"/>
+
+        <toolWindow id="aws.cloudwatchlogs" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
+                    factoryClass="software.aws.toolkits.jetbrains.services.cloudwatch.logs.toolwindow.CloudWatchLogsToolWindowFactory" icon="AwsIcons.Resources.CloudWatch.LOGS_TOOL_WINDOW"/>
 
         <toolWindow id="aws.sqs" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
                     factoryClass="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindowFactory" icon="AwsIcons.Resources.Sqs.SQS_TOOL_WINDOW"/>

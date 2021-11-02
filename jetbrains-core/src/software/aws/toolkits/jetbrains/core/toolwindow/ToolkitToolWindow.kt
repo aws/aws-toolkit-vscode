@@ -4,135 +4,95 @@
 package software.aws.toolkits.jetbrains.core.toolwindow
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.wm.ToolWindow
-import com.intellij.openapi.wm.ToolWindowAnchor
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
-import com.intellij.ui.content.impl.ContentImpl
-import icons.AwsIcons
-import java.util.concurrent.ConcurrentHashMap
-import javax.swing.Icon
 import javax.swing.JComponent
 
 interface ToolkitToolWindow {
+    val project: Project
+    val toolWindowId: String
+
+    fun toolWindow() = ToolWindowManager.getInstance(project).getToolWindow(toolWindowId)
+        ?: throw IllegalStateException("Can't find tool window $toolWindowId")
+
+    /**
+     * Adds a new tab to the tool window
+     *
+     * @param title Title of the tab
+     * @param component The JComponent of the tab's content. If [Disposable] will be auto disposed on close
+     * @param activate Show the tab upon adding it
+     * @param id Unique ID to identify the tab
+     * @param additionalDisposable An additional [Disposable] to dispose when the tab is closed
+     */
     fun addTab(
         title: String,
         component: JComponent,
         activate: Boolean = false,
         id: String = title,
-        disposable: Disposable? = null,
-        refresh: () -> Unit = { }
-    ): ToolkitToolWindowTab
+        additionalDisposable: Disposable? = null
+    ): Content {
+        val toolWindow = toolWindow()
+        val contentManager = toolWindow.contentManager
+        val content = contentManager.factory.createContent(component, title, false).also {
+            it.isCloseable = true
+            it.isPinnable = true
+            it.putUserData(AWS_TOOLKIT_TAB_ID_KEY, id)
 
-    fun find(id: String): ToolkitToolWindowTab?
-
-    // prefix is prefix of the id. Assumes the window is using id composed of paths, like: "loggroup/logstream"
-    fun findPrefix(prefix: String): List<ToolkitToolWindowTab>
-}
-
-interface ToolkitToolWindowTab : Disposable {
-    val name: String
-    fun show(refresh: Boolean = false)
-}
-
-class ToolkitToolWindowManager(private val project: Project) : Disposable {
-    private val toolWindows = ConcurrentHashMap<ToolkitToolWindowType, ManagedToolkitToolWindow>()
-    internal fun getInstance(type: ToolkitToolWindowType) = toolWindows.computeIfAbsent(type) { ManagedToolkitToolWindow(type) }
-
-    inner class ManagedToolkitToolWindow(private val type: ToolkitToolWindowType) : ToolkitToolWindow {
-        private val tabs = mutableMapOf<String, ManagedToolkitToolWindowTab>()
-
-        override fun addTab(
-            title: String,
-            component: JComponent,
-            activate: Boolean,
-            id: String,
-            disposable: Disposable?,
-            refresh: () -> Unit
-        ): ToolkitToolWindowTab {
-            val content = ContentImpl(component, title, true)
-            val toolWindow = windowManager.getToolWindow(type.id)
-                ?: windowManager.registerToolWindow(type.id, true, type.anchor, this@ToolkitToolWindowManager, true).also {
-                    it.setIcon(type.icon)
-                    it.stripeTitle = type.title
-                }
-            Disposer.register(content, Disposable { closeWindowIfEmpty(toolWindow, type.id) })
-            disposable?.let { Disposer.register(content, it) }
-            toolWindow.contentManager.addContent(content)
-            return ManagedToolkitToolWindowTab(toolWindow, content, refresh).also {
-                tabs[id] = it
-                if (activate) {
-                    it.show()
-                }
+            if (additionalDisposable != null) {
+                it.setDisposer(additionalDisposable)
             }
         }
 
-        override fun find(id: String): ToolkitToolWindowTab? {
-            val tab = tabs[id] ?: return null
-            if (Disposer.isDisposed(tab.content)) {
-                tabs.remove(id)
-                return null
-            }
-            return tab
+        contentManager.addContent(content)
+        if (activate) {
+            show(content)
         }
 
-        override fun findPrefix(prefix: String): List<ToolkitToolWindowTab> = tabs
-            .filter { it.key.startsWith("$prefix/") || it.key == prefix }
-            .mapNotNull {
-                if (Disposer.isDisposed(it.value.content)) {
-                    tabs.remove(it.key)
-                    null
-                } else {
-                    it.value
-                }
-            }
+        return content
     }
 
-    class ManagedToolkitToolWindowTab(private val toolWindow: ToolWindow, internal val content: Content, private val refresh: () -> Unit) :
-        ToolkitToolWindowTab {
-        override val name: String = content.displayName
+    fun removeContent(content: Content) = runInEdt {
+        val toolWindow = toolWindow()
+        toolWindow.contentManager.removeContent(content, true)
+    }
 
-        override fun show(refresh: Boolean) {
+    fun show(content: Content) {
+        val toolWindow = toolWindow()
+        toolWindow.activate(null, true)
+        toolWindow.contentManager.setSelectedContent(content)
+    }
+
+    fun showExistingContent(id: String): Boolean {
+        val toolWindow = toolWindow()
+
+        val content = find(id)
+        if (content != null) {
             toolWindow.activate(null, true)
             toolWindow.contentManager.setSelectedContent(content)
-            if (refresh) {
-                refresh()
-            }
+
+            return true
         }
 
-        override fun dispose() {
-            if (!Disposer.isDisposed(content)) {
-                toolWindow.contentManager.removeContent(content, true)
-            }
-        }
+        return false
     }
 
-    private val windowManager
-        get() = ToolWindowManager.getInstance(project)
+    fun find(id: String): Content? =
+        toolWindow().contentManager.contents.find { id == it.getUserData(AWS_TOOLKIT_TAB_ID_KEY) }
 
-    private fun closeWindowIfEmpty(window: ToolWindow, id: String) {
-        if (window.contentManager.contentCount == 0) {
-            windowManager.unregisterToolWindow(id)
+    // prefix is prefix of the id. Assumes the window is using id composed of paths, like: "loggroup/logstream"
+    fun findPrefix(prefix: String): List<Content> {
+        val toolWindow = toolWindow()
+
+        return toolWindow.contentManager.contents.filter {
+            val key = it.getUserData(AWS_TOOLKIT_TAB_ID_KEY) ?: ""
+            key.startsWith("$prefix/") || key == prefix
         }
-    }
-
-    override fun dispose() {
     }
 
     companion object {
-        fun getInstance(project: Project, toolWindowType: ToolkitToolWindowType): ToolkitToolWindow = ServiceManager.getService(
-            project,
-            ToolkitToolWindowManager::class.java
-        ).getInstance(toolWindowType)
+        private val AWS_TOOLKIT_TAB_ID_KEY = Key.create<String>("awsToolkitTabId")
     }
 }
-
-data class ToolkitToolWindowType(
-    val id: String,
-    val title: String,
-    val icon: Icon = AwsIcons.Logos.AWS,
-    val anchor: ToolWindowAnchor = ToolWindowAnchor.BOTTOM
-)

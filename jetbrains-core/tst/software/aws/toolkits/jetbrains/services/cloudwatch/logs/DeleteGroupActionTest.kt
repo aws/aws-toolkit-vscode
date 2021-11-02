@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
+import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -19,8 +21,8 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsRe
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.DeleteGroupAction
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.toolwindow.CloudWatchLogsToolWindowFactory
 import java.util.function.Consumer
 import javax.swing.JPanel
 
@@ -38,6 +40,8 @@ class DeleteGroupActionTest {
 
     @Before
     fun setupMocks() {
+        (ToolWindowManager.getInstance(projectRule.project) as ToolWindowHeadlessManagerImpl)
+            .doRegisterToolWindow(CloudWatchLogsToolWindowFactory.TOOLWINDOW_ID)
         cloudwatchmock = mockClientManager.create()
     }
 
@@ -54,18 +58,18 @@ class DeleteGroupActionTest {
         whenever(cloudwatchmock.describeLogStreams(Mockito.any<DescribeLogStreamsRequest>()))
             .thenReturn(DescribeLogStreamsResponse.builder().logStreams(stream).build())
         val mockNode = CloudWatchLogsNode(projectRule.project, "arn", "name")
-        val toolWindowManager = ToolkitToolWindowManager.getInstance(projectRule.project, CloudWatchLogWindow.CW_LOGS_TOOL_WINDOW)
-        toolWindowManager.addTab("test", JPanel(), true, "name")
-        toolWindowManager.addTab("test", JPanel(), true, "name/eman")
-        toolWindowManager.addTab("test", JPanel(), true, "name2")
-        assertThat(toolWindowManager.findPrefix("name").size).isEqualTo(2)
+        val toolWindow = CloudWatchLogWindow.getInstance(projectRule.project)
+        toolWindow.addTab("test", JPanel(), true, "name")
+        toolWindow.addTab("test", JPanel(), true, "name/eman")
+        toolWindow.addTab("test", JPanel(), true, "name2")
+        assertThat(toolWindow.findPrefix("name").size).isEqualTo(2)
         val delete = DeleteGroupAction()
         delete.performDelete(mockNode)
         // retryable because removing windows is done asynchronously
         retryableAssert {
-            assertThat(toolWindowManager.find("name")).isNull()
-            assertThat(toolWindowManager.find("name/eman")).isNull()
-            assertThat(toolWindowManager.findPrefix("name2").size).isEqualTo(1)
+            assertThat(toolWindow.find("name")).isNull()
+            assertThat(toolWindow.find("name/eman")).isNull()
+            assertThat(toolWindow.findPrefix("name2").size).isEqualTo(1)
         }
     }
 

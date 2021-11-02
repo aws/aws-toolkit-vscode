@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.services.apprunner.actions
 
 import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
+import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndGet
@@ -28,14 +30,14 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindow
-import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.services.apprunner.AppRunnerServiceNode
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.toolwindow.CloudWatchLogsToolWindowFactory
 import software.aws.toolkits.resources.message
 
 class ViewLogsActionTest {
-    @JvmField
     @Rule
+    @JvmField
     val projectRule = ProjectRule()
 
     @Rule
@@ -47,20 +49,22 @@ class ViewLogsActionTest {
     val mockClientManagerRule = MockClientManagerRule()
 
     private lateinit var node: AppRunnerServiceNode
-    private lateinit var toolWindowManager: ToolkitToolWindow
+    private lateinit var toolWindow: ToolkitToolWindow
 
     @Before
     fun setup() {
-        toolWindowManager = ToolkitToolWindowManager.getInstance(projectRule.project, CloudWatchLogWindow.CW_LOGS_TOOL_WINDOW)
+        (ToolWindowManager.getInstance(projectRule.project) as ToolWindowHeadlessManagerImpl)
+            .doRegisterToolWindow(CloudWatchLogsToolWindowFactory.TOOLWINDOW_ID)
+        toolWindow = CloudWatchLogWindow.getInstance(projectRule.project)
         node = AppRunnerServiceNode(projectRule.project, ServiceSummary.builder().serviceName(aString()).serviceId(aString()).build())
     }
 
     @After
     fun cleanup() {
         // close tabs we created
-        toolWindowManager.findPrefix("").forEach {
-            runInEdtAndWait {
-                it.dispose()
+        runInEdtAndWait {
+            toolWindow.findPrefix("").forEach {
+                toolWindow.removeContent(it)
             }
         }
     }
@@ -77,10 +81,11 @@ class ViewLogsActionTest {
 
         val windows = runInEdtAndGet {
             viewLogGroup(node, "service")
-            toolWindowManager.findPrefix("")
+            toolWindow.findPrefix("")
         }
+
         assertThat(windows.size).isEqualTo(1)
-        assertThat(windows.first().name).isEqualTo(message("cloudwatch.logs.log_group_title", "service"))
+        assertThat(windows.first().displayName).isEqualTo(message("cloudwatch.logs.log_group_title", "service"))
     }
 
     @Test
