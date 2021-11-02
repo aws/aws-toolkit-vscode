@@ -5,10 +5,10 @@
 
 import * as assert from 'assert'
 import { Iot } from 'aws-sdk'
-import { attachCertificateCommand, certGen } from '../../../iot/commands/attachCertificate'
+import { attachCertificateCommand, CertGen } from '../../../iot/commands/attachCertificate'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
-import { IotClient, IotCertificate } from '../../../shared/clients/iotClient'
+import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
@@ -24,16 +24,14 @@ describe('attachCertCommand', function () {
     let window: FakeWindow
     let selection: number = 0
 
-    const prompt: (iot: IotClient, certFetch: certGen, window?: Window) => Promise<PromptResult<IotCertificate>> =
+    const prompt: (iot: IotClient, certFetch: CertGen, window?: Window) => Promise<PromptResult<Iot.Certificate>> =
         async (iot, certFetch) => {
             const iterable = certFetch(iot, window)
-            const responses: DataQuickPickItem<IotCertificate>[] = []
+            const responses: DataQuickPickItem<Iot.Certificate>[] = []
             for await (const response of iterable) {
                 responses.push(...response)
             }
-            return new Promise((resolve, reject) => {
-                resolve(selection > -1 ? (responses[selection].data as IotCertificate) : undefined)
-            })
+            return selection > -1 ? (responses[selection].data as Iot.Certificate) : undefined
         }
 
     beforeEach(function () {

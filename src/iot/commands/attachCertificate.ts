@@ -12,14 +12,11 @@ import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../shared/ui/prompter'
-import { IotClient, IotCertificate } from '../../shared/clients/iotClient'
+import { IotClient } from '../../shared/clients/iotClient'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { Iot } from 'aws-sdk'
 
-export type certGen = (
-    iot: IotClient,
-    window?: Window
-) => AsyncGenerator<DataQuickPickItem<IotCertificate>[], void, unknown>
+export type CertGen = typeof getCertList
 
 /**
  * Attaches a certificate to the thing represented by the given node.
@@ -45,14 +42,17 @@ export async function attachCertificateCommand(
     }
     getLogger().info('Picker returned: %O', cert)
     try {
-        await node.iot.attachThingPrincipal({ thingName, principal: cert.arn })
+        await node.iot.attachThingPrincipal({ thingName, principal: cert.certificateArn! })
     } catch (e) {
-        getLogger().error(`Failed to attach certificate ${cert.id}: %O`, e)
-        showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to attach certificate {0}', cert.id), window)
+        getLogger().error(`Failed to attach certificate ${cert.certificateId}: %O`, e)
+        showViewLogsMessage(
+            localize('AWS.iot.attachCert.error', 'Failed to attach certificate {0}', cert.certificateId),
+            window
+        )
         return undefined
     }
 
-    getLogger().debug('Attached certificate %O', cert.id)
+    getLogger().debug('Attached certificate %O', cert.certificateId)
 
     //Refresh the Thing node
     await node.refreshNode(commands)
@@ -63,10 +63,10 @@ export async function attachCertificateCommand(
  */
 async function promptForCert(
     iot: IotClient,
-    certFetch: certGen,
+    certFetch: CertGen,
     window?: Window
-): Promise<PromptResult<IotCertificate>> {
-    const placeHolder: DataQuickPickItem<IotCertificate> = {
+): Promise<PromptResult<Iot.Certificate>> {
+    const placeHolder: DataQuickPickItem<Iot.Certificate> = {
         label: 'No certificates found',
         data: undefined,
     }
@@ -100,14 +100,6 @@ async function* getCertList(iot: IotClient, window?: Window) {
             showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to retrieve certificates'), window)
             return
         }
-        yield filteredCerts.map(cert => ({
-            label: cert.certificateId!,
-            data: {
-                arn: cert.certificateArn!,
-                id: cert.certificateId!,
-                activeStatus: cert.status!,
-                creationDate: cert.creationDate!,
-            },
-        }))
+        yield filteredCerts.map(cert => ({ label: cert.certificateId!, data: cert }))
     } while (marker != undefined)
 }

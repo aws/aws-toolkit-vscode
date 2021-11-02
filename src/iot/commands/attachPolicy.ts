@@ -16,10 +16,7 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 import { Iot } from 'aws-sdk'
 
-export type policyGen = (
-    iot: IotClient,
-    window?: Window
-) => AsyncGenerator<DataQuickPickItem<Iot.Policy>[], void, unknown>
+export type PolicyGen = typeof getPolicyList
 
 /**
  * Attaches a policy to the certificate represented by the given node.
@@ -66,7 +63,7 @@ export async function attachPolicyCommand(
  */
 async function promptForPolicy(
     iot: IotClient,
-    policyFetch: policyGen,
+    policyFetch: PolicyGen,
     window?: Window
 ): Promise<PromptResult<Iot.Policy>> {
     const placeHolder: DataQuickPickItem<Iot.Policy> = {
