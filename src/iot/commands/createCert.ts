@@ -94,7 +94,8 @@ export async function createCertificateCommand(
         showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'), window)
     }
 
-    await refreshNode(node, commands)
+    //Refresh the Certificate Folder node
+    await node.refreshNode(commands)
 }
 
 async function promptForSaveLocation(window: Window): Promise<vscode.Uri | undefined> {
@@ -115,9 +116,4 @@ async function promptForSaveLocation(window: Window): Promise<vscode.Uri | undef
         return undefined
     }
     return saveLocation
-}
-
-async function refreshNode(node: IotCertsFolderNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
 }

@@ -48,11 +48,6 @@ export async function createPolicyVersionCommand(
         return
     }
 
-    await refreshNode(node, commands)
-}
-
-async function refreshNode(node: IotPolicyWithVersionsNode, commands: Commands): Promise<void> {
-    const parent = node.parent
-    parent.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', parent)
+    //Refresh the Policy folder node so that this node's children are cleared
+    await node.parent.refreshNode(commands)
 }

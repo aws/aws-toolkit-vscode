@@ -20,6 +20,7 @@ import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { IotThingFolderNode } from './iotThingFolderNode'
 import { IotThingCertNode } from './iotCertificateNode'
+import { Commands } from '../../shared/vscode/commands'
 
 /**
  * Represents an IoT Thing that may have attached certificates.
@@ -101,6 +102,11 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
 
     public get name(): string {
         return this.thing.name
+    }
+
+    public async refreshNode(commands: Commands): Promise<void> {
+        this.clearChildren()
+        return commands.execute('aws.refreshAwsExplorerNode', this)
     }
 
     public [inspect.custom](): string {

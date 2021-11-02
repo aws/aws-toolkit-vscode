@@ -19,6 +19,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { Commands } from '../../shared/vscode/commands'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -105,5 +106,9 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
             key => this.versionNodes.get(key)!.update(versions.get(key)!),
             key => new IotPolicyVersionNode(this.policy, versions.get(key)!, false, this, this.iot)
         )
+    }
+
+    public async refreshNode(commands: Commands): Promise<void> {
+        return commands.execute('aws.refreshAwsExplorerNode', this)
     }
 }

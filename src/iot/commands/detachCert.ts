@@ -10,7 +10,6 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { IotThingCertNode } from '../explorer/iotCertificateNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
-import { IotThingNode } from '../explorer/iotThingNode'
 
 /**
  * Detaches a certificate from an IoT Thing.
@@ -58,10 +57,6 @@ export async function detachThingCertCommand(
         showViewLogsMessage(localize('AWS.iot.detachCert.error', 'Failed to detach {0}', node.certificate.id), window)
     }
 
-    await refreshNode(node.parent, commands)
-}
-
-async function refreshNode(node: IotThingNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    //Refresh the parent Thing node
+    await node.parent.refreshNode(commands)
 }

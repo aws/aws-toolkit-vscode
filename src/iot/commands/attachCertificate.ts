@@ -54,7 +54,8 @@ export async function attachCertificateCommand(
 
     getLogger().debug('Attached certificate %O', cert.id)
 
-    await refreshNode(node, commands)
+    //Refresh the Thing node
+    await node.refreshNode(commands)
 }
 
 /**
@@ -109,9 +110,4 @@ async function* getCertList(iot: IotClient, window?: Window) {
             },
         }))
     } while (marker != undefined)
-}
-
-async function refreshNode(node: IotThingNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
 }

@@ -49,7 +49,8 @@ export async function createPolicyCommand(
         return
     }
 
-    await refreshNode(node, commands)
+    //Refresh the Policy Folder node
+    await node.refreshNode(commands)
 }
 
 export async function promptForPolicyLocation(window: Window): Promise<vscode.Uri | undefined> {
@@ -65,9 +66,4 @@ export async function promptForPolicyLocation(window: Window): Promise<vscode.Ur
     }
 
     return fileLocation[0]
-}
-
-async function refreshNode(node: IotPolicyFolderNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
 }

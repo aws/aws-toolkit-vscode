@@ -45,10 +45,6 @@ export async function createThingCommand(
         showViewLogsMessage(localize('AWS.iot.createThing.error', 'Failed to create Thing: {0}', thingName), window)
     }
 
-    await refreshNode(node, commands)
-}
-
-async function refreshNode(node: IotThingFolderNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    //Refresh the Things Folder node
+    await node.refreshNode(commands)
 }

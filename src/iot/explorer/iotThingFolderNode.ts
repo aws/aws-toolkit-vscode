@@ -18,6 +18,7 @@ import { inspect } from 'util'
 import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
 import { IotNode } from './iotNodes'
+import { Commands } from '../../shared/vscode/commands'
 
 /**
  * Represents the group of all IoT Things.
@@ -75,6 +76,11 @@ export class IotThingFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
             newContinuationToken: response.nextToken ?? undefined,
             newChildren: [...newThings],
         }
+    }
+
+    public async refreshNode(commands: Commands): Promise<void> {
+        this.clearChildren()
+        return commands.execute('aws.refreshAwsExplorerNode', this)
     }
 
     public [inspect.custom](): string {

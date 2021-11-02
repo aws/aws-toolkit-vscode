@@ -8,7 +8,6 @@ import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
-import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
 
@@ -68,9 +67,6 @@ export async function deletePolicyVersionCommand(
         )
     }
 
-    await refreshNode(node.parent, commands)
-}
-
-async function refreshNode(node: IotPolicyWithVersionsNode, commands: Commands): Promise<void> {
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    //Refresh the policy node
+    node.parent.refreshNode(commands)
 }

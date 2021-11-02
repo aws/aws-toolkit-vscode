@@ -18,6 +18,7 @@ import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
 import { IotCertWithPoliciesNode } from './iotCertificateNode'
 import { IotNode } from './iotNodes'
+import { Commands } from '../../shared/vscode/commands'
 
 /**
  * Represents the group of all IoT Certificates.
@@ -85,6 +86,11 @@ export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
             newContinuationToken: response.nextMarker ?? undefined,
             newChildren: [...newCerts],
         }
+    }
+
+    public async refreshNode(commands: Commands): Promise<void> {
+        this.clearChildren()
+        return commands.execute('aws.refreshAwsExplorerNode', this)
     }
 
     public [inspect.custom](): string {

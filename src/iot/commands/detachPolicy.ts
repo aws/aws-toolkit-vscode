@@ -8,7 +8,6 @@ import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
-import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotPolicyCertNode } from '../explorer/iotPolicyNode'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
@@ -58,10 +57,6 @@ export async function detachPolicyCommand(
         showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach {0}', node.policy.name), window)
     }
 
-    await refreshNode(node.parent, commands)
-}
-
-async function refreshNode(node: IotCertWithPoliciesNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    //Refresh the parent certificate node
+    node.parent.refreshNode(commands)
 }

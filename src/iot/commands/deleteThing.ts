@@ -10,7 +10,6 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
-import { IotThingFolderNode } from '../explorer/iotThingFolderNode'
 
 /**
  * Deletes the thing represented by the given node.
@@ -64,10 +63,6 @@ export async function deleteThingCommand(
         )
     }
 
-    await refreshNode(node.parent, commands)
-}
-
-async function refreshNode(node: IotThingFolderNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    //Refresh the Things Folder node
+    node.parent.refreshNode(commands)
 }

@@ -10,7 +10,6 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
-import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
 
 /**
  * Deletes the policy represented by the given node.
@@ -78,10 +77,6 @@ export async function deletePolicyCommand(
         )
     }
 
-    await refreshNode(node.parent, commands)
-}
-
-async function refreshNode(node: IotPolicyFolderNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    //Refresh the Policy Folder node
+    await node.parent.refreshNode(commands)
 }

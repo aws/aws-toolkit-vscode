@@ -23,6 +23,7 @@ import { IotCertsFolderNode } from './iotCertFolderNode'
 import { IotThingNode } from './iotThingNode'
 import { IotPolicyCertNode } from './iotPolicyNode'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
+import { Commands } from '../../shared/vscode/commands'
 
 const CONTEXT_BASE = 'awsIotCertificateNode'
 /**
@@ -142,6 +143,11 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
             newContinuationToken: response.nextMarker ?? undefined,
             newChildren: [...newPolicies],
         }
+    }
+
+    public async refreshNode(commands: Commands): Promise<void> {
+        this.clearChildren()
+        return commands.execute('aws.refreshAwsExplorerNode', this)
     }
 
     private getMaxItemsPerPage(): number | undefined {

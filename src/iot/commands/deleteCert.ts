@@ -10,7 +10,6 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
-import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 
 /**
  * Deletes the certificate represented by the given node.
@@ -116,10 +115,6 @@ export async function deleteCertCommand(
         )
     }
 
-    await refreshNode(node.parent, commands)
-}
-
-async function refreshNode(node: IotCertsFolderNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    //Refresh the Certificate Folder node
+    await node.parent.refreshNode(commands)
 }

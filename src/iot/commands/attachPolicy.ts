@@ -57,7 +57,8 @@ export async function attachPolicyCommand(
 
     getLogger().debug('Attached policy %O', policy.policyName)
 
-    await refreshNode(node, commands)
+    //Refresh the certificate node
+    await node.refreshNode(commands)
 }
 
 /**
@@ -101,9 +102,4 @@ async function* getPolicyList(iot: IotClient, window?: Window) {
         }
         yield filteredPolicies.map(policy => ({ label: policy.policyName!, data: policy }))
     } while (marker != undefined)
-}
-
-async function refreshNode(node: IotCertWithPoliciesNode, commands: Commands): Promise<void> {
-    node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
 }
