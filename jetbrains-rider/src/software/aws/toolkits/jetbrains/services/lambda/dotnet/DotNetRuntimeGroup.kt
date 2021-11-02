@@ -21,7 +21,6 @@ class DotNetRuntimeGroup : SdkBasedRuntimeGroup() {
         VbLanguage.id
     )
     override val supportedRuntimes = listOf(
-        LambdaRuntime.DOTNETCORE2_1,
         LambdaRuntime.DOTNETCORE3_1,
         LambdaRuntime.DOTNET5_0
     )

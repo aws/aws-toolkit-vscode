@@ -26,7 +26,6 @@ enum class LambdaRuntime(
     PYTHON3_7(Runtime.PYTHON3_7),
     PYTHON3_8(Runtime.PYTHON3_8),
     PYTHON3_9(Runtime.PYTHON3_9, minSamDebugging = "1.28.0", minSamInit = "1.28.0"),
-    DOTNETCORE2_1(Runtime.DOTNETCORE2_1),
     DOTNETCORE3_1(Runtime.DOTNETCORE3_1),
     DOTNET5_0(null, minSamInit = "1.16.0", runtimeOverride = "dotnet5.0");
 

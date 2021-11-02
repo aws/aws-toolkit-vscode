@@ -17,7 +17,7 @@ class DotNetStartupCommandAugmenterTest : AwsReuseSolutionTestBase() {
     override fun getSolutionDirectoryName() = "SamHelloWorldApp"
 
     companion object {
-        private const val DEFAULT_STARTUP_COMMAND = "dotnet /prog/netcoreapp2.1/ConsoleApp.dll"
+        private const val DEFAULT_STARTUP_COMMAND = "dotnet /prog/netcoreapp3.1/ConsoleApp.dll"
     }
 
     @Test
@@ -54,7 +54,7 @@ class DotNetStartupCommandAugmenterTest : AwsReuseSolutionTestBase() {
 
     @Test
     fun testAutomaticallyAugmentable_NoDotnetInCommand_Exception() {
-        val statement = "java /prog/netcoreapp2.1/ConsoleApp.dll"
+        val statement = "java /prog/netcoreapp3.1/ConsoleApp.dll"
         assertThatThrownBy { DotNetDebuggerSupport().automaticallyAugmentable(input = statement) }
             .isInstanceOf(RuntimeConfigurationException::class.java)
             .hasMessage(message("cloud_debug.run_configuration.dotnet.start_command.miss_runtime", "dotnet"))
@@ -62,7 +62,7 @@ class DotNetStartupCommandAugmenterTest : AwsReuseSolutionTestBase() {
 
     @Test
     fun testAutomaticallyAugmentable_LeadingSingleQuote_Exception() {
-        val statement = "'/path/to/dotnet' /prog/netcoreapp2.1/ConsoleApp.dll"
+        val statement = "'/path/to/dotnet' /prog/netcoreapp3.1/ConsoleApp.dll"
         assertThatThrownBy { DotNetDebuggerSupport().automaticallyAugmentable(input = statement) }
             .isInstanceOf(RuntimeConfigurationException::class.java)
             .hasMessage(message("cloud_debug.run_configuration.augment.single_quote"))
@@ -70,7 +70,7 @@ class DotNetStartupCommandAugmenterTest : AwsReuseSolutionTestBase() {
 
     @Test
     fun testAutomaticallyAugmentable_ValidCommand() {
-        val statement = "dotnet /prog/netcoreapp2.1/ConsoleApp.dll"
+        val statement = "dotnet /prog/netcoreapp3.1/ConsoleApp.dll"
         val isAugmented = DotNetDebuggerSupport().automaticallyAugmentable(input = statement)
         assertThat(isAugmented).isTrue()
     }

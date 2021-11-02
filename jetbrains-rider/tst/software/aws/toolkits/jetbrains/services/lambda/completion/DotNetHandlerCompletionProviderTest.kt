@@ -17,7 +17,6 @@ class DotNetHandlerCompletionProviderTest : AwsReuseSolutionTestBase() {
 
     @DataProvider(name = "handlerCompletionSupportedData")
     fun handlerCompletionSupportData() = arrayOf(
-        arrayOf("DotNet21", LambdaRuntime.DOTNETCORE2_1),
         arrayOf("DotNet31", LambdaRuntime.DOTNETCORE3_1)
     )
 
