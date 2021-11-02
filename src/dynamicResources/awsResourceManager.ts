@@ -91,6 +91,7 @@ export class AwsResourceManager {
             getLogger().debug(`resourceManager: closing ${uri}`)
 
             if (!isEditorClosed) {
+                // grab focus back to the desired document before closing the active editor
                 await vscode.window.showTextDocument(uri)
                 await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
             }
