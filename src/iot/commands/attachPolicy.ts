@@ -11,10 +11,15 @@ import { Window } from '../../shared/vscode/window'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../shared/ui/prompter'
-import { IotPolicy } from '../../shared/clients/iotClient'
+import { IotClient } from '../../shared/clients/iotClient'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 import { Iot } from 'aws-sdk'
+
+export type policyGen = (
+    iot: IotClient,
+    window?: Window
+) => AsyncGenerator<DataQuickPickItem<Iot.Policy>[], void, unknown>
 
 /**
  * Attaches a policy to the certificate represented by the given node.
@@ -33,64 +38,69 @@ export async function attachPolicyCommand(
 
     const certArn = node.certificate.arn
 
-    let nextToken: string | undefined = undefined
-    let policies: IotPolicy[] = []
-    do {
-        try {
-            const policyResponse: Iot.ListPoliciesResponse = await node.iot.listPolicies({ marker: nextToken })
-            nextToken = policyResponse.nextMarker
-
-            const newPolicies =
-                policyResponse.policies
-                    ?.filter(policy => policy.policyArn && policy.policyName)
-                    .map(policy => ({ arn: policy.policyArn!, name: policy.policyName! })) ?? []
-
-            policies = policies.concat(newPolicies)
-        } catch (e) {
-            getLogger().error(`Failed to retrieve policies: %O`, e)
-            showViewLogsMessage(localize('AWS.iot.attachPolicy.error', 'Failed to retrieve policies'), window)
-            return undefined
-        }
-    } while (nextToken != undefined)
-
-    const policyItems: DataQuickPickItem<IotPolicy>[] = policies.map(policy => {
-        return {
-            label: policy.name,
-            data: policy,
-        }
-    })
-
-    const result = await promptFun(policyItems)
-    if (!isValidResponse(result)) {
+    const policy = await promptFun(node.iot, getPolicyList, window)
+    if (!isValidResponse(policy)) {
         getLogger().info('No policy chosen')
         return undefined
     }
-    getLogger().info('Picker returned: %O', result)
-    const policy = result
+    getLogger().info('Picker returned: %O', policy)
     try {
-        await node.iot.attachPolicy({ policyName: policy.name, target: certArn })
+        await node.iot.attachPolicy({ policyName: policy.policyName!, target: certArn })
     } catch (e) {
-        getLogger().error(`Failed to attach policy ${policy.name}: %O`, e)
-        showViewLogsMessage(localize('AWS.iot.attachCert.error', 'Failed to attach policy {0}', policy.name), window)
+        getLogger().error(`Failed to attach policy ${policy.policyName}: %O`, e)
+        showViewLogsMessage(
+            localize('AWS.iot.attachCert.error', 'Failed to attach policy {0}', policy.policyName),
+            window
+        )
         return undefined
     }
 
-    getLogger().debug('Attached policy %O', policy.name)
+    getLogger().debug('Attached policy %O', policy.policyName)
 
     await refreshNode(node, commands)
 }
 
-async function promptForPolicy(policyItems: DataQuickPickItem<IotPolicy>[]): Promise<PromptResult<IotPolicy>> {
-    const placeHolder: DataQuickPickItem<IotPolicy> = {
+/**
+ * Prompts the user to pick a policy to attach.
+ */
+async function promptForPolicy(
+    iot: IotClient,
+    policyFetch: policyGen,
+    window?: Window
+): Promise<PromptResult<Iot.Policy>> {
+    const placeHolder: DataQuickPickItem<Iot.Policy> = {
         label: 'No policies found',
         data: undefined,
     }
-    const picker = createQuickPick(policyItems, {
+    const picker = createQuickPick(policyFetch(iot, window), {
         title: localize('AWS.iot.attachPolicy', 'Select a policy'),
         noItemsFoundItem: placeHolder,
         buttons: [vscode.QuickInputButtons.Back],
     })
     return picker.prompt()
+}
+
+/**
+ * Async generator function to get the list of policies when creating a quick pick.
+ */
+async function* getPolicyList(iot: IotClient, window?: Window) {
+    let marker: string | undefined = undefined
+    let filteredPolicies: Iot.Policy[]
+    do {
+        try {
+            const policyResponse: Iot.ListPoliciesResponse = await iot.listPolicies({ marker })
+            marker = policyResponse.nextMarker
+
+            /* The policy name and arn should always be defined when using the
+             * above API, but we filter here anyway for when we use ! later. */
+            filteredPolicies = policyResponse.policies?.filter(policy => policy.policyArn && policy.policyName) ?? []
+        } catch (e) {
+            getLogger().error(`Failed to retrieve policies: %O`, e)
+            showViewLogsMessage(localize('AWS.iot.attachPolicy.error', 'Failed to retrieve policies'), window)
+            return
+        }
+        yield filteredPolicies.map(policy => ({ label: policy.policyName!, data: policy }))
+    } while (marker != undefined)
 }
 
 async function refreshNode(node: IotCertWithPoliciesNode, commands: Commands): Promise<void> {

@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Iot } from 'aws-sdk'
-import { attachCertificateCommand } from '../../../iot/commands/attachCertificate'
+import { attachCertificateCommand, certGen } from '../../../iot/commands/attachCertificate'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotClient, IotCertificate } from '../../../shared/clients/iotClient'
@@ -14,6 +14,7 @@ import { anything, mock, instance, when, deepEqual, verify } from '../../utiliti
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../../shared/ui/prompter'
+import { Window } from '../../../shared/vscode/window'
 
 describe('attachCertCommand', function () {
     const thingName = 'iot-thing'
@@ -22,13 +23,18 @@ describe('attachCertCommand', function () {
     let thingNode: IotThingNode
     let window: FakeWindow
     let selection: number = 0
-    const prompt: (
-        certItems: DataQuickPickItem<IotCertificate | undefined>[]
-    ) => Promise<PromptResult<IotCertificate | undefined>> = certItems => {
-        return new Promise((resolve, reject) => {
-            resolve(selection > -1 ? (certItems[selection].data as IotCertificate) : undefined)
-        })
-    }
+
+    const prompt: (iot: IotClient, certFetch: certGen, window?: Window) => Promise<PromptResult<IotCertificate>> =
+        async (iot, certFetch) => {
+            const iterable = certFetch(iot, window)
+            const responses: DataQuickPickItem<IotCertificate>[] = []
+            for await (const response of iterable) {
+                responses.push(...response)
+            }
+            return new Promise((resolve, reject) => {
+                resolve(selection > -1 ? (responses[selection].data as IotCertificate) : undefined)
+            })
+        }
 
     beforeEach(function () {
         iot = mock()
@@ -56,6 +62,7 @@ describe('attachCertCommand', function () {
     it('shows an error message if certificates are not fetched', async function () {
         when(iot.listCertificates(anything())).thenReject(new Error('Expected failure'))
 
+        selection = -1
         const commands = new FakeCommands()
         await attachCertificateCommand(thingNode, prompt, window, commands)
 

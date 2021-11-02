@@ -5,15 +5,16 @@
 
 import * as assert from 'assert'
 import { Iot } from 'aws-sdk'
-import { attachPolicyCommand } from '../../../iot/commands/attachPolicy'
+import { attachPolicyCommand, policyGen } from '../../../iot/commands/attachPolicy'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
 import { IotCertWithPoliciesNode } from '../../../iot/explorer/iotCertificateNode'
-import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
+import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../../shared/ui/prompter'
+import { Window } from '../../../shared/vscode/window'
 
 describe('attachPolicyCommand', function () {
     const certId = 'iot-certificate'
@@ -22,11 +23,17 @@ describe('attachPolicyCommand', function () {
     let certNode: IotCertWithPoliciesNode
     let window: FakeWindow
     let selection: number = 0
-    const prompt: (policyItems: DataQuickPickItem<IotPolicy>[]) => Promise<PromptResult<IotPolicy>> = policyItems => {
-        return new Promise((resolve, reject) => {
-            resolve(selection > -1 ? (policyItems[selection].data as IotPolicy) : undefined)
-        })
-    }
+    const prompt: (iot: IotClient, policyFetch: policyGen, window?: Window) => Promise<PromptResult<Iot.Policy>> =
+        async (iot, policyFetch) => {
+            const iterable = policyFetch(iot, window)
+            const responses: DataQuickPickItem<Iot.Policy>[] = []
+            for await (const response of iterable) {
+                responses.push(...response)
+            }
+            return new Promise((resolve, reject) => {
+                resolve(selection > -1 ? (responses[selection].data as Iot.Policy) : undefined)
+            })
+        }
 
     beforeEach(function () {
         iot = mock()
@@ -57,6 +64,7 @@ describe('attachPolicyCommand', function () {
     it('shows an error message if policies are not fetched', async function () {
         when(iot.listPolicies(anything())).thenReject(new Error('Expected failure'))
 
+        selection = -1
         const commands = new FakeCommands()
         await attachPolicyCommand(certNode, prompt, window, commands)
 
