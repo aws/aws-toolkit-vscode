@@ -70,7 +70,6 @@ class CloudWatchLogGroup(
         val locationCrumbs = LocationCrumbs(project, logGroup)
         locationInformation.crumbs = locationCrumbs.crumbs
         breadcrumbHolder.border = locationCrumbs.border
-        locationInformation.installClickListener()
 
         Disposer.register(this, groupTable)
         tablePanel.setContent(groupTable.component)

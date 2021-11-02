@@ -20,7 +20,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LocationCrumbs
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.installClickListener
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
@@ -71,7 +70,6 @@ class DetailedLogRecord(
                 val locationCrumbs = LocationCrumbs(project, extractLogGroup(logGroup), logStream)
                 locationInformation.crumbs = locationCrumbs.crumbs
                 breadcrumbHolder.border = locationCrumbs.border
-                locationInformation.installClickListener()
                 locationInformation.isVisible = true
             }
         }

@@ -71,7 +71,6 @@ class CloudWatchLogStream(
         val locationCrumbs = LocationCrumbs(project, logGroup, logStream)
         locationInformation.crumbs = locationCrumbs.crumbs
         breadcrumbHolder.border = locationCrumbs.border
-        locationInformation.installClickListener()
 
         addActionToolbar()
         addSearchListener()

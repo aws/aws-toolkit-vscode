@@ -9,7 +9,6 @@ import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import com.intellij.ui.ClickListener
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SideBorder
 import com.intellij.ui.components.breadcrumbs.Breadcrumbs
@@ -20,26 +19,22 @@ import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
-import java.awt.event.MouseEvent
 import javax.swing.AbstractAction
 import javax.swing.border.Border
 
 class LocationBreadcrumbs : Breadcrumbs() {
-    // getAttributes is similar to PsiBreadcrumbs.java with a modification to not style if there are no actions
+    init {
+        onSelect { crumb, event ->
+            crumb.contextActions.firstOrNull()?.actionPerformed(ActionEvent(event, ActionEvent.ACTION_PERFORMED, ""))
+        }
+    }
+
     override fun getAttributes(crumb: Crumb): TextAttributes? = getKey(crumb)?.let { EditorColorsManager.getInstance().globalScheme.getAttributes(it) }
 
-    private fun getKey(crumb: Crumb): TextAttributesKey? = if (crumb.contextActions.isEmpty()) {
-        EditorColors.BREADCRUMBS_DEFAULT
-    } else if (isHovered(crumb)) {
+    private fun getKey(crumb: Crumb): TextAttributesKey? = if (isHovered(crumb) && crumb.contextActions.isNotEmpty()) {
         EditorColors.BREADCRUMBS_HOVERED
-    } else if (isSelected(crumb) && crumb.contextActions.isNotEmpty()) {
-        EditorColors.BREADCRUMBS_CURRENT
     } else {
-        if (isAfterSelected(crumb)) {
-            EditorColors.BREADCRUMBS_INACTIVE
-        } else {
-            EditorColors.BREADCRUMBS_DEFAULT
-        }
+        EditorColors.BREADCRUMBS_DEFAULT
     }
 }
 
@@ -74,16 +69,4 @@ class LocationCrumbs(project: Project, logGroup: String, logStream: String? = nu
             )
         }
     )
-}
-
-// A click listener that fires the first registered action when it is clicked on
-fun Breadcrumbs.installClickListener() {
-    object : ClickListener() {
-        override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
-            val crumb = getCrumbAt(event.x, event.y) ?: return false
-            val action = crumb.contextActions.firstOrNull() ?: return false
-            action.actionPerformed(ActionEvent(event, ActionEvent.ACTION_PERFORMED, ""))
-            return true
-        }
-    }.installOn(this)
 }
