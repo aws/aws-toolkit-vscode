@@ -85,13 +85,15 @@ export class AwsResourceManager {
         }
     }
 
-    public async close(uri: vscode.Uri): Promise<void> {
+    public async close(uri: vscode.Uri, isEditorClosed?: boolean): Promise<void> {
         const path = uri.toString()
         if (this.openResources.has(path)) {
             getLogger().debug(`resourceManager: closing ${uri}`)
 
-            await vscode.window.showTextDocument(uri)
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            if (!isEditorClosed) {
+                await vscode.window.showTextDocument(uri)
+                await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            }
 
             if (uri.scheme === 'file') {
                 remove(uri.fsPath)
