@@ -3,6 +3,7 @@
 package software.aws.toolkits.jetbrains.services.s3.editor
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.ex.FileTypeChooser
@@ -16,12 +17,10 @@ import com.intellij.ui.TreeTableSpeedSearch
 import com.intellij.ui.treeStructure.treetable.TreeTable
 import com.intellij.util.containers.Convertor
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.s3.objectActions.uploadObjects
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -47,7 +46,6 @@ class S3TreeTable(
     private val project: Project
 ) : TreeTable(treeTableModel) {
     private val coroutineScope = projectCoroutineScope(project)
-    private val edt = getCoroutineUiContext()
 
     private val dropTargetListener = object : DropTargetAdapter() {
         override fun drop(dropEvent: DropTargetDropEvent) {
@@ -110,16 +108,18 @@ class S3TreeTable(
             fileWrapper.virtualFile?.isWritable = true
         }
 
+        val modality = ModalityState.stateForComponent(this)
+
         coroutineScope.launch {
             try {
                 bucket.download(project, objectNode.key, objectNode.versionId, fileWrapper.file.outputStream())
-                withContext(edt) {
+                runInEdt(modality) {
                     // If the file type is not associated, prompt user to associate. Returns null on cancel
                     fileWrapper.virtualFile?.let {
                         ApplicationManager.getApplication().runWriteAction {
                             it.isWritable = false
                         }
-                        FileTypeChooser.getKnownFileTypeOrAssociate(it, project) ?: return@withContext
+                        FileTypeChooser.getKnownFileTypeOrAssociate(it, project) ?: return@runInEdt
                         // set virtual file to read only
                         FileEditorManager.getInstance(project).openFile(it, true, true).ifEmpty {
                             notifyError(project = project, content = message("s3.open.viewer.failed.unsupported"))
