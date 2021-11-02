@@ -354,9 +354,21 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):config:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):stored-query/(?<StoredQueryName>[^/:]+)/(?<StoredQueryId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-config-storedquery.html"
   },
+  "AWS::Connect::HoursOfOperation" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-connect-hoursofoperation.html"
+  },
   "AWS::Connect::QuickConnect" : {
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-connect-quickconnect.html"
+  },
+  "AWS::Connect::User" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-connect-user.html"
+  },
+  "AWS::Connect::UserHierarchyGroup" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-connect-userhierarchygroup.html"
   },
   "AWS::CustomerProfiles::Domain" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -474,6 +486,10 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-globaltable.html"
   },
+  "AWS::EC2::CapacityReservationFleet" : {
+    "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-capacityreservationfleet.html"
+  },
   "AWS::EC2::CarrierGateway" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):carrier-gateway/(?<CarrierGatewayId>[^/:]+)",
@@ -539,10 +555,20 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):network-insights-path/(?<NetworkInsightsPathId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-networkinsightspath.html"
   },
+  "AWS::EC2::NetworkInterface" : {
+    "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):network-interface/(?<NetworkInterfaceId>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-networkinterface.html"
+  },
   "AWS::EC2::PrefixList" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):prefix-list/(?<PrefixListId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-prefixlist.html"
+  },
+  "AWS::EC2::RouteTable" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):route-table/(?<RouteTableId>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-routetable.html"
   },
   "AWS::EC2::SpotFleet" : {
     "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
@@ -588,7 +614,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-transitgatewaymulticastgroupsource.html"
   },
   "AWS::EC2::TransitGatewayPeeringAttachment" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "operations" : [ "READ", "CREATE", "UPDATE", "LIST", "DELETE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-transitgatewaypeeringattachment.html"
   },
   "AWS::EC2::TransitGatewayVpcAttachment" : {
@@ -664,6 +690,11 @@
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):eks:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):addon/(?<ClusterName>[^/:]+)/(?<AddonName>[^/:]+)/(?<UUID>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-eks-addon.html"
+  },
+  "AWS::EKS::Cluster" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):eks:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):cluster/(?<ClusterName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-eks-cluster.html"
   },
   "AWS::EKS::FargateProfile" : {
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
@@ -968,6 +999,9 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):provisioningtemplate/(?<provisioningTemplate>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iot-provisioningtemplate.html"
   },
+  "AWS::IoT::ResourceSpecificLogging" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+  },
   "AWS::IoT::ScheduledAudit" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):scheduledaudit/(?<ScheduleName>[^/:]+)",
@@ -1132,6 +1166,10 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):license-manager::(?<AccountId>[0-9]{12}):license:(?<LicenseId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-licensemanager-license.html"
   },
+  "AWS::Lightsail::Database" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-database.html"
+  },
   "AWS::Lightsail::Disk" : {
     "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-disk.html"
@@ -1139,6 +1177,10 @@
   "AWS::Lightsail::Instance" : {
     "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-instance.html"
+  },
+  "AWS::Lightsail::StaticIp" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-staticip.html"
   },
   "AWS::Location::GeofenceCollection" : {
     "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
@@ -1251,6 +1293,21 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "LIST", "DELETE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-mediapackage-packaginggroup.html"
   },
+  "AWS::MemoryDB::ACL" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+  },
+  "AWS::MemoryDB::Cluster" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+  },
+  "AWS::MemoryDB::ParameterGroup" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+  },
+  "AWS::MemoryDB::SubnetGroup" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+  },
+  "AWS::MemoryDB::User" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+  },
   "AWS::NetworkFirewall::Firewall" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):network-firewall:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):firewall/(?<Name>[^/:]+)",
@@ -1325,6 +1382,18 @@
     "operations" : [ "CREATE", "DELETE", "UPDATE", "LIST", "READ" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opsworkscm-server.html"
   },
+  "AWS::Panorama::ApplicationInstance" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-panorama-applicationinstance.html"
+  },
+  "AWS::Panorama::Package" : {
+    "operations" : [ "CREATE", "READ", "LIST", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-panorama-package.html"
+  },
+  "AWS::Panorama::PackageVersion" : {
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-panorama-packageversion.html"
+  },
   "AWS::QLDB::Stream" : {
     "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):qldb:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):stream/(?<LedgerName>[^/:]+)/(?<StreamId>[^/:]+)",
@@ -1381,6 +1450,10 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):redshift:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):cluster:(?<ClusterName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-redshift-cluster.html"
+  },
+  "AWS::Rekognition::Project" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rekognition-project.html"
   },
   "AWS::ResourceGroups::Group" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -1472,6 +1545,10 @@
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53resolver-firewallrulegroupassociation.html"
   },
+  "AWS::Route53Resolver::ResolverConfig" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53resolver-resolverconfig.html"
+  },
   "AWS::Route53Resolver::ResolverDNSSECConfig" : {
     "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53resolver-resolverdnssecconfig.html"
@@ -1483,6 +1560,11 @@
   "AWS::Route53Resolver::ResolverQueryLoggingConfigAssociation" : {
     "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53resolver-resolverqueryloggingconfigassociation.html"
+  },
+  "AWS::Route53Resolver::ResolverRule" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):route53resolver:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):resolver-rule/(?<ResourceId>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53resolver-resolverrule.html"
   },
   "AWS::S3::AccessPoint" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
