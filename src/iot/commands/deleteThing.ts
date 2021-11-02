@@ -42,25 +42,26 @@ export async function deleteThingCommand(
 
     getLogger().info(`Deleting thing ${thingName}`)
     try {
-        const principalList = (await node.iot.listThingPrincipals({ thingName: thingName })).principals
+        const principalList = (await node.iot.listThingPrincipals({ thingName })).principals
         if (principalList?.length ?? 0 > 0) {
             getLogger().error(`Thing ${thingName} has attached principals: %O`, principalList)
-            showViewLogsMessage(
-                localize('AWS.iot.deleteThing.error', 'Failed to delete Thing {0}', node.thing.name),
-                window
+            window.showErrorMessage(
+                localize(
+                    'AWS.iot.deleteThing.error',
+                    'Cannot delete Thing {0}. Thing {0} has attached principals: {1}',
+                    thingName,
+                    principalList?.join(', ')
+                )
             )
             return undefined
         }
-        await node.iot.deleteThing({ thingName: thingName })
+        await node.iot.deleteThing({ thingName })
 
         getLogger().info(`Successfully deleted Thing ${thingName}`)
-        window.showInformationMessage(localize('AWS.iot.deleteThing.success', 'Deleted Thing {0}', node.thing.name))
+        window.showInformationMessage(localize('AWS.iot.deleteThing.success', 'Deleted Thing {0}', thingName))
     } catch (e) {
         getLogger().error(`Failed to delete Thing ${thingName}: %O`, e)
-        showViewLogsMessage(
-            localize('AWS.iot.deleteThing.error', 'Failed to delete Thing {0}', node.thing.name),
-            window
-        )
+        showViewLogsMessage(localize('AWS.iot.deleteThing.error', 'Failed to delete Thing {0}', thingName), window)
     }
 
     //Refresh the Things Folder node

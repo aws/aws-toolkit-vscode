@@ -53,7 +53,7 @@ describe('deleteCertCommand', function () {
         const commands = new FakeCommands()
         await deleteCertCommand(node, window, commands)
 
-        assert.ok(window.message.error?.includes('Certificate has attached iot-thing'))
+        assert.ok(window.message.error?.includes('Certificate has attached resources: iot-thing'))
 
         assert.strictEqual(commands.command, undefined)
     })

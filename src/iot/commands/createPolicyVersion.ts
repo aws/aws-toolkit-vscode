@@ -33,10 +33,10 @@ export async function createPolicyVersionCommand(
     try {
         const data = await fs.readFile(fileLocation.fsPath)
         //Parse to ensure this is a valid JSON
-        const policyDocument = JSON.parse(data.toString())
+        const policyJSON = JSON.parse(data.toString())
         await node.iot.createPolicyVersion({
-            policyName: policyName,
-            policyDocument: JSON.stringify(policyDocument),
+            policyName,
+            policyDocument: JSON.stringify(policyJSON),
             setAsDefault: true,
         })
     } catch (e) {

@@ -48,13 +48,13 @@ export async function detachThingCertCommand(
 
     getLogger().info(`Detaching certificate ${certId}`)
     try {
-        await node.iot.detachThingPrincipal({ thingName: thingName, principal: certArn })
+        await node.iot.detachThingPrincipal({ thingName, principal: certArn })
 
         getLogger().info(`Successfully detached certificate from Thing ${thingName}`)
-        window.showInformationMessage(localize('AWS.iot.detachCert.success', 'Detached {0}', node.certificate.id))
+        window.showInformationMessage(localize('AWS.iot.detachCert.success', 'Detached {0}', certId))
     } catch (e) {
         getLogger().error(`Failed to detach certificate ${certId}: %O`, e)
-        showViewLogsMessage(localize('AWS.iot.detachCert.error', 'Failed to detach {0}', node.certificate.id), window)
+        showViewLogsMessage(localize('AWS.iot.detachCert.error', 'Failed to detach {0}', certId), window)
     }
 
     //Refresh the parent Thing node

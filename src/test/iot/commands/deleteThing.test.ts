@@ -47,7 +47,7 @@ describe('deleteThingCommand', function () {
         const commands = new FakeCommands()
         await deleteThingCommand(node, window, commands)
 
-        assert.ok(window.message.error?.includes('Failed to delete Thing iot-thing'))
+        assert.ok(window.message.error?.includes('Cannot delete Thing iot-thing'))
 
         assert.strictEqual(commands.command, undefined)
     })

@@ -43,12 +43,16 @@ export async function deletePolicyCommand(
 
     getLogger().info(`Deleting policy ${policyName}`)
     try {
-        const certs = await node.iot.listPolicyTargets({ policyName: policyName })
+        const certs = await node.iot.listPolicyTargets({ policyName })
         if (certs.length > 0) {
             getLogger().error(`Policy ${policyName} has attached Certificates`)
-            showViewLogsMessage(
-                localize('AWS.iot.deletePolicy.attachedError', 'Policy has attached {0}', certs.toString()),
-                window
+            window.showErrorMessage(
+                localize(
+                    'AWS.iot.deletePolicy.attachedError',
+                    'Cannot delete {0}. Policy has attached certificates: {1}',
+                    policyName,
+                    certs.join(', ')
+                )
             )
             return
         }
@@ -59,13 +63,12 @@ export async function deletePolicyCommand(
         }
         if (numVersions != 1) {
             getLogger().error(`Policy ${policyName} has non-default versions`)
-            showViewLogsMessage(
-                localize('AWS.iot.deletePolicy.versionError', 'Policy has non-default versions'),
-                window
+            window.showErrorMessage(
+                localize('AWS.iot.deletePolicy.versionError', 'Policy {0} has non-default versions', policyName)
             )
             return
         }
-        await node.iot.deletePolicy({ policyName: policyName })
+        await node.iot.deletePolicy({ policyName })
 
         getLogger().info(`Successfully deleted Policy ${policyName}`)
         window.showInformationMessage(localize('AWS.iot.deletePolicy.success', 'Deleted Policy {0}', node.policy.name))

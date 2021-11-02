@@ -55,17 +55,31 @@ export async function createCertificateCommand(
 
     if (certExists) {
         getLogger().error('Certificate path {0} already exists', certPath)
-        showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'), window)
+        window.showErrorMessage(
+            localize('AWS.iot.createCert.error', 'Failed to create certificate. Path {0} already exists.', certPath)
+        )
         return undefined
     }
     if (privateKeyExists) {
         getLogger().error('Key path {0} already exists', privateKeyPath)
-        showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'), window)
+        window.showErrorMessage(
+            localize(
+                'AWS.iot.createCert.error',
+                'Failed to create certificate. Path {0} already exists.',
+                privateKeyPath
+            )
+        )
         return undefined
     }
     if (publicKeyExists) {
         getLogger().error('Key path {0} already exists', publicKeyPath)
-        showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'), window)
+        window.showErrorMessage(
+            localize(
+                'AWS.iot.createCert.error',
+                'Failed to create certificate. Path {0} already exists.',
+                publicKeyPath
+            )
+        )
         return undefined
     }
 
@@ -79,7 +93,7 @@ export async function createCertificateCommand(
         const publicKey = certificate.keyPair?.PublicKey
 
         if (!certPem || !privateKey || !publicKey) {
-            getLogger().error('Could not download certificate')
+            getLogger().error('Could not download certificate. Certificate is missing either the PEM or key pair.')
             showViewLogsMessage(localize('AWS.iot.createCert.error', 'Failed to create certificate'), window)
             return undefined
         }

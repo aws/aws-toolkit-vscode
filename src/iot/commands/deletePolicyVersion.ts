@@ -26,14 +26,14 @@ export async function deletePolicyVersionCommand(
     getLogger().debug('DeletePolicyVersion called for %O', node)
 
     const policyName = node.policy.name
-    const versionId = node.version.versionId ?? ''
+    const policyVersionId = node.version.versionId!
 
     const isConfirmed = await showConfirmationMessage(
         {
             prompt: localize(
                 'AWS.iot.deletePolicyVersion.prompt',
                 'Are you sure you want to delete Version {0} of Policy {1}?',
-                versionId,
+                policyVersionId,
                 policyName
             ),
             confirm: localizedText.localizedDelete,
@@ -46,21 +46,26 @@ export async function deletePolicyVersionCommand(
         return
     }
 
-    getLogger().info(`Deleting version ${versionId} of policy ${policyName}`)
+    getLogger().info(`Deleting version ${policyVersionId} of policy ${policyName}`)
     try {
-        await node.iot.deletePolicyVersion({ policyName: policyName, policyVersionId: versionId })
+        await node.iot.deletePolicyVersion({ policyName, policyVersionId })
 
-        getLogger().info(`Successfully deleted Policy Version ${versionId}`)
+        getLogger().info(`Successfully deleted Policy Version ${policyVersionId}`)
         window.showInformationMessage(
-            localize('AWS.iot.deletePolicyVersion.success', 'Deleted Version {0} of Policy {1}', versionId, policyName)
+            localize(
+                'AWS.iot.deletePolicyVersion.success',
+                'Deleted Version {0} of Policy {1}',
+                policyVersionId,
+                policyName
+            )
         )
     } catch (e) {
-        getLogger().error(`Failed to delete Policy Version ${versionId}: %O`, e)
+        getLogger().error(`Failed to delete Policy Version ${policyVersionId}: %O`, e)
         showViewLogsMessage(
             localize(
                 'AWS.iot.deletePolicyVersion.error',
                 'Failed to delete Version {0} of Policy {1}',
-                versionId,
+                policyVersionId,
                 policyName
             ),
             window

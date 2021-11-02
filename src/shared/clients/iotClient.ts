@@ -253,8 +253,7 @@ export class DefaultIotClient {
     }
 
     /**
-     * Creates an X.509 certificate with a 2048 bit RSA keypair and saves them
-     * to the filesystem.
+     * Creates an X.509 certificate with a 2048 bit RSA keypair.
      *
      * @throws Error if there is an error calling IoT.
      */

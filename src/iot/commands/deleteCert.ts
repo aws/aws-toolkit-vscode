@@ -30,7 +30,7 @@ export async function deleteCertCommand(
 
     if (node.certificate.activeStatus === 'ACTIVE') {
         getLogger().error('Certificate is active')
-        showViewLogsMessage(localize('AWS.iot.deleteCert.activeError', 'Active certificates cannot be deleted'), window)
+        window.showErrorMessage(localize('AWS.iot.deleteCert.activeError', 'Active certificates cannot be deleted'))
         return
     }
 
@@ -38,9 +38,12 @@ export async function deleteCertCommand(
         const things = await node.iot.listThingsForCert({ principal: certArn })
         if (things.length > 0) {
             getLogger().error(`Certificate ${node.certificate.id} has attached Things`)
-            showViewLogsMessage(
-                localize('AWS.iot.deleteCert.attachedError', 'Certificate has attached {0}', things.toString()),
-                window
+            window.showErrorMessage(
+                localize(
+                    'AWS.iot.deleteCert.attachedError',
+                    'Cannot delete certificate. Certificate has attached resources: {0}',
+                    things.join(', ')
+                )
             )
             return
         }

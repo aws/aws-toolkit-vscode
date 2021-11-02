@@ -58,6 +58,8 @@ describe('deletePolicyCommand', function () {
         const commands = new FakeCommands()
         await deletePolicyCommand(node, window, commands)
 
+        assert.ok(window.message.error?.includes('Policy has attached certificates: cert'))
+
         verify(iot.deletePolicy(anything())).never()
     })
 

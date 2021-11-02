@@ -48,13 +48,13 @@ export async function detachPolicyCommand(
 
     getLogger().info(`Detaching certificate ${certId}`)
     try {
-        await node.iot.detachPolicy({ policyName: policyName, target: certArn })
+        await node.iot.detachPolicy({ policyName, target: certArn })
 
         getLogger().info(`Successfully detached policy ${policyName}`)
-        window.showInformationMessage(localize('AWS.iot.detachPolicy.success', 'Detached {0}', node.policy.name))
+        window.showInformationMessage(localize('AWS.iot.detachPolicy.success', 'Detached {0}', policyName))
     } catch (e) {
         getLogger().error(`Failed to detach certificate ${certId}: %O`, e)
-        showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach {0}', node.policy.name), window)
+        showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach {0}', policyName), window)
     }
 
     //Refresh the parent certificate node
