@@ -95,4 +95,23 @@ export class DefaultEcsClient {
     protected async createSdkClient(): Promise<ECS> {
         return await ext.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
     }
+
+    public async executeCommand(
+        cluster: string,
+        container: string,
+        task: string,
+        command: string
+    ): Promise<ECS.ExecuteCommandResponse> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.ExecuteCommandRequest = {
+            command: command,
+            interactive: true, // Required
+            task: task,
+            cluster: cluster,
+            container: container,
+        }
+
+        return await sdkClient.executeCommand(params).promise()
+    }
 }

@@ -25,6 +25,7 @@ export async function runCommandInContainer(
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
+    let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
 
     try {
         if (!(await verifyCliAndPlugin(window))) {
@@ -122,10 +123,28 @@ export async function runCommandInContainer(
             return
         }
 
-        await runCliCommandInEcsContainer(node, task, command, outputChannel)
+        const execCommand = await node.ecs.executeCommand(node.clusterArn, node.containerName, task, command)
+        const cp = await new ChildProcess(
+            true,
+            'session-manager-plugin',
+            undefined,
+            JSON.stringify(execCommand.session),
+            node.ecs.regionCode,
+            'StartSession'
+        ).run()
+        if (cp.exitCode !== 0) {
+            result = 'Failed'
+            showOutputMessage(cp.stderr, outputChannel)
+            throw cp.error
+        } else {
+            result = 'Succeeded'
+            showOutputMessage(cp.stdout, outputChannel)
+        }
     } catch (error) {
         getLogger().error('Failed to execute command in container, %O', error)
         showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
+    } finally {
+        recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })
     }
 }
 
@@ -184,37 +203,4 @@ async function getTaskItems(node: EcsContainerNode): Promise<vscode.QuickPickIte
             detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
         }
     })
-}
-
-async function runCliCommandInEcsContainer(
-    node: EcsContainerNode,
-    task: string,
-    command: string,
-    outputChannel: vscode.OutputChannel
-): Promise<void> {
-    const cmd = new ChildProcess(
-        true,
-        'aws',
-        undefined,
-        'ecs',
-        'execute-command',
-        '--cluster',
-        node.clusterArn,
-        '--task',
-        task,
-        '--container',
-        node.containerName,
-        '--command',
-        command,
-        '--interactive'
-    )
-    const processResponse = await cmd.run()
-    if (processResponse.exitCode !== 0) {
-        showOutputMessage(processResponse.stderr, outputChannel)
-        getLogger().error('ECS command failed: %O: %O', cmd, processResponse.stderr)
-        recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
-    } else {
-        showOutputMessage(processResponse.stdout, outputChannel)
-        recordEcsRunExecuteCommand({ result: 'Succeeded', ecsExecuteCommandType: 'command' })
-    }
 }

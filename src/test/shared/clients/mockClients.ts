@@ -377,34 +377,43 @@ export class MockEcsClient implements EcsClient {
     public readonly describeTasks: (cluster: string, tasks: string[]) => Promise<ECS.Task[]>
     public readonly updateService: (cluster: string, serviceName: string, enable: boolean) => Promise<void>
     public readonly describeServices: (cluster: string, services: string[]) => Promise<ECS.Service[]>
+    public readonly executeCommand: (
+        cluster: string,
+        container: string,
+        task: string,
+        command: string
+    ) => Promise<ECS.ExecuteCommandResponse>
 
     public constructor({
         regionCode = '',
-        listClusters = async () => ({ resource: [], nextToken: undefined }),
-        listServices = async () => ({ resource: [], nextToken: undefined }),
+        getClusters = async () => ({ resource: [], nextToken: undefined }),
+        getServices = async () => ({ resource: [], nextToken: undefined }),
         listContainerNames = async () => [],
         listTasks = async () => [],
         describeTasks = async () => [],
         updateService = async () => undefined,
         describeServices = async () => [],
+        executeCommand = async () => ({} as ECS.ExecuteCommandResponse),
     }: {
         regionCode?: string
-        listClusters?(): Promise<EcsResourceAndToken>
-        listServices?(): Promise<EcsResourceAndToken>
+        getClusters?(): Promise<EcsResourceAndToken>
+        getServices?(): Promise<EcsResourceAndToken>
         listContainerNames?(): Promise<string[]>
         listTasks?(): Promise<string[]>
         describeTasks?(): Promise<ECS.Task[]>
         updateService?(): Promise<void>
         describeServices?(): Promise<ECS.Service[]>
+        executeCommand?(): Promise<ECS.ExecuteCommandResponse>
     }) {
         this.regionCode = regionCode
-        this.getClusters = listClusters
-        this.getServices = listServices
+        this.getClusters = getClusters
+        this.getServices = getServices
         this.getContainerNames = listContainerNames
         this.listTasks = listTasks
         this.describeTasks = describeTasks
         this.updateService = updateService
         this.describeServices = describeServices
+        this.executeCommand = executeCommand
     }
 }
 
