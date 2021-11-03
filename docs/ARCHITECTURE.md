@@ -5,8 +5,9 @@ An overview of the architecture for various components within the Toolkit.
 ## Webviews
 
 The current implementation uses Vue 3 with Single File Components (SFCs) for modularity. Each webview
-is bundled into a single file and packaged into the toolkit at release time. Each component is able to
-act independently, however, they must respect the following principles:
+is bundled into a single file and packaged into the toolkit at release time. Vue applications may be composed
+of individual components in a parent/child heiracrchy. Each component is able to act independently within an
+application, however, they must respect the following principles:
 
 1. State can only be stored in a child component if it is not being used for two-way communication (via events)
 2. If there is two-way communication, store state in the parent
@@ -24,7 +25,8 @@ Running the extension in development mode (e.g. via the `Extension` launch task)
 
 ### Client/Server
 
-The VS Code API restricts our Webviews to a single `postMessage` function. To simplify developing Webviews, we use a basic client/server architecture to handle message passing between the view and the extension.
+The VS Code API restricts our Webviews to a single `postMessage` function. To simplify developing Webviews, we use a client/server architecture to handle message passing between the view and the extension. This does not mean that clients are restricted to 1 message = 1 response, rather, the frontend ("client")
+needs to send the first message.
 
 Webview (frontend) clients can be created via `WebviewClientFactory`. This generates a simple Proxy to send messages to the extension, mapping the function name to the command name. Unique IDs are also generated to stop requests from receiving extraneous responses. It is **highly** recommened to use the [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar) extension for syntax highlighting and type-checking when working with SFCs.
 
