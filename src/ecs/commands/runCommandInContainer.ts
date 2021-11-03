@@ -28,7 +28,7 @@ export async function runCommandInContainer(
     let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
 
     try {
-        if (!(await verifyCliAndPlugin(window))) {
+        if (!(await verifySsmPlugin(window))) {
             return
         }
 
@@ -148,18 +148,7 @@ export async function runCommandInContainer(
     }
 }
 
-async function verifyCliAndPlugin(window: Window): Promise<boolean> {
-    const verifyAwsCliResponse = await new ChildProcess(true, 'aws', undefined, '--version').run()
-    if (verifyAwsCliResponse.exitCode !== 0) {
-        const noCli = localize(
-            'AWS.command.ecs.runCommandInContainer.noCliFound',
-            'This feature requires the {0} CLI (aws) to be installed and available on your $PATH',
-            getIdeProperties().company
-        )
-        window.showErrorMessage(noCli)
-        return false
-    }
-
+async function verifySsmPlugin(window: Window): Promise<boolean> {
     const verifySsmPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
     if (verifySsmPluginResponse.exitCode !== 0) {
         window.showErrorMessage(
