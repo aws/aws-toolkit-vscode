@@ -496,7 +496,7 @@ async function requestLocalApi(
             getLogger().info('Local API is alive: %s', uri)
             return
         }
-        const msg = `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err}`
+        const msg = `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err.message}`
         getLogger('channel').error(msg)
         throw new Error(msg)
     })
