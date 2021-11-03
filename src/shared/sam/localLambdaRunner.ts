@@ -475,12 +475,14 @@ async function requestLocalApi(
             methods: [reqMethod],
             calculateDelay: obj => {
                 if (obj.error.response !== undefined) {
-                    getLogger().debug('Local API response: %s : %O', uri, JSON.stringify(obj.error.response))
+                    getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
                 }
                 if (obj.error.code === 'ETIMEDOUT') {
                     return 0
                 }
-                getLogger().debug(`Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error}`)
+                getLogger().debug(
+                    `Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error.message}`
+                )
                 return RETRY_DELAY
             },
         },
