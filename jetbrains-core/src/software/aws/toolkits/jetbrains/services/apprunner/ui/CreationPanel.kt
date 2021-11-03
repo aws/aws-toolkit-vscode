@@ -174,7 +174,7 @@ class CreationPanel(private val project: Project, ecrUri: String? = null) {
                 .apply { component.toolTipText = message("apprunner.creation.panel.start_command.repo.tooltip") }
                 .withErrorOnApplyIf(message("apprunner.creation.panel.start_command.missing")) { it.text.isBlank() }
                 .constraints(pushX, growX)
-        }
+        }.largeGapAfter()
     }
 
     val repoPanel = panel {
