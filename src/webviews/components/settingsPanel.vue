@@ -143,8 +143,11 @@ body.vscode-dark .collapse-button {
 body.vscode-light .collapse-button {
     background-image: url('/resources/light/expand-less.svg');
 }
-.collapse-button:checked {
+.collapse-button {
     transform: rotate(180deg);
+}
+.collapse-button:checked {
+    transform: rotate(90deg);
 }
 .settings-panel {
     background: var(--vscode-menu-background);
