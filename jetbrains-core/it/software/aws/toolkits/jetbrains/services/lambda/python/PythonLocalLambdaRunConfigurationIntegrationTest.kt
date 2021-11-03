@@ -6,6 +6,10 @@ package software.aws.toolkits.jetbrains.services.lambda.python
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFile
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +24,7 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.RuleUtils
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
@@ -53,6 +58,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
     private val input = RuleUtils.randomName()
+    private lateinit var lambdaClass: PsiFile
 
     @Before
     fun setUp() {
@@ -64,7 +70,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
             ""
         )
 
-        val psiClass = fixture.addFileToProject(
+        lambdaClass = fixture.addFileToProject(
             "src/hello_world/app.py",
             """
             import os
@@ -85,7 +91,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         )
 
         runInEdtAndWait {
-            fixture.openFileInEditor(psiClass.containingFile.virtualFile)
+            fixture.openFileInEditor(lambdaClass.virtualFile)
         }
 
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
@@ -152,6 +158,43 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
             .containsEntry("AWS_SECRET_ACCESS_KEY", mockCreds.secretAccessKey())
             // An empty AWS_SESSION_TOKEN is inserted by Samcli/the Lambda runtime as of 1.13.1
             .containsEntry("AWS_SESSION_TOKEN", "")
+    }
+
+    @Test
+    fun fileContentsAreSavedBeforeRunning() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
+        val randomString = aString()
+        runInEdtAndWait {
+            WriteCommandAction.runWriteCommandAction(projectRule.project) {
+                val document = FileDocumentManager.getInstance().getDocument(lambdaClass.virtualFile)!!
+                document.replaceString(
+                    0,
+                    document.textLength,
+                    """
+                    def print_string(event, context):
+                        return "$randomString"
+                    """.trimIndent()
+                )
+                PsiDocumentManager.getInstance(projectRule.project).commitDocument(document)
+            }
+        }
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.print_string",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId,
+        )
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(executeLambda.stdout)
+            .describedAs("Random string is printed")
+            .contains(randomString)
     }
 
     @Test

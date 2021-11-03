@@ -12,6 +12,7 @@ import com.intellij.execution.runners.AsyncProgramRunner
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.RunContentBuilder
 import com.intellij.execution.ui.RunContentDescriptor
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import org.slf4j.event.Level
@@ -68,6 +69,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
     override fun execute(environment: ExecutionEnvironment, state: RunProfileState): Promise<RunContentDescriptor?> {
         val runPromise = AsyncPromise<RunContentDescriptor?>()
+        FileDocumentManager.getInstance().saveAllDocuments()
         val runContentDescriptor = state.execute(environment.executor, this)?.let {
             RunContentBuilder(it, environment).showRunContent(environment.contentToReuse)
         }
