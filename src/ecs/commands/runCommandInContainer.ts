@@ -14,7 +14,6 @@ import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../shared/constants'
-import { getIdeProperties } from '../../shared/extensionUtilities'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { ext } from '../../shared/extensionGlobals'
 
