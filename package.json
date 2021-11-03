@@ -13,7 +13,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.42.0"
+        "vscode": "^1.44.2"
     },
     "icon": "resources/aws-icon-256x256.png",
     "bugs": {
@@ -510,8 +510,7 @@
                                             "options",
                                             "patch",
                                             "post",
-                                            "put",
-                                            ""
+                                            "put"
                                         ]
                                     },
                                     "payload": {
@@ -2056,60 +2055,110 @@
             {
                 "command": "aws.resources.copyIdentifier",
                 "title": "%AWS.command.resources.copyIdentifier%",
-                "category": "%AWS.title%"
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.openResourcePreview",
                 "title": "%AWS.generic.preview%",
                 "category": "%AWS.title%",
-                "icon": "$(open-preview)"
+                "icon": "$(open-preview)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.createResource",
                 "title": "%AWS.generic.create%",
                 "category": "%AWS.title%",
-                "icon": "$(add)"
+                "icon": "$(add)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.deleteResource",
                 "title": "%AWS.generic.promptDelete%",
-                "category": "%AWS.title%"
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.updateResource",
                 "title": "%AWS.generic.promptUpdate%",
                 "category": "%AWS.title%",
-                "icon": "$(pencil)"
+                "icon": "$(pencil)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.updateResourceInline",
                 "title": "%AWS.generic.promptUpdate%",
                 "category": "%AWS.title%",
-                "icon": "$(pencil)"
+                "icon": "$(pencil)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.saveResource",
                 "title": "%AWS.generic.save%",
                 "category": "%AWS.title%",
-                "icon": "$(save)"
+                "icon": "$(save)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.closeResource",
                 "title": "%AWS.generic.close%",
                 "category": "%AWS.title%",
-                "icon": "$(close)"
+                "icon": "$(close)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.viewDocs",
                 "title": "%AWS.generic.viewDocs%",
                 "category": "%AWS.title%",
-                "icon": "$(book)"
+                "icon": "$(book)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.resources.configure",
                 "title": "%AWS.command.resources.configure%",
                 "category": "%AWS.title%",
-                "icon": "$(gear)"
+                "icon": "$(gear)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.apprunner.createService",
@@ -2398,13 +2447,12 @@
         "@types/mocha": "^9.0.0",
         "@types/node": "^10.14.22",
         "@types/readline-sync": "^1.4.3",
-        "@types/request": "^2.47.1",
         "@types/semver": "^7.3.6",
-        "@types/sinon": "^10.0.0",
+        "@types/sinon": "^10.0.5",
         "@types/sinonjs__fake-timers": "^6.0.3",
         "@types/tcp-port-used": "^1.0.0",
         "@types/uuid": "^8.3.1",
-        "@types/vscode": "1.42.0",
+        "@types/vscode": "1.44.0",
         "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^4.33.0",
@@ -2434,14 +2482,14 @@
         "sinon": "^11.1.2",
         "source-map-support": "^0.5.19",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^10.3.0",
+        "ts-node": "^10.4.0",
         "umd-compat-loader": "^2.1.2",
         "vsce": "^1.99.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.5.2",
         "vue-loader": "^16.8.1",
         "vue-style-loader": "^4.1.3",
-        "webpack": "^5.59.0",
+        "webpack": "^5.59.1",
         "webpack-cli": "^4.9.1"
     },
     "dependencies": {
@@ -2449,7 +2497,7 @@
         "@aws-sdk/client-sso-oidc": "^3.16.0",
         "@aws-sdk/credential-provider-ini": "^3.36.1",
         "@aws-sdk/credential-provider-process": "^3.15.0",
-        "@aws-sdk/credential-provider-sso": "^3.16.0",
+        "@aws-sdk/credential-provider-sso": "^3.38.0",
         "@aws-sdk/util-arn-parser": "^3.37.0",
         "adm-zip": "^0.5.9",
         "amazon-states-language-service": "^1.6.4",
@@ -2460,6 +2508,7 @@
         "cross-spawn": "^7.0.3",
         "fast-json-patch": "^3.1.0",
         "fs-extra": "^10.0.0",
+        "got": "^11.8.2",
         "immutable": "^4.0.0",
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.0.0",
@@ -2467,7 +2516,6 @@
         "mime-types": "^2.1.32",
         "moment": "^2.29.1",
         "portfinder": "^1.0.25",
-        "request": "^2.88.0",
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",

@@ -4,15 +4,24 @@
  */
 
 import * as assert from 'assert'
+import { Credentials } from 'aws-sdk'
 import { EcsCredentialsProvider } from '../../../credentials/providers/ecsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
 describe('EcsCredentialsProvider', function () {
     const dummyUri = 'dummyUri'
     const dummyRegion = 'dummmyRegion'
-
-    const credentialsProvider = new EcsCredentialsProvider()
+    const dummyCredentials = { accessKeyId: 'dummyKey' } as Credentials
+    const dummyProvider = () => {
+        return Promise.resolve(dummyCredentials)
+    }
     const env = process.env as EnvironmentVariables
+
+    let credentialsProvider: EcsCredentialsProvider
+
+    beforeEach(function () {
+        credentialsProvider = new EcsCredentialsProvider(dummyProvider)
+    })
 
     afterEach(function () {
         delete env.AWS_CONTAINER_CREDENTIALS_FULL_URI
@@ -36,10 +45,24 @@ describe('EcsCredentialsProvider', function () {
         assert.strictEqual(await credentialsProvider.isAvailable(), false)
     })
 
+    it('should be unavailable if credential provider throws exception', async function () {
+        const dummyProvider = () => {
+            throw new Error('')
+        }
+        credentialsProvider = new EcsCredentialsProvider(dummyProvider)
+        assert.strictEqual(await credentialsProvider.isAvailable(), false)
+    })
+
     it('should retrieve provided region', function () {
         env.AWS_DEFAULT_REGION = dummyRegion
 
         assert.strictEqual(credentialsProvider.getDefaultRegion(), dummyRegion)
+    })
+
+    it('should resolve credentials', async function () {
+        env.AWS_DEFAULT_REGION = dummyRegion
+
+        assert.strictEqual(await credentialsProvider.getCredentials(), dummyCredentials)
     })
 
     it('should return undefined region when not provided', function () {
