@@ -185,7 +185,6 @@
     "AWS.ecs.runCommandInContainer": "Run command in container",
     "AWS.ecs.runCommandInContainer.error": "Failed to execute command in container.",
     "AWS.command.ecs.runCommandInContainer.warnBeforeExecute": "Command may modify the running container {0}. Are you sure?",
-    "AWS.command.ecs.runCommandInContainer.noCliFound": "This feature requires the {0} CLI (aws) to be installed and available on your $PATH",
     "AWS.command.ecs.runCommandInContainer.noPluginFound": "This feature requires the SSM Session Manager plugin (session-manager-plugin) to be installed and available on your $PATH",
     "AWS.command.ecs.runCommandInContainer.noTasks": "There are no running tasks for the service: {0}",
     "AWS.command.ecs.runCommandInContainer.prompt": "Enter the command to run in container: {0}",
