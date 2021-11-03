@@ -29,13 +29,6 @@ describe('runCommandInContainer', function () {
     const outputChannel = new MockOutputChannel()
     const settings = new TestSettingsConfiguration()
 
-    const doesNotHaveAwsCliChildProcessResult: FakeChildProcessResult = {
-        stdout: '',
-        error: undefined,
-        exitCode: 254,
-        stderr: 'This is not installed',
-    }
-
     const doesNotHaveSSMPluginChildProcessResult: FakeChildProcessResult = {
         stdout: '',
         error: undefined,
@@ -86,27 +79,6 @@ describe('runCommandInContainer', function () {
 
         assert.strictEqual(pickerStub.notCalled, true)
         assert.strictEqual(childCalls.callCount, 3)
-    })
-
-    it('throws error if AWS CLI not installed', async function () {
-        const childCalls = sandbox
-            .stub(ChildProcess.prototype, 'run')
-            .onFirstCall()
-            .resolves(doesNotHaveAwsCliChildProcessResult)
-        childCalls.onSecondCall().resolves(successfulCPResult)
-        const listTasksStub = sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
-        const pickerStub = sandbox.stub(picker, 'promptUser')
-
-        const window = new FakeWindow({ inputBox: { input: 'ls' } })
-        try {
-            await runCommandInContainer(node, window, outputChannel, settings)
-        } catch (error) {
-            assert.ok(error)
-        }
-
-        assert.strictEqual(childCalls.callCount, 1)
-        assert.strictEqual(listTasksStub.notCalled, true)
-        assert.strictEqual(pickerStub.notCalled, true)
     })
 
     it('throws error if SSM plugin not installed', async function () {
