@@ -2,7 +2,7 @@
 
 An overview of the architecture for various components within the Toolkit.
 
-## Webviews
+## Webviews (Vue framework)
 
 The current implementation uses Vue 3 with Single File Components (SFCs) for modularity. Each webview
 is bundled into a single file and packaged into the toolkit at release time. Vue applications may be composed
