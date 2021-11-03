@@ -477,7 +477,7 @@ async function requestLocalApi(
                 if (obj.error.response !== undefined) {
                     getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
                 }
-                if (obj.error.code === 'ETIMEDOUT') {
+                if (obj.error.code === 'ETIMEDOUT' || obj.error.code === 'ECONNREFUSED') {
                     return 0
                 }
                 getLogger().debug(
