@@ -19,13 +19,14 @@ import org.jetbrains.plugins.terminal.TerminalView
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalProcess
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalRunner
 import software.aws.toolkits.core.ConnectionSettings
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.ui.resourceSelector
+import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsExecuteCommandType
 import software.aws.toolkits.telemetry.EcsTelemetry
@@ -98,7 +99,8 @@ class OpenShellInContainerDialog(
             }
             EcsTelemetry.runExecuteCommand(project, Result.Succeeded, EcsExecuteCommandType.Shell)
         } catch (e: Exception) {
-            LOG.error(e) { "Failed to start interactive shell" }
+            e.notifyError(message("ecs.execute_command_failed"))
+            LOG.warn(e) { "Failed to start interactive shell" }
             EcsTelemetry.runExecuteCommand(project, Result.Failed, EcsExecuteCommandType.Shell)
         }
     }
