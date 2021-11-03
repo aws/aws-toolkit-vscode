@@ -15,7 +15,7 @@ import { MockOutputChannel } from '../../mockOutputChannel'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 import { ECS } from 'aws-sdk'
 
-describe.only('runCommandInContainer', function () {
+describe('runCommandInContainer', function () {
     let sandbox: sinon.SinonSandbox
     const taskListOne = ['onlyTask']
     const taskListTwo = ['taskId1', 'taskId2']
