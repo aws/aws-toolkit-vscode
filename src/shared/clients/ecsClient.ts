@@ -8,67 +8,88 @@ import { ext } from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
+
+export type EcsResourceAndToken = {
+    resource: ECS.Cluster[] | ECS.Service[]
+    nextToken?: string
+}
+
+const MAX_RESULTS_PER_RESPONSE = 100
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async *listClusters(): AsyncIterableIterator<string> {
+    public async getClusters(nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
-        const request: ECS.ListClustersRequest = {}
-        do {
-            const response = await this.invokeListClusters(request, sdkClient)
-            if (response.clusterArns) {
-                yield* response.clusterArns
-            }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
-    }
-
-    public async *listServices(cluster: string): AsyncIterableIterator<string> {
-        const sdkClient = await this.createSdkClient()
-        const request: ECS.ListServicesRequest = {
-            cluster,
+        const clusterArnList = await sdkClient
+            .listClusters({ maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
+            .promise()
+        if (clusterArnList.clusterArns?.length === 0) {
+            return { resource: [] }
         }
-        do {
-            const response = await this.invokeListServices(request, sdkClient)
-            if (response.serviceArns) {
-                yield* response.serviceArns
-            }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
+        const clusterResponse = await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns }).promise()
+        const response: EcsResourceAndToken = {
+            resource: clusterResponse.clusters!,
+            nextToken: clusterArnList.nextToken,
+        }
+        return response
     }
 
-    public async *listTaskDefinitionFamilies(): AsyncIterableIterator<string> {
+    public async getServices(cluster: string, nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
-        // do we also want to cover inactive? If so, would we want to use a separate function?
-        const request: ECS.ListTaskDefinitionFamiliesRequest = {}
-        do {
-            const response = await this.invokeListTaskDefinitionFamilies(request, sdkClient)
-            if (response.families) {
-                yield* response.families
-            }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
+        const serviceArnList = await sdkClient
+            .listServices({ cluster: cluster, maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
+            .promise()
+        if (serviceArnList.serviceArns?.length === 0) {
+            return { resource: [] }
+        }
+        const services = await this.describeServices(cluster, serviceArnList.serviceArns!)
+        const response: EcsResourceAndToken = {
+            resource: services,
+            nextToken: serviceArnList.nextToken,
+        }
+        return response
     }
 
-    protected async invokeListClusters(
-        request: ECS.ListClustersRequest,
-        sdkClient: ECS
-    ): Promise<ECS.ListClustersResponse> {
-        return sdkClient.listClusters(request).promise()
+    public async getContainerNames(taskDefinition: string): Promise<string[]> {
+        const sdkClient = await this.createSdkClient()
+        const describeTaskDefinitionResponse = await sdkClient.describeTaskDefinition({ taskDefinition }).promise()
+        const containerNames = describeTaskDefinitionResponse.taskDefinition?.containerDefinitions?.map(cd => {
+            return cd.name ?? ''
+        })
+        return containerNames ?? []
     }
 
-    protected async invokeListServices(
-        request: ECS.ListServicesRequest,
-        sdkClient: ECS
-    ): Promise<ECS.ListServicesResponse> {
-        return sdkClient.listServices(request).promise()
+    public async listTasks(cluster: string, serviceName: string): Promise<string[]> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.ListTasksRequest = { cluster: cluster, serviceName: serviceName }
+        const listTasksResponse = await sdkClient.listTasks(params).promise()
+        return listTasksResponse.taskArns ?? []
     }
 
-    protected async invokeListTaskDefinitionFamilies(
-        request: ECS.ListTaskDefinitionFamiliesRequest,
-        sdkClient: ECS
-    ): Promise<ECS.ListTaskDefinitionFamiliesResponse> {
-        return sdkClient.listTaskDefinitionFamilies(request).promise()
+    public async updateService(cluster: string, serviceName: string, enable: boolean): Promise<void> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.UpdateServiceRequest = {
+            cluster,
+            service: serviceName,
+            enableExecuteCommand: enable,
+            forceNewDeployment: true,
+        }
+        await sdkClient.updateService(params).promise()
+    }
+
+    public async describeTasks(cluster: string, tasks: string[]): Promise<ECS.Task[]> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.DescribeTasksRequest = { cluster, tasks }
+        const describedTasks = await sdkClient.describeTasks(params).promise()
+        return describedTasks.tasks ?? []
+    }
+
+    public async describeServices(cluster: string, services: string[]): Promise<ECS.Service[]> {
+        const sdkClient = await this.createSdkClient()
+        return (await sdkClient.describeServices({ cluster, services }).promise()).services ?? []
     }
 
     protected async createSdkClient(): Promise<ECS> {

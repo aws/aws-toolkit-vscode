@@ -194,10 +194,25 @@
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {
                         "apprunnerNotifyPricing": false,
+                        "ecsRunCommand": false,
+                        "ecsRunCommandDisable": false,
+                        "ecsRunCommandEnable": false,
                         "yamlExtPrompt": false
                     },
                     "properties": {
                         "apprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommand": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommandEnable": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommandDisable": {
                             "type": "boolean",
                             "default": false
                         },
@@ -1179,7 +1194,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$|^awsAppRunnerServiceNode/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsEcsClusterNode|awsEcsServiceNode)$|^awsAppRunnerServiceNode/",
                     "group": "2@2"
                 },
                 {
@@ -1241,6 +1256,21 @@
                     "command": "aws.ssmDocument.deleteDocument",
                     "group": "3@2",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                },
+                {
+                    "command": "aws.ecs.runCommandInContainer",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
+                },
+                {
+                    "command": "aws.ecs.enableEcsExec",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
+                },
+                {
+                    "command": "aws.ecs.disableEcsExec",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
                 },
                 {
                     "command": "aws.resources.configure",
@@ -2003,6 +2033,26 @@
                 }
             },
             {
+                "command": "aws.ecs.runCommandInContainer",
+                "title": "%AWS.ecs.runCommandInContainer%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ecs.enableEcsExec",
+                "title": "%AWS.ecs.enableEcsExec%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.resources.copyIdentifier",
                 "title": "%AWS.command.resources.copyIdentifier%",
                 "category": "%AWS.title%",
@@ -2113,6 +2163,16 @@
             {
                 "command": "aws.apprunner.createService",
                 "title": "%AWS.command.apprunner.createService%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ecs.disableEcsExec",
+                "title": "%AWS.ecs.disableEcsExec%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
