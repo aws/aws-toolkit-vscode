@@ -11,6 +11,7 @@ import { Profile } from '../../../shared/credentials/credentialsFile'
 import { stripUndefined } from '../../../shared/utilities/collectionUtils'
 import * as process from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@aws-sdk/shared-ini-file-loader'
+import { installFakeClock } from '../../testUtil'
 
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
@@ -20,7 +21,7 @@ describe('SharedCredentialsProvider', async function () {
 
     before(function () {
         sandbox = sinon.createSandbox()
-        clock = FakeTimers.install()
+        clock = installFakeClock()
     })
 
     after(function () {
