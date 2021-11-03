@@ -27,6 +27,8 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AwsTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -75,7 +77,7 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
             message("executableCommon.installing", type.displayName),
             cancelable = false
         ) {
-            installTool(type, ProgressManager.getInstance().progressIndicator)
+            installTool(project, type, ProgressManager.getInstance().progressIndicator)
         }
     }
 
@@ -181,13 +183,13 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
                 PerformInBackgroundOption.ALWAYS_BACKGROUND
             ) {
                 override fun run(indicator: ProgressIndicator) {
-                    installTool(type, indicator)
+                    installTool(project, type, indicator)
                 }
             }
         )
     }
 
-    private fun <V : Version> installTool(type: ManagedToolType<V>, indicator: ProgressIndicator?): Tool<ToolType<V>> {
+    private fun <V : Version> installTool(project: Project?, type: ManagedToolType<V>, indicator: ProgressIndicator?): Tool<ToolType<V>> {
         assertIsNonDispatchThread()
 
         try {
@@ -206,8 +208,11 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
                 }
             }
 
-            return performInstall(type, latestVersion, indicator)
+            return performInstall(type, latestVersion, indicator).also {
+                AwsTelemetry.toolInstallation(project, type.telemetryId, Result.Succeeded)
+            }
         } catch (e: Exception) {
+            AwsTelemetry.toolInstallation(project, type.telemetryId, Result.Failed)
             throw IllegalStateException(message("executableCommon.failed_install", type.displayName), e)
         }
     }

@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.tools
 
 import com.intellij.openapi.progress.ProgressIndicator
+import software.aws.toolkits.telemetry.ToolId
 import java.nio.file.Path
 
 /**
@@ -47,6 +48,13 @@ interface AutoDetectableToolType<VersionScheme : Version> : ToolType<VersionSche
 }
 
 interface ManagedToolType<VersionScheme : Version> : ToolType<VersionScheme> {
+    override val id: String
+        get() = telemetryId.toString()
+
+    /**
+     * Used to identify this tool with the telemetry stack
+     */
+    val telemetryId: ToolId
     fun determineLatestVersion(): VersionScheme
     fun downloadVersion(version: VersionScheme, destinationDir: Path, indicator: ProgressIndicator?): Path
     fun installVersion(downloadArtifact: Path, destinationDir: Path, indicator: ProgressIndicator?)

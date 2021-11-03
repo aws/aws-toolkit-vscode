@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.core.tools.ToolType
 import software.aws.toolkits.jetbrains.core.tools.VersionRange
 import software.aws.toolkits.jetbrains.core.tools.until
 import software.aws.toolkits.jetbrains.utils.checkSuccess
+import software.aws.toolkits.telemetry.ToolId
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -31,8 +32,9 @@ object SsmPlugin : ManagedToolType<FourPartVersion> {
 
     private val hasRpm2Cpio by lazy { hasCommand("rpm2cpio") }
 
-    override val id: String = "SSM-Plugin"
+    override val telemetryId: ToolId = ToolId.SessionManagerPlugin
     override val displayName: String = "AWS Session Manager Plugin"
+
     override fun supportedVersions(): VersionRange<FourPartVersion> = FourPartVersion(1, 2, 0, 0) until FourPartVersion(2, 0, 0, 0)
 
     override fun determineVersion(path: Path): FourPartVersion {
