@@ -1,3 +1,9 @@
+## 1.33.0 2021-11-04
+
+- **Breaking Change** Bumping VS Code minimum version: 1.42.0 => 1.44.2
+- **Bug Fix** Credentials: Handle case when running in an ECS container but no credentials are available.
+- **Bug Fix** Resources: Avoid redundant close of active editor when resource documents are explicitly closed
+
 ## 1.32.0 2021-10-21
 
 - **Breaking Change** DEPRECATION: SAM actions using `dotnetcore2.1` runtime (Phase 2 Lambda deprecation)

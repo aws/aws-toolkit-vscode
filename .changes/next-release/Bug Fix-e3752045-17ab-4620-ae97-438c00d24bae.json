@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Resources: Avoid redundant close of active editor when resource documents are explicitly closed"
-}
