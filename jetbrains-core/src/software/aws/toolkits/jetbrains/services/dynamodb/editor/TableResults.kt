@@ -16,21 +16,22 @@ import software.aws.toolkits.jetbrains.services.dynamodb.DynamoAttribute
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
 import software.aws.toolkits.jetbrains.services.dynamodb.SearchResults
 import software.aws.toolkits.resources.message
-import java.awt.Component
-import javax.swing.JTable
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
 
 class TableResults : JBTable(TableModel(BidirectionalMap(), emptyList())) {
     init {
-        autoResizeMode = AUTO_RESIZE_ALL_COLUMNS
-        cellSelectionEnabled = true
+        // Make sure we call the method, and not edit the protected field
+        setAutoResizeMode(AUTO_RESIZE_ALL_COLUMNS)
+        setCellSelectionEnabled(true)
 
         font = EditorColorsManager.getInstance().globalScheme.getFont(EditorFontType.PLAIN)
 
         getTableHeader().reorderingAllowed = false
 
-        setDefaultRenderer(Any::class.java, TableRenderer())
+        val tableCellRenderer = DefaultTableCellRenderer()
+        tableCellRenderer.putClientProperty("html.disable", true)
+        setDefaultRenderer(Any::class.java, tableCellRenderer)
 
         TableSpeedSearch(this, Convertor { (it as? DynamoAttribute<*>)?.stringRepresentation() })
     }
@@ -49,32 +50,19 @@ class TableResults : JBTable(TableModel(BidirectionalMap(), emptyList())) {
     }
 }
 
-class TableRenderer : DefaultTableCellRenderer() {
-    init {
-        putClientProperty("html.disable", true)
-    }
-
-    override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
-        val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
-        val attribute = value as? DynamoAttribute<*>
-        text = attribute?.stringRepresentation()
-        return component
-    }
-}
-
 class TableModel(private val columns: BidirectionalMap<String, Int>, private val data: List<Map<String, DynamoAttribute<*>>>) : AbstractTableModel() {
     override fun getRowCount(): Int = data.size
     override fun getColumnCount(): Int = columns.size
     override fun getColumnName(column: Int): String = columns.getKeysByValue(column)?.firstOrNull() ?: ""
 
-    override fun getValueAt(rowIndex: Int, columnIndex: Int): DynamoAttribute<*>? {
+    override fun getValueAt(rowIndex: Int, columnIndex: Int): String? {
         val columnName = getColumnName(columnIndex)
-        return data[rowIndex][columnName]
+        return data[rowIndex][columnName]?.stringRepresentation()
     }
 
     companion object {
         fun buildModel(index: Index, data: SearchResults): TableModel {
-            // Build the columns by putting the index fields first, than sort the rest of the attributes by name (alphabetically)
+            // Build the columns by putting the index fields first, then sort the rest of the attributes by name (alphabetically)
             val columns = buildList<String> {
                 add(index.partitionKey)
                 index.sortKey?.let {
