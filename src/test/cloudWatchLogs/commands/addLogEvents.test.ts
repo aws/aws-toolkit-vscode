@@ -56,14 +56,14 @@ describe('addLogEvents', async function () {
             ]
         >()
 
-        const document: vscode.TextDocument = ({
+        const document: vscode.TextDocument = {
             uri: uri,
-        } as any) as vscode.TextDocument
+        } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = ({
+        const fakeRegistry: LogStreamRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
@@ -72,7 +72,7 @@ describe('addLogEvents', async function () {
         sandbox.assert.calledTwice(setBusyStatus)
         sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)
         sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
-        sandbox.assert.calledTwice(fakeEvent.fire)
+        sandbox.assert.calledTwice(fakeEvent.fire as sinon.SinonSpy)
         sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
         sandbox.assert.calledOnce(updateLog)
         sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
@@ -112,14 +112,14 @@ describe('addLogEvents', async function () {
             clock.setTimeout(() => {}, 100)
         })
 
-        const document: vscode.TextDocument = ({
+        const document: vscode.TextDocument = {
             uri: uri,
-        } as any) as vscode.TextDocument
+        } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = ({
+        const fakeRegistry: LogStreamRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
@@ -134,7 +134,7 @@ describe('addLogEvents', async function () {
                 sandbox.assert.calledTwice(setBusyStatus)
                 sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)
                 sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
-                sandbox.assert.calledTwice(fakeEvent.fire)
+                sandbox.assert.calledTwice(fakeEvent.fire as sinon.SinonSpy)
                 sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
                 sandbox.assert.calledOnce(updateLog)
                 sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
