@@ -29,6 +29,7 @@
 <script lang="ts">
 import { WebviewApi } from 'vscode-webview'
 import { defineComponent } from 'vue'
+import saveData from '../mixins/saveData'
 
 declare const vscode: WebviewApi<{ [key: string]: VueModel }>
 
@@ -37,8 +38,8 @@ let count = 0
 interface VueModel {
     collapsed: boolean
     buttonId: string
-    subPane?: HTMLElement
     lastHeight?: number
+    subPane?: HTMLElement
 }
 
 /**
@@ -58,47 +59,30 @@ export default defineComponent({
         return {
             collapsed: this.$props.startCollapsed ?? false,
             buttonId: `settings-panel-button-${count}`,
+            lastHeight: undefined,
         } as VueModel
     },
+    mixins: [saveData],
     methods: {
-        updateState() {
-            if (this.id === undefined || this.id === '') {
-                return
+        updateHeight(el: Element & { style?: CSSStyleDeclaration }) {
+            if (el.style) {
+                this.lastHeight = el.scrollHeight
+                el.style.setProperty('--max-height', `${this.lastHeight}px`)
             }
-
-            vscode.setState(
-                Object.assign(vscode.getState() ?? {}, {
-                    [this.id]: {
-                        collapsed: this.collapsed,
-                        lastHeight: this.lastHeight,
-                    },
-                })
-            )
         },
-        updateHeight(el: Element & { style: CSSStyleDeclaration }) {
-            this.lastHeight = el.scrollHeight
-            this.updateState()
-            el.style.setProperty('--max-height', `${this.lastHeight}px`)
-        },
-    },
-    created() {
-        if (this.id === undefined || this.id === '') {
-            return
-        }
-
-        const lastState: Partial<VueModel> = (vscode.getState() ?? {})[this.id]
-
-        // TODO: make recurse
-        Object.keys(lastState ?? {}).forEach(key => {
-            this.$data[key] = lastState[key] ?? this.$data[key]
-        })
     },
     mounted() {
         this.subPane = this.$refs.subPane as HTMLElement | undefined
         this.lastHeight = this.collapsed ? this.lastHeight : this.subPane?.scrollHeight ?? this.lastHeight
 
-        // TODO: write preload as a directive or global
-        ;(this.$refs.button as HTMLElement | undefined)?.classList.remove('preload-transition')
+        // TODO: write 'initial-style' as a directive
+        // it will force a style until the first render
+        // or just use Vue's transition element, but this is pretty heavy
+        this.$nextTick(() => {
+            setTimeout(() => {
+                ;(this.$refs.button as HTMLElement | undefined)?.classList.remove('preload-transition')
+            }, 100)
+        })
     },
 })
 </script>
@@ -118,7 +102,7 @@ export default defineComponent({
     padding: 1rem;
     overflow: hidden;
 }
-.sub-pane .button-container:first-child {
+:deep(.sub-pane div:first-child) {
     margin-top: 0;
 }
 .collapse-leave-from {
@@ -159,8 +143,11 @@ body.vscode-dark .collapse-button {
 body.vscode-light .collapse-button {
     background-image: url('/resources/light/expand-less.svg');
 }
-.collapse-button:checked {
+.collapse-button {
     transform: rotate(180deg);
+}
+.collapse-button:checked {
+    transform: rotate(90deg);
 }
 .settings-panel {
     background: var(--vscode-menu-background);

@@ -21,11 +21,10 @@ import {
     DefaultAwsSamDebugConfigurationValidator,
     resolveWorkspaceFolderVariable,
 } from '../../shared/sam/debugger/awsSamDebugConfigurationValidator'
-// import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { createVueWebview } from '../../webviews/main'
+import { compileVueWebview } from '../../webviews/main'
 import { sampleRequestPath } from '../constants'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
@@ -38,37 +37,30 @@ import { samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
 
 const localize = nls.loadMessageBundle()
 
+const VueWebview = compileVueWebview({
+    id: 'createLambda',
+    title: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
+    webviewJs: 'lambdaVue.js',
+    commands: {
+        getRuntimes: () => samLambdaCreatableRuntimes().toArray().sort(),
+        getTemplate,
+        getSamplePayload,
+        loadSamLaunchConfig,
+        saveLaunchConfig,
+        invokeLaunchConfig(config: AwsSamDebuggerConfiguration) {
+            return invokeLaunchConfig(config, this.context)
+        },
+    },
+    start: (param?: AwsSamDebuggerConfiguration) => param,
+})
+
+export class SamInvokeWebview extends VueWebview {}
+
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return vscode.commands.registerCommand(
         'aws.launchConfigForm',
         async (launchConfig?: AwsSamDebuggerConfiguration) => {
-            await createVueWebview<SamInvokerRequest, SamInvokerResponse>({
-                id: 'createLambda',
-                name: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
-                webviewJs: 'samInvokeVue.js',
-                cssFiles: [isCloud9() ? 'base-cloud9.css' : 'base.css'],
-                onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
-                    handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
-                context: context.extensionContext,
-                initialCalls: launchConfig
-                    ? [
-                          {
-                              command: 'getRuntimes',
-                              data: {
-                                  runtimes: samLambdaCreatableRuntimes().toArray().sort(),
-                              },
-                          },
-                          {
-                              command: 'loadSamLaunchConfig',
-                              data: {
-                                  launchConfig: launchConfig,
-                                  initialCall: true,
-                              },
-                          },
-                      ]
-                    : undefined,
-            })
-
+            new SamInvokeWebview(context).start(launchConfig)
             recordSamOpenConfigUi()
         }
     )
@@ -84,88 +76,13 @@ export interface AwsSamDebuggerConfigurationLoose extends AwsSamDebuggerConfigur
     }
 }
 
-export interface LoadSamLaunchConfigResponse {
-    command: 'loadSamLaunchConfig'
-    data: {
-        launchConfig: AwsSamDebuggerConfiguration
-        initialCall?: boolean
-    }
-}
-
-export interface GetSamplePayloadResponse {
-    command: 'getSamplePayload'
-    data: {
-        payload: string
-    }
-}
-
-export interface GetTemplateResponse {
-    command: 'getTemplate'
-    data: {
-        template: string
-        logicalId: string
-    }
-}
-
-export interface GetRuntimesResponse {
-    command: 'getRuntimes'
-    data: {
-        runtimes: string[]
-    }
-}
-
-export interface SamInvokerBasicRequest {
-    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate'
-}
-
-export interface SamInvokerLaunchRequest {
-    command: 'saveLaunchConfig' | 'invokeLaunchConfig'
-    data: {
-        launchConfig: AwsSamDebuggerConfiguration
-    }
-}
-
-export type SamInvokerRequest = SamInvokerBasicRequest | SamInvokerLaunchRequest
-export type SamInvokerResponse =
-    | LoadSamLaunchConfigResponse
-    | GetSamplePayloadResponse
-    | GetTemplateResponse
-    | GetRuntimesResponse
-
-async function handleFrontendToBackendMessage(
-    message: SamInvokerRequest,
-    postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>,
-    destroyWebviewFn: () => any,
-    context: ExtContext
-): Promise<any> {
-    switch (message.command) {
-        case 'loadSamLaunchConfig':
-            loadSamLaunchConfig(postMessageFn)
-            break
-        case 'getSamplePayload':
-            getSamplePayload(postMessageFn)
-            break
-        case 'getTemplate':
-            getTemplate(postMessageFn)
-            break
-        case 'saveLaunchConfig':
-            saveLaunchConfig(message.data.launchConfig)
-            break
-        case 'invokeLaunchConfig':
-            invokeLaunchConfig(message.data.launchConfig, context)
-            break
-    }
-}
-
 /**
  * Open a quick pick containing the names of launch configs in the `launch.json` array.
  * Filter out non-supported launch configs.
  * Call back into the webview with the selected launch config.
  * @param postMessageFn
  */
-async function loadSamLaunchConfig(
-    postMessageFn: (response: LoadSamLaunchConfigResponse) => Thenable<boolean>
-): Promise<void> {
+async function loadSamLaunchConfig(): Promise<AwsSamDebuggerConfiguration | undefined> {
     // TODO: Find a better way to infer this. Might need another arg from the frontend (depends on the context in which the launch config is made?)
     const workspaceFolder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0] : undefined
     if (!workspaceFolder) {
@@ -197,12 +114,7 @@ async function loadSamLaunchConfig(
     if (!pickerResponse || pickerResponse.index === -1) {
         return
     }
-    postMessageFn({
-        command: 'loadSamLaunchConfig',
-        data: {
-            launchConfig: pickerResponse.config!,
-        },
-    })
+    return pickerResponse.config!
 }
 
 interface SampleQuickPickItem extends vscode.QuickPickItem {
@@ -214,9 +126,7 @@ interface SampleQuickPickItem extends vscode.QuickPickItem {
  * Call back into the webview with the contents of the payload to add to the JSON field.
  * @param postMessageFn
  */
-async function getSamplePayload(
-    postMessageFn: (response: GetSamplePayloadResponse) => Thenable<boolean>
-): Promise<void> {
+async function getSamplePayload(): Promise<string | undefined> {
     try {
         const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map(entry => {
             return { label: entry.name ?? '', filename: entry.filename ?? '' }
@@ -240,12 +150,7 @@ async function getSamplePayload(
         const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
         const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
 
-        postMessageFn({
-            command: 'getSamplePayload',
-            data: {
-                payload: sample,
-            },
-        })
+        return sample
     } catch (err) {
         getLogger().error('Error getting manifest data..: %O', err as Error)
     }
@@ -254,9 +159,8 @@ async function getSamplePayload(
 /**
  * Get all templates in the registry.
  * Call back into the webview with the registry contents.
- * @param postMessageFn
  */
-async function getTemplate(postMessageFn: (response: GetTemplateResponse) => Thenable<boolean>): Promise<void> {
+async function getTemplate() {
     const items: (vscode.QuickPickItem & { templatePath: string })[] = []
     const NO_TEMPLATE = 'NOTEMPLATEFOUND'
     for (const template of ext.templateRegistry.registeredItems) {
@@ -305,13 +209,10 @@ async function getTemplate(postMessageFn: (response: GetTemplateResponse) => The
         return
     }
 
-    postMessageFn({
-        command: 'getTemplate',
-        data: {
-            logicalId: selectedTemplate.label,
-            template: selectedTemplate.templatePath,
-        },
-    })
+    return {
+        logicalId: selectedTemplate.label,
+        template: selectedTemplate.templatePath,
+    }
 }
 
 interface LaunchConfigPickItem extends vscode.QuickPickItem {

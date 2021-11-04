@@ -4,18 +4,19 @@
  */
 
 import { defineComponent } from 'vue'
-import { WebviewApi } from 'vscode-webview'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { AwsSamDebuggerConfigurationLoose, SamInvokerResponse } from './samInvokeBackend'
+import { AwsSamDebuggerConfigurationLoose, SamInvokeWebview } from './samInvokeBackend'
 import settingsPanel from '../../webviews/components/settingsPanel.vue'
+import { WebviewClientFactory } from '../../webviews/client'
+import saveData from '../../webviews/mixins/saveData'
 
-declare const vscode: WebviewApi<SamInvokeVueData>
+const client = WebviewClientFactory.create<SamInvokeWebview>()
 
 interface VueDataLaunchPropertyObject {
     value: string
     errorMsg: string
 }
-export interface SamInvokeVueData {
+interface SamInvokeVueData {
     msg: any
     targetTypes: { [k: string]: string }[]
     runtimes: string[]
@@ -89,98 +90,44 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDe
     }
 }
 
+function initData() {
+    return {
+        containerBuild: false,
+        skipNewImageCheck: false,
+        launchConfig: newLaunchConfig(),
+        payload: { value: '', errorMsg: '' },
+        apiPayload: { value: '', errorMsg: '' },
+        environmentVariables: { value: '', errorMsg: '' },
+        parameters: { value: '', errorMsg: '' },
+        headers: { value: '', errorMsg: '' },
+        stageVariables: { value: '', errorMsg: '' },
+    }
+}
+
 export default defineComponent({
+    name: 'sam-invoke',
     components: {
         settingsPanel,
     },
     created() {
-        const oldState: Partial<SamInvokeVueData> = vscode.getState() ?? {}
+        client.init().then(config => this.parseConfig(config))
 
-        const keys = Object.keys(oldState) as [keyof SamInvokeVueData]
-        keys.forEach(k => {
-            this.$data[k] = oldState[k] ?? this.$data[k]
+        client.getRuntimes().then(runtimes => {
+            this.runtimes = runtimes
         })
-
-        window.addEventListener('message', ev => {
-            const event = ev.data as SamInvokerResponse
-            switch (event.command) {
-                case 'getRuntimes':
-                    this.runtimes = event.data.runtimes
-                    break
-                case 'getSamplePayload':
-                    this.payload.value = JSON.stringify(JSON.parse(event.data.payload), undefined, 4)
-                    break
-                case 'getTemplate':
-                    this.launchConfig.invokeTarget.target = 'template'
-                    this.launchConfig.invokeTarget.logicalId = event.data.logicalId
-                    this.launchConfig.invokeTarget.templatePath = event.data.template
-                    break
-                case 'loadSamLaunchConfig':
-                    if (oldState.launchConfig !== undefined && event.data.initialCall) {
-                        return
-                    }
-
-                    this.clearForm()
-                    this.launchConfig = newLaunchConfig(event.data.launchConfig)
-                    if (event.data.launchConfig.lambda?.payload) {
-                        this.payload.value = JSON.stringify(event.data.launchConfig.lambda.payload.json, undefined, 4)
-                    }
-                    if (event.data.launchConfig.lambda?.environmentVariables) {
-                        this.environmentVariables.value = JSON.stringify(
-                            event.data.launchConfig.lambda?.environmentVariables
-                        )
-                    }
-                    if (event.data.launchConfig.sam?.template?.parameters) {
-                        this.parameters.value = JSON.stringify(event.data.launchConfig.sam?.template?.parameters)
-                    }
-                    if (event.data.launchConfig.api?.headers) {
-                        this.headers.value = JSON.stringify(event.data.launchConfig.api?.headers)
-                    }
-                    if (event.data.launchConfig.api?.stageVariables) {
-                        this.stageVariables.value = JSON.stringify(event.data.launchConfig.api?.stageVariables)
-                    }
-                    this.containerBuild = event.data.launchConfig.sam?.containerBuild ?? false
-                    this.skipNewImageCheck = event.data.launchConfig.sam?.skipNewImageCheck ?? false
-                    this.msg = `Loaded config ${event.data.launchConfig.name}`
-                    break
-            }
-        })
-
-        Object.keys(this.$data).forEach(k => {
-            this.$watch(
-                k,
-                (v: any) => {
-                    const old = vscode.getState()
-                    vscode.setState(
-                        Object.assign(old ?? {}, { [k]: JSON.parse(JSON.stringify(v)) }) as SamInvokeVueData
-                    )
-                },
-                { deep: true }
-            )
-        })
-
-        // Send a message back to let the backend know we're ready for messages
-        vscode.postMessage({ command: 'initialized' })
     },
+    mixins: [saveData],
     data(): SamInvokeVueData {
         return {
+            ...initData(),
             msg: 'Hello',
             targetTypes: [
                 { name: 'Code', value: 'code' },
                 { name: 'Template', value: 'template' },
                 { name: 'API Gateway (Template)', value: 'api' },
             ],
-            containerBuild: false,
-            skipNewImageCheck: false,
             runtimes: [],
             httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
-            launchConfig: newLaunchConfig(),
-            payload: { value: '', errorMsg: '' },
-            apiPayload: { value: '', errorMsg: '' },
-            environmentVariables: { value: '', errorMsg: '' },
-            parameters: { value: '', errorMsg: '' },
-            headers: { value: '', errorMsg: '' },
-            stageVariables: { value: '', errorMsg: '' },
         }
     },
     methods: {
@@ -191,26 +138,59 @@ export default defineComponent({
             this.stageVariables.errorMsg = ''
         },
         launch() {
-            this.formatDataAndExecute('invokeLaunchConfig')
+            const config = this.formatConfig()
+            config && client.invokeLaunchConfig(config)
         },
         save() {
-            this.formatDataAndExecute('saveLaunchConfig')
+            const config = this.formatConfig()
+            config && client.saveLaunchConfig(config)
         },
         loadConfig() {
-            vscode.postMessage({
-                command: 'loadSamLaunchConfig',
-            })
+            client.loadSamLaunchConfig().then(config => this.parseConfig(config))
+        },
+        parseConfig(config?: AwsSamDebuggerConfiguration) {
+            if (!config) {
+                return
+            }
+            this.clearForm()
+            this.launchConfig = newLaunchConfig(config)
+            if (config.lambda?.payload) {
+                this.payload.value = JSON.stringify(config.lambda.payload.json, undefined, 4)
+            }
+            if (config.lambda?.environmentVariables) {
+                this.environmentVariables.value = JSON.stringify(config.lambda?.environmentVariables)
+            }
+            if (config.sam?.template?.parameters) {
+                this.parameters.value = JSON.stringify(config.sam?.template?.parameters)
+            }
+            if (config.api?.headers) {
+                this.headers.value = JSON.stringify(config.api?.headers)
+            }
+            if (config.api?.stageVariables) {
+                this.stageVariables.value = JSON.stringify(config.api?.stageVariables)
+            }
+            this.containerBuild = config.sam?.containerBuild ?? false
+            this.skipNewImageCheck = config.sam?.skipNewImageCheck ?? false
+            this.msg = `Loaded config ${config}`
         },
         loadPayload() {
             this.resetJsonErrors()
-            vscode.postMessage({
-                command: 'getSamplePayload',
+            client.getSamplePayload().then(sample => {
+                if (!sample) {
+                    return
+                }
+                this.payload.value = JSON.stringify(JSON.parse(sample), undefined, 4)
             })
         },
         loadResource() {
             this.resetJsonErrors()
-            vscode.postMessage({
-                command: 'getTemplate',
+            client.getTemplate().then(template => {
+                if (!template) {
+                    return
+                }
+                this.launchConfig.invokeTarget.target = 'template'
+                this.launchConfig.invokeTarget.logicalId = template.logicalId
+                this.launchConfig.invokeTarget.templatePath = template.template
             })
         },
         formatFieldToStringArray(field: string | undefined) {
@@ -232,7 +212,7 @@ export default defineComponent({
                 }
             }
         },
-        formatDataAndExecute(command: 'saveLaunchConfig' | 'invokeLaunchConfig') {
+        formatConfig() {
             this.resetJsonErrors()
 
             let payloadJson, environmentVariablesJson, headersJson, stageVariablesJson, parametersJson, apiPayloadJson
@@ -253,53 +233,41 @@ export default defineComponent({
             // this by recursively accessing all primitive fields (which is what this line does)
             const launchConfig: AwsSamDebuggerConfigurationLoose = JSON.parse(JSON.stringify(this.launchConfig))
 
-            vscode.postMessage({
-                command: command,
-                data: {
-                    launchConfig: {
-                        ...launchConfig,
-                        lambda: {
-                            ...launchConfig.lambda,
-                            payload: {
-                                ...launchConfig.payload,
-                                json: payloadJson,
-                            },
-                            environmentVariables: environmentVariablesJson,
-                        },
-                        sam: {
-                            ...launchConfig.sam,
-                            buildArguments: this.formatFieldToStringArray(launchConfig.sam?.buildArguments?.toString()),
-                            localArguments: this.formatFieldToStringArray(launchConfig.sam?.localArguments?.toString()),
-                            containerBuild: this.containerBuild,
-                            skipNewImageCheck: this.skipNewImageCheck,
-                            template: {
-                                parameters: parametersJson,
-                            },
-                        },
-                        api: launchConfig.api
-                            ? {
-                                  ...launchConfig.api,
-                                  headers: headersJson,
-                                  stageVariables: stageVariablesJson,
-                                  payload: {
-                                      json: apiPayloadJson,
-                                  },
-                              }
-                            : undefined,
+            return {
+                ...launchConfig,
+                lambda: {
+                    ...launchConfig.lambda,
+                    payload: {
+                        ...launchConfig.payload,
+                        json: payloadJson,
+                    },
+                    environmentVariables: environmentVariablesJson,
+                },
+                sam: {
+                    ...launchConfig.sam,
+                    buildArguments: this.formatFieldToStringArray(launchConfig.sam?.buildArguments?.toString()),
+                    localArguments: this.formatFieldToStringArray(launchConfig.sam?.localArguments?.toString()),
+                    containerBuild: this.containerBuild,
+                    skipNewImageCheck: this.skipNewImageCheck,
+                    template: {
+                        parameters: parametersJson,
                     },
                 },
-            })
+                api: launchConfig.api
+                    ? {
+                          ...launchConfig.api,
+                          headers: headersJson,
+                          stageVariables: stageVariablesJson,
+                          payload: {
+                              json: apiPayloadJson,
+                          },
+                      }
+                    : undefined,
+            }
         },
         clearForm() {
-            this.launchConfig = newLaunchConfig()
-            this.containerBuild = false
-            this.skipNewImageCheck = false
-            this.payload = { value: '', errorMsg: '' }
-            this.apiPayload = { value: '', errorMsg: '' }
-            this.environmentVariables = { value: '', errorMsg: '' }
-            this.parameters = { value: '', errorMsg: '' }
-            this.headers = { value: '', errorMsg: '' }
-            this.stageVariables = { value: '', errorMsg: '' }
+            const init = initData()
+            Object.keys(init).forEach(k => (this.$data[k as keyof typeof init] = init[k as keyof typeof init] as any))
         },
     },
 })
