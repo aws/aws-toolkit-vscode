@@ -104,9 +104,10 @@ export class DefaultEcsClient {
     ): Promise<ECS.ExecuteCommandResponse> {
         const sdkClient = await this.createSdkClient()
 
+        // Currently the 'interactive' flag is required and needs to be true for ExecuteCommand: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ExecuteCommand.html
         const params: ECS.ExecuteCommandRequest = {
             command: command,
-            interactive: true, // Required
+            interactive: true,
             task: task,
             cluster: cluster,
             container: container,
