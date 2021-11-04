@@ -9,14 +9,20 @@
             "name": "Extension",
             "type": "extensionHost",
             "request": "launch",
+            "debugWebviews": true,
+            "rendererDebugOptions": {
+                "urlFilter": "*amazonwebservices.aws-toolkit-vscode*",
+                "webRoot": "${workspaceFolder}"
+            },
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
-                "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010"
+                "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
+                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "watch"
         },
         {
             "name": "Attach to ASL Server",
