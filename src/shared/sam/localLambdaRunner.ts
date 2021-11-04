@@ -475,14 +475,12 @@ async function requestLocalApi(
             methods: [reqMethod],
             calculateDelay: obj => {
                 if (obj.error.response !== undefined) {
-                    getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
+                    getLogger().debug('Local API response: %s : %O', uri, JSON.stringify(obj.error.response))
                 }
-                if (obj.error.code === 'ETIMEDOUT' || obj.error.code === 'ECONNREFUSED') {
+                if (obj.error.code === 'ETIMEDOUT') {
                     return 0
                 }
-                getLogger().debug(
-                    `Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error.message}`
-                )
+                getLogger().debug(`Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error}`)
                 return RETRY_DELAY
             },
         },
@@ -498,7 +496,7 @@ async function requestLocalApi(
             getLogger().info('Local API is alive: %s', uri)
             return
         }
-        const msg = `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err.message}`
+        const msg = `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err}`
         getLogger('channel').error(msg)
         throw new Error(msg)
     })
