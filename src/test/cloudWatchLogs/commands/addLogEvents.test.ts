@@ -72,7 +72,8 @@ describe('addLogEvents', async function () {
         sandbox.assert.calledTwice(setBusyStatus)
         sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)
         sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
-        sandbox.assert.calledTwice(fakeEvent.fire as any)
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        sandbox.assert.calledTwice(fakeEvent.fire)
         sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
         sandbox.assert.calledOnce(updateLog)
         sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
@@ -134,7 +135,8 @@ describe('addLogEvents', async function () {
                 sandbox.assert.calledTwice(setBusyStatus)
                 sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)
                 sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
-                sandbox.assert.calledTwice(fakeEvent.fire as any)
+                // eslint-disable-next-line @typescript-eslint/unbound-method
+                sandbox.assert.calledTwice(fakeEvent.fire)
                 sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
                 sandbox.assert.calledOnce(updateLog)
                 sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
