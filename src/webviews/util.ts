@@ -33,9 +33,13 @@ export function createClass<T>(defaults: T): { new (initial?: Partial<T>): T } |
     } as any
 }
 
-// Creates a 'safe' Vue type using the anonymous class from `createClass`
-// We don't really need to use this, but if you don't Vue will warn about type checking.
-// Alternatively, use 'PropType' and ditch any kind of runtime type-checking
+/**
+ * Creates a Vue 'type' from a class. Note that nothing is actually created; a type is only inferred from the `Model`.
+ *
+ * @param Model Model class, usually created from {@link createClass}.
+ *
+ * @returns The {@link Object} class with the typed coerced as a {@link PropType} for the `Model` instance.
+ */
 export function createType<T extends new (obj: any) => any>(Model: T): PropType<InstanceType<T>> {
     return Object
 }

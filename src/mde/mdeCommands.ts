@@ -146,11 +146,8 @@ export async function mdeConnectCommand(
         return
     }
 
-    // BIG HACK, VERY FRAGILE
-    // XXX: if the environment has a non-default devfile, use `/project` until an environment variable is available
-    const envMetadata = await mdeClient.getEnvironmentMetadata({ environmentId: args.id })
-    const projectDir =
-        envMetadata?.actions?.devfile?.location === '/aws/mde/.mde.devfile.yaml' ? '/projects' : '/project'
+    // temporary until we can dynamically find the directory
+    const projectDir = '/projects'
 
     const cmd = new ChildProcess(
         true,

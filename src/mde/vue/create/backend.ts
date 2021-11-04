@@ -30,14 +30,11 @@ export interface DefinitionTemplate {
 
 const VueWebview = compileVueWebview({
     id: 'createMde',
-    cssFiles: ['base.css'],
-    name: localize('AWS.command.createMdeForm.title', 'Create new development environment'),
-    webviewJs: 'createMdeVue.js',
+    title: localize('AWS.command.createMdeForm.title', 'Create new development environment'),
+    webviewJs: 'mdeCreateVue.js',
     viewColumn: vscode.ViewColumn.Active,
-    // TODO: rename to `showHandler` ?
-    validateData: (repo?: { url: string; branch?: string }) => true,
-    // TODO: rename to `submitHandler` ?
-    validateSubmit: async (result: CreateEnvironmentRequest) => {
+    start: (repo?: { url: string; branch?: string }) => repo,
+    submit: async (result: CreateEnvironmentRequest) => {
         return await submit(result)
     },
     // TODO: typescript can't verify if `commands` is passed with a function that has an invalid `this` type
@@ -68,7 +65,7 @@ export async function createMdeWebview(
     context: ExtContext,
     repo?: { url: string; branch?: string }
 ): Promise<MdeEnvironment | undefined> {
-    return new MdeCreateWebview(context).show(repo)
+    return new MdeCreateWebview(context).start(repo)
 }
 
 // TODO: where should we present errors?

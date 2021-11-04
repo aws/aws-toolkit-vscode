@@ -10,6 +10,9 @@ declare const vscode: WebviewApi<{ [key: string]: any }>
 /* Keep track of registered IDs to warn if duplicates appears */
 const _unids = new Set<string>()
 
+// Upon remounting we need to clear whatever IDs we have stored
+window.addEventListener('remount', () => _unids.clear())
+
 /**
  * A mixin for saving component data state.
  *
@@ -25,11 +28,11 @@ const saveData: Vue.ComponentOptionsMixin = {
         if (this.$data === undefined) {
             return
         }
+        const state = vscode.getState() ?? {}
 
         // TODO: add error handling, logs, etc.
         this.$options._count = ((this.$options._count as number | undefined) ?? 0) + 1
-        const unid =
-            this.id ?? `${this.$options.vscodeId ?? this.name ?? `DEFAULT-${_unids.size}`}-${this.$options._count}`
+        const unid = this.id ?? `${this.name ?? `DEFAULT-${_unids.size}`}-${this.$options._count}`
         this.$options._unid = unid
 
         if (_unids.has(unid)) {
@@ -38,7 +41,7 @@ const saveData: Vue.ComponentOptionsMixin = {
         }
 
         _unids.add(unid)
-        const old = (vscode.getState() ?? {})[unid] ?? {}
+        const old = state[unid] ?? {}
 
         Object.keys(this.$data).forEach(k => {
             this.$data[k] = old[k] ?? this.$data[k]
@@ -58,20 +61,6 @@ const saveData: Vue.ComponentOptionsMixin = {
             )
         })
     },
-}
-
-declare module '@vue/runtime-core' {
-    export interface ComponentCustomOptions {
-        // TODO: might not even need this, generating IDs works for the majority of use-cases
-        /**
-         * ID associated with the component to save its internal state.
-         *
-         * This should be unique, otherwise state may get overwritten.
-         */
-        vscodeId?: string
-    }
-    // TODO: add custom property to clear component state based off id
-    // can we just check for when a component is unmounted?
 }
 
 export default saveData

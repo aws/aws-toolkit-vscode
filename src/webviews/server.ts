@@ -13,13 +13,6 @@ interface Command<T extends any[] = any, R = any> {
     (this: WebviewServer, ...args: T): R | never
 }
 
-interface CommandWithOptions<T extends any[], R> extends CommandOptions {
-    command: ((...args: T) => R | never) | ((this: WebviewServer, ...args: T) => R | never)
-}
-
-/** Dummy class just in-case someone tries to do some weird things with the emitters. */
-// export class WebviewEventEmitter<T> {}
-
 export interface Protocol<U = any, S = any> {
     /**
      * Called when the frontend wants to submit the webview. If the result is valid, the webview is closed.
@@ -27,21 +20,28 @@ export interface Protocol<U = any, S = any> {
     submit?: (result: S) => Promise<void> | void | never
     /**
      * Initial data to load. This is called only once, even if the view is refreshed.
-     * Further calls result in a rejected Promise.
+     * Further calls return undefined.
      */
-    init?: () => Promise<U> | U
-    [key: string]: Command<any, any> | CommandWithOptions<any, any> | vscode.EventEmitter<any> | undefined
+    init?: () => Promise<U | undefined>
+    [key: string]: Command<any, any> | vscode.EventEmitter<any> | undefined
 }
 
 export interface Commands {
-    [key: string]: Command<any, any> | CommandWithOptions<any, any> | undefined
+    [key: string]: Command<any, any> | undefined
 }
 
 export interface Events {
     [key: string]: vscode.EventEmitter<any>
 }
 
-export interface WebviewCompileOptions<C extends Commands = any, E extends Events = any, D = any, S = any, O = any> {
+export interface WebviewCompileOptions<
+    C extends Commands = any,
+    E extends Events = any,
+    D extends any[] = any[],
+    S = any,
+    O = any,
+    P extends any = any
+> {
     /**
      * Events emitters provided by the backend. Note that whatever is passed into this option is
      * only used for type and key generation. Do not assume the same reference will exist on instantiation.
@@ -58,23 +58,37 @@ export interface WebviewCompileOptions<C extends Commands = any, E extends Event
      * Merged with {@link WebviewServer}
      */
     commands?: C
-    /** Validates the input from `show` is correct. Used to infer the type returned by `init`. */
-    validateData?: (data?: D) => Promise<boolean> | boolean
-    /** Validates the output from `submit` is correct. Used to infer the type returned by `show`. */
-    validateSubmit?: (result: S) => Promise<O> | O
+    /**
+     * Called when the webview is started.
+     *
+     * Whatever is returned by this function is then passed into the frontend code via {@link Protocol.init}.
+     * Note that if this function is not provided or if it returns `undefined` then the arguments are passed directly
+     * to the frontend code. This function and {@link WebviewCompileOptions.submit} can be thought of as 'glue' code
+     * that exists as interfaces between the frontend/backend logic. The purpose is primarily to infer types, though
+     * it can also be used for pre/post processing of the inputs/outputs of the webview.
+     */
+    start?(this: ThisType<WebviewServer>, ...args: D): Promise<P> | P
+    /**
+     * Called when the webview calls {@link Protocol.submit}.
+     *
+     * Whatever is returned by this function is then forwarded to the creator of the webview. If this function does not
+     * exist, or if it returns `undefined`, then `result` is passed directly. A successful submission will close the
+     * webview, disposing any related listeners or handlers. Submissions can be rejected by throwing an error.
+     */
+    submit?(this: ThisType<WebviewServer>, result: S): Promise<O> | O
 }
 
-export type CompileContext<T> = T extends WebviewCompileOptions<any, infer E, infer D>
-    ? ThisType<WebviewServer & { emitters: E } & { arguments: D }>
+export type CompileContext<T> = T extends WebviewCompileOptions<any, infer E>
+    ? ThisType<WebviewServer & { emitters: E } & { data: ReturnType<NonNullable<T['start']>> }>
     : never
 export type SubmitFromOptions<O> = O extends WebviewCompileOptions<any, any, any, infer S> ? S : never
 export type DataFromOptions<O> = O extends WebviewCompileOptions<any, any, infer D> ? D : never
 export type OutputFromOptions<O> = O extends WebviewCompileOptions<any, any, any, any, infer O> ? O : never
-
-export type OptionsToProtocol<O> = O extends WebviewCompileOptions<infer C, infer E, infer D, infer S>
+export type PropsFromOptions<O> = O extends WebviewCompileOptions<any, any, any, any, any, infer P> ? P : never
+export type OptionsToProtocol<O> = O extends WebviewCompileOptions<infer C, infer E, any, infer S, any, infer P>
     ? {
           submit: (result: S) => Promise<void> | void | never
-          init: () => Promise<D> | D
+          init: () => Promise<P | undefined> | P | undefined
       } & C &
           E
     : never
@@ -84,24 +98,14 @@ export type WebviewServer = vscode.Webview & {
     dispose(): void
 }
 
-interface CommandOptions {
-    /** Function will only ever execute once, even when the view is refreshed. */
-    once?: boolean
-    /** Store the result on the client side via Webview API. */
-    memoize?: boolean
-}
-
-// TODO:
-// add readonly props on webview create rather than `init`
-
 /**
  * Sets up an event listener for the webview to call registered commands.
  *
- * @param webview
- * @param commands
+ * @param webview Target webview to add the event hook.
+ * @param commands Commands to register.
  */
-export function registerWebviewServer(webview: WebviewServer, commands: Protocol) {
-    webview.onDidReceiveMessage(async (event: Message) => {
+export function registerWebviewServer(webview: WebviewServer, commands: Protocol): vscode.Disposable {
+    return webview.onDidReceiveMessage(async (event: Message) => {
         const { id, command, data } = event
         const metadata: Omit<Message, 'id' | 'command' | 'data'> = {}
 
@@ -118,22 +122,12 @@ export function registerWebviewServer(webview: WebviewServer, commands: Protocol
             return webview.postMessage({ id, command, event: true })
         }
 
-        let fn: Command
-        if (typeof handler !== 'function') {
-            fn = handler.command
-            const partial = { ...handler } as Partial<typeof handler>
-            delete partial.command
-            Object.assign(metadata, partial)
-        } else {
-            fn = handler
-        }
-
         // TODO: these commands could potentially have sensitive data, we don't want to log in that case
         getLogger().debug(`Webview called command "${command}" with args: %O`, data)
 
         let result: any
         try {
-            result = await fn.call(webview, ...data)
+            result = await handler.call(webview, ...data)
             // For now undefined means we should not send any data back
             // Later on the commands should specify how undefined is handled
             if (result === undefined) {
@@ -150,6 +144,8 @@ export function registerWebviewServer(webview: WebviewServer, commands: Protocol
             getLogger().error(`Webview server failed on command "${command}": %O`, err)
         }
 
+        // TODO: check if webview has been disposed of before posting message (not necessary but nice)
+        // We also get a boolean value back, maybe retry sending on false?
         webview.postMessage({ id, command, data: result, ...metadata })
     })
 }

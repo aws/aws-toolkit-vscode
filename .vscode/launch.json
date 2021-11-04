@@ -13,11 +13,6 @@
             "rendererDebugOptions": {
                 "urlFilter": "*amazonwebservices.aws-toolkit-vscode*",
                 "webRoot": "${workspaceFolder}"
-                // Vue SFC source maps do not work correctly with TS
-                // "sourceMaps": true,
-                // "sourceMapPathOverrides": {
-                //    "webpack:///./*": "${webRoot}/*"
-                // },
             },
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],

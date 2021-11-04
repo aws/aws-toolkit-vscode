@@ -64,9 +64,11 @@ export default defineComponent({
     },
     mixins: [saveData],
     methods: {
-        updateHeight(el: Element & { style: CSSStyleDeclaration }) {
-            this.lastHeight = el.scrollHeight
-            el.style.setProperty('--max-height', `${this.lastHeight}px`)
+        updateHeight(el: Element & { style?: CSSStyleDeclaration }) {
+            if (el.style) {
+                this.lastHeight = el.scrollHeight
+                el.style.setProperty('--max-height', `${this.lastHeight}px`)
+            }
         },
     },
     mounted() {
@@ -141,8 +143,11 @@ body.vscode-dark .collapse-button {
 body.vscode-light .collapse-button {
     background-image: url('/resources/light/expand-less.svg');
 }
-.collapse-button:checked {
+.collapse-button {
     transform: rotate(180deg);
+}
+.collapse-button:checked {
+    transform: rotate(90deg);
 }
 .settings-panel {
     background: var(--vscode-menu-background);

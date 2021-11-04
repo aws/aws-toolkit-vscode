@@ -3,8 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// temporary, we should be able to generate these entry point files from components
 import { createApp } from 'vue'
 import component from './samInvokeComponent.vue'
-const app = createApp(component)
+
+const create = () => createApp(component)
+const app = create()
 app.mount('#vue-app')
+
+window.addEventListener('remount', () => {
+    app.unmount()
+    create().mount('#vue-app')
+})

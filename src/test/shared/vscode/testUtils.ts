@@ -14,8 +14,7 @@ type InterceptEmitters<T, K extends keyof T> = {
     [P in K as `fire${Capitalize<P & string>}`]: T[P] extends vscode.Event<infer R>
         ? vscode.EventEmitter<R>['fire']
         : never
-} &
-    T // prettier really wants to keep this T separate
+} & T // prettier really wants to keep this T separate
 type FilteredKeys<T> = { [P in keyof T]: T[P] extends never ? never : P }[keyof T]
 type NoNever<T> = Pick<T, FilteredKeys<T>>
 

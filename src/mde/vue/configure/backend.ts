@@ -27,10 +27,11 @@ export interface DefinitionTemplate {
 
 const VueWebview = compileVueWebview({
     id: 'configureMde',
-    cssFiles: ['base.css'],
-    name: localize('AWS.command.configureMdeForm.title', 'Environment settings'),
-    webviewJs: 'createMdeConfigureVue.js',
+    title: localize('AWS.command.configureMdeForm.title', 'Environment settings'),
+    webviewJs: 'mdeConfigureVue.js',
     viewColumn: vscode.ViewColumn.Active,
+    start: (env: GetEnvironmentMetadataResponse & { connected: boolean }) => env,
+    submit: (data: CreateEnvironmentRequest) => data,
     events: {
         onEnvironmentUpdate: new vscode.EventEmitter<GetEnvironmentMetadataResponse & { connected: boolean }>(),
         onDevfileUpdate: new vscode.EventEmitter<GetStatusResponse & { actionId: 'devfile' }>(),
@@ -67,7 +68,7 @@ const VueWebview = compileVueWebview({
             })
         },
         getEnvironmentSummary() {
-            return getEnvironmentSummary.bind(undefined, this.arguments.id)
+            return getEnvironmentSummary.bind(undefined, this.data.id)
         },
         async deleteEnvironment(mde: GetEnvironmentMetadataResponse) {
             const deleted = await mdeDeleteCommand(mde)
@@ -80,11 +81,9 @@ const VueWebview = compileVueWebview({
             return deleted
         },
         connect() {
-            return mdeConnectCommand(this.arguments, parse(this.arguments.arn).region)
+            return mdeConnectCommand(this.data, parse(this.data.arn).region)
         },
     },
-    validateSubmit: (data: CreateEnvironmentRequest) => data,
-    validateData: (env?: GetEnvironmentMetadataResponse & { connected: boolean }) => true,
 })
 
 export class MdeConfigureWebview extends VueWebview {}
@@ -132,7 +131,7 @@ export async function createMdeConfigureWebview(
         }
     })()
 
-    return webview.show(await getEnvironmentSummary(environmentId)).finally(() => (done = true))
+    return webview.start(await getEnvironmentSummary(environmentId)).finally(() => (done = true))
 }
 
 // TODO: move to shared file
