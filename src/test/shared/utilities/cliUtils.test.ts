@@ -28,7 +28,7 @@ describe('cliUtils', async function () {
         fs.remove(path.join(ext.context.globalStoragePath, 'tools'))
     })
 
-    describe.only('installCli', async function () {
+    describe('installCli', async function () {
         async function hasFunctionalCli(cliPath: string): Promise<boolean> {
             return new Promise(resolve => {
                 fs.access(cliPath, fs.constants.X_OK, err => {
