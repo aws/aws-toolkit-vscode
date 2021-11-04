@@ -82,7 +82,7 @@ export interface VueWebviewPanel<Options extends WebviewCompileOptions> extends 
      *
      * This may be undefined if the view has not been started yet, or if the view was disposed.
      */
-    readonly panel?: vscode.WebviewPanel
+    readonly panel: vscode.WebviewPanel | undefined
 }
 
 export interface VueWebviewView<Options extends WebviewCompileOptions> extends VueWebview<Options> {
@@ -97,7 +97,7 @@ export interface VueWebviewView<Options extends WebviewCompileOptions> extends V
      *
      * This may be undefined if the view has not been started yet, or if the view was disposed.
      */
-    readonly view?: vscode.WebviewView
+    readonly view: vscode.WebviewView | undefined
 }
 
 function copyEmitters(events?: WebviewCompileOptions['events']): WebviewCompileOptions['events'] {
@@ -193,10 +193,10 @@ const MIN_WEBVIEW_VIEW_VERSION = '1.50.0'
  * @returns An anonymous class that can instantiate instances of {@link VueWebviewView}.
  */
 export function compileVueWebviewView<Options extends WebviewCompileOptions>(
-    params: WebviewViewParams & Omit<Options, 'submit'> & { commands?: CompileContext<Options> }
+    params: WebviewViewParams & Options & { commands?: CompileContext<Options> }
 ): { new (context: ExtContext): VueWebviewView<Options> } {
     return class implements VueWebviewView<Options> {
-        private _view?: vscode.WebviewView
+        private _view: vscode.WebviewView | undefined
         private initialData?: PropsFromOptions<Options>
         public readonly emitters: Options['events']
 
@@ -229,9 +229,8 @@ export function compileVueWebviewView<Options extends WebviewCompileOptions>(
                     view.description = params.description ?? view.description
                     updateWebview(view.webview, { ...params, context: this.context })
                     this.initialData = (await params.start?.(...data)) ?? data
-                    this._view = view
 
-                    if (params.commands) {
+                    if (!this._view && params.commands) {
                         const init = async () => this.initialData
                         const modifiedWebview = Object.assign(view.webview, {
                             dispose: () => {}, // currently does nothing for `view` type webviews
@@ -239,8 +238,16 @@ export function compileVueWebviewView<Options extends WebviewCompileOptions>(
                             emitters: this.emitters,
                         })
                         Object.defineProperty(modifiedWebview, 'data', { get: () => this.initialData })
-                        registerWebviewServer(modifiedWebview, { init, ...params.commands, ...this.emitters })
+                        const server = registerWebviewServer(modifiedWebview, {
+                            init,
+                            ...params.commands,
+                            ...this.emitters,
+                        })
+                        view.onDidDispose(() => server.dispose())
                     }
+
+                    this._view = view
+                    view.onDidDispose(() => (this._view = undefined))
                 },
             })
         }

@@ -105,7 +105,14 @@ export type WebviewServer = vscode.Webview & {
  * @param commands Commands to register.
  */
 export function registerWebviewServer(webview: WebviewServer, commands: Protocol): vscode.Disposable {
-    return webview.onDidReceiveMessage(async (event: Message) => {
+    const eventListeners: vscode.Disposable[] = []
+    const disposeListeners = () => {
+        while (eventListeners.length) {
+            eventListeners.pop()?.dispose()
+        }
+    }
+
+    const messageListener = webview.onDidReceiveMessage(async (event: Message) => {
         const { id, command, data } = event
         const metadata: Omit<Message, 'id' | 'command' | 'data'> = {}
 
@@ -115,9 +122,13 @@ export function registerWebviewServer(webview: WebviewServer, commands: Protocol
             return getLogger().warn(`Received invalid message from client: ${command}`)
         }
 
+        if (id === '0') {
+            disposeListeners() // Webview reloaded, dispose all listeners
+        }
+
         if (handler instanceof vscode.EventEmitter) {
             // TODO: make server dipose of event if client calls `dispose`
-            handler.event(e => webview.postMessage({ command, event: true, data: e }))
+            eventListeners.push(handler.event(e => webview.postMessage({ command, event: true, data: e })))
             getLogger().verbose(`Registered event handler for: ${command}`)
             return webview.postMessage({ id, command, event: true })
         }
@@ -148,4 +159,6 @@ export function registerWebviewServer(webview: WebviewServer, commands: Protocol
         // We also get a boolean value back, maybe retry sending on false?
         webview.postMessage({ id, command, data: result, ...metadata })
     })
+
+    return { dispose: () => (messageListener.dispose(), disposeListeners()) }
 }
