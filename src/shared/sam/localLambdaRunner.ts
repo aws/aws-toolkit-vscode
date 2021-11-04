@@ -475,12 +475,18 @@ async function requestLocalApi(
             methods: [reqMethod],
             calculateDelay: obj => {
                 if (obj.error.response !== undefined) {
-                    getLogger().debug('Local API response: %s : %O', uri, JSON.stringify(obj.error.response))
+                    getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
                 }
-                if (obj.error.code === 'ETIMEDOUT') {
+                if (
+                    obj.error.code === 'ETIMEDOUT' ||
+                    obj.attemptCount > RETRY_LIMIT ||
+                    obj.error.response?.statusCode === 403
+                ) {
                     return 0
                 }
-                getLogger().debug(`Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error}`)
+                getLogger().debug(
+                    `Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error.message}`
+                )
                 return RETRY_DELAY
             },
         },
@@ -496,7 +502,10 @@ async function requestLocalApi(
             getLogger().info('Local API is alive: %s', uri)
             return
         }
-        const msg = `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err}`
+        const msg =
+            err.response?.statusCode === 403
+                ? `Local API failed to respond to path: ${api?.path}`
+                : `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err.message}`
         getLogger('channel').error(msg)
         throw new Error(msg)
     })
