@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { getLogger } from '../../shared/logger'
 import { Commands } from '../../shared/vscode/commands'
@@ -17,6 +16,7 @@ import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
  */
 export async function createPolicyCommand(
     node: IotPolicyFolderNode,
+    getPolicyDoc = getPolicyDocument,
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
@@ -32,20 +32,19 @@ export async function createPolicyCommand(
         return
     }
 
-    const fileLocation = await promptForPolicyLocation(window)
-    if (!fileLocation) {
-        getLogger().info('CreatePolicy canceled: No document selected')
+    const data = await getPolicyDoc(window)
+    if (!data) {
         return
     }
 
     try {
-        const data = await fs.readFile(fileLocation.fsPath)
         //Parse to ensure this is a valid JSON
         const policyJSON = JSON.parse(data.toString())
         await node.iot.createPolicy({ policyName, policyDocument: JSON.stringify(policyJSON) })
+        window.showInformationMessage(localize('AWS.iot.createPolicy.success', 'Created Policy {0}', policyName))
     } catch (e) {
         getLogger().error('Failed to create policy document: %O', e)
-        showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to create policy'), window)
+        showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to create policy {0}', policyName), window)
         return
     }
 
@@ -53,7 +52,7 @@ export async function createPolicyCommand(
     await node.refreshNode(commands)
 }
 
-export async function promptForPolicyLocation(window: Window): Promise<vscode.Uri | undefined> {
+export async function getPolicyDocument(window: Window): Promise<Buffer | undefined> {
     const fileLocation = await window.showOpenDialog({
         canSelectFolders: false,
         canSelectFiles: true,
@@ -62,8 +61,20 @@ export async function promptForPolicyLocation(window: Window): Promise<vscode.Ur
     })
 
     if (!fileLocation || fileLocation.length == 0) {
+        getLogger().info('CreatePolicy canceled: No document selected')
         return undefined
     }
 
-    return fileLocation[0]
+    const policyLocation = fileLocation[0]
+
+    let data: Buffer
+    try {
+        data = await fs.readFile(policyLocation.fsPath)
+    } catch (e) {
+        getLogger().error('Failed to read policy document: %O', e)
+        showViewLogsMessage(localize('AWS.iot.createPolicy.error', 'Failed to read policy document'), window)
+        return undefined
+    }
+
+    return data
 }

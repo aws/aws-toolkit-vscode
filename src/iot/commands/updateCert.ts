@@ -13,7 +13,6 @@ import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utili
 import { IotThingNode } from '../explorer/iotThingNode'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { IotNode } from '../explorer/iotNodes'
-import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 
 const STATUS_REVOKED = 'REVOKED'
 const STATUS_ACTIVE = 'ACTIVE'
@@ -71,8 +70,8 @@ export async function deactivateCertificateCommand(
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node.parent)
-    await refreshNode(baseNode.thingFolderNode, commands)
-    await refreshNode(baseNode.certFolderNode, commands)
+    await baseNode.thingFolderNode?.refreshNode(commands)
+    await baseNode.certFolderNode?.refreshNode(commands)
 }
 
 /**
@@ -125,8 +124,8 @@ export async function activateCertificateCommand(
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node.parent)
-    await refreshNode(baseNode.thingFolderNode, commands)
-    await refreshNode(baseNode.certFolderNode, commands)
+    await baseNode.thingFolderNode?.refreshNode(commands)
+    await baseNode.certFolderNode?.refreshNode(commands)
 }
 
 /**
@@ -172,8 +171,8 @@ export async function revokeCertificateCommand(
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node.parent)
-    await refreshNode(baseNode.thingFolderNode, commands)
-    await refreshNode(baseNode.certFolderNode, commands)
+    await baseNode.thingFolderNode?.refreshNode(commands)
+    await baseNode.certFolderNode?.refreshNode(commands)
 }
 
 function getBaseNode(node: IotThingNode | IotCertsFolderNode): IotNode {
@@ -181,11 +180,4 @@ function getBaseNode(node: IotThingNode | IotCertsFolderNode): IotNode {
         return node.parent.parent
     }
     return node.parent
-}
-
-async function refreshNode(node: LoadMoreNode | undefined, commands: Commands): Promise<void> {
-    if (node) {
-        node.clearChildren()
-        return commands.execute('aws.refreshAwsExplorerNode', node)
-    }
 }

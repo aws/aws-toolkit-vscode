@@ -50,18 +50,12 @@ export class DefaultIotClient {
         getLogger().debug('ListThings called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.ListThingsResponse
-        try {
-            output = await iot
-                .listThings({
-                    maxResults: request?.maxResults ?? DEFAULT_MAX_THINGS,
-                    nextToken: request?.nextToken,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to list things: %O', e)
-            throw e
-        }
+        const output: Iot.ListThingsResponse = await iot
+            .listThings({
+                maxResults: request?.maxResults ?? DEFAULT_MAX_THINGS,
+                nextToken: request?.nextToken,
+            })
+            .promise()
 
         getLogger().debug('ListThings returned response: %O', output)
         return output
@@ -76,13 +70,7 @@ export class DefaultIotClient {
         getLogger().debug('CreateThing called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.CreateThingResponse
-        try {
-            output = await iot.createThing({ thingName: request.thingName }).promise()
-        } catch (e) {
-            getLogger().error('Failed to create Thing: %s: %O', request.thingName, e)
-            throw e
-        }
+        const output: Iot.CreateThingResponse = await iot.createThing({ thingName: request.thingName }).promise()
 
         getLogger().debug('CreateThing returned response: %O', output)
         return output
@@ -97,12 +85,7 @@ export class DefaultIotClient {
         getLogger().debug('DeleteThing called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.deleteThing({ thingName: request.thingName }).promise()
-        } catch (e) {
-            getLogger().error('Failed to delete Thing: %O', e)
-            throw e
-        }
+        await iot.deleteThing({ thingName: request.thingName }).promise()
 
         getLogger().debug('DeleteThing successful')
     }
@@ -116,19 +99,13 @@ export class DefaultIotClient {
         getLogger().debug('ListCertificates called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.ListCertificatesResponse
-        try {
-            output = await iot
-                .listCertificates({
-                    pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
-                    marker: request.marker,
-                    ascendingOrder: request.ascendingOrder,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to retrieve certificates: %O', e)
-            throw e
-        }
+        const output: Iot.ListCertificatesResponse = await iot
+            .listCertificates({
+                pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                marker: request.marker,
+                ascendingOrder: request.ascendingOrder,
+            })
+            .promise()
 
         getLogger().debug('ListCertificates returned response: %O', output)
         return output
@@ -147,19 +124,13 @@ export class DefaultIotClient {
     ): Promise<Iot.ListThingPrincipalsResponse> {
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.ListThingPrincipalsResponse
-        try {
-            output = await iot
-                .listThingPrincipals({
-                    thingName: request.thingName,
-                    maxResults: request.maxResults ?? DEFAULT_MAX_THINGS,
-                    nextToken: request.nextToken,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to list thing principals: %O', e)
-            throw e
-        }
+        const output: Iot.ListThingPrincipalsResponse = await iot
+            .listThingPrincipals({
+                thingName: request.thingName,
+                maxResults: request.maxResults ?? DEFAULT_MAX_THINGS,
+                nextToken: request.nextToken,
+            })
+            .promise()
         return output
     }
 
@@ -173,13 +144,8 @@ export class DefaultIotClient {
     ): Promise<Iot.DescribeCertificateResponse> {
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.DescribeCertificateResponse
-        try {
-            output = await iot.describeCertificate(request).promise()
-        } catch (e) {
-            getLogger().error('Failed to describe certificate: %O', e)
-            throw e
-        }
+        const output: Iot.DescribeCertificateResponse = await iot.describeCertificate(request).promise()
+
         return output
     }
 
@@ -233,20 +199,14 @@ export class DefaultIotClient {
         getLogger().debug('ListThingsForCert called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let iotThings: Iot.ThingName[]
-        try {
-            const output = await iot
-                .listPrincipalThings({
-                    maxResults: request.maxResults ?? DEFAULT_MAX_THINGS,
-                    nextToken: request.nextToken,
-                    principal: request.principal,
-                })
-                .promise()
-            iotThings = output.things ?? []
-        } catch (e) {
-            getLogger().error('Failed to list things: %O', e)
-            throw e
-        }
+        const output = await iot
+            .listPrincipalThings({
+                maxResults: request.maxResults ?? DEFAULT_MAX_THINGS,
+                nextToken: request.nextToken,
+                principal: request.principal,
+            })
+            .promise()
+        const iotThings: Iot.ThingName[] = output.things ?? []
 
         getLogger().debug('ListThingsForCert returned response: %O', iotThings)
         return iotThings
@@ -263,13 +223,7 @@ export class DefaultIotClient {
         getLogger().debug('CreateCertificate called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.CreateKeysAndCertificateResponse
-        try {
-            output = await iot.createKeysAndCertificate(request).promise()
-        } catch (e) {
-            getLogger().error('Failed to create certificate and keys: %O', e)
-            throw e
-        }
+        const output: Iot.CreateKeysAndCertificateResponse = await iot.createKeysAndCertificate(request).promise()
 
         getLogger().debug('CreateCertificate succeeded')
         return output
@@ -284,14 +238,7 @@ export class DefaultIotClient {
         getLogger().debug('UpdateCertificate called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot
-                .updateCertificate({ certificateId: request.certificateId, newStatus: request.newStatus })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to update certificate: %O', e)
-            throw e
-        }
+        await iot.updateCertificate({ certificateId: request.certificateId, newStatus: request.newStatus }).promise()
 
         getLogger().debug('UpdateCertificate successful')
     }
@@ -309,14 +256,7 @@ export class DefaultIotClient {
         getLogger().debug('DeleteCertificate called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot
-                .deleteCertificate({ certificateId: request.certificateId, forceDelete: request.forceDelete })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to delete certificate: %O', e)
-            throw e
-        }
+        await iot.deleteCertificate(request).promise()
 
         getLogger().debug('DeleteCertificate successful')
     }
@@ -330,12 +270,7 @@ export class DefaultIotClient {
         getLogger().debug('AttachThingPrincipal called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.attachThingPrincipal({ thingName: request.thingName, principal: request.principal }).promise()
-        } catch (e) {
-            getLogger().error('Failed to attach certificate: %O', e)
-            throw e
-        }
+        await iot.attachThingPrincipal({ thingName: request.thingName, principal: request.principal }).promise()
 
         getLogger().debug('AttachThingPrincipal successful')
     }
@@ -349,12 +284,7 @@ export class DefaultIotClient {
         getLogger().debug('DetachThingPrincipal called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.detachThingPrincipal({ thingName: request.thingName, principal: request.principal }).promise()
-        } catch (e) {
-            getLogger().error('Failed to detach certificate: %O', e)
-            throw e
-        }
+        await iot.detachThingPrincipal({ thingName: request.thingName, principal: request.principal }).promise()
 
         getLogger().debug('DetachThingPrincipal successful')
     }
@@ -368,19 +298,14 @@ export class DefaultIotClient {
         getLogger().debug('ListPolicies called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.ListPoliciesResponse
-        try {
-            output = await iot
-                .listPolicies({
-                    pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
-                    marker: request.marker,
-                    ascendingOrder: request.ascendingOrder,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to retrieve policies: %O', e)
-            throw e
-        }
+        const output: Iot.ListPoliciesResponse = await iot
+            .listPolicies({
+                pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                marker: request.marker,
+                ascendingOrder: request.ascendingOrder,
+            })
+            .promise()
+
         getLogger().debug('ListPolicies returned response: %O', output)
         return output
     }
@@ -394,20 +319,15 @@ export class DefaultIotClient {
         getLogger().debug('ListPrincipalPolicies called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.ListPrincipalPoliciesResponse
-        try {
-            output = await iot
-                .listPrincipalPolicies({
-                    principal: request.principal,
-                    pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
-                    marker: request.marker,
-                    ascendingOrder: request.ascendingOrder,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to retrieve policies: %O', e)
-            throw e
-        }
+        const output: Iot.ListPrincipalPoliciesResponse = await iot
+            .listPrincipalPolicies({
+                principal: request.principal,
+                pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                marker: request.marker,
+                ascendingOrder: request.ascendingOrder,
+            })
+            .promise()
+
         getLogger().debug('ListPrincipalPolicies returned response: %O', output)
         return output
     }
@@ -424,20 +344,14 @@ export class DefaultIotClient {
         getLogger().debug('ListPolicyTargets called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let arns: Iot.Target[]
-        try {
-            const output = await iot
-                .listTargetsForPolicy({
-                    pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
-                    marker: request.marker,
-                    policyName: request.policyName,
-                })
-                .promise()
-            arns = output.targets ?? []
-        } catch (e) {
-            getLogger().error('Failed to list policy targets: %O', e)
-            throw e
-        }
+        const output = await iot
+            .listTargetsForPolicy({
+                pageSize: request.pageSize ?? DEFAULT_MAX_THINGS,
+                marker: request.marker,
+                policyName: request.policyName,
+            })
+            .promise()
+        const arns: Iot.Target[] = output.targets ?? []
 
         getLogger().debug('ListPolicyTargets returned response: %O', arns)
         return arns
@@ -452,12 +366,7 @@ export class DefaultIotClient {
         getLogger().debug('AttachPolicy called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.attachPolicy({ policyName: request.policyName, target: request.target }).promise()
-        } catch (e) {
-            getLogger().error('Failed to attach policy: %O', e)
-            throw e
-        }
+        await iot.attachPolicy({ policyName: request.policyName, target: request.target }).promise()
 
         getLogger().debug('AttachPolicy successful')
     }
@@ -471,12 +380,7 @@ export class DefaultIotClient {
         getLogger().debug('DetachPolicy called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.detachPolicy({ policyName: request.policyName, target: request.target }).promise()
-        } catch (e) {
-            getLogger().error('Failed to detach policy: %O', e)
-            throw e
-        }
+        await iot.detachPolicy({ policyName: request.policyName, target: request.target }).promise()
 
         getLogger().debug('DetachPolicy successful')
     }
@@ -490,15 +394,8 @@ export class DefaultIotClient {
         getLogger().debug('CreatePolicy called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let policyArn: string | undefined
-        try {
-            const output = await iot.createPolicy(request).promise()
-            policyArn = output.policyArn
-        } catch (e) {
-            getLogger().error('Failed to create policy: %O', e)
-            throw e
-        }
-        getLogger().info(`Created policy: ${policyArn}`)
+        const output: Iot.CreatePolicyResponse = await iot.createPolicy(request).promise()
+        getLogger().info(`Created policy: ${output.policyArn}`)
 
         getLogger().debug('CreatePolicy successful')
     }
@@ -516,12 +413,7 @@ export class DefaultIotClient {
         getLogger().debug('DeletePolicy called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.deletePolicy({ policyName: request.policyName }).promise()
-        } catch (e) {
-            getLogger().error('Failed to delete Policy: %O', e)
-            throw e
-        }
+        await iot.deletePolicy({ policyName: request.policyName }).promise()
 
         getLogger().debug('DeletePolicy successful')
     }
@@ -535,20 +427,13 @@ export class DefaultIotClient {
         getLogger().debug('GetEndpoint called')
         const iot = await this.iotProvider(this.regionCode)
 
-        let endpoint: string | undefined
-        try {
-            const output = await iot.describeEndpoint({ endpointType: IOT_ENDPOINT_TYPE }).promise()
-            endpoint = output.endpointAddress
-        } catch (e) {
-            getLogger().error('Failed to retrieve endpoint: %O', e)
-            throw e
-        }
-        if (!endpoint) {
+        const output = await iot.describeEndpoint({ endpointType: IOT_ENDPOINT_TYPE }).promise()
+        if (!output.endpointAddress) {
             throw new Error('Failed to retrieve endpoint')
         }
 
         getLogger().debug('GetEndpoint successful')
-        return endpoint
+        return output.endpointAddress
     }
 
     /**
@@ -575,12 +460,8 @@ export class DefaultIotClient {
         getLogger().debug('CreatePolicyVersion called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.createPolicyVersion(request).promise()
-        } catch (e) {
-            getLogger().error('Failed to create new Policy Version: %O', e)
-            throw e
-        }
+        const output = await iot.createPolicyVersion(request).promise()
+        getLogger().info(`Created new version ${output.policyVersionId} of ${request.policyName}`)
 
         getLogger().debug('CreatePolicyVersion successful')
     }
@@ -598,12 +479,7 @@ export class DefaultIotClient {
         getLogger().debug('DeletePolicyVersion called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.deletePolicyVersion(request).promise()
-        } catch (e) {
-            getLogger().error('Failed to delete Policy Version: %O', e)
-            throw e
-        }
+        await iot.deletePolicyVersion(request).promise()
 
         getLogger().debug('DeletePolicyVersion successful')
     }
@@ -617,12 +493,7 @@ export class DefaultIotClient {
         getLogger().debug('SetDefaultPolicyVersion called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        try {
-            await iot.setDefaultPolicyVersion(request).promise()
-        } catch (e) {
-            getLogger().error('Failed to set default policy version: %O', e)
-            throw e
-        }
+        await iot.setDefaultPolicyVersion(request).promise()
 
         getLogger().debug('SetDefaultPolicyVersion successful')
     }
@@ -636,13 +507,7 @@ export class DefaultIotClient {
         getLogger().debug('GetPolicyVersion called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        let output: Iot.GetPolicyVersionResponse
-        try {
-            output = await iot.getPolicyVersion(request).promise()
-        } catch (e) {
-            getLogger().error('Failed to get policy version: %O', e)
-            throw e
-        }
+        const output: Iot.GetPolicyVersionResponse = await iot.getPolicyVersion(request).promise()
 
         getLogger().debug('GetPolicyVersion successful')
         return output

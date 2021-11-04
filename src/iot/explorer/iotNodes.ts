@@ -14,7 +14,6 @@ import { inspect } from 'util'
 import { IotThingFolderNode } from './iotThingFolderNode'
 import { IotCertsFolderNode } from './iotCertFolderNode'
 import { IotPolicyFolderNode } from './iotPolicyFolderNode'
-import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 
 /**
  * An AWS Explorer node representing IoT.
@@ -22,16 +21,18 @@ import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
  * Contains folders for Things, Certificates, and Policies as child nodes.
  */
 export class IotNode extends AWSTreeNodeBase {
-    public thingFolderNode: LoadMoreNode | undefined
-    public certFolderNode: LoadMoreNode | undefined
-    public policyFolderNode: LoadMoreNode | undefined
+    /* These nodes are declared here to be used when refreshing resources that
+     * occur multiple times in the tree (e.g. certificates that are under both
+     * Things and the Certificates folder). However, they cannot be assinged in
+     * the constructor due to a circular dependency with this node, so they are
+     * initially undefined. */
+    public thingFolderNode: IotThingFolderNode | undefined
+    public certFolderNode: IotCertsFolderNode | undefined
+    public policyFolderNode: IotPolicyFolderNode | undefined
 
     public constructor(private readonly iot: IotClient) {
         super('IoT', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsIotNode'
-        // this.thingFolderNode = new IotThingFolderNode(this.iot, this)
-        // this.certFolderNode = new IotCertsFolderNode(this.iot, this)
-        // this.policyFolderNode = new IotPolicyFolderNode(this.iot, this)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
