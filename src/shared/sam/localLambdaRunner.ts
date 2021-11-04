@@ -470,9 +470,6 @@ async function requestLocalApi(
         headers: api?.headers,
         method: reqMethod,
         retry: {
-            limit: RETRY_LIMIT,
-            statusCodes: [],
-            methods: [reqMethod],
             calculateDelay: obj => {
                 if (obj.error.response !== undefined) {
                     getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
