@@ -10,16 +10,15 @@ import software.amazon.awssdk.services.apprunner.model.ServiceSummary
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
-import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
-import software.aws.toolkits.jetbrains.core.getResourceNow
+import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.apprunner.resources.AppRunnerResources
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.resources.message
 
-class AppRunnerNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
+class AppRunnerNode(project: Project, service: AwsExplorerServiceNode) :
+    CacheBackedAwsExplorerServiceRootNode<ServiceSummary>(project, service, AppRunnerResources.LIST_SERVICES) {
     override fun displayName() = message("explorer.node.apprunner")
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> =
-        nodeProject.getResourceNow(AppRunnerResources.LIST_SERVICES).map { AppRunnerServiceNode(nodeProject, it) }
+    override fun toNode(child: ServiceSummary): AwsExplorerNode<*> = AppRunnerServiceNode(nodeProject, child)
 }
 
 class AppRunnerServiceNode(

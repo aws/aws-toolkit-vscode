@@ -18,6 +18,8 @@ abstract class AwsExplorerServiceRootNode(project: Project, service: AwsExplorer
     private val serviceId = service.serviceId
 
     abstract override fun displayName(): String
+
+    override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
     override fun isAlwaysShowPlus(): Boolean = true
     override fun actionGroupName() = "aws.toolkit.explorer.$serviceId"
 }
