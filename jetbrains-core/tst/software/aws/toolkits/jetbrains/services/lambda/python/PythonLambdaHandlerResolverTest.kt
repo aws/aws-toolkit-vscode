@@ -27,6 +27,7 @@ class PythonLambdaHandlerResolverTest {
     @Test
     fun findWorksByPath() {
         createHandler("hello_world/app.py")
+        createRequirementsTxt(".")
 
         assertHandler("hello_world/app.handle", true)
     }
@@ -35,12 +36,13 @@ class PythonLambdaHandlerResolverTest {
     fun findWorksByPathWithInit() {
         createHandler("hello_world/app.py")
         createInitPy("hello_world")
+        createRequirementsTxt(".")
 
         assertHandler("hello_world/app.handle", true)
     }
 
     @Test
-    fun findDoesntWorkByModule() {
+    fun findDoesntWorkIfNoRequirementsFound() {
         createHandler("hello_world/app.py")
 
         assertHandler("hello_world.app.handle", false)
@@ -50,6 +52,7 @@ class PythonLambdaHandlerResolverTest {
     fun findWorksByModuleWithInit() {
         createHandler("hello_world/app.py")
         createInitPy("hello_world")
+        createRequirementsTxt(".")
 
         assertHandler("hello_world.app.handle", true)
     }
@@ -57,21 +60,24 @@ class PythonLambdaHandlerResolverTest {
     @Test
     fun findWorksInSubFolderByPath() {
         createHandler("hello_world/foo_bar/app.py")
+        createRequirementsTxt("hello_world")
 
-        assertHandler("hello_world/foo_bar/app.handle", true)
+        assertHandler("foo_bar/app.handle", true)
     }
 
     @Test
     fun findWorksInSubFolderByPathWithInit() {
         createHandler("hello_world/foo_bar/app.py")
         createInitPy("hello_world/foo_bar")
+        createRequirementsTxt("hello_world")
 
-        assertHandler("hello_world/foo_bar/app.handle", true)
+        assertHandler("foo_bar.app.handle", true)
     }
 
     @Test
-    fun findDoesntWorkWithPathAndModule() {
+    fun findDoesntWorkWithPathAndModuleWithoutInit() {
         createHandler("hello_world/foo_bar/app.py")
+        createRequirementsTxt(".")
 
         assertHandler("hello_world/foo_bar.app.handle", false)
     }
@@ -80,6 +86,7 @@ class PythonLambdaHandlerResolverTest {
     fun findWorksWithPathAndModuleWithInit() {
         createHandler("hello_world/foo_bar/app.py")
         createInitPy("hello_world/foo_bar")
+        createRequirementsTxt(".")
 
         assertHandler("hello_world/foo_bar.app.handle", true)
     }
@@ -89,6 +96,7 @@ class PythonLambdaHandlerResolverTest {
         createHandler("hello_world/foo_bar/app.py")
         createInitPy("hello_world")
         createInitPy("hello_world/foo_bar")
+        createRequirementsTxt(".")
 
         assertHandler("hello_world.foo_bar.app.handle", true)
     }
@@ -97,6 +105,7 @@ class PythonLambdaHandlerResolverTest {
     fun findDoesntWorkWithSubmodulesWithMissingInit() {
         createHandler("hello_world/foo_bar/app.py")
         createInitPy("hello_world/foo_bar")
+        createRequirementsTxt(".")
 
         assertHandler("hello_world.foo_bar.app.handle", false)
     }
@@ -106,6 +115,7 @@ class PythonLambdaHandlerResolverTest {
         val virtualFile = createHandler("src/hello_world/foo_bar/app.py")
         createInitPy("src/hello_world/foo_bar")
         createInitPy("src/hello_world")
+        createRequirementsTxt("src")
 
         markAsSourceRoot(virtualFile.parent.parent) // hello_world
 
@@ -113,18 +123,10 @@ class PythonLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findDoesntWorkIfNotASourceOrContentRoot() {
-        createHandler("src/hello_world/foo_bar/app.py")
-        createInitPy("src/hello_world")
-        createInitPy("src/hello_world/foo_bar")
-
-        assertHandler("hello_world.foo_bar.app.handle", false)
-    }
-
-    @Test
     fun findDoesntWorkIfParentFolderDoesntExist() {
         createHandler("src/hello_world/foo_bar/app.py")
         createInitPy("src/hello_world/foo_bar")
+        createRequirementsTxt(".")
 
         assertHandler("doesnt_exist/foo_bar.app.handle", false)
     }
@@ -132,6 +134,7 @@ class PythonLambdaHandlerResolverTest {
     @Test
     fun invalidHandlerReturnsNothing() {
         createHandler("hello_world/app.py")
+        createRequirementsTxt(".")
 
         assertHandler("doesnt_exist", false)
     }
@@ -139,23 +142,15 @@ class PythonLambdaHandlerResolverTest {
     @Test
     fun findWorksByTopLevelModule() {
         createHandler("app.py")
+        createRequirementsTxt(".")
 
         assertHandler("app.handle", true)
     }
 
     @Test
-    fun findWorkIfRequirementsFileIsFound() {
-        createHandler("src/hello_world/foo_bar/app.py")
-        createInitPy("src/hello_world")
-        createInitPy("src/hello_world/foo_bar")
-        projectRule.fixture.addFileToModule(projectRule.module, "src/requirements.txt", "")
-
-        assertHandler("hello_world.foo_bar.app.handle", true)
-    }
-
-    @Test
     fun foundHandlersNotPythonFileInvalid() {
         createHandler("hello_world/foo_bar/app.java")
+        createRequirementsTxt(".")
 
         assertHandler("hello_world/foo_bar/app.handle", false)
     }
@@ -163,6 +158,7 @@ class PythonLambdaHandlerResolverTest {
     @Test
     fun foundHandlersAreDeterminedValid() {
         createHandler("hello_world/foo_bar/app.py")
+        createRequirementsTxt(".")
 
         assertHandlerDetermineHandlers("hello_world/foo_bar/app.handle", false)
     }
@@ -170,6 +166,7 @@ class PythonLambdaHandlerResolverTest {
     @Test
     fun pyTestHandlersAreDeterminedInvalid() {
         createPyTestHandler("hello_world/foo_bar/app.py")
+        createRequirementsTxt(".")
 
         assertHandlerDetermineHandlers("hello_world/foo_bar/app.test_handle", true)
     }
@@ -177,24 +174,32 @@ class PythonLambdaHandlerResolverTest {
     @Test
     fun testDirectoryHandlerHandlersAreDeterminedInvalid() {
         val vfs = createHandler("hello_world/foo_bar/app.py")
+        createRequirementsTxt(".")
         PsiTestUtil.addSourceRoot(projectRule.module, vfs.parent, true)
 
         assertHandlerDetermineHandlers("hello_world/foo_bar/app.handle", true)
     }
 
     @Test
-    fun foundHandlersOneArugmentIsDeterminedInvalid() {
+    fun foundHandlersOneArgumentIsDeterminedInvalid() {
         createInvalidHandler("hello_world/foo_bar/app.py", 1)
+        createRequirementsTxt(".")
 
         assertHandlerDetermineHandlers("hello_world/foo_bar/app.handle", true)
     }
 
     @Test
-    fun foundHandlersThreeArugmentsIsDeterminedInvalid() {
+    fun foundHandlersThreeArgumentsIsDeterminedInvalid() {
         createInvalidHandler("hello_world/foo_bar/app.py", 3)
+        createRequirementsTxt(".")
 
         assertHandlerDetermineHandlers("hello_world/foo_bar/app.handle", true)
     }
+
+    private fun createRequirementsTxt(folder: String): VirtualFile = projectRule.fixture.addFileToProject(
+        folder + "/requirements.txt",
+        ""
+    ).virtualFile
 
     private fun createHandler(path: String): VirtualFile = projectRule.fixture.addFileToProject(
         path,

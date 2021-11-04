@@ -22,16 +22,18 @@ class PythonLambdaBuilder : LambdaBuilder() {
         return Paths.get(locateRequirementsTxt(handlerVirtualFile).parent.path)
     }
 
-    private fun locateRequirementsTxt(startLocation: VirtualFile): VirtualFile = runReadAction {
-        var dir = if (startLocation.isDirectory) startLocation else startLocation.parent
-        while (dir != null) {
-            val requirementsFile = dir.findChild("requirements.txt")
-            if (requirementsFile != null && requirementsFile.isValid) {
-                return@runReadAction requirementsFile
+    companion object {
+        fun locateRequirementsTxt(startLocation: VirtualFile): VirtualFile = runReadAction {
+            var dir = if (startLocation.isDirectory) startLocation else startLocation.parent
+            while (dir != null) {
+                val requirementsFile = dir.findChild("requirements.txt")
+                if (requirementsFile != null && requirementsFile.isValid) {
+                    return@runReadAction requirementsFile
+                }
+                dir = dir.parent
             }
-            dir = dir.parent
-        }
 
-        throw IllegalStateException("Cannot locate requirements.txt in a parent directory of ${startLocation.path}")
+            throw IllegalStateException("Cannot locate requirements.txt in a parent directory of ${startLocation.path}")
+        }
     }
 }

@@ -3,11 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.python
 
-import com.intellij.openapi.module.Module
-import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.TestSourcesFilter
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiDirectory
@@ -43,10 +41,7 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
         // Find the module by the name
         PyModuleNameIndex.find(moduleFile, project, false).forEach { pyModule ->
             val lambdaFunctionCandidate = pyModule.findTopLevelFunction(functionName) ?: return@forEach
-
-            val module = ModuleUtilCore.findModuleForFile(lambdaFunctionCandidate.containingFile)
-
-            if (validateHandlerPath(module, pyModule, moduleFolders, parentFolders)) {
+            if (validateHandlerPath(pyModule, moduleFolders, parentFolders)) {
                 return arrayOf(lambdaFunctionCandidate)
             }
         }
@@ -55,7 +50,6 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
     }
 
     private fun validateHandlerPath(
-        module: Module?,
         pyModule: PyFile,
         parentModuleFolders: List<String>,
         parentFolders: List<String>
@@ -63,7 +57,7 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
         // Start matching to see if the parent folders align
         var directory = pyModule.containingDirectory
 
-        // Go from deepest back up
+        // Go from the deepest back up
         parentModuleFolders.reversed().forEach { parentModule ->
             if (parentModule != directory?.name || !directoryHasInitPy(directory)) {
                 return false
@@ -79,22 +73,11 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
         }
 
         val rootVirtualFile = directory.virtualFile
-        module?.let {
-            val rootManager = ModuleRootManager.getInstance(module)
-            if (rootManager.contentRoots.contains(rootVirtualFile)) {
-                return true
-            }
-
-            if (rootManager.getSourceRoots(false).contains(rootVirtualFile)) {
-                return true
-            }
-
-            if (rootVirtualFile.findChild("requirements.txt") != null) {
-                return true
-            }
+        if (rootVirtualFile.findChild("requirements.txt") != null) {
+            return true
+        } else {
+            throw IllegalStateException("Failed to locate requirements.txt")
         }
-
-        return false
     }
 
     private fun directoryHasInitPy(psiDirectory: PsiDirectory) = psiDirectory.findFile("__init__.py") != null
@@ -115,7 +98,13 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
             // https://pytest.readthedocs.io/en/reorganize-docs/new-docs/user/naming_conventions.html#id1
             function.name?.startsWith("test_") != true
         ) {
-            return function.qualifiedName
+            val requirementsFileDir = runCatching { PythonLambdaBuilder.locateRequirementsTxt(virtualFile).parent }.getOrNull() ?: return null
+            val filePath = if (virtualFile.parent != requirementsFileDir) {
+                VfsUtil.getRelativePath(virtualFile.parent, requirementsFileDir)?.let { "$it/" } ?: return null
+            } else {
+                ""
+            }
+            return "$filePath${virtualFile.nameWithoutExtension}.${function.name}"
         }
         return null
     }
