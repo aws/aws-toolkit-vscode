@@ -17,4 +17,6 @@ class CloudFormationToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun init(toolWindow: ToolWindow) {
         toolWindow.stripeTitle = message("cloudformation.toolwindow.label")
     }
+
+    override fun shouldBeAvailable(project: Project): Boolean = false
 }
