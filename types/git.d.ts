@@ -29,9 +29,9 @@ export const enum ForcePushMode {
 }
 
 export const enum RefType {
-    Head,
-    RemoteHead,
-    Tag,
+    Head = 0,
+    RemoteHead = 1,
+    Tag = 2,
 }
 
 export interface Ref {

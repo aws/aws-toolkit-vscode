@@ -22,6 +22,7 @@ import {
 } from '../shared/sam/cli/samCliValidator'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
+import { UriHandler } from '../shared/vscode/uriHandler'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -107,6 +108,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             outputChannel: outputChannel,
             telemetryService: telemetryService,
             credentialsStore: new CredentialsStore(),
+            uriHandler: new UriHandler(),
         }
     }
 }

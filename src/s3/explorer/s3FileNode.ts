@@ -13,6 +13,7 @@ import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { inspect } from 'util'
 import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
+import { getRelativeDate } from '../../shared/utilities/textUtilities'
 
 /**
  * Moment format for rendering readable dates for S3.
@@ -39,9 +40,6 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
         if (file.sizeBytes !== undefined && file.lastModified) {
             const readableSize = formatBytes(file.sizeBytes)
 
-            // Prevent clock skew showing future date
-            const readableDate = moment(file.lastModified).subtract(5, 'second').from(now)
-
             this.tooltip = localize(
                 'AWS.explorerNode.s3.fileTooltip',
                 '{0}\nSize: {1}\nLast Modified: {2}',
@@ -49,7 +47,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
                 readableSize,
                 moment(file.lastModified).format(S3_DATE_FORMAT)
             )
-            this.description = `${readableSize}, ${readableDate}`
+            this.description = `${readableSize}, ${getRelativeDate(file.lastModified, now)}`
         }
         this.iconPath = fileIconPath()
         this.contextValue = 'awsS3FileNode'
