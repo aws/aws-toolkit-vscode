@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.datagrip.auth
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.intellij.database.dataSource.DataSourceSshTunnelConfiguration
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor
 import com.intellij.database.dataSource.DatabaseConnectionPoint
 import com.intellij.database.dataSource.LocalDataSource
@@ -96,6 +97,18 @@ class SecretsManagerAuthTest {
     }
 
     @Test
+    fun `Intercept credentials does not use host and port from secret when SSH tunnel is enabled`() {
+        createSecretsManagerClient()
+        val connection = sAuth.intercept(buildConnection(usesSshTunnel = true, usesUrlFromSecret = true), false)?.toCompletableFuture()?.get()
+        assertNotNull(connection)
+        assertThat(connection.connectionProperties).containsKey("user")
+        assertThat(connection.connectionProperties["user"]).isEqualTo(username)
+        assertThat(connection.connectionProperties).containsKey("password")
+        assertThat(connection.connectionProperties["password"]).isEqualTo(password)
+        assertThat(connection.url).doesNotContain("//$secretDbHost:$secretPort/")
+    }
+
+    @Test
     fun `No secret fails`() {
         assertThatThrownBy { sAuth.intercept(buildConnection(hasSecret = false), false)?.unwrap() }.isInstanceOf(IllegalArgumentException::class.java)
     }
@@ -176,6 +189,7 @@ class SecretsManagerAuthTest {
         hasHost: Boolean = true,
         hasPort: Boolean = true,
         hasSecret: Boolean = true,
+        usesSshTunnel: Boolean = false,
         usesUrlFromSecret: Boolean = false
     ): DatabaseConnectionInterceptor.ProtoConnection {
         val mockConnection = mock<LocalDataSource> {
@@ -188,6 +202,13 @@ class SecretsManagerAuthTest {
             }
             on { databaseDriver } doReturn null
             on { driverClass } doReturn "org.postgresql.Driver"
+            on { sshConfiguration } doAnswer {
+                if (usesSshTunnel) {
+                    DataSourceSshTunnelConfiguration(true, "config")
+                } else {
+                    null
+                }
+            }
         }
         val dbConnectionPoint = mock<DatabaseConnectionPoint> {
             on { additionalJdbcProperties } doAnswer {

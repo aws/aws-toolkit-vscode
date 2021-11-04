@@ -59,7 +59,10 @@ class SecretsManagerAuth : DatabaseAuthProvider {
             try {
                 val connectionSettings = getConfiguration(connection)
                 val dbSecret = getDbSecret(connectionSettings)
-                if (connection.connectionPoint.additionalJdbcProperties[GET_URL_FROM_SECRET]?.toBoolean() == true) {
+                if (
+                    connection.connectionPoint.dataSource.sshConfiguration?.isEnabled != true &&
+                    connection.connectionPoint.additionalJdbcProperties[GET_URL_FROM_SECRET]?.toBoolean() == true
+                ) {
                     dbSecret.host ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_host", connectionSettings.secretId))
                     dbSecret.port ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_port", connectionSettings.secretId))
                     // we have to rewrite the url which is pretty messy. The util is not better than using split (requires magic strings
