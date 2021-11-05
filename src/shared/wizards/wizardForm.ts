@@ -142,7 +142,7 @@ type FormDataElement<TState, TProp> = ContextOptions<TState, TProp, any> & {
     /** Provides a 'prompt' given the current state */
     provider?: PrompterProvider<TState, TProp, any>
     /** Gets the default value (if any) of the property */
-    getDefault: (state: TState) => TProp | undefined
+    getDefault: (state: TState, assigned: Set<string>) => TProp | undefined
     /**  Checks if the property could be shown given the state and currently queued-up properties */
     canShow: (state: TState, assigned: Set<string>) => boolean
 }
@@ -179,11 +179,11 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     /** Applies 'default' values to a state (see {@link ContextOptions.setDefault setDefault}) */
-    public applyDefaults(state: TState): TState {
+    public applyDefaults(state: TState, assigned: Set<string>): TState {
         const defaultState = _.cloneDeep(state)
 
         this.formData.forEach((opt, targetProp) => {
-            const value = opt.getDefault(state)
+            const value = opt.getDefault(state, assigned)
             if (value !== undefined) {
                 _.set(defaultState, targetProp, value)
             }
@@ -238,7 +238,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         prop: string,
         state: TState,
         assigned: Set<string> = new Set(),
-        defaultState: TState = this.applyDefaults(state)
+        defaultState: TState = this.applyDefaults(state, assigned)
     ): boolean {
         const current = _.get(state, prop)
         const options = this.formData.get(prop)
@@ -276,10 +276,10 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             }
         }
 
-        element.getDefault = state => {
+        element.getDefault = (state, assigned) => {
             const current = _.get(state, prop)
 
-            if (!isSet(current) && options.setDefault !== undefined && !isDependent(state)) {
+            if (options.setDefault !== undefined && !isSet(current) && !assigned.has(prop) && !isDependent(state)) {
                 return options.setDefault(state)
             }
         }
@@ -327,10 +327,12 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             return layer.canShow(state, assigned) && element.canShow(mapState(state), mapAssigned(assigned))
         }
 
-        wrappedElement.getDefault = state => {
+        wrappedElement.getDefault = (state, assigned) => {
             return (
-                layer.getDefault(state) ??
-                (layer.canShow(state, new Set()) ? element.getDefault(mapState(state)) : undefined)
+                layer.getDefault(state, assigned) ??
+                (layer.canShow(state, new Set())
+                    ? element.getDefault(mapState(state), mapAssigned(assigned))
+                    : undefined)
             )
         }
 

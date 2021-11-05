@@ -48,7 +48,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     let initialized: boolean = false
 
     function canShowPrompter(prop: string, shown: Set<string> = new Set(assigned)): boolean {
-        const defaultState = form.applyDefaults(state)
+        const defaultState = form.applyDefaults(state, shown)
 
         if (!form.canShowProperty(prop, state, shown, defaultState)) {
             return false
@@ -95,7 +95,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     }
 
     function assertValue<TProp>(path: string): MockWizardFormElement<TProp>['assertValue'] {
-        const actual = _.get(form.applyDefaults(state), path)
+        const actual = _.get(form.applyDefaults(state, new Set(assigned)), path)
 
         return (expected: TProp) =>
             failIf(actual !== expected, `Property "${path}" had unexpected value: ${actual} !== ${expected}`)

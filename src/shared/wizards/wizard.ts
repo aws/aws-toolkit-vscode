@@ -112,7 +112,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
         const outputState = await this.stateController.run()
 
-        return outputState !== undefined ? this._form.applyDefaults(outputState) : undefined
+        return outputState !== undefined ? this._form.applyDefaults(outputState, this.getAssigned()) : undefined
     }
 
     private createStepEstimator<TProp>(state: TState, prop: string): StepEstimator<TProp> {
@@ -151,7 +151,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return async state => {
             const stateWithCache = Object.assign(
                 { stepCache: stepCache, estimator: this.createStepEstimator(state, prop) },
-                this._form.applyDefaults(state)
+                this._form.applyDefaults(state, this.getAssigned())
             )
             const impliedResponse = _.get(this.options.implicitState ?? {}, prop)
             const response = await this.promptUser(stateWithCache, provider, impliedResponse)
@@ -179,11 +179,10 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
     protected resolveNextSteps(state: TState, assigned: Set<string> = this.getAssigned()): Branch<TState> {
         const nextSteps: Branch<TState> = []
-        const defaultState = this._form.applyDefaults(state)
         const currentlyAssigned = new Set(assigned)
         this.boundSteps.forEach((step, targetProp) => {
             if (
-                this._form.canShowProperty(targetProp, state, currentlyAssigned, defaultState) &&
+                this._form.canShowProperty(targetProp, state, currentlyAssigned) &&
                 !this.stateController.containsStep(step)
             ) {
                 nextSteps.push(step)

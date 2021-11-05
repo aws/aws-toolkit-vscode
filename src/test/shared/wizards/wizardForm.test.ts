@@ -47,6 +47,19 @@ describe('WizardForm', function () {
         assert.throws(() => testForm.prop1.setDefault(1))
     })
 
+    it('ignores `setDefault` if property is assigned', function () {
+        testForm.prop1.bindPrompter(() => new SimplePrompter(1), {
+            setDefault: () => 0,
+        })
+        testForm.prop2.bindPrompter(() => new SimplePrompter(''), {
+            showWhen: state => state.prop1 === 0,
+        })
+
+        tester.prop1.assertShow()
+        tester.prop1.assertValue(undefined)
+        tester.prop2.assertDoesNotShow()
+    })
+
     it('uses relative order', function () {
         testForm.prop1.bindPrompter(() => new SimplePrompter(0), { relativeOrder: 1 })
         testForm.prop2.bindPrompter(() => new SimplePrompter(''), { relativeOrder: 0 })
@@ -65,14 +78,14 @@ describe('WizardForm', function () {
     })
 
     it('applies default setting when field is not assigned', function () {
-        testForm.prop1.bindPrompter(() => new SimplePrompter(0), { setDefault: () => 100 })
-        tester.prop1.assertShow()
+        testForm.prop1.bindPrompter(() => new SimplePrompter(0), {
+            setDefault: () => 100,
+            showWhen: state => state.prop2 === 'foo',
+        })
+
         tester.prop1.assertValue(100)
         tester.prop1.applyInput(5)
-        tester.prop1.assertDoesNotShow()
         tester.prop1.assertValue(5)
-        tester.prop1.clearInput()
-        tester.prop1.assertShow()
     })
 
     // TODO: revisit this. Values should not technically know about other field defaults

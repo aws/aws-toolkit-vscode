@@ -208,22 +208,17 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))
 
-        this.form.dependencyManager.bindPrompter(state => createDependencyPrompter(state.runtimeAndPackage!.runtime!), {
-            showWhen: state =>
-                state.runtimeAndPackage?.runtime !== undefined &&
-                getDependencyManager(state.runtimeAndPackage.runtime).length > 1,
-            setDefault: state =>
-                state.runtimeAndPackage?.runtime !== undefined
-                    ? getDependencyManager(state.runtimeAndPackage.runtime)[0]
-                    : undefined,
+        this.form.dependencyManager.bindPrompter(state => createDependencyPrompter(state.runtimeAndPackage.runtime), {
+            showWhen: state => getDependencyManager(state.runtimeAndPackage.runtime).length > 1,
+            setDefault: state => getDependencyManager(state.runtimeAndPackage.runtime)[0],
+            dependencies: [this.form.runtimeAndPackage],
         })
 
-        // TODO: remove `partial` when updated wizard types gets merged (need to make the PR first of course...)
         function canShowArchitecture(
-            state: Partial<Pick<CreateNewSamAppWizardForm, 'runtimeAndPackage' | 'dependencyManager'>>
+            state: Pick<CreateNewSamAppWizardForm, 'runtimeAndPackage' | 'dependencyManager'>
         ): boolean {
             // TODO: Remove Image Maven check if/when Hello World app supports multiarch Maven builds
-            if (state.dependencyManager === 'maven' && state.runtimeAndPackage?.packageType === 'Image') {
+            if (state.dependencyManager === 'maven' && state.runtimeAndPackage.packageType === 'Image') {
                 return false
             }
 
@@ -231,37 +226,43 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
                 return false
             }
 
-            return samArmLambdaRuntimes.has(state.runtimeAndPackage?.runtime ?? 'unknown')
+            return samArmLambdaRuntimes.has(state.runtimeAndPackage.runtime)
         }
 
         this.form.architecture.bindPrompter(createArchitecturePrompter, {
             showWhen: canShowArchitecture,
+            dependencies: [this.form.dependencyManager, this.form.runtimeAndPackage],
         })
 
-        this.form.template.bindPrompter(state =>
-            createSamTemplatePrompter(
-                state.runtimeAndPackage!.runtime!,
-                state.runtimeAndPackage!.packageType!,
-                context.samCliVersion
-            )
+        this.form.template.bindPrompter(
+            state =>
+                createSamTemplatePrompter(
+                    state.runtimeAndPackage.runtime,
+                    state.runtimeAndPackage.packageType,
+                    context.samCliVersion
+                ),
+            { dependencies: [this.form.runtimeAndPackage] }
         )
 
-        function isStarterTemplate(state: { template?: string }): boolean {
+        function isStarterTemplate(state: { template: string }): boolean {
             return state.template === eventBridgeStarterAppTemplate
         }
 
         this.form.region.bindPrompter(() => createSchemaRegionPrompter(context.schemaRegions, context.defaultRegion), {
             showWhen: isStarterTemplate,
+            dependencies: [this.form.template],
         })
 
         this.form.registryName.bindPrompter(form => createRegistryPrompter(form.region!, context.credentials), {
             showWhen: isStarterTemplate,
+            dependencies: [this.form.template],
         })
 
         this.form.schemaName.bindPrompter(
             state => createSchemaPrompter(state.region!, state.registryName!, context.credentials),
             {
                 showWhen: isStarterTemplate,
+                dependencies: [this.form.template],
             }
         )
 
@@ -276,15 +277,17 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             })
         )
 
-        this.form.name.bindPrompter(state =>
-            createNamePrompter(
-                fsutil.getNonexistentFilename(
-                    state.location!.fsPath,
-                    `lambda-${state.runtimeAndPackage!.runtime}`,
-                    '',
-                    99
-                )
-            )
+        this.form.name.bindPrompter(
+            state =>
+                createNamePrompter(
+                    fsutil.getNonexistentFilename(
+                        state.location!.fsPath,
+                        `lambda-${state.runtimeAndPackage!.runtime}`,
+                        '',
+                        99
+                    )
+                ),
+            { dependencies: [this.form.location] }
         )
     }
 }

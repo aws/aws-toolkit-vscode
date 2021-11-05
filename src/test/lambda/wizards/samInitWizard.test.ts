@@ -66,7 +66,8 @@ describe('CreateNewSamAppWizard', async function () {
         it('prompts for architecture after the dependency manager if SAM CLI >= 1.33', function () {
             tester.runtimeAndPackage.applyInput({ runtime: 'java11', packageType: 'Zip' })
             tester.dependencyManager.assertShowFirst()
-            tester.architecture.assertShowSecond()
+            tester.dependencyManager.applyInput('gradle')
+            tester.architecture.assertShowFirst()
         })
 
         it('skips prompt for earlier versions of SAM CLI', function () {
