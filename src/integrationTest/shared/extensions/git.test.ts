@@ -160,7 +160,7 @@ describe('GitExtension', function () {
 
     it('can list files from a remote', async function () {
         this.timeout(LIST_REMOTE_TIMEOUT)
-        const result = await git.listAllRemoteFiles({ fetchUrl: TEST_REMOTE_URL, branch: TEST_REMOTE_BRANCH })
+        const result = await git.listAllRemoteFiles({ fetchUrl: TEST_REMOTE_URL, branch: TEST_REMOTE_HEAD })
 
         const readme = result.files.find(f => f.name === 'NOTICE')
         assert.ok(readme, 'Expected to find NOTICE file in repository root')
