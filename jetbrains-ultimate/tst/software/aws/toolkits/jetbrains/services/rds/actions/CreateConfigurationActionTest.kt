@@ -8,16 +8,19 @@ import com.intellij.database.remote.jdbc.helpers.JdbcSettings
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.RuleChain
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import software.aws.toolkits.core.credentials.CredentialIdentifier
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.DUMMY_PROVIDER_IDENTIFIER
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
-import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.rds.JDBC_MYSQL
@@ -36,6 +39,7 @@ class CreateConfigurationActionTest {
     private val projectRule = ProjectRule()
     private val resourceCache = MockResourceCacheRule()
     private val credentialManager = MockCredentialManagerRule()
+    private val settingsManager = ProjectAccountSettingsManagerRule(projectRule)
 
     @Rule
     @JvmField
@@ -49,6 +53,16 @@ class CreateConfigurationActionTest {
     private val address = RuleUtils.randomName()
     private val username = "${RuleUtils.randomName()}CAPITAL"
     private val masterUsername = RuleUtils.randomName()
+    private lateinit var credentialIdentifier: CredentialIdentifier
+    private lateinit var region: AwsRegion
+
+    @Before
+    fun setUp() {
+        credentialIdentifier = credentialManager.createCredentialProvider().identifier
+        region = AwsRegionProvider.getInstance().defaultRegion()
+        settingsManager.settingsManager.changeCredentialProviderAndWait(credentialIdentifier)
+        settingsManager.settingsManager.changeRegionAndWait(region)
+    }
 
     @Test
     fun `Prerequisites fails when IAM authentication is disabled`() {
@@ -100,8 +114,8 @@ class CreateConfigurationActionTest {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = getDefaultRegion().id,
+                credentialId = credentialIdentifier.id,
+                regionId = region.id,
                 database = database
             )
         )
@@ -109,8 +123,8 @@ class CreateConfigurationActionTest {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.url).contains(port.toString())
             assertThat(it.url).contains(address)
-            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(DUMMY_PROVIDER_IDENTIFIER.displayName)
-            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(getDefaultRegion().id)
+            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialIdentifier.displayName)
+            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
             assertThat(it.authProviderId).isEqualTo(IamAuth.providerId)
         }
     }
@@ -122,8 +136,8 @@ class CreateConfigurationActionTest {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = getDefaultRegion().id,
+                credentialId = credentialIdentifier.id,
+                regionId = region.id,
                 database = database
             )
         )
@@ -141,8 +155,8 @@ class CreateConfigurationActionTest {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = getDefaultRegion().id,
+                credentialId = credentialIdentifier.id,
+                regionId = region.id,
                 database = database
             )
         )
@@ -160,8 +174,8 @@ class CreateConfigurationActionTest {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = getDefaultRegion().id,
+                credentialId = credentialIdentifier.id,
+                regionId = region.id,
                 database = database
             )
         )
@@ -180,8 +194,8 @@ class CreateConfigurationActionTest {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = getDefaultRegion().id,
+                credentialId = credentialIdentifier.id,
+                regionId = region.id,
                 database = database
             )
         )
@@ -200,8 +214,8 @@ class CreateConfigurationActionTest {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = getDefaultRegion().id,
+                credentialId = credentialIdentifier.id,
+                regionId = region.id,
                 database = database
             )
         )
@@ -220,8 +234,8 @@ class CreateConfigurationActionTest {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = getDefaultRegion().id,
+                credentialId = credentialIdentifier.id,
+                regionId = region.id,
                 database = database
             )
         )

@@ -10,8 +10,9 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.redshift.model.Cluster
 import software.aws.toolkits.core.utils.RuleUtils
-import software.aws.toolkits.jetbrains.core.credentials.DUMMY_PROVIDER_IDENTIFIER
-import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.redshift.auth.CLUSTER_ID_PROPERTY
@@ -23,8 +24,21 @@ class CreateDataSourceActionTest {
     @JvmField
     val projectRule = ProjectRule()
 
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
+    @Rule
+    @JvmField
+    val settingsManager = MockAwsConnectionManager.ProjectAccountSettingsManagerRule(projectRule)
+
     @Test
     fun `Add data source`() {
+        val credentialProvider = credentialManager.createCredentialProvider()
+        val region = AwsRegionProvider.getInstance().defaultRegion()
+        settingsManager.settingsManager.changeCredentialProviderAndWait(credentialProvider.identifier)
+        settingsManager.settingsManager.changeRegionAndWait(region)
+
         val port = RuleUtils.randomNumber()
         val address = RuleUtils.randomName()
         val username = RuleUtils.randomName()
@@ -43,8 +57,8 @@ class CreateDataSourceActionTest {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.sslCfg?.myEnabled).isTrue()
             assertThat(it.url).isEqualTo("jdbc:redshift://$address:$port/$dbName")
-            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(DUMMY_PROVIDER_IDENTIFIER.displayName)
-            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(getDefaultRegion().id)
+            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialProvider.id)
+            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
             assertThat(it.additionalJdbcProperties[CLUSTER_ID_PROPERTY]).isEqualTo(address)
             assertThat(it.authProviderId).isEqualTo(IamAuth.providerId)
         }

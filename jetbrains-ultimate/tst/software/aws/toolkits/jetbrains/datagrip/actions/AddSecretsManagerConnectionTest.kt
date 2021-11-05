@@ -9,8 +9,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.utils.RuleUtils
-import software.aws.toolkits.jetbrains.core.credentials.DUMMY_PROVIDER_IDENTIFIER
-import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.auth.SECRET_ID_PROPERTY
@@ -22,8 +23,21 @@ class AddSecretsManagerConnectionTest {
     @JvmField
     val projectRule = ProjectRule()
 
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
+    @Rule
+    @JvmField
+    val settingsManager = ProjectAccountSettingsManagerRule(projectRule)
+
     @Test
     fun `Add data source`() {
+        val credentialProvider = credentialManager.createCredentialProvider()
+        val region = AwsRegionProvider.getInstance().defaultRegion()
+        settingsManager.settingsManager.changeCredentialProviderAndWait(credentialProvider.identifier)
+        settingsManager.settingsManager.changeRegionAndWait(region)
+
         val port = RuleUtils.randomNumber()
         val address = RuleUtils.randomName()
         val username = RuleUtils.randomName()
@@ -41,8 +55,8 @@ class AddSecretsManagerConnectionTest {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.sslCfg?.myEnabled).isTrue()
             assertThat(it.url).isEqualTo("jdbc:adapter://$address:$port")
-            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(DUMMY_PROVIDER_IDENTIFIER.id)
-            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(getDefaultRegion().id)
+            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialProvider.identifier.id)
+            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
             assertThat(it.additionalJdbcProperties[SECRET_ID_PROPERTY]).isEqualTo(secretArn)
             assertThat(it.authProviderId).isEqualTo(SecretsManagerAuth.providerId)
         }

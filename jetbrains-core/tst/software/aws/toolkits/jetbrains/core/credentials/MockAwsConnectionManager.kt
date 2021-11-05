@@ -76,16 +76,23 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
         constructor(projectRule: ProjectRule) : this({ projectRule.project })
         constructor(projectRule: CodeInsightTestFixtureRule) : this({ projectRule.project })
 
-        val settingsManager by lazy {
+        private val settingsManagerDelegate = lazy {
             getInstance(projectSupplier())
         }
 
+        val settingsManager: MockAwsConnectionManager
+            get() = settingsManagerDelegate.value
+
         override fun before() {
-            settingsManager.reset()
+            if (settingsManagerDelegate.isInitialized()) {
+                settingsManager.reset()
+            }
         }
 
         override fun after() {
-            settingsManager.reset()
+            if (settingsManagerDelegate.isInitialized()) {
+                settingsManager.reset()
+            }
         }
     }
 }
