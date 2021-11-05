@@ -4,9 +4,8 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.util.messages.Topic
-import java.util.EventListener
 
-interface LambdaSettingsChangeListener : EventListener {
+interface LambdaSettingsChangeListener {
     companion object {
         @JvmStatic val TOPIC = Topic("SAM Setting has been changed", LambdaSettingsChangeListener::class.java)
     }

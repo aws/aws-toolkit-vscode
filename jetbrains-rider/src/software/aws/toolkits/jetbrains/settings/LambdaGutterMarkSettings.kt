@@ -4,24 +4,11 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.project.Project
-import com.intellij.util.messages.MessageBus
 import com.jetbrains.rider.projectView.solution
 import software.aws.toolkits.jetbrains.protocol.awsSettingModel
 
-class LambdaGutterMarkSettings(project: Project, messageBus: MessageBus) {
-
-    val model = project.solution.awsSettingModel
-
-    init {
-        model.showLambdaGutterMarks.fire(LambdaSettings.getInstance(project).showAllHandlerGutterIcons)
-
-        messageBus.connect().subscribe(
-            LambdaSettingsChangeListener.TOPIC,
-            object : LambdaSettingsChangeListener {
-                override fun samShowAllHandlerGutterIconsSettingsChange(isShow: Boolean) {
-                    model.showLambdaGutterMarks.fire(isShow)
-                }
-            }
-        )
+class LambdaGutterMarkSettings(private val project: Project) : LambdaSettingsChangeListener {
+    override fun samShowAllHandlerGutterIconsSettingsChange(isShow: Boolean) {
+        project.solution.awsSettingModel.showLambdaGutterMarks.fire(isShow)
     }
 }

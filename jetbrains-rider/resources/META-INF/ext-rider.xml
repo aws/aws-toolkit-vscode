@@ -10,17 +10,17 @@
         <component>
             <implementation-class>software.aws.toolkits.jetbrains.services.lambda.LambdaPsiHost</implementation-class>
         </component>
-        <component>
-            <implementation-class>software.aws.toolkits.jetbrains.settings.LambdaGutterMarkSettings</implementation-class>
-        </component>
-        <component>
-            <implementation-class>software.aws.toolkits.jetbrains.services.toolwindow.BuildToolWindowRegistrar</implementation-class>
-        </component>
     </project-components>
+
+    <projectListeners>
+        <listener class="software.aws.toolkits.jetbrains.settings.LambdaGutterMarkSettings"
+                  topic="software.aws.toolkits.jetbrains.settings.LambdaSettingsChangeListener"/>
+    </projectListeners>
 
     <extensions defaultExtensionNs="com.intellij">
         <projectTemplateProvider implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectProvider" order="last"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.icons.RiderAwsIconsPatcherRegistrar"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.settings.RiderSyncSettings"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit.lambda">
