@@ -35,6 +35,10 @@ phases:
             - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
             # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
             - sysctl fs.inotify.max_user_watches=524288
+            # update git so integ tests pass
+            # TODO: remove when git version >= 2.27.0 is included in CI image
+            - '>/dev/null apt-get -qq install -y git'
+            - git --version
 
     pre_build:
         commands:
