@@ -9,7 +9,7 @@ import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/com
 import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import {
-    DefaultSamDeployWizardContext,
+    computeTemplateParameters,
     SamDeployWizard,
     SamDeployWizardResponse,
 } from '../../lambda/wizards/samDeployWizard'
@@ -36,6 +36,7 @@ import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 import { extensionSettingsPrefix } from '../constants'
+import { RegionNode } from '../../awsexplorer/regionNode'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -98,15 +99,17 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.deploySamApplication', async arg => {
+        vscode.commands.registerCommand('aws.deploySamApplication', async (arg?: vscode.Uri | RegionNode) => {
             // `arg` is one of :
             //  - undefined
             //  - regionNode (selected from AWS Explorer)
             //  -  Uri to template.yaml (selected from File Explorer)
 
-            const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
             const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-                const wizard = new SamDeployWizard(samDeployWizardContext, arg)
+                if (arg instanceof vscode.Uri) {
+                    return new SamDeployWizard(ctx, await computeTemplateParameters({ uri: arg })).run()
+                }
+                const wizard = new SamDeployWizard(ctx, arg)
                 return wizard.run()
             }
 

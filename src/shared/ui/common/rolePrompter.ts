@@ -5,21 +5,14 @@
 
 import { IAM } from 'aws-sdk'
 import { IamClient } from '../../clients/iamClient'
-import {
-    createBackButton,
-    createExitButton,
-    createHelpButton,
-    createPlusButton,
-    createRefreshButton,
-    PrompterButtons,
-    QuickInputButton,
-} from '../buttons'
+import { createBackButton, createExitButton, createHelpButton, createPlusButton, createRefreshButton } from '../buttons'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
-import { CachedFunction, Prompter, CachedPrompter } from '../prompter'
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import { getLogger } from '../../logger/logger'
 import { showViewLogsMessage } from '../../utilities/messages'
+import { WIZARD_BACK } from '../../wizards/wizard'
+import { partialCached } from '../../utilities/collectionUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -30,107 +23,70 @@ interface RolePrompterOptions {
     helpUri?: vscode.Uri
     filter?: (role: IAM.Role) => boolean
     createRole?: () => Promise<IAM.Role>
+    noRoleDetail?: string
 }
 
-export class RolePrompter extends CachedPrompter<IAM.Role> {
-    private refreshButton: QuickInputButton<void>
-    private createRoleButton?: QuickInputButton<void>
-    private buttons: PrompterButtons<IAM.Role>
+function loadRoles(client: IamClient, filter: RolePrompterOptions['filter']): Promise<DataQuickPickItem<IAM.Role>[]> {
+    return client.listRoles().then(resp => {
+        const roles = resp.Roles.filter(filter ?? (() => true)).map(role => ({
+            label: role.RoleName,
+            data: role,
+        }))
 
-    public constructor(private readonly client: IamClient, private readonly options: RolePrompterOptions = {}) {
-        super()
+        return roles
+    })
+}
 
-        this.refreshButton = createRefreshButton()
-        const buttons = [this.refreshButton]
+export function createRolePrompter(client: IamClient, options: RolePrompterOptions = {}): QuickPickPrompter<IAM.Role> {
+    const refreshButton = createRefreshButton()
+    const buttons = [refreshButton]
 
-        if (this.options.createRole !== undefined) {
-            this.createRoleButton = createPlusButton(createRoleTooltip)
-            buttons.push(this.createRoleButton)
-        }
-
-        buttons.push(createHelpButton(this.options.helpUri), createExitButton(), createBackButton())
-
-        this.buttons = buttons
+    const placeholderItem: DataQuickPickItem<IAM.Role> = {
+        label: localize('AWS.rolePrompter.noRoles.title', 'No valid roles found'),
+        data: WIZARD_BACK,
+        detail: options.noRoleDetail,
     }
 
-    protected load(): Promise<DataQuickPickItem<IAM.Role>[]> {
-        return this.client.listRoles().then(roles => {
-            const filtered = roles.filter(this.options.filter ?? (() => true)).map(role => ({
-                label: role.RoleName,
-                data: role,
-            }))
-
-            return filtered
-        })
-    }
-
-    private addCreateRoleCallback(
-        prompter: QuickPickPrompter<IAM.Role>,
-        loader: CachedFunction<RolePrompter['load']>
-    ): void {
-        if (this.options.createRole === undefined) {
-            return
-        }
+    if (options.createRole !== undefined) {
+        const createRoleButton = createPlusButton(createRoleTooltip)
 
         const makeRole = () => {
-            const temp = prompter.quickPick.items[0]?.invalidSelection ? [] : prompter.quickPick.items
-            const appendedItems = this.options.createRole!()
-                .then(role => [...temp, { label: role.RoleName, data: role }])
+            const items = options.createRole!()
+                .then(role => [{ label: role.RoleName, data: role }])
                 .catch(err => {
                     getLogger().error('role prompter: Failed to create new role: %O', err)
                     showViewLogsMessage(localize('AWS.rolePrompter.createRole.failed', 'Failed to create new role'))
-                    return [...temp]
+                    return []
                 })
-            appendedItems.then(items => loader.supplantLast(items))
-            prompter.clearAndLoadItems(appendedItems)
+            prompter.appendItems(items)
         }
 
-        this.createRoleButton!.onClick = makeRole
+        placeholderItem.detail = localize('AWS.rolePrompter.noRoles.detail', 'Create a new role')
+        placeholderItem.invalidSelection = true
+        placeholderItem.onClick = makeRole
+        createRoleButton!.onClick = makeRole
+        buttons.push(createRoleButton)
     }
 
-    private checkNoRoles(roles: ReturnType<RolePrompter['load']>): ReturnType<RolePrompter['load']> {
-        return roles.then(items => {
-            const detail =
-                this.options.createRole !== undefined
-                    ? localize('AWS.rolePrompter.noRoles.detail', 'Click the "+" to generate a new role')
-                    : undefined
+    buttons.push(createHelpButton(options.helpUri), createExitButton(), createBackButton())
 
-            if (items.length === 0) {
-                return [
-                    {
-                        label: localize('AWS.rolePrompter.noRoles.title', 'No valid roles found'),
-                        data: {} as any,
-                        invalidSelection: true, // TODO: if invalid is true then data can be any?
-                        detail,
-                    },
-                ]
-            }
+    // Note: prompter gets hoisted
+    const prompter = createQuickPick([], {
+        buttons,
+        title: options.title,
+        itemLoader: partialCached(() => loadRoles(client, options.filter)),
+        noItemsFoundItem: placeholderItem,
+        placeholder: localize('AWS.rolePrompter.placeholder', 'Select or enter a role ARN'),
+        filterBoxInputSettings: {
+            label: localize('AWS.rolePrompter.enterArn', 'Enter Role ARN'),
+            transform: resp => ({ Arn: resp, RoleName: 'Unknown' } as IAM.Role), // callers would not expect this to be incomplete
+            // validator
+        },
+    })
 
-            return items
-        })
+    refreshButton.onClick = () => {
+        prompter.refreshItems()
     }
 
-    protected createPrompter(loader: CachedFunction<RolePrompter['load']>): Prompter<IAM.Role> {
-        let roles = loader()
-
-        if (roles instanceof Promise) {
-            roles = this.checkNoRoles(roles)
-        }
-
-        const prompter = createQuickPick(roles, {
-            title: this.options.title,
-            buttons: this.buttons,
-            placeholder: localize('AWS.rolePrompter.placeholder', 'Select a role'),
-        })
-
-        const refresh = () => {
-            loader.clearCache()
-            prompter.clearAndLoadItems(loader())
-        }
-
-        this.refreshButton.onClick = refresh
-        this.addCreateRoleCallback(prompter, loader)
-
-        return prompter
-    }
+    return prompter
 }

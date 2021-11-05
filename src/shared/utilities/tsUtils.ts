@@ -37,3 +37,5 @@ export type ExpandWithObject<T> = Expand<T> extends Record<string, unknown> ? Ex
  * This shrinks a tuple by removing a single element from the start.
  */
 export type ReduceTuple<T> = T extends [any, ...infer P] ? P : T
+
+export type RequireKey<T, K extends keyof T> = T & Required<Pick<T, K>>

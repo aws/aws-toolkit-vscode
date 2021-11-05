@@ -5,11 +5,8 @@
 
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import {
-    AppRunnerImageRepositoryWizard,
-    ImageIdentifierForm,
-    TaggedEcrRepository,
-} from '../../../apprunner/wizards/imageRepositoryWizard'
+import { AppRunnerImageRepositoryWizard, TaggedEcrRepository } from '../../../apprunner/wizards/imageRepositoryWizard'
+import { EcrRepositoryForm } from '../../../shared/ui/common/ecrRepository'
 
 describe('AppRunnerImageRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
@@ -49,11 +46,11 @@ describe('AppRunnerImageRepositoryWizard', function () {
     })
 })
 
-describe('ImageIdentifierForm', function () {
+describe('EcrRepositoryForm', function () {
     let tester: WizardTester<{ repo: TaggedEcrRepository }>
 
     beforeEach(function () {
-        const form = new ImageIdentifierForm({} as any) // ecr will never be called
+        const form = new EcrRepositoryForm({} as any) // ecr will never be called
         tester = createWizardTester(form)
     })
 

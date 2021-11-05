@@ -6,10 +6,10 @@
 import * as _ from 'lodash'
 
 export enum ControlSignal {
-    Retry,
-    Exit,
-    Back,
-    Continue,
+    Retry = 'Retry',
+    Exit = 'Exit',
+    Back = 'Back',
+    Continue = 'Continue',
 }
 
 export interface StepResult<TState> {

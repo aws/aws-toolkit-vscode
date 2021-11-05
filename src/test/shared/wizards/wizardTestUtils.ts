@@ -33,7 +33,9 @@ type MockForm<T, TState = T> = {
         : MockWizardFormElement<T[Property]>
 }
 
-export type WizardTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, 'assertShowCount'>
+export type WizardTester<T> = T extends Wizard<infer U>
+    ? WizardTester<U>
+    : MockForm<Required<T>> & Pick<MockWizardFormElement<any>, 'assertShowCount'>
 
 function failIf(cond: boolean, message?: string): void {
     if (cond) {

@@ -119,13 +119,27 @@ export interface DeleteBucketRequest {
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
+type RegionCache = {
+    [partition: string]: {
+        [name: string]: {
+            region: string
+            dates: { [region: string]: Date | undefined }
+        }
+    }
+}
+
 export class DefaultS3Client {
     public constructor(
         private readonly partitionId: string,
         private readonly regionCode: string,
         private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
-    ) {}
+    ) {
+        DefaultS3Client.regionCache[partitionId] ??= {}
+    }
+
+    /** Cache bucket region based off partition */
+    private static regionCache: RegionCache = {}
 
     private async createS3(): Promise<S3> {
         return this.s3Provider(this.regionCode)
@@ -359,6 +373,22 @@ export class DefaultS3Client {
         return s3Buckets
     }
 
+    private async filterBucketByRegion(bucket: S3.Bucket, s3: S3): Promise<Bucket | undefined> {
+        const bucketName = bucket.Name
+        if (!bucketName) {
+            return undefined
+        }
+        const region = await this.lookupRegion(bucketName, bucket.CreationDate, s3)
+        if (!region || region !== this.regionCode) {
+            return undefined
+        }
+        return new DefaultBucket({
+            partitionId: this.partitionId,
+            region: region,
+            name: bucketName,
+        })
+    }
+
     /**
      * Lists buckets in the region of the client.
      *
@@ -375,33 +405,30 @@ export class DefaultS3Client {
         const s3Buckets: S3.Bucket[] = await this.listAllBuckets()
 
         // S3#ListBuckets returns buckets across all regions
-        const allBucketPromises: Promise<Bucket | undefined>[] = s3Buckets.map(async s3Bucket => {
-            const bucketName = s3Bucket.Name
-            if (!bucketName) {
-                return undefined
-            }
-            const region = await this.lookupRegion(bucketName, s3)
-            if (!region) {
-                return undefined
-            }
-            return new DefaultBucket({
-                partitionId: this.partitionId,
-                region: region,
-                name: bucketName,
-            })
-        })
-
+        const allBucketPromises = s3Buckets.map(bucket => this.filterBucketByRegion(bucket, s3))
         const allBuckets = await Promise.all(allBucketPromises)
-        const bucketsInRegion = _(allBuckets)
-            .reject(bucket => bucket === undefined)
-            // we don't have a filerNotNull so we can filter then cast
-            .map(bucket => bucket as Bucket)
-            .reject(bucket => bucket.region !== this.regionCode)
-            .value()
+        const bucketsInRegion = allBuckets.filter(bucket => !!bucket) as Bucket[]
 
         const response: ListBucketsResponse = { buckets: bucketsInRegion }
         getLogger().debug('ListBuckets returned response: %O', response)
         return { buckets: bucketsInRegion }
+    }
+
+    /**
+     * Iterable version of {@link listBuckets}
+     * Note that buckets are still yielded sequentially even if the later Promises are already fulfilled
+     */
+    public async *listBucketsIterable(): AsyncIterable<Bucket> {
+        const s3 = await this.createS3()
+        const s3Buckets: S3.Bucket[] = await this.listAllBuckets()
+        const filteredBuckets = s3Buckets.map(bucket => this.filterBucketByRegion(bucket, s3))
+
+        for (const bucket of filteredBuckets) {
+            const resolved = await bucket
+            if (resolved) {
+                yield resolved
+            }
+        }
     }
 
     /**
@@ -605,19 +632,41 @@ export class DefaultS3Client {
      *
      * Use the getBucketLocation API to avoid cross region lookups.
      */
-    private async lookupRegion(bucketName: string, s3: S3): Promise<string | undefined> {
-        getLogger().debug('LookupRegion called for bucketName: %s', bucketName)
-
-        try {
-            const response = await s3.getBucketLocation({ Bucket: bucketName }).promise()
-            // getBucketLocation returns an explicit empty string location contraint for us-east-1
-            const region = response.LocationConstraint === '' ? 'us-east-1' : response.LocationConstraint
-            getLogger().debug('LookupRegion returned region: %s', region)
-            return region
-        } catch (e) {
-            // Try to recover region from the error
-            return (e as AWSError).region
+    private async lookupRegion(name: string, creationDate: Date | undefined, s3: S3): Promise<string | undefined> {
+        const cache = DefaultS3Client.regionCache[this.partitionId]
+        const cached = cache?.[name]
+        if (cached) {
+            const dates = cached.dates
+            dates[this.regionCode] ??= creationDate
+            if (this.regionCode === cached.region && creationDate?.getTime() !== dates[cached.region]?.getTime()) {
+                getLogger().debug('Evicted cached region for: %s', name)
+                delete cache[name]
+            } else {
+                return cached.region
+            }
         }
+
+        getLogger().debug('LookupRegion called for bucketName: %s', name)
+
+        const getRegion = async () => {
+            try {
+                const response = await s3.getBucketLocation({ Bucket: name }).promise()
+                // getBucketLocation returns an explicit empty string location contraint for us-east-1
+                const region = response.LocationConstraint === '' ? 'us-east-1' : response.LocationConstraint
+                getLogger().debug('LookupRegion returned region: %s', region)
+                return region
+            } catch (e) {
+                // Try to recover region from the error
+                return (e as AWSError).region
+            }
+        }
+
+        return getRegion().then(region => {
+            if (region) {
+                cache[name] = { region, dates: { [this.regionCode]: creationDate } }
+            }
+            return region
+        })
     }
 
     /**

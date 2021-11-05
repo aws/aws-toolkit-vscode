@@ -2458,6 +2458,7 @@
         "lodash": "^4.17.21",
         "mime-types": "^2.1.32",
         "moment": "^2.29.1",
+        "node-object-hash": "^2.3.10",
         "portfinder": "^1.0.25",
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",

@@ -9,26 +9,20 @@ import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from
 import { Remote } from '../../../types/git.d'
 import { GitExtension } from '../../shared/extensions/git'
 import * as vscode from 'vscode'
-import { CachedFunction, CachedPrompter } from '../../shared/ui/prompter'
 import { WizardForm } from '../../shared/wizards/wizardForm'
 import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompter'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { makeDeploymentButton } from './deploymentButton'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
-import {
-    createLabelQuickPick,
-    createQuickPick,
-    DataQuickPickItem,
-    QuickPickPrompter,
-} from '../../shared/ui/pickerPrompter'
+import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import {
     APPRUNNER_CONNECTION_HELP_URL,
     APPRUNNER_CONFIGURATION_HELP_URL,
     APPRUNNER_RUNTIME_HELP_URL,
 } from '../../shared/constants'
-import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
-import { getLogger } from '../../shared/logger/logger'
+import { Wizard } from '../../shared/wizards/wizard'
+import { partialCached } from '../../shared/utilities/collectionUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -149,71 +143,46 @@ function createPortPrompter(): InputBoxPrompter {
     })
 }
 
-export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
-    public constructor(private readonly client: AppRunnerClient) {
-        super()
-    }
-
-    protected load(): Promise<DataQuickPickItem<ConnectionSummary>[]> {
-        return this.client
-            .listConnections({})
-            .then(resp => {
-                const connections = resp.ConnectionSummaryList.filter(conn => conn.Status === 'AVAILABLE').map(
-                    conn => ({
-                        label: conn.ConnectionName!,
-                        data: conn,
-                    })
-                )
-
-                if (connections.length === 0) {
-                    return [
-                        {
-                            label: 'No connections found',
-                            detail: 'Click for documentation on creating a new GitHub connection for App Runner',
-                            data: {} as any,
-                            invalidSelection: true,
-                            onClick: vscode.env.openExternal.bind(
-                                vscode.env,
-                                vscode.Uri.parse(APPRUNNER_CONNECTION_HELP_URL)
-                            ),
-                        },
-                    ]
-                } else {
-                    return connections
-                }
-            })
-            .catch(err => {
-                getLogger().error(`Failed to list GitHub connections: %O`, err)
-                return [
-                    {
-                        label: localize(
-                            'AWS.apprunner.createService.selectConnection.failed',
-                            'Failed to list GitHub connections'
-                        ),
-                        description: localize('AWS.generic.goBack', 'Click to go back'),
-                        data: WIZARD_BACK,
-                    },
-                ]
-            })
-    }
-
-    protected createPrompter(loader: CachedFunction<ConnectionPrompter['load']>): QuickPickPrompter<ConnectionSummary> {
-        const connections = loader()
-        const refreshButton = createRefreshButton()
-        const prompter = createQuickPick(connections, {
-            title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
-            buttons: [refreshButton, ...createCommonButtons(APPRUNNER_CONNECTION_HELP_URL)],
+export function createConnectionPrompter(client: AppRunnerClient): QuickPickPrompter<ConnectionSummary> {
+    const itemLoader = (region?: string) =>
+        client.listConnections({}).then(resp => {
+            return resp.ConnectionSummaryList.filter(
+                conn => conn.Status === 'AVAILABLE' || conn.Status === 'PENDING_HANDSHAKE'
+            ).map(conn => ({
+                label: conn.ConnectionName!,
+                detail:
+                    conn.Status === 'PENDING_HANDSHAKE'
+                        ? localize('AWS.apprunner.createService.selectConnection.pending', 'Pending handsake')
+                        : undefined,
+                invalidSelection: conn.Status === 'PENDING_HANDSHAKE',
+                data: conn,
+            }))
         })
 
-        const refresh = () => {
-            loader.clearCache()
-            prompter.clearAndLoadItems(loader())
-        }
-
-        refreshButton.onClick = refresh
-
-        return prompter
+    const noConnection = {
+        label: localize('No connections found', 'AWS.apprunner.createService.noConnections'),
+        detail: localize(
+            'Click for documentation on creating a new GitHub connection for App Runner',
+            'AWS.apprunner.createService.newConnect'
+        ),
+        invalidSelection: true as const,
+        onClick: vscode.env.openExternal.bind(vscode.env, vscode.Uri.parse(APPRUNNER_CONNECTION_HELP_URL)),
     }
+
+    const refreshButton = createRefreshButton()
+    const prompter = createQuickPick<ConnectionSummary>([], {
+        title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
+        buttons: [refreshButton, ...createCommonButtons(APPRUNNER_CONNECTION_HELP_URL)],
+        itemLoader: partialCached(itemLoader, client.regionCode),
+        noItemsFoundItem: noConnection,
+        errorItem: localize('AWS.apprunner.createService.selectConnection.failed', 'Failed to list GitHub connections'),
+    })
+
+    refreshButton.onClick = () => {
+        prompter.refreshItems()
+    }
+
+    return prompter
 }
 
 function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource> {
@@ -275,10 +244,9 @@ export class AppRunnerCodeRepositoryWizard extends Wizard<AppRunner.SourceConfig
     constructor(client: AppRunnerClient, git: GitExtension, autoDeployButton?: QuickInputToggleButton) {
         super()
         const form = this.form
-        const connectionPrompter = new ConnectionPrompter(client)
 
-        form.AuthenticationConfiguration.ConnectionArn.bindPrompter(
-            connectionPrompter.transform(conn => conn.ConnectionArn!)
+        form.AuthenticationConfiguration.ConnectionArn.bindPrompter(() =>
+            createConnectionPrompter(client).transform(conn => conn.ConnectionArn!)
         )
         form.CodeRepository.applyBoundForm(createCodeRepositorySubForm(git))
 
