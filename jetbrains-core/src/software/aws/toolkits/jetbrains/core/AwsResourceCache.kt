@@ -20,7 +20,6 @@ import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.credentials.toEnvironmentVariables
-import software.aws.toolkits.core.getClient
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -237,7 +236,7 @@ class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
     constructor(sdkClientClass: KClass<ClientType>, id: String, fetchCall: ClientType.() -> ReturnType) : this(sdkClientClass, id, null, fetchCall)
 
     override fun fetch(region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
-        val client = AwsClientManager.getInstance().getClient(sdkClientClass, credentials, region)
+        val client = AwsClientManager.getInstance().getClient(sdkClientClass, ConnectionSettings(credentials, region))
         return fetchCall(client)
     }
 

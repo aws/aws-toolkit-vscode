@@ -39,7 +39,7 @@ abstract class ToolkitClientManager {
     inline fun <reified T : SdkClient> getClient(
         credProvider: ToolkitCredentialsProvider,
         region: AwsRegion
-    ): T = this.getClient(T::class, credProvider, region)
+    ): T = this.getClient(T::class, ConnectionSettings(credProvider, region))
 
     @Suppress("UNCHECKED_CAST")
     fun <T : SdkClient> getClient(
@@ -72,7 +72,7 @@ abstract class ToolkitClientManager {
      * Calls [AutoCloseable.close] on all managed clients and clears the cache
      */
     protected fun shutdown() {
-        cachedClients.values.map { it }.forEach { it.close() }
+        cachedClients.values.forEach { it.close() }
         cachedClients.clear()
     }
 
@@ -141,9 +141,3 @@ abstract class ToolkitClientManager {
         }
     }
 }
-
-fun <T : SdkClient> ToolkitClientManager.getClient(
-    sdkClass: KClass<T>,
-    credProvider: ToolkitCredentialsProvider,
-    region: AwsRegion
-): T = this.getClient(sdkClass, ConnectionSettings(credProvider, region))
