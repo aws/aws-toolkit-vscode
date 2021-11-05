@@ -6,9 +6,9 @@ package software.aws.toolkits.jetbrains.core.executables
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
@@ -45,7 +45,7 @@ interface ExecutableManager {
 
     companion object {
         @JvmStatic
-        fun getInstance(): ExecutableManager = ServiceManager.getService(ExecutableManager::class.java)
+        fun getInstance(): ExecutableManager = service()
     }
 }
 

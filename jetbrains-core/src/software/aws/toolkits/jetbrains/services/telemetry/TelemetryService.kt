@@ -4,7 +4,7 @@
 package software.aws.toolkits.jetbrains.services.telemetry
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 import software.aws.toolkits.core.ConnectionSettings
@@ -121,7 +121,7 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         private const val TELEMETRY_KEY = "aws.toolkits.enableTelemetry"
         private val TELEMETRY_ENABLED = System.getProperty(TELEMETRY_KEY)?.toBoolean() ?: true
 
-        fun getInstance(): TelemetryService = ServiceManager.getService(TelemetryService::class.java)
+        fun getInstance(): TelemetryService = service()
     }
 }
 

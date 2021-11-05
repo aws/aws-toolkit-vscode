@@ -4,9 +4,9 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 
 @State(name = "cloud_debug", storages = [Storage("aws.xml")])
 class CloudDebugSettings : PersistentStateComponent<AwsCloudDebugConfiguration> {
@@ -26,7 +26,7 @@ class CloudDebugSettings : PersistentStateComponent<AwsCloudDebugConfiguration> 
 
     companion object {
         @JvmStatic
-        fun getInstance(): CloudDebugSettings = ServiceManager.getService(CloudDebugSettings::class.java)
+        fun getInstance(): CloudDebugSettings = service()
     }
 }
 

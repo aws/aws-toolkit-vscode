@@ -4,9 +4,9 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import org.jetbrains.annotations.TestOnly
 
 @State(name = "sam", storages = [Storage("aws.xml")])
@@ -22,7 +22,7 @@ class SamSettings : PersistentStateComponent<SamConfiguration> {
     companion object {
         @JvmStatic
         @TestOnly
-        fun getInstance(): SamSettings = ServiceManager.getService(SamSettings::class.java)
+        fun getInstance(): SamSettings = service()
     }
 }
 

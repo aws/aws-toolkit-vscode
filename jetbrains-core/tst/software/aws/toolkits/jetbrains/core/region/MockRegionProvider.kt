@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.region
 
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.ApplicationRule
 import software.amazon.awssdk.regions.Region
@@ -59,7 +58,7 @@ private class MockRegionProvider : ToolkitRegionProvider() {
     companion object {
         private val AWS_CLASSIC = AwsPartition("aws", "AWS Classic", listOf(US_EAST_1))
         private val regions = mapOf(US_EAST_1.id to US_EAST_1)
-        fun getInstance(): MockRegionProvider = ServiceManager.getService(ToolkitRegionProvider::class.java) as MockRegionProvider
+        fun getInstance(): MockRegionProvider = service<ToolkitRegionProvider>() as MockRegionProvider
     }
 }
 

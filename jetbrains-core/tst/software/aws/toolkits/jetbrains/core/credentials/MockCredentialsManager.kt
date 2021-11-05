@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.testFramework.ApplicationRule
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
@@ -66,7 +66,8 @@ class MockCredentialsManager : CredentialManager() {
         mapOf<String, CredentialProviderFactory>(MockCredentialProviderFactory.id to MockCredentialProviderFactory)
 
     companion object {
-        fun getInstance(): MockCredentialsManager = ServiceManager.getService(CredentialManager::class.java) as MockCredentialsManager
+        @Suppress("DEPRECATION")
+        fun getInstance(): MockCredentialsManager = service<CredentialManager>() as MockCredentialsManager
     }
 
     class MockCredentialIdentifier(override val displayName: String, val credentials: AwsCredentialsProvider, override val defaultRegionId: String?) :

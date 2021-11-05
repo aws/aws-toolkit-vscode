@@ -4,7 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.util.messages.MessageBus
@@ -93,7 +93,7 @@ abstract class CredentialManager : SimpleModificationTracker() {
 
     companion object {
         @JvmStatic
-        fun getInstance(): CredentialManager = ServiceManager.getService(CredentialManager::class.java)
+        fun getInstance(): CredentialManager = service()
 
         /***
          * [MessageBus] topic for when credential providers get added/changed/deleted

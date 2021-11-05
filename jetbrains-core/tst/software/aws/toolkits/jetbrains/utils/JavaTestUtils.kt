@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.utils
 
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.application.runWriteActionAndWait
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder
 import com.intellij.openapi.externalSystem.model.DataNode
 import com.intellij.openapi.externalSystem.model.project.ProjectData
@@ -127,7 +126,7 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String
                 System.err.println("Got null External project after import")
                 return
             }
-            ServiceManager.getService(ProjectDataManager::class.java).importData(externalProject, project, true)
+            ProjectDataManager.getInstance().importData(externalProject, project, true)
             println("External project was successfully imported")
         }
 

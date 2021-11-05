@@ -4,9 +4,9 @@
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 
 @State(name = "updateLambdaState", storages = [Storage("aws.xml")])
 private class UpdateLambdaState : PersistentStateComponent<UpdateLambda> {
@@ -19,7 +19,7 @@ private class UpdateLambdaState : PersistentStateComponent<UpdateLambda> {
 
     companion object {
         @JvmStatic
-        internal fun getInstance(): UpdateLambdaState = ServiceManager.getService(UpdateLambdaState::class.java)
+        internal fun getInstance(): UpdateLambdaState = service()
     }
 }
 

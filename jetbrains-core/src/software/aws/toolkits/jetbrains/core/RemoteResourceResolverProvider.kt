@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.util.io.createDirectories
 import software.aws.toolkits.core.utils.DefaultRemoteResourceResolver
 import software.aws.toolkits.core.utils.RemoteResourceResolver
@@ -18,7 +18,7 @@ interface RemoteResourceResolverProvider {
     fun get(): RemoteResourceResolver
 
     companion object {
-        fun getInstance(): RemoteResourceResolverProvider = ServiceManager.getService(RemoteResourceResolverProvider::class.java)
+        fun getInstance(): RemoteResourceResolverProvider = service()
     }
 }
 

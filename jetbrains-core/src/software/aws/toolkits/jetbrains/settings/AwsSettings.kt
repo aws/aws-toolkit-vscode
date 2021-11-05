@@ -7,9 +7,9 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
@@ -26,7 +26,7 @@ interface AwsSettings {
 
     companion object {
         @JvmStatic
-        fun getInstance(): AwsSettings = ServiceManager.getService(AwsSettings::class.java)
+        fun getInstance(): AwsSettings = service()
     }
 }
 

@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.region
 
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import org.slf4j.event.Level
 import software.amazon.awssdk.regions.providers.AwsProfileRegionProvider
 import software.amazon.awssdk.regions.providers.AwsRegionProviderChain
@@ -63,6 +63,6 @@ class AwsRegionProvider : ToolkitRegionProvider() {
         private val LOG = getLogger<AwsRegionProvider>()
 
         @JvmStatic
-        fun getInstance(): ToolkitRegionProvider = ServiceManager.getService(ToolkitRegionProvider::class.java)
+        fun getInstance(): ToolkitRegionProvider = service()
     }
 }
