@@ -105,6 +105,7 @@ export class DefaultEcsClient {
         const sdkClient = await this.createSdkClient()
 
         // Currently the 'interactive' flag is required and needs to be true for ExecuteCommand: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ExecuteCommand.html
+        // This may change 'in the near future' as explained here: https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
         const params: ECS.ExecuteCommandRequest = {
             command: command,
             interactive: true,
