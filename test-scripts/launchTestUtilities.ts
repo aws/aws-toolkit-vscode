@@ -98,7 +98,7 @@ export async function getCliArgsToDisableExtensions(
     return ids
 }
 
-function getMinVsCodeVersion(): string {
+export function getMinVsCodeVersion(): string {
     const vsCodeVersion: string | undefined = require(path.join('..', 'package.json'))?.engines?.vscode
     if (!vsCodeVersion) {
         throw Error('Minimum version specified to run tests, but package.json does not have a .engine.vscode!')
