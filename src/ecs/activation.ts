@@ -9,6 +9,7 @@ import { updateEnableExecuteCommandFlag } from './commands/updateEnableExecuteCo
 import { runCommandInContainer } from './commands/runCommandInContainer'
 import { EcsContainerNode } from './explorer/ecsContainerNode'
 import { EcsServiceNode } from './explorer/ecsServiceNode'
+import { ecsDocumentationUrl } from '../shared/constants'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -26,6 +27,12 @@ export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ecs.disableEcsExec', async (node: EcsServiceNode) => {
             await updateEnableExecuteCommandFlag(node, false)
+        })
+    )
+
+    ctx.extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('aws.ecs.viewDocumentation', async () => {
+            vscode.env.openExternal(vscode.Uri.parse(ecsDocumentationUrl))
         })
     )
 }
