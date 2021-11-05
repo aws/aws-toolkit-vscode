@@ -37,7 +37,7 @@ export async function configurePythonExtension(): Promise<void> {
     // Disable linting to silence some of the Python extension's log spam
     await configPy.update('linting.pylintEnabled', false, false)
     await configPy.update('linting.enabled', false, false)
-    await configPy.update('logging.level', 'error')
+    await configPy.update('logging.level', 'error', vscode.ConfigurationTarget.Global)
 }
 
 // Installs tools that the Go extension wants (it complains a lot if we don't)
