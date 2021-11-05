@@ -120,7 +120,8 @@ abstract class AbstractToolkitDockerAdapter(protected val project: Project, prot
     abstract suspend fun pushImage(localTag: String, config: DockerRepositoryModel)
 
     fun getLocalImages(): List<LocalImage> =
-        // potentially null pre-212
+        // TODO: FIX_WHEN_MIN_IS_212: potentially null pre-212
+        @Suppress("UNNECESSARY_SAFE_CALL")
         agent.getImages(null)?.flatMap { image ->
             image.imageRepoTags?.map { localTag ->
                 val tag = localTag.takeUnless { it == NO_TAG_TAG }

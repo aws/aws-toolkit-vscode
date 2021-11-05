@@ -37,7 +37,7 @@ abstract class ContainerMappingTable<T>(emptyTableMainText: String, addNewEntryT
             }
 
             val shortcutSet = CommonActionsPanel.getCommonShortcut(CommonActionsPanel.Buttons.ADD)
-            shortcutSet?.shortcuts?.firstOrNull()?.let { shortcut ->
+            shortcutSet.shortcuts.firstOrNull()?.let { shortcut ->
                 emptyText.appendSecondaryText(" (${KeymapUtil.getShortcutText(shortcut)})", StatusText.DEFAULT_ATTRIBUTES, null)
             }
         }

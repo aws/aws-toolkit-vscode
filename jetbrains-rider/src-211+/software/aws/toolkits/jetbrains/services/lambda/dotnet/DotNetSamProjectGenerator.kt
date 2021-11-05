@@ -113,7 +113,7 @@ class DotNetSamProjectGenerator(
         val sep = File.separator
         val builder = StringBuilder()
         val font = JBUI.Fonts.label()
-        builder.appendln("<html><span style=\"font-family:${font.family};font-size:${font.size}\"")
+        builder.appendLine("<html><span style=\"font-family:${font.family};font-size:${font.size}\"")
 
         val solutionDirectory = getSolutionDirectory()
         val projectDirectory = getProjectDirectory()
@@ -123,7 +123,7 @@ class DotNetSamProjectGenerator(
 
         val vcsMarker = vcsPanel?.getVcsMarker()
         if (solutionDirectory != null && vcsMarker != null) {
-            builder.appendln(
+            builder.appendLine(
                 htmlText(
                     "$sep${solutionDirectory.parentFile.name}$sep",
                     "${solutionDirectory.name}$sep$vcsMarker"
@@ -133,22 +133,22 @@ class DotNetSamProjectGenerator(
 
         if (solutionDirectory != null) {
             val solutionName = getSolutionName() + SolutionFileType.solutionExtensionWithDot
-            builder.appendln(htmlText(parentStr, "${solutionDirectory.name}$sep$solutionName"))
+            builder.appendLine(htmlText(parentStr, "${solutionDirectory.name}$sep$solutionName"))
         }
 
         if (projectDirectory != null) {
             val projectsText = "project files"
             val projectFilesLabel = XmlUtil.escape("<$projectsText>")
             if (solutionDirectory != null && solutionDirectory != projectDirectory) {
-                builder.appendln(htmlText(parentStr, "${solutionDirectory.name}${sep}src$sep${projectDirectory.name}$sep$projectFilesLabel"))
-                builder.appendln(htmlText(parentStr, "${solutionDirectory.name}${sep}test$sep${projectDirectory.name}.Test$sep$projectFilesLabel"))
+                builder.appendLine(htmlText(parentStr, "${solutionDirectory.name}${sep}src$sep${projectDirectory.name}$sep$projectFilesLabel"))
+                builder.appendLine(htmlText(parentStr, "${solutionDirectory.name}${sep}test$sep${projectDirectory.name}.Test$sep$projectFilesLabel"))
             } else {
-                builder.appendln(htmlText(parentStr, "src$sep${projectDirectory.name}$sep$projectFilesLabel"))
-                builder.appendln(htmlText(parentStr, "test$sep${projectDirectory.name}.Test$sep$projectFilesLabel"))
+                builder.appendLine(htmlText(parentStr, "src$sep${projectDirectory.name}$sep$projectFilesLabel"))
+                builder.appendLine(htmlText(parentStr, "test$sep${projectDirectory.name}.Test$sep$projectFilesLabel"))
             }
         }
 
-        builder.appendln("</span></html>")
+        builder.appendLine("</span></html>")
         structurePane.text = builder.toString()
         validateData()
     }
