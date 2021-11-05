@@ -9,7 +9,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.SortedComboBoxModel
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
-import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListener
+import software.aws.toolkits.jetbrains.ui.installTextFieldProjectFileBrowseListener
 import java.util.Comparator
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
@@ -38,7 +38,11 @@ class DownloadCodeForSchemaPanel(project: Project) {
     }
 
     init {
-        location.addBrowseFolderListener(ProjectFileBrowseListener(project, FileChooserDescriptorFactory.createSingleFolderDescriptor()))
+        installTextFieldProjectFileBrowseListener(
+            project,
+            location,
+            FileChooserDescriptorFactory.createSingleFolderDescriptor()
+        )
     }
 
     fun setLanguages(languages: List<SchemaCodeLangs>) {

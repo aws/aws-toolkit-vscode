@@ -16,6 +16,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.openapi.ui.ComponentWithBrowseButton;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
+import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.core.lambda.LambdaSampleEvent;
 import software.aws.toolkits.core.lambda.LambdaSampleEventProvider;
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider;
-import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListener;
+import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListenerKt;
 
 public class LambdaInputPanel {
     private static final Logger LOG = Logger.getInstance(LambdaInputPanel.class);
@@ -96,8 +98,10 @@ public class LambdaInputPanel {
         addQuickSelect(inputTemplates.getButton(), useInputText, this::updateComponents);
         addQuickSelect(inputText.getComponent(), useInputText, this::updateComponents);
 
-        inputFile.addBrowseFolderListener(
-            new ProjectFileBrowseListener(project, FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE))
+        ProjectFileBrowseListenerKt.installTextFieldProjectFileBrowseListener(
+            project,
+            inputFile,
+            FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE)
         );
 
         LambdaSampleEventProvider eventProvider = new LambdaSampleEventProvider(RemoteResourceResolverProvider.Companion.getInstance().get());
@@ -108,8 +112,9 @@ public class LambdaInputPanel {
             return null;
         }));
 
-        inputTemplates.addActionListener(new ProjectFileBrowseListener(
+        ProjectFileBrowseListenerKt.installComboBoxProjectFileBrowseListener(
             project,
+            inputTemplates,
             FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE),
             chosenFile -> {
                 try {
@@ -124,7 +129,7 @@ public class LambdaInputPanel {
 
                 return null; // Required since lambda is defined in Kotlin
             }
-        ));
+        );
 
         updateComponents();
     }

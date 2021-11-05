@@ -21,7 +21,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugS
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.getFunctionEnvironmentVariables
 import software.aws.toolkits.jetbrains.ui.KeyValueTextField
-import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListener
+import software.aws.toolkits.jetbrains.ui.installTextFieldProjectFileBrowseListener
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import java.io.File
@@ -57,14 +57,12 @@ class TemplateSettings(val project: Project) {
         imageSettingsPanel.isVisible = false
         pathMappingsTable.isVisible = false
         environmentVariables.isEnabled = false
-        templateFile.addBrowseFolderListener(
-            ProjectFileBrowseListener(
-                project,
-                FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML)
-            ) {
-                templateFile.text = it.canonicalPath ?: ""
-            }
-        )
+        installTextFieldProjectFileBrowseListener(
+            project, templateFile, FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML)
+        ) {
+            it.canonicalPath ?: ""
+        }
+
         templateFile.textField.document.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(e: DocumentEvent) {
                 updateFunctionModel(templateFile.text)
