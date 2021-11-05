@@ -1,5 +1,8 @@
 <Project>
   <PropertyGroup>
+    <!-- TODO: Remove when https://youtrack.jetbrains.com/issue/RIDER-63534 is fixed -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+
     <BaseOutputDirectory>$(MSBuildThisFileDirectory)\..\build\dotnetBuild</BaseOutputDirectory>
 
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
