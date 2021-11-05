@@ -1,14 +1,19 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as vscode from 'vscode'
-import { cdkDocumentationUrl } from '../shared/constants'
-import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
+
+import { AslVisualizationCDKManager } from '../stepFunctions/commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
+import { ConstructNode } from './explorer/nodes/constructNode'
 import { cdk } from './globals'
+import { cdkDocumentationUrl } from '../shared/constants'
+import { initalizeWebviewPaths } from '../stepFunctions/activation'
+import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
+import { renderStateMachineGraphCommand } from '../stepFunctions/commands/visualizeStateMachine/renderStateMachineGraphCDK'
 
 /**
  * Activate AWS CDK related functionality for the extension.
@@ -17,6 +22,7 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     const explorer = new AwsCdkExplorer()
 
     initializeIconPaths(activateArguments.extensionContext)
+    initalizeWebviewPaths(activateArguments.extensionContext)
 
     await registerCdkCommands(activateArguments.extensionContext, explorer)
     const view = vscode.window.createTreeView(explorer.viewProviderId, {
@@ -66,6 +72,13 @@ async function registerCdkCommands(context: vscode.ExtensionContext, explorer: A
             } finally {
                 recordCdkRefreshExplorer()
             }
+        })
+    )
+
+    const visualizationManager = new AslVisualizationCDKManager(context)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.cdk.renderStateMachineGraph', async (node: ConstructNode) => {
+            await renderStateMachineGraphCommand(context.globalState, visualizationManager, node)
         })
     )
 }

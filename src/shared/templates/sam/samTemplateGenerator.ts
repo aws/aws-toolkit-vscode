@@ -6,6 +6,7 @@
 import { mkdirp, writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
+import { Architecture } from '../../../lambda/models/samLambdaRuntime'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import ZipResourceProperties = CloudFormation.ZipResourceProperties
@@ -79,6 +80,12 @@ export class SamTemplateGenerator {
 
     public withParameters(parameters: { [key: string]: CloudFormation.Parameter | undefined }): SamTemplateGenerator {
         this.parameters = parameters
+
+        return this
+    }
+
+    public withArchitectures(architectures: Architecture[]): SamTemplateGenerator {
+        this.properties.Architectures = architectures
 
         return this
     }

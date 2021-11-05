@@ -11,12 +11,7 @@ import * as path from 'path'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
-import {
-    getComputeRegion,
-    initializeComputeRegion,
-    mostRecentVersionKey,
-    pluginVersion,
-} from '../../shared/extensionUtilities'
+import { getComputeRegion, initializeComputeRegion, mostRecentVersionKey } from '../../shared/extensionUtilities'
 import {
     createQuickStartWebview,
     isDifferentVersion,
@@ -26,6 +21,7 @@ import {
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
+import { extensionVersion } from '../../shared/vscode/env'
 
 describe('extensionUtilities', function () {
     describe('safeGet', function () {
@@ -129,12 +125,12 @@ describe('extensionUtilities', function () {
             const extContext = new FakeExtensionContext()
             setMostRecentVersion(extContext)
 
-            assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), pluginVersion)
+            assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), extensionVersion)
         })
     })
 })
 
-describe('initializeComputeRegion & getComputeRegion', async function () {
+describe('initializeComputeRegion, getComputeRegion', async function () {
     const metadataService = new DefaultEc2MetadataClient()
 
     let sandbox: sinon.SinonSandbox
@@ -182,5 +178,9 @@ describe('initializeComputeRegion & getComputeRegion', async function () {
 
         await initializeComputeRegion(metadataService, false)
         assert.strictEqual(getComputeRegion(), undefined)
+    })
+
+    it('handles invalid endpoint or invalid response', async function () {
+        await assert.rejects(metadataService.invoke('/bogus/path'))
     })
 })

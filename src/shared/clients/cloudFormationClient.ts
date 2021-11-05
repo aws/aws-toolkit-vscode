@@ -22,6 +22,17 @@ export class DefaultCloudFormationClient {
             .promise()
     }
 
+    public async describeType(typeName: string): Promise<CloudFormation.DescribeTypeOutput> {
+        const client = await this.createSdkClient()
+
+        return await client
+            .describeType({
+                Type: 'RESOURCE',
+                TypeName: typeName,
+            })
+            .promise()
+    }
+
     public async *listStacks(
         statusFilter: string[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
     ): AsyncIterableIterator<CloudFormation.StackSummary> {
@@ -36,6 +47,26 @@ export class DefaultCloudFormationClient {
 
             if (response.StackSummaries) {
                 yield* response.StackSummaries
+            }
+
+            request.NextToken = response.NextToken
+        } while (request.NextToken)
+    }
+
+    public async *listTypes(): AsyncIterableIterator<CloudFormation.TypeSummary> {
+        const client = await this.createSdkClient()
+
+        const request: CloudFormation.ListTypesInput = {
+            DeprecatedStatus: 'LIVE',
+            Type: 'RESOURCE',
+            Visibility: 'PUBLIC',
+        }
+
+        do {
+            const response: CloudFormation.ListTypesOutput = await client.listTypes(request).promise()
+
+            if (response.TypeSummaries) {
+                yield* response.TypeSummaries
             }
 
             request.NextToken = response.NextToken

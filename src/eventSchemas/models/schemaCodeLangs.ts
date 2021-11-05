@@ -28,9 +28,7 @@ const typescriptDetail = {
     extension: '.ts',
 }
 
-export function getLanguageDetails(
-    language: SchemaCodeLangs
-): {
+export function getLanguageDetails(language: SchemaCodeLangs): {
     apiValue: string
     extension: string
 } {

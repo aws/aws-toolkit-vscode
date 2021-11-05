@@ -35,14 +35,13 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
                 return [...this.apiNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => 
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
                     localize('AWS.explorerNode.apigateway.noApis', '[No API Gateway REST APIs found]')
                 ),
-            sort: (nodeA: RestApiNode, nodeB: RestApiNode) => nodeA.label!.localeCompare(nodeB.label!),
+            sort: (nodeA, nodeB) => nodeA.label!.localeCompare(nodeB.label!),
         })
     }
 

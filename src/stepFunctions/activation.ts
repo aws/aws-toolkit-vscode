@@ -64,13 +64,14 @@ async function registerStepFunctionCommands(
     )
 
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.stepfunctions.publishStateMachine', async () => {
-            await publishStateMachine(awsContext, outputChannel)
+        vscode.commands.registerCommand('aws.stepfunctions.publishStateMachine', async (node?: any) => {
+            const region: string | undefined = node?.regionCode
+            await publishStateMachine(awsContext, outputChannel, region)
         })
     )
 }
 
-function initalizeWebviewPaths(context: vscode.ExtensionContext) {
+export function initalizeWebviewPaths(context: vscode.ExtensionContext) {
     // Location for script in body of webview that handles input from user
     // and calls the code to render state machine graph
     ext.visualizationResourcePaths.localWebviewScriptsPath = vscode.Uri.file(

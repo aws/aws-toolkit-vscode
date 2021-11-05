@@ -4,4 +4,4 @@ Resources:
         Properties:
             CodeUri: src
             Handler: app.projectDeepInWorkspace
-            Runtime: nodejs10.x
+            Runtime: nodejs14.x

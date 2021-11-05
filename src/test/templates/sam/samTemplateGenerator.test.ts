@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import { Architecture } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
@@ -18,6 +19,7 @@ describe('SamTemplateGenerator', function () {
     const sampleMemorySize: number = 256
     const sampleTimeout: number = 321
     const sampleRuntimeValue: string = 'sampleRuntime'
+    const sampleArchitecture: Architecture = 'arm64'
     const sampleEnvironment: CloudFormation.Environment = {}
     let templateFilename: string
     let tempFolder: string
@@ -98,6 +100,20 @@ describe('SamTemplateGenerator', function () {
         assert.deepStrictEqual(resource!.Properties!.Environment, sampleEnvironment)
     })
 
+    it('Produces a template containing Architectures', async function () {
+        await makeMinimalTemplate().withArchitectures([sampleArchitecture]).generate(templateFilename)
+
+        assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
+
+        const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
+        assert.ok(template.Resources)
+        assert.notStrictEqual(Object.keys(template.Resources!).length, 0)
+
+        const resource = template.Resources![sampleResourceNameValue]
+        assert.ok(resource)
+        assert.deepStrictEqual(resource!.Properties?.Architectures, [sampleArchitecture])
+    })
+
     it('Produces a template with a Globals section', async function () {
         await makeMinimalTemplate()
             .withGlobals({
@@ -122,70 +138,54 @@ describe('SamTemplateGenerator', function () {
     })
 
     it('errs if resource name is missing', async function () {
-        const error: Error = await assertThrowsError(async () => {
-            await new SamTemplateGenerator()
+        await assert.rejects(
+            new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withRuntime(sampleRuntimeValue)
-                .generate(templateFilename)
-        })
+                .generate(templateFilename),
+            new Error('Missing value: at least one of ResourceName or TemplateResources')
+        )
 
-        assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: at least one of ResourceName or TemplateResources')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if function handler is missing', async function () {
-        const error: Error = await assertThrowsError(async () => {
-            await new SamTemplateGenerator()
+        await assert.rejects(
+            new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withRuntime(sampleRuntimeValue)
                 .withResourceName(sampleResourceNameValue)
-                .generate(templateFilename)
-        })
+                .generate(templateFilename),
+            new Error('Missing value: Handler')
+        )
 
-        assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: Handler')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if code uri is missing', async function () {
-        const error: Error = await assertThrowsError(async () => {
-            await new SamTemplateGenerator()
+        await assert.rejects(
+            new SamTemplateGenerator()
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withRuntime(sampleRuntimeValue)
                 .withResourceName(sampleResourceNameValue)
-                .generate(templateFilename)
-        })
+                .generate(templateFilename),
+            new Error('Missing value: CodeUri')
+        )
 
-        assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: CodeUri')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if runtime is missing', async function () {
-        const error: Error = await assertThrowsError(async () => {
-            await new SamTemplateGenerator()
+        await assert.rejects(
+            new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withResourceName(sampleResourceNameValue)
-                .generate(templateFilename)
-        })
+                .generate(templateFilename),
+            new Error('Missing value: Runtime')
+        )
 
-        assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: Runtime')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
-
-    async function assertThrowsError(fn: () => Thenable<any>): Promise<Error> {
-        try {
-            await fn()
-        } catch (err) {
-            if (err instanceof Error) {
-                return err
-            }
-        }
-
-        throw new Error('function did not throw error as expected')
-    }
 })

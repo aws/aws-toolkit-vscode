@@ -5,13 +5,15 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
+import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsextra from 'fs-extra'
 import * as FakeTimers from '@sinonjs/fake-timers'
 
 import * as pathutil from '../shared/utilities/pathUtils'
-import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
-import * as disposableFiles from '../shared/utilities/disposableFiles'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
+
+const testTempDirs: string[] = []
 
 /**
  * Writes the string form of `o` to `filepath` as UTF-8 text.
@@ -55,11 +57,25 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  */
 export async function createTestWorkspaceFolder(name?: string): Promise<vscode.WorkspaceFolder> {
     const tempFolder = await makeTemporaryToolkitFolder()
-    disposableFiles.ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
+    testTempDirs.push(tempFolder)
     return {
         uri: vscode.Uri.file(tempFolder),
         name: name ?? 'test-workspace-folder',
         index: 0,
+    }
+}
+
+export async function deleteTestTempDirs(): Promise<void> {
+    let failed = 0
+    for (const s of testTempDirs) {
+        if (!tryRemoveFolder(s)) {
+            failed += 1
+        }
+    }
+    if (failed > 0) {
+        console.error('deleteTestTempDirs: failed to delete %d/%d test temp dirs', failed, testTempDirs.length)
+    } else {
+        console.error('deleteTestTempDirs: deleted %d test temp dirs', testTempDirs.length)
     }
 }
 
@@ -82,4 +98,17 @@ export function assertFileText(file: string, expected: string, message?: string 
 export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.InstalledClock, t: number): Promise<T> {
     clock.tick(t)
     return await promise
+}
+
+/**
+ * Creates an executable file (including any parent directories) with the given contents.
+ */
+export function createExecutableFile(filepath: string, contents: string): void {
+    fs.mkdirpSync(path.dirname(filepath))
+    if (process.platform === 'win32') {
+        fs.writeFileSync(filepath, `@echo OFF$\r\n${contents}\r\n`)
+    } else {
+        fs.writeFileSync(filepath, contents)
+        fs.chmodSync(filepath, 0o744)
+    }
 }

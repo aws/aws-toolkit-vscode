@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,6 +13,7 @@ import { cdk } from '../../../cdk/globals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../iconPathUtils'
 import * as treeUtils from '../treeTestUtils'
+import { isStateMachine } from '../../../cdk/explorer/nodes/constructNode'
 
 describe('ConstructNode', function () {
     before(async function () {
@@ -185,6 +186,78 @@ describe('ConstructNode', function () {
             treeUtils.generateConstructTreeEntity(displayLabel, constructTreePath)
         )
     }
+})
+
+describe('Check if ConstructNode is a state machine', function () {
+    it('returns true when tree node contains a node with id === "Resource" and type === "StateMachine"', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/StateMachine',
+            children: {
+                Resource: {
+                    id: 'Resource',
+                    path: 'aws-stepfunctions-integ/StateMachine/Resource',
+                    attributes: {
+                        'aws:cdk:cloudformation:type': 'AWS::StepFunctions::StateMachine',
+                    },
+                },
+            },
+        }
+
+        assert.ok(isStateMachine(construct))
+    })
+
+    it('returns true when tree node contains a node with id !== "Resource" and type === "StateMachine"', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/StateMachine',
+            children: {
+                Other: {
+                    id: 'Other',
+                    path: 'aws-stepfunctions-integ/StateMachine/Resource',
+                    attributes: {
+                        'aws:cdk:cloudformation:type': 'AWS::StepFunctions::StateMachine',
+                    },
+                },
+            },
+        }
+
+        assert.strictEqual(isStateMachine(construct), false)
+    })
+
+    it('returns false when tree node contains a node with id !== "Resource" and type !== "StateMachine"', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/LambdaFunction',
+            children: {
+                Other: {
+                    id: 'Other',
+                    path: 'aws-stepfunctions-integ/LambdaFunction/Resource',
+                    attributes: {
+                        'aws:cdk:cloudformation:type': 'AWS::StepFunctions::LambdaFunction',
+                    },
+                },
+            },
+        }
+        assert.strictEqual(isStateMachine(construct), false)
+    })
+
+    it('returns false when tree node contains a node with id === "Resource" and type !== "StateMachine"', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/LambdaFunction',
+            children: {
+                Resource: {
+                    id: 'Resource',
+                    path: 'aws-stepfunctions-integ/LambdaFunction/Resource',
+                    attributes: {
+                        'aws:cdk:cloudformation:type': 'AWS::StepFunctions::LambdaFunction',
+                    },
+                },
+            },
+        }
+        assert.strictEqual(isStateMachine(construct), false)
+    })
 })
 
 export class FakeParentNode extends AWSTreeNodeBase {

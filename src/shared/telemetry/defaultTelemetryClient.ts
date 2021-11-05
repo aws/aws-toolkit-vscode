@@ -6,7 +6,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { pluginVersion } from '../extensionUtilities'
+import { isReleaseVersion, extensionVersion } from '../vscode/env'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
@@ -15,6 +15,7 @@ import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 
 export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
@@ -23,6 +24,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
     private readonly logger = getLogger()
+    private readonly settings = new DefaultSettingsConfiguration('aws')
 
     private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
@@ -37,19 +39,26 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 return undefined
             }
 
-            await this.client
-                .postMetrics({
-                    AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                    AWSProductVersion: pluginVersion,
-                    ClientID: this.clientId,
-                    OS: os.platform(),
-                    OSVersion: os.release(),
-                    ParentProduct: vscode.env.appName,
-                    ParentProductVersion: vscode.version,
-                    MetricData: batch,
-                })
-                .promise()
-            this.logger.info(`Successfully sent a telemetry batch of ${batch.length}`)
+            if (
+                isReleaseVersion() ||
+                this.settings.readDevSetting<boolean>('aws.dev.forceTelemetry', 'boolean', true)
+            ) {
+                await this.client
+                    .postMetrics({
+                        AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                        AWSProductVersion: extensionVersion,
+                        ClientID: this.clientId,
+                        OS: os.platform(),
+                        OSVersion: os.release(),
+                        ParentProduct: vscode.env.appName,
+                        ParentProductVersion: vscode.version,
+                        MetricData: batch,
+                    })
+                    .promise()
+                this.logger.info(`telemetry: sent batch (size=${batch.length})`)
+            } else {
+                this.logger.info(`telemetry: (test mode) dropped batch (size=${batch.length})`)
+            }
 
             return undefined
         } catch (err) {
@@ -64,7 +73,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
             await this.client
                 .postFeedback({
                     AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                    AWSProductVersion: pluginVersion,
+                    AWSProductVersion: extensionVersion,
                     OS: os.platform(),
                     OSVersion: os.release(),
                     ParentProduct: vscode.env.appName,

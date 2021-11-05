@@ -28,7 +28,7 @@ import {
     githubCreateIssueUrl,
     githubUrl,
 } from './shared/constants'
-import { DefaultAwsContext } from './shared/defaultAwsContext'
+import { DefaultAwsContext } from './shared/awsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
 import {
@@ -59,11 +59,11 @@ import {
     recordAwsShowExtensionSource,
     recordToolkitInit,
 } from './shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
+import { activate as activateDynamicResources } from './dynamicResources/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
@@ -72,6 +72,7 @@ import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsPr
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
+import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 
 let localize: nls.LocalizeFunc
 
@@ -101,6 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const endpointsProvider = makeEndpointsProvider()
 
         const awsContext = new DefaultAwsContext(context)
+        ext.awsContext = awsContext
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
@@ -114,6 +116,7 @@ export async function activate(context: vscode.ExtensionContext) {
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
+        ext.regionProvider = regionProvider
         ext.awsContextCommands = new DefaultAWSContextCommands(
             awsContext,
             awsContextTrees,
@@ -123,6 +126,7 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         ext.schemaService = new SchemaService(context)
+        ext.resourceManager = new AwsResourceManager(context)
 
         await initializeCredentials({
             extensionContext: context,
@@ -229,8 +233,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
 
-        await ExtensionDisposableFiles.initialize(context)
-
         await activateSam(extContext)
 
         await activateS3(extContext)
@@ -239,17 +241,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudWatchLogs(context, toolkitSettings)
 
+        await activateDynamicResources(context)
+
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
             await activateSchemas({
                 context: extContext.extensionContext,
                 outputChannel: toolkitOutputChannel,
             })
-
-            setImmediate(async () => {
-                await activateStepFunctions(context, awsContext, toolkitOutputChannel)
-            })
         }
+
+        setImmediate(async () => {
+            await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+        })
 
         showWelcomeMessage(context)
 
@@ -277,6 +281,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     await ext.telemetry.shutdown()
+    await ext.resourceManager.dispose()
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {

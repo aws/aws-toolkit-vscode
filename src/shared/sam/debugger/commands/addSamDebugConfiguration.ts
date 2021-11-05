@@ -5,10 +5,8 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
-import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
 import {
     API_TARGET_TYPE,
@@ -23,6 +21,7 @@ import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { ext } from '../../../extensionGlobals'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import { getIdeProperties } from '../../../extensionUtilities'
+import { isValidResponse } from '../../../wizards/wizard'
 
 /**
  * Holds information required to create a launch config
@@ -106,20 +105,13 @@ export async function addSamDebugConfiguration(
                         runtimeFamily,
                     })
 
-                    const choices = await picker.promptUser({
-                        picker: quickPick,
-                        onDidTriggerButton: (button, resolve, reject) => {
-                            if (button === vscode.QuickInputButtons.Back) {
-                                resolve(undefined)
-                            }
-                        },
-                    })
-                    const userRuntime = picker.verifySinglePickerOutput(choices)?.runtime
-                    if (!userRuntime) {
-                        // User selected "Cancel". Abandon config creation
+                    const choices = await quickPick.prompt()
+
+                    if (!isValidResponse(choices)) {
                         return
                     }
-                    runtimeName = userRuntime
+
+                    runtimeName = choices.runtime
                     addRuntimeNameToConfig = true
                 }
             }
@@ -158,28 +150,19 @@ export async function addSamDebugConfiguration(
             totalSteps: step?.totalSteps,
         })
 
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput(choices)
+        const choices = await quickPick.prompt()
 
-        if (val) {
-            // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
-            samDebugConfig = createCodeAwsSamDebugConfig(
-                workspaceFolder,
-                resourceName,
-                path.dirname(rootUri.fsPath),
-                val.label as Runtime
-            )
-        } else {
-            // User backed out of runtime selection. Abandon config creation.
+        if (!isValidResponse(choices)) {
             return
         }
+
+        // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
+        samDebugConfig = createCodeAwsSamDebugConfig(
+            workspaceFolder,
+            resourceName,
+            path.dirname(rootUri.fsPath),
+            choices.runtime
+        )
     } else {
         throw new Error('Unrecognized debug target type')
     }

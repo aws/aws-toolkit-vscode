@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { sleep } from './promiseUtilities'
+
 export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
 export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
 export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
@@ -150,7 +152,7 @@ export async function waitUntil<T>(
             return undefined
         }
 
-        await new Promise(r => setTimeout(r, opt.interval))
+        await sleep(opt.interval)
     }
 }
 
@@ -168,29 +170,29 @@ export async function waitUntil<T>(
  *
  * @returns A Promise that returns if successful, or rejects when the Timeout was cancelled or expired.
  */
-export function waitTimeout<T>(
+export function waitTimeout<T, R = void, B extends boolean = true>(
     promise: Promise<T> | (() => Promise<T>),
-    timeout: Timeout,
+    timeout: Timeout, // TODO: potentially type 'completed' timers differently from active ones
     opt: {
-        allowUndefined?: boolean
-        onExpire?: () => T | undefined
-        onCancel?: () => T | undefined
+        allowUndefined?: B
+        onExpire?: () => R
+        onCancel?: () => R
         completeTimeout?: boolean
     } = {}
-): Promise<T | undefined> {
+): Promise<T | R | (true extends typeof opt.allowUndefined ? undefined : never)> {
     if (typeof promise === 'function') {
         promise = promise()
     }
 
     return Promise.race([promise, timeout.timer])
         .then(obj => {
-            if (opt.allowUndefined === false && obj === undefined) {
-                throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
-            }
             if (obj !== undefined) {
                 return obj
             }
-            return undefined
+            if ((opt.allowUndefined ?? true) !== true) {
+                throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
+            }
+            return undefined as any
         })
         .catch(err => {
             if (opt.onExpire && (err as Error).message === TIMEOUT_EXPIRED_MESSAGE) {

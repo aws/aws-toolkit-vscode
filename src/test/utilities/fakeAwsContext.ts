@@ -70,6 +70,8 @@ export class FakeAwsContext implements AwsContext {
         this.awsContextCredentials = params?.contextCredentials
     }
 
+    public async setDeveloperMode(enable: boolean, settingName: string | undefined): Promise<void> {}
+
     public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
         this.awsContextCredentials = credentials
     }
