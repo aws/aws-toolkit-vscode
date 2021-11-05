@@ -8,11 +8,11 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.ui.layout.panel
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
-import software.aws.toolkits.jetbrains.utils.ui.validationInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcrTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -24,14 +24,21 @@ class CreateEcrRepoDialog(
     private val ecrClient: EcrClient,
     parent: Component? = null
 ) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
-    private val view = CreateRepoPanel()
+    var repoName: String = ""
 
-    var repoName
-        get() = view.repoName.text.trim()
-        @TestOnly
-        set(value) {
-            view.repoName.text = value
+    private val panel = panel {
+        row(message("general.name.label")) {
+            textField(::repoName)
+                .focused()
+                .withValidationOnApply {
+                    if (it.text.isBlank()) {
+                        error(message("ecr.create.repo.validation.empty"))
+                    } else {
+                        null
+                    }
+                }
         }
+    }
 
     init {
         title = message("ecr.create.repo.title")
@@ -40,11 +47,7 @@ class CreateEcrRepoDialog(
         init()
     }
 
-    override fun createCenterPanel(): JComponent? = view.component
-
-    override fun getPreferredFocusedComponent(): JComponent? = view.repoName
-
-    override fun doValidate(): ValidationInfo? = if (repoName.isBlank()) view.repoName.validationInfo(message("ecr.create.repo.validation.empty")) else null
+    override fun createCenterPanel(): JComponent = panel
 
     override fun doCancelAction() {
         EcrTelemetry.createRepository(project, Result.Cancelled)
@@ -63,7 +66,7 @@ class CreateEcrRepoDialog(
                         {
                             close(OK_EXIT_CODE)
                         },
-                        ModalityState.stateForComponent(view.repoName)
+                        ModalityState.stateForComponent(rootPane)
                     )
                     project.refreshAwsTree(EcrResources.LIST_REPOS)
                     EcrTelemetry.createRepository(project, Result.Succeeded)
@@ -78,9 +81,12 @@ class CreateEcrRepoDialog(
     }
 
     fun createRepo() {
-        ecrClient.createRepository { it.repositoryName(repoName) }
+        ecrClient.createRepository { it.repositoryName(repoName.trim()) }
     }
 
     @TestOnly
-    fun validateForTest(): ValidationInfo? = doValidate()
+    fun validateForTest(): List<ValidationInfo> {
+        panel.reset()
+        return doValidateAll()
+    }
 }
