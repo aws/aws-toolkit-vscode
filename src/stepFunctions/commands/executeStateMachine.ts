@@ -20,6 +20,7 @@ import {
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import { StepFunctionsTemplates } from '../templates/stepFunctionsTemplates'
+import { updateCspSource } from '../../webviews/main'
 
 interface CommandMessage {
     command: string
@@ -47,7 +48,7 @@ export async function executeStateMachine(params: {
         const loadStylesheets = ExtensionUtilities.getCssForHtml(['executeStateMachine.css'], view.webview)
 
         view.webview.html = baseTemplateFn({
-            cspSource: view.webview.cspSource,
+            cspSource: updateCspSource(view.webview.cspSource),
             content: executeTemplate({
                 StateMachineName: stateMachineNode.details.name,
                 Scripts: loadScripts,

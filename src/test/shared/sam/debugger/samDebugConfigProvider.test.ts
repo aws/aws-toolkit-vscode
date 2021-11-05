@@ -9,7 +9,7 @@ import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as lambdaModel from '../../../../lambda/models/samLambdaRuntime'
-import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../../../shared/fs/templateRegistry'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
     TemplateTargetProperties,
