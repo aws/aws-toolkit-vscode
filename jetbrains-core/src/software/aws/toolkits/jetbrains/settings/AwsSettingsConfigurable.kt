@@ -216,6 +216,5 @@ class AwsSettingsConfigurable() : SearchableConfigurable {
     companion object {
         private const val CLOUDDEBUG = "clouddebug"
         private const val SAM = "sam"
-        private const val AWS_CLI = "awsCli"
     }
 }

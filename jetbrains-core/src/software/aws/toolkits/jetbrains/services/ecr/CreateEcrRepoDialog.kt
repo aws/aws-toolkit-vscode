@@ -24,7 +24,7 @@ class CreateEcrRepoDialog(
     private val ecrClient: EcrClient,
     parent: Component? = null
 ) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
-    private val view = CreateRepoPanel(project)
+    private val view = CreateRepoPanel()
 
     var repoName
         get() = view.repoName.text.trim()

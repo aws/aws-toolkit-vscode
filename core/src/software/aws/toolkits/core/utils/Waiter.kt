@@ -4,7 +4,6 @@
 package software.aws.toolkits.core.utils
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import java.time.Duration
 import java.time.Instant
@@ -14,29 +13,6 @@ import kotlin.reflect.KClass
 
 object Waiters {
     private val LOG = getLogger<Waiters>()
-
-    /**
-     * Creates a waiter that attempts executing the provided [call] until the specified conditions are met.
-     *
-     * @param T The response type of the [call]
-     * @param succeedOn The condition on the response under which the thing we are trying is complete. Defaults to if the call succeeds, we stop wating
-     * @param failOn The condition on the response under which the thing we are trying has already failed and further attempts are pointless. Defaults to always try again
-     * @param exceptionsToStopOn The exception types that should be considered a success and stop waiting. Default to never stop on any exception
-     * @param exceptionsToIgnore The exception types that should be ignored if the thing we are trying throws them. Default to not ignoring any exceptions and let it bubble out
-     * @param maxDuration The max amount of time we want to wait for
-     * @param call The function we want to keep retrying
-     */
-    fun <T> waitUntilBlocking(
-        succeedOn: (T) -> Boolean = { true },
-        failOn: (T) -> Boolean = { false },
-        exceptionsToStopOn: Set<KClass<out Exception>> = emptySet(),
-        exceptionsToIgnore: Set<KClass<out Exception>> = emptySet(),
-        maxDuration: Duration = Duration.ofMinutes(1),
-        // The status pulling method to get the latest resource
-        call: () -> T
-    ): T? = runBlocking {
-        waitUntil(succeedOn, failOn, exceptionsToStopOn, exceptionsToIgnore, maxDuration, call)
-    }
 
     /**
      * Creates a waiter that attempts executing the provided [call] until the specified conditions are met.

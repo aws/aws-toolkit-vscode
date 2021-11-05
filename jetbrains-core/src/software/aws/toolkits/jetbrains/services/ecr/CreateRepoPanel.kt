@@ -3,11 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.ecr
 
-import com.intellij.openapi.project.Project
 import javax.swing.JPanel
 import javax.swing.JTextField
 
-class CreateRepoPanel(private val project: Project) {
+class CreateRepoPanel {
     lateinit var component: JPanel
         private set
     lateinit var repoName: JTextField

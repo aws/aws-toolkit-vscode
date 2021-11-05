@@ -7,7 +7,6 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
 /**
@@ -40,11 +39,4 @@ fun createTemporaryZipFile(block: (ZipOutputStream) -> Unit): Path {
     val file = Files.createTempFile(null, ".zip")
     ZipOutputStream(Files.newOutputStream(file)).use(block)
     return file
-}
-
-/**
- * Returns a list of the file names in the Zip archive
- */
-fun zipEntries(zipFile: Path): List<String> = ZipFile(zipFile.toFile()).use { zip ->
-    zip.entries().asSequence().filterNot { it.isDirectory }.mapNotNull { it.name }.toList()
 }
