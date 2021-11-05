@@ -109,7 +109,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         const iamClient = ext.toolkitClientBuilder.createIamClient(region)
         const apprunnerClient = ext.toolkitClientBuilder.createAppRunnerClient(region)
         const autoDeployButton = makeDeploymentButton()
-        const gitExtension = new GitExtension()
+        const gitExtension = GitExtension.instance
         const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(apprunnerClient, gitExtension, autoDeployButton)
         const imageRepositoryWizard = new AppRunnerImageRepositoryWizard(ecrClient, iamClient, autoDeployButton)
 

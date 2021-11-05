@@ -41,6 +41,7 @@ async function setupVSCode(): Promise<string> {
                 VSCODE_EXTENSION_ID.go,
                 VSCODE_EXTENSION_ID.java,
                 VSCODE_EXTENSION_ID.javadebug,
+                VSCODE_EXTENSION_ID.git,
             ],
         })
         const args = {

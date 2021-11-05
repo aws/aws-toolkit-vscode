@@ -112,4 +112,14 @@ describe('SystemUtilities', function () {
         testutil.assertEqualPaths(result, tscNodemodules)
         fs.removeSync(tscNodemodules)
     })
+
+    it('getVscodeCliPath()', async function () {
+        if (os.platform() === 'linux') {
+            this.skip()
+        }
+        const vscPath = await SystemUtilities.getVscodeCliPath()
+        assert(vscPath)
+        const regex = /bin[\\\/](code|code-insiders)$/
+        assert.ok(regex.test(vscPath), `expected regex ${regex} to match: "${vscPath}"`)
+    })
 })
