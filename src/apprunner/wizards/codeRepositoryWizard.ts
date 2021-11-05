@@ -274,9 +274,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     // TODO: ask user if they would like to save their parameters into an App Runner config file
 
     form.CodeConfiguration.CodeConfigurationValues.applyBoundForm(codeConfigForm, {
-        showWhen: state => {
-            return state.CodeConfiguration.ConfigurationSource === 'API'
-        },
+        showWhen: state => state.CodeConfiguration.ConfigurationSource === 'API',
         dependencies: [form.CodeConfiguration.ConfigurationSource],
     })
 
