@@ -22,11 +22,7 @@ import {
     QuickPickPrompter,
 } from '../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
-import {
-    APPRUNNER_CONNECTION_HELP_URL,
-    APPRUNNER_CONFIGURATION_HELP_URL,
-    APPRUNNER_RUNTIME_HELP_URL,
-} from '../../shared/constants'
+import { apprunnerConnectionHelpUrl, apprunnerConfigHelpUrl, apprunnerRuntimeHelpUrl } from '../../shared/constants'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { getLogger } from '../../shared/logger/logger'
 
@@ -98,7 +94,7 @@ function createRuntimePrompter(): QuickPickPrompter<AppRunner.Runtime> {
 
     return createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectRuntime.title', 'Select a runtime'),
-        buttons: createCommonButtons(APPRUNNER_RUNTIME_HELP_URL),
+        buttons: createCommonButtons(apprunnerRuntimeHelpUrl),
     })
 }
 
@@ -110,7 +106,7 @@ function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
 
     return createInputBox({
         title: localize('AWS.apprunner.createService.buildCommand.title', 'Enter a build command'),
-        buttons: createCommonButtons(APPRUNNER_RUNTIME_HELP_URL),
+        buttons: createCommonButtons(apprunnerRuntimeHelpUrl),
         placeholder:
             buildCommandMap[Object.keys(buildCommandMap).filter(key => runtime.toLowerCase().includes(key))[0]],
         validateInput: validateCommand,
@@ -125,7 +121,7 @@ function createStartCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
 
     return createInputBox({
         title: localize('AWS.apprunner.createService.startCommand.title', 'Enter a start command'),
-        buttons: createCommonButtons(APPRUNNER_RUNTIME_HELP_URL),
+        buttons: createCommonButtons(apprunnerRuntimeHelpUrl),
         placeholder:
             startCommandMap[Object.keys(startCommandMap).filter(key => runtime.toLowerCase().includes(key))[0]],
         validateInput: validateCommand,
@@ -174,7 +170,7 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
                             invalidSelection: true,
                             onClick: vscode.env.openExternal.bind(
                                 vscode.env,
-                                vscode.Uri.parse(APPRUNNER_CONNECTION_HELP_URL)
+                                vscode.Uri.parse(apprunnerConnectionHelpUrl)
                             ),
                         },
                     ]
@@ -202,7 +198,7 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
         const refreshButton = createRefreshButton()
         const prompter = createQuickPick(connections, {
             title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
-            buttons: [refreshButton, ...createCommonButtons(APPRUNNER_CONNECTION_HELP_URL)],
+            buttons: [refreshButton, ...createCommonButtons(apprunnerConnectionHelpUrl)],
         })
 
         const refresh = () => {
@@ -231,7 +227,7 @@ function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource
         ],
         {
             title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
-            buttons: createCommonButtons(APPRUNNER_CONFIGURATION_HELP_URL),
+            buttons: createCommonButtons(apprunnerConfigHelpUrl),
         }
     )
 }
