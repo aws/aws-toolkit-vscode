@@ -255,7 +255,9 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     codeConfigForm.body.BuildCommand.bindPrompter(state => createBuildCommandPrompter(state.Runtime!))
     codeConfigForm.body.StartCommand.bindPrompter(state => createStartCommandPrompter(state.Runtime!))
     codeConfigForm.body.Port.bindPrompter(createPortPrompter)
-    codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() => createVariablesPrompter(createCommonButtons()))
+    codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() =>
+        createVariablesPrompter(createCommonButtons(apprunnerCreateServiceDocsUrl))
+    )
     // TODO: ask user if they would like to save their parameters into an App Runner config file
 
     form.CodeConfiguration.CodeConfigurationValues.applyBoundForm(codeConfigForm, {

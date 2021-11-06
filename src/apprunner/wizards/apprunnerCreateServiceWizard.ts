@@ -66,7 +66,7 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
 
     return picker.createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectInstanceConfig.title', 'Select instance configuration'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
     })
 }
 

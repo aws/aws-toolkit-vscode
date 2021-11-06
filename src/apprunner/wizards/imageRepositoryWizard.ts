@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { AppRunner, IAM } from 'aws-sdk'
 import { createCommonButtons, QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -244,7 +245,7 @@ function createImageRepositorySubForm(
 
     form.ImageConfiguration.Port.bindPrompter(() => createPortPrompter())
     form.ImageConfiguration.RuntimeEnvironmentVariables.bindPrompter(() =>
-        createVariablesPrompter(createCommonButtons())
+        createVariablesPrompter(createCommonButtons(apprunnerCreateServiceDocsUrl))
     )
 
     return subform
@@ -256,6 +257,7 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
         const form = this.form
         const rolePrompter = new RolePrompter(iamClient, {
             title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
+            helpUri: vscode.Uri.parse(apprunnerCreateServiceDocsUrl),
             filter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
             createRole: createEcrRole.bind(undefined, iamClient),
         })
