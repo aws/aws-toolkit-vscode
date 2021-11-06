@@ -22,6 +22,7 @@ import { RolePrompter } from '../../shared/ui/common/rolePrompter'
 import { getLogger } from '../../shared/logger/logger'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -156,7 +157,7 @@ function createPortPrompter(): Prompter<string> {
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl), // TODO: update docs URL when we have docs for the "from ECR" case.
     })
 }
 

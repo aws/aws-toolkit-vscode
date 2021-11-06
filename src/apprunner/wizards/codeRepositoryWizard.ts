@@ -22,7 +22,12 @@ import {
     QuickPickPrompter,
 } from '../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
-import { apprunnerConnectionHelpUrl, apprunnerConfigHelpUrl, apprunnerRuntimeHelpUrl } from '../../shared/constants'
+import {
+    apprunnerConnectionHelpUrl,
+    apprunnerConfigHelpUrl,
+    apprunnerRuntimeHelpUrl,
+    apprunnerCreateServiceDocsUrl,
+} from '../../shared/constants'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { getLogger } from '../../shared/logger/logger'
 
@@ -141,7 +146,7 @@ function createPortPrompter(): InputBoxPrompter {
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl), // TODO: update docs URL when we have docs for the "from ECR" case.
     })
 }
 
