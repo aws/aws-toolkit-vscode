@@ -34,10 +34,10 @@ export const DEVFILE_EXCLUDE_PATTERN = /.*devfile\.(yaml|yml)/i
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     try {
         const registry = new CloudFormationTemplateRegistry()
+        ext.templateRegistry = registry
         await registry.addExcludedPattern(DEVFILE_EXCLUDE_PATTERN)
         await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
         await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
-        ext.templateRegistry = registry
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
