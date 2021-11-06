@@ -129,7 +129,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             input.createInputBox({
                 title: localize('AWS.apprunner.createService.name.title', 'Name your service'),
                 validateInput: validateName, // TODO: we can check if names match any already made services
-                buttons: createCommonButtons(apprunnerCreateServiceDocsUrl), // TODO: update docs URL when we have docs for the "from ECR" case.
+                buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
             })
         )
 

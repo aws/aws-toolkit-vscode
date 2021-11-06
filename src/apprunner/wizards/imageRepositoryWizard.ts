@@ -158,7 +158,7 @@ function createPortPrompter(): Prompter<string> {
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
-        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl), // TODO: update docs URL when we have docs for the "from ECR" case.
+        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
     })
 }
 
