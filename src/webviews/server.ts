@@ -150,9 +150,9 @@ export function registerWebviewServer(webview: WebviewServer, commands: Protocol
                 return
             }
             result = JSON.stringify(err, Object.getOwnPropertyNames(err))
-            delete result.stack // Already being logged anyway
+            delete result.stack // Not relevant to frontend code, we only care about the message
             metadata.error = true
-            getLogger().error(`Webview server failed on command "${command}": %O`, err)
+            getLogger().debug(`Webview server failed on command "${command}": %s`, err.message)
         }
 
         // TODO: check if webview has been disposed of before posting message (not necessary but nice)
