@@ -21,27 +21,13 @@ export class CompositeResourceFetcher implements ResourceFetcher {
      * Returns the contents of the resource from the first fetcher that successfully retrieves it, or undefined if the resource could not be retrieved.
      */
     public async get(): Promise<string | undefined> {
-        try {
-            for (const fetcher of this.fetchers) {
-                const contents = await this.tryGet(fetcher)
-                if (contents) {
-                    return contents
-                }
+        for (const fetcher of this.fetchers) {
+            const contents = await fetcher.get().catch(err => {
+                this.logger.debug('Error loading resource from resource fetcher: %s', (err as Error).message)
+            })
+            if (contents) {
+                return contents
             }
-        } catch (err) {
-            this.logger.error('Error loading resource from resource fetchers: %O', err as Error)
-
-            return undefined
-        }
-    }
-
-    private async tryGet(fetcher: ResourceFetcher): Promise<string | undefined> {
-        try {
-            return await fetcher.get()
-        } catch (err) {
-            this.logger.error('Error loading resource from resource fetcher: %O', err as Error)
-
-            return undefined
         }
     }
 }

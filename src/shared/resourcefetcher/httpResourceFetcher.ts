@@ -36,7 +36,7 @@ interface FetcherStreams {
     requestStream: Request // `got` doesn't add the correct types to 'on' for some reason
     /** Stream writing to the file system. */
     fsStream: fs.WriteStream
-    /** Promise that resolves when all streams have closed, */
+    /** Promise that resolves when all streams have closed. This is rejected on error. */
     done: Promise<void>
 }
 
@@ -92,7 +92,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
             return contents
         } catch (err) {
-            this.logger.error(`Error downloading ${this.logText()}: %O`, err as Error)
+            this.logger.verbose(`Error downloading ${this.logText()}: %s`, (err as Error).message)
 
             return undefined
         }
