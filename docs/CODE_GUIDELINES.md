@@ -100,6 +100,9 @@ that is a net cost.
     able to react to them in some way. This could be showing an error message,
     attaching metadata to the error, or retrying the failed action. Do not just
     log and rethrow the error without additional context as to where the error occured.
+-   Do not log a stack trace unless it's truly a fatal exception. Stack traces are
+    noisy and mostly useless in production because the extension is 'bundled', removing
+    anything useful from the trace.
 -   Refactoring tools allow us to avoid "premature abstraction". Avoid wrappers
     until the need is clear and obvious.
 

@@ -78,11 +78,17 @@ export class SchemaService {
 
         const batch = this.updateQueue.splice(0, this.updateQueue.length)
         for (const mapping of batch) {
-            const handler = this.handlers.get(mapping.type)
+            const { type, schema, path } = mapping
+            const handler = this.handlers.get(type)
             if (!handler) {
-                throw new Error(`no registered handler for type ${mapping.type}`)
+                throw new Error(`no registered handler for type ${type}`)
             }
-            getLogger().debug('schema service: handle %s mapping: %s -> %$s', mapping.type, path, mapping.path)
+            getLogger().debug(
+                'schema service: handle %s mapping: %s -> %s',
+                type,
+                schema?.toString() ?? '[removed]',
+                path
+            )
             await handler.handleUpdate(mapping, this.schemas)
         }
     }
@@ -141,7 +147,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             sam: samSchemaUri,
         }
     } catch (e) {
-        getLogger().error('Could not refresh schemas:', (e as Error).message)
+        getLogger().verbose('Could not refresh schemas: %s', (e as Error).message)
         return undefined
     }
 }
