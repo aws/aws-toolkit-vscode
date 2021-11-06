@@ -16,7 +16,7 @@ import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
-import { appRunnerCreateServiceDocsUrl } from '../../shared/constants'
+import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -90,7 +90,7 @@ function createSourcePrompter(
 
     return picker.createQuickPick([ecrPath, repositoryPath], {
         title: localize('AWS.apprunner.createService.sourceType.title', 'Select a source code location type'),
-        buttons: [autoDeployButton, ...createCommonButtons(appRunnerCreateServiceDocsUrl)],
+        buttons: [autoDeployButton, ...createCommonButtons(apprunnerCreateServiceDocsUrl)],
     })
 }
 

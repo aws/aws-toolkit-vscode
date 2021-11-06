@@ -97,6 +97,6 @@ export const apprunnerConnectionHelpUrl =
 export const apprunnerConfigHelpUrl = 'https://docs.aws.amazon.com/apprunner/latest/dg/manage-configure.html'
 export const apprunnerRuntimeHelpUrl = 'https://docs.aws.amazon.com/apprunner/latest/dg/service-source-code.html'
 export const apprunnerPricingUrl = 'https://aws.amazon.com/apprunner/pricing/'
-export const appRunnerCreateServiceDocsUrl: string = isCloud9()
+export const apprunnerCreateServiceDocsUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/creating-service-apprunner.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/creating-service-apprunner.html'
