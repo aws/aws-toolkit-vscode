@@ -4,11 +4,41 @@
  */
 
 import * as fs from 'fs'
-// TODO: Move off of deprecated `request` to `got` or similar modern library.
-import * as request from 'request'
+import * as http from 'http'
+import * as https from 'https'
+import * as vscode from 'vscode'
+import * as semver from 'semver'
+import * as stream from 'stream'
+import got, { Response, RequestError } from 'got'
+import urlToOptions from 'got/dist/source/core/utils/url-to-options'
+import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
+
+// XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
+// `got` has also deprecated `urlToOptions`
+const patchedGot = got.extend({
+    request: (url, options, callback) => {
+        if (url.protocol === 'https:') {
+            return https.request({ ...options, ...urlToOptions(url) }, callback)
+        }
+        return http.request({ ...options, ...urlToOptions(url) }, callback)
+    },
+})
+// I can't track down the real version but this seems close enough
+// VSC 1.44.2 seems to work, but on C9 it does not?
+const MIN_VERSION_FOR_GOT = '1.47.0'
+
+// Minimal interface for hooking into download + file write streams
+interface FetcherStreams {
+    /** Download stream piped to `fsStream`. */
+    requestStream: Request // `got` doesn't add the correct types to 'on' for some reason
+    /** Stream writing to the file system. */
+    fsStream: fs.WriteStream
+    /** Promise that resolves when all streams have closed, */
+    done: Promise<void>
+}
 
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
@@ -19,36 +49,50 @@ export class HttpResourceFetcher implements ResourceFetcher {
      * @param params Additional params for the fetcher
      * @param {boolean} params.showUrl Whether or not to the URL in log statements.
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
-     * @param {string} params.pipeLocation If provided, pipes output to file designated here.
-     * @param {function} params.onSuccess Function to execute on successful request.
+     * @param {function} params.onSuccess Function to execute on successful request. No effect if piping to a location.
      */
     public constructor(
         private readonly url: string,
         private readonly params: {
             showUrl: boolean
             friendlyName?: string
-            pipeLocation?: string
             onSuccess?(contents: string): void
         }
     ) {}
 
     /**
      * Returns the contents of the resource, or undefined if the resource could not be retrieved.
+     *
+     * @param pipeLocation Optionally pipe the download to a file system location
      */
-    public async get(): Promise<string | undefined> {
-        try {
-            this.logger.verbose(`Loading ${this.logText()}`)
+    public get(): Promise<string | undefined>
+    public get(pipeLocation: string): FetcherStreams
+    public get(pipeLocation?: string): Promise<string | undefined> | FetcherStreams {
+        this.logger.verbose(`Downloading ${this.logText()}`)
 
+        if (pipeLocation) {
+            const streams = this.pipeGetRequest(pipeLocation)
+            streams.fsStream.on('close', () => {
+                this.logger.verbose(`Finished downloading ${this.logText()}`)
+            })
+            return streams
+        }
+
+        return this.downloadRequest()
+    }
+
+    private async downloadRequest(): Promise<string | undefined> {
+        try {
             const contents = (await this.getResponseFromGetRequest()).body
             if (this.params.onSuccess) {
                 this.params.onSuccess(contents)
             }
 
-            this.logger.verbose(`Finished loading ${this.logText()}`)
+            this.logger.verbose(`Finished downloading ${this.logText()}`)
 
             return contents
         } catch (err) {
-            this.logger.error(`Error loading ${this.logText()}: %O`, err as Error)
+            this.logger.error(`Error downloading ${this.logText()}: %O`, err as Error)
 
             return undefined
         }
@@ -58,26 +102,30 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
     }
 
-    private async getResponseFromGetRequest(): Promise<request.Response> {
-        return new Promise<request.Response>((resolve, reject) => {
-            const call = request(
-                {
-                    url: this.url,
-                    headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
-                },
-                (err, response, body) => {
-                    if (err) {
-                        // swallow error to keep URL private
-                        // some AWS APIs use presigned links (e.g. Lambda.getFunction); showing these represent a securty concern.
-                        reject({ code: err.code })
-                    }
-                    resolve(response)
-                }
-            )
+    // TODO: make pipeLocation a vscode.Uri
+    private pipeGetRequest(pipeLocation: string): FetcherStreams {
+        const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
+        const requestStream = requester.stream(this.url, { headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit } })
+        const fsStream = fs.createWriteStream(pipeLocation)
 
-            if (this.params.pipeLocation) {
-                call.pipe(fs.createWriteStream(this.params.pipeLocation))
-            }
+        const done = new Promise<void>((resolve, reject) => {
+            stream.pipeline(requestStream, fsStream, err => {
+                if (err instanceof RequestError) {
+                    return reject(Object.assign(new Error('Failed to download file'), { code: err.code }))
+                }
+                err ? reject(err) : resolve()
+            })
+        })
+
+        return { requestStream, fsStream, done }
+    }
+
+    private async getResponseFromGetRequest(): Promise<Response<string>> {
+        const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
+        return requester(this.url, {
+            headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
+        }).catch((err: RequestError) => {
+            throw { code: err.code } // Swallow URL since it may contain sensitive data
         })
     }
 }

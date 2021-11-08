@@ -479,7 +479,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
-                    if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
+                    if (vscode.version.startsWith('1.44') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
                         this.skip()
                     }
 
@@ -527,7 +527,7 @@ describe('SAM Integration Tests', async function () {
 
                 it('target=api: invokes and attaches on debug request (F5)', async function () {
                     if (
-                        (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) ||
+                        (vscode.version.startsWith('1.44') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) ||
                         SKIP_LANGUAGES_ON_API.includes(scenario.language)
                     ) {
                         this.skip()
@@ -544,7 +544,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=template: invokes and attaches on debug request (F5)', async function () {
-                    if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
+                    if (vscode.version.startsWith('1.44') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
                         this.skip()
                     }
 

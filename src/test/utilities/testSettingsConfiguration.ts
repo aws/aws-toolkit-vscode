@@ -43,6 +43,6 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
     }
 
     public readDevSetting<T>(key: AwsDevSetting, type: string = 'string', silent: boolean = false): T | undefined {
-        return undefined
+        return this._data[key] as T
     }
 }

@@ -65,7 +65,7 @@ type Folder = Pick<vscode.WorkspaceFolder, 'name' | 'uri'>
  * @returns A {@link QuickPickPrompter Prompter} that returns a URI
  */
 export function createFolderPrompt(
-    folders: Folder[] = [],
+    folders: readonly Folder[] = [],
     options: LocationPromptOptions = {}
 ): QuickPickPrompter<vscode.Uri> {
     const items: DataQuickPickItem<vscode.Uri>[] = folders.map((f: Folder) => ({

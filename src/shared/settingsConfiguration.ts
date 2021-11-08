@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { ext } from './extensionGlobals'
-import { isCI } from './vscode/env'
+import { isReleaseVersion } from './vscode/env'
 import * as logger from './logger'
 
 /**
@@ -16,7 +16,7 @@ import * as logger from './logger'
  */
 export type SettingsConfiguration = ClassToInterfaceType<DefaultSettingsConfiguration>
 
-export type AwsDevSetting = 'aws.forceCloud9' | 'aws.dev.forceTelemetry' | 'aws.dev.foo'
+export type AwsDevSetting = 'aws.forceCloud9' | 'aws.dev.forceTelemetry' | 'aws.dev.forceInstallTools' | 'aws.dev.foo'
 
 type JSPrimitiveTypeName =
     | 'undefined'
@@ -216,7 +216,8 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         silent: boolean = false
     ): T | undefined {
         const val = this.getSetting<T>(key, type, {
-            silent: silent ? 'yes' : isCI() ? 'no' : 'notfound',
+            // Never throw in a release environment, but throw in CI
+            silent: silent ? 'yes' : isReleaseVersion() ? 'notfound' : 'no',
             logging: true,
         })
         if (val === undefined) {
