@@ -126,7 +126,9 @@ class ContainerLogsAction(
             notifyInfo(message("ecs.service.logs.no_log_stream"))
             return false
         }
-        window.showLogStream(logGroup, logStream)
+        runInEdt {
+            window.showLogStream(logGroup, logStream)
+        }
         return true
     }
 }

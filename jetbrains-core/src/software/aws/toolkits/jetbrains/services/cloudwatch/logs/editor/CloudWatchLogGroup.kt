@@ -127,7 +127,9 @@ class CloudWatchLogGroup(
                 }
             }
         )
-        tablePanel.toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false).component
+        val toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false)
+        toolbar.setTargetComponent(tablePanel.component)
+        tablePanel.toolbar = toolbar.component
     }
 
     internal fun refreshTable() {
