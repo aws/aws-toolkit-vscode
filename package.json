@@ -1211,7 +1211,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsEcsClusterNode|awsEcsServiceNode)$|^awsAppRunnerServiceNode/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsEcsClusterNode)$|^awsAppRunnerServiceNode|^awsEcsServiceNode/",
                     "group": "2@2"
                 },
                 {
@@ -1282,17 +1282,17 @@
                 {
                     "command": "aws.ecs.enableEcsExec",
                     "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode.DISABLED"
                 },
                 {
                     "command": "aws.ecs.disableEcsExec",
                     "group": "0@2",
-                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode.ENABLED"
                 },
                 {
                     "command": "aws.ecs.viewDocumentation",
                     "group": "1@3",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsClusterNode|awsEcsServiceNode|awsEcsContainerNode)$/"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsClusterNode|awsEcsContainerNode)$|^awsEcsServiceNode/"
                 },
                 {
                     "command": "aws.resources.configure",

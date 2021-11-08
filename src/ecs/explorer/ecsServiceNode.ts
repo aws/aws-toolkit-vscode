@@ -16,6 +16,9 @@ import { EcsClusterNode } from './ecsClusterNode'
 import { EcsContainerNode } from './ecsContainerNode'
 import { ext } from '../../shared/extensionGlobals'
 
+const CONTEXT_EXEC_ENABLED = 'awsEcsServiceNode.ENABLED'
+const CONTEXT_EXEC_DISABLED = 'awsEcsServiceNode.DISABLED'
+
 export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly service: ECS.Service,
@@ -24,7 +27,7 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
     ) {
         super(service.serviceName!, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = `${service.serviceArn}\nTask Definition: ${service.taskDefinition}`
-        this.contextValue = 'awsEcsServiceNode'
+        this.contextValue = this.service.enableExecuteCommand ? CONTEXT_EXEC_ENABLED : CONTEXT_EXEC_DISABLED
 
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.service),
