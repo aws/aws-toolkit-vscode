@@ -262,6 +262,117 @@ class ProfileCredentialProviderFactoryTest {
     }
 
     @Test
+    fun testAssumeRoleDuration() {
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+            duration_seconds=400
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        val captor = argumentCaptor<HttpExecuteRequest>()
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(captor.capture()) }
+                .thenReturn(
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
+                )
+        }
+
+        val providerFactory = createProviderFactory()
+        val validProfile = findCredentialIdentifier("role")
+        providerFactory.createProvider(validProfile).resolveCredentials()
+
+        val content = captor.firstValue.contentStreamProvider().get().newStream().bufferedReader().use { it.readText() }
+        assertThat(content).contains("DurationSeconds=400")
+    }
+
+    @Test
+    fun testAssumeRolWithInvalidDuration() {
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+            duration_seconds=abc
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        val captor = argumentCaptor<HttpExecuteRequest>()
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(captor.capture()) }
+                .thenReturn(
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
+                )
+        }
+
+        val providerFactory = createProviderFactory()
+        val validProfile = findCredentialIdentifier("role")
+        providerFactory.createProvider(validProfile).resolveCredentials()
+
+        val content = captor.firstValue.contentStreamProvider().get().newStream().bufferedReader().use { it.readText() }
+        assertThat(content).contains("DurationSeconds=3600")
+    }
+
+    @Test
+    fun testAssumeRolWihDefaultDuration() {
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+            duration_seconds=abc
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        val captor = argumentCaptor<HttpExecuteRequest>()
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(captor.capture()) }
+                .thenReturn(
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
+                )
+        }
+
+        val providerFactory = createProviderFactory()
+        val validProfile = findCredentialIdentifier("role")
+        providerFactory.createProvider(validProfile).resolveCredentials()
+
+        val content = captor.firstValue.contentStreamProvider().get().newStream().bufferedReader().use { it.readText() }
+        assertThat(content).contains("DurationSeconds=3600")
+    }
+
+    @Test
     fun testAssumingRolesMfa() {
         profileFile.writeToFile(
             """

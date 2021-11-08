@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Respect the `duration_seconds` property when assuming a role if set on the profile"
+}

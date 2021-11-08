@@ -289,6 +289,9 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         val mfaSerial = profile.property(ProfileProperty.MFA_SERIAL)
             .orElse(null)
 
+        // https://docs.aws.amazon.com/sdkref/latest/guide/setting-global-duration_seconds.html
+        val durationSecs = profile.property(ProfileProperty.DURATION_SECONDS).map { it.toIntOrNull() }.orElse(null) ?: 3600
+
         val assumeRoleCredentialsProvider = StsAssumeRoleCredentialsProvider.builder()
             .stsClient(stsClient)
             .refreshRequest(
@@ -298,7 +301,8 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
                         mfaSerial,
                         roleArn,
                         roleSessionName,
-                        externalId
+                        externalId,
+                        durationSecs
                     )
                 }
             )
@@ -313,12 +317,14 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         mfaSerial: String?,
         roleArn: String,
         roleSessionName: String?,
-        externalId: String?
+        externalId: String?,
+        durationSeconds: Int
     ): AssumeRoleRequest {
         val requestBuilder = AssumeRoleRequest.builder()
             .roleArn(roleArn)
             .roleSessionName(roleSessionName)
             .externalId(externalId)
+            .durationSeconds(durationSeconds)
 
         mfaSerial?.let { _ ->
             requestBuilder
