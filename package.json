@@ -909,6 +909,10 @@
                 {
                     "command": "aws.ecs.disableEcsExec",
                     "when": "false"
+                },
+                {
+                    "command": "aws.ecs.viewDocumentation",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -2072,7 +2076,7 @@
             },
             {
                 "command": "aws.ecs.viewDocumentation",
-                "title": "%AWS.command.ecs.viewDocumentation%",
+                "title": "%AWS.generic.viewDocs%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
