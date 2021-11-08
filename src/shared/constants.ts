@@ -93,8 +93,11 @@ export const COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS = 5000
 export const LAMBDA_PACKAGE_TYPE_IMAGE = 'Image'
 
 // URLs for App Runner
-export const APPRUNNER_CONNECTION_HELP_URL =
+export const apprunnerConnectionHelpUrl =
     'https://docs.aws.amazon.com/apprunner/latest/dg/manage-create.html#manage-create.create.github'
-export const APPRUNNER_CONFIGURATION_HELP_URL = 'https://docs.aws.amazon.com/apprunner/latest/dg/manage-configure.html'
-export const APPRUNNER_RUNTIME_HELP_URL = 'https://docs.aws.amazon.com/apprunner/latest/dg/service-source-code.html'
-export const APPRUNNER_PRICING_URL = 'https://aws.amazon.com/apprunner/pricing/'
+export const apprunnerConfigHelpUrl = 'https://docs.aws.amazon.com/apprunner/latest/dg/manage-configure.html'
+export const apprunnerRuntimeHelpUrl = 'https://docs.aws.amazon.com/apprunner/latest/dg/service-source-code.html'
+export const apprunnerPricingUrl = 'https://aws.amazon.com/apprunner/pricing/'
+export const apprunnerCreateServiceDocsUrl: string = isCloud9()
+    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/creating-service-apprunner.html'
+    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/creating-service-apprunner.html'
