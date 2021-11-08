@@ -23,9 +23,10 @@ import {
 } from '../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import {
-    APPRUNNER_CONNECTION_HELP_URL,
-    APPRUNNER_CONFIGURATION_HELP_URL,
-    APPRUNNER_RUNTIME_HELP_URL,
+    apprunnerConnectionHelpUrl,
+    apprunnerConfigHelpUrl,
+    apprunnerRuntimeHelpUrl,
+    apprunnerCreateServiceDocsUrl,
 } from '../../shared/constants'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { getLogger } from '../../shared/logger/logger'
@@ -98,7 +99,7 @@ function createRuntimePrompter(): QuickPickPrompter<AppRunner.Runtime> {
 
     return createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectRuntime.title', 'Select a runtime'),
-        buttons: createCommonButtons(APPRUNNER_RUNTIME_HELP_URL),
+        buttons: createCommonButtons(apprunnerRuntimeHelpUrl),
     })
 }
 
@@ -110,7 +111,7 @@ function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
 
     return createInputBox({
         title: localize('AWS.apprunner.createService.buildCommand.title', 'Enter a build command'),
-        buttons: createCommonButtons(APPRUNNER_RUNTIME_HELP_URL),
+        buttons: createCommonButtons(apprunnerRuntimeHelpUrl),
         placeholder:
             buildCommandMap[Object.keys(buildCommandMap).filter(key => runtime.toLowerCase().includes(key))[0]],
         validateInput: validateCommand,
@@ -125,7 +126,7 @@ function createStartCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
 
     return createInputBox({
         title: localize('AWS.apprunner.createService.startCommand.title', 'Enter a start command'),
-        buttons: createCommonButtons(APPRUNNER_RUNTIME_HELP_URL),
+        buttons: createCommonButtons(apprunnerRuntimeHelpUrl),
         placeholder:
             startCommandMap[Object.keys(startCommandMap).filter(key => runtime.toLowerCase().includes(key))[0]],
         validateInput: validateCommand,
@@ -145,7 +146,7 @@ function createPortPrompter(): InputBoxPrompter {
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
     })
 }
 
@@ -174,7 +175,7 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
                             invalidSelection: true,
                             onClick: vscode.env.openExternal.bind(
                                 vscode.env,
-                                vscode.Uri.parse(APPRUNNER_CONNECTION_HELP_URL)
+                                vscode.Uri.parse(apprunnerConnectionHelpUrl)
                             ),
                         },
                     ]
@@ -202,7 +203,7 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
         const refreshButton = createRefreshButton()
         const prompter = createQuickPick(connections, {
             title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
-            buttons: [refreshButton, ...createCommonButtons(APPRUNNER_CONNECTION_HELP_URL)],
+            buttons: [refreshButton, ...createCommonButtons(apprunnerConnectionHelpUrl)],
         })
 
         const refresh = () => {
@@ -231,7 +232,7 @@ function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource
         ],
         {
             title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
-            buttons: createCommonButtons(APPRUNNER_CONFIGURATION_HELP_URL),
+            buttons: createCommonButtons(apprunnerConfigHelpUrl),
         }
     )
 }
@@ -254,7 +255,9 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     codeConfigForm.body.BuildCommand.bindPrompter(state => createBuildCommandPrompter(state.Runtime!))
     codeConfigForm.body.StartCommand.bindPrompter(state => createStartCommandPrompter(state.Runtime!))
     codeConfigForm.body.Port.bindPrompter(createPortPrompter)
-    codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() => createVariablesPrompter(createCommonButtons()))
+    codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() =>
+        createVariablesPrompter(createCommonButtons(apprunnerCreateServiceDocsUrl))
+    )
     // TODO: ask user if they would like to save their parameters into an App Runner config file
 
     form.CodeConfiguration.CodeConfigurationValues.applyBoundForm(codeConfigForm, {
