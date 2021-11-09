@@ -116,7 +116,7 @@ async function createNewBucket(region: string, name: string): Promise<Bucket | u
     }
 }
 
-const DOES_NOT_EXIST = localize('AWS.prompts.s3Bucket.doesNotExists', 'Bucket does not exist, create one?')
+const DOES_NOT_EXIST = localize('AWS.prompts.s3Bucket.doesNotExists', 'Bucket does not exist, select to create')
 
 export function validateBucket(name: string, region: string): string | undefined | Promise<string> {
     const checkName = validateBucketName(name)

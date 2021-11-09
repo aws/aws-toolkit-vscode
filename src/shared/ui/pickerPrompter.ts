@@ -636,6 +636,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         const { label } = this.settings
         let timer: NodeJS.Timeout
         let pendingValidation: Promise<string | undefined> | undefined
+        let pendingValue: string | undefined
 
         const createItem = (detail: string = '', invalidSelection: boolean = false) => {
             return {
@@ -656,11 +657,13 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
                 const validate = pendingValidation ?? validator(value)
                 if (validate instanceof Promise) {
                     pendingValidation = validate
+                    pendingValue ??= value
                     timer = setTimeout(() => {
                         this.addBusyUpdate(
                             validate.then(result => {
-                                pendingValidation = undefined
-                                if (value !== picker.value) {
+                                const validatedValue = pendingValue
+                                pendingValidation = pendingValue = undefined
+                                if (validatedValue !== picker.value) {
                                     // stale validation
                                     update(picker.value)
                                     return

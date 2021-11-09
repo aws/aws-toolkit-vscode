@@ -90,12 +90,15 @@ type Action<T> = {
 interface TestOptions {
     /** Amount of time to wait per action before stopping the test. */
     timeout?: number
+    /** Forcefully fire event emitters when they normally wouldn't. (default: false) */
+    forceEmits?: boolean
     // TODO: add formatting options?
 }
 
 const TEST_DEFAULTS: Required<TestOptions> = {
     /** Timeout per-action */
     timeout: 1000,
+    forceEmits: false,
 }
 
 /**
@@ -118,7 +121,7 @@ export function createQuickPickTester<T>(
     const actions: Action<T>[] = []
     const errors: Error[] = []
     const traces: AssertionError[] = []
-    const testPicker = exposeEmitters(prompter.quickPick, ['onDidAccept', 'onDidTriggerButton'])
+    const testPicker = exposeEmitters(prompter.quickPick, ['onDidAccept', 'onDidTriggerButton', 'onDidChangeValue'])
     const resolvedOptions = { ...TEST_DEFAULTS, ...options }
 
     /* Waits until the picker is both enabled and not busy. */
@@ -285,6 +288,9 @@ export function createQuickPickTester<T>(
                 const filterApplied = whenAppliedFilter()
                 testPicker.value = action[1][0] ?? ''
                 await filterApplied
+                if (resolvedOptions.forceEmits) {
+                    testPicker.fireOnDidChangeValue(testPicker.value)
+                }
                 break
             }
             case 'hide': {
