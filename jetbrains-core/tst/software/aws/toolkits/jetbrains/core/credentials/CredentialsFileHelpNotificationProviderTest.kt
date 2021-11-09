@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.application.impl.NonBlockingReadActionImpl
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
@@ -66,48 +65,12 @@ class CredentialsFileHelpNotificationProviderTest {
     }
 
     @Test
-    fun `notification not shown on credentials file when hidden forever`() {
-        val propertiesComponent = PropertiesComponent.getInstance()
-        val originalValue = propertiesComponent.getValue(CredentialsFileHelpNotificationProvider.DISABLE_KEY)
-        try {
-            val editor = openEditor(credentialsFile)
-            getEditorNotifications(editor)!!.hideForever(credentialsFile, projectRule.project)
-
-            assertThat(getEditorNotifications(editor)).isNull()
-
-            closeEditor(credentialsFile)
-
-            val newEditor = openEditor(credentialsFile)
-            assertThat(getEditorNotifications(newEditor)).isNull()
-        } finally {
-            propertiesComponent.setValue(CredentialsFileHelpNotificationProvider.DISABLE_KEY, originalValue)
-        }
-    }
-
-    @Test
-    fun `notification gets hidden on dismiss`() {
-        val editor = openEditor(credentialsFile)
-        getEditorNotifications(editor)!!.dismiss(credentialsFile, projectRule.project, editor)
-
-        assertThat(getEditorNotifications(editor)).isNull()
-
-        closeEditor(credentialsFile)
-
-        val newEditor = openEditor(credentialsFile)
-        assertThat(getEditorNotifications(newEditor)).isNotNull
-    }
-
-    @Test
     fun `notification not shown on non credentials files`() {
         val editor = openEditor(projectRule.fixture.tempDirFixture.createFile("foo.txt"))
         assertThat(getEditorNotifications(editor)).isNull()
     }
 
     private fun openEditor(file: VirtualFile): FileEditor = FileEditorManagerEx.getInstanceEx(projectRule.project).openFile(file, true).single()
-
-    private fun closeEditor(file: VirtualFile) {
-        FileEditorManagerEx.getInstanceEx(projectRule.project).closeFile(file)
-    }
 
     private fun getEditorNotifications(editor: FileEditor): CredentialFileNotificationPanel? {
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()

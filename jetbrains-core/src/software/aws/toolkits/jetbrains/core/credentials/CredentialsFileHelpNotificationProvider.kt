@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.ide.util.PropertiesComponent
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.help.HelpManager
 import com.intellij.openapi.project.DumbAware
@@ -16,19 +16,16 @@ import software.amazon.awssdk.profiles.ProfileFileLocation
 import software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider.CredentialFileNotificationPanel
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AwsTelemetry
 
 class CredentialsFileHelpNotificationProvider : EditorNotifications.Provider<CredentialFileNotificationPanel>(), DumbAware {
     override fun getKey(): Key<CredentialFileNotificationPanel> = KEY
 
     override fun createNotificationPanel(file: VirtualFile, fileEditor: FileEditor, project: Project): CredentialFileNotificationPanel? {
-        // Check if user dismissed permanently
-        if (PropertiesComponent.getInstance().isTrueValue(DISABLE_KEY)) return null
-        // Check if user hid per editor tab
-        if (fileEditor.getUserData(HIDE_KEY) != null) return null
         // Check if editor is for the config/credential file
         if (!isCredentialsFile(file)) return null
 
-        return CredentialFileNotificationPanel(file, project, fileEditor)
+        return CredentialFileNotificationPanel(project)
     }
 
     private fun isCredentialsFile(file: VirtualFile): Boolean = try {
@@ -38,34 +35,20 @@ class CredentialsFileHelpNotificationProvider : EditorNotifications.Provider<Cre
         false
     }
 
-    class CredentialFileNotificationPanel(file: VirtualFile, project: Project, fileEditor: FileEditor) : EditorNotificationPanel() {
+    class CredentialFileNotificationPanel(project: Project) : EditorNotificationPanel() {
         init {
+            createActionLabel(message("general.save")) {
+                FileDocumentManager.getInstance().saveAllDocuments()
+                AwsTelemetry.saveCredentials(project = project)
+            }
+
             createActionLabel(message("general.help")) {
                 HelpManager.getInstance().invokeHelp(HelpIds.SETUP_CREDENTIALS.id)
-            }
-
-            createActionLabel(message("general.notification.action.hide_once")) {
-                dismiss(file, project, fileEditor)
-            }
-
-            createActionLabel(message("general.notification.action.hide_forever")) {
-                hideForever(file, project)
+                AwsTelemetry.help(project = project, name = HelpIds.SETUP_CREDENTIALS.id)
             }
 
             text(message("credentials.file.notification"))
         }
-
-        fun dismiss(file: VirtualFile, project: Project, fileEditor: FileEditor) {
-            fileEditor.putUserData(HIDE_KEY, true)
-            update(file, project)
-        }
-
-        fun hideForever(file: VirtualFile, project: Project) {
-            PropertiesComponent.getInstance().setValue(DISABLE_KEY, true)
-            update(file, project)
-        }
-
-        private fun update(file: VirtualFile, project: Project) = EditorNotifications.getInstance(project).updateNotifications(file)
     }
 
     companion object {
@@ -73,15 +56,5 @@ class CredentialsFileHelpNotificationProvider : EditorNotifications.Provider<Cre
          * Key used to store the notification panel in an editor
          */
         val KEY = Key.create<CredentialFileNotificationPanel>("software.aws.toolkits.jetbrains.core.credentials.editor.notification.provider")
-
-        /**
-         * Key to indicate we should hide the panel (per editor)
-         */
-        private val HIDE_KEY = Key.create<Boolean>("software.aws.toolkits.jetbrains.core.credentials.editor.notification.hidden")
-
-        /**
-         * Name of the IDE wide setting to never show again
-         */
-        const val DISABLE_KEY = "software.aws.toolkits.jetbrains.core.credentials.editor.notification.disabled"
     }
 }
