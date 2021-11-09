@@ -12,6 +12,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.sso.model.UnauthorizedException
+import software.amazon.awssdk.utils.SdkAutoCloseable
 import software.amazon.awssdk.utils.cache.CachedSupplier
 import software.amazon.awssdk.utils.cache.RefreshResult
 import java.time.Duration
@@ -27,7 +28,7 @@ class SsoCredentialProvider(
     private val ssoRole: String,
     private val ssoClient: SsoClient,
     private val ssoAccessTokenProvider: SsoAccessTokenProvider
-) : AwsCredentialsProvider {
+) : AwsCredentialsProvider, SdkAutoCloseable {
     private val sessionCache: CachedSupplier<SsoCredentialsHolder> = CachedSupplier.builder(this::refreshCredentials).build()
 
     override fun resolveCredentials(): AwsCredentials = sessionCache.get().credentials
@@ -64,6 +65,10 @@ class SsoCredentialProvider(
             .staleTime(expirationTime.minus(Duration.ofMinutes(1)))
             .prefetchTime(expirationTime.minus(Duration.ofMinutes(5)))
             .build()
+    }
+
+    override fun close() {
+        sessionCache.close()
     }
 
     private data class SsoCredentialsHolder(val credentials: AwsSessionCredentials, val expirationTime: Instant)

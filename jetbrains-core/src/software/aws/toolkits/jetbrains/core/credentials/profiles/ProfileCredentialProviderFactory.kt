@@ -17,8 +17,6 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.sts.StsClient
-import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
-import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialIdentifierBase
@@ -27,23 +25,16 @@ import software.aws.toolkits.core.credentials.CredentialSourceId
 import software.aws.toolkits.core.credentials.CredentialType
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
-import software.aws.toolkits.core.credentials.sso.SSO_ACCOUNT
 import software.aws.toolkits.core.credentials.sso.SSO_REGION
-import software.aws.toolkits.core.credentials.sso.SSO_ROLE_NAME
 import software.aws.toolkits.core.credentials.sso.SSO_URL
-import software.aws.toolkits.core.credentials.sso.SsoAccessTokenProvider
 import software.aws.toolkits.core.credentials.sso.SsoCache
-import software.aws.toolkits.core.credentials.sso.SsoCredentialProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
-import software.aws.toolkits.jetbrains.core.credentials.CorrectThreadCredentialsProvider
 import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
-import software.aws.toolkits.jetbrains.core.credentials.SsoPrompt
 import software.aws.toolkits.jetbrains.core.credentials.SsoRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
 import software.aws.toolkits.jetbrains.core.credentials.diskCache
-import software.aws.toolkits.jetbrains.core.credentials.promptForMfaToken
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.ProfilesNotification
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
@@ -51,7 +42,6 @@ import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
-import java.util.function.Supplier
 
 const val DEFAULT_PROFILE_ID = "profile:default"
 
@@ -251,20 +241,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
             AwsClientManager.userAgent
         )
 
-        val ssoAccessTokenProvider = SsoAccessTokenProvider(
-            profile.requiredProperty(SSO_URL),
-            ssoRegion,
-            SsoPrompt,
-            ssoCache,
-            ssoOidcClient
-        )
-
-        return SsoCredentialProvider(
-            profile.requiredProperty(SSO_ACCOUNT),
-            profile.requiredProperty(SSO_ROLE_NAME),
-            ssoClient,
-            ssoAccessTokenProvider
-        )
+        return ProfileSsoProvider(ssoClient, ssoOidcClient, profile)
     }
 
     private fun createAssumeRoleProvider(profile: Profile, region: AwsRegion): AwsCredentialsProvider {
@@ -281,58 +258,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
             AwsClientManager.userAgent
         )
 
-        val roleArn = profile.requiredProperty(ProfileProperty.ROLE_ARN)
-        val roleSessionName = profile.property(ProfileProperty.ROLE_SESSION_NAME)
-            .orElseGet { "aws-toolkit-jetbrains-${System.currentTimeMillis()}" }
-        val externalId = profile.property(ProfileProperty.EXTERNAL_ID)
-            .orElse(null)
-        val mfaSerial = profile.property(ProfileProperty.MFA_SERIAL)
-            .orElse(null)
-
-        // https://docs.aws.amazon.com/sdkref/latest/guide/setting-global-duration_seconds.html
-        val durationSecs = profile.property(ProfileProperty.DURATION_SECONDS).map { it.toIntOrNull() }.orElse(null) ?: 3600
-
-        val assumeRoleCredentialsProvider = StsAssumeRoleCredentialsProvider.builder()
-            .stsClient(stsClient)
-            .refreshRequest(
-                Supplier {
-                    createAssumeRoleRequest(
-                        profile.name(),
-                        mfaSerial,
-                        roleArn,
-                        roleSessionName,
-                        externalId,
-                        durationSecs
-                    )
-                }
-            )
-            .build()
-
-        // TODO: Do we still need this wrapper?
-        return CorrectThreadCredentialsProvider(assumeRoleCredentialsProvider)
-    }
-
-    private fun createAssumeRoleRequest(
-        profileName: String,
-        mfaSerial: String?,
-        roleArn: String,
-        roleSessionName: String?,
-        externalId: String?,
-        durationSeconds: Int
-    ): AssumeRoleRequest {
-        val requestBuilder = AssumeRoleRequest.builder()
-            .roleArn(roleArn)
-            .roleSessionName(roleSessionName)
-            .externalId(externalId)
-            .durationSeconds(durationSeconds)
-
-        mfaSerial?.let { _ ->
-            requestBuilder
-                .serialNumber(mfaSerial)
-                .tokenCode(promptForMfaToken(profileName, mfaSerial))
-        }
-
-        return requestBuilder.build()
+        return ProfileAssumeRoleProvider(stsClient, parentCredentialProvider, profile)
     }
 
     private fun createBasicProvider(profile: Profile) = StaticCredentialsProvider.create(
