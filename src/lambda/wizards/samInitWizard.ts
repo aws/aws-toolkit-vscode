@@ -245,26 +245,18 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             { dependencies: [this.form.runtimeAndPackage] }
         )
 
-        function isStarterTemplate(state: { template: string }): boolean {
-            return state.template === eventBridgeStarterAppTemplate
-        }
-
         this.form.region.bindPrompter(() => createSchemaRegionPrompter(context.schemaRegions, context.defaultRegion), {
-            showWhen: isStarterTemplate,
+            showWhen: state => state.template === eventBridgeStarterAppTemplate,
             dependencies: [this.form.template],
         })
 
-        this.form.registryName.bindPrompter(form => createRegistryPrompter(form.region!, context.credentials), {
-            showWhen: isStarterTemplate,
-            dependencies: [this.form.template],
+        this.form.registryName.bindPrompter(form => createRegistryPrompter(form.region, context.credentials), {
+            dependencies: [this.form.region],
         })
 
         this.form.schemaName.bindPrompter(
-            state => createSchemaPrompter(state.region!, state.registryName!, context.credentials),
-            {
-                showWhen: isStarterTemplate,
-                dependencies: [this.form.template],
-            }
+            state => createSchemaPrompter(state.region, state.registryName, context.credentials),
+            { dependencies: [this.form.region, this.form.registryName] }
         )
 
         this.form.location.bindPrompter(() =>
@@ -282,13 +274,13 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             state =>
                 createNamePrompter(
                     fsutil.getNonexistentFilename(
-                        state.location!.fsPath,
-                        `lambda-${state.runtimeAndPackage!.runtime}`,
+                        state.location.fsPath,
+                        `lambda-${state.runtimeAndPackage.runtime}`,
                         '',
                         99
                     )
                 ),
-            { dependencies: [this.form.location] }
+            { dependencies: [this.form.location, this.form.runtimeAndPackage] }
         )
     }
 }

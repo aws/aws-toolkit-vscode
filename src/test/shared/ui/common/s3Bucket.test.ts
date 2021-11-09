@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import * as _ from 'lodash'
@@ -121,6 +122,10 @@ describe('createS3BucketPrompter', function () {
     // TODO: verify this differentiates based off region
     // we need some better mocking constructs to make this not so tedious
     it('allows user to input their own bucket name', { buckets: [createBucket('my-bucket')] }, async function () {
+        if (vscode.version.startsWith('1.44')) {
+            this.skip()
+        }
+
         tester.setFilter('my-bucket')
         // TODO: use fake timer? Need to do this since the filter box is debounced
         tester.addCallback(() => new Promise(r => setTimeout(r, 300)))
@@ -131,6 +136,10 @@ describe('createS3BucketPrompter', function () {
     })
 
     it('can create buckets', {}, async function () {
+        if (vscode.version.startsWith('1.44')) {
+            this.skip()
+        }
+
         tester.setFilter('newbucket')
         tester.addCallback(() => new Promise(r => setTimeout(r, 300)))
         tester.acceptItem('Enter bucket name: ')
