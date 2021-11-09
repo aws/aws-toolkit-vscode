@@ -11,11 +11,12 @@ import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../picker
 import * as nls from 'vscode-nls'
 import { PrompterButtons } from '../buttons'
 import { promisifyThenable } from '../../utilities/vsCodeUtils'
+import { getLogger } from '../../logger/logger'
 
 const localize = nls.loadMessageBundle()
 
 function isMatchArray(obj: any): obj is RegExpMatchArray {
-    return obj !== undefined && (obj.groups !== undefined || Array.isArray(obj))
+    return obj && (obj.groups !== undefined || Array.isArray(obj))
 }
 
 function unquote(str: string): string {
@@ -23,7 +24,7 @@ function unquote(str: string): string {
     const isDoubleQuoted = str[0] === '"' && str[str.length - 1] === '"'
 
     if (isSingleQuoted || isDoubleQuoted) {
-        str = str.substr(1, str.length - 1)
+        str = str.substr(1, str.length - 2)
     }
 
     if (isDoubleQuoted) {
@@ -39,7 +40,7 @@ function parseEnvFile(contents: string): { [key: string]: string } {
         .map(line => line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/))
         .filter(isMatchArray)
         .map(match => ({ [match[1]]: unquote(match[2] ?? '').trim() }))
-        .reduce((a, b) => Object.assign(a, b))
+        .reduce((a, b) => Object.assign(a, b), {})
 }
 
 // TODO: create key/value pair prompter
@@ -55,7 +56,7 @@ function parseEnvFile(contents: string): { [key: string]: string } {
  * Creates a optional prompt for environment variables.
  *
  * Currently, the only accepted file format are `.env` files:
- * KEY1=VALUE2
+ * KEY1=VALUE1
  * KEY2=VALUE2
  * ...
  *
@@ -63,7 +64,7 @@ function parseEnvFile(contents: string): { [key: string]: string } {
  * @returns A {@link QuickPickPrompter} that returns data in the shape of Node's process `env` variable
  */
 export function createVariablesPrompter(
-    buttons?: PrompterButtons<string>
+    buttons?: PrompterButtons<Record<string, string>>
 ): QuickPickPrompter<{ [name: string]: string }> {
     const openDialog = () => {
         return promisifyThenable(vscode.window.showOpenDialog({ canSelectMany: false }))
@@ -72,12 +73,28 @@ export function createVariablesPrompter(
                     throw new Error('Closed dialog')
                 }
 
+                getLogger().debug('Reading environment variables from: %s', resp[0].fsPath)
                 return resp[0].fsPath
             })
             .then(path => fs.promises.readFile(path))
             .then(contents => parseEnvFile(contents.toString()))
+            .then(result => {
+                if (Object.keys(result).length === 0) {
+                    vscode.window.showWarningMessage(
+                        localize(
+                            'AWS.environmentVariables.prompt.noVars',
+                            'No environment variables found. Files are expected to be in a `.env` format.'
+                        )
+                    )
+                    return WIZARD_RETRY
+                }
+
+                getLogger().debug('Parsed environment variables:\n%s', JSON.stringify(result, undefined, 2))
+                return result
+            })
             .catch(err => {
                 if (err.message !== 'Closed dialog') {
+                    getLogger().error('Failed to read environment variables: %s', (err as Error).message)
                     showViewLogsMessage(
                         localize('AWS.environmentVariables.prompt.failed', 'Failed to read environment variables')
                     )
@@ -89,7 +106,7 @@ export function createVariablesPrompter(
 
     const items: DataQuickPickItem<{ [name: string]: string }>[] = [
         { label: localize('AWS.generic.skip', 'Skip'), data: {} },
-        { label: localize('AWS.generic.useFile', 'Use file...'), data: openDialog, skipEstimate: true },
+        { label: localize('AWS.generic.useFile', 'Use file...'), data: openDialog },
     ]
 
     return createQuickPick<{ [name: string]: string }>(items, {

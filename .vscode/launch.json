@@ -64,7 +64,8 @@
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "null",
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "FORCE_COLOR": "2"
             },
             "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
@@ -84,7 +85,8 @@
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "FORCE_COLOR": "2"
             },
             "outFiles": ["${workspaceFolder}/dist/.vscode/*", "${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"

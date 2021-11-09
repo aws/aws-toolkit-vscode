@@ -4,13 +4,14 @@
  */
 
 import { EcrClient, EcrRepository } from '../../clients/ecrClient'
-import { WizardControl, WIZARD_BACK } from '../../wizards/wizard'
-import { WizardForm } from '../../wizards/wizardForm'
-import { createBackButton, createExitButton, createHelpButton, QuickInputButton } from '../buttons'
+import { createCommonButtons } from '../buttons'
 import * as nls from 'vscode-nls'
-import { createLabelQuickPick, createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
-import { toArrayAsync } from '../../utilities/collectionUtils'
-import { getLogger } from '../../logger'
+import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
+import { partialCached } from '../../utilities/collectionUtils'
+import { Wizard } from '../../wizards/wizard'
+import { BasicExitPrompter } from './basicExit'
+import { ext } from '../../extensionGlobals'
+import { WizardPrompter } from '../wizardPrompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -18,87 +19,42 @@ export type TaggedEcrRepository = EcrRepository & { tag: string }
 
 const PUBLIC_ECR = 'public.ecr.aws'
 
-function makeButtons() {
-    return [createHelpButton(), createBackButton(), createExitButton()]
+async function* loadTags(ecrClient: EcrClient, repo: EcrRepository) {
+    for await (const page of ecrClient.describeTags(repo.repositoryName)) {
+        yield { label: page, data: page }
+    }
 }
 
-function createTagPrompter(
-    ecrClient: EcrClient,
-    imageRepo: EcrRepository,
-    cache: { [key: string]: any }
-): QuickPickPrompter<string> {
-    const last: DataQuickPickItem<TaggedEcrRepository>[] = cache[imageRepo.repositoryName]
-    const tagItems =
-        last ??
-        toArrayAsync(ecrClient.describeTags(imageRepo.repositoryName))
-            .then(tags => {
-                if (tags.length === 0) {
-                    return [
-                        {
-                            label: localize('AWS.apprunner.createService.selectTags.noFound', 'No tags found'),
-                            description: localize('AWS.generic.goBack', 'Click to go back'),
-                            data: WIZARD_BACK,
-                        },
-                    ]
-                }
+async function* loadRepositories(ecrClient: EcrClient) {
+    for await (const repo of ecrClient.describeRepositories()) {
+        yield {
+            label: repo.repositoryName,
+            detail: repo.repositoryUri,
+            data: repo as TaggedEcrRepository,
+        }
+    }
+}
 
-                const tagT = tags.map(tag => ({ label: tag }))
-                cache[imageRepo.repositoryName] = tagT
-                return tagT
-            })
-            .catch(err => {
-                getLogger().error(`Unabled to list tags for repository "${imageRepo.repositoryName}": %O`, err)
-                return [
-                    {
-                        label: localize(
-                            'AWS.apprunner.createService.selectTag.failed',
-                            'Failed to get tags for repository'
-                        ),
-                        description: localize('AWS.generic.goBack', 'Click to go back'),
-                        data: WIZARD_BACK,
-                    },
-                ]
-            })
-
-    return createLabelQuickPick(tagItems, {
+export function createTagPrompter(ecrClient: EcrClient, repo: EcrRepository): QuickPickPrompter<string> {
+    return createQuickPick([], {
+        itemLoader: partialCached((repo: EcrRepository) => loadTags(ecrClient, repo), repo),
         title: localize('AWS.apprunner.createService.selectTag.title', 'Select an ECR tag'),
         placeholder: 'latest',
-        buttons: makeButtons(),
+        buttons: createCommonButtons(),
+        noItemsFoundItem: localize('AWS.apprunner.createService.selectTags.noFound', 'No tags found'),
+        errorItem: localize('AWS.apprunner.createService.selectTag.failed', 'Failed to get tags'),
     })
 }
 
-function createImagePrompter(
+export function createImagePrompter(
     ecrClient: EcrClient,
-    cache: { [key: string]: any },
     options: ImagePrompterOptions = {}
 ): QuickPickPrompter<TaggedEcrRepository> {
-    const last = cache['repos']
-    const imageRepos =
-        last ??
-        toArrayAsync(ecrClient.describeRepositories())
-            .then(resp => {
-                const repos = resp.map(repo => ({ label: repo.repositoryName, detail: repo.repositoryUri, data: repo }))
-                cache['repos'] = repos
-                return repos
-            })
-            .catch(err => {
-                getLogger().error(`Unabled to list repositories: %O`, err)
-                return [
-                    {
-                        label: localize(
-                            'AWS.apprunner.createService.selectImageRepo.failed',
-                            'Failed to list repositories'
-                        ),
-                        description: localize('AWS.generic.goBack', 'Click to go back'),
-                        data: WIZARD_BACK,
-                    },
-                ]
-            })
-
-    const customUserInputLabel = localize('AWS.apprunner.createService.selectImageRepo.input', 'Custom ECR URL')
+    const customUserInputLabel = localize('AWS.apprunner.createService.selectImageRepo.input', 'ECR URL')
     const customUserInputTransform = (resp: string) => {
         const userInputParts = resp.split(':')
 
+        // TODO: validate this prior to continuing the flow, that way we don't need to fill with dummy data
         return {
             repositoryArn: '',
             repositoryName: 'UserDefined',
@@ -131,34 +87,46 @@ function createImagePrompter(
 
     const customUserInputValidator = (input: string) => {
         const message = ecrUriValidator(input)
-        return message !== undefined ? `$(close) Invalid input: ${message}` : undefined
+        return message !== undefined ? `$(error) Invalid input: ${message}` : undefined
     }
 
-    return createQuickPick<TaggedEcrRepository>(imageRepos, {
-        title: localize('AWS.apprunner.createService.selectImageRepo.title', 'Select or enter an image repository'),
+    return createQuickPick([], {
+        itemLoader: partialCached((region?: string) => loadRepositories(ecrClient), ecrClient.regionCode),
+        title:
+            options.title ??
+            localize('AWS.apprunner.createService.selectImageRepo.title', 'Select or enter an image repository'),
         placeholder: '123456789012.dkr.ecr.us-east-1.amazonaws.com/myrepo:latest',
-        filterBoxInputSettings: {
+        filterBoxInput: {
             label: customUserInputLabel,
             transform: customUserInputTransform,
             validator: customUserInputValidator,
         },
-        buttons: makeButtons(),
+        buttons: createCommonButtons(),
+        errorItem: localize('AWS.apprunner.createService.selectImageRepo.failed', 'Failed to list repositories'),
     })
 }
 
 interface ImagePrompterOptions {
+    title?: string
     noPublicMessage?: string
-    extraButtons?: QuickInputButton<void | WizardControl>
-    promptTitle?: string
 }
 
-export class EcrRepositoryForm extends WizardForm<{ repo: TaggedEcrRepository }> {
+export class EcrRepositoryWizard extends Wizard<{ repo: TaggedEcrRepository }> {
     constructor(ecrClient: EcrClient, options: ImagePrompterOptions = {}) {
-        super()
+        super({ exitPrompter: BasicExitPrompter })
 
-        this.body.repo.bindPrompter(state => createImagePrompter(ecrClient, state.stepCache, options))
-        this.body.repo.tag.bindPrompter(state => createTagPrompter(ecrClient, state.repo, state.stepCache), {
-            dependencies: [this.body.repo],
+        this.form.repo.bindPrompter(() => createImagePrompter(ecrClient, options))
+        this.form.repo.tag.bindPrompter(state => createTagPrompter(ecrClient, state.repo), {
+            // TODO: restructure this wizard state to not need to do this or add logic to the core wizard code
+            // we use a clause to prevent early assignment, otherwise we might prompt for tags despite being provided
+            showWhen: state => !!state.repo,
+            dependencies: [this.form.repo],
         })
     }
+}
+
+export function createEcrPrompter(regionOrClient: string | EcrClient, options?: ImagePrompterOptions) {
+    const client =
+        typeof regionOrClient === 'string' ? ext.toolkitClientBuilder.createEcrClient(regionOrClient) : regionOrClient
+    return new WizardPrompter(new EcrRepositoryWizard(client, options))
 }

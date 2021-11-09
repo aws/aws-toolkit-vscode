@@ -4,13 +4,10 @@
  */
 
 import { localize } from '../../utilities/vsCodeUtils'
-import { StepEstimator } from '../../wizards/wizard'
 import { createQuickPick } from '../pickerPrompter'
-import { Prompter, PromptResult } from '../prompter'
+import { Prompter, PrompterConfiguration, PromptResult } from '../prompter'
 
 class ExitPrompter extends Prompter<boolean> {
-    private _isStart = true
-
     public get recentItem(): any {
         return undefined
     }
@@ -20,9 +17,9 @@ class ExitPrompter extends Prompter<boolean> {
     constructor() {
         super()
     }
-
-    protected async promptUser(): Promise<PromptResult<boolean>> {
-        if (this._isStart) {
+    protected async promptUser(config: PrompterConfiguration): Promise<PromptResult<boolean>> {
+        // Exit was initiated from the first step, so the prompt would be step 2
+        if (config.steps?.current === 2) {
             return true
         }
 
@@ -36,13 +33,8 @@ class ExitPrompter extends Prompter<boolean> {
             }
         )
 
-        return await prompter.prompt()
+        return await prompter.promptControl()
     }
-    public setSteps(current: number, total: number): void {
-        // Exit was initiated from the first step, so the prompt would be step 2
-        this._isStart = current === 2
-    }
-    public setStepEstimator(estimator: StepEstimator<boolean>): void {}
 }
 
 declare interface ExitPrompterConstructor {

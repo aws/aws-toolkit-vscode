@@ -7,8 +7,9 @@ import * as assert from 'assert'
 import { createBackButton, QuickInputButton } from '../../../shared/ui/buttons'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import * as vscode from 'vscode'
-import { createInputBox, DEFAULT_INPUTBOX_OPTIONS, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
+import { createInputBox, DEFAULT_INPUTBOX_OPTIONS, InputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
+import { PromptResult } from '../../../shared/ui/prompter'
 
 describe('createInputBox', function () {
     it('creates a new prompter with options', async function () {
@@ -27,11 +28,11 @@ describe('createInputBox', function () {
 })
 
 describe('InputBoxPrompter', function () {
-    let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
+    let inputBox: ExposeEmitters<InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
     let testPrompter: InputBoxPrompter
 
     beforeEach(function () {
-        inputBox = exposeEmitters(vscode.window.createInputBox(), [
+        inputBox = exposeEmitters(vscode.window.createInputBox() as InputBox, [
             'onDidAccept',
             'onDidChangeValue',
             'onDidTriggerButton',
@@ -53,6 +54,7 @@ describe('InputBoxPrompter', function () {
 
     it('steps can be set', async function () {
         testPrompter.setSteps(1, 2)
+        testPrompter.prompt()
         assert.strictEqual(inputBox.step, 1)
         assert.strictEqual(inputBox.totalSteps, 2)
     })
@@ -69,15 +71,31 @@ describe('InputBoxPrompter', function () {
         assert.strictEqual(inputBox.value, 'last response')
     })
 
+    it('can estimate steps', async function () {
+        const stepEstimator = (val: PromptResult<string>) => (typeof val === 'string' ? val.length : 0)
+        testPrompter.setSteps(1, 2)
+        testPrompter.configure({ stepEstimator })
+        testPrompter.prompt()
+
+        inputBox.fireOnDidChangeValue('123')
+        assert.strictEqual(testPrompter.inputBox.step, 1)
+        assert.strictEqual(testPrompter.inputBox.totalSteps, 5)
+
+        inputBox.fireOnDidChangeValue('12')
+        assert.strictEqual(testPrompter.inputBox.totalSteps, 4)
+    })
+
     describe('buttons', function () {
         it('back button returns control signal', async function () {
             const back = createBackButton()
             inputBox.buttons = [back]
 
-            const result = testPrompter.prompt()
+            const result = testPrompter.promptControl()
+            const didHide = new Promise((r1, r2) => (inputBox.onDidHide(r1), setTimeout(r2, 1000)))
             inputBox.fireOnDidTriggerButton(back)
 
             assert.strictEqual(await result, WIZARD_BACK)
+            await assert.doesNotReject(didHide)
         })
 
         it('buttons can return values', async function () {
@@ -94,7 +112,7 @@ describe('InputBoxPrompter', function () {
         })
 
         it('buttons with void return type do not close the prompter', async function () {
-            const button: QuickInputButton<void> = {
+            const button: QuickInputButton = {
                 iconPath: vscode.Uri.parse(''),
                 onClick: () => {},
             }

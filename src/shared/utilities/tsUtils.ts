@@ -39,3 +39,5 @@ export type ExpandWithObject<T> = Expand<T> extends Record<string, unknown> ? Ex
 export type ReduceTuple<T> = T extends [any, ...infer P] ? P : T
 
 export type RequireKey<T, K extends keyof T> = T & Required<Pick<T, K>>
+
+export type UnionPromise<T> = T | Promise<T>

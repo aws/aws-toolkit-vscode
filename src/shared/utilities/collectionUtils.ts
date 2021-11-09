@@ -321,38 +321,33 @@ export interface CachedFunctionOptions<F extends Cacheable> {
      */
     unboxPromises?: boolean
     /**
-     * Caches the result of an {@link AsyncIterable } rather than the iterable itself. (default: true)
+     * Caches the result of an {@link AsyncIterable} rather than the iterable itself. (default: true)
      */
     resolveAsyncIterables?: boolean
-    /** Removes functions from the hashing computation (default: true) */
-    ignoreCallbacks?: boolean
     /** Extra options passed to the hashing library. See {@link hasher.HasherOptions HasherOptions}. */
     hashOptions?: hasher.HasherOptions
 }
 
 function cacheAsyncIterable<T extends AsyncIterable<R>, R = any>(iterable: T, cache: R[]) {
-    async function* cachedGenerator() {
-        for (const cached of cache) {
-            yield cached
-        }
+    return async function* () {
+        yield* cache
         for await (const newVal of iterable) {
             cache.push(newVal)
             yield newVal
         }
     }
-
-    return cachedGenerator
 }
 
 /**
  * Creates a cached function, handling both synchronous and asychronous operations. Instruments the function with
  * additional methods for manipulating the internal cache.
  *
- * This is very similar to Python's https://docs.python.org/3/library/functools.html#functools.cache but with a
- * JavaScript spin on it. Mainly useful for long-running asychronous calls. Callers can also implement
+ * This is very similar to Python's [functools.cache](https://docs.python.org/3/library/functools.html#functools.cache)
+ * but with a JavaScript spin on it. Mainly useful for long-running asychronous calls. Callers can also implement
  * {@link hasher.Hashable Hashable} for improved performance with custom objects.
  *
  * Note that computing the argument hash can be a fairly expensive operation for non-primitive argument types.
+ * Use this function wisely!
  *
  * @param func Function to wrap
  * @param options {@link CachedFunctionOptions}
@@ -427,9 +422,12 @@ export type PartialCachedFunction<
     Unbox extends boolean = true,
     ResolveIterable extends boolean = true,
     Cache extends Record<string, any> = { [key: string]: ReturnType<F> }
-> = (cache: Cache) => CachedFunction<F, Unbox, ResolveIterable>
+> = (cache: Cache) => CachedFunction<() => ReturnType<F>, Unbox, ResolveIterable>
 
-/** Partial application of the cached function with deferred cache binding */
+/**
+ * ~Partial~ Full application of the cached function with deferred cache binding.
+ * TODO: either rename this or set-up the types correctly to represent partial application.
+ */
 export function partialCached<F extends Cacheable>(func: F, ...args: Parameters<F>): PartialCachedFunction<F> {
     return cache => {
         const cachedFunc = createCachedFunction(func, { cache })

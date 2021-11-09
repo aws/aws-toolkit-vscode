@@ -13,7 +13,7 @@ import * as vscode from 'vscode'
 import { samDeployDocUrl } from '../../shared/constants'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
-import { createBackButton, createCommonButtons, createExitButton, createHelpButton } from '../../shared/ui/buttons'
+import { createCommonButtons } from '../../shared/ui/buttons'
 import { difference, filter } from '../../shared/utilities/collectionUtils'
 import { ext } from '../../shared/extensionGlobals'
 import { getSamCliVersion, SamCliContext } from '../../shared/sam/cli/samCliContext'
@@ -29,10 +29,10 @@ import { createS3BucketPrompter } from '../../shared/ui/common/s3Bucket'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { AwsContext } from '../../shared/awsContext'
 import { RegionProvider } from '../../shared/regions/regionProvider'
-import { EcrRepositoryForm, TaggedEcrRepository } from '../../shared/ui/common/ecrRepository'
+import { createEcrPrompter } from '../../shared/ui/common/ecrRepository'
 import { PromptResult } from '../../shared/ui/prompter'
 import { getOverriddenParameters, getParameters } from '../config/parameterUtils'
-import { BasicExitPrompter } from '../../shared/ui/common/exitPrompter'
+import { BasicExitPrompter } from '../../shared/ui/common/basicExit'
 
 export const CHOSEN_BUCKET_KEY = 'manuallySelectedBuckets'
 
@@ -53,12 +53,8 @@ export interface SamDeployWizardResponse {
     region: string
     template: CFNTemplate
     s3Bucket: string
-    ecrRepo?: { repo: TaggedEcrRepository }
+    ecrRepo?: string
     stackName: string
-}
-
-function makeButtons(helpUri?: string | vscode.Uri) {
-    return [createHelpButton(helpUri), createBackButton(), createExitButton()]
 }
 
 /**
@@ -89,7 +85,7 @@ export function createParametersPrompter(
     const configure = async () => {
         configureParameterOverrides({
             templateUri,
-            requiredParameterNames: missingParameters !== undefined ? missingParameters!.keys() : undefined,
+            requiredParameterNames: missingParameters?.keys(),
         })
         return WIZARD_FORCE_EXIT
     }
@@ -107,7 +103,7 @@ export function createParametersPrompter(
             { label: localizedText.no, data: new Map<string, string>() },
         ]
 
-        return createQuickPick(items, { title, buttons: makeButtons(samDeployDocUrl) })
+        return createQuickPick(items, { title, buttons: createCommonButtons(samDeployDocUrl) })
     } else {
         const title = localize(
             'AWS.samcli.deploy.parameters.mandatoryPrompt.message',
@@ -126,7 +122,7 @@ export function createParametersPrompter(
             { label: responseCancel, data: WIZARD_FORCE_EXIT },
         ]
 
-        return createQuickPick(items, { title, buttons: makeButtons(samDeployDocUrl) })
+        return createQuickPick(items, { title, buttons: createCommonButtons(samDeployDocUrl) })
     }
 }
 
@@ -143,28 +139,28 @@ function createStackNamePrompter(): InputBoxPrompter {
     return createInputBox({
         title: localize('AWS.samcli.deploy.stackName.prompt', 'Enter the name to use for the deployed stack'),
         validateInput: validateStackName,
-        buttons: makeButtons(samDeployDocUrl),
+        buttons: createCommonButtons(samDeployDocUrl),
     })
 }
 
 export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
     public constructor(
         context: { awsContext: AwsContext; regionProvider: RegionProvider; samCliContext: () => SamCliContext },
-        commandArgs?: { regionCode: string } | CFNTemplate
+        commandArgs?: string | CFNTemplate
     ) {
         super({
             initState: {
-                region: ((commandArgs ?? {}) as any).regionCode,
-                template: (commandArgs as any)?.uri !== undefined ? (commandArgs as any) : undefined,
+                region: typeof commandArgs === 'string' ? commandArgs : undefined,
+                template: typeof commandArgs === 'object' ? commandArgs : undefined,
             },
-            exitPrompterProvider: BasicExitPrompter,
+            exitPrompter: BasicExitPrompter,
         })
         const profile = context.awsContext.getCredentialProfileName()
         const accountId = context.awsContext.getCredentialAccountId()
 
         const form = this.form
 
-        form.template.bindPrompter(createSamTemplatePrompter.bind(undefined, context.samCliContext()))
+        form.template.bindPrompter(() => createSamTemplatePrompter(context.samCliContext()))
 
         this.form.parameterOverrides.bindPrompter(
             ({ template }) => createParametersPrompter(template.uri, template.missingParameters),
@@ -176,8 +172,9 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
         )
 
         this.form.region.bindPrompter(() =>
-            createRegionPrompter(undefined, {
+            createRegionPrompter({
                 title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
+                defaultRegion: context.awsContext.getCredentialDefaultRegion(),
             }).transform(r => r.id)
         )
 
@@ -187,18 +184,23 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
                     profile,
                     region: state.region,
                     baseBuckets: isCloud9() ? [`cloud9-${accountId}-sam-deployments-${state.region}`] : [],
-                    extraButtons: createCommonButtons(),
+                    title: localize('AWS.samcli.deploy.s3Bucket.title', 'Select an AWS S3 Bucket to deploy code to'),
                 }).transform(({ name }) => name),
             { dependencies: [this.form.region] }
         )
 
-        this.form.ecrRepo.applyBoundForm(
-            new EcrRepositoryForm(ext.toolkitClientBuilder.createEcrClient((commandArgs as any)?.regionCode), {
-                promptTitle: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select a ECR repo to deploy images to'),
-            }),
+        const ecrPromptOptions = {
+            title: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select a ECR repo to deploy images to'),
+        }
+
+        this.form.ecrRepo.bindPrompter(
+            ({ region }) =>
+                createEcrPrompter(region, ecrPromptOptions).transform(
+                    resp => `${resp.repo.repositoryUri}:${resp.repo.tag}`
+                ),
             {
                 showWhen: state => isImage(state.template),
-                dependencies: [this.form.template, this.form.s3Bucket],
+                dependencies: [this.form.template, this.form.region],
             }
         )
 
@@ -206,8 +208,8 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
     }
 }
 
-function isImage(template?: CloudFormation.Template): boolean {
-    const resources = template?.Resources
+function isImage(template: CloudFormation.Template): boolean {
+    const resources = template.Resources
 
     return (
         resources !== undefined &&
@@ -255,7 +257,7 @@ async function parseTemplate(template: CFNTemplate, context: SamCliContext): Pro
     return computeTemplateParameters(template)
 }
 
-export async function computeTemplateParameters(template: { uri: vscode.Uri }): Promise<CFNTemplate> {
+export async function computeTemplateParameters(template: CFNTemplate): Promise<CFNTemplate> {
     const parameters = await getParameters(template.uri)
     if (parameters === undefined || parameters.size < 1) {
         return { ...template, parameterOverrides: new Map() }
@@ -325,7 +327,7 @@ function getTemplateChoices(samContext: SamCliContext) {
             return {
                 label,
                 description,
-                data: () => parseTemplate({ ...template, uri }, samContext),
+                data: () => parseTemplate({ ...template.item, uri }, samContext),
             }
         })
         .sort(localeSortItem)

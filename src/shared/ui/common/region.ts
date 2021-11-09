@@ -4,60 +4,67 @@
  */
 
 import * as nls from 'vscode-nls'
+import { Uri } from 'vscode'
 import { ext } from '../../extensionGlobals'
 import { getLogger } from '../../logger/logger'
 import { Region } from '../../regions/endpoints'
 import { getRegionsForActiveCredentials } from '../../regions/regionUtilities'
-import { PrompterButtons } from '../buttons'
+import { createCommonButtons } from '../buttons'
 import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
 
 const localize = nls.loadMessageBundle()
 
+/**
+ * Filter can be a service ID, an array of service IDs (all must be available in a region), or a callback
+ */
+type RegionFilter = string | [string, ...string[]] | ((region: Region) => boolean)
+
 type RegionPrompterOptions = {
+    regions?: Region[]
     defaultRegion?: string
     title?: string
-    buttons?: PrompterButtons<Region>
+    helpUri?: string | Uri
+    filter?: RegionFilter
 }
 
-export function createRegionPrompter(
-    regions?: Region[],
-    options: RegionPrompterOptions = {}
-): QuickPickPrompter<Region> {
-    const lastRegionKey = 'lastSelectedRegion'
-    if (!regions) {
-        regions = getRegionsForActiveCredentials(ext.awsContext, ext.regionProvider)
-    }
+const serviceFilter = (service: string) => (region: Region) => ext.regionProvider.isServiceInRegion(service, region.id)
 
-    const items = regions.map(region => ({
+function resolveRegionFilter(filter: RegionFilter): (region: Region) => boolean {
+    return typeof filter === 'function'
+        ? filter
+        : typeof filter === 'string'
+        ? serviceFilter(filter)
+        : filter.map(serviceFilter).reduce((a, b) => (region: Region) => a(region) && b(region))
+}
+
+export function createRegionPrompter(options: RegionPrompterOptions = {}): QuickPickPrompter<Region> {
+    const lastRegionKey = 'lastSelectedRegion'
+    const regions = options.regions ?? getRegionsForActiveCredentials(ext.awsContext, ext.regionProvider)
+    const filteredRegions = options.filter ? regions.filter(resolveRegionFilter(options.filter)) : regions
+    const lastRegion = ext.context.globalState.get<Region>(lastRegionKey)
+
+    const items = filteredRegions.map(region => ({
         label: region.name,
         detail: region.id,
         data: region,
         description: '',
+        recentlyUsed: region.id === lastRegion?.id,
     }))
 
-    const defaultRegionItem = items.find(item => item.label === options.defaultRegion)
+    const defaultRegionItem = items.find(item => item.detail === options.defaultRegion)
 
     if (defaultRegionItem !== undefined) {
-        defaultRegionItem.description = localize('AWS.generic.defaultRegion', 'Default region')
+        defaultRegionItem.description = localize('AWS.generic.defaultRegion', 'default region')
     }
 
     const prompter = createQuickPick(items, {
         title: options.title ?? localize('AWS.generic.selectRegion', 'Select a region'),
-        buttons: options.buttons,
         matchOnDetail: true,
-        compare: (a, b) => {
-            return a.detail === options.defaultRegion ? -1 : b.detail === options.defaultRegion ? 1 : 0
-        },
+        buttons: createCommonButtons(options.helpUri),
+        compare: (a, b) => (a === defaultRegionItem ? -1 : b === defaultRegionItem ? 1 : 0),
     })
 
-    const lastRegion = ext.context.globalState.get<Region>(lastRegionKey)
-    if (lastRegion !== undefined && (lastRegion as any).id) {
-        const found = regions.find(val => val.id === lastRegion.id)
-        if (found) {
-            prompter.recentItem = lastRegion
-        }
-    }
-    return prompter.transform(item => {
+    return prompter.onResponse(item => {
         getLogger().debug('createRegionPrompter: selected %O', item)
         ext.context.globalState.update(lastRegionKey, item)
         return item

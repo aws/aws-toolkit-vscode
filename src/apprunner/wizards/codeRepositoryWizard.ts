@@ -10,7 +10,7 @@ import { Remote } from '../../../types/git.d'
 import { GitExtension } from '../../shared/extensions/git'
 import * as vscode from 'vscode'
 import { WizardForm } from '../../shared/wizards/wizardForm'
-import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompter'
+import { createVariablesPrompter } from '../../shared/ui/common/environmentVariables'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { makeDeploymentButton } from './deploymentButton'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
@@ -44,7 +44,7 @@ function createRepoPrompter(git: GitExtension): QuickPickPrompter<Remote> {
             'AWS.apprunner.createService.selectRepository.placeholder',
             'Select a remote repository or enter a URL'
         ),
-        filterBoxInputSettings: {
+        filterBoxInput: {
             label: userInputString,
             transform: resp => ({ name: 'UserRemote', isReadOnly: true, fetchUrl: resp }),
         },
@@ -72,7 +72,7 @@ function createBranchPrompter(
     const userInputString = localize('AWS.apprunner.createService.customRepo', 'Enter branch name')
     return createLabelQuickPick(branchItems, {
         title: localize('AWS.apprunner.createService.selectBranch.title', 'Select a branch'),
-        filterBoxInputSettings: {
+        filterBoxInput: {
             label: userInputString,
             transform: resp => resp,
         },
@@ -152,7 +152,7 @@ export function createConnectionPrompter(client: AppRunnerClient): QuickPickProm
                 label: conn.ConnectionName!,
                 detail:
                     conn.Status === 'PENDING_HANDSHAKE'
-                        ? localize('AWS.apprunner.createService.selectConnection.pending', 'Pending handsake')
+                        ? localize('AWS.apprunner.createService.selectConnection.pending', 'Pending handshake')
                         : undefined,
                 invalidSelection: conn.Status === 'PENDING_HANDSHAKE',
                 data: conn,
@@ -160,10 +160,10 @@ export function createConnectionPrompter(client: AppRunnerClient): QuickPickProm
         })
 
     const noConnection = {
-        label: localize('No connections found', 'AWS.apprunner.createService.noConnections'),
+        label: localize('AWS.apprunner.createService.noConnections', 'No connections found'),
         detail: localize(
-            'Click for documentation on creating a new GitHub connection for App Runner',
-            'AWS.apprunner.createService.newConnect'
+            'AWS.apprunner.createService.newConnect',
+            'Click for documentation on creating a new GitHub connection for App Runner'
         ),
         invalidSelection: true as const,
         onClick: vscode.env.openExternal.bind(vscode.env, vscode.Uri.parse(APPRUNNER_CONNECTION_HELP_URL)),

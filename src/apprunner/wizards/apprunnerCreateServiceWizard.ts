@@ -13,7 +13,7 @@ import { Prompter } from '../../shared/ui/prompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { AppRunnerImageRepositoryWizard } from './imageRepositoryWizard'
 import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
-import { BasicExitPrompter } from '../../shared/ui/common/exitPrompter'
+import { BasicExitPrompter } from '../../shared/ui/common/basicExit'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
 
@@ -102,7 +102,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         super({
             initState,
             implicitState,
-            exitPrompterProvider: BasicExitPrompter,
+            exitPrompter: BasicExitPrompter,
         })
 
         const ecrClient = ext.toolkitClientBuilder.createEcrClient(region)

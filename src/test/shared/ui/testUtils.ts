@@ -53,14 +53,14 @@ type QuickPickTesterMethods<T> = {
      *
      * This **must** be called and awaited, otherwise errors will not be surfaced correctly.
      */
-    result(exptected?: PromptResult<T>): Promise<PromptResult<T>>
+    result(expected?: PromptResult<T>): Promise<PromptResult<T>>
     /**
      * Executes the callback with a snapshot of the prompter in a given moment.
      *
      * This can be used for things such as setting up external state, asserting side-effects, or
      * inspecting the picker at test time.
      */
-    addCallback(callback: (prompter?: QuickPickPrompter<T>) => Promise<any> | any): void
+    addCallback(callback: (prompter: QuickPickPrompter<T>) => Promise<any> | any): void
     /**
      * Sets the Quick Pick's filter. `undefined` removes any applied filters.
      *
@@ -70,7 +70,17 @@ type QuickPickTesterMethods<T> = {
     setFilter(value?: string): void
 }
 
-export type QuickPickTester<T> = QuickPickTesterMethods<T> & QuickPickPrompter<T>
+export type QuickPickTester<T> = QuickPickTesterMethods<T> &
+    QuickPickPrompter<T> & {
+        /**
+         * Actions assigned to the tester. This can be re-used against other prompts.
+         */
+        readonly actions: Action<T>[]
+        /**
+         * Applies an array of actions to the tester.
+         */
+        applyActions(actions: Action<T>[]): void
+    }
 
 type Action<T> = {
     [P in keyof QuickPickTesterMethods<T>]: [P, Parameters<QuickPickTesterMethods<T>[P]>]
@@ -117,7 +127,7 @@ export function createQuickPickTester<T>(
                     return r()
                 }
 
-                const d = prompter.onDidChangeEnablement(e => e && d.dispose(), r())
+                const d = prompter.onDidChangeEnablement(e => e && (d.dispose(), r()))
             }),
             new Promise(r => {
                 if (!testPicker.busy) {
@@ -126,19 +136,22 @@ export function createQuickPickTester<T>(
 
                 const d = prompter.onDidChangeBusy(e => !e && (d.dispose(), r()))
             }),
+            // Currently needed since the placeholder item is not added until the next tick
+            new Promise(r => setImmediate(r)),
         ])
     }
 
-    // 'activeItems' will change twice after applying a filter
+    // 'activeItems' will change twice after applying a filter, but once after removing a filter
     /* Waits until the filter has been applied to the picker */
-    async function whenAppliedFilter(): Promise<void> {
+    async function whenAppliedFilter(filter: string): Promise<void> {
         await new Promise<void>(r => {
             const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
         })
-        await new Promise(r => setImmediate(r))
-        await new Promise<void>(r => {
-            const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
-        })
+        if (filter) {
+            await new Promise<void>(r => {
+                const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
+            })
+        }
     }
 
     /* Simulates the filtering of items. We do not have access to the picker's internal representation */
@@ -182,7 +195,14 @@ export function createQuickPickTester<T>(
 
         function assertItems(actual: DataQuickPickItem<T>[], expected: (string | DataQuickPickItem<T>)[]): void {
             if (actual.length !== expected.length) {
-                return throwError('Picker had different number of items')
+                if (typeof expected[0] === 'string') {
+                    return throwError(
+                        'Picker had different number of items',
+                        actual.map(i => i.label),
+                        expected
+                    )
+                }
+                return throwError('Picker had different number of items', actual, expected)
             }
 
             actual.forEach((actualItem, index) => {
@@ -264,10 +284,13 @@ export function createQuickPickTester<T>(
                 }
                 break
             }
-            case 'setFilter':
-                testPicker.value = action[1][0] ?? ''
-                await whenAppliedFilter()
+            case 'setFilter': {
+                const filter = action[1][0] ?? ''
+                const promise = whenAppliedFilter(filter)
+                testPicker.value = filter
+                await promise
                 break
+            }
             case 'hide': {
                 testPicker.hide()
                 break
@@ -275,10 +298,12 @@ export function createQuickPickTester<T>(
         }
     }
 
+    const timeoutMessage = 'Timed out, did you forget to call `hide` or `acceptItem`?'
+
     async function start(): Promise<void> {
         while (actions.length > 0) {
             const trace = traces.shift()!
-            const timeout = setTimeout(() => throwErrorWithTrace(trace, 'Timed out'), resolvedOptions.timeout)
+            const timeout = setTimeout(() => throwErrorWithTrace(trace, timeoutMessage), resolvedOptions.timeout)
             await whenReady()
             await executeAction(actions.shift()!, trace)
             clearTimeout(timeout)
@@ -286,7 +311,7 @@ export function createQuickPickTester<T>(
     }
 
     async function result(expected?: PromptResult<T>): Promise<PromptResult<T>> {
-        const result = await prompter.prompt()
+        const result = await prompter.promptControl()
         if (errors.length > 0) {
             // TODO: combine errors into a single one
             throw errors[0]
@@ -318,7 +343,8 @@ export function createQuickPickTester<T>(
     }
 
     // initialize prompter
-    prompter.onDidShow(start)
+    prompter.configure({ cache: {} }) // TODO: expose some of this?
+    prompter.onDidShow(start) // TODO: may want to add option to dispose of the UI element
 
     return Object.assign(
         prompter,
@@ -336,6 +362,7 @@ export function createQuickPickTester<T>(
                 result,
             } as QuickPickTesterMethods<T>,
             ['result', 'hide']
-        )
+        ),
+        { actions, applyActions: (parts: Action<T>[]) => actions.push(...parts) }
     )
 }

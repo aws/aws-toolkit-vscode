@@ -5,22 +5,24 @@
 
 import * as vscode from 'vscode'
 import { applyPrimitives } from '../utilities/collectionUtils'
-import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
-import { QuickInputButton, PrompterButtons } from './buttons'
-import { Prompter, PromptResult } from './prompter'
+import { StepEstimator, WIZARD_EXIT } from '../wizards/wizard'
+import { PrompterButtons } from './buttons'
+import { PrompterConfiguration, PromptResult } from './prompter'
+import { QuickInputPrompter } from './quickInput'
 
-// TODO: allow `validateInput` to return a Thenable so we don't need to omit it from the options
+type InputBoxButtons = PrompterButtons<string, InputBoxPrompter>
 /** Additional options to configure the `InputBox` beyond the standard API */
 export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'validateInput' | 'placeHolder'> & {
     title?: string
     step?: number
     placeholder?: string
     totalSteps?: number
-    buttons?: PrompterButtons<string>
-    validateInput?(value: string): string | undefined
+    buttons?: InputBoxButtons
+    /** Validates the user's input. Falsy values show no message. */
+    validateInput?(value: string): string | undefined | Promise<string | undefined>
 }
 
-export type InputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
+export type InputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: InputBoxButtons }
 
 export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
     ignoreFocusOut: true,
@@ -51,7 +53,7 @@ export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPromp
  *
  * See {@link createInputBox} for easy creation of instances of this class.
  */
-export class InputBoxPrompter extends Prompter<string> {
+export class InputBoxPrompter extends QuickInputPrompter<string> {
     private _lastResponse?: string
     private validateEvents: vscode.Disposable[] = []
 
@@ -65,12 +67,12 @@ export class InputBoxPrompter extends Prompter<string> {
     }
 
     constructor(public readonly inputBox: InputBox, protected readonly options: ExtendedInputBoxOptions = {}) {
-        super()
+        super(inputBox)
     }
 
-    public setSteps(current: number, total: number): void {
-        this.inputBox.step = current
-        this.inputBox.totalSteps = total
+    public override dispose() {
+        this.validateEvents.forEach(d => d.dispose())
+        super.dispose()
     }
 
     /**
@@ -79,50 +81,77 @@ export class InputBoxPrompter extends Prompter<string> {
      *
      * @param validate Validator function
      */
-    public setValidation(validate: (value: string) => string | undefined): void {
+    public setValidation(validate: (value: string) => string | undefined | Promise<string | undefined>): void {
         this.validateEvents.forEach(d => d.dispose())
         this.validateEvents = []
 
-        this.inputBox.onDidChangeValue(
-            value => (this.inputBox.validationMessage = validate(value)),
-            this.validateEvents
-        )
-        this.inputBox.onDidAccept(
-            () => (this.inputBox.validationMessage = validate(this.inputBox.value)),
-            this.validateEvents
+        const applyValidation = (value: string) => {
+            const result = validate(value)
+            if (result instanceof Promise) {
+                // TODO: add test
+                // also upstream a change to VS Code to support progress bar for InputBox
+                this.addBusyUpdate(
+                    result.then(message => {
+                        this.inputBox.validationMessage = message
+                    }),
+                    true
+                )
+            } else {
+                this.inputBox.validationMessage = result
+            }
+        }
+
+        this.validateEvents.push(
+            this.inputBox.onDidChangeValue(applyValidation, this.validateEvents),
+            this.inputBox.onDidAccept(() => applyValidation(this.inputBox.value), this.validateEvents)
         )
     }
 
-    protected async promptUser(): Promise<PromptResult<string>> {
+    protected async promptUser(config: PrompterConfiguration<string>): Promise<PromptResult<string>> {
+        if (config.steps) {
+            this.setSteps(config.steps.current, config.steps.total)
+        }
+
+        if (config.stepEstimator) {
+            this.applyStepEstimator(config.stepEstimator)
+        }
+
+        const accept = (resolve: (value: PromptResult<string>) => void) => {
+            this.recentItem = this.inputBox.value
+            if (!this.inputBox.validationMessage) {
+                resolve(this.inputBox.value)
+            }
+        }
+
         const promptPromise = new Promise<PromptResult<string>>(resolve => {
-            this.inputBox.onDidAccept(() => {
-                this.recentItem = this.inputBox.value
-                if (!this.inputBox.validationMessage) {
-                    resolve(this.inputBox.value)
-                }
-            })
+            this.inputBox.onDidAccept(() => accept(resolve))
             this.inputBox.onDidHide(() => resolve(WIZARD_EXIT))
-            this.inputBox.onDidTriggerButton(button => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(WIZARD_BACK)
-                } else if ((button as QuickInputButton<string>).onClick !== undefined) {
-                    const response = (button as QuickInputButton<string>).onClick!()
-                    if (response !== undefined) {
-                        resolve(response)
-                    }
-                }
-            })
-            this.inputBox.show()
+            this.inputBox.onDidTriggerButton(button => this.handleButton(button, resolve))
+            this.show()
         }).finally(() => {
             // TODO: remove the .hide() call when Cloud9 implements dispose
             this.inputBox.hide()
-            this.inputBox.dispose()
         })
 
         return await promptPromise
     }
 
-    public setStepEstimator(estimator: StepEstimator<string>): void {
-        // TODO: implement this
+    private applyStepEstimator(estimator: StepEstimator<string>): void {
+        const { step, totalSteps } = this.inputBox
+        const estimates: Record<string, number> = {}
+
+        if (!step || !totalSteps) {
+            return
+        }
+
+        const estimate = (value: string) => {
+            if (this.inputBox.validationMessage) {
+                return
+            }
+            estimates[value] ??= estimator(value)
+            this.setSteps(step, totalSteps + estimates[value])
+        }
+
+        this.disposables.push(this.inputBox.onDidChangeValue(estimate))
     }
 }

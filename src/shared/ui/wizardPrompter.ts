@@ -3,27 +3,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StepEstimator, Wizard } from '../wizards/wizard'
-import { Prompter, PromptResult } from './prompter'
+import { StepCache, StepEstimator, Wizard, WIZARD_BACK } from '../wizards/wizard'
+import { Prompter, PrompterConfiguration, PromptResult } from './prompter'
+
+type WizardCache = Record<string, StepCache>
 
 /**
  * Wraps {@link Wizard} object into its own {@link Prompter}, allowing wizards to use other
  * wizards in their flows.
  */
 export class WizardPrompter<T> extends Prompter<T> {
-    public get recentItem(): any {
-        return undefined
+    public get recentItem(): WizardCache {
+        return this.wizard.cache
     }
-    public set recentItem(response: any) {}
+    public set recentItem(response: WizardCache) {
+        this.wizard.cache = response
+    }
 
     private stepOffset: number = 0
     private response: T | undefined
+
+    public get totalSteps(): number {
+        return this.wizard.totalSteps - this.stepOffset
+    }
 
     constructor(private readonly wizard: Wizard<T>) {
         super()
     }
 
-    public setSteps(current: number, total: number): void {
+    private applySteps(current: number, total: number): void {
         if (this.wizard.currentStep === 1) {
             this.wizard.stepOffset = [current - 1, total - 1]
         }
@@ -31,11 +39,7 @@ export class WizardPrompter<T> extends Prompter<T> {
         this.stepOffset = total - 1
     }
 
-    public get totalSteps(): number {
-        return this.wizard.totalSteps - this.stepOffset
-    }
-
-    public setStepEstimator(estimator: StepEstimator<T>): void {
+    private applyStepEstimator(estimator: StepEstimator<T>): void {
         const estimates = new Map<string, number>()
 
         this.wizard.parentEstimator = state => {
@@ -49,8 +53,16 @@ export class WizardPrompter<T> extends Prompter<T> {
         }
     }
 
-    protected async promptUser(): Promise<PromptResult<T>> {
+    protected async promptUser(config: PrompterConfiguration<T>): Promise<PromptResult<T>> {
+        if (config.steps) {
+            this.applySteps(config.steps.current, config.steps.total)
+        }
+
+        if (config.stepEstimator) {
+            this.applyStepEstimator(config.stepEstimator)
+        }
+
         this.response = await this.wizard.run()
-        return this.response
+        return this.response ?? WIZARD_BACK
     }
 }

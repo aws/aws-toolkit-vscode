@@ -24,7 +24,11 @@ import * as localizedText from '../../../shared/localizedText'
 import { ext } from '../../../shared/extensionGlobals'
 import { WIZARD_FORCE_EXIT } from '../../../shared/wizards/wizard'
 import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
-import { makeSampleSamTemplateYaml, strToYamlFile } from '../../shared/cloudformation/cloudformationTestUtils'
+import {
+    createBaseImageTemplate,
+    makeSampleSamTemplateYaml,
+    strToYamlFile,
+} from '../../shared/cloudformation/cloudformationTestUtils'
 
 let extContext: ExtContext
 
@@ -37,11 +41,13 @@ before(async function () {
 
 describe('SamDeployWizard', async function () {
     let tester: WizardTester<SamDeployWizard>
-    let regionNode: { regionCode: string }
 
     beforeEach(function () {
-        regionNode = {} as any
-        tester = createWizardTester(new SamDeployWizard(extContext, regionNode))
+        tester = createWizardTester(new SamDeployWizard(extContext))
+    })
+
+    it('has 4 steps by default', function () {
+        tester.assertShowCount(4)
     })
 
     it('prompts for template first', function () {
@@ -52,7 +58,15 @@ describe('SamDeployWizard', async function () {
         tester.region.assertShow()
     })
 
-    it('skips template picker if passed as an argument', async function () {
+    it('skips region if assigned', function () {
+        // TODO: hook into wizard init state?
+        // Ideally args -> `initState` shouldn't involve much logic, though nice to test it
+        // tester = createWizardTester(new SamDeployWizard(extContext, 'region'))
+        tester.region.applyInput('region')
+        tester.region.assertDoesNotShow()
+    })
+
+    it('skips template picker if assigned', async function () {
         tester.template.applyInput({ uri: vscode.Uri.file('') })
         tester.template.assertDoesNotShow()
     })
@@ -60,6 +74,20 @@ describe('SamDeployWizard', async function () {
     it('skips configuring overrides and continues wizard if `parameterOverrides` is defined', async function () {
         tester.template.applyInput({ uri: vscode.Uri.file(''), parameterOverrides: new Map() })
         tester.parameterOverrides.assertDoesNotShow()
+    })
+
+    it('prompts for ECR repository after region if template is an image', async function () {
+        tester.template.applyInput({
+            ...createBaseImageTemplate(),
+            uri: vscode.Uri.file(''),
+            parameterOverrides: new Map(),
+        })
+        // TODO: currently assertions are conservative when a `showWhen` clause exists, meaning a value needs to be applied
+        // to all dependencies even if they're not used in the predicate. Future work should refine the predicates to
+        // specifiy their exact dependencies.
+        tester.ecrRepo.assertDoesNotShow()
+        tester.region.applyInput('')
+        tester.ecrRepo.assertShow()
     })
 })
 
@@ -98,7 +126,7 @@ describe('createParametersPrompter', function () {
         assert.strictEqual(configureStub.callCount, 1)
     })
 
-    it('presents a mandatory prompt when missing parameters is not empty', async function () {
+    it('presents a mandatory prompt when missing parameters is not empty ("cancel")', async function () {
         tester = createQuickPickTester(createParametersPrompter(templateUri, new Set('x')))
         tester.acceptItem(localizedText.cancel)
         assert.strictEqual(await tester.result(), WIZARD_FORCE_EXIT)
@@ -111,26 +139,11 @@ function isTemplateResult(obj: any): asserts obj is SamDeployWizardResponse['tem
 }
 
 describe('createSamTemplatePrompter', function () {
-    /**
-     *             return {
-                invoker: new TestSamCliProcessInvoker(
-                    (spawnOptions, args: any[]): ChildProcessResult => {
-                        return new FakeChildProcessResult({})
-                    }
-                ),
-                validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
-            } as SamCliContext
-     */
-
+    type Params = typeof parameterUtils['getParameters']
+    type Overrides = typeof parameterUtils['getOverriddenParameters']
     let tester: QuickPickTester<SamDeployWizardResponse['template']>
-    let parametersStub: sinon.SinonStub<
-        Parameters<typeof parameterUtils['getParameters']>,
-        ReturnType<typeof parameterUtils['getParameters']>
-    >
-    let overridesStub: sinon.SinonStub<
-        Parameters<typeof parameterUtils['getOverriddenParameters']>,
-        ReturnType<typeof parameterUtils['getOverriddenParameters']>
-    >
+    let parametersStub: sinon.SinonStub<Parameters<Params>, ReturnType<Params>>
+    let overridesStub: sinon.SinonStub<Parameters<Overrides>, ReturnType<Overrides>>
     let testDir: string
 
     before(async function () {
@@ -150,14 +163,16 @@ describe('createSamTemplatePrompter', function () {
         await fs.remove(testDir)
     })
 
+    const testPath = path.join('paramTest', 'template.yml')
+
     it('presents list of templates', async function () {
-        tester.acceptItem(path.join('paramTest', 'template.yml'))
+        tester.acceptItem(testPath)
         const result = await tester.result()
         isTemplateResult(result)
     })
 
     it('returns no parameter overrides if undefined or empty parameters', async function () {
-        tester.acceptItem(path.join('paramTest', 'template.yml'))
+        tester.acceptItem(testPath)
         const result = await tester.result()
         isTemplateResult(result)
         assert.strictEqual(result.parameterOverrides?.size, 0)
@@ -167,7 +182,7 @@ describe('createSamTemplatePrompter', function () {
         parametersStub.returns(
             Promise.resolve(new Map<string, { required: boolean }>([['myParam', { required: true }]]))
         )
-        tester.acceptItem(path.join('paramTest', 'template.yml'))
+        tester.acceptItem(testPath)
         const result = await tester.result()
         isTemplateResult(result)
         assert.deepStrictEqual([...(result.missingParameters?.keys() ?? [])], ['myParam'])
@@ -177,7 +192,7 @@ describe('createSamTemplatePrompter', function () {
         parametersStub.returns(
             Promise.resolve(new Map<string, { required: boolean }>([['myParam', { required: false }]]))
         )
-        tester.acceptItem(path.join('paramTest', 'template.yml'))
+        tester.acceptItem(testPath)
         const result = await tester.result()
         isTemplateResult(result)
         assert.strictEqual(result.missingParameters, undefined)
@@ -188,14 +203,12 @@ describe('createSamTemplatePrompter', function () {
             Promise.resolve(new Map<string, { required: boolean }>([['myParam', { required: true }]]))
         )
         overridesStub.returns(Promise.resolve(new Map<string, string>([['myParam', 'override']])))
-        tester.acceptItem(path.join('paramTest', 'template.yml'))
+        tester.acceptItem(testPath)
         const result = await tester.result()
         isTemplateResult(result)
         assert.strictEqual(result.missingParameters, undefined)
         assert.strictEqual(result.parameterOverrides?.size, 1)
     })
 
-    // TODO: test for sort
     // TODO: test for workspace folder label
-    // TODO: test for image
 })

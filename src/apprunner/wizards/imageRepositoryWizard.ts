@@ -7,19 +7,16 @@ import { AppRunner, IAM } from 'aws-sdk'
 import { createCommonButtons, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import * as input from '../../shared/ui/inputPrompter'
+import * as nls from 'vscode-nls'
 import { Prompter } from '../../shared/ui/prompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { WizardPrompter } from '../../shared/ui/wizardPrompter'
-
-import * as nls from 'vscode-nls'
 import { WizardForm } from '../../shared/wizards/wizardForm'
-import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompter'
+import { createVariablesPrompter } from '../../shared/ui/common/environmentVariables'
 import { makeDeploymentButton } from './deploymentButton'
 import { IamClient } from '../../shared/clients/iamClient'
-import { createRolePrompter } from '../../shared/ui/common/rolePrompter'
-import { BasicExitPrompter } from '../../shared/ui/common/exitPrompter'
+import { createRolePrompter } from '../../shared/ui/common/roles'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { EcrRepositoryForm } from '../../shared/ui/common/ecrRepository'
+import { createEcrPrompter } from '../../shared/ui/common/ecrRepository'
 
 const localize = nls.loadMessageBundle()
 
@@ -80,14 +77,8 @@ function createImageRepositorySubForm(
     const subform = new WizardForm<AppRunner.ImageRepository>()
     const form = subform.body
 
-    // note: this is intentionally initialized only once to preserve caches
-    const imageIdentifierWizard = new Wizard({
-        initForm: new EcrRepositoryForm(ecrClient),
-        exitPrompterProvider: BasicExitPrompter,
-    })
-
     form.ImageIdentifier.bindPrompter(() =>
-        new WizardPrompter(imageIdentifierWizard).transform(resp => `${resp.repo.repositoryUri}:${resp.repo.tag}`)
+        createEcrPrompter(ecrClient).transform(resp => `${resp.repo.repositoryUri}:${resp.repo.tag}`)
     )
 
     function isPublic(imageRepo: string): boolean {
@@ -110,11 +101,12 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
     constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton?: QuickInputToggleButton) {
         super()
         const form = this.form
-        const rolePrompter = createRolePrompter(iamClient, {
-            title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
-            filter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
-            createRole: createEcrRole.bind(undefined, iamClient),
-        })
+        const rolePrompter = () =>
+            createRolePrompter(iamClient, {
+                title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
+                filter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
+                createRole: createEcrRole.bind(undefined, iamClient),
+            }).transform(resp => resp.Arn)
 
         if (autoDeployButton === undefined) {
             autoDeployButton = makeDeploymentButton()
@@ -122,7 +114,7 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
         }
 
         form.ImageRepository.applyBoundForm(createImageRepositorySubForm(ecrClient, autoDeployButton))
-        form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(() => rolePrompter.transform(resp => resp.Arn), {
+        form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(rolePrompter, {
             showWhen: form => form.ImageRepository.ImageRepositoryType === 'ECR',
             dependencies: [form.ImageRepository.ImageRepositoryType],
         })

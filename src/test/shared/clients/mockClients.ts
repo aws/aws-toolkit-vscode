@@ -51,6 +51,7 @@ import {
     ListObjectVersionsResponse,
     DeleteObjectsResponse,
     SignedUrlRequest,
+    Bucket,
 } from '../../../shared/clients/s3Client'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 
@@ -627,6 +628,12 @@ export class MockS3Client implements S3Client {
         this.deleteObject = deleteObject
         this.deleteObjects = deleteObjects
         this.deleteBucket = deleteBucket
+    }
+    public listBucketsIterable(): AsyncIterable<Bucket> {
+        throw new Error('Method not implemented.')
+    }
+    public checkBucketExists(name: string): Promise<boolean> {
+        throw new Error('Method not implemented.')
     }
 }
 

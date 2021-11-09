@@ -40,6 +40,13 @@ export class StateMachineController<TState> {
     private steps: Branch<TState> = []
     private internalStep: number = 0
 
+    public get currentStep(): number {
+        return this.internalStep + 1
+    }
+    public get totalSteps(): number {
+        return this.steps.length
+    }
+
     public constructor(private state: TState = {} as TState) {
         this.previousStates = [_.cloneDeep(state)]
     }
@@ -50,13 +57,6 @@ export class StateMachineController<TState> {
 
     public containsStep(step: StepFunction<TState> | undefined): boolean {
         return step !== undefined && this.steps.indexOf(step) > -1
-    }
-
-    public get currentStep(): number {
-        return this.internalStep + 1
-    }
-    public get totalSteps(): number {
-        return this.steps.length
     }
 
     protected rollbackState(): void {

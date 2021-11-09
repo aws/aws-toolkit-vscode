@@ -141,6 +141,12 @@ export class DefaultS3Client {
     /** Cache bucket region based off partition */
     private static regionCache: RegionCache = {}
 
+    public static clearCache(): void {
+        for (const key of Object.keys(this.regionCache)) {
+            this.regionCache[key] = {}
+        }
+    }
+
     private async createS3(): Promise<S3> {
         return this.s3Provider(this.regionCode)
     }
@@ -563,6 +569,24 @@ export class DefaultS3Client {
 
             yield listObjectVersionsResponse
         } while (continuationToken)
+    }
+
+    /**
+     * Checks if the bucket exists.
+     *
+     * @throws On network errors or if we do not have permission to access the bucket.
+     */
+    public async checkBucketExists(name: string): Promise<boolean> {
+        const client = await this.createS3()
+        try {
+            await client.headBucket({ Bucket: name }).promise()
+            return true
+        } catch (err) {
+            if ((err as AWSError).statusCode === 404) {
+                return false
+            }
+            throw err
+        }
     }
 
     /**

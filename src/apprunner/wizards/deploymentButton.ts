@@ -6,14 +6,14 @@
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
-import { QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
+import { QuickInputToggleButton } from '../../shared/ui/buttons'
 import { APPRUNNER_PRICING_URL, extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
 function makeDeployButtons() {
-    const autoDeploymentsEnable: QuickInputButton<void> = {
+    const autoDeploymentsEnable = {
         iconPath: {
             light: ext.iconPaths.light.syncIgnore,
             dark: ext.iconPaths.dark.syncIgnore,
@@ -21,7 +21,7 @@ function makeDeployButtons() {
         tooltip: localize('AWS.apprunner.buttons.enableAutoDeploy', 'Turn on automatic deployment'),
     }
 
-    const autoDeploymentsDisable: QuickInputButton<void> = {
+    const autoDeploymentsDisable = {
         iconPath: {
             light: ext.iconPaths.light.sync,
             dark: ext.iconPaths.dark.sync,

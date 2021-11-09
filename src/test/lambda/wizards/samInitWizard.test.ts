@@ -5,6 +5,7 @@
 
 import { eventBridgeStarterAppTemplate } from '../../../lambda/models/samTemplates'
 import { CreateNewSamAppWizard, CreateNewSamAppWizardForm } from '../../../lambda/wizards/samInitWizard'
+import { createQuickPickTester } from '../../shared/ui/testUtils'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 
 describe('CreateNewSamAppWizard', async function () {
@@ -24,6 +25,14 @@ describe('CreateNewSamAppWizard', async function () {
 
     it('leaves architecture undefined by default', function () {
         tester.architecture.assertValue(undefined)
+    })
+
+    it('shows runtimes SAM has available', async function () {
+        await tester.runtimeAndPackage.runPrompt(prompter => {
+            const picker = createQuickPickTester(prompter)
+            picker.acceptItem('go1.x')
+            return picker
+        })
     })
 
     it('prompts for dependency manager if there are multiple', function () {

@@ -40,7 +40,7 @@ import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { BasicExitPrompter } from '../../shared/ui/common/exitPrompter'
+import { BasicExitPrompter } from '../../shared/ui/common/basicExit'
 
 const localize = nls.loadMessageBundle()
 
@@ -82,10 +82,11 @@ function createSamTemplatePrompter(
 }
 
 function createSchemaRegionPrompter(regions: Region[], defaultRegion?: string): QuickPickPrompter<string> {
-    return createRegionPrompter(regions, {
-        title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
-        buttons: createCommonButtons(eventBridgeSchemasDocUrl),
+    return createRegionPrompter({
+        regions,
         defaultRegion,
+        title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
+        helpUri: eventBridgeSchemasDocUrl,
     }).transform(r => r.id)
 }
 
@@ -203,7 +204,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
         credentials?: AWS.Credentials
     }) {
         super({
-            exitPrompterProvider: BasicExitPrompter,
+            exitPrompter: BasicExitPrompter,
         })
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))

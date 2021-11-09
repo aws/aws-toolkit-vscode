@@ -107,9 +107,12 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
 
             const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
                 if (arg instanceof vscode.Uri) {
-                    return new SamDeployWizard(ctx, await computeTemplateParameters({ uri: arg })).run()
+                    const template = ext.templateRegistry.getRegisteredItem(arg.fsPath)
+                    !template && getLogger().warn(`Could not find corresponding template for: ${arg.fsPath}`)
+                    const computedTemplate = await computeTemplateParameters({ ...template?.item, uri: arg })
+                    return new SamDeployWizard(ctx, computedTemplate).run()
                 }
-                const wizard = new SamDeployWizard(ctx, arg)
+                const wizard = new SamDeployWizard(ctx, arg?.regionCode)
                 return wizard.run()
             }
 

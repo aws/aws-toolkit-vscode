@@ -21,7 +21,6 @@ import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { ext } from '../../../extensionGlobals'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import { getIdeProperties } from '../../../extensionUtilities'
-import { isValidResponse } from '../../../wizards/wizard'
 
 /**
  * Holds information required to create a launch config
@@ -44,9 +43,6 @@ export async function addSamDebugConfiguration(
     openWebview: boolean,
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
-    // emit without waiting
-    emitCommandTelemetry()
-
     let samDebugConfig: AwsSamDebuggerConfiguration
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
     let runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
@@ -107,7 +103,7 @@ export async function addSamDebugConfiguration(
 
                     const choices = await quickPick.prompt()
 
-                    if (!isValidResponse(choices)) {
+                    if (!choices) {
                         return
                     }
 
@@ -152,7 +148,7 @@ export async function addSamDebugConfiguration(
 
         const choices = await quickPick.prompt()
 
-        if (!isValidResponse(choices)) {
+        if (!choices) {
             return
         }
 
@@ -183,8 +179,4 @@ export async function openLaunchJsonFile(): Promise<void> {
             ? 'workbench.action.debug.configure'
             : 'workbench.action.openWorkspaceSettingsFile'
     )
-}
-
-async function emitCommandTelemetry(): Promise<void> {
-    // TODO add new metric for when command is executed
 }

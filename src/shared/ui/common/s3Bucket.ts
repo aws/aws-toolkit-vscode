@@ -3,17 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createPlusButton, PrompterButtons } from '../buttons'
+import { createCommonButtons } from '../buttons'
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
-import { createInputBox } from '../inputPrompter'
+import * as telemetry from '../../../shared/telemetry/telemetry'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import { ext } from '../../extensionGlobals'
 import { Bucket } from '../../clients/s3Client'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../settingsConfiguration'
 import { getLogger } from '../../logger'
 import { extensionSettingsPrefix } from '../../constants'
-import { isValidResponse, WizardControl, WIZARD_RETRY } from '../../wizards/wizard'
 import { validateBucketName } from '../../../s3/util'
 import { showViewLogsMessage } from '../../utilities/messages'
 import { partialCached } from '../../utilities/collectionUtils'
@@ -29,14 +28,16 @@ async function* loadBuckets(region?: string, filter?: S3BucketPrompterOptions['f
     })
 
     // TODO: need to set the region correctly to the 'master' region per-partition
+    // this was not done previously and would always try to use `us-east-1` regardless of partition
     const client = ext.toolkitClientBuilder.createS3Client(region ?? 'us-east-1')
     if (!region) {
-        return client.listBuckets().then(({ buckets }) => buckets.map(mapBucket))
+        yield await client.listBuckets().then(({ buckets }) => buckets.filter(filter ?? (() => true)).map(mapBucket))
+        return
     }
 
     for await (const bucket of client.listBucketsIterable()) {
         if (!filter || filter(bucket)) {
-            yield [mapBucket(bucket)]
+            yield mapBucket(bucket)
         }
     }
 }
@@ -86,7 +87,7 @@ export function writeSavedBucket(
     )
 }
 
-// key is currently implemented but it would allow different prompts to save different buckets
+// key is currently *not* implemented but it would allow different prompts to save different buckets
 function loadLastPickedBucket(profile: string, region: string, key?: string): string | undefined {
     const settings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
     const existingBuckets = readSavedBuckets(settings)
@@ -96,91 +97,114 @@ function loadLastPickedBucket(profile: string, region: string, key?: string): st
     }
 }
 
-async function createNewBucket(region: string): Promise<Bucket | WizardControl> {
-    const prompter = createInputBox({
-        title: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
-        validateInput: validateBucketName,
-    })
-
-    const response = await prompter.prompt()
-
-    if (!isValidResponse(response)) {
-        return WIZARD_RETRY
-    }
+async function createNewBucket(region: string, name: string): Promise<Bucket | undefined> {
+    const client = ext.toolkitClientBuilder.createS3Client(region)
 
     try {
-        const s3Client = ext.toolkitClientBuilder.createS3Client(region!)
-        const newBucket = (await s3Client.createBucket({ bucketName: response })).bucket
+        const newBucket = (await client.createBucket({ bucketName: name })).bucket
         getLogger().info('Created bucket: %O', newBucket.name)
         vscode.window.showInformationMessage(
             localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucket.name)
         )
-        //telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+        telemetry.recordS3CreateBucket({ result: 'Succeeded' })
         return newBucket
     } catch (e) {
-        showViewLogsMessage(localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', response))
-        //telemetry.recordS3CreateBucket({ result: 'Failed' })
-        return WIZARD_RETRY
+        showViewLogsMessage(
+            localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', (e as Error).message)
+        )
+        telemetry.recordS3CreateBucket({ result: 'Failed' })
     }
+}
+
+const DOES_NOT_EXIST = localize('AWS.prompts.s3Bucket.doesNotExists', 'Bucket does not exist, create one?')
+
+export function validateBucket(name: string, region: string): string | undefined | Promise<string> {
+    const checkName = validateBucketName(name)
+    if (checkName) {
+        return `$(error) ${checkName}`
+    }
+
+    const client = ext.toolkitClientBuilder.createS3Client(region)
+    // For now we'll just treat any error as the bucket existing.
+    // There's a few edge-cases here and we should only block if we _know_ that the bucket doesn't exist.
+    return client
+        .checkBucketExists(name)
+        .catch(() => true)
+        .then(exists => {
+            return exists ? '' : `$(error) ${DOES_NOT_EXIST}`
+        })
 }
 
 export interface S3BucketPrompterOptions {
+    title?: string
     /** Lists all buckets in the account if no region is specified */
     region?: string
     profile?: string
+    /** [NOT IMPLEMENTED] Changes where the 'recently used' buckets are saved. */
     settingsKey?: string
-    promptTitle?: string
     noBucketMessage?: string
     bucketErrorMessage?: string
     filter?: (bucket: Bucket) => boolean
-    /** These are always shown and will automatically be created if they do not exist if the user selects them */
+    /** These buckets are always shown. */
     baseBuckets?: string[]
-    extraButtons?: PrompterButtons<Bucket>
+    helpUri?: string | vscode.Uri
 }
-
-const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
-const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
 
 // TODO: rewrite as a form so the prompts can swap between QuickInput and InputBox for creating a new bucket
 export function createS3BucketPrompter(options: S3BucketPrompterOptions = {}): QuickPickPrompter<Bucket> {
-    ;(options.noBucketMessage =
-        options.noBucketMessage ?? localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.')),
-        (options.bucketErrorMessage =
-            options.bucketErrorMessage ??
-            localize('AWS.samcli.deploy.s3bucket.picker.error', 'There was an error loading S3 buckets.'))
+    const resolvedOptions = {
+        noBucketMessage: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
+        bucketErrorMessage: localize(
+            'AWS.samcli.deploy.s3bucket.picker.error',
+            'There was an error loading S3 buckets.'
+        ),
+        ...options,
+    }
+
+    const { profile, region, settingsKey } = resolvedOptions
 
     const baseBuckets = (options.baseBuckets ?? []).concat(
-        (options.profile &&
-            options.region &&
-            loadLastPickedBucket(options.profile, options.region, options.settingsKey)) ||
-            []
+        profile && region ? loadLastPickedBucket(profile, region, settingsKey) ?? [] : []
     )
 
-    const createBucket = createPlusButton(CREATE_NEW_BUCKET)
-    const baseItems = baseBuckets.map(name => ({ label: name, data: { name } } as DataQuickPickItem<Bucket>))
-
     const filter = (bucket: Bucket) => {
-        return baseBuckets.indexOf(bucket.name) === -1 && (options.filter === undefined || options.filter(bucket))
+        return baseBuckets.indexOf(bucket.name) === -1 && (!options.filter || options.filter(bucket))
     }
+
+    const baseItems = baseBuckets.map(
+        name =>
+            ({
+                label: name,
+                data: { name },
+                recentlyUsed: true,
+            } as DataQuickPickItem<Bucket>)
+    )
 
     const prompter = createQuickPick(baseItems, {
-        title:
-            options.promptTitle ??
-            localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
+        title: options.title ?? localize('AWS.prompts.s3Bucket.title', 'Select an AWS S3 Bucket'),
         matchOnDetail: true,
-        buttons: [createBucket].concat(options.extraButtons ?? []),
-        itemLoader: partialCached((region?: string) => loadBuckets(region ?? 'us-east-1', filter), options.region),
-        placeholder: localize('', 'Select a bucket or enter a name'),
-        filterBoxInputSettings: {
-            label: localize('', 'Bucket name: '),
+        buttons: createCommonButtons(options.helpUri),
+        itemLoader: partialCached((region?: string) => loadBuckets(region, filter), region),
+        placeholder: localize(
+            'AWS.prompts.s3Bucket.placeholder',
+            'Select a bucket you own or enter a name for a bucket'
+        ),
+        filterBoxInput: {
+            label: localize('AWS.prompts.s3Bucket.filterBox.label', 'Enter bucket name: '),
             transform: resp => ({ name: resp } as Bucket),
-            validator: validateBucketName,
+            validator: val => validateBucket(val, region ?? 'us-east-1'),
         },
+        noItemsFoundItem: resolvedOptions.noBucketMessage,
     })
 
-    createBucket.onClick = () => {
-        createNewBucket(options.region ?? 'us-east-1')
-    }
+    prompter.quickPick.onDidAccept(() => {
+        const active = prompter.quickPick.activeItems[0]
+        if (active && active.invalidSelection && active.detail?.includes(DOES_NOT_EXIST)) {
+            createNewBucket(region ?? 'us-east-1', active.description!).then(bucket => {
+                prompter.refreshItems()
+            })
+        }
+    })
 
     return prompter
 }

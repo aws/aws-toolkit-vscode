@@ -8,7 +8,6 @@ import { createHelpButton } from '../../shared/ui/buttons'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { AppRunnerServiceNode } from '../explorer/apprunnerServiceNode'
 import * as nls from 'vscode-nls'
-import { isValidResponse } from '../../shared/wizards/wizard'
 const localize = nls.loadMessageBundle()
 
 function validateName(name: string) {
@@ -33,7 +32,7 @@ export async function deleteService(node: AppRunnerServiceNode): Promise<void> {
 
         const userInput = await inputBox.prompt()
 
-        if (!isValidResponse(userInput)) {
+        if (!userInput) {
             telemetryResult = 'Cancelled'
             return
         }

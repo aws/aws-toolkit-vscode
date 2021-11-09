@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { Prompter, PromptResult } from '../../../shared/ui/prompter'
+import { Prompter, PrompterConfiguration, PromptResult } from '../../../shared/ui/prompter'
 import {
     isWizardControl,
     StateWithCache,
@@ -63,11 +63,12 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     private readonly acceptedSteps: [current: number, total: number][] = []
     private readonly acceptedEstimators: StepEstimator<T>[] = []
     private _totalSteps: number = 1
-    private _lastResponse: PromptResult<T>
+    private _lastResponse?: PromptResult<T>
     private promptCount: number = 0
     private name: string = 'Test Prompter'
 
     public get recentItem(): PromptResult<T> {
+        assert.ok(this._lastResponse, 'Tried accessing `recentItem` before prompting')
         return this._lastResponse
     }
     public set recentItem(response: PromptResult<T>) {
@@ -87,7 +88,11 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this.responses = responses
     }
 
-    public async prompt(): Promise<PromptResult<T>> {
+    public async prompt(): Promise<T | undefined> {
+        throw new Error('Wizards should not call this method')
+    }
+
+    public async promptControl(): Promise<PromptResult<T>> {
         if (this.responses.length === this.promptCount) {
             this.fail('Ran out of responses')
         }
@@ -95,6 +100,11 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this._lastResponse = !isWizardControl(resp) ? resp : this._lastResponse
 
         return resp
+    }
+
+    public configure(config: PrompterConfiguration<T>): void {
+        config.steps && this.setSteps(config.steps.current, config.steps.total)
+        config.stepEstimator && this.setStepEstimator(config.stepEstimator)
     }
 
     protected promptUser(): Promise<PromptResult<T>> {
@@ -228,11 +238,11 @@ describe('Wizard', function () {
         helloPrompter.assertCallCount(1)
     })
 
-    it('users exit prompter if provided', async function () {
+    it('user exit prompter if provided', async function () {
         const checkForHello = (state: TestWizardForm) => state.prop1 !== 'hello'
         const exitPrompter = new TestPrompter(checkForHello, true).setName('Exit Dialog')
         const exitSignalPrompter = new TestPrompter<string>(WIZARD_EXIT, WIZARD_EXIT).setName('Exit Signal')
-        wizard = new Wizard({ exitPrompterProvider: state => exitPrompter.acceptState(state as any) })
+        wizard = new Wizard({ exitPrompter: state => exitPrompter.acceptState(state as any) })
         wizard.form.prop1.bindPrompter(() => helloPrompter)
         wizard.form.prop3.bindPrompter(() => exitSignalPrompter)
 
@@ -255,6 +265,16 @@ describe('Wizard', function () {
     })
 
     it('applies step offset', async function () {
+        const testPrompter = new TestPrompter('1')
+        wizard.stepOffset = [4, 5]
+
+        wizard.form.prop1.bindPrompter(() => testPrompter)
+
+        assert.deepStrictEqual(await wizard.run(), { prop1: '1' })
+        testPrompter.assertSteps(5, 6).onFirstCall()
+    })
+
+    it('tells the UI element to dispose if exiting the wizard', async function () {
         const testPrompter = new TestPrompter('1')
         wizard.stepOffset = [4, 5]
 

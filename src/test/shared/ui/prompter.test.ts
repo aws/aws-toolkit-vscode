@@ -4,18 +4,23 @@
  */
 
 import * as assert from 'assert'
-import { Prompter, PromptResult } from '../../../shared/ui/prompter'
-import { StepEstimator } from '../../../shared/wizards/wizard'
+import { Prompter, PrompterConfiguration, PromptResult } from '../../../shared/ui/prompter'
 
 export class SimplePrompter<T> extends Prompter<T> {
+    private _config?: PrompterConfiguration<T>
+    public get promptConfig() {
+        if (!this._config) {
+            throw new Error('Did not receive config from Prompter')
+        }
+        return this._config
+    }
     constructor(private readonly input: T | PromptResult<T>) {
         super()
     }
-    protected async promptUser(): Promise<PromptResult<T>> {
+    protected async promptUser(config: PrompterConfiguration<T>): Promise<PromptResult<T>> {
+        this._config = config
         return this.input
     }
-    public setSteps(current: number, total: number): void {}
-    public setStepEstimator(estimator: StepEstimator<T>): void {}
     public set recentItem(response: any) {}
     public get recentItem(): any {
         return undefined
@@ -33,10 +38,23 @@ describe('Prompter', function () {
         assert.strictEqual(await prompter.prompt(), '1')
     })
 
+    it('passes in config to derived classes via `promptUser`', async function () {
+        const prompter = new SimplePrompter(1)
+        prompter.configure({ title: 'foo' })
+        await prompter.promptControl()
+        assert.strictEqual(prompter.promptConfig.title, 'foo')
+    })
+
     it('throws error if calling prompt multiple times', async function () {
         const prompter = new SimplePrompter(1)
         await prompter.prompt()
         await assert.rejects(prompter.prompt())
+    })
+
+    it('throws error if trying to configure after prompt', async function () {
+        const prompter = new SimplePrompter(1)
+        await prompter.prompt()
+        assert.throws(() => prompter.configure({}))
     })
 
     it('can attach multiple transformations', async function () {
@@ -49,5 +67,31 @@ describe('Prompter', function () {
             .transform(resp => resp.toString())
             .transform(resp => `result: ${resp}`)
         assert.strictEqual(await prompter.prompt(), 'result: 6')
+    })
+
+    it('can attach callbacks after a response', async function () {
+        let sum = 0
+        const prompter = new SimplePrompter(1)
+        prompter
+            .onResponse(resp => (sum += resp))
+            .onResponse(resp => (sum += resp))
+            .onResponse(resp => (sum += resp))
+
+        const result = await prompter.prompt()
+        assert.strictEqual(result, 1, 'Callbacks should not change the response')
+        assert.strictEqual(sum, 3)
+    })
+
+    it('applies callbacks in the correct order', async function () {
+        let sum = 0
+        const prompter = new SimplePrompter(1)
+        prompter
+            .onResponse(resp => (sum += resp))
+            .transform(resp => resp * 2)
+            .onResponse(resp => (sum += resp * 2))
+
+        const result = await prompter.prompt()
+        assert.strictEqual(result, 2)
+        assert.strictEqual(sum, 5)
     })
 })

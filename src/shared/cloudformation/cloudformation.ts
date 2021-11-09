@@ -372,7 +372,7 @@ export namespace CloudFormation {
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
         const template = yaml.load(templateAsYaml, {
-            schema: schema as any,
+            schema: schema,
         }) as Template
         validateTemplate(template)
 
