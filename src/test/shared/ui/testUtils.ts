@@ -97,7 +97,7 @@ interface TestOptions {
 
 const TEST_DEFAULTS: Required<TestOptions> = {
     /** Timeout per-action */
-    timeout: 1000,
+    timeout: 2500,
     forceEmits: false,
 }
 
@@ -141,6 +141,7 @@ export function createQuickPickTester<T>(
 
                 const d = prompter.onDidChangeBusy(e => !e && (d.dispose(), r()))
             }),
+            sleep(), // Make the test loop less aggressive against the UI
         ])
     }
 
