@@ -238,6 +238,9 @@ export function createQuickPickTester<T>(
                     throwError(`Unable to find item: ${JSON.stringify(action[1][0])}`) // TODO: add ways to format
                 }
                 testPicker.selectedItems = match
+                if (resolvedOptions.forceEmits) {
+                    testPicker.fireOnDidAccept()
+                }
                 break
             }
             case 'assertItems': {
