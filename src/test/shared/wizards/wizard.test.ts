@@ -241,13 +241,6 @@ describe('Wizard', function () {
         assert.strictEqual((await wizard.run())?.prop1, 'hello')
     })
 
-    it('throws if trying to access the cache while running', async function () {
-        wizard.form.prop1.bindPrompter(() => new TestPrompter<string>(Promise.resolve('test')))
-        wizard.run()
-        assert.throws(() => wizard.cache)
-        assert.throws(() => (wizard.cache = {}))
-    })
-
     it('processes exit signal', async function () {
         wizard.form.prop1.bindPrompter(() => helloPrompter)
         wizard.form.prop3.bindPrompter(() => new TestPrompter<string>(WIZARD_EXIT).setName('Exit'))
@@ -358,6 +351,35 @@ describe('Wizard', function () {
         it('disposes of exit prompter on exit', async function () {
             assert.strictEqual(await wizard.run(), undefined)
             exitPrompter.assertDisposed()
+        })
+    })
+
+    describe('cache', function () {
+        it('throws if trying to access the cache while running', async function () {
+            wizard.form.prop1.bindPrompter(() => new TestPrompter<string>(Promise.resolve('test')))
+            wizard.run()
+            assert.throws(() => wizard.cache)
+            assert.throws(() => (wizard.cache = {}))
+        })
+
+        it('can use cache to reconstruct internal state, showing the last step', async function () {
+            const reuseState = (state: BoundState<TestWizardForm, []>) => state.prop1 ?? 'unknown'
+            const testPrompter = new TestPrompter('goodbye', WIZARD_BACK, reuseState).setName('Goodbye')
+
+            wizard.form.prop1.bindPrompter(() => helloPrompter)
+            wizard.form.prop3.bindPrompter(state => testPrompter.acceptState(state))
+
+            assert.deepStrictEqual(await wizard.run(), { prop1: 'hello', prop3: 'goodbye' })
+            const cache = wizard.cache
+
+            wizard = new Wizard()
+            wizard.form.prop1.bindPrompter(() => helloPrompter)
+            wizard.form.prop3.bindPrompter(state => testPrompter.acceptState(state))
+            wizard.cache = cache
+
+            assert.deepStrictEqual(await wizard.run(), { prop1: 'hello', prop3: 'hello' })
+            helloPrompter.assertCallCount(2)
+            testPrompter.assertCallCount(3)
         })
     })
 
