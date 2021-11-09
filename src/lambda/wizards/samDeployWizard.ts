@@ -65,6 +65,7 @@ export interface SamDeployWizardResponse {
 export function createSamTemplatePrompter(samContext: SamCliContext): QuickPickPrompter<CFNTemplate> {
     return createQuickPick(getTemplateChoices(samContext), {
         title: localize('AWS.samcli.deploy.template.prompt', 'Which SAM Template would you like to deploy to AWS?'),
+        buttons: createCommonButtons(samDeployDocUrl),
     })
 }
 
@@ -175,6 +176,7 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
             createRegionPrompter({
                 title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
                 defaultRegion: context.awsContext.getCredentialDefaultRegion(),
+                helpUri: samDeployDocUrl,
             }).transform(r => r.id)
         )
 
