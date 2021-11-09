@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>NoNameShadowing:BucketUtilsTest.kt$BucketUtilsTest${ it.status(BucketVersioningStatus.ENABLED) }</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -17,7 +17,6 @@ repositories {
 
 plugins {
     id("toolkit-kotlin-conventions")
-    id("toolkit-detekt")
     id("toolkit-testing")
 }
 

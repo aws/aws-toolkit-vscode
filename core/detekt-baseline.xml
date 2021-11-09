@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>AbsentOrWrongFileLicense:ExceptionUtils.kt$software.aws.toolkits.core.utils.ExceptionUtils.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>

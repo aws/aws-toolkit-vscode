@@ -5,4 +5,5 @@ package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import com.jetbrains.rdclient.daemon.util.backendAttributeId
 
+@Suppress("UnsafeCallOnNullableType")
 fun com.intellij.openapi.editor.markup.RangeHighlighter.attributeId() = this.backendAttributeId!!

@@ -8,7 +8,6 @@ plugins {
     id("toolkit-intellij-subplugin")
     id("toolkit-testing")
     id("toolkit-integration-testing")
-    id("toolkit-detekt")
 }
 
 dependencies {

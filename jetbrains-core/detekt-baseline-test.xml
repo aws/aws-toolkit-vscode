@@ -1,0 +1,139 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>AbsentOrWrongFileLicense:DeleteBucketTest.kt$software.aws.toolkits.jetbrains.services.s3.DeleteBucketTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:EventsFetcherTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsFetcherTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:EventsTableTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsTableTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:Mocks.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.Mocks.kt</ID>
+    <ID>AbsentOrWrongFileLicense:OutputsTableViewTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.OutputsTableViewTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:PageButtonsTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.PageButtonsTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3ServiceNodeTest.kt$software.aws.toolkits.jetbrains.services.s3.S3ServiceNodeTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3VirtualBucketTest.kt$software.aws.toolkits.jetbrains.services.s3.S3VirtualBucketTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:UpdaterTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.UpdaterTest.kt</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_fail_autodetectBadSam_andManuallySetToBadSam()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectBadSam()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectValidSam()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_changedTelemetry()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_noOp()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_setSamEmpty()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_setValidSam()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test(expected = ConfigurationException::class) fun validate_fail_setBadSam()</ID>
+    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_canHandleMultiLineEvents()</ID>
+    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_colorCodesAreIgnored()</ID>
+    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_handlesDifferentLevels()</ID>
+    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_unexpectedStringIsHandled()</ID>
+    <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_emptyRemote()</ID>
+    <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_emptyTemplate()</ID>
+    <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_withOverlap()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateCanDeployTest.kt$CloudFormationTemplateCanDeployTest$@Test fun deployable_validatableEnough()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateCanDeployTest.kt$CloudFormationTemplateCanDeployTest$@Test fun nonDeployable_emptyFile()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateCanDeployTest.kt$CloudFormationTemplateCanDeployTest$@Test fun nonDeployable_incompleteResources()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listFunctions_lambdaFunction()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listFunctions_missingType()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listFunctions_serverlessAndLambdaFunctions()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listFunctions_serverlessFunction()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listResourcesByType_simpleTable()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listResources_fromFile()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listResources_nullType()</ID>
+    <ID>FunctionNaming:CreateBucketActionDialogTest.kt$CreateBucketActionDialogTest$@Test fun validateBucketName_emptyBucketName()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun InvalidNullArgs()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun InvalidNullArgs_Element()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun InvalidNullArgs_HandlerResolver()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun NonSamFunction()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun NonSamFunction_Substring()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun SamFunction()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun bothFilesOpened_bothFilesExists()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun configFileOpened_onlyConfigExists()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun confirmConfigFileCreated_bothFilesDoNotExist()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun credentialFileOpened_onlyCredentialsExists()</ID>
+    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withNamespace()</ID>
+    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withoutNamespace()</ID>
+    <ID>FunctionNaming:DeleteWaiterTest.kt$DeleteWaiterTest$@Test fun deleteSuccessful_stackNotExist()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_Duplicate()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_InvalidChars()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_TooLong()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameterAllTypesValid_hasValues()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameterAllTypesValid_noValues()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberConstraintsInvalid()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberInvalid()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberTooBig()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberTooSmall()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringConstraintsInvalid()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringFailsRegex()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringRegex()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringTooLong()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringTooShort()</ID>
+    <ID>FunctionNaming:DeploySettingsTest.kt$DeploySettingsTest$@Test fun relativeSamPath_null()</ID>
+    <ID>FunctionNaming:DeploySettingsTest.kt$DeploySettingsTest$@Test fun relativeSamPath_root()</ID>
+    <ID>FunctionNaming:FileInfoCacheTest.kt$FileInfoCacheTest$@Test fun emptyCache_SingleExecutableRequest()</ID>
+    <ID>FunctionNaming:FileInfoCacheTest.kt$FileInfoCacheTest$@Test fun multipleThreads_SameSamPath()</ID>
+    <ID>FunctionNaming:FileInfoCacheTest.kt$FileInfoCacheTest$@Test fun nonEmptyCache_SingleExecutableRequest()</ID>
+    <ID>FunctionNaming:RetrieveSavedQueryDialogTest.kt$RetrieveSavedQueryDialogTest$@Test fun populateParentEditor_noLogGroups()</ID>
+    <ID>FunctionNaming:RetrieveSavedQueryDialogTest.kt$RetrieveSavedQueryDialogTest$@Test fun populateParentEditor_withLogGroups()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getCodeUri_multipleUris()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getCodeUri_noUri()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getCodeUri_samAndNotSam()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getCodeUri_singleUri()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getTemplateFromDirectory_singleYaml()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getVersion_Valid_exitNonZero()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getVersion_badPath()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test(expected = java.lang.AssertionError::class) fun getTemplateFromDirectory_multipleYaml()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test(expected = java.lang.AssertionError::class) fun getTemplateFromDirectory_noYaml()</ID>
+    <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_InvalidOption()</ID>
+    <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_RandomError()</ID>
+    <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun successExecution_EmptyOutput()</ID>
+    <ID>NoNameShadowing:CopyUrlActionTest.kt$CopyUrlActionTest${ // Actual format is implementation detail below S3VirtualBucket URL("https://s3/${it.getArgument&lt;String&gt;(0)}?version=${it.getArgument&lt;String&gt;(1)}") }</ID>
+    <ID>NoNameShadowing:CreateLambdaTest.kt$CreateLambdaTest${ it.functionArn("arn of ${details.name}") }</ID>
+    <ID>NoNameShadowing:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest${ it.getArgument&lt;File&gt;(0).writeText("hello") }</ID>
+    <ID>NoNameShadowing:CreateServiceRoleDialogTest.kt$CreateServiceRoleDialogTest${ it.roleName(name).arn("arn") }</ID>
+    <ID>NoNameShadowing:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest${ it.message.contains(message("serverless.application.deploy.validation.new.stack.name.invalid")) }</ID>
+    <ID>NoNameShadowing:DownloadObjectActionTest.kt$DownloadObjectActionTest${ it.key == key }</ID>
+    <ID>NoNameShadowing:DownloadObjectActionTest.kt$DownloadObjectActionTest${ it.write(content) }</ID>
+    <ID>NoNameShadowing:EcsExecUtilsTest.kt$EcsExecUtilsTest${ it.sessionId(sessionId) it.tokenValue(token) it.streamUrl(streamUrl) }</ID>
+    <ID>NoNameShadowing:MockAwsConnectionManager.kt${ manager.changeCredentialProviderAndWait(it) }</ID>
+    <ID>NoNameShadowing:S3ViewerPanelTest.kt$S3ViewerPanelTest${ it.prefix("folder/") }</ID>
+    <ID>NoNameShadowing:S3VirtualBucketTest.kt$S3VirtualBucketTest${ @Suppress("UNCHECKED_CAST") val transformer = it.arguments[1] as ResponseTransformer&lt;GetObjectResponse, GetObjectResponse&gt; val data = "hello".toByteArray() transformer.transform( GetObjectResponse.builder() .eTag("1111") .lastModified(Instant.parse("1995-10-23T10:12:35Z")) .contentLength(data.size.toLong()) .build(), AbortableInputStream.create(data.inputStream()) ) }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultError&gt;(3).invoke(searchError) latch.countDown() }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned&gt;(1).invoke(searchResults) latch.countDown() }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned&gt;(1).invoke(searchResultsPart1) it.getArgument&lt;OnSearchResultError&gt;(2).invoke(searchError) latch.countDown() }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned&gt;(1).invoke(searchResultsPart1) it.getArgument&lt;OnSearchResultReturned&gt;(1).invoke(searchResultsPart2) latch.countDown() }</ID>
+    <ID>NoNameShadowing:SchemaSearchDialogTest.kt$SchemaSearchDialogTest${ it.getArgument&lt;OnSearchResultReturned&gt;(2).invoke(searchResults) latch.countDown() }</ID>
+    <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val nonEmptyMessage = "Second call on the same page must not return anything"</ID>
+    <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>
+    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ClearableLazy$_value!!</ID>
+    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$PsiManager.getInstance(project).findFile(file)!!</ID>
+    <ID>UnsafeCallOnNullableType:CodeInsightTestFixtureRule.kt$ref!!</ID>
+    <ID>UnsafeCallOnNullableType:CredentialManagerTest.kt$CredentialManagerTest.TestCredentialProviderFactory$credentialsMapping.remove(providerId)!!</ID>
+    <ID>UnsafeCallOnNullableType:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$VfsUtil.findFileByIoFile(dir.writeChild("path.yaml", byteArrayOf()).toFile(), true)!!</ID>
+    <ID>UnsafeCallOnNullableType:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest.TestParameter$getOptionalScalarProperty(key)!!</ID>
+    <ID>UnsafeCallOnNullableType:EcsCloudDebugRunConfigurationTest.kt$EcsCloudDebugRunConfigurationTest$state!!</ID>
+    <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$infoProvider.evaluate(tempFile.absolutePath).blockingGet(0)!!</ID>
+    <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$pathPromise.blockingGet(0)!!</ID>
+    <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$pathTempFile1Promise.blockingGet(0)!!</ID>
+    <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$pathTempFile2Promise.blockingGet(0)!!</ID>
+    <ID>UnsafeCallOnNullableType:FileInfoCacheTest.kt$FileInfoCacheTest$result.blockingGet(0)!!</ID>
+    <ID>UnsafeCallOnNullableType:JavaTestUtils.kt$LocalFileSystem.getInstance().refreshAndFindFileByPath(jdkHome)!!</ID>
+    <ID>UnsafeCallOnNullableType:JavaTestUtils.kt$SdkConfigurationUtil.setupSdk(emptyArray(), jdkHomeDir, JavaSdk.getInstance(), false, null, jdkName)!!</ID>
+    <ID>UnsafeCallOnNullableType:JavaTestUtils.kt$psiFile.classes[0].allMethods[0].body!!</ID>
+    <ID>UnsafeCallOnNullableType:LambdaRunLineMarkerContributorTest.kt$LambdaRunLineMarkerContributorTest$it!!</ID>
+    <ID>UnsafeCallOnNullableType:LocalLambdaRunConfigurationTest.kt$LocalLambdaRunConfigurationTest$PsiDocumentManager.getInstance(projectRule.project).getDocument(eventFile)!!</ID>
+    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheRule$connectionManager.selectedCredentialIdentifier!!</ID>
+    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheRule$connectionManager.selectedRegion!!</ID>
+    <ID>UnsafeCallOnNullableType:ProfileCredentialProviderFactoryTest.kt$ProfileCredentialProviderFactoryTest$LocalFileSystem.getInstance().findFileByIoFile(profileFile)!!</ID>
+    <ID>UnsafeCallOnNullableType:ProfileCredentialProviderFactoryTest.kt$ProfileCredentialProviderFactoryTest$LocalFileSystem.getInstance().refreshAndFindFileByIoFile(this)!!</ID>
+    <ID>UnsafeCallOnNullableType:PythonCodeInsightTestFixtureRule.kt$PythonCodeInsightTestFixtureRule$newFixture.tempDirFixture.getFile(".")!!</ID>
+    <ID>UnsafeCallOnNullableType:PythonLambdaBuilderTest.kt$PythonLambdaBuilderTest$psiFile.findTopLevelFunction("handle")!!</ID>
+    <ID>UnsafeCallOnNullableType:PythonLambdaHandlerResolverTest.kt$PythonLambdaHandlerResolverTest$Runtime.PYTHON3_6.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) }!!</ID>
+    <ID>UnsafeCallOnNullableType:PythonLambdaHandlerResolverTest.kt$PythonLambdaHandlerResolverTest$pyElement.identifyingElement!!</ID>
+    <ID>UnsafeCallOnNullableType:RemoteLambdaRunConfigurationTest.kt$RemoteLambdaRunConfigurationTest$PsiDocumentManager.getInstance(projectRule.project).getDocument(eventFile)!!</ID>
+    <ID>UnsafeCallOnNullableType:RunConfigTestUtils.kt$ExecutorRegistry.getInstance().getExecutorById(executorId)!!</ID>
+    <ID>UnsafeCallOnNullableType:RunConfigTestUtils.kt$ProgramRunner.getRunner(executorId, runConfiguration)!!</ID>
+    <ID>UnsafeCallOnNullableType:ScopeTest.kt$ScopeTest$ProjectManagerEx.getInstanceEx().openProject(projectFile, options)!!</ID>
+    <ID>UnsafeCallOnNullableType:TelemetryServiceTest.kt$TelemetryServiceTest$ProjectManagerEx.getInstanceEx().openProject(projectFile, options)!!</ID>
+    <ID>UnsafeCallOnNullableType:ToolkitToolWindowTest.kt$ToolkitToolWindowTest$it!!</ID>
+    <ID>UnsafeCallOnNullableType:ToolkitToolWindowTest.kt$ToolkitToolWindowTest$jbToolWindowManager.getToolWindow(sut.toolWindowId)?.contentManager!!</ID>
+    <ID>UnsafeCallOnNullableType:WrapLogsActionTest.kt$WrapLogsActionTest$model.columnInfos[1].getRenderer(null)!!</ID>
+    <ID>UnsafeCallOnNullableType:YamlCloudFormationTemplateTest.kt$YamlCloudFormationTemplateTest$resource!!</ID>
+  </CurrentIssues>
+</SmellBaseline>
