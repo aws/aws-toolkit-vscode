@@ -7,18 +7,11 @@ import { Branch, ControlSignal, StateMachineController, StepFunction } from './s
 import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { PrompterProvider, WizardForm } from './wizardForm'
+import { WizardControl, WizardError, WizardTrace } from './util'
 
 /** Checks if the user response is valid (i.e. not undefined and not a control signal) */
 export function isValidResponse<T>(response: PromptResult<T>): response is T {
-    return response !== undefined && !isWizardControl(response)
-}
-
-/** Control signals allow for alterations of the normal wizard flow */
-export class WizardControl {
-    constructor(public readonly type: ControlSignal) {}
-    public toString() {
-        return `[WIZARD_CONTROL] ${this.type}`
-    }
+    return response !== undefined && !(response instanceof WizardControl)
 }
 
 export const WIZARD_FORCE_EXIT = new WizardControl(ControlSignal.Exit)
@@ -26,21 +19,13 @@ export const WIZARD_EXIT = new WizardControl(ControlSignal.Exit)
 export const WIZARD_BACK = new WizardControl(ControlSignal.Back)
 export const WIZARD_RETRY = new WizardControl(ControlSignal.Retry)
 
-export function isWizardControl(obj: any): obj is WizardControl {
-    return obj instanceof WizardControl
-}
-
-function shouldDispose(signal: WizardControl): boolean {
-    return [WIZARD_EXIT, WIZARD_BACK, WIZARD_FORCE_EXIT].includes(signal)
-}
-
 export interface StepEstimator<T> {
     (response: PromptResult<T>): number
 }
 
 // Persistent storage that exists on a per-property basis, side effects may occur here
 export type StepCache = { picked?: any; stepOffset?: [number, number] } & { [key: string]: any }
-export type StateWithCache<TState, TProp> = TState & { stepCache: StepCache; estimator: StepEstimator<TProp> }
+export type StateWithCache<TState, TProp = any> = TState & { stepCache: StepCache; estimator: StepEstimator<TProp> }
 
 export interface WizardOptions<TState> {
     readonly initForm?: WizardForm<TState>
@@ -63,6 +48,15 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private _stepOffset: [number, number] = [0, 0]
     private exitStep?: StepFunction<TState>
     private running: boolean = false
+    private activePrompter?: Prompter<any>
+    private trace: WizardTrace<TState>
+
+    public constructor(private readonly options: WizardOptions<TState> = {}) {
+        this.stateController = new StateMachineController(options.initState as TState)
+        this._form = options.initForm ?? new WizardForm()
+        this.exitStep = options.exitPrompter !== undefined ? this.createExitStep(options.exitPrompter) : undefined
+        this.trace = new WizardTrace(options.initState ?? {})
+    }
 
     /**
      * The offset is applied to both the current step and total number of steps. Useful if the wizard is
@@ -106,15 +100,13 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return _.cloneDeep(this.options.initState)
     }
 
+    public get traceResult() {
+        return this.trace.build()
+    }
+
     private _estimator: ((state: TState) => number) | undefined
     public set parentEstimator(estimator: (state: TState) => number) {
         this._estimator = estimator
-    }
-
-    public constructor(private readonly options: WizardOptions<TState> = {}) {
-        this.stateController = new StateMachineController(options.initState as TState)
-        this._form = options.initForm ?? new WizardForm()
-        this.exitStep = options.exitPrompter !== undefined ? this.createExitStep(options.exitPrompter) : undefined
     }
 
     private assignSteps(): void {
@@ -133,8 +125,15 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             this.stateController.addStep(step)
         )
 
-        const outputState = await this.stateController.run()
+        const handleError = (error: Error) => {
+            throw new WizardError(error, this.trace)
+        }
+        const outputState = await this.stateController
+            .run()
+            .catch(handleError)
+            .finally(() => this.activePrompter?.dispose())
         this.running = false
+
         return outputState !== undefined ? this._form.applyDefaults(outputState, this.getAssigned()) : undefined
     }
 
@@ -157,14 +156,11 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
     private createExitStep(provider: NonNullable<WizardOptions<TState>['exitPrompter']>): StepFunction<TState> {
         return async state => {
-            const prompter = provider(state)
+            const prompter = (this.activePrompter = provider(state))
             prompter.setSteps(this.currentStep, this.totalSteps)
-            const response = await prompter.promptControl()
+            const reporter = this.trace.start('[[Exit]]', this.currentStep, this.totalSteps)
+            const response = await WizardTrace.instrumentPromise(reporter, prompter.promptControl())
             const didExit = response && [true, WIZARD_EXIT, WIZARD_FORCE_EXIT].includes(response)
-
-            if (didExit) {
-                prompter.dispose()
-            }
 
             return {
                 nextState: state,
@@ -182,7 +178,9 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
                 this._form.applyDefaults(state, this.getAssigned())
             )
             const impliedResponse = _.get(this.options.implicitState ?? {}, prop)
-            const response = await this.promptUser(stateWithCache, provider, impliedResponse)
+            const reporter = this.trace.start(prop, this.currentStep, this.totalSteps)
+            const prompt = this.promptUser(stateWithCache, provider, impliedResponse)
+            const response = await WizardTrace.instrumentPromise(reporter, prompt)
 
             if (response === WIZARD_EXIT && this.exitStep !== undefined) {
                 return {
@@ -194,7 +192,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             return {
                 nextState: isValidResponse(response) ? _.set(state, prop, response) : state,
                 nextSteps: this.resolveNextSteps(state),
-                controlSignal: isWizardControl(response) ? response.type : undefined,
+                controlSignal: response instanceof WizardControl ? response.type : undefined,
             }
         }
     }
@@ -225,7 +223,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         provider: PrompterProvider<TState, TProp, any>,
         impliedResponse?: TProp
     ): Promise<PromptResult<TProp>> {
-        const prompter = provider(state as StateWithCache<TState, TProp>)
+        const prompter = (this.activePrompter = provider(state as StateWithCache<TState, TProp>))
 
         this._stepOffset = state.stepCache.stepOffset ?? this._stepOffset
         state.stepCache.stepOffset = this._stepOffset
@@ -247,9 +245,6 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             state.stepCache.picked = prompter.recentItem
         } else {
             delete state.stepCache.stepOffset
-            if (this.currentStep === 1 && shouldDispose(answer)) {
-                prompter.dispose()
-            }
         }
 
         this._stepOffset = [

@@ -8,7 +8,8 @@ import * as nls from 'vscode-nls'
 import { documentationUrl } from '../constants'
 import { ext } from '../extensionGlobals'
 import { UnionPromise } from '../utilities/tsUtils'
-import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
+import { WizardControl } from '../wizards/util'
+import { WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
 import { Prompter, PromptResult } from './prompter'
 
 const localize = nls.loadMessageBundle()

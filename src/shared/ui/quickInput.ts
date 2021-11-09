@@ -18,9 +18,9 @@ interface Update {
 
 export abstract class QuickInputPrompter<T> extends Prompter<T> {
     protected disposables: vscode.Disposable[] = []
-    private updateCounter = 0
+    private updatesCounter = 0
     /** Updates to the UI that keep it in a busy (or potentially disabled) state. */
-    private pendingUpdates: Map<number, Update> = new Map()
+    private updates: Map<number, Update> = new Map()
     private onDidShowEmitter = new vscode.EventEmitter<void>()
     private onDidChangeBusyEmitter = new vscode.EventEmitter<boolean>()
     private onDidChangeEnablementEmitter = new vscode.EventEmitter<boolean>()
@@ -44,10 +44,6 @@ export abstract class QuickInputPrompter<T> extends Prompter<T> {
         }
     }
 
-    public get busy(): boolean {
-        return this.quickInput.busy
-    }
-
     private set enabled(state: boolean) {
         const prev = this.quickInput.enabled
         if (prev !== state) {
@@ -56,12 +52,12 @@ export abstract class QuickInputPrompter<T> extends Prompter<T> {
         }
     }
 
-    public get enabled(): boolean {
-        return this.quickInput.enabled
+    protected get pendingUpdates(): number {
+        return this.updates.size
     }
 
     public get pendingUpdate(): boolean {
-        return this.pendingUpdates.size > 0
+        return this.updates.size > 0
     }
 
     public setSteps(current: number, total: number) {
@@ -94,14 +90,14 @@ export abstract class QuickInputPrompter<T> extends Prompter<T> {
         this.busy = true
         this.enabled = !disableInput
 
-        const handle = this.updateCounter++
+        const handle = this.updatesCounter++
         const after = update.finally(() => {
-            this.pendingUpdates.delete(handle)
+            this.updates.delete(handle)
             this.busy = this.pendingUpdate
-            this.enabled = !Array.from(this.pendingUpdates.values()).some(u => u.disableInput)
+            this.enabled = !Array.from(this.updates.values()).some(u => u.disableInput)
         })
 
-        this.pendingUpdates.set(handle, { promise: after, disableInput })
+        this.updates.set(handle, { promise: after, disableInput })
         return after
     }
 

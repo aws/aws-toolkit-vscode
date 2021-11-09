@@ -180,6 +180,8 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
 
     /** Applies 'default' values to a state (see {@link ContextOptions.setDefault setDefault}) */
     public applyDefaults(state: TState, assigned: Set<string>): TState {
+        // TODO: optimize and cache results from this function
+        // All 'default' functions are assumed to be pure, so given a certain state we can safely cache the result
         const defaultState = _.cloneDeep(state)
 
         this.formData.forEach((opt, targetProp) => {

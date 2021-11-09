@@ -150,7 +150,6 @@ export interface S3BucketPrompterOptions {
     helpUri?: string | vscode.Uri
 }
 
-// TODO: rewrite as a form so the prompts can swap between QuickInput and InputBox for creating a new bucket
 export function createS3BucketPrompter(options: S3BucketPrompterOptions = {}): QuickPickPrompter<Bucket> {
     const resolvedOptions = {
         noBucketMessage: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
@@ -197,12 +196,22 @@ export function createS3BucketPrompter(options: S3BucketPrompterOptions = {}): Q
         noItemsFoundItem: resolvedOptions.noBucketMessage,
     })
 
+    // The below logic is bypassing the normal `prompter` control flow and manipulating it externally
+    // This is not the preferred way to implement actions from the 'filter box' item, though it works for now
     prompter.quickPick.onDidAccept(() => {
         const active = prompter.quickPick.activeItems[0]
         if (active && active.invalidSelection && active.detail?.includes(DOES_NOT_EXIST)) {
-            createNewBucket(region ?? 'us-east-1', active.description!).then(bucket => {
-                prompter.refreshItems()
+            const createBucket = createNewBucket(region ?? 'us-east-1', active.description!).then(bucket => {
+                if (bucket) {
+                    prompter.refreshItems().then(() => {
+                        prompter.quickPick.selectedItems = prompter.quickPick.items.filter(
+                            i => i.label === bucket?.name
+                        )
+                    })
+                }
+                return []
             })
+            prompter.loadItems(createBucket, true)
         }
     })
 

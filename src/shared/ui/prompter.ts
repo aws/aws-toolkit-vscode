@@ -4,7 +4,8 @@
  */
 
 import * as _ from 'lodash'
-import { isValidResponse, StepEstimator, WizardControl } from '../wizards/wizard'
+import { WizardControl } from '../wizards/util'
+import { isValidResponse, StepEstimator } from '../wizards/wizard'
 
 export type PromptResult<T> = T | WizardControl
 export type Transform<T, R = T> = (result: T) => R

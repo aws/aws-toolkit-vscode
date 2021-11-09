@@ -50,7 +50,7 @@ type QuickPickTesterMethods<T> = {
     hide(): void
     /**
      * Runs the given inputs and waits for the result or timeout.
-     * Can optionally pass in an expected return value.
+     * Can optionally pass in an expected return value which is deeply compared with the result.
      *
      * This **must** be called and awaited, otherwise errors will not be surfaced correctly.
      */
@@ -94,7 +94,8 @@ interface TestOptions {
 }
 
 const TEST_DEFAULTS: Required<TestOptions> = {
-    timeout: 5000,
+    /** Timeout per-action */
+    timeout: 1000,
 }
 
 /**
@@ -137,22 +138,7 @@ export function createQuickPickTester<T>(
 
                 const d = prompter.onDidChangeBusy(e => !e && (d.dispose(), r()))
             }),
-            // Currently needed since the placeholder item is not added until the next tick
-            new Promise(r => setImmediate(r)),
         ])
-    }
-
-    // 'activeItems' will change twice after applying a filter, but once after removing a filter
-    /* Waits until the filter has been applied to the picker */
-    async function whenAppliedFilter(filter: string): Promise<void> {
-        await new Promise<void>(r => {
-            const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
-        })
-        if (filter) {
-            await new Promise<void>(r => {
-                const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
-            })
-        }
     }
 
     /* Simulates the filtering of items. We do not have access to the picker's internal representation */
@@ -182,6 +168,16 @@ export function createQuickPickTester<T>(
             if (index !== -1) {
                 return (target = target.slice(0, index).concat(target.slice(index + 1)))
             }
+        })
+    }
+
+    /* Waits until the filter has been applied to the picker */
+    async function whenAppliedFilter(): Promise<void> {
+        await new Promise<void>(r => {
+            const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
+        })
+        await new Promise<void>(r => {
+            const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
         })
     }
 
@@ -286,10 +282,9 @@ export function createQuickPickTester<T>(
                 break
             }
             case 'setFilter': {
-                const filter = action[1][0] ?? ''
-                const promise = whenAppliedFilter(filter)
-                testPicker.value = filter
-                await promise
+                const filterApplied = whenAppliedFilter()
+                testPicker.value = action[1][0] ?? ''
+                await filterApplied
                 break
             }
             case 'hide': {
@@ -312,9 +307,10 @@ export function createQuickPickTester<T>(
     }
 
     async function result(expected?: PromptResult<T>): Promise<PromptResult<T>> {
-        const result = await Promise.race([prompter.promptControl(), sleep(resolvedOptions.timeout)])
+        const timeoutTime = resolvedOptions.timeout * (actions.length + 1)
+        const result = await Promise.race([prompter.promptControl(), sleep(timeoutTime)])
         if (result === undefined) {
-            const remaining = actions.map(a => a[0]).join(', ')
+            const remaining = actions.map(a => a[0]).join(', ') || 'None'
             throw new Error(`Timed out without executing all actions. Remaining actions: ${remaining}`)
         }
         if (errors.length > 0) {

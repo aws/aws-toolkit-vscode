@@ -13,6 +13,7 @@ import { Bucket, DefaultS3Client } from '../../../../shared/clients/s3Client'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 import { ext } from '../../../../shared/extensionGlobals'
 import { WIZARD_BACK } from '../../../../shared/wizards/wizard'
+import { sleep } from '../../../../shared/utilities/promiseUtilities'
 
 const mochaIt = it
 
@@ -128,25 +129,22 @@ describe('createS3BucketPrompter', function () {
 
         tester.setFilter('my-bucket')
         // TODO: use fake timer? Need to do this since the filter box is debounced
-        tester.addCallback(() => new Promise(r => setTimeout(r, 300)))
+        tester.addCallback(() => sleep(300))
         tester.acceptItem('Enter bucket name: ')
         const result = await tester.result()
         // TODO: we should fetch the real bucket and return rather than just the name
         assert.strictEqual((result as Bucket).name, this.scenario.buckets[0].name)
     })
 
-    it('can create buckets', {}, async function () {
+    it('can create buckets from the filter box', {}, async function () {
         if (vscode.version.startsWith('1.44')) {
             return
         }
 
         tester.setFilter('newbucket')
-        tester.addCallback(() => new Promise(r => setTimeout(r, 300)))
+        tester.addCallback(() => sleep(300))
         tester.acceptItem('Enter bucket name: ')
-        tester.setFilter(undefined)
-        tester.assertItems(['newbucket'])
-        tester.acceptItem('newbucket')
-        await tester.result()
+        await tester.result(createBucket('newbucket'))
     })
 
     // TODO: test settings

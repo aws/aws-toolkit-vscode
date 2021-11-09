@@ -5,14 +5,8 @@
 
 import * as assert from 'assert'
 import { Prompter, PrompterConfiguration, PromptResult } from '../../../shared/ui/prompter'
-import {
-    isWizardControl,
-    StateWithCache,
-    StepEstimator,
-    Wizard,
-    WIZARD_BACK,
-    WIZARD_EXIT,
-} from '../../../shared/wizards/wizard'
+import { WizardControl } from '../../../shared/wizards/util'
+import { StateWithCache, StepEstimator, Wizard, WIZARD_BACK, WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { BoundState } from '../../../shared/wizards/wizardForm'
 
 interface TestWizardForm {
@@ -38,7 +32,7 @@ interface AssertStepMethods {
 
 type StepTuple = [current: number, total: number]
 type StateResponse<T, S> = (state: StateWithCache<S, T>) => PromptResult<T>
-type TestResponse<T, S> = PromptResult<T> | StateResponse<T, S>
+type TestResponse<T, S> = Promise<PromptResult<T>> | PromptResult<T> | StateResponse<T, S>
 
 function makeGreen(s: string): string {
     return `\u001b[32m${s}\u001b[0m`
@@ -63,7 +57,9 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     private readonly acceptedSteps: [current: number, total: number][] = []
     private readonly acceptedEstimators: StepEstimator<T>[] = []
     private _totalSteps: number = 1
+    private _disposed: boolean = false
     private _lastResponse?: PromptResult<T>
+
     private promptCount: number = 0
     private name: string = 'Test Prompter'
 
@@ -96,8 +92,8 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         if (this.responses.length === this.promptCount) {
             this.fail('Ran out of responses')
         }
-        const resp = this.convertFunctionResponse(this.promptCount++)
-        this._lastResponse = !isWizardControl(resp) ? resp : this._lastResponse
+        const resp = await this.convertFunctionResponse(this.promptCount++)
+        this._lastResponse = !(resp instanceof WizardControl) ? resp : this._lastResponse
 
         return resp
     }
@@ -119,6 +115,9 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this.acceptedEstimators.push(estimator)
     }
 
+    public override dispose(): void {
+        this._disposed = true
+    }
     //----------------------------Test helper methods go below this line----------------------------//
 
     public acceptState(state: StateWithCache<S, T>): this {
@@ -143,7 +142,7 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this._totalSteps = total
     }
 
-    private convertFunctionResponse(count: number = this.promptCount): PromptResult<T> {
+    private convertFunctionResponse(count: number = this.promptCount): PromptResult<T> | Promise<PromptResult<T>> {
         let response = this.responses[count]
         if (typeof response === 'function') {
             if (this.acceptedStates[count] === undefined) {
@@ -206,6 +205,18 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     public assertCallCount(count: number): void {
         assert.strictEqual(this.promptCount, count, this.makeErrorMessage('Called an unexpected number of times'))
     }
+
+    public assertDisposed(): void {
+        if (!this._disposed) {
+            this.fail('Was not disposed')
+        }
+    }
+
+    public assertNotDisposed(): void {
+        if (this._disposed) {
+            this.fail('Was disposed')
+        }
+    }
 }
 
 // We only need to test execution of prompters provided by the wizard form
@@ -230,6 +241,13 @@ describe('Wizard', function () {
         assert.strictEqual((await wizard.run())?.prop1, 'hello')
     })
 
+    it('throws if trying to access the cache while running', async function () {
+        wizard.form.prop1.bindPrompter(() => new TestPrompter<string>(Promise.resolve('test')))
+        wizard.run()
+        assert.throws(() => wizard.cache)
+        assert.throws(() => (wizard.cache = {}))
+    })
+
     it('processes exit signal', async function () {
         wizard.form.prop1.bindPrompter(() => helloPrompter)
         wizard.form.prop3.bindPrompter(() => new TestPrompter<string>(WIZARD_EXIT).setName('Exit'))
@@ -238,18 +256,12 @@ describe('Wizard', function () {
         helloPrompter.assertCallCount(1)
     })
 
-    it('user exit prompter if provided', async function () {
-        const checkForHello = (state: TestWizardForm) => state.prop1 !== 'hello'
-        const exitPrompter = new TestPrompter(checkForHello, true).setName('Exit Dialog')
-        const exitSignalPrompter = new TestPrompter<string>(WIZARD_EXIT, WIZARD_EXIT).setName('Exit Signal')
-        wizard = new Wizard({ exitPrompter: state => exitPrompter.acceptState(state as any) })
-        wizard.form.prop1.bindPrompter(() => helloPrompter)
-        wizard.form.prop3.bindPrompter(() => exitSignalPrompter)
+    it('disposes of the last prompter if exiting the wizard', async function () {
+        const exitPrompter = new TestPrompter<string>(WIZARD_BACK).setName('Exit')
+        wizard.form.prop1.bindPrompter(() => exitPrompter)
 
         assert.strictEqual(await wizard.run(), undefined)
-        helloPrompter.assertCallCount(1)
-        exitPrompter.assertCallCount(2)
-        exitSignalPrompter.assertCallCount(2)
+        exitPrompter.assertDisposed()
     })
 
     // test is mostly redundant (state controller handles this logic) but good to have
@@ -265,16 +277,6 @@ describe('Wizard', function () {
     })
 
     it('applies step offset', async function () {
-        const testPrompter = new TestPrompter('1')
-        wizard.stepOffset = [4, 5]
-
-        wizard.form.prop1.bindPrompter(() => testPrompter)
-
-        assert.deepStrictEqual(await wizard.run(), { prop1: '1' })
-        testPrompter.assertSteps(5, 6).onFirstCall()
-    })
-
-    it('tells the UI element to dispose if exiting the wizard', async function () {
         const testPrompter = new TestPrompter('1')
         wizard.stepOffset = [4, 5]
 
@@ -317,7 +319,7 @@ describe('Wizard', function () {
     it('does not apply control values to state when going back', async function () {
         const noWizardControl = (state: StateWithCache<BoundState<TestWizardForm, []>, string>) => {
             assert.strictEqual(
-                isWizardControl(state.prop2),
+                (state.prop2 as any) instanceof WizardControl,
                 false,
                 'Wizard flow control should not appear in wizard state'
             )
@@ -331,6 +333,32 @@ describe('Wizard', function () {
         wizard.form.prop2.bindPrompter(() => testPrompter2)
 
         assert.deepStrictEqual(await wizard.run(), { prop1: 'good', prop2: 22 })
+    })
+
+    describe('exitPrompter', function () {
+        let exitPrompter: TestPrompter<boolean>
+        let exitSignalPrompter: TestPrompter<string>
+
+        beforeEach(function () {
+            const checkForHello = (state: TestWizardForm) => state.prop1 !== 'hello'
+            exitPrompter = new TestPrompter(checkForHello, true).setName('Exit Dialog')
+            exitSignalPrompter = new TestPrompter<string>(WIZARD_EXIT, WIZARD_EXIT).setName('Exit Signal')
+            wizard = new Wizard({ exitPrompter: state => exitPrompter.acceptState(state as any) })
+            wizard.form.prop1.bindPrompter(() => helloPrompter)
+            wizard.form.prop3.bindPrompter(() => exitSignalPrompter)
+        })
+
+        it('user exit prompter if provided', async function () {
+            assert.strictEqual(await wizard.run(), undefined)
+            helloPrompter.assertCallCount(1)
+            exitPrompter.assertCallCount(2)
+            exitSignalPrompter.assertCallCount(2)
+        })
+
+        it('disposes of exit prompter on exit', async function () {
+            assert.strictEqual(await wizard.run(), undefined)
+            exitPrompter.assertDisposed()
+        })
     })
 
     describe('prompter state', function () {
