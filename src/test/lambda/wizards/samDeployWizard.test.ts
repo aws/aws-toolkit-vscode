@@ -59,10 +59,7 @@ describe('SamDeployWizard', async function () {
     })
 
     it('skips region if assigned', function () {
-        // TODO: hook into wizard init state?
-        // Ideally args -> `initState` shouldn't involve much logic, though nice to test it
-        // tester = createWizardTester(new SamDeployWizard(extContext, 'region'))
-        tester.region.applyInput('region')
+        tester = createWizardTester(new SamDeployWizard(extContext, 'region'))
         tester.region.assertDoesNotShow()
     })
 

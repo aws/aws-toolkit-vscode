@@ -4,10 +4,12 @@
  */
 
 import { localize } from '../../utilities/vsCodeUtils'
-import { createQuickPick } from '../pickerPrompter'
+import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
 import { Prompter, PrompterConfiguration, PromptResult } from '../prompter'
 
 class ExitPrompter extends Prompter<boolean> {
+    private prompter: QuickPickPrompter<boolean>
+
     public get recentItem(): any {
         return undefined
     }
@@ -16,14 +18,8 @@ class ExitPrompter extends Prompter<boolean> {
 
     constructor() {
         super()
-    }
-    protected async promptUser(config: PrompterConfiguration): Promise<PromptResult<boolean>> {
-        // Exit was initiated from the first step, so the prompt would be step 2
-        if (config.steps?.current === 2) {
-            return true
-        }
 
-        const prompter = createQuickPick(
+        this.prompter = createQuickPick(
             [
                 { label: localize('AWS.generic.response.no', 'No'), data: false },
                 { label: localize('AWS.generic.response.yes', 'Yes'), data: true },
@@ -32,8 +28,20 @@ class ExitPrompter extends Prompter<boolean> {
                 title: localize('AWS.wizards.exit.title', 'Exit wizard?'),
             }
         )
+    }
 
-        return await prompter.promptControl()
+    public override dispose() {
+        this.prompter.dispose()
+        super.dispose()
+    }
+
+    protected async promptUser(config: PrompterConfiguration): Promise<PromptResult<boolean>> {
+        // Exit was initiated from the first step, so the prompt would be step 2
+        if (config.steps?.current === 2) {
+            return true
+        }
+
+        return await this.prompter.promptControl()
     }
 }
 
