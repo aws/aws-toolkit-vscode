@@ -362,9 +362,21 @@ describe('Wizard', function () {
             assert.throws(() => (wizard.cache = {}))
         })
 
+        // Expected behavior
+        //
+        // First run: prop1 -> prop3
+        // Cache now contains "hello" for prop1 and "goodbye" for prop3
+        //
+        // Second run: prop3 -> prop1 -> prop3
+        // The `Goodbye` prompter receives "goodbye" as a recent item, then presses back because "hello" was the last response
+        // `Hello` prompter responds "hello"
+        // `Goodbye` prompter uses the `Hello` prompter's response as a result
+        //
+        // This test is meant to be somewhat contrived and is more of a smoke test than anything else
         it('can use cache to reconstruct internal state, showing the last step', async function () {
-            const reuseState = (state: BoundState<TestWizardForm, []>) => state.prop1 ?? 'unknown'
-            const testPrompter = new TestPrompter('goodbye', WIZARD_BACK, reuseState).setName('Goodbye')
+            const reuseState = (back: boolean) => (state: BoundState<TestWizardForm, []>) =>
+                state.prop1 === 'hello' ? (back ? WIZARD_BACK : 'hello') : 'unknown'
+            const testPrompter = new TestPrompter('goodbye', reuseState(true), reuseState(false)).setName('Goodbye')
 
             wizard.form.prop1.bindPrompter(() => helloPrompter)
             wizard.form.prop3.bindPrompter(state => testPrompter.acceptState(state))
@@ -373,6 +385,7 @@ describe('Wizard', function () {
             const cache = wizard.cache
 
             wizard = new Wizard()
+            wizard.stepOffset = [1, 1] // Covers the 'nested wizard' case
             wizard.form.prop1.bindPrompter(() => helloPrompter)
             wizard.form.prop3.bindPrompter(state => testPrompter.acceptState(state))
             wizard.cache = cache
