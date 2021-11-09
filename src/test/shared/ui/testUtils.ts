@@ -8,6 +8,7 @@ import { AssertionError, deepStrictEqual } from 'assert'
 import { QuickInputButton } from '../../../shared/ui/buttons'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../../shared/ui/prompter'
+import { sleep } from '../../../shared/utilities/promiseUtilities'
 import { exposeEmitters } from '../vscode/testUtils'
 
 type QuickPickTesterMethods<T> = {
@@ -186,7 +187,7 @@ export function createQuickPickTester<T>(
 
     function throwErrorWithTrace(trace: AssertionError, message: string, actual?: any, expected?: any) {
         errors.push(Object.assign(trace, { message, actual, expected }))
-        testPicker.hide()
+        testPicker.dispose()
     }
 
     /* Executes a test action. Immediately hides the picker on any error */
@@ -311,7 +312,11 @@ export function createQuickPickTester<T>(
     }
 
     async function result(expected?: PromptResult<T>): Promise<PromptResult<T>> {
-        const result = await prompter.promptControl()
+        const result = await Promise.race([prompter.promptControl(), sleep(resolvedOptions.timeout)])
+        if (result === undefined) {
+            const remaining = actions.map(a => a[0]).join(', ')
+            throw new Error(`Timed out without executing all actions. Remaining actions: ${remaining}`)
+        }
         if (errors.length > 0) {
             // TODO: combine errors into a single one
             throw errors[0]

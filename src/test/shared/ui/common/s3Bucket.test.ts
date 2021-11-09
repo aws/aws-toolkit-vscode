@@ -123,7 +123,7 @@ describe('createS3BucketPrompter', function () {
     // we need some better mocking constructs to make this not so tedious
     it('allows user to input their own bucket name', { buckets: [createBucket('my-bucket')] }, async function () {
         if (vscode.version.startsWith('1.44')) {
-            this.skip()
+            return
         }
 
         tester.setFilter('my-bucket')
@@ -137,7 +137,7 @@ describe('createS3BucketPrompter', function () {
 
     it('can create buckets', {}, async function () {
         if (vscode.version.startsWith('1.44')) {
-            this.skip()
+            return
         }
 
         tester.setFilter('newbucket')
