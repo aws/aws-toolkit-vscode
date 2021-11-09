@@ -14,7 +14,7 @@ import {
 } from '../../../apprunner/wizards/codeRepositoryWizard'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
-import { APPRUNNER_CONNECTION_HELP_URL } from '../../../shared/constants'
+import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
 import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtils'
 import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
 
@@ -23,7 +23,6 @@ describe('AppRunnerCodeRepositoryWizard', function () {
     let repoTester: Omit<WizardTester<AppRunner.CodeRepository>, 'printInfo' | 'runTester'>
 
     beforeEach(function () {
-        // apprunner client and git api will never be called
         const wizard = new AppRunnerCodeRepositoryWizard({} as any, {} as any)
         tester = createWizardTester(wizard)
         repoTester = tester.CodeRepository
@@ -146,6 +145,6 @@ describe('createConnectionPrompter', function () {
         tester.acceptItem('No connections found')
         tester.hide()
         await tester.result(WIZARD_EXIT)
-        assert.strictEqual(openExternal.firstCall.args[0].toString(), APPRUNNER_CONNECTION_HELP_URL)
+        assert.strictEqual(openExternal.firstCall.args[0].toString(), apprunnerConnectionHelpUrl)
     })
 })

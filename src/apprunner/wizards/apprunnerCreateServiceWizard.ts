@@ -16,6 +16,7 @@ import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
 import { BasicExitPrompter } from '../../shared/ui/common/basicExit'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
+import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -65,7 +66,7 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
 
     return picker.createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectInstanceConfig.title', 'Select instance configuration'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
     })
 }
 
@@ -89,7 +90,7 @@ function createSourcePrompter(
 
     return picker.createQuickPick([ecrPath, repositoryPath], {
         title: localize('AWS.apprunner.createService.sourceType.title', 'Select a source code location type'),
-        buttons: [autoDeployButton, ...createCommonButtons()],
+        buttons: [autoDeployButton, ...createCommonButtons(apprunnerCreateServiceDocsUrl)],
     })
 }
 
@@ -109,7 +110,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         const iamClient = ext.toolkitClientBuilder.createIamClient(region)
         const apprunnerClient = ext.toolkitClientBuilder.createAppRunnerClient(region)
         const autoDeployButton = makeDeploymentButton()
-        const gitExtension = new GitExtension()
+        const gitExtension = GitExtension.instance
         const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(apprunnerClient, gitExtension, autoDeployButton)
         const imageRepositoryWizard = new AppRunnerImageRepositoryWizard(ecrClient, iamClient, autoDeployButton)
 
@@ -130,7 +131,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             input.createInputBox({
                 title: localize('AWS.apprunner.createService.name.title', 'Name your service'),
                 validateInput: validateName, // TODO: we can check if names match any already made services
-                buttons: createCommonButtons(),
+                buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
             })
         )
 

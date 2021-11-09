@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { QuickInputToggleButton } from '../../shared/ui/buttons'
-import { APPRUNNER_PRICING_URL, extensionSettingsPrefix } from '../../shared/constants'
+import { apprunnerPricingUrl, extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
@@ -41,7 +41,7 @@ async function showDeploymentCostNotification(): Promise<void> {
         )
         const viewPricing = localize('aws.apprunner.createService.priceNotice.view', 'View Pricing')
         const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
-        const pricingUri = vscode.Uri.parse(APPRUNNER_PRICING_URL)
+        const pricingUri = vscode.Uri.parse(apprunnerPricingUrl)
 
         vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(async button => {
             if (button === viewPricing) {

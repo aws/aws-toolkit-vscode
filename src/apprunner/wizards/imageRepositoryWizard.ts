@@ -17,6 +17,7 @@ import { IamClient } from '../../shared/clients/iamClient'
 import { createRolePrompter } from '../../shared/ui/common/roles'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { createEcrPrompter } from '../../shared/ui/common/ecrRepository'
+import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -66,7 +67,7 @@ function createPortPrompter(): Prompter<string> {
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
     })
 }
 
@@ -91,7 +92,7 @@ function createImageRepositorySubForm(
 
     form.ImageConfiguration.Port.bindPrompter(() => createPortPrompter())
     form.ImageConfiguration.RuntimeEnvironmentVariables.bindPrompter(() =>
-        createVariablesPrompter(createCommonButtons())
+        createVariablesPrompter(createCommonButtons(apprunnerCreateServiceDocsUrl))
     )
 
     return subform

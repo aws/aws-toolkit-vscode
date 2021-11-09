@@ -129,6 +129,32 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
     )
 }
 
+async function activateCodeLensRegistry(context: ExtContext) {
+    try {
+        const registry = new CodelensRootRegistry()
+        ext.codelensRootRegistry = registry
+        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
+        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
+        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
+        await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
+        await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
+    } catch (e) {
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.codelens.failToInitializeCode',
+                'Failed to activate Lambda handler {0}',
+                getIdeProperties().codelenses
+            )
+        )
+        getLogger().error('Failed to activate codelens registry', e)
+        // This prevents us from breaking for any reason later if it fails to load. Since
+        // Noop watcher is always empty, we will get back empty arrays with no issues.
+        ext.codelensRootRegistry = new NoopWatcher() as unknown as CodelensRootRegistry
+    }
+    context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
+}
+
 async function activateCodeLensProviders(
     context: ExtContext,
     configuration: SettingsConfiguration,
@@ -141,6 +167,10 @@ async function activateCodeLensProviders(
     const javaCodeLensProvider = await codelensUtils.makeJavaCodeLensProvider(configuration)
     const csCodeLensProvider = await codelensUtils.makeCSharpCodeLensProvider(configuration)
     const goCodeLensProvider = await codelensUtils.makeGoCodeLensProvider(configuration)
+
+    // Ideally we should not need to `await` this Promise, but CodeLens providers are currently not implementing
+    // the event to notify on when their results change.
+    await activateCodeLensRegistry(context)
 
     const supportedLanguages: {
         [language: string]: codelensUtils.OverridableCodeLensProvider
@@ -218,32 +248,6 @@ async function activateCodeLensProviders(
             codelensUtils.invokeCodeLensCommandPalette(document, lenses)
         })
     )
-
-    try {
-        const registry = new CodelensRootRegistry()
-
-        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
-        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
-        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
-        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
-
-        ext.codelensRootRegistry = registry
-    } catch (e) {
-        vscode.window.showErrorMessage(
-            localize(
-                'AWS.codelens.failToInitializeCode',
-                'Failed to activate Lambda handler {0}',
-                getIdeProperties().codelenses
-            )
-        )
-        getLogger().error('Failed to activate codelens registry', e)
-        // This prevents us from breaking for any reason later if it fails to load. Since
-        // Noop watcher is always empty, we will get back empty arrays with no issues.
-        ext.codelensRootRegistry = new NoopWatcher() as unknown as CodelensRootRegistry
-    }
-    context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
 
     return disposables
 }
