@@ -10,7 +10,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ec2.Ec2Client
 import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.ecs.model.DeploymentRolloutState
@@ -21,7 +20,6 @@ import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.iam.model.PolicyEvaluationDecisionType
 import software.aws.toolkits.core.ConnectionSettings
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
@@ -234,18 +232,14 @@ object EcsExecUtils {
         val client = connection.awsClient<EcsClient>()
         val path = SsmPlugin.getOrInstallTool(project).path.toAbsolutePath().toString()
 
-        val (containerRuntimeId, session) = runUnderProgressIfNeeded(project, message("ecs.execute_command_call_service"), cancelable = false) {
-            val runtimeId = client.getContainerRuntimeId(container.service.clusterArn(), task, container.containerDefinition.name())
-
-            val session = client.executeCommand {
+        val session = runUnderProgressIfNeeded(project, message("ecs.execute_command_call_service"), cancelable = false) {
+            client.executeCommand {
                 it.cluster(container.service.clusterArn())
                 it.task(task)
                 it.container(container.containerDefinition.name())
                 it.interactive(true)
                 it.command(command)
             }
-
-            runtimeId to session
         }
 
         return GeneralCommandLine()
@@ -253,22 +247,8 @@ object EcsExecUtils {
             .withParameters(
                 MAPPER.writeValueAsString(session.session().toBuilder()),
                 connection.region.id,
-                "StartSession",
-                "",
-                """{"Target": "ecs:${container.service.clusterArn()}_${task}_$containerRuntimeId"}""",
-                ecsHostName(connection.region)
+                "StartSession"
             )
             .withEnvironment(connection.toEnvironmentVariables())
     }
-
-    private fun EcsClient.getContainerRuntimeId(cluster: String, task: String, container: String): String {
-        val taskDescription = describeTasks { it.cluster(cluster).tasks(task) }.tasks().first()
-            ?: throw IllegalArgumentException("Task $task not found in cluster $cluster")
-
-        return taskDescription.containers().find { it.name() == container }?.runtimeId()
-            ?: throw IllegalArgumentException("Cannot find runtime ID for container $container in task $task")
-    }
-
-    private fun ecsHostName(region: AwsRegion) =
-        EcsClient.serviceMetadata().endpointFor(Region.of(region.id))?.toString() ?: throw RuntimeException("Cannot determine ECS host for $region")
 }

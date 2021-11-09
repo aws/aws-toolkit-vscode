@@ -24,7 +24,6 @@ import software.amazon.awssdk.services.ec2.model.IamInstanceProfile
 import software.amazon.awssdk.services.ec2.model.Instance
 import software.amazon.awssdk.services.ec2.model.Reservation
 import software.amazon.awssdk.services.ecs.EcsClient
-import software.amazon.awssdk.services.ecs.model.Container
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.ContainerInstance
 import software.amazon.awssdk.services.ecs.model.Deployment
@@ -352,7 +351,6 @@ class EcsExecUtilsTest {
         val cluster = aString()
         val taskId = aString()
         val containerName = aString()
-        val containerRuntimeId = aString()
         val command = aString()
         val sessionId = aString()
         val token = aString()
@@ -368,19 +366,6 @@ class EcsExecUtilsTest {
         toolManager.registerTool(SsmPlugin, mockTool)
 
         ecsClient.stub {
-            on {
-                describeTasks(DescribeTasksRequest.builder().cluster(cluster).tasks(taskId).build())
-            } doReturn (
-                DescribeTasksResponse.builder().tasks(
-                    Task.builder().containers(
-                        Container.builder()
-                            .name(containerName)
-                            .runtimeId(containerRuntimeId)
-                            .build()
-                    ).build()
-                ).build()
-                )
-
             on {
                 executeCommand(
                     ExecuteCommandRequest.builder()
@@ -408,9 +393,9 @@ class EcsExecUtilsTest {
             )
 
             val expectedSession = """{\"sessionId\":\"$sessionId\",\"streamUrl\":\"$streamUrl\",\"tokenValue\":\"$token\"}"""
-            val expectedTarget = """{\"Target\": \"ecs:${cluster}_${taskId}_$containerRuntimeId\"}"""
+
             assertThat(cmd.commandLineString).isEqualTo(
-                """${cliPath.toAbsolutePath()} $expectedSession us-east-1 StartSession "" "$expectedTarget" ecs.us-east-1.amazonaws.com"""
+                """${cliPath.toAbsolutePath()} $expectedSession us-east-1 StartSession"""
             )
 
             assertThat(cmd.environment).containsEntry("AWS_REGION", "us-east-1")
