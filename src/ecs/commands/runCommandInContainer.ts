@@ -14,7 +14,6 @@ import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../shared/constants'
-import { getIdeProperties } from '../../shared/extensionUtilities'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { ext } from '../../shared/extensionGlobals'
 
@@ -25,9 +24,10 @@ export async function runCommandInContainer(
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
+    let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
 
     try {
-        if (!(await verifyCliAndPlugin(window))) {
+        if (!(await verifySsmPlugin(window))) {
             return
         }
 
@@ -122,25 +122,32 @@ export async function runCommandInContainer(
             return
         }
 
-        await runCliCommandInEcsContainer(node, task, command, outputChannel)
+        const execCommand = await node.ecs.executeCommand(node.clusterArn, node.containerName, task, command)
+        const cp = await new ChildProcess(
+            true,
+            'session-manager-plugin',
+            undefined,
+            JSON.stringify(execCommand.session),
+            node.ecs.regionCode,
+            'StartSession'
+        ).run()
+        if (cp.exitCode !== 0) {
+            result = 'Failed'
+            showOutputMessage(cp.stderr, outputChannel)
+            throw cp.error
+        } else {
+            result = 'Succeeded'
+            showOutputMessage(cp.stdout, outputChannel)
+        }
     } catch (error) {
         getLogger().error('Failed to execute command in container, %O', error)
         showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
+    } finally {
+        recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })
     }
 }
 
-async function verifyCliAndPlugin(window: Window): Promise<boolean> {
-    const verifyAwsCliResponse = await new ChildProcess(true, 'aws', undefined, '--version').run()
-    if (verifyAwsCliResponse.exitCode !== 0) {
-        const noCli = localize(
-            'AWS.command.ecs.runCommandInContainer.noCliFound',
-            'This feature requires the {0} CLI (aws) to be installed and available on your $PATH',
-            getIdeProperties().company
-        )
-        window.showErrorMessage(noCli)
-        return false
-    }
-
+async function verifySsmPlugin(window: Window): Promise<boolean> {
     const verifySsmPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
     if (verifySsmPluginResponse.exitCode !== 0) {
         window.showErrorMessage(
@@ -184,37 +191,4 @@ async function getTaskItems(node: EcsContainerNode): Promise<vscode.QuickPickIte
             detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
         }
     })
-}
-
-async function runCliCommandInEcsContainer(
-    node: EcsContainerNode,
-    task: string,
-    command: string,
-    outputChannel: vscode.OutputChannel
-): Promise<void> {
-    const cmd = new ChildProcess(
-        true,
-        'aws',
-        undefined,
-        'ecs',
-        'execute-command',
-        '--cluster',
-        node.clusterArn,
-        '--task',
-        task,
-        '--container',
-        node.containerName,
-        '--command',
-        command,
-        '--interactive'
-    )
-    const processResponse = await cmd.run()
-    if (processResponse.exitCode !== 0) {
-        showOutputMessage(processResponse.stderr, outputChannel)
-        getLogger().error('ECS command failed: %O: %O', cmd, processResponse.stderr)
-        recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
-    } else {
-        showOutputMessage(processResponse.stdout, outputChannel)
-        recordEcsRunExecuteCommand({ result: 'Succeeded', ecsExecuteCommandType: 'command' })
-    }
 }

@@ -95,4 +95,25 @@ export class DefaultEcsClient {
     protected async createSdkClient(): Promise<ECS> {
         return await ext.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
     }
+
+    public async executeCommand(
+        cluster: string,
+        container: string,
+        task: string,
+        command: string
+    ): Promise<ECS.ExecuteCommandResponse> {
+        const sdkClient = await this.createSdkClient()
+
+        // Currently the 'interactive' flag is required and needs to be true for ExecuteCommand: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ExecuteCommand.html
+        // This may change 'in the near future' as explained here: https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
+        const params: ECS.ExecuteCommandRequest = {
+            command: command,
+            interactive: true,
+            task: task,
+            cluster: cluster,
+            container: container,
+        }
+
+        return await sdkClient.executeCommand(params).promise()
+    }
 }
