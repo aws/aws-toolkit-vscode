@@ -528,7 +528,7 @@ describe('CollectionUtils', async function () {
         })
 
         it('respects the "Hashable" interface', function () {
-            const o = { s: 1, toHashableString: () => callCount }
+            const o = { s: 1, toHashableString: () => String(callCount) }
 
             Array(10)
                 .fill(1)

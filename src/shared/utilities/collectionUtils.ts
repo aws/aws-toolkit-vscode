@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import './asyncIteratorShim'
 import * as hasher from 'node-object-hash'
 import { SorterOptions } from 'node-object-hash/dist/objectSorter'
 
@@ -281,8 +280,7 @@ export function entries<T extends Record<PropertyKey, any>>(obj: T): [keyof T, T
 }
 
 export function isAsyncIterable<T = unknown>(obj: any): obj is AsyncIterable<T> {
-    const symbol = Symbol.asyncIterator || Symbol.for('asyncIterator')
-    return Object.getOwnPropertySymbols(obj).includes(symbol) && typeof obj[symbol] === 'function'
+    return obj && typeof obj[Symbol.asyncIterator || Symbol.for('asyncIterator')] === 'function'
 }
 
 export type Cacheable = (...args: any[]) => NonNullable<any>
@@ -363,7 +361,8 @@ export function createCachedFunction<F extends Cacheable>(
     let lastKey: string
 
     const wrapped = (...args: Parameters<F>) => {
-        const key = hasher({ sort: false, ...options.hashOptions }).hash(args)
+        const argHasher = hasher(options.hashOptions)
+        const key = argHasher.hash(args.map(a => argHasher.hash(a)).join(''))
         lastKey = key
 
         if (cache[key] !== undefined) {
