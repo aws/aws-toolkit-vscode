@@ -5,6 +5,7 @@
 
 import './asyncIteratorShim'
 import * as hasher from 'node-object-hash'
+import { SorterOptions } from 'node-object-hash/dist/objectSorter'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
@@ -280,29 +281,22 @@ export function entries<T extends Record<PropertyKey, any>>(obj: T): [keyof T, T
 }
 
 export function isAsyncIterable<T = unknown>(obj: any): obj is AsyncIterable<T> {
-    return typeof obj === 'object' && typeof obj[Symbol.for('asyncIterator')] === 'function'
+    const symbol = Symbol.asyncIterator || Symbol.for('asyncIterator')
+    return Object.getOwnPropertySymbols(obj).includes(symbol) && typeof obj[symbol] === 'function'
 }
 
 export type Cacheable = (...args: any[]) => NonNullable<any>
-
-type UnboxAsyncIterable<T> = T extends AsyncIterable<infer U> ? U : T
 
 /**
  * A wrapped function that can cache both synchronous and asynchronous return types.
  *
  * Pending promises are returned as-is, while resolved promises are 'unboxed' into their promised type.
  */
-export interface CachedFunction<
-    F extends Cacheable,
-    Unbox extends boolean = true,
-    ResolveIterable extends boolean = true
-> {
+export interface CachedFunction<F extends Cacheable, Unbox extends boolean = true> {
     (...args: Parameters<F>): Unbox extends true
         ? ReturnType<F> extends Promise<infer Inner>
             ? ReturnType<F> | Inner
             : ReturnType<F>
-        : ResolveIterable extends true
-        ? UnboxAsyncIterable<ReturnType<F>>
         : ReturnType<F>
     /** Clears all keys that were cached. */
     clearCache(this: void): void
@@ -323,7 +317,7 @@ export interface CachedFunctionOptions<F extends Cacheable> {
      */
     resolveAsyncIterables?: boolean
     /** Extra options passed to the hashing library. See {@link hasher.HasherOptions HasherOptions}. */
-    hashOptions?: hasher.HasherOptions
+    hashOptions?: hasher.HasherOptions & SorterOptions
 }
 
 function cacheAsyncIterable<T extends AsyncIterable<R>, R = any>(iterable: T, cache: R[]) {
@@ -369,7 +363,7 @@ export function createCachedFunction<F extends Cacheable>(
     let lastKey: string
 
     const wrapped = (...args: Parameters<F>) => {
-        const key = hasher(options.hashOptions).hash(args)
+        const key = hasher({ sort: false, ...options.hashOptions }).hash(args)
         lastKey = key
 
         if (cache[key] !== undefined) {
@@ -418,9 +412,8 @@ export function createCachedFunction<F extends Cacheable>(
 export type PartialCachedFunction<
     F extends Cacheable,
     Unbox extends boolean = true,
-    ResolveIterable extends boolean = true,
     Cache extends Record<string, any> = { [key: string]: ReturnType<F> }
-> = (cache: Cache) => CachedFunction<() => ReturnType<F>, Unbox, ResolveIterable>
+> = (cache: Cache) => CachedFunction<() => ReturnType<F>, Unbox>
 
 /**
  * ~Partial~ Full application of the cached function with deferred cache binding.

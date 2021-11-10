@@ -152,7 +152,7 @@ type ItemLoadTypes<T> =
     | Promise<DataQuickPickItem<T>[]>
     | DataQuickPickItem<T>[]
     | AsyncIterableOpt<DataQuickPickItem<T>>
-type ItemLoader<T> = PartialCachedFunction<() => ItemLoadTypes<T>, true, true, Record<string, any>>
+type ItemLoader<T> = PartialCachedFunction<() => ItemLoadTypes<T>, true, Record<string, any>>
 
 /**
  * Creates a UI element that presents a list of items. Information that should be returned when the user selects an
