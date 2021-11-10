@@ -16,6 +16,8 @@ import { extensionSettingsPrefix } from '../../constants'
 import { validateBucketName } from '../../../s3/util'
 import { showViewLogsMessage } from '../../utilities/messages'
 import { partialCached } from '../../utilities/collectionUtils'
+import { addCodiconToString } from '../../utilities/textUtilities'
+import { isCloud9 } from '../../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -121,7 +123,7 @@ const DOES_NOT_EXIST = localize('AWS.prompts.s3Bucket.doesNotExists', 'Bucket do
 export function validateBucket(name: string, region: string): string | undefined | Promise<string> {
     const checkName = validateBucketName(name)
     if (checkName) {
-        return `$(error) ${checkName}`
+        return addCodiconToString('error', checkName)
     }
 
     const client = ext.toolkitClientBuilder.createS3Client(region)
@@ -131,7 +133,7 @@ export function validateBucket(name: string, region: string): string | undefined
         .checkBucketExists(name)
         .catch(() => true)
         .then(exists => {
-            return exists ? '' : `$(error) ${DOES_NOT_EXIST}`
+            return exists ? '' : addCodiconToString('error', DOES_NOT_EXIST)
         })
 }
 
@@ -204,6 +206,11 @@ export function createS3BucketPrompter(options: S3BucketPrompterOptions = {}): Q
             const createBucket = createNewBucket(region ?? 'us-east-1', active.description!).then(bucket => {
                 if (bucket) {
                     prompter.refreshItems().then(() => {
+                        // Cloud9 seems a bit buggy with their ext. host API
+                        // certain fields aren't updated when they should be
+                        if (isCloud9()) {
+                            return
+                        }
                         prompter.quickPick.selectedItems = prompter.quickPick.items.filter(
                             i => i.label === bucket?.name
                         )

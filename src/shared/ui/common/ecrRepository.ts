@@ -12,6 +12,7 @@ import { Wizard } from '../../wizards/wizard'
 import { BasicExitPrompter } from './basicExit'
 import { ext } from '../../extensionGlobals'
 import { WizardPrompter } from '../wizardPrompter'
+import { addCodiconToString } from '../../utilities/textUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -87,7 +88,7 @@ export function createImagePrompter(
 
     const customUserInputValidator = (input: string) => {
         const message = ecrUriValidator(input)
-        return message !== undefined ? `$(error) Invalid input: ${message}` : undefined
+        return message !== undefined ? addCodiconToString('error', `Invalid input: ${message}`) : undefined
     }
 
     return createQuickPick([], {

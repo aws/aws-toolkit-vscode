@@ -280,10 +280,7 @@ export function entries<T extends Record<PropertyKey, any>>(obj: T): [keyof T, T
 }
 
 export function isAsyncIterable<T = unknown>(obj: any): obj is AsyncIterable<T> {
-    return (
-        Object.getOwnPropertySymbols(obj).includes(Symbol.asyncIterator) &&
-        typeof obj[Symbol.asyncIterator] === 'function'
-    )
+    return typeof obj === 'object' && typeof obj[Symbol.for('asyncIterator')] === 'function'
 }
 
 export type Cacheable = (...args: any[]) => NonNullable<any>
