@@ -108,7 +108,10 @@ export function createImagePrompter(
 
 interface ImagePrompterOptions {
     title?: string
+    /** Displays a validation message if the user tries to use a public ECR URI. Public ECR is considered valid by default. */
     noPublicMessage?: string
+    /** Skips the tag step and any related tag vaildation. (default: false) */
+    skipTag?: boolean
 }
 
 export class EcrRepositoryWizard extends Wizard<{ repo: TaggedEcrRepository }> {
@@ -119,7 +122,8 @@ export class EcrRepositoryWizard extends Wizard<{ repo: TaggedEcrRepository }> {
         this.form.repo.tag.bindPrompter(state => createTagPrompter(ecrClient, state.repo), {
             // TODO: restructure this wizard state to not need to do this or add logic to the core wizard code
             // we use a clause to prevent early assignment, otherwise we might prompt for tags despite being provided
-            showWhen: state => !!state.repo,
+            showWhen: state => !!state.repo && !options.skipTag,
+            setDefault: () => 'latest',
             dependencies: [this.form.repo],
         })
     }

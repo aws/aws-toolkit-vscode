@@ -38,6 +38,14 @@ describe('EcrRepositoryWizard', function () {
         })
     })
 
+    it('skips tag step if set in the option, using `latest` as default', function () {
+        tester = createWizardTester(new EcrRepositoryWizard(instance(ecrClient), { skipTag: true }))
+        tester.repo.assertShow()
+        tester.repo.applyInput(repositories[0] as any)
+        tester.repo.tag.assertDoesNotShow()
+        tester.repo.tag.assertValue('latest')
+    })
+
     it('asks for tag if not provided', async function () {
         tester.repo.assertShow()
         tester.repo.tag.assertDoesNotShow()

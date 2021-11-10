@@ -193,12 +193,14 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
 
         const ecrPromptOptions = {
             title: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select a ECR repo to deploy images to'),
+            noPublicMessage: localize('AWS.samcli.deploy.ecrRepo.nopublic', 'Cannot deploy to public ECR'),
+            skipTag: true,
         }
 
         this.form.ecrRepo.bindPrompter(
             ({ region }) =>
                 createEcrPrompter(region, ecrPromptOptions).transform(
-                    resp => `${resp.repo.repositoryUri}:${resp.repo.tag}`
+                    resp => `${resp.repo.repositoryUri}${resp.repo.tag === 'latest' ? '' : `:${resp.repo.tag}`}`
                 ),
             {
                 showWhen: state => isImage(state.template),
