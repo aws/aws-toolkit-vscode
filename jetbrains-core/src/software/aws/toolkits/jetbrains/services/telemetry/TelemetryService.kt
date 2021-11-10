@@ -95,6 +95,7 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         listeners.clear()
 
         batcher.shutdown()
+        publisher.close()
     }
 
     fun record(metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> Unit) {

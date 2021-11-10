@@ -8,10 +8,12 @@ import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 
-class MockTelemetryService() : TelemetryService(NoOpPublisher(), DefaultTelemetryBatcher(NoOpPublisher()))
+class NoOpTelemetryService() : TelemetryService(NoOpPublisher(), DefaultTelemetryBatcher(NoOpPublisher()))
 
 class NoOpPublisher() : TelemetryPublisher {
     override suspend fun publish(metricEvents: Collection<MetricEvent>) {}
 
     override suspend fun sendFeedback(sentiment: Sentiment, comment: String) {}
+
+    override fun close() {}
 }

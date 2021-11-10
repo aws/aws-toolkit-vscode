@@ -84,6 +84,10 @@ class DefaultTelemetryPublisher(
             }
         }
 
+    override fun close() {
+        client.close()
+    }
+
     private companion object {
         private const val METADATA_AWS_ACCOUNT = "awsAccount"
         private const val METADATA_AWS_REGION = "awsRegion"
@@ -95,7 +99,7 @@ class DefaultTelemetryPublisher(
                 ToolkitTelemetryClient::class,
                 sdkClient.sharedSdkClient(),
                 region,
-                AWSCognitoCredentialsProvider(
+                AwsCognitoCredentialsProvider(
                     Registry.get("aws.telemetry.identityPool").asString(),
                     CognitoIdentityClient.builder()
                         .credentialsProvider(AnonymousCredentialsProvider.create())

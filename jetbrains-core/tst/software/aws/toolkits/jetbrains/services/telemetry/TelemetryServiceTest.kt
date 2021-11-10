@@ -25,6 +25,7 @@ import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADAT
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
+import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
@@ -39,7 +40,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class TelemetryServiceTest {
-    private class TestTelemetryService(batcher: TelemetryBatcher) : TelemetryService(NoOpPublisher(), batcher)
+    private class TestTelemetryService(publlisher: TelemetryPublisher = NoOpPublisher(), batcher: TelemetryBatcher) : TelemetryService(publlisher, batcher)
 
     @Rule
     @JvmField
@@ -73,16 +74,14 @@ class TelemetryServiceTest {
         val changeCountDown = CountDownLatch(1)
         val changeCaptor = argumentCaptor<Boolean>()
 
-        val batcher = mock<TelemetryBatcher>()
-
-        batcher.stub {
-            on(batcher.onTelemetryEnabledChanged(changeCaptor.capture()))
+        val batcher = mock<TelemetryBatcher> {
+            on { onTelemetryEnabledChanged(changeCaptor.capture()) }
                 .doAnswer {
                     changeCountDown.countDown()
                 }
         }
 
-        TestTelemetryService(batcher)
+        TestTelemetryService(batcher = batcher)
 
         changeCountDown.await(5, TimeUnit.SECONDS)
         verify(batcher).onTelemetryEnabledChanged(true)
@@ -106,7 +105,7 @@ class TelemetryServiceTest {
                 }
         }
 
-        val telemetryService = TestTelemetryService(batcher)
+        val telemetryService = TestTelemetryService(batcher = batcher)
 
         telemetryService.setTelemetryEnabled(false)
         telemetryService.setTelemetryEnabled(true)
@@ -127,7 +126,7 @@ class TelemetryServiceTest {
         val eventCaptor = argumentCaptor<MetricEvent>()
 
         val batcher = mock<TelemetryBatcher>()
-        val telemetryService = TestTelemetryService(batcher)
+        val telemetryService = TestTelemetryService(batcher = batcher)
 
         telemetryService.record(projectRule.project) {
             datum("Foo")
@@ -155,7 +154,7 @@ class TelemetryServiceTest {
 
         val eventCaptor = argumentCaptor<MetricEvent>()
         val batcher = mock<TelemetryBatcher>()
-        val telemetryService = TestTelemetryService(batcher)
+        val telemetryService = TestTelemetryService(batcher = batcher)
 
         telemetryService.record(projectRule.project) {
             datum("Foo")
@@ -181,7 +180,7 @@ class TelemetryServiceTest {
         val eventCaptor = argumentCaptor<MetricEvent>()
 
         val batcher = mock<TelemetryBatcher>()
-        val telemetryService = TestTelemetryService(batcher)
+        val telemetryService = TestTelemetryService(batcher = batcher)
 
         telemetryService.record(
             MetricEventMetadata(
@@ -216,7 +215,7 @@ class TelemetryServiceTest {
             connectionSettingsManager.waitUntilConnectionStateIsStable()
 
             val batcher = mock<TelemetryBatcher>()
-            val telemetryService = TestTelemetryService(batcher)
+            val telemetryService = TestTelemetryService(batcher = batcher)
 
             telemetryService.record(project) {
                 datum("Foo")
@@ -242,6 +241,18 @@ class TelemetryServiceTest {
                 PlatformTestUtil.forceCloseProjectWithoutSaving(project)
             }
         }
+    }
+
+    @Test
+    fun disposeClosesThePublisher() {
+        val mockPublisher = mock<TelemetryPublisher>()
+        val mockBatcher = mock<TelemetryBatcher>()
+
+        val telemetryService = TestTelemetryService(mockPublisher, mockBatcher)
+        telemetryService.dispose()
+
+        verify(mockBatcher).shutdown()
+        verify(mockPublisher).close()
     }
 
     private fun addAccountId(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {

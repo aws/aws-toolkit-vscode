@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient
 import software.amazon.awssdk.services.cognitoidentity.model.Credentials
 import software.amazon.awssdk.services.cognitoidentity.model.GetCredentialsForIdentityRequest
 import software.amazon.awssdk.services.cognitoidentity.model.GetIdRequest
+import software.amazon.awssdk.utils.SdkAutoCloseable
 import software.amazon.awssdk.utils.cache.CachedSupplier
 import software.amazon.awssdk.utils.cache.NonBlocking
 import software.amazon.awssdk.utils.cache.RefreshResult
@@ -22,14 +23,13 @@ import java.time.temporal.ChronoUnit
  *
  * @constructor Creates a new AwsCredentialsProvider that uses credentials from a Cognito Identity pool.
  * @property identityPool The name of the pool to create users from
- * @param region The region associated with this Cognito pool
  * @param cacheStorage A storage solution to cache an identity ID, disabled if null
  */
-class AWSCognitoCredentialsProvider(
+class AwsCognitoCredentialsProvider(
     private val identityPool: String,
     private val cognitoClient: CognitoIdentityClient,
     cacheStorage: CachedIdentityStorage? = null
-) : AwsCredentialsProvider {
+) : AwsCredentialsProvider, SdkAutoCloseable {
     private val identityIdProvider = AwsCognitoIdentityProvider(cognitoClient, identityPool, cacheStorage)
     private val cacheSupplier = CachedSupplier.builder(this::updateCognitoCredentials)
         .prefetchStrategy(NonBlocking("Cognito Identity Credential Refresh"))
@@ -57,6 +57,11 @@ class AWSCognitoCredentialsProvider(
         val request = GetCredentialsForIdentityRequest.builder().identityId(identityId).build()
 
         return cognitoClient.getCredentialsForIdentity(request).credentials()
+    }
+
+    override fun close() {
+        cognitoClient.close()
+        cacheSupplier.close()
     }
 }
 

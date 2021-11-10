@@ -179,7 +179,7 @@ with what features/services are supported.
                             serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.services.telemetry.TelemetryService"
                             serviceImplementation="software.aws.toolkits.jetbrains.services.telemetry.DefaultTelemetryService"
-                            testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.MockTelemetryService" />
+                            testServiceImplementation="software.aws.toolkits.jetbrains.services.telemetry.NoOpTelemetryService" />
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.executables.ExecutableManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
 
