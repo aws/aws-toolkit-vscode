@@ -19,6 +19,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.amazon.awssdk.utils.SdkAutoCloseable
 import software.amazon.awssdk.utils.cache.CachedSupplier
 import software.amazon.awssdk.utils.cache.RefreshResult
 import software.aws.toolkits.resources.message
@@ -27,7 +28,7 @@ import java.time.Instant
 class ToolkitCredentialProcessProvider internal constructor(
     private val command: String,
     private val parser: CredentialProcessOutputParser
-) : AwsCredentialsProvider {
+) : AwsCredentialsProvider, SdkAutoCloseable {
     constructor(command: String) : this(command, DefaultCredentialProcessOutputParser)
 
     private val entrypoint by lazy {
@@ -74,7 +75,11 @@ class ToolkitCredentialProcessProvider internal constructor(
         throw RuntimeException(msg)
     }
 
-    internal companion object {
+    override fun close() {
+        processCredentialCache.close()
+    }
+
+    private companion object {
         private const val DEFAULT_TIMEOUT = 30000
     }
 }
