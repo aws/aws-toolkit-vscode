@@ -6,23 +6,30 @@ package software.aws.toolkits.jetbrains.utils.rules
 import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.project.Project
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.ComponentManager
 import com.intellij.testFramework.ProjectRule
 import org.junit.rules.ExternalResource
 import java.util.concurrent.CopyOnWriteArrayList
 
 class NotificationListenerRule : ExternalResource {
-    private val projectSupplier: () -> Project
+    private val messageBusSupplier: () -> ComponentManager
     private val disposable: Disposable
 
+    constructor(disposable: Disposable) : super() {
+        this.messageBusSupplier = { ApplicationManager.getApplication() }
+        this.disposable = disposable
+        this.notifications = CopyOnWriteArrayList<Notification>()
+    }
+
     constructor(projectRule: ProjectRule, disposable: Disposable) : super() {
-        this.projectSupplier = { projectRule.project }
+        this.messageBusSupplier = { projectRule.project }
         this.disposable = disposable
         this.notifications = CopyOnWriteArrayList<Notification>()
     }
 
     constructor(projectRule: CodeInsightTestFixtureRule, disposable: Disposable) : super() {
-        this.projectSupplier = { projectRule.project }
+        this.messageBusSupplier = { projectRule.project }
         this.disposable = disposable
         this.notifications = CopyOnWriteArrayList<Notification>()
     }
@@ -30,7 +37,7 @@ class NotificationListenerRule : ExternalResource {
     val notifications: CopyOnWriteArrayList<Notification>
 
     override fun before() {
-        projectSupplier().messageBus.connect(disposable).subscribe(
+        messageBusSupplier().messageBus.connect(disposable).subscribe(
             Notifications.TOPIC,
             object : Notifications {
                 override fun notify(notification: Notification) {

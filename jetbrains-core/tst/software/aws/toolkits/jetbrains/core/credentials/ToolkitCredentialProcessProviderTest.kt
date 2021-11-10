@@ -12,8 +12,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import org.junit.runner.RunWith
-import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
@@ -32,9 +30,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 import kotlin.time.toJavaDuration
 
-@RunWith(MockitoJUnitRunner::class)
 class ToolkitCredentialProcessProviderTest {
-
     @Rule
     @JvmField
     val project = ProjectRule()

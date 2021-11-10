@@ -25,6 +25,9 @@ import software.amazon.awssdk.utils.cache.RefreshResult
 import software.aws.toolkits.resources.message
 import java.time.Instant
 
+/**
+ * Similar to the SDKs ProcessCredentialsProvider, but ties in the env var system of the IDE such as getting $PATH
+ */
 class ToolkitCredentialProcessProvider internal constructor(
     private val command: String,
     private val parser: CredentialProcessOutputParser
