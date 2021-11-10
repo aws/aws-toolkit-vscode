@@ -192,7 +192,7 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
         )
 
         const ecrPromptOptions = {
-            title: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select a ECR repo to deploy images to'),
+            title: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select an ECR repo to deploy images to'),
             noPublicMessage: localize('AWS.samcli.deploy.ecrRepo.nopublic', 'Cannot deploy to public ECR'),
             skipTag: true,
         }

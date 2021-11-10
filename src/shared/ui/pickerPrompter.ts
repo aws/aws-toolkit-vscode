@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { createRefreshButton, PrompterButtons } from './buttons'
 import { PrompterConfiguration, PromptResult, Transform } from './prompter'
-import { applyPrimitives, isAsyncIterable, PartialCachedFunction } from '../utilities/collectionUtils'
+import { applyPrimitives, PartialCachedFunction } from '../utilities/collectionUtils'
 import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
 import { RequireKey, UnionPromise } from '../utilities/tsUtils'
@@ -506,9 +506,8 @@ export class QuickPickPrompter<T> extends QuickInputPrompter<T> {
             this.appendItems(items)
             this.checkEmpty()
         } else {
-            const loader = isAsyncIterable(items)
-                ? this.loadFromAsyncIterable(items)
-                : items.then(this.appendItems.bind(this))
+            const loader =
+                items instanceof Promise ? items.then(this.appendItems.bind(this)) : this.loadFromAsyncIterable(items)
             const withHandlers = loader.catch(handleError).finally(() => this.checkEmpty(this.pendingUpdates > 1))
             await this.addBusyUpdate(withHandlers, disableInput)
         }
