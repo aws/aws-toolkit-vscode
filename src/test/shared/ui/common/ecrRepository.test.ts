@@ -82,7 +82,7 @@ describe('EcrRepositoryWizard', function () {
         await tester.repo.runPrompt(prompter => {
             const input = createRepo('my-repo')
             const tester = createQuickPickTester(prompter)
-            tester.setFilter(`${input.repositoryUri}:my-tag`)
+            tester.setValue(`${input.repositoryUri}:my-tag`)
             tester.acceptItem('ECR URL') // derived from `customUserInputLabel
             return tester
         })
@@ -98,14 +98,14 @@ describe('EcrRepositoryWizard', function () {
         await tester.repo.runPrompt(prompter => {
             const input = createRepo('repo')
             const tester = createQuickPickTester(prompter, { forceEmits: true })
-            tester.setFilter(`${input.repositoryUri}`)
+            tester.setValue(`${input.repositoryUri}`)
             tester.addCallback(() => repositories.push(createRepo('my-repo')))
             tester.pressButton('Refresh')
             tester.assertItems(['repo1'])
             // TODO: should we preserve the filter box item on a refresh?
             // probably, but that does require some extra logic
             //tester.assertItems(['ECR URL', 'repo1'])
-            tester.setFilter(undefined)
+            tester.setValue(undefined)
             tester.assertItems(['repo1', 'my-repo'])
             tester.acceptItem('my-repo')
             return tester

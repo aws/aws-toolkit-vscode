@@ -5,7 +5,7 @@
 
 import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
-import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from '../../shared/ui/buttons'
+import { createCommonButtons, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { Remote } from '../../../types/git.d'
 import { GitExtension } from '../../shared/extensions/git'
 import * as vscode from 'vscode'
@@ -53,30 +53,24 @@ function createRepoPrompter(git: GitExtension): QuickPickPrompter<Remote> {
     })
 }
 
-function createBranchPrompter(
-    git: GitExtension,
-    cache: { [key: string]: any },
-    repo: string = ''
-): QuickPickPrompter<string> {
-    const last = cache[repo]
-    const branchItems =
-        last ??
-        git.getBranchesForRemote({ name: '', fetchUrl: repo } as any).then(branches => {
-            const branchItems = branches
-                .filter(b => b.name !== undefined && b.name !== '')
-                .map(branch => ({
-                    label: branch.name!.split('/').slice(1).join('/'),
-                }))
-            cache[repo] = branchItems
-            return branchItems
-        })
+function createBranchPrompter(git: GitExtension, repo: string = ''): QuickPickPrompter<string> {
+    const loader = async (repo: string) => {
+        const branches = await git.getBranchesForRemote({ name: '', fetchUrl: repo } as any)
+
+        return branches
+            .filter(b => !!b.name)
+            .map(b => b.name!.split('/').slice(1).join('/'))
+            .map(b => ({ label: b, data: b }))
+    }
+
     const userInputString = localize('AWS.apprunner.createService.customRepo', 'Enter branch name')
-    return createLabelQuickPick(branchItems, {
+    return createLabelQuickPick([], {
         title: localize('AWS.apprunner.createService.selectBranch.title', 'Select a branch'),
         filterBoxInput: {
             label: userInputString,
             transform: resp => resp,
         },
+        itemLoader: partialCached(loader, repo),
         buttons: createCommonButtons(),
         placeholder: localize(
             'AWS.apprunner.createService.selectBranch.placeholder',
@@ -170,18 +164,14 @@ export function createConnectionPrompter(client: AppRunnerClient): QuickPickProm
         onClick: vscode.env.openExternal.bind(vscode.env, vscode.Uri.parse(apprunnerConnectionHelpUrl)),
     }
 
-    const refreshButton = createRefreshButton()
     const prompter = createQuickPick<ConnectionSummary>([], {
         title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
         buttons: createCommonButtons(apprunnerConnectionHelpUrl),
         itemLoader: partialCached(itemLoader, client.regionCode),
         noItemsFoundItem: noConnection,
+        compare: (a, b) => (a.detail ? 1 : b.detail ? -1 : 0),
         errorItem: localize('AWS.apprunner.createService.selectConnection.failed', 'Failed to list GitHub connections'),
     })
-
-    refreshButton.onClick = () => {
-        prompter.refreshItems()
-    }
 
     return prompter
 }
@@ -213,7 +203,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     form.RepositoryUrl.bindPrompter(() => createRepoPrompter(git).transform(r => r.fetchUrl!))
     form.SourceCodeVersion.Value.bindPrompter(
         state =>
-            createBranchPrompter(git, state.stepCache, state.RepositoryUrl).transform(resp =>
+            createBranchPrompter(git, state.RepositoryUrl).transform(resp =>
                 resp.replace(`${state.RepositoryUrl}/`, '')
             ),
         { dependencies: [form.RepositoryUrl] }

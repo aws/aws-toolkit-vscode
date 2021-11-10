@@ -108,6 +108,14 @@ describe('createConnectionPrompter', function () {
         await tester.result(connections[1])
     })
 
+    it('sorts pending connections last', async function () {
+        connections.unshift(makeConnection('pending', 'pending', 'PENDING_HANDSHAKE'))
+
+        tester.assertItems(['connection-name-1', 'connection-name-2', 'pending'])
+        tester.hide()
+        await tester.result()
+    })
+
     it('lists only available or pending connections', async function () {
         connections.push(makeConnection('pending', 'pending', 'PENDING_HANDSHAKE'))
         connections.push(makeConnection('error', 'error', 'ERROR'))

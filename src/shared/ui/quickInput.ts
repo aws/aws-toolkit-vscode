@@ -16,7 +16,7 @@ interface Update {
     disableInput: boolean
 }
 
-export abstract class QuickInputPrompter<T> extends Prompter<T> {
+export abstract class QuickInputPrompter<T = any> extends Prompter<T> {
     protected disposables: vscode.Disposable[] = []
     private updatesCounter = 0
     /** Updates to the UI that keep it in a busy (or potentially disabled) state. */

@@ -127,7 +127,7 @@ describe('createS3BucketPrompter', function () {
             return
         }
 
-        tester.setFilter('my-bucket')
+        tester.setValue('my-bucket')
         // TODO: use fake timer? Need to do this since the filter box is debounced
         tester.addCallback(() => sleep(300))
         tester.acceptItem('Enter bucket name: ')
@@ -141,7 +141,7 @@ describe('createS3BucketPrompter', function () {
             return
         }
 
-        tester.setFilter('newbucket')
+        tester.setValue('newbucket')
         tester.addCallback(() => sleep(300))
         tester.acceptItem('Enter bucket name: ')
         await tester.result(createBucket('newbucket'))

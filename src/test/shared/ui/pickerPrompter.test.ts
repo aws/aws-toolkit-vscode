@@ -346,7 +346,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     it('adds a new item based off the filter box', async function () {
         const input = '123'
 
-        tester.setFilter(input)
+        tester.setValue(input)
         tester.acceptItem(filterBoxInput.label)
 
         await tester.result(Number(input))
@@ -355,7 +355,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     it('can handle additional items being added', async function () {
         const input = '456'
 
-        tester.setFilter(input)
+        tester.setValue(input)
         tester.addCallback(async () => {
             const newItems = [{ label: 'item4', data: 3 }]
             const newItemsPromise = Promise.resolve(newItems)
@@ -384,9 +384,9 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = 'not a number'
 
         tester = createQuickPickTester(testPrompter, { forceEmits: true })
-        tester.setFilter(input)
+        tester.setValue(input)
         tester.acceptItem(filterBoxInput.label)
-        tester.setFilter(undefined)
+        tester.setValue(undefined)
         tester.acceptItem(testItems[0])
 
         await tester.result(testItems[0].data)
@@ -405,11 +405,11 @@ describe('FilterBoxQuickPickPrompter', function () {
         tester = createQuickPickTester(testPrompter, { forceEmits: true })
         testPrompter.loadItems(testItems)
 
-        tester.setFilter(input)
+        tester.setValue(input)
         tester.addCallback(prompter => {
             assert.strictEqual(prompter.quickPick.items[0].detail, 'Checking...')
         })
-        tester.setFilter(undefined)
+        tester.setValue(undefined)
         tester.assertItems(testItems)
         tester.hide()
 

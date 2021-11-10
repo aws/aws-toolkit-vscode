@@ -9,8 +9,8 @@ import chalk from 'chalk'
 import { ExpandWithObject } from '../../../shared/utilities/tsUtils'
 import { isValidResponse, Wizard } from '../../../shared/wizards/wizard'
 import { WizardForm } from '../../../shared/wizards/wizardForm'
-import { QuickPickTester } from '../ui/testUtils'
-import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
+import { PrompterTester } from '../ui/testUtils'
+import { QuickInputPrompter } from '../../../shared/ui/quickInput'
 
 interface MockWizardFormElement<TProp> {
     /** Directly assigns input to the property, skipping any prompt. */
@@ -25,6 +25,7 @@ interface MockWizardFormElement<TProp> {
     assertDoesNotShow(): void
     /** Verifies that no sub-properties of the target would show prompters. */
     assertDoesNotShowAny(): void
+    /** Performs a deep-compare. */
     assertValue(expected: TProp | undefined): void
     assertShowCount(count: number): void
     /**
@@ -46,7 +47,7 @@ interface TesterMethods {
     printInfo(): void
 }
 
-type PromptTester<T> = (prompter: QuickPickPrompter<T>) => QuickPickTester<T>
+type PromptTester<T> = (prompter: QuickInputPrompter<T>) => PrompterTester<T>
 
 type MockForm<T, TState = T> = {
     [Property in keyof T]-?: T[Property] extends ExpandWithObject<T[Property]>
@@ -68,6 +69,15 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
         if (cond) {
             assert.fail(message)
         }
+    }
+
+    function print(parts: TemplateStringsArray, ...subs: any[]): string {
+        const result = [parts[0]]
+        subs.forEach((s, i) => {
+            const p = typeof s === 'object' ? JSON.stringify(s) : s
+            result.push(p, parts[i + 1])
+        })
+        return result.join('')
     }
 
     function canShowPrompter(prop: string, shown: Set<string> = new Set(assigned)): boolean {
@@ -120,7 +130,10 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     function assertValue<TProp>(path: string): MockWizardFormElement<TProp>['assertValue'] {
         return (expected: TProp) => {
             const actual = _.get(form.applyDefaults(state, new Set(assigned)), path)
-            failIf(actual !== expected, `Property "${path}" had unexpected value: ${actual} !== ${expected}`)
+            failIf(
+                !_.isEqual(actual, expected),
+                print`Property "${path}" had unexpected value: ${actual} !== ${expected}`
+            )
         }
     }
 
@@ -138,8 +151,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
         failIf(!provider, 'Prompter binding returned undefined.')
         const defaults = form.applyDefaults(state, new Set(assigned))
         const prompter = provider!({ ...defaults, stepCache: {}, estimator: () => 0 })
-        failIf(!(prompter instanceof QuickPickPrompter), 'Can only test QuickPickPrompters.')
-        const tester = callback(prompter as QuickPickPrompter<TProp>)
+        const tester = callback(prompter as QuickInputPrompter)
         return tester.result().then(result => {
             failIf(!isValidResponse(result), 'Testing with control signals is not currently supported.')
             _.set(state, assigned[0], result)
