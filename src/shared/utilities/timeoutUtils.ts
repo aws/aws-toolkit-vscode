@@ -102,6 +102,9 @@ export class Timeout {
     /**
      * Marks the Timeout token as being completed, preventing further use and locking in the elapsed time.
      *
+     * Note that completing the token but not rejecting it is equivalent to 'freeing' any resources associated
+     * with the timer, given that they do not wait for the timer Promise to resolve.
+     *
      * @param reject Rejects the token with a cancelled error message
      */
     public complete(reject?: boolean): void {
