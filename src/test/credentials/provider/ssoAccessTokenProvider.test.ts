@@ -11,6 +11,7 @@ import { DiskCache } from '../../../credentials/sso/diskCache'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
+import { installFakeClock } from '../../testUtil'
 
 describe('SsoAccessTokenProvider', function () {
     let sandbox: sinon.SinonSandbox
@@ -65,7 +66,7 @@ describe('SsoAccessTokenProvider', function () {
     let clock: FakeTimers.InstalledClock
 
     before(function () {
-        clock = FakeTimers.install()
+        clock = installFakeClock()
     })
 
     beforeEach(function () {
