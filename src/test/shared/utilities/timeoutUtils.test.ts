@@ -6,14 +6,14 @@
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
-import { tickPromise } from '../../../test/testUtil'
+import { installFakeClock, tickPromise } from '../../../test/testUtil'
 import { sleep } from '../../../shared/utilities/promiseUtilities'
 
 describe('timeoutUtils', async function () {
     let clock: FakeTimers.InstalledClock
 
     before(function () {
-        clock = FakeTimers.install()
+        clock = installFakeClock()
     })
 
     after(function () {
@@ -160,7 +160,7 @@ describe('timeoutUtils', async function () {
                 clock.tick(testSettings.clockSpeed * testSettings.clockInterval)
             }, testSettings.clockInterval)
 
-            clock = FakeTimers.install()
+            clock = installFakeClock()
         })
 
         after(function () {
@@ -259,7 +259,7 @@ describe('timeoutUtils', async function () {
         let clock: FakeTimers.InstalledClock
 
         before(function () {
-            clock = FakeTimers.install()
+            clock = installFakeClock()
         })
 
         after(function () {

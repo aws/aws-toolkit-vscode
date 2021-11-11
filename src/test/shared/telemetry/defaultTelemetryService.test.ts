@@ -21,6 +21,7 @@ import {
 } from '../../utilities/fakeAwsContext'
 import { FakeTelemetryPublisher } from '../../fake/fakeTelemetryService'
 import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
+import { installFakeClock } from '../../testUtil'
 
 const originalTelemetryClient: TelemetryService = ext.telemetry
 let mockContext: FakeExtensionContext
@@ -59,7 +60,7 @@ describe('DefaultTelemetryService', function () {
 
     before(function () {
         sandbox = sinon.createSandbox()
-        clock = FakeTimers.install()
+        clock = installFakeClock()
     })
 
     after(function () {
@@ -123,7 +124,7 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('events automatically inject the active account id into the metadata', async function () {
-        const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
+        const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
         service = new DefaultTelemetryService(mockContext, mockAwsWithIds, undefined, mockPublisher)
         ext.telemetry = service
         service.clearRecords()
@@ -160,9 +161,9 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('events created with a bad active account produce metadata mentioning the bad account', async function () {
-        const mockAwsBad = ({
+        const mockAwsBad = {
             getCredentialAccountId: () => 'this is bad!',
-        } as any) as AwsContext
+        } as any as AwsContext
         service = new DefaultTelemetryService(mockContext, mockAwsBad, undefined, mockPublisher)
         ext.telemetry = service
         service.clearRecords()

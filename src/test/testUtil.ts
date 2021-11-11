@@ -112,3 +112,10 @@ export function createExecutableFile(filepath: string, contents: string): void {
         fs.chmodSync(filepath, 0o744)
     }
 }
+
+/**
+ * Installs a fake clock, making sure to set a flag to clear real timers.
+ */
+export function installFakeClock(): FakeTimers.InstalledClock {
+    return FakeTimers.install({ shouldClearNativeTimers: true })
+}
