@@ -15,6 +15,7 @@ import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
+import { Timeout } from '../utilities/timeoutUtils'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -36,7 +37,7 @@ interface FetcherStreams {
     requestStream: Request // `got` doesn't add the correct types to 'on' for some reason
     /** Stream writing to the file system. */
     fsStream: fs.WriteStream
-    /** Promise that resolves when all streams have closed. This is rejected on error. */
+    /** Promise that fulfills when all streams have closed or when an error event occurs. */
     done: Promise<void>
 }
 
@@ -50,6 +51,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
      * @param {boolean} params.showUrl Whether or not to the URL in log statements.
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
      * @param {function} params.onSuccess Function to execute on successful request. No effect if piping to a location.
+     * @param {Timeout} params.timeout Timeout token to abort/cancel the request. Similar to `AbortSignal`. Only used if using a pipe.
      */
     public constructor(
         private readonly url: string,
@@ -57,6 +59,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
             showUrl: boolean
             friendlyName?: string
             onSuccess?(contents: string): void
+            timeout?: Timeout
         }
     ) {}
 
@@ -71,8 +74,8 @@ export class HttpResourceFetcher implements ResourceFetcher {
         this.logger.verbose(`Downloading ${this.logText()}`)
 
         if (pipeLocation) {
-            const streams = this.pipeGetRequest(pipeLocation)
-            streams.fsStream.on('close', () => {
+            const streams = this.pipeGetRequest(pipeLocation, this.params.timeout)
+            streams.done.then(() => {
                 this.logger.verbose(`Finished downloading ${this.logText()}`)
             })
             return streams
@@ -92,7 +95,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
             return contents
         } catch (err) {
-            this.logger.verbose(`Error downloading ${this.logText()}: %s`, (err as Error).message)
+            this.logger.error(`Error downloading ${this.logText()}: %O`, err as Error)
 
             return undefined
         }
@@ -103,18 +106,20 @@ export class HttpResourceFetcher implements ResourceFetcher {
     }
 
     // TODO: make pipeLocation a vscode.Uri
-    private pipeGetRequest(pipeLocation: string): FetcherStreams {
+    private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherStreams {
         const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
         const requestStream = requester.stream(this.url, { headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit } })
         const fsStream = fs.createWriteStream(pipeLocation)
 
         const done = new Promise<void>((resolve, reject) => {
-            stream.pipeline(requestStream, fsStream, err => {
+            const pipe = stream.pipeline(requestStream, fsStream, err => {
                 if (err instanceof RequestError) {
                     return reject(Object.assign(new Error('Failed to download file'), { code: err.code }))
                 }
                 err ? reject(err) : resolve()
             })
+
+            timeout?.timer.catch(err => (pipe.end(), reject(err)))
         })
 
         return { requestStream, fsStream, done }

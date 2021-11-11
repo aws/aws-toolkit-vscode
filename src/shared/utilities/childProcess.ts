@@ -6,18 +6,43 @@
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
-import { waitUntil } from './timeoutUtils'
+import { Timeout, waitUntil } from './timeoutUtils'
 
-export interface ChildProcessStartArguments {
-    /** Controls whether stdout/stderr is collected and returned in the `ChildProcessResult`. */
-    collect?: boolean
-    onStdout?(text: string): void
-    onStderr?(text: string): void
-    onError?(error: Error): void
-    onClose?(code: number, signal: string): void
-    onExit?(code: number | null, signal: string | null): void
+interface StartParameterContext {
+    /** Reports an error parsed from the stdin/stdout streams. */
+    reportError(err: string | Error): void
+    /** Attempts to stop the running process. See {@link ChildProcess.stop}. */
+    stop(force?: boolean, signal?: string): void
+    /** The active `Timeout` object (if applicable). */
+    readonly timeout?: Timeout
+    /** The logger being used by the process. */
+    readonly logger: logger.Logger
 }
 
+export interface ChildProcessOptions {
+    /** Sets the logging behavior. False disables all logging. (default: true) */
+    logging?: boolean
+    /** Controls whether stdout/stderr is collected and returned in the `ChildProcessResult`. (default: true) */
+    collect?: boolean
+    /** Wait until streams close to resolve the process result. (default: true) */
+    waitForStreams?: boolean
+    /** Try to kill the process on any error. (default: true) */
+    stopOnError?: boolean
+    /** Forcefully kill the process on an error. (default: false) */
+    useForceStop?: boolean
+    /** Rejects the Promise on any error. Can also use a callback for custom errors. (default: false) */
+    rejectOnError?: boolean | ((error: Error) => Error)
+    /** Rejects the Promise on non-zero exit codes. Can also use a callback for custom errors. (default: false) */
+    rejectOnExit?: boolean | ((code: number) => Error)
+    /** A `Timeout` token. The running process will be terminated on expiration or cancellation. */
+    timeout?: Timeout
+    /** Options sent to the `spawn` command. This is merged in with the base options if they exist. */
+    spawnOptions?: child_process.SpawnOptions
+    /** Callback for intercepting text from the stdout stream. */
+    onStdout?(this: StartParameterContext, text: string): void
+    /** Callback for intercepting text from the stderr stream. */
+    onStderr?(this: StartParameterContext, text: string): void
+}
 export interface ChildProcessResult {
     exitCode: number
     error: Error | undefined
@@ -25,6 +50,7 @@ export interface ChildProcessResult {
     stdout: string
     /** All stderr data emitted by the process, if it was started with `collect=true`, else empty. */
     stderr: string
+    signal?: string
 }
 
 /**
@@ -34,9 +60,8 @@ export interface ChildProcessResult {
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    private readonly args: string[]
     private childProcess: child_process.ChildProcess | undefined
-    private processError: Error | undefined
+    private processErrors: Error[] = []
     private processResult: ChildProcessResult | undefined
     private log: logger.Logger
 
@@ -45,138 +70,156 @@ export class ChildProcess {
     /** Collects stderr data if the process was started with `collect=true`. */
     private stderrChunks: string[] = []
 
-    private makeResult(code: number): ChildProcessResult {
+    private makeResult(code: number, signal?: string): ChildProcessResult {
         return {
             exitCode: code,
             stdout: this.stdoutChunks.join().trim(),
             stderr: this.stderrChunks.join().trim(),
-            error: this.processError,
+            error: this.processErrors.shift(), // Only use the first since that one usually cascades.
+            signal,
         }
     }
 
     public constructor(
-        logging: boolean,
         private readonly command: string,
-        private readonly options?: child_process.SpawnOptions,
-        ...args: string[]
+        private readonly args: string[] = [],
+        private readonly options: ChildProcessOptions = {}
     ) {
-        this.log = logging ? logger.getLogger() : logger.getNullLogger()
-        this.args = args
+        // TODO: allow caller to use the various loggers instead of just the single one
+        this.log = options.logging ?? true ? logger.getLogger() : logger.getNullLogger()
     }
 
+    // TODO: add a way to create 'base' child process instances without necessarily needing to construct a new one each time
+    // this way modules can define default parameters (e.g. `Timeout`) and have all downstream functions use it
     /**
-     * Calls `start()` with default listeners that resolve()/reject() on process end.
+     * Runs the child process. Options passed here are merged with the options passed in during construction.
+     * Priority is given to `run` options, overriding the previous value.
      */
-    public async run(
-        onStdout?: ChildProcessStartArguments['onStdout'],
-        onStderr?: ChildProcessStartArguments['onStderr']
-    ): Promise<ChildProcessResult> {
-        return await new Promise<ChildProcessResult>(async (resolve, reject) => {
-            await this.start({
-                collect: true,
-                onClose: () => {
-                    resolve(this.processResult as ChildProcessResult)
-                },
-                onExit: () => {
-                    const didClose = !!this.processResult
-                    // Race: 'close' may happen after 'exit'. Do not resolve
-                    // before 'close' (the streams may have pending data).
-                    if (!didClose) {
-                        resolve(this.processResult as ChildProcessResult)
-                    }
-                },
-                onStderr: onStderr,
-                onStdout: onStdout,
-            }).catch(reject)
-            if (!this.childProcess) {
-                reject('child process not started')
-            }
-        })
-    }
-
-    public async start(params: ChildProcessStartArguments): Promise<void> {
+    public async run(params: ChildProcessOptions = {}): Promise<ChildProcessResult> {
         if (this.childProcess) {
             throw new Error('process already started')
         }
+
         this.log.info(`Running: ${this.toString()}`)
 
-        // Async.
-        // See also crossSpawn.spawnSync().
-        // Arguments are forwarded[1] to node `child_process` module, see its documentation[2].
-        // [1] https://github.com/moxystudio/node-cross-spawn/blob/master/index.js
-        // [2] https://nodejs.org/api/child_process.html
-        this.childProcess = crossSpawn.spawn(this.command, this.args, this.options)
-
-        function errorHandler(process: ChildProcess, params: ChildProcessStartArguments, error: Error): void {
-            process.processError = error
-            if (params.onError) {
-                params.onError(error)
-            }
+        const cleanup = () => {
+            this.childProcess?.removeAllListeners()
+            this.childProcess?.stdout?.removeAllListeners()
+            this.childProcess?.stderr?.removeAllListeners()
         }
 
-        // Emitted whenever:
-        //  1. Process could not be spawned, or
-        //  2. Process could not be killed, or
-        //  3. Sending a message to the child process failed.
-        // https://nodejs.org/api/child_process.html#child_process_class_childprocess
-        // We also register error event handlers on the output/error streams in case a lower level library fails
-        this.childProcess.on('error', err => {
-            errorHandler(this, params, err)
-        })
-        this.childProcess.stdout?.on('error', err => {
-            errorHandler(this, params, err)
-        })
-        this.childProcess.stderr?.on('error', err => {
-            errorHandler(this, params, err)
-        })
+        const mergedOptions = {
+            ...this.options,
+            ...params,
+            spawnOptions: { ...this.options.spawnOptions, ...params.spawnOptions },
+        }
+        const { rejectOnError, rejectOnExit, timeout } = mergedOptions
 
-        this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
-            if (params.collect) {
-                this.stdoutChunks.push(data.toString())
+        // Defaults
+        mergedOptions.collect ??= true
+        mergedOptions.waitForStreams ??= true
+        mergedOptions.stopOnError ??= true
+
+        return new Promise<ChildProcessResult>((resolve, reject) => {
+            const errorHandler = (error: Error, force = mergedOptions.useForceStop) => {
+                this.processErrors.push(error)
+                if (mergedOptions.stopOnError && !this.stopped) {
+                    this.stop(force)
+                }
+                if (rejectOnError) {
+                    if (typeof rejectOnError === 'function') {
+                        reject(rejectOnError(error))
+                    } else {
+                        reject(error)
+                    }
+                }
             }
 
-            if (params.onStdout) {
-                params.onStdout(data.toString())
-            }
-        })
-
-        this.childProcess.stderr?.on('data', (data: { toString(): string }) => {
-            if (params.collect) {
-                this.stderrChunks.push(data.toString())
+            const paramsContext: StartParameterContext = {
+                timeout,
+                logger: this.log,
+                stop: this.stop.bind(this),
+                reportError: err => errorHandler(err instanceof Error ? err : new Error(err)),
             }
 
-            if (params.onStderr) {
-                params.onStderr(data.toString())
-            }
-        })
+            if (timeout) {
+                if (timeout?.completed) {
+                    throw new Error('Timeout token was already completed.')
+                }
 
-        // Emitted when streams are closed.
-        this.childProcess.once('close', (code, signal) => {
-            const result = this.makeResult(code)
-            this.processResult = result
-
-            if (params.onClose) {
-                params.onClose(code, signal)
+                timeout.timer
+                    .catch(err => err)
+                    .then(err => {
+                        errorHandler(err ?? new Error('Timeout token completed'), true)
+                    })
             }
 
-            this.childProcess!.stdout?.removeAllListeners()
-            this.childProcess!.stderr?.removeAllListeners()
-            this.childProcess!.removeAllListeners()
-        })
-
-        // Emitted when process exits or terminates.
-        // https://nodejs.org/api/child_process.html#child_process_class_childprocess
-        // - If the process exited, `code` is the final exit code of the process, else null.
-        // - If the process terminated because of a signal, `signal` is the name of the signal, else null.
-        // - One of `code` or `signal` will always be non-null.
-        this.childProcess.once('exit', (code, signal) => {
-            const result = this.makeResult(typeof code !== 'number' ? -1 : code)
-            this.processResult = result
-
-            if (params.onExit) {
-                params.onExit(code, signal)
+            // Async.
+            // See also crossSpawn.spawnSync().
+            // Arguments are forwarded[1] to node `child_process` module, see its documentation[2].
+            // [1] https://github.com/moxystudio/node-cross-spawn/blob/master/index.js
+            // [2] https://nodejs.org/api/child_process.html
+            try {
+                this.childProcess = crossSpawn.spawn(this.command, this.args, mergedOptions.spawnOptions)
+            } catch (err) {
+                return errorHandler(err as Error)
             }
-        })
+
+            // Emitted whenever:
+            //  1. Process could not be spawned, or
+            //  2. Process could not be killed, or
+            //  3. Sending a message to the child process failed.
+            // https://nodejs.org/api/child_process.html#child_process_class_childprocess
+            // We also register error event handlers on the output/error streams in case a lower level library fails
+            this.childProcess.on('error', errorHandler)
+            this.childProcess.stdout?.on('error', errorHandler)
+            this.childProcess.stderr?.on('error', errorHandler)
+
+            this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
+                if (mergedOptions.collect) {
+                    this.stdoutChunks.push(data.toString())
+                }
+
+                mergedOptions.onStdout?.call(paramsContext, data.toString())
+            })
+
+            this.childProcess.stderr?.on('data', (data: { toString(): string }) => {
+                if (mergedOptions.collect) {
+                    this.stderrChunks.push(data.toString())
+                }
+
+                mergedOptions.onStderr?.call(paramsContext, data.toString())
+            })
+
+            // Emitted when streams are closed.
+            this.childProcess.once('close', (code, signal) => {
+                this.processResult = this.makeResult(code, signal)
+                resolve(this.processResult)
+                cleanup()
+            })
+
+            // Emitted when process exits or terminates.
+            // https://nodejs.org/api/child_process.html#child_process_class_childprocess
+            // - If the process exited, `code` is the final exit code of the process, else null.
+            // - If the process terminated because of a signal, `signal` is the name of the signal, else null.
+            // - One of `code` or `signal` will always be non-null.
+            this.childProcess.once('exit', (code, signal) => {
+                this.processResult = this.makeResult(
+                    typeof code === 'number' ? code : -1,
+                    typeof signal === 'string' ? signal : undefined
+                )
+                if (code && rejectOnExit) {
+                    if (typeof rejectOnExit === 'function') {
+                        reject(rejectOnExit(code))
+                    } else {
+                        reject(new Error(`Command exited with non-zero code: ${code}`))
+                    }
+                }
+                if (mergedOptions.waitForStreams === false) {
+                    resolve(this.processResult)
+                }
+            })
+        }).finally(() => this.childProcess?.killed && cleanup())
     }
 
     /**
@@ -195,7 +238,7 @@ export class ChildProcess {
     }
 
     public exitCode(): number {
-        return typeof this.childProcess?.exitCode == 'number' ? this.childProcess.exitCode : -1
+        return this.childProcess?.exitCode ?? -1
     }
 
     /**
@@ -204,10 +247,10 @@ export class ChildProcess {
      * SIGTERM won't kill a terminal process, use SIGHUP instead.
      *
      * @param force  Tries SIGKILL if the process is not stopped after a few seconds.
-     * @param signal  Signal to send, defaults to SIGTERM.
+     * @param signal  Signal to send, defaults to SIGTERM (node default).
      *
      */
-    public stop(force: boolean = false, signal: string = 'SIGTERM'): void {
+    public stop(force: boolean = false, signal?: string): void {
         const child = this.childProcess
         if (!child) {
             return

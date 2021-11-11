@@ -173,7 +173,7 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
         // Overwrite the tsconfig.json copied by `sam build`.
         writeFileSync(buildDirTsConfig, JSON.stringify(defaultTsconfig, undefined, 4))
         getLogger('channel').info(`Compiling TypeScript app with: "${tsc}"`)
-        await new ChildProcess(true, tsc, undefined, '--project', buildDirApp).run()
+        await new ChildProcess(tsc, ['--project', buildDirApp]).run()
     } catch (error) {
         getLogger('channel').error(`TypeScript compile error: ${error}`)
         throw Error('Failed to compile TypeScript app')

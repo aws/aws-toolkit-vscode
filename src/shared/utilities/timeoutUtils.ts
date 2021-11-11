@@ -9,6 +9,12 @@ export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
 export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
 export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
 
+export class TimeoutError extends Error {
+    constructor(public readonly type: 'expired' | 'cancelled' = 'expired') {
+        super(type === 'cancelled' ? TIMEOUT_CANCELLED_MESSAGE : TIMEOUT_EXPIRED_MESSAGE)
+    }
+}
+
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations. Timeouts
  * cannot be used after 'complete' has been called or if the Timeout expired.
@@ -38,7 +44,7 @@ export class Timeout {
         })
 
         this.timerTimeout = setTimeout(() => {
-            this.timerReject(new Error(TIMEOUT_EXPIRED_MESSAGE))
+            this.timerReject(new TimeoutError('expired'))
             this._completed = true
         }, timeoutLength)
     }
@@ -108,7 +114,7 @@ export class Timeout {
         clearTimeout(this.timerTimeout!)
 
         if (reject) {
-            this.timerReject(new Error(TIMEOUT_CANCELLED_MESSAGE))
+            this.timerReject(new TimeoutError('cancelled'))
         } else {
             this.timerResolve()
         }
