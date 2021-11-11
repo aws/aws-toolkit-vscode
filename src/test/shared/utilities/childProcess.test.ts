@@ -362,6 +362,20 @@ describe('ChildProcess', async function () {
                 assert.notStrictEqual(childProcess.result()?.error, undefined)
             })
 
+            it('still runs if the timer completed (not rejected) after starting', async function () {
+                const timer = new Timeout(10)
+                setTimeout(() => timer.complete())
+                await childProcess.run({
+                    stopOnError: true,
+                    waitForStreams: false,
+                    onStdout() {
+                        this.reportError('Got stuff')
+                    },
+                })
+
+                assert.strictEqual(childProcess.result()?.error?.message, 'Got stuff')
+            })
+
             it('rejects if using a completed timer', async function () {
                 const timer = new Timeout(10)
                 timer.complete()

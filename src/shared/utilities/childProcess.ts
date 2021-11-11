@@ -154,11 +154,7 @@ export class ChildProcess {
                     throw new Error('Timeout token was already completed.')
                 }
 
-                timeout.timer
-                    .catch(err => err)
-                    .then(err => {
-                        errorHandler(err ?? new Error('Timeout token completed'), true)
-                    })
+                timeout.timer.catch(err => errorHandler(err, true))
             }
 
             // Async.

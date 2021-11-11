@@ -95,7 +95,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
             return contents
         } catch (err) {
-            this.logger.error(`Error downloading ${this.logText()}: %O`, err as Error)
+            this.logger.verbose(`Error downloading ${this.logText()}: %s`, (err as Error).message)
 
             return undefined
         }

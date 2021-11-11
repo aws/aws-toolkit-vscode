@@ -3,291 +3,324 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { chmod, ensureDir, writeFile } from 'fs-extra'
+import * as assert from 'assert'
 import * as os from 'os'
-import * as path from 'path'
-import * as semver from 'semver'
-import {
-    DotNetCoreDebugConfiguration,
-    DOTNET_CORE_DEBUGGER_PATH,
-    getCodeRoot,
-    isImageLambdaConfig,
-} from '../../../lambda/local/debugConfiguration'
+import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
+import { makeCoreCLRDebugConfiguration } from '../../../shared/sam/debugger/csharpSamDebug'
+import * as testutil from '../../testUtil'
+import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 import * as pathutil from '../../../shared/utilities/pathUtils'
-import { ExtContext } from '../../extensions'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
-import { SamLaunchRequestArgs } from './awsSamDebugger'
-import { ChildProcess } from '../../utilities/childProcess'
-import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
-import { ext } from '../../extensionGlobals'
-import { getLogger } from '../../logger'
-import { Window } from '../../vscode/window'
+import * as path from 'path'
+import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
+import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
+import { ext } from '../../../shared/extensionGlobals'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
-import * as nls from 'vscode-nls'
-import { getSamCliVersion } from '../cli/samCliContext'
-import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT } from '../cli/samCliValidator'
-const localize = nls.loadMessageBundle()
+describe('makeCoreCLRDebugConfiguration', function () {
+    let tempFolder: string
+    let fakeWorkspaceFolder: vscode.WorkspaceFolder
 
-/**
- * Gathers and sets launch-config info by inspecting the workspace and creating
- * temp files/directories as needed.
- *
- * Does NOT execute/invoke SAM, docker, etc.
- */
-export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
-    if (!config.baseBuildDir) {
-        throw Error('invalid state: config.baseBuildDir was not set')
-    }
-    config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
-    // TODO: avoid the reassignment
-    // TODO: walk the tree to find .sln, .csproj ?
-    const originalCodeRoot = config.codeRoot
-    config.codeRoot = getSamProjectDirPathForFile(config.templatePath)
-
-    config = {
-        ...config,
-        type: 'coreclr',
-        request: config.noDebug ? 'launch' : 'attach',
-        runtimeFamily: RuntimeFamily.DotNetCore,
-    }
-
-    if (!config.noDebug) {
-        config = await makeCoreCLRDebugConfiguration(config, originalCodeRoot)
-    }
-
-    return config
-}
-
-/**
- * Launches and attaches debugger to a SAM dotnet (csharp) project.
- *
- * We spin up a C# Lambda Docker container, download and build the debugger for
- * Linux, then mount it with the SAM app on run. User's C# workspace dir will
- * have a `.vsdbg` dir after the first run.
- */
-export async function invokeCsharpLambda(
-    ctx: ExtContext,
-    config: SamLaunchRequestArgs,
-    window: Window = Window.vscode()
-): Promise<SamLaunchRequestArgs> {
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.DOTNET])
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = waitForPort
-
-    if (!config.noDebug) {
-        const samCliVersion = await getSamCliVersion(ctx.samCliContext())
-        // TODO: Remove this when min sam version is >= 1.4.0
-        if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT)) {
-            window.showWarningMessage(
-                localize(
-                    'AWS.output.sam.local.no.net.3.1.debug',
-                    'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
-                )
-            )
-            config.noDebug = true
-        } else if (config.architecture === 'arm64') {
-            window.showWarningMessage(
-                localize(
-                    'AWS.output.sam.local.no.arm.net.3.1.debug',
-                    'The vsdbg debugger does not currently support the arm64 architecture. Function will run locally without debug.'
-                )
-            )
-            getLogger().warn('SAM Invoke: Attempting to debug dotnet on ARM - removing debug flag.')
-            config.noDebug = true
-        }
-    }
-    return await runLambdaFunction(ctx, config, async () => {
-        if (!config.noDebug) {
-            await _installDebugger({
-                debuggerPath: config.debuggerPath!,
-            })
+    beforeEach(async function () {
+        tempFolder = await makeTemporaryToolkitFolder()
+        fakeWorkspaceFolder = {
+            uri: vscode.Uri.file(tempFolder),
+            name: 'It was me, fakeWorkspaceFolder!',
+            index: 0,
         }
     })
-}
 
-interface InstallDebuggerArgs {
-    debuggerPath: string
-}
+    afterEach(async function () {
+        await fs.remove(tempFolder)
+    })
 
-function getDebuggerPath(parentFolder: string): string {
-    return path.resolve(parentFolder, '.vsdbg')
-}
+    async function makeFakeSamLaunchConfig() {
+        const config: SamLaunchRequestArgs = {
+            name: 'fake-launch-config',
+            workspaceFolder: fakeWorkspaceFolder,
+            codeRoot: fakeWorkspaceFolder.uri.fsPath,
+            runtimeFamily: RuntimeFamily.DotNetCore,
+            type: 'coreclr',
+            request: 'attach',
+            // cfnTemplate?: CloudFormation.Template
+            runtime: 'fakedotnet',
+            handlerName: 'fakehandlername',
+            noDebug: false,
+            apiPort: 4242,
+            debugPort: 4243,
 
-async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<void> {
-    await ensureDir(debuggerPath)
+            baseBuildDir: '/fake/build/dir/',
+            envFile: '/fake/build/dir/env-vars.json',
+            eventPayloadFile: '/fake/build/dir/event.json',
+            documentUri: vscode.Uri.parse('/fake/path/foo.txt'),
+            templatePath: '/fake/sam/path',
+            samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(),
 
-    try {
-        getLogger('channel').info(
-            localize(
-                'AWS.samcli.local.invoke.debugger.install',
-                'Installing .NET Core Debugger to {0}...',
-                debuggerPath
-            )
-        )
+            //debuggerPath?:
 
-        const vsDbgVersion = 'latest'
-        // TODO: If vsdbg works with qemu, have this detect Architecture and swap to `linux-arm64` if ARM.
-        // See https://github.com/OmniSharp/omnisharp-vscode/issues/3277 ;
-        // qemu appears to set PrivateTmp=true : https://github.com/qemu/qemu/blob/326ff8dd09556fc2e257196c49f35009700794ac/contrib/systemd/qemu-pr-helper.service#L8 ?
-        const vsDbgRuntime = 'linux-x64'
+            invokeTarget: {
+                target: 'code',
+                lambdaHandler: 'fakehandlername',
+                projectRoot: fakeWorkspaceFolder.uri.fsPath,
+            },
+        }
+        return config
+    }
 
-        const installScriptPath = await downloadInstallScript(debuggerPath)
+    async function makeConfig({ codeUri = tempFolder }: { codeUri?: string; port?: number }) {
+        const fakeLaunchConfig = await makeFakeSamLaunchConfig()
+        return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
+    }
 
-        let installCommand: string
-        let installArgs: string[]
-        if (os.platform() == 'win32') {
-            const windir = process.env['WINDIR']
-            if (!windir) {
-                throw new Error('Environment variable `WINDIR` not defined')
-            }
-
-            installCommand = `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
-            installArgs = [
-                '-NonInteractive',
-                '-NoProfile',
-                '-WindowStyle',
-                'Hidden',
-                '-ExecutionPolicy',
-                'RemoteSigned',
-                '-File',
-                installScriptPath,
-                '-Version',
-                vsDbgVersion,
-                '-RuntimeID',
-                vsDbgRuntime,
-                '-InstallPath',
-                debuggerPath,
-            ]
-        } else {
-            installCommand = installScriptPath
-            installArgs = ['-v', vsDbgVersion, '-r', vsDbgRuntime, '-l', debuggerPath]
+    describe('windows', function () {
+        if (os.platform() === 'win32') {
+            it('massages drive letters to uppercase', async function () {
+                const config = await makeConfig({})
+                assert.strictEqual(
+                    config.windows.pipeTransport.pipeCwd.substring(0, 1),
+                    tempFolder.substring(0, 1).toUpperCase()
+                )
+            })
         }
 
-        const childProcess = new ChildProcess(installCommand, installArgs)
-
-        const install = await childProcess.run({
-            onStdout: (text: string) => {
-                ext.outputChannel.append(text)
-            },
-            onStderr: (text: string) => {
-                ext.outputChannel.append(text)
-            },
+        it('uses powershell', async function () {
+            const config = await makeConfig({})
+            assert.strictEqual(config.windows.pipeTransport.pipeProgram, 'powershell')
         })
 
-        if (install.exitCode) {
-            throw new Error(`command failed (exit code: ${install.exitCode}): ${installCommand}`)
-        }
-    } catch (err) {
-        getLogger('channel').info(
-            localize(
-                'AWS.samcli.local.invoke.debugger.install.failed',
-                'Error installing .NET Core Debugger: {0}',
-                err instanceof Error ? (err as Error).message : String(err)
+        it('uses the specified port', async function () {
+            const config = await makeConfig({})
+            assert.strictEqual(
+                config.windows.pipeTransport.pipeArgs.some(arg => arg.includes(config.debugPort!.toString())),
+                true
             )
-        )
-
-        throw err
-    }
-}
-
-async function downloadInstallScript(debuggerPath: string): Promise<string> {
-    let installScriptUrl: string
-    let installScriptPath: string
-    if (os.platform() == 'win32') {
-        installScriptUrl = 'https://aka.ms/getvsdbgps1'
-        installScriptPath = path.join(debuggerPath, 'installVsdbgScript.ps1')
-    } else {
-        installScriptUrl = 'https://aka.ms/getvsdbgsh'
-        installScriptPath = path.join(debuggerPath, 'installVsdbgScript.sh')
-    }
-
-    const installScriptFetcher = new HttpResourceFetcher(installScriptUrl, { showUrl: true })
-    const installScript = await installScriptFetcher.get()
-    if (!installScript) {
-        throw Error(`Failed to download ${installScriptUrl}`)
-    }
-
-    await writeFile(installScriptPath, installScript, 'utf8')
-    await chmod(installScriptPath, 0o700)
-
-    return installScriptPath
-}
-
-function getSamProjectDirPathForFile(filepath: string): string {
-    return pathutil.normalize(path.dirname(filepath))
-}
-
-/**
- * Creates a CLR launch-config composed with the given `config`.
- */
-export async function makeCoreCLRDebugConfiguration(
-    config: SamLaunchRequestArgs,
-    codeUri: string
-): Promise<DotNetCoreDebugConfiguration> {
-    if (config.noDebug) {
-        throw Error(`SAM debug: invalid config ${config}`)
-    }
-    const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
-    config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
-    await ensureDir(config.debuggerPath)
-
-    const isImageLambda = isImageLambdaConfig(config)
-
-    if (isImageLambda && !config.noDebug) {
-        config.containerEnvVars = {
-            _AWS_LAMBDA_DOTNET_DEBUGGING: '1',
-        }
-    }
-
-    if (os.platform() === 'win32') {
-        // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
-        codeUri = codeUri.replace(pathutil.DRIVE_LETTER_REGEX, match => match.toUpperCase())
-    }
-
-    if (isImageLambda) {
-        // default build path, in dotnet image-based templates
-        // Not needed for ZIP lambdas, because SAM prevents dotnet from being
-        // built in-container thus PDBs already point to the user workspace.
-        if (!config.sourceFileMap) {
-            config.sourceFileMap = {}
-        }
-        config.sourceFileMap['/build'] = codeUri
-    }
-
-    if (config.lambda?.pathMappings !== undefined) {
-        if (!config.sourceFileMap) {
-            config.sourceFileMap = {}
-        }
-        // we could safely leave this entry in, but might as well give the user full control if they're specifying mappings
-        delete config.sourceFileMap['/build']
-        config.lambda.pathMappings.forEach(mapping => {
-            // this looks weird because we're mapping the PDB path to the local workspace
-            config.sourceFileMap[mapping.remoteRoot] = mapping.localRoot
         })
-    }
+    })
+    describe('*nix', function () {
+        it('uses the default shell', async function () {
+            const config = await makeConfig({})
 
-    return {
-        ...config,
-        runtimeFamily: RuntimeFamily.DotNetCore,
-        request: 'attach',
-        // Since SAM CLI 1.0 we cannot assume PID=1. So use processName=dotnet
-        // instead of processId=1.
-        processName: 'dotnet',
-        pipeTransport: {
-            pipeProgram: 'sh',
-            pipeArgs,
-            debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
-            pipeCwd: codeUri,
-        },
-        windows: {
-            pipeTransport: {
-                pipeProgram: 'powershell',
-                pipeArgs,
-                debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
-                pipeCwd: codeUri,
+            assert.strictEqual(config.pipeTransport.pipeProgram, 'sh')
+        })
+
+        it('uses the specified port', async function () {
+            const config = await makeConfig({})
+
+            assert.strictEqual(
+                config.pipeTransport.pipeArgs.some(arg => arg.includes(config.debugPort!.toString())),
+                true
+            )
+        })
+    })
+})
+
+describe('isImageLambdaConfig', function () {
+    let tempFolder: string
+    let fakeWorkspaceFolder: vscode.WorkspaceFolder
+
+    let registry: CloudFormationTemplateRegistry
+    let appDir: string
+
+    beforeEach(async function () {
+        tempFolder = await makeTemporaryToolkitFolder()
+        fakeWorkspaceFolder = {
+            uri: vscode.Uri.file(tempFolder),
+            name: 'It was me, fakeWorkspaceFolder!',
+            index: 0,
+        }
+        registry = ext.templateRegistry
+        appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
+    })
+
+    it('true for Image-backed template', async function () {
+        const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
+        await registry.addItemToRegistry(templatePath)
+
+        const input = {
+            name: 'fake-launch-config',
+            workspaceFolder: fakeWorkspaceFolder,
+            codeRoot: fakeWorkspaceFolder.uri.fsPath,
+            runtimeFamily: RuntimeFamily.DotNetCore,
+            request: 'launch',
+            type: 'launch',
+            runtime: 'fakedotnet',
+            handlerName: 'fakehandlername',
+            envFile: '/fake/build/dir/env-vars.json',
+            eventPayloadFile: '/fake/build/dir/event.json',
+            documentUri: vscode.Uri.parse('/fake/path/foo.txt'),
+            templatePath: '/fake/sam/path',
+            invokeTarget: {
+                target: 'template',
+                templatePath: templatePath.fsPath,
+                logicalId: 'HelloWorldFunction',
+                lambdaHandler: 'fakehandlername',
+                projectRoot: fakeWorkspaceFolder.uri.fsPath,
             },
-        },
-    }
-}
+        } as SamLaunchRequestArgs
+
+        assert.strictEqual(isImageLambdaConfig(input), true)
+    })
+
+    it('false for ZIP-backed template', async function () {
+        const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
+        await registry.addItemToRegistry(templatePath)
+
+        const input = {
+            name: 'fake-launch-config',
+            workspaceFolder: fakeWorkspaceFolder,
+            codeRoot: fakeWorkspaceFolder.uri.fsPath,
+            runtimeFamily: RuntimeFamily.DotNetCore,
+            request: 'launch',
+            type: 'launch',
+            runtime: 'fakedotnet',
+            handlerName: 'fakehandlername',
+            envFile: '/fake/build/dir/env-vars.json',
+            eventPayloadFile: '/fake/build/dir/event.json',
+            documentUri: vscode.Uri.parse('/fake/path/foo.txt'),
+            templatePath: '/fake/sam/path',
+            invokeTarget: {
+                target: 'template',
+                templatePath: templatePath.fsPath,
+                logicalId: 'HelloWorldFunction',
+                lambdaHandler: 'fakehandlername',
+                projectRoot: fakeWorkspaceFolder.uri.fsPath,
+            },
+        } as SamLaunchRequestArgs
+
+        assert.strictEqual(isImageLambdaConfig(input), false)
+    })
+
+    it('false for code-type', async function () {
+        const input = {
+            name: 'fake-launch-config',
+            workspaceFolder: fakeWorkspaceFolder,
+            codeRoot: fakeWorkspaceFolder.uri.fsPath,
+            runtimeFamily: RuntimeFamily.DotNetCore,
+            request: 'launch',
+            type: 'launch',
+            runtime: 'fakedotnet',
+            handlerName: 'fakehandlername',
+            envFile: '/fake/build/dir/env-vars.json',
+            eventPayloadFile: '/fake/build/dir/event.json',
+            documentUri: vscode.Uri.parse('/fake/path/foo.txt'),
+            invokeTarget: {
+                target: 'code',
+                lambdaHandler: 'fakehandlername',
+                projectRoot: fakeWorkspaceFolder.uri.fsPath,
+            },
+        } as SamLaunchRequestArgs
+
+        assert.strictEqual(isImageLambdaConfig(input), false)
+    })
+})
+
+describe('getArchitecture', function () {
+    it('returns a valid architecture from a template', function () {
+        const resource: CloudFormation.Resource = {
+            Type: 'AWS::Serverless::Function',
+            Properties: {
+                CodeUri: 'foo',
+                Handler: 'foo',
+                Architectures: ['arm64'],
+            },
+        }
+        const template: CloudFormation.Template = {
+            Resources: {
+                myResource: resource,
+            },
+        }
+        assert.strictEqual(
+            getArchitecture(template, resource, {
+                target: 'template',
+                logicalId: 'myResource',
+                templatePath: 'foo',
+            }),
+            'arm64'
+        )
+    })
+
+    it('returns x86_64 for an invalid architecture from a template', function () {
+        const resource: CloudFormation.Resource = {
+            Type: 'AWS::Serverless::Function',
+            Properties: {
+                CodeUri: 'foo',
+                Handler: 'foo',
+                Architectures: ['powerPc' as 'x86_64'],
+            },
+        }
+        const template: CloudFormation.Template = {
+            Resources: {
+                myResource: resource,
+            },
+        }
+        assert.strictEqual(
+            getArchitecture(template, resource, {
+                target: 'template',
+                logicalId: 'myResource',
+                templatePath: 'foo',
+            }),
+            'x86_64'
+        )
+    })
+
+    it('returns a valid architecture from CodeTargetProperties', function () {
+        assert.strictEqual(
+            getArchitecture(undefined, undefined, {
+                lambdaHandler: 'foo',
+                projectRoot: 'foo',
+                target: 'code',
+                architecture: 'arm64',
+            }),
+            'arm64'
+        )
+    })
+
+    it('returns x86_64 for an invalid architecture from CodeTargetProperties', function () {
+        assert.strictEqual(
+            getArchitecture(undefined, undefined, {
+                lambdaHandler: 'foo',
+                projectRoot: 'foo',
+                target: 'code',
+                architecture: 'powerPc' as 'x86_64',
+            }),
+            'x86_64'
+        )
+    })
+
+    it('returns undefined if no value is present in the template', function () {
+        const resource: CloudFormation.Resource = {
+            Type: 'AWS::Serverless::Function',
+            Properties: {
+                CodeUri: 'foo',
+                Handler: 'foo',
+            },
+        }
+        const template: CloudFormation.Template = {
+            Resources: {
+                myResource: resource,
+            },
+        }
+        assert.strictEqual(
+            getArchitecture(template, resource, {
+                target: 'template',
+                logicalId: 'myResource',
+                templatePath: 'foo',
+            }),
+            undefined
+        )
+    })
+
+    it('returns undefined if no value is present in CodeTargetProperties', function () {
+        assert.strictEqual(
+            getArchitecture(undefined, undefined, {
+                lambdaHandler: 'foo',
+                projectRoot: 'foo',
+                target: 'code',
+            }),
+            undefined
+        )
+    })
+})
