@@ -11,6 +11,7 @@ import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
+import { installFakeClock } from '../../testUtil'
 
 describe('addLogEvents', async function () {
     let sandbox: sinon.SinonSandbox
@@ -18,7 +19,7 @@ describe('addLogEvents', async function () {
     const config = new TestSettingsConfiguration()
 
     before(function () {
-        clock = FakeTimers.install()
+        clock = installFakeClock()
         config.writeSetting('cloudWatchLogs.limit', 1000)
     })
 
@@ -56,14 +57,14 @@ describe('addLogEvents', async function () {
             ]
         >()
 
-        const document: vscode.TextDocument = ({
+        const document: vscode.TextDocument = {
             uri: uri,
-        } as any) as vscode.TextDocument
+        } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = ({
+        const fakeRegistry: LogStreamRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
@@ -112,14 +113,14 @@ describe('addLogEvents', async function () {
             clock.setTimeout(() => {}, 100)
         })
 
-        const document: vscode.TextDocument = ({
+        const document: vscode.TextDocument = {
             uri: uri,
-        } as any) as vscode.TextDocument
+        } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = ({
+        const fakeRegistry: LogStreamRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 

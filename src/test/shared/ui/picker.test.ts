@@ -9,6 +9,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
 import { IteratorTransformer } from '../../../shared/utilities/collectionUtils'
+import { installFakeClock } from '../../testUtil'
 
 export class TestQuickPick<T extends vscode.QuickPickItem> implements vscode.QuickPick<T> {
     public _value: string = ''
@@ -404,7 +405,7 @@ describe('IteratingQuickPickController', async function () {
     let clock: FakeTimers.InstalledClock
 
     before(function () {
-        clock = FakeTimers.install()
+        clock = installFakeClock()
     })
 
     after(function () {
