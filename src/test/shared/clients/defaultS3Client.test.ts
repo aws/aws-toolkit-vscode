@@ -112,6 +112,10 @@ describe('DefaultS3Client', function () {
         mockS3 = mock()
     })
 
+    afterEach(function () {
+        DefaultS3Client.clearCache()
+    })
+
     function success<T>(output?: T): Request<T, AWSError> {
         return {
             promise: () => Promise.resolve(output),
@@ -121,12 +125,12 @@ describe('DefaultS3Client', function () {
         } as Request<any, AWSError>
     }
 
-    function failure(): Request<any, AWSError> {
+    function failure(err = error): Request<any, AWSError> {
         return {
-            promise: () => Promise.reject(error),
+            promise: () => Promise.reject(err),
             createReadStream() {
                 const readStream = FakeFileStreams.readStreamFrom(fileData)
-                readStream.destroy(error)
+                readStream.destroy(err)
                 return readStream
             },
         } as Request<any, AWSError>
@@ -286,6 +290,48 @@ describe('DefaultS3Client', function () {
         })
     })
 
+    describe('listBucketsIterable', function () {
+        it('returns an async iterable filtered by region', async function () {
+            when(mockS3.listBuckets()).thenReturn(
+                success({ Buckets: [{ Name: bucketName }, { Name: outOfRegionBucketName }] })
+            )
+            when(mockS3.getBucketLocation(deepEqual({ Bucket: bucketName }))).thenReturn(
+                success({ LocationConstraint: region })
+            )
+
+            const expected = new DefaultBucket({
+                partitionId: partition,
+                region,
+                name: bucketName,
+            })
+
+            for await (const bucket of createClient().listBucketsIterable()) {
+                assert.deepStrictEqual(bucket, expected)
+            }
+        })
+    })
+
+    describe('checkBucketExists', function () {
+        it('returns true if it exists', async function () {
+            when(mockS3.headBucket(anything())).thenReturn(success())
+            assert.ok(await createClient().checkBucketExists('foo'))
+        })
+
+        it('returns false on a 404', async function () {
+            when(mockS3.headBucket(anything())).thenReturn(
+                failure(Object.assign(new Error() as AWSError, { statusCode: 404 }))
+            )
+            assert.strictEqual(await createClient().checkBucketExists('foo'), false)
+        })
+
+        it('throws otherwise', async function () {
+            when(mockS3.headBucket(anything())).thenReturn(
+                failure(Object.assign(new Error() as AWSError, { statusCode: 403 }))
+            )
+            await assert.rejects(createClient().checkBucketExists('foo'))
+        })
+    })
+
     describe('uploadFile', function () {
         it('uploads a file', async function () {
             const mockManagedUpload: ManagedUpload = mock()
@@ -335,26 +381,56 @@ describe('DefaultS3Client', function () {
     })
 
     describe('listBuckets', function () {
-        it('lists a bucket', async function () {
-            when(mockS3.listBuckets()).thenReturn(
-                success({ Buckets: [{ Name: bucketName }, { Name: outOfRegionBucketName }] })
-            )
-            when(mockS3.getBucketLocation(deepEqual({ Bucket: bucketName }))).thenReturn(
-                success({ LocationConstraint: region })
-            )
-            when(mockS3.getBucketLocation(deepEqual({ Bucket: outOfRegionBucketName }))).thenReturn(
-                success({ LocationConstraint: 'outOfRegion' })
-            )
+        describe('listing by region', function () {
+            const expected = new DefaultBucket({
+                partitionId: partition,
+                region,
+                name: bucketName,
+            })
 
-            const response = await createClient().listBuckets()
-            assert.deepStrictEqual(response, {
-                buckets: [
-                    new DefaultBucket({
-                        partitionId: partition,
-                        region,
-                        name: bucketName,
-                    }),
-                ],
+            beforeEach(function () {
+                when(mockS3.listBuckets()).thenReturn(
+                    success({
+                        Buckets: [{ Name: bucketName, CreationDate: new Date(1) }, { Name: outOfRegionBucketName }],
+                    })
+                )
+                when(mockS3.getBucketLocation(deepEqual({ Bucket: bucketName }))).thenReturn(
+                    success({ LocationConstraint: region })
+                )
+                when(mockS3.getBucketLocation(deepEqual({ Bucket: outOfRegionBucketName }))).thenReturn(
+                    success({ LocationConstraint: 'outOfRegion' })
+                )
+            })
+
+            it('lists a bucket', async function () {
+                const response = await createClient().listBuckets()
+                assert.deepStrictEqual(response, { buckets: [expected] })
+            })
+
+            it('caches bucket regions in the constructor object', async function () {
+                const response = await createClient().listBuckets()
+                assert.deepStrictEqual(response, { buckets: [expected] })
+
+                await createClient().listBuckets()
+                verify(mockS3.getBucketLocation(anything())).twice()
+                verify(mockS3.listBuckets()).twice()
+            })
+
+            it("re-checks region if the bucket's creation date changes", async function () {
+                const response = await createClient().listBuckets()
+                assert.deepStrictEqual(response, { buckets: [expected] })
+
+                when(mockS3.listBuckets()).thenReturn(
+                    success({ Buckets: [{ Name: bucketName, CreationDate: new Date(2) }] })
+                )
+
+                when(mockS3.getBucketLocation(deepEqual({ Bucket: bucketName }))).thenReturn(
+                    success({ LocationConstraint: 'new-region' })
+                )
+
+                assert.deepStrictEqual(await createClient().listBuckets(), { buckets: [] })
+                verify(mockS3.getBucketLocation(anything())).thrice()
+                verify(mockS3.listBuckets()).twice()
             })
         })
 

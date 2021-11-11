@@ -11,10 +11,8 @@ import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { sfnCreateStateMachineUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
-import { createCommonButtons } from '../../shared/ui/buttons'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { isValidResponse } from '../../shared/wizards/wizard'
 import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
 import { refreshStepFunctionsTree } from '../explorer/stepFunctionsNodes'
 import {
@@ -65,14 +63,11 @@ export async function publishStateMachine(
     }
 
     if (!region) {
-        const r = await createRegionPrompter(undefined, {
-            buttons: createCommonButtons(sfnCreateStateMachineUrl),
+        const r = await createRegionPrompter({
+            helpUri: sfnCreateStateMachineUrl,
             defaultRegion: awsContext.getCredentialDefaultRegion(),
         }).prompt()
-        if (!isValidResponse(r)) {
-            logger.error('publishStateMachine: invalid region selected: %O', r)
-        }
-        region = isValidResponse(r) ? r.id : awsContext.getCredentialDefaultRegion()
+        region = r?.id ?? awsContext.getCredentialDefaultRegion()
     }
 
     const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(region)

@@ -5,26 +5,22 @@
 
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import {
-    AppRunnerImageRepositoryWizard,
-    ImageIdentifierForm,
-    TaggedEcrRepository,
-} from '../../../apprunner/wizards/imageRepositoryWizard'
+import { AppRunnerImageRepositoryWizard } from '../../../apprunner/wizards/imageRepositoryWizard'
 
 describe('AppRunnerImageRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
-    let repoTester: WizardTester<AppRunner.ImageRepository>
+    let repoTester: Omit<WizardTester<AppRunner.ImageRepository>, 'printInfo' | 'runTester'>
 
     beforeEach(function () {
-        const wizard = new AppRunnerImageRepositoryWizard({} as any, {} as any) // the clients will never be called
+        const wizard = new AppRunnerImageRepositoryWizard({} as any, {} as any)
         tester = createWizardTester(wizard)
         repoTester = tester.ImageRepository
     })
 
     it('prompts for identifier, port, and environment variables', function () {
-        repoTester.ImageIdentifier.assertShow()
-        repoTester.ImageConfiguration.Port.assertShow()
-        repoTester.ImageConfiguration.RuntimeEnvironmentVariables.assertShow()
+        repoTester.ImageIdentifier.assertShowFirst()
+        repoTester.ImageConfiguration.Port.assertShowSecond()
+        repoTester.ImageConfiguration.RuntimeEnvironmentVariables.assertShowThird()
         repoTester.assertShowCount(3)
     })
 
@@ -46,25 +42,5 @@ describe('AppRunnerImageRepositoryWizard', function () {
 
         repoTester.ImageRepositoryType.applyInput('ECR_PUBLIC')
         tester.AuthenticationConfiguration.AccessRoleArn.assertDoesNotShow()
-    })
-})
-
-describe('ImageIdentifierForm', function () {
-    let tester: WizardTester<{ repo: TaggedEcrRepository }>
-
-    beforeEach(function () {
-        const form = new ImageIdentifierForm({} as any) // ecr will never be called
-        tester = createWizardTester(form)
-    })
-
-    it('asks for tag if not provided', function () {
-        tester.repo.tag.assertDoesNotShow()
-        tester.repo.applyInput({ repositoryName: 'name', repositoryArn: '', repositoryUri: '' })
-        tester.repo.tag.assertShow()
-    })
-
-    it('skips tag step if given', function () {
-        tester.repo.applyInput({ repositoryName: 'name', repositoryArn: '', repositoryUri: '', tag: 'latest' })
-        tester.repo.tag.assertDoesNotShow()
     })
 })

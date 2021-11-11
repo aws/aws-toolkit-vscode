@@ -4,16 +4,10 @@
  */
 
 import * as assert from 'assert'
-import { Prompter, PromptResult } from '../../../shared/ui/prompter'
-import {
-    isWizardControl,
-    StateWithCache,
-    StepEstimator,
-    Wizard,
-    WizardState,
-    WIZARD_BACK,
-    WIZARD_EXIT,
-} from '../../../shared/wizards/wizard'
+import { Prompter, PrompterConfiguration, PromptResult } from '../../../shared/ui/prompter'
+import { WizardControl } from '../../../shared/wizards/util'
+import { StateWithCache, StepEstimator, Wizard, WIZARD_BACK, WIZARD_EXIT } from '../../../shared/wizards/wizard'
+import { BoundState } from '../../../shared/wizards/wizardForm'
 
 interface TestWizardForm {
     prop1: string
@@ -38,7 +32,7 @@ interface AssertStepMethods {
 
 type StepTuple = [current: number, total: number]
 type StateResponse<T, S> = (state: StateWithCache<S, T>) => PromptResult<T>
-type TestResponse<T, S> = PromptResult<T> | StateResponse<T, S>
+type TestResponse<T, S> = Promise<PromptResult<T>> | PromptResult<T> | StateResponse<T, S>
 
 function makeGreen(s: string): string {
     return `\u001b[32m${s}\u001b[0m`
@@ -63,11 +57,14 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     private readonly acceptedSteps: [current: number, total: number][] = []
     private readonly acceptedEstimators: StepEstimator<T>[] = []
     private _totalSteps: number = 1
-    private _lastResponse: PromptResult<T>
+    private _disposed: boolean = false
+    private _lastResponse?: PromptResult<T>
+
     private promptCount: number = 0
     private name: string = 'Test Prompter'
 
     public get recentItem(): PromptResult<T> {
+        assert.ok(this._lastResponse, 'Tried accessing `recentItem` before prompting')
         return this._lastResponse
     }
     public set recentItem(response: PromptResult<T>) {
@@ -87,14 +84,23 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this.responses = responses
     }
 
-    public async prompt(): Promise<PromptResult<T>> {
+    public async prompt(): Promise<T | undefined> {
+        throw new Error('Wizards should not call this method')
+    }
+
+    public async promptControl(): Promise<PromptResult<T>> {
         if (this.responses.length === this.promptCount) {
             this.fail('Ran out of responses')
         }
-        const resp = this.convertFunctionResponse(this.promptCount++)
-        this._lastResponse = !isWizardControl(resp) ? resp : this._lastResponse
+        const resp = await this.convertFunctionResponse(this.promptCount++)
+        this._lastResponse = !(resp instanceof WizardControl) ? resp : this._lastResponse
 
         return resp
+    }
+
+    public configure(config: PrompterConfiguration<T>): void {
+        config.steps && this.setSteps(config.steps.current, config.steps.total)
+        config.stepEstimator && this.setStepEstimator(config.stepEstimator)
     }
 
     protected promptUser(): Promise<PromptResult<T>> {
@@ -109,6 +115,9 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this.acceptedEstimators.push(estimator)
     }
 
+    public override dispose(): void {
+        this._disposed = true
+    }
     //----------------------------Test helper methods go below this line----------------------------//
 
     public acceptState(state: StateWithCache<S, T>): this {
@@ -133,7 +142,7 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         this._totalSteps = total
     }
 
-    private convertFunctionResponse(count: number = this.promptCount): PromptResult<T> {
+    private convertFunctionResponse(count: number = this.promptCount): PromptResult<T> | Promise<PromptResult<T>> {
         let response = this.responses[count]
         if (typeof response === 'function') {
             if (this.acceptedStates[count] === undefined) {
@@ -196,6 +205,18 @@ class TestPrompter<T, S = any> extends Prompter<T> {
     public assertCallCount(count: number): void {
         assert.strictEqual(this.promptCount, count, this.makeErrorMessage('Called an unexpected number of times'))
     }
+
+    public assertDisposed(): void {
+        if (!this._disposed) {
+            this.fail('Was not disposed')
+        }
+    }
+
+    public assertNotDisposed(): void {
+        if (this._disposed) {
+            this.fail('Was disposed')
+        }
+    }
 }
 
 // We only need to test execution of prompters provided by the wizard form
@@ -228,18 +249,12 @@ describe('Wizard', function () {
         helloPrompter.assertCallCount(1)
     })
 
-    it('users exit prompter if provided', async function () {
-        const checkForHello = (state: TestWizardForm) => state.prop1 !== 'hello'
-        const exitPrompter = new TestPrompter(checkForHello, true).setName('Exit Dialog')
-        const exitSignalPrompter = new TestPrompter<string>(WIZARD_EXIT, WIZARD_EXIT).setName('Exit Signal')
-        wizard = new Wizard({ exitPrompterProvider: state => exitPrompter.acceptState(state as any) })
-        wizard.form.prop1.bindPrompter(() => helloPrompter)
-        wizard.form.prop3.bindPrompter(() => exitSignalPrompter)
+    it('disposes of the last prompter if exiting the wizard', async function () {
+        const exitPrompter = new TestPrompter<string>(WIZARD_BACK).setName('Exit')
+        wizard.form.prop1.bindPrompter(() => exitPrompter)
 
         assert.strictEqual(await wizard.run(), undefined)
-        helloPrompter.assertCallCount(1)
-        exitPrompter.assertCallCount(2)
-        exitSignalPrompter.assertCallCount(2)
+        exitPrompter.assertDisposed()
     })
 
     // test is mostly redundant (state controller handles this logic) but good to have
@@ -295,9 +310,9 @@ describe('Wizard', function () {
     })
 
     it('does not apply control values to state when going back', async function () {
-        const noWizardControl = (state: StateWithCache<WizardState<TestWizardForm>, string>) => {
+        const noWizardControl = (state: StateWithCache<BoundState<TestWizardForm, []>, string>) => {
             assert.strictEqual(
-                isWizardControl(state.prop2),
+                (state.prop2 as any) instanceof WizardControl,
                 false,
                 'Wizard flow control should not appear in wizard state'
             )
@@ -311,6 +326,74 @@ describe('Wizard', function () {
         wizard.form.prop2.bindPrompter(() => testPrompter2)
 
         assert.deepStrictEqual(await wizard.run(), { prop1: 'good', prop2: 22 })
+    })
+
+    describe('exitPrompter', function () {
+        let exitPrompter: TestPrompter<boolean>
+        let exitSignalPrompter: TestPrompter<string>
+
+        beforeEach(function () {
+            const checkForHello = (state: TestWizardForm) => state.prop1 !== 'hello'
+            exitPrompter = new TestPrompter(checkForHello, true).setName('Exit Dialog')
+            exitSignalPrompter = new TestPrompter<string>(WIZARD_EXIT, WIZARD_EXIT).setName('Exit Signal')
+            wizard = new Wizard({ exitPrompter: state => exitPrompter.acceptState(state as any) })
+            wizard.form.prop1.bindPrompter(() => helloPrompter)
+            wizard.form.prop3.bindPrompter(() => exitSignalPrompter)
+        })
+
+        it('user exit prompter if provided', async function () {
+            assert.strictEqual(await wizard.run(), undefined)
+            helloPrompter.assertCallCount(1)
+            exitPrompter.assertCallCount(2)
+            exitSignalPrompter.assertCallCount(2)
+        })
+
+        it('disposes of exit prompter on exit', async function () {
+            assert.strictEqual(await wizard.run(), undefined)
+            exitPrompter.assertDisposed()
+        })
+    })
+
+    describe('cache', function () {
+        it('throws if trying to access the cache while running', async function () {
+            wizard.form.prop1.bindPrompter(() => new TestPrompter<string>(Promise.resolve('test')))
+            wizard.run()
+            assert.throws(() => wizard.cache)
+            assert.throws(() => (wizard.cache = {}))
+        })
+
+        // Expected behavior
+        //
+        // First run: prop1 -> prop3
+        // Cache now contains "hello" for prop1 and "goodbye" for prop3
+        //
+        // Second run: prop3 -> prop1 -> prop3
+        // The `Goodbye` prompter receives "goodbye" as a recent item, then presses back because "hello" was the last response
+        // `Hello` prompter responds "hello"
+        // `Goodbye` prompter uses the `Hello` prompter's response as a result
+        //
+        // This test is meant to be somewhat contrived and is more of a smoke test than anything else
+        it('can use cache to reconstruct internal state, showing the last step', async function () {
+            const reuseState = (back: boolean) => (state: BoundState<TestWizardForm, []>) =>
+                state.prop1 === 'hello' ? (back ? WIZARD_BACK : 'hello') : 'unknown'
+            const testPrompter = new TestPrompter('goodbye', reuseState(true), reuseState(false)).setName('Goodbye')
+
+            wizard.form.prop1.bindPrompter(() => helloPrompter)
+            wizard.form.prop3.bindPrompter(state => testPrompter.acceptState(state))
+
+            assert.deepStrictEqual(await wizard.run(), { prop1: 'hello', prop3: 'goodbye' })
+            const cache = wizard.cache
+
+            wizard = new Wizard()
+            wizard.stepOffset = [1, 1] // Covers the 'nested wizard' case
+            wizard.form.prop1.bindPrompter(() => helloPrompter)
+            wizard.form.prop3.bindPrompter(state => testPrompter.acceptState(state))
+            wizard.cache = cache
+
+            assert.deepStrictEqual(await wizard.run(), { prop1: 'hello', prop3: 'hello' })
+            helloPrompter.assertCallCount(2)
+            testPrompter.assertCallCount(3)
+        })
     })
 
     describe('prompter state', function () {
@@ -340,7 +423,7 @@ describe('Wizard', function () {
         // Execution order:
         // Start -> Path 1 -> End -> Path 1 -> Start -> Path 2 -> Start -> Path 1 -> Start -> Path 2 -> End -> Path 2 -> End
         it('sets total steps correctly when branching', async function () {
-            const helloFunction = (state: WizardState<TestWizardForm>) =>
+            const helloFunction = (state: BoundState<TestWizardForm, []>) =>
                 state.prop1 === 'B' ? `hello ${state.prop3}` : `extra step`
             const testPrompterStart = new TestPrompter('A', 'B', 'A', 'B').setName('Start')
             const testPrompterPath1 = new TestPrompter(99, WIZARD_BACK, WIZARD_BACK, 10).setName('Path 1')

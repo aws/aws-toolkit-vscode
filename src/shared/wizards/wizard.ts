@@ -7,65 +7,32 @@ import { Branch, ControlSignal, StateMachineController, StepFunction } from './s
 import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { PrompterProvider, WizardForm } from './wizardForm'
+import { WizardControl, WizardError, WizardTrace } from './util'
 
 /** Checks if the user response is valid (i.e. not undefined and not a control signal) */
 export function isValidResponse<T>(response: PromptResult<T>): response is T {
-    return response !== undefined && !isWizardControl(response)
+    return response !== undefined && !(response instanceof WizardControl)
 }
 
-type ObjectKeys<T> = {
-    [Property in keyof T]: T[Property] extends Record<string, unknown> ? Property : never
-}[keyof T]
-
-type NonObjectKeys<T> = {
-    [Property in keyof T]: T[Property] extends Record<string, unknown> ? never : Property
-}[keyof T]
-
-/**
- * Reserved type. Currently makes all object-like fields required and everything else
- * optional.
- */
-export type WizardState<T> = {
-    [Property in ObjectKeys<T>]-?: T[Property] extends Record<string, unknown>
-        ? WizardState<Required<T[Property]>>
-        : never
-} & {
-    [Property in NonObjectKeys<T>]+?: T[Property] extends Record<string, unknown> ? never : T[Property]
-}
-
-// We use a symbol to safe-guard against collisions (alternatively this can be a class and use 'instanceof')
-const WIZARD_CONTROL = Symbol()
-const makeControlString = (type: string) => `[WIZARD_CONTROL] ${type}`
-
-export const WIZARD_RETRY = {
-    id: WIZARD_CONTROL,
-    type: ControlSignal.Retry,
-    toString: () => makeControlString('Retry'),
-}
-export const WIZARD_BACK = { id: WIZARD_CONTROL, type: ControlSignal.Back, toString: () => makeControlString('Back') }
-export const WIZARD_EXIT = { id: WIZARD_CONTROL, type: ControlSignal.Exit, toString: () => makeControlString('Exit') }
-
-/** Control signals allow for alterations of the normal wizard flow */
-export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_BACK | typeof WIZARD_EXIT
-
-export function isWizardControl(obj: any): obj is WizardControl {
-    return obj !== undefined && obj.id === WIZARD_CONTROL
-}
+export const WIZARD_FORCE_EXIT = new WizardControl(ControlSignal.Exit)
+export const WIZARD_EXIT = new WizardControl(ControlSignal.Exit)
+export const WIZARD_BACK = new WizardControl(ControlSignal.Back)
+export const WIZARD_RETRY = new WizardControl(ControlSignal.Retry)
 
 export interface StepEstimator<T> {
     (response: PromptResult<T>): number
 }
 
 // Persistent storage that exists on a per-property basis, side effects may occur here
-type StepCache = { picked?: any; stepOffset?: [number, number] } & { [key: string]: any }
-export type StateWithCache<TState, TProp> = TState & { stepCache: StepCache; estimator: StepEstimator<TProp> }
+export type StepCache = { picked?: any; response?: any; stepOffset?: [number, number] } & { [key: string]: any }
+export type StateWithCache<TState, TProp = any> = TState & { stepCache: StepCache; estimator: StepEstimator<TProp> }
 
 export interface WizardOptions<TState> {
     readonly initForm?: WizardForm<TState>
     readonly initState?: Partial<TState>
+    readonly exitPrompter?: (state: TState) => Prompter<boolean>
     /** Provides a way to apply inputs to Prompters as if the user has already responded */
     readonly implicitState?: Partial<TState>
-    readonly exitPrompterProvider?: (state: TState) => Prompter<boolean>
 }
 
 /**
@@ -76,9 +43,20 @@ export interface WizardOptions<TState> {
 export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
     private readonly _form: WizardForm<TState>
+    private caches: Record<string, StepCache> = {}
     private stateController: StateMachineController<TState>
     private _stepOffset: [number, number] = [0, 0]
-    private _exitStep?: StepFunction<TState>
+    private exitStep?: StepFunction<TState>
+    private running: boolean = false
+    private activePrompter?: Prompter<any>
+    private trace: WizardTrace<TState>
+
+    public constructor(private readonly options: WizardOptions<TState> = {}) {
+        this.stateController = new StateMachineController(options.initState as TState)
+        this._form = options.initForm ?? new WizardForm()
+        this.exitStep = options.exitPrompter !== undefined ? this.createExitStep(options.exitPrompter) : undefined
+        this.trace = new WizardTrace(options.initState ?? {})
+    }
 
     /**
      * The offset is applied to both the current step and total number of steps. Useful if the wizard is
@@ -103,16 +81,32 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return this._form
     }
 
+    /** Retrives the internal cache of the wizard. Throws if the wizard is running. */
+    public get cache() {
+        if (this.running) {
+            throw new Error('Cannot retrieve cache while wizard is running.')
+        }
+        return this.caches
+    }
+    /** Sets the internal cache of the wizard. Throws if the wizard is running. */
+    public set cache(cache: Record<string, StepCache>) {
+        if (this.running) {
+            throw new Error('Cannot set cache while wizard is running.')
+        }
+        this.caches = cache
+    }
+
+    public get initialState() {
+        return _.cloneDeep(this.options.initState)
+    }
+
+    public get traceResult() {
+        return this.trace.build()
+    }
+
     private _estimator: ((state: TState) => number) | undefined
     public set parentEstimator(estimator: (state: TState) => number) {
         this._estimator = estimator
-    }
-
-    public constructor(private readonly options: WizardOptions<TState> = {}) {
-        this.stateController = new StateMachineController(options.initState as TState)
-        this._form = options.initForm ?? new WizardForm()
-        this._exitStep =
-            options.exitPrompterProvider !== undefined ? this.createExitStep(options.exitPrompterProvider) : undefined
     }
 
     private assignSteps(): void {
@@ -125,14 +119,22 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     public async run(): Promise<TState | undefined> {
+        this.running = true
         this.assignSteps()
         this.resolveNextSteps((this.options.initState ?? {}) as TState).forEach(step =>
             this.stateController.addStep(step)
         )
 
-        const outputState = await this.stateController.run()
+        const handleError = (error: Error) => {
+            throw new WizardError(error, this.trace)
+        }
+        const outputState = await this.stateController
+            .run()
+            .catch(handleError)
+            .finally(() => this.activePrompter?.dispose())
+        this.running = false
 
-        return outputState !== undefined ? this._form.applyDefaults(outputState) : undefined
+        return outputState !== undefined ? this._form.applyDefaults(outputState, this.getAssigned()) : undefined
     }
 
     private createStepEstimator<TProp>(state: TState, prop: string): StepEstimator<TProp> {
@@ -144,7 +146,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             }
 
             _.set(state, prop, response)
-            const estimate = this.resolveNextSteps(state).length
+            const estimate = this.resolveNextSteps(state, new Set([prop])).length
             const parentEstimate = this._estimator !== undefined ? this._estimator(state) : 0
             _.set(state, prop, undefined)
 
@@ -152,11 +154,13 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
-    private createExitStep(provider: NonNullable<WizardOptions<TState>['exitPrompterProvider']>): StepFunction<TState> {
+    private createExitStep(provider: NonNullable<WizardOptions<TState>['exitPrompter']>): StepFunction<TState> {
         return async state => {
-            const prompter = provider(state)
+            const prompter = (this.activePrompter = provider(state))
             prompter.setSteps(this.currentStep, this.totalSteps)
-            const didExit = await prompter.prompt()
+            const reporter = this.trace.start('[[Exit]]', this.currentStep, this.totalSteps)
+            const response = await WizardTrace.instrumentPromise(reporter, prompter.promptControl())
+            const didExit = response && [true, WIZARD_EXIT, WIZARD_FORCE_EXIT].includes(response)
 
             return {
                 nextState: state,
@@ -165,41 +169,60 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
-    private createBoundStep<TProp>(prop: string, provider: PrompterProvider<TState, TProp>): StepFunction<TState> {
-        const stepCache: StepCache = {}
+    private createBoundStep<TProp>(prop: string, provider: PrompterProvider<TState, TProp, any>): StepFunction<TState> {
+        let useImplied = Object.keys(this.caches).includes(prop)
+        const stepCache = (this.caches[prop] ??= {})
+        const impliedState = (stepCache.response = _.get(this.options.implicitState ?? {}, prop, stepCache.response))
 
         return async state => {
             const stateWithCache = Object.assign(
                 { stepCache: stepCache, estimator: this.createStepEstimator(state, prop) },
-                this._form.applyDefaults(state)
+                this._form.applyDefaults(state, this.getAssigned())
             )
-            const impliedResponse = _.get(this.options.implicitState ?? {}, prop)
-            const response = await this.promptUser(stateWithCache, provider, impliedResponse)
+            const impliedResponse = useImplied ? impliedState : undefined
+            const reporter = this.trace.start(prop, this.currentStep, this.totalSteps)
+            const prompt = this.promptUser(stateWithCache, provider, impliedResponse)
+            const response = await WizardTrace.instrumentPromise(reporter, prompt)
 
-            if (response === WIZARD_EXIT && this._exitStep !== undefined) {
+            if (response === WIZARD_EXIT && this.exitStep !== undefined) {
                 return {
                     nextState: state,
-                    nextSteps: [this._exitStep],
+                    nextSteps: [this.exitStep],
                 }
             }
 
-            return {
-                nextState: isValidResponse(response) ? _.set(state, prop, response) : state,
-                nextSteps: this.resolveNextSteps(state),
-                controlSignal: isWizardControl(response) ? response.type : undefined,
+            const nextState = isValidResponse(response) ? _.set(state, prop, response) : state
+            const nextSteps = this.resolveNextSteps(nextState)
+            const controlSignal = response instanceof WizardControl ? response.type : undefined
+            const isLastStep =
+                nextSteps.length === 0 && this.stateController.currentStep === this.stateController.totalSteps
+
+            if (useImplied && isLastStep) {
+                useImplied = false
+                return { controlSignal: WIZARD_RETRY.type }
             }
+            useImplied = false
+
+            return { nextSteps, nextState, controlSignal }
         }
     }
 
-    protected resolveNextSteps(state: TState): Branch<TState> {
+    private getAssigned(): Set<string> {
+        return new Set(
+            [...this.boundSteps.keys()].filter(key => this.stateController.containsStep(this.boundSteps.get(key)!))
+        )
+    }
+
+    protected resolveNextSteps(state: TState, assigned: Set<string> = this.getAssigned()): Branch<TState> {
         const nextSteps: Branch<TState> = []
-        const defaultState = this._form.applyDefaults(state)
+        const currentlyAssigned = new Set(assigned)
         this.boundSteps.forEach((step, targetProp) => {
             if (
-                this._form.canShowProperty(targetProp, state, defaultState) &&
+                this._form.canShowProperty(targetProp, state, currentlyAssigned) &&
                 !this.stateController.containsStep(step)
             ) {
                 nextSteps.push(step)
+                currentlyAssigned.add(targetProp)
             }
         })
         return nextSteps
@@ -207,39 +230,38 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
     private async promptUser<TProp>(
         state: StateWithCache<TState, TProp>,
-        provider: PrompterProvider<TState, TProp>,
-        impliedResponse?: TProp
+        provider: PrompterProvider<TState, TProp, any>,
+        impliedResponse: TProp | undefined
     ): Promise<PromptResult<TProp>> {
-        const prompter = provider(state as StateWithCache<WizardState<TState>, TProp>)
+        const prompter = (this.activePrompter = provider(state as StateWithCache<TState, TProp>))
 
         this._stepOffset = state.stepCache.stepOffset ?? this._stepOffset
         state.stepCache.stepOffset = this._stepOffset
-        prompter.setSteps(this.currentStep, this.totalSteps)
-        prompter.setStepEstimator(state.estimator)
+        prompter.configure({
+            cache: state.stepCache,
+            stepEstimator: state.estimator,
+            steps: { current: this.currentStep, total: this.totalSteps },
+        })
 
         if (state.stepCache.picked !== undefined) {
             prompter.recentItem = state.stepCache.picked
-        } else if (impliedResponse !== undefined) {
-            prompter.recentItem = impliedResponse
         }
 
-        const answer = await prompter.prompt()
+        const answer = impliedResponse === undefined ? await prompter.promptControl() : impliedResponse
 
-        if (isValidResponse(answer)) {
+        if (isValidResponse(answer) && impliedResponse === undefined) {
             state.stepCache.picked = prompter.recentItem
-        }
-
-        if (!isValidResponse(answer)) {
+        } else {
             delete state.stepCache.stepOffset
         }
+
+        state.stepCache.response = answer
 
         this._stepOffset = [
             this._stepOffset[0] + prompter.totalSteps - 1,
             this._stepOffset[1] + prompter.totalSteps - 1,
         ]
 
-        // Legacy code used 'undefined' to represent back, we will support the use-case
-        // but moving forward wizard implementations will explicity use 'WIZARD_BACK'
-        return answer ?? WIZARD_BACK
+        return answer
     }
 }

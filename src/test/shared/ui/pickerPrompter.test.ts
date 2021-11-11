@@ -19,6 +19,8 @@ import {
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
 import { recentlyUsed } from '../../../shared/localizedText'
+import { partialCached } from '../../../shared/utilities/collectionUtils'
+import { createQuickPickTester, QuickPickTester } from './testUtils'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -48,15 +50,37 @@ describe('createQuickPick', function () {
         const itemsPromise = new Promise<DataQuickPickItem<string>[]>(resolve => (resolveItems = resolve))
         const prompter = createQuickPick(itemsPromise)
         prompter.prompt()
-        assert.strictEqual(prompter.quickPick.busy, true)
-        assert.strictEqual(prompter.quickPick.enabled, false)
+        assert.strictEqual(prompter.pendingUpdate, true)
 
         resolveItems(items)
         await itemsPromise
+        await new Promise(r => setTimeout(r))
 
-        assert.strictEqual(prompter.quickPick.busy, false)
-        assert.strictEqual(prompter.quickPick.enabled, true)
+        assert.strictEqual(prompter.pendingUpdate, false)
         assert.deepStrictEqual(prompter.quickPick.items, items)
+    })
+
+    it('adds a refresh button if using `itemLoader`', function (done) {
+        const copy = [...items]
+        const loader = partialCached(() => copy)
+        const prompter = createQuickPick([], { itemLoader: loader })
+
+        prompter.onDidShow(() => {
+            const refresh = prompter.quickPick.buttons.find(b => b.tooltip === 'Refresh')
+
+            if (refresh) {
+                copy.push({ label: 'item3', data: 'maybe' })
+                refresh.onClick?.(prompter)
+                if (prompter.quickPick.items[2]?.label === 'item3') {
+                    done()
+                }
+            } else {
+                done(new Error('Could not find refresh button'))
+            }
+        })
+
+        prompter.configure({ cache: {} })
+        prompter.prompt()
     })
 
     it('creates a new prompter when given an AsyncIterable', async function () {
@@ -118,7 +142,7 @@ describe('QuickPickPrompter', function () {
     let testPrompter: QuickPickPrompter<number>
 
     beforeEach(function () {
-        picker = exposeEmitters(vscode.window.createQuickPick(), [
+        picker = exposeEmitters(vscode.window.createQuickPick() as DataQuickPick<number>, [
             'onDidChangeValue',
             'onDidTriggerButton',
             'onDidHide',
@@ -141,7 +165,7 @@ describe('QuickPickPrompter', function () {
 
     it('can handle back button', async function () {
         testPrompter.onDidShow(() => picker.fireOnDidTriggerButton(createBackButton()))
-        assert.strictEqual(await testPrompter.prompt(), WIZARD_BACK)
+        assert.strictEqual(await testPrompter.promptControl(), WIZARD_BACK)
     })
 
     it('can accept input from buttons', async function () {
@@ -176,8 +200,21 @@ describe('QuickPickPrompter', function () {
     it('can set recent item', async function () {
         testPrompter.recentItem = testItems[2]
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
+    })
+
+    it('puts `recentlyUsed` items at the top', function () {
         // setRecentItem() puts the item at the top of the list. #2148
-        assert.deepStrictEqual(picker.items[0], picker.activeItems[0])
+        const item = { label: 'item4', data: 3, recentlyUsed: true }
+        testPrompter.loadItems([item])
+        assert.strictEqual(testPrompter.quickPick.items.length, 4)
+        assert.deepStrictEqual(testPrompter.quickPick.items[0], { ...item, description: recentlyUsed })
+    })
+
+    it('encloses description suffix with parentheses if description exists', function () {
+        const item = { label: 'item4', data: 3, recentlyUsed: true, description: 'foo' }
+        testPrompter.loadItems([item])
+        const expected = `foo (${recentlyUsed})`
+        assert.deepStrictEqual(testPrompter.quickPick.items[0], { ...item, description: expected })
     })
 
     it('tries to recover recent item from partial data', async function () {
@@ -188,13 +225,6 @@ describe('QuickPickPrompter', function () {
     it('shows first item if recent item does not exist', async function () {
         testPrompter.recentItem = { label: 'item4', data: 3 }
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
-    })
-
-    it('adds a message to the description when an item has been previously selected', async function () {
-        testPrompter = new QuickPickPrompter(picker, { recentItemText: true })
-        testPrompter.recentItem = { label: 'item1', data: 0 }
-        const description = ` (${recentlyUsed})`
-        assert.deepStrictEqual(picker.activeItems, [{ ...testItems[0], description }])
     })
 
     it('shows a `noItemsFound` item if no items are loaded', async function () {
@@ -222,6 +252,14 @@ describe('QuickPickPrompter', function () {
         testPrompter = new QuickPickPrompter(picker, { errorItem })
         await testPrompter.clearAndLoadItems(badPromise)
         assert.deepStrictEqual(picker.items, [{ detail: 'my error', ...errorItem }])
+    })
+
+    it('uses an error item callback if applicable', async function () {
+        const badPromise = Promise.reject(new Error('my error'))
+        const errorCallback = (err: Error) => ({ label: err.message, data: 0 })
+        testPrompter = new QuickPickPrompter(picker, { errorItem: errorCallback })
+        await testPrompter.clearAndLoadItems(badPromise)
+        assert.deepStrictEqual(picker.items, [{ detail: 'my error', label: 'my error', data: 0 }])
     })
 
     it('handles AsyncIterables that return something', async function () {
@@ -277,124 +315,104 @@ describe('QuickPickPrompter', function () {
 })
 
 describe('FilterBoxQuickPickPrompter', function () {
-    const TEST_TIMEOUT = 5000
     const testItems = [
         { label: 'item1', data: 0 },
         { label: 'item2', data: 1 },
         { label: 'item3', data: 2 },
     ]
-    const filterBoxInputSettings = {
+    const filterBoxInput = {
         label: 'Enter a number',
         transform: (resp: string) => Number.parseInt(resp),
         validator: (resp: string) => (Number.isNaN(Number.parseInt(resp)) ? 'NaN' : undefined),
     }
 
     let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue' | 'onDidAccept'>
+    let tester: QuickPickTester<number>
     let testPrompter: FilterBoxQuickPickPrompter<number>
-
-    function addTimeout(): void {
-        setTimeout(picker.dispose.bind(picker), TEST_TIMEOUT)
-    }
-
-    function loadAndPrompt(): ReturnType<typeof testPrompter.prompt> {
-        return testPrompter.loadItems(testItems).then(() => testPrompter.prompt())
-    }
 
     beforeEach(function () {
         if (vscode.version.startsWith('1.44')) {
             this.skip()
         }
-        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidAccept'])
-        testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
-        addTimeout()
+        picker = exposeEmitters(vscode.window.createQuickPick() as DataQuickPick<number>, [
+            'onDidChangeValue',
+            'onDidAccept',
+        ])
+        testPrompter = new FilterBoxQuickPickPrompter(picker, { filterBoxInput })
+        tester = createQuickPickTester(testPrompter)
+        testPrompter.loadItems(testItems)
     })
 
     it('adds a new item based off the filter box', async function () {
         const input = '123'
 
-        picker.onDidChangeActive(items => {
-            if (items[0]?.description !== undefined) {
-                picker.selectedItems = [items[0]]
-            }
-        })
+        tester.setValue(input)
+        tester.acceptItem(filterBoxInput.label)
 
-        testPrompter.onDidShow(() => {
-            // Note: VSC 1.42 will _not_ fire the change value event when setting `picker.value`
-            // TODO: check 1.44.2 or make a different test.
-            picker.value = input
-            picker.fireOnDidChangeValue(input)
-        })
-
-        assert.strictEqual(await loadAndPrompt(), Number(input))
+        await tester.result(Number(input))
     })
 
     it('can handle additional items being added', async function () {
         const input = '456'
 
-        picker.onDidChangeActive(items => {
-            if (items[0]?.description !== undefined) {
-                picker.selectedItems = [items[0]]
-            }
-        })
-
-        testPrompter.onDidShow(async () => {
-            picker.value = input
-            picker.fireOnDidChangeValue(input)
-
+        tester.setValue(input)
+        tester.addCallback(async () => {
             const newItems = [{ label: 'item4', data: 3 }]
             const newItemsPromise = Promise.resolve(newItems)
 
             await testPrompter.loadItems(newItems)
             await testPrompter.loadItems(newItemsPromise)
         })
+        tester.acceptItem(filterBoxInput.label)
 
-        assert.strictEqual(await loadAndPrompt(), Number(input))
+        await tester.result(Number(input))
     })
 
     it('can accept custom input as a last response', async function () {
         const input = '123'
 
-        testPrompter.onDidShow(() => {
-            picker.onDidChangeActive(active => {
-                if (active[0]?.description !== undefined) {
-                    picker.selectedItems = [active[0]]
-                    picker.fireOnDidAccept()
-                }
-            })
-
-            testPrompter.recentItem = { data: CUSTOM_USER_INPUT, description: input } as any
-            picker.fireOnDidChangeValue(input)
+        tester.addCallback(prompter => {
+            prompter.recentItem = { data: CUSTOM_USER_INPUT, description: input } as any
+            picker.fireOnDidChangeValue(picker.value)
         })
+        tester.acceptItem(filterBoxInput.label)
 
-        assert.strictEqual(await loadAndPrompt(), Number(input))
+        await tester.result(Number(input))
     })
 
     it('validates the custom input', async function () {
         const input = 'not a number'
 
-        testPrompter.onDidShow(() => {
-            const disposable = picker.onDidChangeActive(items => {
-                if (
-                    items[0]?.description === input &&
-                    items[0]?.detail?.includes('NaN') &&
-                    items[0]?.invalidSelection
-                ) {
-                    picker.onDidChangeActive(items => {
-                        if (items.length > 0) {
-                            picker.selectedItems = [picker.items[0]]
-                        }
-                    })
-                    picker.selectedItems = [picker.items[0]]
-                    disposable.dispose()
-                    picker.value = ''
-                    picker.fireOnDidChangeValue('')
-                }
-            })
+        tester = createQuickPickTester(testPrompter, { forceEmits: true })
+        tester.setValue(input)
+        tester.acceptItem(filterBoxInput.label)
+        tester.setValue(undefined)
+        tester.acceptItem(testItems[0])
 
-            picker.value = input
-            picker.fireOnDidChangeValue(input)
+        await tester.result(testItems[0].data)
+    })
+
+    it('can handle async validation', async function () {
+        const input = 'not a number'
+        const validator = async (val: string) => {
+            await new Promise(r => setImmediate(r))
+            return filterBoxInput.validator(val)
+        }
+        const filterBox = { ...filterBoxInput, validator }
+
+        const newPicker = vscode.window.createQuickPick() as DataQuickPick<number>
+        testPrompter = new FilterBoxQuickPickPrompter(newPicker, { filterBoxInput: filterBox })
+        tester = createQuickPickTester(testPrompter, { forceEmits: true })
+        testPrompter.loadItems(testItems)
+
+        tester.setValue(input)
+        tester.addCallback(prompter => {
+            assert.strictEqual(prompter.quickPick.items[0].detail, 'Checking...')
         })
+        tester.setValue(undefined)
+        tester.assertItems(testItems)
+        tester.hide()
 
-        assert.strictEqual(await loadAndPrompt(), testItems[0].data)
+        await tester.result()
     })
 })

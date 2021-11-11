@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import '../../../shared/utilities/asyncIteratorShim'
-
 import * as assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'
@@ -26,6 +24,8 @@ import {
     getPaginatedAwsCallIterParams,
     IteratorTransformer,
     stripUndefined,
+    createCachedFunction,
+    CachedFunction,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -470,6 +470,157 @@ describe('CollectionUtils', async function () {
                     prop4: false,
                     prop6: { prop7: '' },
                 },
+            })
+        })
+    })
+
+    describe('createCachedFunction', function () {
+        let cached: CachedFunction<typeof addAndScale>
+        let callCount: 0
+
+        function addAndScale(a: number, b: number, o: { s: number } = { s: 1 }): number {
+            callCount += 1
+            return (a + b) * o.s
+        }
+
+        beforeEach(function () {
+            cached = createCachedFunction(addAndScale)
+            callCount = 0
+        })
+
+        it("caches a function's return value", function () {
+            assert.strictEqual(cached(1, 1), cached(1, 1))
+            assert.strictEqual(callCount, 1)
+        })
+
+        it('hashes based off arguments', function () {
+            assert.notStrictEqual(cached(1, 1), cached(1, 2))
+            assert.strictEqual(cached(2, 1), cached(1, 2))
+            assert.strictEqual(callCount, 3)
+        })
+
+        it('can hash object arguments', function () {
+            assert.strictEqual(cached(1, 1, { s: 2 }), cached(1, 1, { s: 2 }))
+            assert.strictEqual(callCount, 1)
+        })
+
+        it('can clear the cache', function () {
+            cached(1, 1)
+            cached.clearCache()
+            cached(1, 1)
+            assert.strictEqual(callCount, 2)
+        })
+
+        it('can replace the last recently cached value', function () {
+            cached(1, 1)
+            cached(1, 2)
+            cached(1, 1)
+            cached.supplantLast(4)
+            assert.strictEqual(cached(1, 1), 4)
+            assert.strictEqual(cached(1, 2), 3)
+            assert.strictEqual(callCount, 2)
+        })
+
+        it('throws if trying to replace last value when cache is empty', function () {
+            assert.throws(cached.supplantLast.bind(undefined, 0))
+        })
+
+        it('respects the "Hashable" interface', function () {
+            const o = { s: 1, toHashableString: () => String(callCount) }
+
+            Array(10)
+                .fill(1)
+                .forEach(n => assert.strictEqual(cached(n, n, o), 2))
+            assert.strictEqual(callCount, 10)
+        })
+
+        describe('options', function () {
+            it('uses pre-set cache if provided', function () {
+                const cache = {}
+                const cached = createCachedFunction(addAndScale, { cache })
+
+                cached(1, 1)
+                assert.strictEqual(Object.keys(cache).length, 1)
+            })
+        })
+
+        describe('promises', function () {
+            async function asyncAdd(a: number, b: number): Promise<number> {
+                callCount += 1
+                return a + b
+            }
+
+            it('handles promises', async function () {
+                const cached = createCachedFunction(asyncAdd, { unboxPromises: false })
+
+                assert.strictEqual(cached(1, 1), cached(1, 1)) // reference assertion
+                assert.strictEqual(callCount, 1)
+                assert.notStrictEqual(cached(1, 1), cached(1, 2))
+            })
+
+            it('can unbox promises', async function () {
+                const cached = createCachedFunction(asyncAdd, { unboxPromises: true })
+
+                assert.strictEqual(await cached(1, 1), 2)
+                assert.strictEqual(cached(1, 1), 2)
+                assert.strictEqual(callCount, 1)
+            })
+        })
+
+        describe('async generators', function () {
+            let yieldCount = 0
+            async function* asyncGen(...vals: number[]): AsyncIterable<number> {
+                callCount += 1
+                for (const val of vals) {
+                    yieldCount += 1
+                    yield val
+                }
+            }
+
+            beforeEach(function () {
+                callCount = 0
+                yieldCount = 0
+            })
+
+            it('returns reference if not using `resolveAsyncIterable`', async function () {
+                const cached = createCachedFunction(asyncGen, { resolveAsyncIterables: false })
+                const vals = []
+
+                assert.strictEqual(cached(1, 1), cached(1, 1))
+                assert.strictEqual(callCount, 0)
+
+                for await (const val of cached(1, 1)) {
+                    vals.push(val)
+                    break
+                }
+                assert.strictEqual(yieldCount, 1)
+
+                for await (const val of cached(1, 1)) {
+                    vals.push(val)
+                }
+
+                assert.strictEqual(yieldCount, 1)
+                assert.strictEqual(callCount, 1)
+                assert.deepStrictEqual(vals, [1])
+            })
+
+            it('creates a new async generator for resolved async iterables', async function () {
+                const cached = createCachedFunction(asyncGen)
+                const vals = []
+
+                for await (const val of cached(1, 1)) {
+                    vals.push(val)
+                    break
+                }
+                assert.strictEqual(yieldCount, 1)
+
+                for await (const val of cached(1, 1)) {
+                    vals.push(val)
+                }
+
+                assert.strictEqual(yieldCount, 1)
+                assert.strictEqual(callCount, 1)
+                assert.deepStrictEqual(vals, [1, 1])
             })
         })
     })

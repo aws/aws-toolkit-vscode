@@ -5,19 +5,18 @@
 
 import * as _ from 'lodash'
 import * as assert from 'assert'
+import chalk from 'chalk'
 import { ExpandWithObject } from '../../../shared/utilities/tsUtils'
-import { Wizard } from '../../../shared/wizards/wizard'
+import { isValidResponse, Wizard } from '../../../shared/wizards/wizard'
 import { WizardForm } from '../../../shared/wizards/wizardForm'
+import { PrompterTester } from '../ui/testUtils'
+import { QuickInputPrompter } from '../../../shared/ui/quickInput'
 
 interface MockWizardFormElement<TProp> {
+    /** Directly assigns input to the property, skipping any prompt. */
     applyInput(input: TProp): void
     clearInput(): void
-    /**
-     * Verifies the property could be shown.
-     *
-     * Passing in the order argument specifies the relative order (1-indexed) in which prompters
-     * would be shown. Properties that lack a prompter (e.g. forms) have no relative ordering.
-     */
+    /** Verifies the property would be shown. */
     assertShow(order?: number): void
     assertShowFirst(): void
     assertShowSecond(): void
@@ -26,9 +25,29 @@ interface MockWizardFormElement<TProp> {
     assertDoesNotShow(): void
     /** Verifies that no sub-properties of the target would show prompters. */
     assertDoesNotShowAny(): void
+    /** Performs a deep-compare. */
     assertValue(expected: TProp | undefined): void
     assertShowCount(count: number): void
+    /**
+     * Executes a UI tester against the next available prompt.
+     *
+     * Currently only `QuickPickTester` is supported. In the future `InputBox` can also be tested.
+     */
+    runPrompt(callback: PromptTester<TProp>): Promise<void>
 }
+
+interface TesterMethods {
+    /**
+     * Pretty-prints some info about the test state.
+     *
+     * Blue: state with a defined value. Non-default values will never be assigned.
+     * Green: properties that would be shown in the given order.
+     * Red: properties that would not be shown.
+     */
+    printInfo(): void
+}
+
+type PromptTester<T> = (prompter: QuickInputPrompter<T>) => PrompterTester<T>
 
 type MockForm<T, TState = T> = {
     [Property in keyof T]-?: T[Property] extends ExpandWithObject<T[Property]>
@@ -36,53 +55,53 @@ type MockForm<T, TState = T> = {
         : MockWizardFormElement<T[Property]>
 }
 
-type FormTesterMethodKey = keyof MockWizardFormElement<any>
-const APPLY_INPUT: FormTesterMethodKey = 'applyInput'
-const CLEAR_INPUT: FormTesterMethodKey = 'clearInput'
-const ASSERT_SHOW: FormTesterMethodKey = 'assertShow'
-const ASSERT_SHOW_FIRST: FormTesterMethodKey = 'assertShowFirst'
-const ASSERT_SHOW_SECOND: FormTesterMethodKey = 'assertShowSecond'
-const ASSERT_SHOW_THIRD: FormTesterMethodKey = 'assertShowThird'
-const ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertShowAny'
-const NOT_ASSERT_SHOW: FormTesterMethodKey = 'assertDoesNotShow'
-const NOT_ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertDoesNotShowAny'
-const ASSERT_VALUE: FormTesterMethodKey = 'assertValue'
-const SHOW_COUNT: FormTesterMethodKey = 'assertShowCount'
-
-export type WizardTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
-
-function failIf(cond: boolean, message?: string): void {
-    if (cond) {
-        assert.fail(message)
-    }
-}
+export type WizardTester<T> = T extends Wizard<infer U>
+    ? WizardTester<U>
+    : MockForm<Required<T>> & Pick<MockWizardFormElement<any>, 'assertShowCount'> & TesterMethods
 
 export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): WizardTester<T> {
     const form = wizard instanceof Wizard ? wizard.boundForm : wizard
-    const state = {} as T
+    const state = (wizard instanceof Wizard ? (wizard.initialState as T) : undefined) ?? ({} as T)
+    let assigned: string[] = []
+    let initialized: boolean = false
 
-    function canShowPrompter(prop: string): boolean {
-        const defaultState = form.applyDefaults(state)
+    function failIf(cond: boolean, message?: string): void {
+        if (cond) {
+            assert.fail(message)
+        }
+    }
 
-        if (!form.canShowProperty(prop, state, defaultState)) {
+    function print(parts: TemplateStringsArray, ...subs: any[]): string {
+        const result = [parts[0]]
+        subs.forEach((s, i) => {
+            const p = typeof s === 'object' ? JSON.stringify(s) : s
+            result.push(p, parts[i + 1])
+        })
+        return result.join('')
+    }
+
+    function canShowPrompter(prop: string, shown: Set<string> = new Set(assigned)): boolean {
+        const defaultState = form.applyDefaults(state, shown)
+
+        if (!form.canShowProperty(prop, state, shown, defaultState)) {
             return false
         }
 
         const provider = form.getPrompterProvider(prop)
 
-        return provider !== undefined // && provider({ stepCache: {} } as any) !== undefined
+        return provider !== undefined
+    }
+
+    function hasProp(prop: string): boolean {
+        return assigned.indexOf(prop) !== -1
     }
 
     function showableChildren(parent: string): string[] {
-        return form.properties.filter(prop => prop !== parent && prop.startsWith(parent) && canShowPrompter(prop))
-    }
-
-    function getRelativeOrder(prop: string): number {
-        return form.properties.filter(prop => canShowPrompter(prop)).indexOf(prop)
+        return assigned.filter(prop => prop !== parent && prop.startsWith(parent) && hasProp(prop))
     }
 
     function assertOrder(prop: string, expected: number): void {
-        const order = getRelativeOrder(prop)
+        const order = assigned.indexOf(prop)
 
         failIf(order === -1, `Property "${prop}" would not be shown`)
         failIf(
@@ -92,10 +111,11 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     }
 
     function assertShow(prop: string, expected?: number): MockWizardFormElement<T>['assertShow'] {
-        return (order: number | undefined = expected) =>
+        return (order: number | undefined = expected) => {
             order === undefined
-                ? failIf(!form.canShowProperty(prop, state), `Property "${prop}" would not be shown`)
+                ? failIf(!hasProp(prop), `Property "${prop}" would not be shown`)
                 : assertOrder(prop, order)
+        }
     }
 
     function assertShowNone(prop: string): MockWizardFormElement<T>['assertDoesNotShowAny'] {
@@ -108,56 +128,143 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     }
 
     function assertValue<TProp>(path: string): MockWizardFormElement<TProp>['assertValue'] {
-        const actual = _.get(form.applyDefaults(state), path)
-
-        return (expected: TProp) =>
-            failIf(actual !== expected, `Property "${path}" had unexpected value: ${actual} !== ${expected}`)
+        return (expected: TProp) => {
+            const actual = _.get(form.applyDefaults(state, new Set(assigned)), path)
+            failIf(
+                !_.isEqual(actual, expected),
+                print`Property "${path}" had unexpected value: ${actual} !== ${expected}`
+            )
+        }
     }
+
+    function assertShowCount(): MockWizardFormElement<T>['assertShowCount'] {
+        return (expected: number) => {
+            const total = assigned.length
+            assert.strictEqual(total, expected, 'Expected number of prompts were not shown.')
+        }
+    }
+
+    function runPrompt<TProp>(prop: string, callback: PromptTester<TProp>): Promise<void> {
+        failIf(assigned.length === 0, 'Cannot run a tester without an assigned prompt.')
+        failIf(assigned[0] !== prop, `Can only test the next assigned prompt: ${assigned[0]}`)
+        const provider = form.getPrompterProvider(assigned[0])
+        failIf(!provider, 'Prompter binding returned undefined.')
+        const defaults = form.applyDefaults(state, new Set(assigned))
+        const prompter = provider!({ ...defaults, stepCache: {}, estimator: () => 0 })
+        const tester = callback(prompter as QuickInputPrompter)
+        return tester.result().then(result => {
+            failIf(!isValidResponse(result), 'Testing with control signals is not currently supported.')
+            _.set(state, assigned[0], result)
+            evaluate()
+        })
+    }
+
+    // TODO: make this per-prop. No reason why we can't index the state
+    function printInfo(logger = console.log): void {
+        // TODO: be able to mark bad props (e.g. shown when not supposed to be)
+        const log =
+            (c: (a: string) => string) =>
+            (p: string, s: string, ...meta: any[]) =>
+                logger(c(`${p.padEnd(5)} ${s}`), ...meta)
+        const defaults = form.applyDefaults(state, new Set(assigned))
+        const score = (a: string) => {
+            const unassignedScore =
+                1000 - Number(_.get(state, a) !== undefined) * 2000 - Number(_.get(defaults, a) !== undefined) * 2000
+            return assigned.indexOf(a) + 1 || unassignedScore
+        }
+        const props = form.properties.sort((a, b) => score(a) - score(b))
+        for (const prop of props) {
+            const stateVal = _.get(state, prop)
+            const defaultVal = _.get(defaults, prop)
+            const index = assigned.indexOf(prop)
+            if (index !== -1) {
+                log(chalk.green)(`${index + 1}`, prop)
+            } else if (stateVal === undefined && defaultVal !== undefined) {
+                log(chalk.blue)('-', `${prop} => %s ${chalk.yellow('(Default)')}`, JSON.stringify(defaultVal))
+            } else if (stateVal !== undefined) {
+                log(chalk.blue)('-', `${prop} => %s`, JSON.stringify(stateVal))
+            } else {
+                log(chalk.red)('X', prop)
+            }
+        }
+    }
+
+    function decorateMethods(obj: any): any {
+        for (const prop of Object.keys(obj)) {
+            if (prop === 'printInfo') {
+                continue
+            }
+            const original = obj[prop]
+            obj[prop] = (...args: any[]) => {
+                try {
+                    return original(...args)
+                } catch (err) {
+                    const error = err as Error
+                    const logger = (s: string, ...meta: any[]) => {
+                        // pretty bad logger...
+                        error.message = `${error.message} \n${s.replace('%s', meta[0])}`
+                    }
+                    printInfo(logger)
+                    throw error
+                }
+            }
+        }
+        return obj
+    }
+
+    /** Regenerates the dependency graph after binding elements to the form. */
+    function evaluate(): void {
+        assigned = []
+
+        form.properties.forEach(prop => {
+            if (canShowPrompter(prop)) {
+                assigned.push(prop)
+            }
+        })
+    }
+
+    const createElement = (prop: string) =>
+        decorateMethods({
+            applyInput: <TProp>(input: TProp) => (_.set(state, prop, input), evaluate()),
+            clearInput: () => (_.set(state, prop, undefined), evaluate()),
+            assertShow: assertShow(prop),
+            assertShowFirst: assertShow(prop, 1),
+            assertShowSecond: assertShow(prop, 2),
+            assertShowThird: assertShow(prop, 3),
+            assertShowAny: () =>
+                failIf(showableChildren(prop).length === 0, `No properties of "${prop}" would be shown`),
+            assertDoesNotShow: () => failIf(hasProp(prop), `Property "${prop}" would be shown`),
+            assertDoesNotShowAny: assertShowNone(prop),
+            assertValue: assertValue(prop),
+            assertShowCount: assertShowCount(),
+            runPrompt: (callback: PromptTester<any>) => runPrompt(prop, callback),
+            printInfo,
+        }) as MockWizardFormElement<any>
 
     function createFormWrapper(path: string[] = []): WizardTester<T> {
         return new Proxy(
             {},
             {
                 get: (obj, prop, rec) => {
-                    const propPath = path.join('.')
-
-                    // Using a switch rather than a map since a generic index signature is not yet possible
-                    switch (prop) {
-                        case APPLY_INPUT:
-                            return <TProp>(input: TProp) => _.set(state, path, input)
-                        case CLEAR_INPUT:
-                            return () => _.set(state, path, undefined)
-                        case ASSERT_SHOW:
-                            return assertShow(propPath)
-                        case ASSERT_SHOW_FIRST:
-                            return assertShow(propPath, 1)
-                        case ASSERT_SHOW_SECOND:
-                            return assertShow(propPath, 2)
-                        case ASSERT_SHOW_THIRD:
-                            return assertShow(propPath, 3)
-                        case ASSERT_SHOW_ANY:
-                            return () =>
-                                failIf(
-                                    showableChildren(propPath).length === 0,
-                                    `No properties of "${propPath}" would be shown`
-                                )
-                        case NOT_ASSERT_SHOW:
-                            return () =>
-                                failIf(form.canShowProperty(propPath, state), `Property "${propPath}" would be shown`)
-                        case NOT_ASSERT_SHOW_ANY:
-                            return assertShowNone(propPath)
-                        case ASSERT_VALUE:
-                            return assertValue(propPath)
-                        case SHOW_COUNT:
-                            return (count: number) =>
-                                assert.strictEqual(form.properties.filter(prop => canShowPrompter(prop)).length, count)
-                        default:
-                            return Reflect.get(obj, prop, rec) ?? createFormWrapper([...path, prop.toString()])
+                    if (!initialized) {
+                        initialized = true
+                        evaluate()
                     }
+
+                    const propPath = path.join('.')
+                    const element = createElement(propPath)
+
+                    if (prop in element) {
+                        return element[prop as keyof MockWizardFormElement<any>]
+                    }
+
+                    return Reflect.get(obj, prop, rec) ?? createFormWrapper([...path, prop.toString()])
                 },
             }
         ) as WizardTester<T>
     }
+
+    evaluate()
 
     return createFormWrapper()
 }

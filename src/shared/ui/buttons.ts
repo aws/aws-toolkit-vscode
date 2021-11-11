@@ -7,17 +7,18 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { documentationUrl } from '../constants'
 import { ext } from '../extensionGlobals'
-import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
+import { UnionPromise } from '../utilities/tsUtils'
+import { WizardControl } from '../wizards/util'
+import { WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
+import { Prompter, PromptResult } from './prompter'
 
 const localize = nls.loadMessageBundle()
 const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
 
-type WizardButton<T> = QuickInputButton<T | WizardControl> | QuickInputButton<void>
-export type PrompterButtons<T> = readonly WizardButton<T>[]
-
+export type PrompterButtons<T = never, U extends Prompter<T> = any> = readonly QuickInputButton<T, U>[]
 /** Light wrapper around VS Code's buttons, adding a `onClick` callback. */
-export interface QuickInputButton<T> extends vscode.QuickInputButton {
-    onClick?: () => T
+export interface QuickInputButton<T = never, U extends Prompter<T> = any> extends vscode.QuickInputButton {
+    onClick?: (prompter: U) => UnionPromise<PromptResult<T> | void>
 }
 
 /**
@@ -67,7 +68,7 @@ interface ToggleButtonOptions {
 /**
  * Basic toggle button. Swaps icons whenever clicked.
  */
-export class QuickInputToggleButton implements QuickInputButton<WizardControl> {
+export class QuickInputToggleButton implements QuickInputButton {
     private _state: ButtonState
 
     public get iconPath(): vscode.QuickInputButton['iconPath'] {
@@ -108,11 +109,11 @@ export class QuickInputToggleButton implements QuickInputButton<WizardControl> {
 // Currently VS Code uses a static back button for every QuickInput, so we can't redefine any of its
 // properties without potentially affecting other extensions. Creating a wrapper is possible, but it
 // would still need to be swapped out for the real Back button when adding it to the QuickInput.
-export function createBackButton(): QuickInputButton<WizardControl> {
-    return vscode.QuickInputButtons.Back as QuickInputButton<WizardControl>
+export function createBackButton(): QuickInputButton {
+    return vscode.QuickInputButtons.Back as QuickInputButton
 }
 
-export function createExitButton(): QuickInputButton<WizardControl> {
+export function createExitButton(): QuickInputButton {
     return {
         iconPath: {
             light: ext.iconPaths.light.exit,
@@ -123,7 +124,7 @@ export function createExitButton(): QuickInputButton<WizardControl> {
     }
 }
 
-export function createRefreshButton(): QuickInputButton<void> {
+export function createRefreshButton(): QuickInputButton {
     return {
         iconPath: {
             light: ext.iconPaths.light.refresh,
@@ -134,7 +135,7 @@ export function createRefreshButton(): QuickInputButton<void> {
 }
 
 /** Creates a '+' button. Usually used to add new resources during a prompt. */
-export function createPlusButton(tooltip?: string): QuickInputButton<void> {
+export function createPlusButton(tooltip: string): QuickInputButton {
     return {
         iconPath: {
             light: ext.iconPaths.light.plus,
@@ -151,6 +152,6 @@ export function createPlusButton(tooltip?: string): QuickInputButton<void> {
  * @param helpUri optional URI to link to for the 'help' button (see {@link createHelpButton} for defaults)
  * @returns An array of buttons
  */
-export function createCommonButtons(helpUri?: string | vscode.Uri): PrompterButtons<WizardControl> {
+export function createCommonButtons(helpUri?: string | vscode.Uri): PrompterButtons {
     return [createHelpButton(helpUri), createBackButton(), createExitButton()]
 }

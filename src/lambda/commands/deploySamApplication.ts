@@ -21,8 +21,9 @@ import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
+import { writeSavedBucket } from '../../shared/ui/common/s3Bucket'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { SamDeployWizardResponse, writeSavedBucket } from '../wizards/samDeployWizard'
+import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
@@ -85,11 +86,11 @@ export async function deploySamApplication(
             deployRootFolder: deployFolder,
             destinationStackName: deployWizardResponse.stackName,
             packageBucketName: deployWizardResponse.s3Bucket,
-            ecrRepo: deployWizardResponse.ecrRepo?.repositoryUri,
+            ecrRepo: deployWizardResponse.ecrRepo,
             parameterOverrides: deployWizardResponse.parameterOverrides,
             environmentVariables: asEnvironmentVariables(credentials),
             region: deployWizardResponse.region,
-            sourceTemplatePath: deployWizardResponse.template.fsPath,
+            sourceTemplatePath: deployWizardResponse.template.uri.fsPath,
         }
 
         const deployApplicationPromise = deploy({

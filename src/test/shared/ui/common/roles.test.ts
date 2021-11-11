@@ -9,11 +9,10 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { IAM } from 'aws-sdk'
 import { IamClient } from '../../../../shared/clients/iamClient'
-import { RolePrompter } from '../../../../shared/ui/common/rolePrompter'
+import { createRolePrompter } from '../../../../shared/ui/common/roles'
 import { mock, when } from 'ts-mockito'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 import { instance } from '../../../utilities/mockito'
-import { QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
 
 const TEST_HELP_URI = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
@@ -39,11 +38,13 @@ describe('RolePrompter', function () {
         } as any
 
         mockIamClient = mock()
-        when(mockIamClient.listRoles()).thenResolve(roles)
-        const prompter = new RolePrompter(instance(mockIamClient), {
+        when(mockIamClient.getRoles()).thenCall(async function* () {
+            yield* roles
+        })
+        const prompter = createRolePrompter(instance(mockIamClient), {
             createRole: () => Promise.resolve(newRole),
             helpUri: TEST_HELP_URI,
-        }).call({ estimator: () => 0, stepCache: {} }) as QuickPickPrompter<IAM.Role>
+        })
         tester = createQuickPickTester(prompter)
     })
 

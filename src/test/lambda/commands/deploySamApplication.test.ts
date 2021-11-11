@@ -8,13 +8,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
-import {
-    readSavedBuckets,
-    writeSavedBucket,
-    SamDeployWizardResponse,
-    SavedBuckets,
-    CHOSEN_BUCKET_KEY,
-} from '../../../lambda/wizards/samDeployWizard'
+import { SamDeployWizardResponse, SavedBuckets, CHOSEN_BUCKET_KEY } from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
 import { ext } from '../../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -27,6 +21,7 @@ import {
     SamCliVersionValidatorResult,
 } from '../../../shared/sam/cli/samCliValidator'
 import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { readSavedBuckets, writeSavedBucket } from '../../../shared/ui/common/s3Bucket'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
@@ -148,7 +143,7 @@ describe('deploySamApplication', async function () {
             region: 'region',
             s3Bucket: 'bucket',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: { uri: vscode.Uri.file(templatePath) },
         }
 
         runningDeployProcess = undefined
@@ -253,7 +248,7 @@ describe('deploySamApplication', async function () {
             region: 'region0',
             s3Bucket: 'bucket0',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: { uri: vscode.Uri.file(templatePath) },
         }
 
         await deploySamApplication(
@@ -274,7 +269,7 @@ describe('deploySamApplication', async function () {
             region: 'region1',
             s3Bucket: 'bucket1',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: { uri: vscode.Uri.file(templatePath) },
         }
         await deploySamApplication(
             {
@@ -294,7 +289,7 @@ describe('deploySamApplication', async function () {
             region: 'region2',
             s3Bucket: 'bucket2',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: { uri: vscode.Uri.file(templatePath) },
         }
         await deploySamApplication(
             {
@@ -314,7 +309,7 @@ describe('deploySamApplication', async function () {
             region: 'region0',
             s3Bucket: 'bucket3',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: { uri: vscode.Uri.file(templatePath) },
         }
         await deploySamApplication(
             {
@@ -346,7 +341,7 @@ describe('deploySamApplication', async function () {
             region: 'region0',
             s3Bucket: 'bucket0',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: { uri: vscode.Uri.file(templatePath) },
         }
 
         await deploySamApplication(
@@ -368,7 +363,7 @@ describe('deploySamApplication', async function () {
             region: 'region0',
             s3Bucket: 'bucket1',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: { uri: vscode.Uri.file(templatePath) },
         }
         await deploySamApplication(
             {

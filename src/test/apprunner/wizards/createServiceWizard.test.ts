@@ -47,7 +47,7 @@ describe('CreateServiceWizard', function () {
         })
 
         it('prompts for name before instance', function () {
-            tester.ServiceName.assertShowSecond() // TODO: write a 'assertShowBefore' that accepts another form element as input
+            tester.ServiceName.assertShowSecond()
             tester.InstanceConfiguration.assertShowThird()
         })
 

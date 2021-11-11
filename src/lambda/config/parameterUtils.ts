@@ -68,7 +68,7 @@ export async function getOverriddenParameters(
 
     const relativeTemplatePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, templateUri.fsPath)
     const templatesConfig = await context.loadTemplatesConfig(workspaceFolder.uri.fsPath)
-    const templateConfig = templatesConfig.templates[relativeTemplatePath]
+    const templateConfig = templatesConfig.templates?.[relativeTemplatePath]
     if (!templateConfig || !templateConfig.parameterOverrides) {
         return undefined
     }
