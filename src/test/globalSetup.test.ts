@@ -9,8 +9,8 @@
 import * as assert from 'assert'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
-import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
-import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
+import { CodelensRootRegistry } from '../shared/fs/codelensRootRegistry'
+import { CloudFormationTemplateRegistry } from '../shared/fs/templateRegistry'
 import { ext } from '../shared/extensionGlobals'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
@@ -22,7 +22,7 @@ import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { SchemaService } from '../shared/schemas'
-import { deleteTestTempDirs } from './testUtil'
+import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -38,6 +38,8 @@ before(async function () {
     mkdirpSync(testReportDir)
     // Set up global telemetry client
     const fakeContext = new FakeExtensionContext()
+    // set global storage path
+    fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
     const fakeAws = new FakeAwsContext()
     const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
     const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)

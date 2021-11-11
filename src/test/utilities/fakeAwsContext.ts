@@ -65,6 +65,8 @@ export class FakeAwsContext implements AwsContext {
     public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
         new vscode.EventEmitter<ContextChangeEventsArgs>().event
     private awsContextCredentials: AwsContextCredentials | undefined
+    private cawsUsername: string | undefined
+    // private cawsSecret: string | undefined
 
     public constructor(params?: FakeAwsContextParams) {
         this.awsContextCredentials = params?.contextCredentials
@@ -78,6 +80,15 @@ export class FakeAwsContext implements AwsContext {
 
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
         return this.awsContextCredentials?.credentials
+    }
+
+    public setCawsCredentials(username: string, secret: string): void {
+        this.cawsUsername = username
+        // this.cawsSecret = secret
+    }
+
+    public getCawsCredentials(): string | undefined {
+        return this.cawsUsername
     }
 
     public getCredentialProfileName(): string | undefined {
