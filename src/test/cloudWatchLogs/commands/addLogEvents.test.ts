@@ -11,6 +11,7 @@ import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
+import { installFakeClock } from '../../testUtil'
 
 describe('addLogEvents', async function () {
     let sandbox: sinon.SinonSandbox
@@ -18,7 +19,7 @@ describe('addLogEvents', async function () {
     const config = new TestSettingsConfiguration()
 
     before(function () {
-        clock = FakeTimers.install()
+        clock = installFakeClock()
         config.writeSetting('cloudWatchLogs.limit', 1000)
     })
 
