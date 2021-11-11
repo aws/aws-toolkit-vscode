@@ -105,6 +105,13 @@
                     "default": "prompt",
                     "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
                 },
+                "aws.iot.maxItemsPerPage": {
+                    "type": "number",
+                    "default": 100,
+                    "minimum": 1,
+                    "maximum": 250,
+                    "markdownDescription": "%AWS.configuration.description.iot.maxItemsPerPage%"
+                },
                 "aws.s3.maxItemsPerPage": {
                     "type": "number",
                     "default": 300,
@@ -783,6 +790,78 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.iot.createThing",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.deleteThing",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.createCert",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.deleteCert",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.attachCert",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.attachPolicy",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.activateCert",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.deactivateCert",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.revokeCert",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.createPolicy",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.deletePolicy",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.createPolicyVersion",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.deletePolicyVersion",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.detachCert",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.detachPolicy",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.editPolicyVersion",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.setDefaultPolicy",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.iot.copyEndpoint",
+                    "when": "false"
+                },
+                {
                     "command": "aws.s3.copyPath",
                     "when": "false"
                 },
@@ -1018,6 +1097,31 @@
                     "group": "inline@1"
                 },
                 {
+                    "command": "aws.iot.createThing",
+                    "when": "view == aws.explorer && viewItem == awsIotThingsNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.iot.deleteThing",
+                    "when": "view == aws.explorer && viewItem == awsIotThingNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.iot.createCert",
+                    "when": "view == aws.explorer && viewItem == awsIotCertsNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.iot.deletePolicy",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsIotPolicyNode.WithVersions)$/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.iot.deletePolicyVersion",
+                    "when": "view == aws.explorer && viewItem == awsIotPolicyVersionNode.NONDEFAULT",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.s3.downloadFileAs",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
@@ -1148,6 +1252,41 @@
                     "group": "0@3"
                 },
                 {
+                    "command": "aws.iot.createThing",
+                    "when": "view == aws.explorer && viewItem == awsIotThingsNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.iot.createCert",
+                    "when": "view == aws.explorer && viewItem == awsIotCertsNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.iot.createPolicy",
+                    "when": "view == aws.explorer && viewItem == awsIotPoliciesNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.iot.createPolicyVersion",
+                    "when": "view == aws.explorer && viewItem == awsIotPolicyNode.WithVersions",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.iot.editPolicyVersion",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotPolicyVersionNode./",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.iot.attachCert",
+                    "when": "view == aws.explorer && viewItem == awsIotThingNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.iot.attachPolicy",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.Policies/",
+                    "group": "0@1"
+                },
+                {
                     "command": "aws.s3.createBucket",
                     "when": "view == aws.explorer && viewItem == awsS3Node",
                     "group": "0@1"
@@ -1173,13 +1312,38 @@
                     "group": "1@1"
                 },
                 {
+                    "command": "aws.iot.deactivateCert",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.(Things|Policies).ACTIVE$/",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.iot.activateCert",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.(Things|Policies).INACTIVE$/",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.iot.revokeCert",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.(Things|Policies).(ACTIVE|INACTIVE)$/",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.iot.setDefaultPolicy",
+                    "when": "view == aws.explorer && viewItem == awsIotPolicyVersionNode.NONDEFAULT",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.iot.copyEndpoint",
+                    "when": "view == aws.explorer && viewItem == awsIotNode",
+                    "group": "2@1"
+                },
+                {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode)$|^awsAppRunnerServiceNode/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$|^awsAppRunnerServiceNode/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
                     "group": "2@2"
                 },
                 {
@@ -1196,6 +1360,36 @@
                     "command": "aws.s3.presignedURL",
                     "when": "view == aws.explorer && viewItem =~ /^(awsS3FileNode)$/",
                     "group": "2@4"
+                },
+                {
+                    "command": "aws.iot.detachCert",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsIotCertificateNode.Things)/",
+                    "group": "3@1"
+                },
+                {
+                    "command": "aws.iot.detachPolicy",
+                    "when": "view == aws.explorer && viewItem == awsIotPolicyNode.Certificates",
+                    "group": "3@1"
+                },
+                {
+                    "command": "aws.iot.deleteThing",
+                    "when": "view == aws.explorer && viewItem == awsIotThingNode",
+                    "group": "3@1"
+                },
+                {
+                    "command": "aws.iot.deleteCert",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.Policies/",
+                    "group": "3@1"
+                },
+                {
+                    "command": "aws.iot.deletePolicy",
+                    "when": "view == aws.explorer && viewItem == awsIotPolicyNode.WithVersions",
+                    "group": "3@1"
+                },
+                {
+                    "command": "aws.iot.deletePolicyVersion",
+                    "when": "view == aws.explorer && viewItem == awsIotPolicyVersionNode.NONDEFAULT",
+                    "group": "3@1"
                 },
                 {
                     "command": "aws.s3.deleteBucket",
@@ -1499,6 +1693,214 @@
             {
                 "command": "aws.hideRegion",
                 "title": "%AWS.command.hideRegion%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.createThing",
+                "title": "%AWS.command.iot.createThing%",
+                "category": "%AWS.title%",
+                "icon": {
+                    "light": "resources/light/plus.svg",
+                    "dark": "resources/dark/plus.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.deleteThing",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "icon": {
+                    "light": "resources/light/exit.svg",
+                    "dark": "resources/dark/exit.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.createCert",
+                "title": "%AWS.command.iot.createCert%",
+                "category": "%AWS.title%",
+                "icon": {
+                    "light": "resources/light/plus.svg",
+                    "dark": "resources/dark/plus.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.deleteCert",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.attachCert",
+                "title": "%AWS.command.iot.attachCert%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.attachPolicy",
+                "title": "%AWS.command.iot.attachPolicy%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.activateCert",
+                "title": "%AWS.command.iot.activateCert%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.deactivateCert",
+                "title": "%AWS.command.iot.deactivateCert%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.revokeCert",
+                "title": "%AWS.command.iot.revokeCert%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.createPolicy",
+                "title": "%AWS.command.iot.createPolicy%",
+                "category": "%AWS.title%",
+                "icon": {
+                    "light": "resources/light/plus.svg",
+                    "dark": "resources/dark/plus.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.deletePolicy",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "icon": {
+                    "light": "resources/light/exit.svg",
+                    "dark": "resources/dark/exit.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.createPolicyVersion",
+                "title": "%AWS.command.iot.createPolicyVersion%",
+                "category": "%AWS.title%",
+                "icon": {
+                    "light": "resources/light/plus.svg",
+                    "dark": "resources/dark/plus.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.deletePolicyVersion",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "icon": {
+                    "light": "resources/light/exit.svg",
+                    "dark": "resources/dark/exit.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.detachCert",
+                "title": "%AWS.command.iot.detachCert%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.detachPolicy",
+                "title": "%AWS.command.iot.detachCert%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.editPolicyVersion",
+                "title": "%AWS.command.iot.editPolicyVersion%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.setDefaultPolicy",
+                "title": "%AWS.command.iot.setDefaultPolicy%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.iot.copyEndpoint",
+                "title": "%AWS.command.iot.copyEndpoint%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
