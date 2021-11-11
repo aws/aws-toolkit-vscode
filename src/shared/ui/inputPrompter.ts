@@ -133,7 +133,15 @@ export class InputBoxPrompter extends QuickInputPrompter<string> {
             this.inputBox.hide()
         })
 
-        return await promptPromise
+        const result = await promptPromise
+
+        if (Object.keys(config).length === 0) {
+            this.dispose()
+        } else {
+            vscode.Disposable.from(...this.disposables).dispose()
+        }
+
+        return result
     }
 
     private applyStepEstimator(estimator: StepEstimator<string>): void {

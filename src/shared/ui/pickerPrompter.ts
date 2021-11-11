@@ -567,7 +567,11 @@ export class QuickPickPrompter<T> extends QuickInputPrompter<T> {
             this.show()
         })
 
-        vscode.Disposable.from(...this.disposables).dispose()
+        if (Object.keys(config).length === 0) {
+            this.dispose()
+        } else {
+            vscode.Disposable.from(...this.disposables).dispose()
+        }
 
         this._lastPicked = choices[0]
         const result = choices[0].data
