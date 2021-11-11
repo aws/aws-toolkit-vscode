@@ -293,12 +293,12 @@ describe('ChildProcess', async function () {
                 const command = path.join(tempFolder, `test-script.${isWindows ? 'bat' : 'sh'}`)
 
                 if (isWindows) {
-                    writeBatchFile(command, ['@echo 1', '@echo 2', '@echo 3', 'SLEEP 20', 'exit 1'].join(os.EOL))
+                    writeBatchFile(command, ['@echo %1', '@echo %2', '@echo "%3"', 'SLEEP 20', 'exit 1'].join(os.EOL))
                 } else {
-                    writeShellFile(command, ['echo 1', 'echo 2', 'echo 3', 'sleep 20', 'exit 1'].join(os.EOL))
+                    writeShellFile(command, ['echo $1', 'echo $2', 'echo "$3"', 'sleep 20', 'exit 1'].join(os.EOL))
                 }
 
-                childProcess = new ChildProcess(command, [], { collect: false })
+                childProcess = new ChildProcess(command, ['1', '2'], { collect: false })
             })
 
             it('can report errors', async function () {
@@ -336,18 +336,20 @@ describe('ChildProcess', async function () {
                 assert.notStrictEqual(result.exitCode, 1)
             })
 
-            it('can override base options', async function () {
+            it('can merge with base options', async function () {
                 const result = await childProcess.run({
                     collect: true,
                     stopOnError: true,
                     waitForStreams: false,
+                    extraArgs: ['4'],
                     onStdout(text) {
-                        if (text.includes('3')) {
-                            this.reportError('Got 3')
+                        if (text.includes('4')) {
+                            this.reportError('Got 4')
                         }
                     },
                 })
                 assert.ok(result.stdout.length !== 0)
+                assert.ok(result.error?.message.includes('Got 4'))
             })
 
             it('uses `Timeout` objects', async function () {

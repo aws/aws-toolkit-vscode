@@ -43,6 +43,12 @@ export interface ChildProcessOptions {
     /** Callback for intercepting text from the stderr stream. */
     onStderr?(this: StartParameterContext, text: string): void
 }
+
+export interface ChildProcessRunOptions extends ChildProcessOptions {
+    /** Arguments applied in addition to the ones used in construction. */
+    extraArgs?: string[]
+}
+
 export interface ChildProcessResult {
     exitCode: number
     error: Error | undefined
@@ -75,7 +81,7 @@ export class ChildProcess {
             exitCode: code,
             stdout: this.stdoutChunks.join().trim(),
             stderr: this.stderrChunks.join().trim(),
-            error: this.processErrors.shift(), // Only use the first since that one usually cascades.
+            error: this.processErrors[0], // Only use the first since that one usually cascades.
             signal,
         }
     }
@@ -95,7 +101,7 @@ export class ChildProcess {
      * Runs the child process. Options passed here are merged with the options passed in during construction.
      * Priority is given to `run` options, overriding the previous value.
      */
-    public async run(params: ChildProcessOptions = {}): Promise<ChildProcessResult> {
+    public async run(params: ChildProcessRunOptions = {}): Promise<ChildProcessResult> {
         if (this.childProcess) {
             throw new Error('process already started')
         }
@@ -114,6 +120,7 @@ export class ChildProcess {
             spawnOptions: { ...this.options.spawnOptions, ...params.spawnOptions },
         }
         const { rejectOnError, rejectOnExit, timeout } = mergedOptions
+        const args = this.args.concat(mergedOptions.extraArgs ?? [])
 
         // Defaults
         mergedOptions.collect ??= true
@@ -160,7 +167,7 @@ export class ChildProcess {
             // [1] https://github.com/moxystudio/node-cross-spawn/blob/master/index.js
             // [2] https://nodejs.org/api/child_process.html
             try {
-                this.childProcess = crossSpawn.spawn(this.command, this.args, mergedOptions.spawnOptions)
+                this.childProcess = crossSpawn.spawn(this.command, args, mergedOptions.spawnOptions)
             } catch (err) {
                 return errorHandler(err as Error)
             }
