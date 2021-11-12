@@ -19,7 +19,7 @@ import {
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
 import { recentlyUsed } from '../../../shared/localizedText'
-import { partialCached } from '../../../shared/utilities/collectionUtils'
+import { deferredCached } from '../../../shared/utilities/collectionUtils'
 import { createQuickPickTester, QuickPickTester } from './testUtils'
 
 describe('createQuickPick', function () {
@@ -62,8 +62,8 @@ describe('createQuickPick', function () {
 
     it('adds a refresh button if using `itemLoader`', function (done) {
         const copy = [...items]
-        const loader = partialCached(() => copy)
-        const prompter = createQuickPick([], { itemLoader: loader })
+        const loader = deferredCached(() => copy)
+        const prompter = createQuickPick(loader)
 
         prompter.onDidShow(() => {
             const refresh = prompter.quickPick.buttons.find(b => b.tooltip === 'Refresh')
@@ -79,8 +79,7 @@ describe('createQuickPick', function () {
             }
         })
 
-        prompter.configure({ cache: {} })
-        prompter.prompt()
+        prompter.promptControl()
     })
 
     it('creates a new prompter when given an AsyncIterable', async function () {
@@ -260,6 +259,27 @@ describe('QuickPickPrompter', function () {
         testPrompter = new QuickPickPrompter(picker, { errorItem: errorCallback })
         await testPrompter.clearAndLoadItems(badPromise)
         assert.deepStrictEqual(picker.items, [{ detail: 'my error', label: 'my error', data: 0 }])
+    })
+
+    it('respects base items on refresh', function (done) {
+        const baseItems = [{ label: 'base', data: -1 }]
+        const copy = [...testItems]
+        const itemLoader = deferredCached(() => copy)
+        const prompter = new QuickPickPrompter(picker, { itemLoader, baseItems })
+
+        prompter.onDidShow(() => {
+            prompter.refreshItems()
+            if (picker.items.length === 4) {
+                picker.selectedItems = [picker.items[0]]
+            }
+        })
+
+        prompter.promptControl().then(resp => {
+            if (resp !== -1) {
+                done(new Error(`Invalid response: ${resp}, expected -1`))
+            }
+            done()
+        })
     })
 
     it('handles AsyncIterables that return something', async function () {

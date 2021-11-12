@@ -40,8 +40,7 @@ describe('Prompter', function () {
 
     it('passes in config to derived classes via `promptUser`', async function () {
         const prompter = new SimplePrompter(1)
-        prompter.configure({ title: 'foo' })
-        await prompter.promptControl()
+        await prompter.promptControl({ title: 'foo' })
         assert.strictEqual(prompter.promptConfig.title, 'foo')
     })
 
@@ -49,12 +48,6 @@ describe('Prompter', function () {
         const prompter = new SimplePrompter(1)
         await prompter.prompt()
         await assert.rejects(prompter.prompt())
-    })
-
-    it('throws error if trying to configure after prompt', async function () {
-        const prompter = new SimplePrompter(1)
-        await prompter.prompt()
-        assert.throws(() => prompter.configure({}))
     })
 
     it('can attach multiple transformations', async function () {

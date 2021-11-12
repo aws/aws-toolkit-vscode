@@ -15,7 +15,7 @@ import { getLogger } from '../../logger'
 import { extensionSettingsPrefix } from '../../constants'
 import { validateBucketName } from '../../../s3/util'
 import { showViewLogsMessage } from '../../utilities/messages'
-import { partialCached } from '../../utilities/collectionUtils'
+import { deferredCached } from '../../utilities/collectionUtils'
 import { addCodiconToString } from '../../utilities/textUtilities'
 import { isCloud9 } from '../../extensionUtilities'
 
@@ -181,22 +181,25 @@ export function createS3BucketPrompter(options: S3BucketPrompterOptions = {}): Q
             } as DataQuickPickItem<Bucket>)
     )
 
-    const prompter = createQuickPick(baseItems, {
-        title: options.title ?? localize('AWS.prompts.s3Bucket.title', 'Select an AWS S3 Bucket'),
-        matchOnDetail: true,
-        buttons: createCommonButtons(options.helpUri),
-        itemLoader: partialCached((region?: string) => loadBuckets(region, filter), region),
-        placeholder: localize(
-            'AWS.prompts.s3Bucket.placeholder',
-            'Select a bucket you own or enter a name for a bucket'
-        ),
-        filterBoxInput: {
-            label: localize('AWS.prompts.s3Bucket.filterBox.label', 'Enter bucket name: '),
-            transform: resp => ({ name: resp } as Bucket),
-            validator: val => validateBucket(val, region ?? 'us-east-1'),
-        },
-        noItemsFoundItem: resolvedOptions.noBucketMessage,
-    })
+    const prompter = createQuickPick(
+        deferredCached((region?: string) => loadBuckets(region, filter), region),
+        {
+            title: options.title ?? localize('AWS.prompts.s3Bucket.title', 'Select an AWS S3 Bucket'),
+            matchOnDetail: true,
+            buttons: createCommonButtons(options.helpUri),
+            baseItems,
+            placeholder: localize(
+                'AWS.prompts.s3Bucket.placeholder',
+                'Select a bucket you own or enter a name for a bucket'
+            ),
+            filterBoxInput: {
+                label: localize('AWS.prompts.s3Bucket.filterBox.label', 'Enter bucket name: '),
+                transform: resp => ({ name: resp } as Bucket),
+                validator: val => validateBucket(val, region ?? 'us-east-1'),
+            },
+            noItemsFoundItem: resolvedOptions.noBucketMessage,
+        }
+    )
 
     // The below logic is bypassing the normal `prompter` control flow and manipulating it externally
     // This is not the preferred way to implement actions from the 'filter box' item, though it works for now

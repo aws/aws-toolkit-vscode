@@ -7,7 +7,7 @@ import { EcrClient, EcrRepository } from '../../clients/ecrClient'
 import { createCommonButtons } from '../buttons'
 import * as nls from 'vscode-nls'
 import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
-import { partialCached } from '../../utilities/collectionUtils'
+import { deferredCached } from '../../utilities/collectionUtils'
 import { Wizard } from '../../wizards/wizard'
 import { BasicExitPrompter } from './basicExit'
 import { ext } from '../../extensionGlobals'
@@ -37,14 +37,16 @@ async function* loadRepositories(ecrClient: EcrClient) {
 }
 
 export function createTagPrompter(ecrClient: EcrClient, repo: EcrRepository): QuickPickPrompter<string> {
-    return createQuickPick([], {
-        itemLoader: partialCached((repo: EcrRepository) => loadTags(ecrClient, repo), repo),
-        title: localize('AWS.apprunner.createService.selectTag.title', 'Select an ECR tag'),
-        placeholder: 'latest',
-        buttons: createCommonButtons(),
-        noItemsFoundItem: localize('AWS.apprunner.createService.selectTags.noFound', 'No tags found'),
-        errorItem: localize('AWS.apprunner.createService.selectTag.failed', 'Failed to get tags'),
-    })
+    return createQuickPick(
+        deferredCached((repo: EcrRepository) => loadTags(ecrClient, repo), repo),
+        {
+            title: localize('AWS.apprunner.createService.selectTag.title', 'Select an ECR tag'),
+            placeholder: 'latest',
+            buttons: createCommonButtons(),
+            noItemsFoundItem: localize('AWS.apprunner.createService.selectTags.noFound', 'No tags found'),
+            errorItem: localize('AWS.apprunner.createService.selectTag.failed', 'Failed to get tags'),
+        }
+    )
 }
 
 export function createImagePrompter(
@@ -91,20 +93,22 @@ export function createImagePrompter(
         return message !== undefined ? addCodiconToString('error', `Invalid input: ${message}`) : undefined
     }
 
-    return createQuickPick([], {
-        itemLoader: partialCached((region?: string) => loadRepositories(ecrClient), ecrClient.regionCode),
-        title:
-            options.title ??
-            localize('AWS.apprunner.createService.selectImageRepo.title', 'Select or enter an image repository'),
-        placeholder: '123456789012.dkr.ecr.us-east-1.amazonaws.com/myrepo:latest',
-        filterBoxInput: {
-            label: customUserInputLabel,
-            transform: customUserInputTransform,
-            validator: customUserInputValidator,
-        },
-        buttons: createCommonButtons(),
-        errorItem: localize('AWS.apprunner.createService.selectImageRepo.failed', 'Failed to list repositories'),
-    })
+    return createQuickPick(
+        deferredCached((region?: string) => loadRepositories(ecrClient), ecrClient.regionCode),
+        {
+            title:
+                options.title ??
+                localize('AWS.apprunner.createService.selectImageRepo.title', 'Select or enter an image repository'),
+            placeholder: '123456789012.dkr.ecr.us-east-1.amazonaws.com/myrepo:latest',
+            filterBoxInput: {
+                label: customUserInputLabel,
+                transform: customUserInputTransform,
+                validator: customUserInputValidator,
+            },
+            buttons: createCommonButtons(),
+            errorItem: localize('AWS.apprunner.createService.selectImageRepo.failed', 'Failed to list repositories'),
+        }
+    )
 }
 
 interface ImagePrompterOptions {

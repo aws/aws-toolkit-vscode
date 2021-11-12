@@ -5,7 +5,7 @@
 
 import { Branch, ControlSignal, StateMachineController, StepFunction } from './stateController'
 import * as _ from 'lodash'
-import { Prompter, PromptResult } from '../../shared/ui/prompter'
+import { Prompter, PrompterConfiguration, PromptResult } from '../../shared/ui/prompter'
 import { PrompterProvider, WizardForm } from './wizardForm'
 import { WizardControl, WizardError, WizardTrace } from './util'
 
@@ -157,9 +157,9 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private createExitStep(provider: NonNullable<WizardOptions<TState>['exitPrompter']>): StepFunction<TState> {
         return async state => {
             const prompter = (this.activePrompter = provider(state))
-            prompter.setSteps(this.currentStep, this.totalSteps)
+            const config = { steps: { current: this.currentStep, total: this.totalSteps } }
             const reporter = this.trace.start('[[Exit]]', this.currentStep, this.totalSteps)
-            const response = await WizardTrace.instrumentPromise(reporter, prompter.promptControl())
+            const response = await WizardTrace.instrumentPromise(reporter, prompter.promptControl(config))
             const didExit = response && [true, WIZARD_EXIT, WIZARD_FORCE_EXIT].includes(response)
 
             return {
@@ -237,19 +237,19 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
         this._stepOffset = state.stepCache.stepOffset ?? this._stepOffset
         state.stepCache.stepOffset = this._stepOffset
-        prompter.configure({
+        const config: PrompterConfiguration<TProp> = {
             cache: state.stepCache,
             stepEstimator: state.estimator,
             steps: { current: this.currentStep, total: this.totalSteps },
-        })
+        }
 
         if (state.stepCache.picked !== undefined) {
             prompter.recentItem = state.stepCache.picked
         }
 
-        const answer = impliedResponse === undefined ? await prompter.promptControl() : impliedResponse
+        const answer = impliedResponse === undefined ? await prompter.promptControl(config) : impliedResponse
 
-        if (isValidResponse(answer) && impliedResponse === undefined) {
+        if (impliedResponse === undefined) {
             state.stepCache.picked = prompter.recentItem
         } else {
             delete state.stepCache.stepOffset

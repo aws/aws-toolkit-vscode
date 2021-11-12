@@ -8,7 +8,7 @@ import { WizardControl } from '../wizards/util'
 import { isValidResponse, StepEstimator } from '../wizards/wizard'
 
 export type PromptResult<T> = T | WizardControl
-export type Transform<T, R = T> = (result: T) => R
+export type Transform<T, R> = (result: T) => R
 export type ResultListener<T> = (result: Readonly<T>) => void
 
 export interface PrompterConfiguration<T = any> {
@@ -17,6 +17,8 @@ export interface PrompterConfiguration<T = any> {
     steps?: { current: number; total: number }
     stepEstimator?: StepEstimator<T>
 }
+
+type SinglePromptConfiguration = Pick<PrompterConfiguration, 'title' | 'cache'>
 
 /**
  * @experimental Currently not used. This will replace the base {@link Prompter} class.
@@ -51,7 +53,7 @@ export abstract class Prompter<T> {
     /** Implementing classes should return the user's response _before_ transforming into into type T. */
     public abstract set recentItem(response: any)
 
-    constructor(private config: PrompterConfiguration<T> = {}) {}
+    constructor() {}
 
     /**
      * Attaches a callback that is invoked after the user provides a valid response of type `T`.
@@ -96,7 +98,7 @@ export abstract class Prompter<T> {
         this.disposed = true
     }
 
-    private async promptOrThrow(): Promise<PromptResult<T>> {
+    private async promptOrThrow(config: PrompterConfiguration<T> = {}): Promise<PromptResult<T>> {
         if (this.prompting) {
             // May want to re-think this. Re-using a prompter can potentially be useful.
             throw new Error('Cannot prompt while already prompting')
@@ -105,16 +107,18 @@ export abstract class Prompter<T> {
             throw new Error('Cannot use prompter after it has been disposed')
         }
         this.prompting = true
-        return this.executeCallbacks(await this.promptUser(this.config), this.resultCallbacks)
+        return this.executeCallbacks(await this.promptUser(config), this.resultCallbacks)
     }
 
     /**
      * Opens a dialog for the user to respond to.
      *
+     * This is used for 'one-off' prompts not apart of a wizard flow.
+     *
      * @returns The user-response or undefined.
      */
-    public async prompt(): Promise<T | undefined> {
-        const response = await this.promptOrThrow()
+    public async prompt(config: SinglePromptConfiguration = {}): Promise<T | undefined> {
+        const response = await this.promptOrThrow(config)
         return isValidResponse(response) ? response : undefined
     }
 
@@ -123,29 +127,10 @@ export abstract class Prompter<T> {
      *
      * @returns The user-response or a control signal.
      */
-    public async promptControl(): Promise<PromptResult<T>> {
-        return await this.promptOrThrow()
-    }
-
-    /**
-     * Configures the prompter with some basic settings. See {@link PrompterConfiguration}.
-     *
-     * @throws If called after the UI element has been shown.
-     */
-    public configure(config: PrompterConfiguration<T>): void {
-        if (this.disposed || this.prompting) {
-            throw new Error("Cannot configure a prompter after it's already been shown")
-        }
-        this.config = { ...this.config, ...config }
+    public async promptControl(config: PrompterConfiguration<T> = {}): Promise<PromptResult<T>> {
+        return await this.promptOrThrow(config)
     }
 
     /** Derived classes should implement this to actually prompt the user. */
     protected abstract promptUser(config: PrompterConfiguration<T>): Promise<PromptResult<T>>
-
-    /** ----- Convenience methods ----- */
-
-    /** Sets the step configuration. This is not applied to the UI element until prompted. */
-    public setSteps(current: number, total: number): void {
-        this.config.steps = { current, total }
-    }
 }

@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../logger/logger'
 import { showViewLogsMessage } from '../../utilities/messages'
 import { WIZARD_BACK } from '../../wizards/wizard'
-import { partialCached } from '../../utilities/collectionUtils'
+import { deferredCached } from '../../utilities/collectionUtils'
 import { parse } from '@aws-sdk/util-arn-parser'
 
 const localize = nls.loadMessageBundle()
@@ -45,25 +45,27 @@ export function createRolePrompter(client: IamClient, options: RolePrompterOptio
         detail: options.noRoleDetail,
     }
 
-    const prompter = createQuickPick([], {
-        buttons: createCommonButtons(options.helpUri),
-        title: options.title,
-        noItemsFoundItem: placeholderItem,
-        itemLoader: partialCached(() => loadRoles(client, options.filter)),
-        placeholder: localize('AWS.rolePrompter.placeholder', 'Select or enter a role ARN'),
-        filterBoxInput: {
-            // TODO: need to define some 'base' interfaces for prompt options as well as logic to merge with defaults
-            label: localize('AWS.rolePrompter.enterArn', 'Enter Role ARN'),
-            transform: resp => ({ Arn: resp, RoleName: 'Unknown' } as IAM.Role), // callers would not expect this to be incomplete
-            validator: value => {
-                try {
-                    parse(value)
-                } catch (err) {
-                    return `Invalid: ${(err as any).message}`
-                }
+    const prompter = createQuickPick(
+        deferredCached(() => loadRoles(client, options.filter)),
+        {
+            buttons: createCommonButtons(options.helpUri),
+            title: options.title,
+            noItemsFoundItem: placeholderItem,
+            placeholder: localize('AWS.rolePrompter.placeholder', 'Select or enter a role ARN'),
+            filterBoxInput: {
+                // TODO: need to define some 'base' interfaces for prompt options as well as logic to merge with defaults
+                label: localize('AWS.rolePrompter.enterArn', 'Enter Role ARN'),
+                transform: resp => ({ Arn: resp, RoleName: 'Unknown' } as IAM.Role), // callers would not expect this to be incomplete
+                validator: value => {
+                    try {
+                        parse(value)
+                    } catch (err) {
+                        return `Invalid: ${(err as any).message}`
+                    }
+                },
             },
-        },
-    })
+        }
+    )
 
     const createRole = options.createRole
     if (createRole !== undefined) {

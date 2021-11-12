@@ -275,41 +275,28 @@ export function stripUndefined(obj: any): void {
     })
 }
 
-export function entries<T extends Record<PropertyKey, any>>(obj: T): [keyof T, T[keyof T]][] {
-    return Object.entries(obj)
-}
-
 export function isAsyncIterable<T = unknown>(obj: any): obj is AsyncIterable<T> {
     return obj && typeof obj[Symbol.asyncIterator || Symbol.for('asyncIterator')] === 'function'
 }
 
-export type Cacheable = (...args: any[]) => NonNullable<any>
+/**
+ * Alias since ESlint doesn't like using `Function` in types
+ */
+type Func = (...args: any[]) => any
 
 /**
  * A wrapped function that can cache both synchronous and asynchronous return types.
- *
- * Pending promises are returned as-is, while resolved promises are 'unboxed' into their promised type.
  */
-export interface CachedFunction<F extends Cacheable, Unbox extends boolean = true> {
-    (...args: Parameters<F>): Unbox extends true
-        ? ReturnType<F> extends Promise<infer Inner>
-            ? ReturnType<F> | Inner
-            : ReturnType<F>
-        : ReturnType<F>
+export interface CachedFunction<F extends Func> {
+    (...args: Parameters<F>): ReturnType<F>
     /** Clears all keys that were cached. */
     clearCache(this: void): void
     /** Replaces the most-recently cached value with a new value. */
     supplantLast(this: void, result: ReturnType<F> extends Promise<infer Inner> ? Inner : ReturnType<F>): void
 }
-export interface CachedFunctionOptions<F extends Cacheable> {
+export interface CachedFunctionOptions<F extends Func> {
     /** Cache to use for storing results. If not provided, an empty dictionary will be created instead. */
     cache?: { [key: string]: ReturnType<F> }
-    /**
-     * Automatically 'unboxes' Promises into their resolved value. Useful if you want to execute code _immediately_ if
-     * the value is already known rather than waiting for the event loop to process already queued microtasks.
-     * (default: true)
-     */
-    unboxPromises?: boolean
     /**
      * Caches the result of an {@link AsyncIterable} rather than the iterable itself. (default: true)
      */
@@ -318,6 +305,26 @@ export interface CachedFunctionOptions<F extends Cacheable> {
     hashOptions?: hasher.HasherOptions & SorterOptions
 }
 
+/**
+ * 'Normalizes' an iterable by ensuring it can only be iterated over once.
+ */
+function normalizeAsyncIterable<T extends AsyncIterable<R>, R>(iterable: T): AsyncIterable<R> {
+    const iterator = iterable[Symbol.asyncIterator]()
+    return { [Symbol.asyncIterator]: () => iterator }
+}
+
+/**
+ * This function assumes that the iterable is already 'normalized' and will contain an iterator that
+ * can only be iterated over once. Generator functions already fall under this category, though it's
+ * possible to create arbitrary iterables that do not respect this behavior.
+ *
+ * Because we retain the same reference to the iterable we're able to stop/pause/start iteration without
+ * any additional logic. If any consuming code stops iterating over the cached iterable, then the yield
+ * within this generator is never consumed (and so forth to the underlying iterable).
+ *
+ * Resuming the iterable creates a new generator, however, we always yield to the cache first. Since this
+ * delegation happens synchronously it will look instantaneous from an asynchronous perspective.
+ */
 function cacheAsyncIterable<T extends AsyncIterable<R>, R = any>(iterable: T, cache: R[]) {
     return async function* () {
         yield* cache
@@ -343,16 +350,7 @@ function cacheAsyncIterable<T extends AsyncIterable<R>, R = any>(iterable: T, ca
  * @param options {@link CachedFunctionOptions}
  * @returns The {@link CachedFunction wrapped function}
  */
-
-export function createCachedFunction<F extends (...args: any[]) => Promise<any>>(
-    func: F,
-    options?: CachedFunctionOptions<F> & { unboxPromises?: true }
-): CachedFunction<F, true>
-export function createCachedFunction<F extends Cacheable>(
-    func: F,
-    options?: CachedFunctionOptions<F>
-): CachedFunction<F, false>
-export function createCachedFunction<F extends Cacheable>(
+export function createCachedFunction<F extends Func>(
     func: F,
     options: CachedFunctionOptions<F> = {}
 ): CachedFunction<F> {
@@ -374,15 +372,8 @@ export function createCachedFunction<F extends Cacheable>(
         cache[key] = resolved
         keys.add(key)
 
-        if ((options.unboxPromises ?? true) && resolved instanceof Promise) {
-            return resolved.then(result => {
-                cache[key] = result
-                return result
-            })
-        }
-
         if ((options.resolveAsyncIterables ?? true) && isAsyncIterable<any>(resolved)) {
-            const gen = cacheAsyncIterable(resolved, [] as any[])
+            const gen = cacheAsyncIterable(normalizeAsyncIterable(resolved), [] as any[])
             Object.defineProperty(cache, key, {
                 get: () => gen(),
                 configurable: true,
@@ -408,17 +399,20 @@ export function createCachedFunction<F extends Cacheable>(
     return Object.assign(wrapped, { clearCache, supplantLast })
 }
 
-export type PartialCachedFunction<
-    F extends Cacheable,
-    Unbox extends boolean = true,
+export type DeferredCachedFunction<
+    F extends Func,
     Cache extends Record<string, any> = { [key: string]: ReturnType<F> }
-> = (cache: Cache) => CachedFunction<() => ReturnType<F>, Unbox>
+> = (cache: Cache) => CachedFunction<() => ReturnType<F>>
 
 /**
  * ~Partial~ Full application of the cached function with deferred cache binding.
- * TODO: either rename this or set-up the types correctly to represent partial application.
+ *
+ * By deferring the cache we can transport the function with bound arguments to other consumers,
+ * allowing them to add a cache as-needed.
+ *
+ * TODO: set-up the types correctly to represent partial application.
  */
-export function partialCached<F extends Cacheable>(func: F, ...args: Parameters<F>): PartialCachedFunction<F> {
+export function deferredCached<F extends Func>(func: F, ...args: Parameters<F>): DeferredCachedFunction<F> {
     return cache => {
         const cachedFunc = createCachedFunction(func, { cache })
         const { clearCache, supplantLast } = cachedFunc

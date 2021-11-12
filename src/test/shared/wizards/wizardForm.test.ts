@@ -47,6 +47,14 @@ describe('WizardForm', function () {
         assert.throws(() => testForm.prop1.setDefault(1))
     })
 
+    it('caches `properties`', function () {
+        testForm.prop1.bindPrompter(() => new SimplePrompter(0))
+        const props = testWizard.boundForm.properties
+        assert.strictEqual(testWizard.boundForm.properties, props)
+        testForm.prop2.bindPrompter(() => new SimplePrompter(''))
+        assert.notStrictEqual(testWizard.boundForm.properties, props)
+    })
+
     it('ignores `setDefault` if property is assigned', function () {
         testForm.prop1.bindPrompter(() => new SimplePrompter(1), {
             setDefault: () => 0,
@@ -151,6 +159,17 @@ describe('WizardForm', function () {
             tester.nestedProp.prop1.assertDoesNotShow()
             tester.nestedProp.prop2.applyInput('hello')
             tester.nestedProp.prop1.assertShow()
+        })
+
+        it('propagates wizard-specific state down to prompters', function () {
+            nestedTestForm.body.prop1.bindPrompter(state => {
+                assert.ok(state.estimator)
+                assert.ok(state.stepCache)
+                return new SimplePrompter('')
+            })
+            testForm.nestedProp.applyBoundForm(nestedTestForm)
+            tester.nestedProp.prop2.applyInput('hello')
+            testWizard.boundForm.getPrompterProvider('prop2')?.({ stepCache: {}, estimator: () => 0 })
         })
 
         it('can apply form with "showWhen"', function () {

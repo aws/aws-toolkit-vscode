@@ -551,19 +551,11 @@ describe('CollectionUtils', async function () {
             }
 
             it('handles promises', async function () {
-                const cached = createCachedFunction(asyncAdd, { unboxPromises: false })
+                const cached = createCachedFunction(asyncAdd)
 
                 assert.strictEqual(cached(1, 1), cached(1, 1)) // reference assertion
                 assert.strictEqual(callCount, 1)
                 assert.notStrictEqual(cached(1, 1), cached(1, 2))
-            })
-
-            it('can unbox promises', async function () {
-                const cached = createCachedFunction(asyncAdd, { unboxPromises: true })
-
-                assert.strictEqual(await cached(1, 1), 2)
-                assert.strictEqual(cached(1, 1), 2)
-                assert.strictEqual(callCount, 1)
             })
         })
 
@@ -577,6 +569,17 @@ describe('CollectionUtils', async function () {
                 }
             }
 
+            async function iterateN(iterable: AsyncIterable<number>, arr: number[], n = 1): Promise<void> {
+                const iterator = iterable[Symbol.asyncIterator]()
+                while (n-- > 0) {
+                    const { value, done } = await iterator.next()
+                    if (done) {
+                        break
+                    }
+                    arr.push(value)
+                }
+            }
+
             beforeEach(function () {
                 callCount = 0
                 yieldCount = 0
@@ -584,43 +587,57 @@ describe('CollectionUtils', async function () {
 
             it('returns reference if not using `resolveAsyncIterable`', async function () {
                 const cached = createCachedFunction(asyncGen, { resolveAsyncIterables: false })
-                const vals = []
+                const vals: number[] = []
 
-                assert.strictEqual(cached(1, 1), cached(1, 1))
+                assert.strictEqual(cached(1, 2), cached(1, 2))
+                assert.notStrictEqual(cached(1, 2), cached(1, 3))
                 assert.strictEqual(callCount, 0)
 
-                for await (const val of cached(1, 1)) {
-                    vals.push(val)
-                    break
-                }
+                await iterateN(cached(1, 2), vals)
                 assert.strictEqual(yieldCount, 1)
 
-                for await (const val of cached(1, 1)) {
-                    vals.push(val)
-                }
-
-                assert.strictEqual(yieldCount, 1)
+                await iterateN(cached(1, 2), vals)
+                assert.strictEqual(yieldCount, 2)
                 assert.strictEqual(callCount, 1)
-                assert.deepStrictEqual(vals, [1])
+                assert.deepStrictEqual(vals, [1, 2])
             })
 
             it('creates a new async generator for resolved async iterables', async function () {
                 const cached = createCachedFunction(asyncGen)
-                const vals = []
+                const vals: number[] = []
 
-                for await (const val of cached(1, 1)) {
-                    vals.push(val)
-                    break
-                }
+                await iterateN(cached(1, 2), vals)
                 assert.strictEqual(yieldCount, 1)
 
-                for await (const val of cached(1, 1)) {
-                    vals.push(val)
-                }
-
+                await iterateN(cached(1, 2), vals)
                 assert.strictEqual(yieldCount, 1)
                 assert.strictEqual(callCount, 1)
                 assert.deepStrictEqual(vals, [1, 1])
+
+                await iterateN(cached(1, 2), vals, 2)
+                assert.strictEqual(yieldCount, 2)
+                assert.strictEqual(callCount, 1)
+                assert.deepStrictEqual(vals, [1, 1, 1, 2])
+            })
+
+            it('normalizes iterables', async function () {
+                // This test is pretty synthetic but nice to have just in case anyone tries to use a 'custom' iterator
+                const iterator: AsyncIterator<number> & { counter: number } = {
+                    counter: 0,
+                    async next() {
+                        return { value: (this.counter += 1), done: false }
+                    },
+                }
+                const func = () => ({ [Symbol.asyncIterator]: () => iterator })
+                const cached = createCachedFunction(func)
+                const vals: number[] = []
+
+                await iterateN(cached(), vals, 1)
+                await iterateN(cached(), vals, 2)
+                await iterateN(cached(), vals, 3)
+
+                assert.deepStrictEqual(vals, [1, 1, 2, 1, 2, 3])
+                assert.deepStrictEqual(iterator.counter, 3)
             })
         })
     })

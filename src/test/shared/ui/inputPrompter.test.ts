@@ -74,8 +74,7 @@ describe('InputBoxPrompter', function () {
     it('can estimate steps', async function () {
         const stepEstimator = (val: PromptResult<string>) => (typeof val === 'string' ? val.length : 0)
         testPrompter.setSteps(1, 2)
-        testPrompter.configure({ stepEstimator })
-        testPrompter.prompt()
+        testPrompter.promptControl({ stepEstimator })
 
         inputBox.fireOnDidChangeValue('123')
         assert.strictEqual(testPrompter.inputBox.step, 1)

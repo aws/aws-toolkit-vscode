@@ -537,8 +537,7 @@ function createQuickInputTester<T>(
         return tester
     }
 
-    // initialize prompter
-    prompter.configure({ cache: {} }) // TODO: expose some of this?
+    // set up start hooks
     prompter.onDidShow(start) // TODO: may want to add option to dispose of the UI element
 
     // TODO: can I generalize the concept of a proxy capturing arbitrary props and mapping them to handlers?

@@ -61,7 +61,6 @@ export abstract class QuickInputPrompter<T = any> extends Prompter<T> {
     }
 
     public setSteps(current: number, total: number) {
-        super.setSteps(current, total)
         this.quickInput.step = current
         this.quickInput.totalSteps = total
     }

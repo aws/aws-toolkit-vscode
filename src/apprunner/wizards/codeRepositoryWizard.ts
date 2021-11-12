@@ -14,7 +14,7 @@ import { createVariablesPrompter } from '../../shared/ui/common/environmentVaria
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { makeDeploymentButton } from './deploymentButton'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
-import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
+import { createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import {
     apprunnerConnectionHelpUrl,
@@ -23,7 +23,7 @@ import {
     apprunnerCreateServiceDocsUrl,
 } from '../../shared/constants'
 import { Wizard } from '../../shared/wizards/wizard'
-import { partialCached } from '../../shared/utilities/collectionUtils'
+import { deferredCached } from '../../shared/utilities/collectionUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -64,13 +64,12 @@ function createBranchPrompter(git: GitExtension, repo: string = ''): QuickPickPr
     }
 
     const userInputString = localize('AWS.apprunner.createService.customRepo', 'Enter branch name')
-    return createLabelQuickPick([], {
+    return createQuickPick(deferredCached(loader, repo), {
         title: localize('AWS.apprunner.createService.selectBranch.title', 'Select a branch'),
         filterBoxInput: {
             label: userInputString,
             transform: resp => resp,
         },
-        itemLoader: partialCached(loader, repo),
         buttons: createCommonButtons(),
         placeholder: localize(
             'AWS.apprunner.createService.selectBranch.placeholder',
@@ -164,10 +163,9 @@ export function createConnectionPrompter(client: AppRunnerClient): QuickPickProm
         onClick: vscode.env.openExternal.bind(vscode.env, vscode.Uri.parse(apprunnerConnectionHelpUrl)),
     }
 
-    const prompter = createQuickPick<ConnectionSummary>([], {
+    const prompter = createQuickPick<ConnectionSummary>(deferredCached(itemLoader, client.regionCode), {
         title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
         buttons: createCommonButtons(apprunnerConnectionHelpUrl),
-        itemLoader: partialCached(itemLoader, client.regionCode),
         noItemsFoundItem: noConnection,
         compare: (a, b) => (a.detail ? 1 : b.detail ? -1 : 0),
         errorItem: localize('AWS.apprunner.createService.selectConnection.failed', 'Failed to list GitHub connections'),

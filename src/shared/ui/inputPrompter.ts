@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { applyPrimitives } from '../utilities/collectionUtils'
+import { WizardControl } from '../wizards/util'
 import { StepEstimator, WIZARD_EXIT } from '../wizards/wizard'
 import { PrompterButtons } from './buttons'
 import { PrompterConfiguration, PromptResult } from './prompter'
@@ -134,6 +135,7 @@ export class InputBoxPrompter extends QuickInputPrompter<string> {
         })
 
         const result = await promptPromise
+        this._lastResponse = result instanceof WizardControl ? this._lastResponse : this._lastResponse
 
         if (Object.keys(config).length === 0) {
             this.dispose()
