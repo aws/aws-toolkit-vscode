@@ -30,13 +30,6 @@ describe('runCommandInContainer', function () {
     const outputChannel = new MockOutputChannel()
     const settings = new TestSettingsConfiguration()
 
-    const doesNotHaveSSMPluginChildProcessResult: FakeChildProcessResult = {
-        stdout: '',
-        error: undefined,
-        exitCode: 254,
-        stderr: 'This is not installed',
-    }
-
     const successfulCPResult: FakeChildProcessResult = new FakeChildProcessResult({})
 
     const ecs: EcsClient = new DefaultEcsClient('fakeRegion')
@@ -53,8 +46,7 @@ describe('runCommandInContainer', function () {
     })
 
     it('prompts for command', async function () {
-        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulCPResult)
-        childCalls.onSecondCall().resolves(successfulCPResult)
+        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').resolves(successfulCPResult)
         sandbox.stub(ecs, 'describeServices').resolves(serviceNoDeployments)
         sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
@@ -64,13 +56,12 @@ describe('runCommandInContainer', function () {
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         await runCommandInContainer(node, window, outputChannel, settings)
 
-        assert.strictEqual(childCalls.callCount, 2)
+        assert.strictEqual(childCalls.callCount, 1)
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter the command to run in container: containerName')
     })
 
     it('does not show picker if only one task exists', async function () {
-        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulCPResult)
-        childCalls.onSecondCall().resolves(successfulCPResult)
+        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').resolves(successfulCPResult)
         sandbox.stub(ecs, 'describeServices').resolves(serviceNoDeployments)
         sandbox.stub(ecs, 'listTasks').resolves(taskListOne)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
@@ -81,26 +72,6 @@ describe('runCommandInContainer', function () {
         await runCommandInContainer(node, window, outputChannel, settings)
 
         assert.strictEqual(pickerStub.notCalled, true)
-        assert.strictEqual(childCalls.callCount, 2)
-    })
-
-    it('throws error if SSM plugin not installed', async function () {
-        const childCalls = sandbox
-            .stub(ChildProcess.prototype, 'run')
-            .onFirstCall()
-            .resolves(doesNotHaveSSMPluginChildProcessResult)
-        const listTasksStub = sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
-        const pickerStub = sandbox.stub(picker, 'promptUser')
-
-        const window = new FakeWindow({ inputBox: { input: 'ls' } })
-        try {
-            await runCommandInContainer(node, window, outputChannel, settings)
-        } catch (error) {
-            assert.ok(error)
-        }
-
         assert.strictEqual(childCalls.callCount, 1)
-        assert.strictEqual(listTasksStub.notCalled, true)
-        assert.strictEqual(pickerStub.notCalled, true)
     })
 })
