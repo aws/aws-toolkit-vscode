@@ -30,8 +30,8 @@ import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
 import software.amazon.awssdk.core.client.config.SdkClientOption
 import software.amazon.awssdk.core.signer.Signer
 import software.amazon.awssdk.http.SdkHttpClient
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.lambda.LambdaClient
-import software.amazon.awssdk.services.lambda.LambdaClientBuilder
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
@@ -195,19 +195,73 @@ class AwsClientManagerTest {
     }
 
     @Test
-    fun userAgentIsPassed() {
+    fun clientCustomizationIsAppliedToManagedClients() {
         wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
 
         val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
-        val customizer = AwsClientCustomizer { connection, builder ->
-            assertThat(connection).isEqualTo(aConnection)
-            if (builder is LambdaClientBuilder) {
-                builder.endpointOverride(URI.create(wireMockRule.baseUrl()))
-            }
+        val customizer = AwsClientCustomizer { credentialProvider, region, builder ->
+            assertThat(credentialProvider).isEqualTo(aConnection.credentials)
+            assertThat(region).isEqualTo(aConnection.region.id)
+
+            builder.endpointOverride(URI.create(wireMockRule.baseUrl()))
         }
         ExtensionTestUtil.maskExtensions(CUSTOMIZER_EP, listOf(customizer), disposableRule.disposable)
 
-        getClientManager().createNewClient(LambdaClient::class, aConnection).use {
+        getClientManager().getClient(LambdaClient::class, aConnection).use {
+            it.listFunctions()
+        }
+
+        wireMockRule.verify(anyRequestedFor(anyUrl()))
+    }
+
+    @Test
+    fun clientCustomizationIsAppliedToUnmanagedClients() {
+        wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
+
+        val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
+        val customizer = AwsClientCustomizer { credentialProvider, region, builder ->
+            assertThat(credentialProvider).isEqualTo(aConnection.credentials)
+            assertThat(region).isEqualTo(aConnection.region.id)
+
+            builder.endpointOverride(URI.create(wireMockRule.baseUrl()))
+        }
+        ExtensionTestUtil.maskExtensions(CUSTOMIZER_EP, listOf(customizer), disposableRule.disposable)
+
+        getClientManager().createUnmanagedClient<LambdaClient>(aConnection.credentials, Region.of(aConnection.region.id)).use {
+            it.listFunctions()
+        }
+
+        wireMockRule.verify(anyRequestedFor(anyUrl()))
+    }
+
+    @Test
+    fun userAgentIsPassedForManagedClients() {
+        wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
+
+        val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
+        val customizer = AwsClientCustomizer { _, _, builder ->
+            builder.endpointOverride(URI.create(wireMockRule.baseUrl()))
+        }
+        ExtensionTestUtil.maskExtensions(CUSTOMIZER_EP, listOf(customizer), disposableRule.disposable)
+
+        getClientManager().getClient<LambdaClient>(aConnection).use {
+            it.listFunctions()
+        }
+
+        wireMockRule.verify(anyRequestedFor(urlPathMatching("(.*)/functions/")).withHeader("User-Agent", ContainsPattern("AWS-Toolkit-For-JetBrains/")))
+    }
+
+    @Test
+    fun userAgentIsPassedForUnmanagedClients() {
+        wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
+
+        val aConnection = ConnectionSettings(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion())
+        val customizer = AwsClientCustomizer { _, _, builder ->
+            builder.endpointOverride(URI.create(wireMockRule.baseUrl()))
+        }
+        ExtensionTestUtil.maskExtensions(CUSTOMIZER_EP, listOf(customizer), disposableRule.disposable)
+
+        getClientManager().createUnmanagedClient<LambdaClient>(aConnection.credentials, Region.of(aConnection.region.id)).use {
             it.listFunctions()
         }
 

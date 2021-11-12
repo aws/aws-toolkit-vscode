@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.credentials.profiles
 import com.intellij.openapi.ui.TestDialogManager
 import com.intellij.openapi.ui.TestInputDialog
 import com.intellij.testFramework.ApplicationRule
+import com.intellij.testFramework.RuleChain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -15,6 +16,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.profiles.Profile
@@ -23,15 +25,19 @@ import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
 import software.amazon.awssdk.services.sts.model.AssumeRoleResponse
 import software.amazon.awssdk.utils.SdkAutoCloseable
-import software.aws.toolkits.core.utils.delegateMock
+import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import java.time.Duration
 import java.time.Instant
 
 class ProfileAssumeRoleProviderTest {
+    private val application = ApplicationRule()
+    private val clientManager = MockClientManagerRule()
+
     @Rule
     @JvmField
-    val application = ApplicationRule()
+    val ruleChain = RuleChain(application, clientManager)
 
     private val mfaToken = "SomeToken"
     private lateinit var parentProvider: AwsCredentialsProvider
@@ -41,7 +47,7 @@ class ProfileAssumeRoleProviderTest {
     fun setup() {
         parentProvider = mock(extraInterfaces = arrayOf(SdkAutoCloseable::class))
 
-        stsClient = delegateMock {
+        stsClient = clientManager.create<StsClient>().stub {
             on { assumeRole(any<AssumeRoleRequest>()) } doReturn AssumeRoleResponse.builder()
                 .credentials { c ->
                     c.accessKeyId(aString())
@@ -66,7 +72,7 @@ class ProfileAssumeRoleProviderTest {
             put(ProfileProperty.ROLE_ARN, role)
         }
 
-        ProfileAssumeRoleProvider(stsClient, parentProvider, profile).resolveCredentials()
+        ProfileAssumeRoleProvider(parentProvider, anAwsRegion(), profile).resolveCredentials()
 
         argumentCaptor<AssumeRoleRequest> {
             verify(stsClient).assumeRole(capture())
@@ -82,7 +88,7 @@ class ProfileAssumeRoleProviderTest {
             put(ProfileProperty.DURATION_SECONDS, "12345")
         }
 
-        ProfileAssumeRoleProvider(stsClient, parentProvider, profile).resolveCredentials()
+        ProfileAssumeRoleProvider(parentProvider, anAwsRegion(), profile).resolveCredentials()
 
         argumentCaptor<AssumeRoleRequest> {
             verify(stsClient).assumeRole(capture())
@@ -98,7 +104,7 @@ class ProfileAssumeRoleProviderTest {
             put(ProfileProperty.DURATION_SECONDS, "abc")
         }
 
-        ProfileAssumeRoleProvider(stsClient, parentProvider, profile).resolveCredentials()
+        ProfileAssumeRoleProvider(parentProvider, anAwsRegion(), profile).resolveCredentials()
 
         argumentCaptor<AssumeRoleRequest> {
             verify(stsClient).assumeRole(capture())
@@ -113,7 +119,7 @@ class ProfileAssumeRoleProviderTest {
             put(ProfileProperty.ROLE_ARN, aString())
         }
 
-        ProfileAssumeRoleProvider(stsClient, parentProvider, profile).resolveCredentials()
+        ProfileAssumeRoleProvider(parentProvider, anAwsRegion(), profile).resolveCredentials()
 
         argumentCaptor<AssumeRoleRequest> {
             verify(stsClient).assumeRole(capture())
@@ -130,7 +136,7 @@ class ProfileAssumeRoleProviderTest {
             put(ProfileProperty.MFA_SERIAL, mfaSerial)
         }
 
-        ProfileAssumeRoleProvider(stsClient, parentProvider, profile).resolveCredentials()
+        ProfileAssumeRoleProvider(parentProvider, anAwsRegion(), profile).resolveCredentials()
 
         argumentCaptor<AssumeRoleRequest> {
             verify(stsClient).assumeRole(capture())
@@ -147,7 +153,7 @@ class ProfileAssumeRoleProviderTest {
             put(ProfileProperty.EXTERNAL_ID, id)
         }
 
-        ProfileAssumeRoleProvider(stsClient, parentProvider, profile).resolveCredentials()
+        ProfileAssumeRoleProvider(parentProvider, anAwsRegion(), profile).resolveCredentials()
 
         argumentCaptor<AssumeRoleRequest> {
             verify(stsClient).assumeRole(capture())
@@ -164,7 +170,7 @@ class ProfileAssumeRoleProviderTest {
             put(ProfileProperty.ROLE_SESSION_NAME, name)
         }
 
-        ProfileAssumeRoleProvider(stsClient, parentProvider, profile).resolveCredentials()
+        ProfileAssumeRoleProvider(parentProvider, anAwsRegion(), profile).resolveCredentials()
 
         argumentCaptor<AssumeRoleRequest> {
             verify(stsClient).assumeRole(capture())
@@ -179,14 +185,14 @@ class ProfileAssumeRoleProviderTest {
             put(ProfileProperty.ROLE_ARN, aString())
         }
 
-        ProfileAssumeRoleProvider(stsClient, parentProvider, profile).close()
+        ProfileAssumeRoleProvider(parentProvider, anAwsRegion(), profile).close()
 
         verify(stsClient).close()
         verify(parentProvider as SdkAutoCloseable).close()
     }
 
-    private fun profile(properties: MutableMap<String, String>.() -> Unit) =
-        Profile.builder().name(aString())
-            .properties(mutableMapOf<String, String>().apply { properties(this) })
-            .build()
+    private fun profile(properties: MutableMap<String, String>.() -> Unit) = Profile.builder()
+        .name(aString())
+        .properties(mutableMapOf<String, String>().apply { properties(this) })
+        .build()
 }

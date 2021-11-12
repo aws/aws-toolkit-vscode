@@ -6,18 +6,12 @@ package software.aws.toolkits.jetbrains.core.credentials.profiles
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileProperty
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sso.SsoClient
-import software.amazon.awssdk.services.ssooidc.SsoOidcClient
-import software.amazon.awssdk.services.sts.StsClient
-import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
@@ -25,12 +19,9 @@ import software.aws.toolkits.core.credentials.CredentialSourceId
 import software.aws.toolkits.core.credentials.CredentialType
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
-import software.aws.toolkits.core.credentials.sso.SSO_REGION
 import software.aws.toolkits.core.credentials.sso.SSO_URL
 import software.aws.toolkits.core.credentials.sso.SsoCache
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.SsoRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
@@ -222,27 +213,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         }
     }
 
-    private fun createSsoProvider(profile: Profile): AwsCredentialsProvider {
-        val ssoRegion = profile.requiredProperty(SSO_REGION)
-        val sdkHttpClient = AwsSdkClient.getInstance().sharedSdkClient()
-        val ssoClient = ToolkitClientManager.createNewClient(
-            SsoClient::class,
-            sdkHttpClient,
-            Region.of(ssoRegion),
-            AnonymousCredentialsProvider.create(),
-            AwsClientManager.userAgent
-        )
-
-        val ssoOidcClient = ToolkitClientManager.createNewClient(
-            SsoOidcClient::class,
-            sdkHttpClient,
-            Region.of(ssoRegion),
-            AnonymousCredentialsProvider.create(),
-            AwsClientManager.userAgent
-        )
-
-        return ProfileSsoProvider(ssoClient, ssoOidcClient, profile)
-    }
+    private fun createSsoProvider(profile: Profile): AwsCredentialsProvider = ProfileSsoProvider(profile)
 
     private fun createAssumeRoleProvider(profile: Profile, region: AwsRegion): AwsCredentialsProvider {
         val sourceProfileName = profile.requiredProperty(ProfileProperty.SOURCE_PROFILE)
@@ -250,15 +221,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
             ?: throw IllegalStateException("Profile $sourceProfileName looks to have been removed")
         val parentCredentialProvider = createAwsCredentialProvider(sourceProfile, region)
 
-        val stsClient = ToolkitClientManager.createNewClient(
-            StsClient::class,
-            AwsSdkClient.getInstance().sharedSdkClient(),
-            Region.of(region.id),
-            parentCredentialProvider,
-            AwsClientManager.userAgent
-        )
-
-        return ProfileAssumeRoleProvider(stsClient, parentCredentialProvider, profile)
+        return ProfileAssumeRoleProvider(parentCredentialProvider, region, profile)
     }
 
     private fun createBasicProvider(profile: Profile) = StaticCredentialsProvider.create(

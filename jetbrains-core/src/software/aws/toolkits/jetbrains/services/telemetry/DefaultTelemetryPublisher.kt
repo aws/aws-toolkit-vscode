@@ -12,9 +12,9 @@ import software.amazon.awssdk.services.toolkittelemetry.ToolkitTelemetryClient
 import software.amazon.awssdk.services.toolkittelemetry.model.MetadataEntry
 import software.amazon.awssdk.services.toolkittelemetry.model.MetricDatum
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
-import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
 import kotlin.streams.toList
@@ -95,11 +95,9 @@ class DefaultTelemetryPublisher(
         private fun createDefaultTelemetryClient(): ToolkitTelemetryClient {
             val region = Region.of(Registry.get("aws.telemetry.region").asString())
             val sdkClient = AwsSdkClient.getInstance()
-            return ToolkitClientManager.createNewClient(
-                ToolkitTelemetryClient::class,
-                sdkClient.sharedSdkClient(),
-                region,
-                AwsCognitoCredentialsProvider(
+
+            return AwsClientManager.getInstance().createUnmanagedClient(
+                credProvider = AwsCognitoCredentialsProvider(
                     Registry.get("aws.telemetry.identityPool").asString(),
                     CognitoIdentityClient.builder()
                         .credentialsProvider(AnonymousCredentialsProvider.create())
@@ -107,6 +105,7 @@ class DefaultTelemetryPublisher(
                         .httpClient(sdkClient.sharedSdkClient())
                         .build()
                 ),
+                region = region,
                 endpointOverride = Registry.get("aws.telemetry.endpoint").asString()
             )
         }

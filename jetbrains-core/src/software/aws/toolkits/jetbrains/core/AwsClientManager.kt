@@ -10,6 +10,7 @@ import com.intellij.openapi.application.ex.ApplicationInfoEx
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.http.SdkHttpClient
@@ -47,8 +48,8 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
 
     override fun getRegionProvider(): ToolkitRegionProvider = AwsRegionProvider.getInstance()
 
-    override fun clientCustomizer(connection: ConnectionSettings, builder: AwsClientBuilder<*, *>) {
-        CUSTOMIZER_EP.extensionList.forEach { it.customize(connection, builder) }
+    override fun clientCustomizer(credentialProvider: AwsCredentialsProvider, regionId: String, builder: AwsClientBuilder<*, *>) {
+        CUSTOMIZER_EP.extensionList.forEach { it.customize(credentialProvider, regionId, builder) }
     }
 
     companion object {
@@ -82,7 +83,7 @@ inline fun <reified T : SdkClient> ConnectionSettings.awsClient(): T = AwsClient
  *
  * ```
  * class MyDevEndpointCustomizer : AwsClientCustomizer {
- *   override fun customize(connection: ConnectionSettings, builder: AwsClientBuilder<*, *>) {
+ *   override fun customize(credentialProvider: AwsCredentialsProvider, regionId: String, builder: AwsClientBuilder<*, *>) {
  *     if (builder is LambdaClientBuilder && connection.region.id == "us-west-2") {
  *       builder.endpointOverride(URI.create("http://localhost:8888"))
  *     }
@@ -91,5 +92,5 @@ inline fun <reified T : SdkClient> ConnectionSettings.awsClient(): T = AwsClient
  * ```
  */
 fun interface AwsClientCustomizer {
-    fun customize(connection: ConnectionSettings, builder: AwsClientBuilder<*, *>)
+    fun customize(credentialProvider: AwsCredentialsProvider, regionId: String, builder: AwsClientBuilder<*, *>)
 }

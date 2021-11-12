@@ -10,8 +10,9 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.ThreadTracker
 import com.intellij.testFramework.replaceService
 import org.junit.rules.ExternalResource
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.core.SdkClient
-import software.aws.toolkits.core.ConnectionSettings
+import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.clients.SdkClientProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -24,17 +25,19 @@ import kotlin.reflect.KClass
 class MockClientManager : AwsClientManager() {
     private data class Key(
         val clazz: KClass<out SdkClient>,
-        val region: AwsRegion? = null,
-        val credProviderId: String? = null
+        val regionId: String? = null,
+        val credProviderId: AwsCredentialsProvider? = null
     )
 
     private val mockClients = mutableMapOf<Key, SdkClient>()
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : SdkClient> createNewClient(
+    override fun <T : SdkClient> constructAwsClient(
         sdkClass: KClass<T>,
-        connection: ConnectionSettings
-    ): T = mockClients[Key(sdkClass, connection.region, connection.credentials.id)] as? T
+        credProvider: AwsCredentialsProvider,
+        region: Region,
+        endpointOverride: String?
+    ): T = mockClients[Key(sdkClass, region.id(), credProvider)] as? T
         ?: mockClients[Key(sdkClass)] as? T
         ?: throw IllegalStateException("No mock registered for $sdkClass")
 
@@ -52,7 +55,7 @@ class MockClientManager : AwsClientManager() {
 
     @Deprecated("Do not use, use MockClientManagerRule")
     fun <T : SdkClient> register(clazz: KClass<out SdkClient>, sdkClient: T, region: AwsRegion, credProvider: ToolkitCredentialsProvider) {
-        mockClients[Key(clazz, region, credProvider.id)] = sdkClient
+        mockClients[Key(clazz, region.id, credProvider)] = sdkClient
     }
 
     companion object {
@@ -98,7 +101,7 @@ class MockClientManagerRule : ExternalResource() {
     @Deprecated("Do not use, visible for inline")
     internal fun manager() = mockClientManager
 
-    inline fun <reified T : SdkClient> create(): T = delegateMock<T>().also {
+    inline fun <reified T : SdkClient> create(): T = delegateMock<T>(verboseLogging = true).also {
         @Suppress("DEPRECATION")
         manager().register(T::class, it)
     }
@@ -106,5 +109,10 @@ class MockClientManagerRule : ExternalResource() {
     inline fun <reified T : SdkClient> create(region: AwsRegion, credProvider: ToolkitCredentialsProvider): T = delegateMock<T>().also {
         @Suppress("DEPRECATION")
         manager().register(T::class, it, region, credProvider)
+    }
+
+    inline fun <reified T : SdkClient> register(mock: T): T = mock.also {
+        @Suppress("DEPRECATION")
+        manager().register(T::class, it)
     }
 }

@@ -28,11 +28,15 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.amazon.awssdk.services.sso.SsoClient
+import software.amazon.awssdk.services.ssooidc.SsoOidcClient
+import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.credentials.sso.SsoCache
 import software.aws.toolkits.core.rules.SystemPropertyHelper
+import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.InteractiveCredential
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
@@ -47,6 +51,7 @@ class ProfileCredentialProviderFactoryTest {
     private val systemPropertyHelper = SystemPropertyHelper()
     private val disposableRule = DisposableRule()
     private val notificationListener = NotificationListenerRule(disposableRule.disposable)
+    private val clientManager = MockClientManagerRule()
 
     @Rule
     @JvmField
@@ -55,7 +60,8 @@ class ProfileCredentialProviderFactoryTest {
         ApplicationRule(),
         systemPropertyHelper,
         notificationListener,
-        disposableRule
+        disposableRule,
+        clientManager
     )
 
     private lateinit var profileFile: File
@@ -522,6 +528,8 @@ class ProfileCredentialProviderFactoryTest {
             """.trimIndent()
         )
 
+        clientManager.create<StsClient>()
+
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("role")
         val credentialsProvider = providerFactory.createProvider(validProfile)
@@ -540,6 +548,9 @@ class ProfileCredentialProviderFactoryTest {
             sso_role_name=RoleName
             """.trimIndent()
         )
+
+        clientManager.create<SsoClient>()
+        clientManager.create<SsoOidcClient>()
 
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("sso")
