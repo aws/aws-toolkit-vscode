@@ -18,8 +18,8 @@ interface Version : Comparable<Version> {
  */
 fun <T : Version> T.isValid(range: VersionRange<T>?): Validity = when {
     range == null -> Validity.Valid(this)
-    this < range.minVersion -> Validity.VersionTooOld(range.minVersion)
-    range.maxVersion <= this -> Validity.VersionTooNew(range.maxVersion)
+    this < range.minVersion -> Validity.VersionTooOld(this, range.minVersion)
+    range.maxVersion <= this -> Validity.VersionTooNew(this, range.maxVersion)
     else -> Validity.Valid(this)
 }
 

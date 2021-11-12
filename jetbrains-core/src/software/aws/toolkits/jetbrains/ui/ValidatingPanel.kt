@@ -27,7 +27,7 @@ import javax.swing.JComponent
 
 class ValidatingPanel internal constructor(
     parentDisposable: Disposable,
-    private val contentPanel: DialogPanel,
+    val contentPanel: DialogPanel,
     validatingButtons: Map<JButton, (event: ActionEvent) -> Unit>
 ) : BorderLayoutPanel() {
     private val disposable = Disposer.newDisposable(parentDisposable, this::class.java.name)
@@ -120,6 +120,7 @@ class ValidatingPanel internal constructor(
             startTrackingValidation()
             false
         } else {
+            updateErrorInfo(emptyList())
             contentPanel.apply()
             true
         }

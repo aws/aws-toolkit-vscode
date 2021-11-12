@@ -70,7 +70,7 @@
         </constraints>
         <properties>
           <selected value="true"/>
-          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="run_configuration_extension.none"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="common.none"/>
         </properties>
       </component>
     </children>

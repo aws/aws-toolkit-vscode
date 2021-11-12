@@ -17,7 +17,7 @@ data class SemanticVersion(val major: Int, val minor: Int, val patch: Int) : Ver
         fun parse(version: String): SemanticVersion {
             val parts = version.split(".")
             if (parts.size != 3) {
-                throw IllegalArgumentException("$version not in the format of MAJOR.MINOR.PATCH")
+                throw IllegalArgumentException("[$version] not in the format of MAJOR.MINOR.PATCH")
             }
 
             try {
@@ -30,7 +30,7 @@ data class SemanticVersion(val major: Int, val minor: Int, val patch: Int) : Ver
 
                 return SemanticVersion(parts[0].toInt(), parts[1].toInt(), patchStr.toInt())
             } catch (e: Exception) {
-                throw IllegalArgumentException("$version could not be parsed", e)
+                throw IllegalArgumentException("[$version] could not be parsed", e)
             }
         }
     }

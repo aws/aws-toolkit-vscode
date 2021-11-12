@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.core.tools
 
 import com.intellij.openapi.progress.util.ProgressIndicatorUtils
 import com.intellij.openapi.util.ThrowableComputable
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.lastModified
+import software.aws.toolkits.core.utils.warn
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -39,6 +41,7 @@ class ToolVersionCache {
                     lastResult as Result<V>
                 }
             } catch (e: Exception) {
+                LOG.warn(e) { "Unable to get tool version for $tool" }
                 Result.Failure(e, lastModifiedTime).also {
                     cache[tool] = it
                 } as Result<V>
@@ -51,5 +54,9 @@ class ToolVersionCache {
     sealed class Result<T : Version>(open val lastModifiedTime: Long) {
         data class Failure(val reason: Exception, override val lastModifiedTime: Long) : Result<Nothing>(lastModifiedTime)
         data class Success<V : Version>(val version: V, override val lastModifiedTime: Long) : Result<V>(lastModifiedTime)
+    }
+
+    private companion object {
+        val LOG = getLogger<ToolVersionCache>()
     }
 }

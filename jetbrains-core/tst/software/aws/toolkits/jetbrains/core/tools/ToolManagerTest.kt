@@ -158,7 +158,7 @@ class ToolManagerTest {
         }
 
         val tool = sut.getToolForPath(type, Path.of(aString()))
-        assertThat(sut.validateCompatability(tool = tool)).isInstanceOf<Validity.NotInstalled>()
+        assertThat(sut.validateCompatability(tool = tool)).isInstanceOf<Validity.ValidationFailed>()
     }
 
     @Test
@@ -190,7 +190,7 @@ class ToolManagerTest {
 
         val tool = sut.getToolForPath(type, tempFolder.newFile().toPath())
         val validity = sut.validateCompatability(tool = tool)
-        assertThat(validity).isInstanceOfSatisfying<Validity.NotInstalled> {
+        assertThat(validity).isInstanceOfSatisfying<Validity.ValidationFailed> {
             assertThat(it.detailedMessage).isEqualTo(error.message)
         }
     }
@@ -203,8 +203,8 @@ class ToolManagerTest {
 
         val tool = sut.getToolForPath(type, tempFolder.newFile().toPath())
 
-        assertThat(sut.validateCompatability(tool = tool)).isInstanceOf<Validity.NotInstalled>()
-        assertThat(sut.validateCompatability(tool = tool)).isInstanceOf<Validity.NotInstalled>()
+        assertThat(sut.validateCompatability(tool = tool)).isInstanceOf<Validity.ValidationFailed>()
+        assertThat(sut.validateCompatability(tool = tool)).isInstanceOf<Validity.ValidationFailed>()
 
         verify(type, times(1)).determineVersion(any())
     }

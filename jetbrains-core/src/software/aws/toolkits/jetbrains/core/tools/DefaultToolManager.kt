@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.tools
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.progress.PerformInBackgroundOption
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -15,7 +14,6 @@ import com.intellij.openapi.util.ThrowableComputable
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.serviceContainer.NonInjectable
 import com.intellij.util.ExceptionUtil
-import com.intellij.util.io.createDirectories
 import com.intellij.util.io.delete
 import com.intellij.util.io.exists
 import com.intellij.util.io.readText
@@ -24,12 +22,15 @@ import org.jetbrains.annotations.VisibleForTesting
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.tools.ToolManager.Companion.MANAGED_TOOL_INSTALL_ROOT
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.Result
+import java.io.FileNotFoundException
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Clock
@@ -66,19 +67,12 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
         }
     }
 
-    override fun <V : Version> getOrInstallTool(type: ManagedToolType<V>, project: Project?): Tool<ToolType<V>> {
-        val existingTool = getTool(type)
-        if (existingTool != null) {
-            return existingTool
-        }
-
-        return runUnderProgressIfNeeded(
-            project,
-            message("executableCommon.installing", type.displayName),
-            cancelable = false
-        ) {
-            installTool(project, type, ProgressManager.getInstance().progressIndicator)
-        }
+    override fun <V : Version> getOrInstallTool(type: ManagedToolType<V>, project: Project?): Tool<ToolType<V>> = getTool(type) ?: runUnderProgressIfNeeded(
+        project,
+        message("executableCommon.installing", type.displayName),
+        cancelable = false
+    ) {
+        installTool(project, type, ProgressManager.getInstance().progressIndicator)
     }
 
     /**
@@ -111,9 +105,7 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
         stricterMinVersion: T?,
         project: Project?
     ): Validity {
-        if (tool == null) {
-            return Validity.NotInstalled()
-        }
+        tool ?: return Validity.NotInstalled
 
         return runUnderProgressIfNeeded(project, message("executableCommon.validating", tool.type.displayName), false) {
             determineCompatability(tool, stricterMinVersion)
@@ -124,7 +116,7 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
         assertIsNonDispatchThread()
 
         val version = when (val cacheResult = versionCache.getValue(tool)) {
-            is ToolVersionCache.Result.Failure -> return Validity.NotInstalled(ExceptionUtil.getMessage(cacheResult.reason))
+            is ToolVersionCache.Result.Failure -> return Validity.ValidationFailed(detailedMessage(cacheResult.reason, tool))
             is ToolVersionCache.Result.Success -> cacheResult.version
         }
 
@@ -138,12 +130,17 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
 
         stricterMinVersion?.let {
             if (stricterMinVersion > version) {
-                return Validity.VersionTooOld(stricterMinVersion)
+                return Validity.VersionTooOld(version, stricterMinVersion)
             }
         }
 
         return Validity.Valid(version)
     }
+
+    private fun detailedMessage(exception: Exception, tool: Tool<ToolType<*>>) = when (exception) {
+        is FileNotFoundException, is NoSuchFileException -> message("general.file_not_found", exception.message ?: tool.path)
+        else -> ExceptionUtil.getMessage(exception)
+    } ?: message("general.unknown_error")
 
     @VisibleForTesting
     internal fun <V : Version> checkForUpdates(type: ManagedToolType<V>, project: Project? = null) {
@@ -281,9 +278,6 @@ class DefaultToolManager @NonInjectable internal constructor(private val clock: 
         private val LOG = getLogger<ToolManager>()
         private val UPDATE_CHECK_INTERVAL = Period.ofDays(1)
         private const val VERSION_MARKER_FILENAME = "VERSION"
-        private val MANAGED_TOOL_INSTALL_ROOT by lazy {
-            Paths.get(PathManager.getSystemPath(), "aws-static-resources").resolve("tools").createDirectories()
-        }
 
         internal fun managedToolMarkerFile(toolId: String) = MANAGED_TOOL_INSTALL_ROOT.resolve(toolId).resolve(VERSION_MARKER_FILENAME)
         internal fun managedToolInstallDir(toolId: String, version: String) = MANAGED_TOOL_INSTALL_ROOT.resolve(toolId).resolve(version)

@@ -11,4 +11,4 @@ fun String.splitNoBlank(vararg delimiters: Char, ignoreCase: Boolean = false, li
 
 fun ByteArray.toHexString() = joinToString("") { "%02x".format(it) }
 
-fun String.htmlWrap() = """<html>$this</html>"""
+fun String.htmlWrap() = """<html>${this.replace("\n", "<br/>")}</html>"""

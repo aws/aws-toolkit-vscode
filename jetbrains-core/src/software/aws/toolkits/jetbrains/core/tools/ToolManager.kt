@@ -3,9 +3,12 @@
 
 package software.aws.toolkits.jetbrains.core.tools
 
+import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.util.io.createDirectories
 import java.nio.file.Path
+import java.nio.file.Paths
 
 /**
  * Service for managing external tools such as CLIs.
@@ -50,6 +53,10 @@ interface ToolManager {
 
     companion object {
         fun getInstance(): ToolManager = service()
+
+        internal val MANAGED_TOOL_INSTALL_ROOT by lazy {
+            Paths.get(PathManager.getSystemPath(), "aws-static-resources").resolve("tools").createDirectories()
+        }
     }
 }
 
