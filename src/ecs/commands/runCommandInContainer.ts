@@ -16,7 +16,7 @@ import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../share
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { ext } from '../../shared/extensionGlobals'
-import { AWS_CLIS, getCliCommand, installCli } from '../../shared/utilities/cliUtils'
+import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
@@ -118,14 +118,8 @@ export async function runCommandInContainer(
         if (!command) {
             return
         }
-        let ssmPlugin: string | undefined
-        if (!settings.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)) {
-            ssmPlugin = await getCliCommand(AWS_CLIS['session-manager-plugin']!)
-        }
 
-        if (!ssmPlugin) {
-            ssmPlugin = await installCli('session-manager-plugin', true)
-        }
+        const ssmPlugin = await getOrInstallCli('session-manager-plugin', true, window, settings)
 
         if (!ssmPlugin) {
             result = 'Failed'
