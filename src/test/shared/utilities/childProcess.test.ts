@@ -325,9 +325,8 @@ describe('ChildProcess', async function () {
                 )
             })
 
-            it('can kill the process if `stopOnError` is set', async function () {
+            it('kills the process if an error is reported', async function () {
                 const result = await childProcess.run({
-                    stopOnError: true,
                     waitForStreams: false,
                     onStdout: (text, context) => {
                         context.reportError('An error')
@@ -339,7 +338,6 @@ describe('ChildProcess', async function () {
             it('can merge with base options', async function () {
                 const result = await childProcess.run({
                     collect: true,
-                    stopOnError: true,
                     waitForStreams: false,
                     extraArgs: ['4'],
                     onStdout: (text, context) => {
@@ -354,7 +352,6 @@ describe('ChildProcess', async function () {
 
             it('uses `Timeout` objects', async function () {
                 await childProcess.run({
-                    stopOnError: true,
                     waitForStreams: false,
                     timeout: new Timeout(10),
                 })
@@ -366,7 +363,6 @@ describe('ChildProcess', async function () {
                 const timer = new Timeout(10)
                 setTimeout(() => timer.complete())
                 await childProcess.run({
-                    stopOnError: true,
                     waitForStreams: false,
                     onStdout: (text, context) => {
                         context.reportError('Got stuff')

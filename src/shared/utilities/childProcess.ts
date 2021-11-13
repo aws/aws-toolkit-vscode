@@ -26,8 +26,6 @@ export interface ChildProcessOptions {
     collect?: boolean
     /** Wait until streams close to resolve the process result. (default: true) */
     waitForStreams?: boolean
-    /** Try to kill the process on any error. (default: true) */
-    stopOnError?: boolean
     /** Forcefully kill the process on an error. (default: false) */
     useForceStop?: boolean
     /** Rejects the Promise on any error. Can also use a callback for custom errors. (default: false) */
@@ -127,12 +125,11 @@ export class ChildProcess {
         // Defaults
         mergedOptions.collect ??= true
         mergedOptions.waitForStreams ??= true
-        mergedOptions.stopOnError ??= true
 
         return new Promise<ChildProcessResult>((resolve, reject) => {
             const errorHandler = (error: Error, force = mergedOptions.useForceStop) => {
                 this.processErrors.push(error)
-                if (mergedOptions.stopOnError && !this.stopped) {
+                if (!this.stopped) {
                     this.stop(force)
                 }
                 if (rejectOnError) {
