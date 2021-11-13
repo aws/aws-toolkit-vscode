@@ -5,6 +5,7 @@
 import * as assert from 'assert'
 import * as picker from '../../../shared/ui/picker'
 import * as sinon from 'sinon'
+import * as cliUtils from '../../../shared/utilities/cliUtils'
 import { runCommandInContainer } from '../../../ecs/commands/runCommandInContainer'
 import { EcsContainerNode } from '../../../ecs/explorer/ecsContainerNode'
 import { DefaultEcsClient, EcsClient } from '../../../shared/clients/ecsClient'
@@ -51,6 +52,7 @@ describe('runCommandInContainer', function () {
         sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
         sandbox.stub(picker, 'promptUser').resolves(chosenTask)
+        sandbox.stub(cliUtils, 'getOrInstallCli').resolves('session-manager-plugin')
         sandbox.stub(ecs, 'executeCommand').resolves({} as ECS.ExecuteCommandRequest)
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
@@ -65,6 +67,7 @@ describe('runCommandInContainer', function () {
         sandbox.stub(ecs, 'describeServices').resolves(serviceNoDeployments)
         sandbox.stub(ecs, 'listTasks').resolves(taskListOne)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
+        sandbox.stub(cliUtils, 'getOrInstallCli').resolves('session-manager-plugin')
         sandbox.stub(ecs, 'executeCommand').resolves({} as ECS.ExecuteCommandRequest)
         const pickerStub = sandbox.stub(picker, 'promptUser')
 
