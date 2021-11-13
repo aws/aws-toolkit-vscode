@@ -10,7 +10,7 @@ export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
 export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
 
 export class TimeoutError extends Error {
-    constructor(public readonly type: 'expired' | 'cancelled' = 'expired') {
+    public constructor(public readonly type: 'expired' | 'cancelled') {
         super(type === 'cancelled' ? TIMEOUT_CANCELLED_MESSAGE : TIMEOUT_EXPIRED_MESSAGE)
     }
 }
