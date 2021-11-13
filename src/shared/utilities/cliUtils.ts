@@ -19,6 +19,8 @@ import { Window } from '../vscode/window'
 import * as nls from 'vscode-nls'
 import { Timeout } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
+import { extensionSettingsPrefix } from '../constants'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -41,13 +43,13 @@ interface Cli {
     name: string
 }
 
-type AwsClis = telemetry.ToolId
+type AwsClis = Extract<telemetry.ToolId, 'session-manager-plugin'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
  * TODO: Add SAM? Other CLIs?
  */
-export const AWS_CLIS: { [cli in AwsClis]?: Cli } = {
+export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
     'session-manager-plugin': {
         command: {
             unix: path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin'),
@@ -306,6 +308,23 @@ async function installSsmCli(
             throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
         }
     }
+}
+
+export async function getOrInstallCli(
+    cli: AwsClis,
+    confirm: boolean,
+    window: Window = Window.vscode(),
+    settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+): Promise<string | undefined> {
+    let cliCommand: string | undefined
+    if (!settings.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)) {
+        cliCommand = await getCliCommand(AWS_CLIS[cli])
+    }
+
+    if (!cliCommand) {
+        cliCommand = await installCli(cli, confirm, window)
+    }
+    return cliCommand
 }
 
 // TODO: uncomment for AWS CLI installation

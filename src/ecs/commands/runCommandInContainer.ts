@@ -16,6 +16,7 @@ import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../share
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { ext } from '../../shared/extensionGlobals'
+import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
@@ -27,10 +28,6 @@ export async function runCommandInContainer(
     let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
 
     try {
-        if (!(await verifySsmPlugin(window))) {
-            return
-        }
-
         // Check to see if there are any deployments in progress
         const activeDeployments = await deploymentsInProgress(node)
         if (activeDeployments.ACTIVE > 0 || activeDeployments.IN_PROGRESS > 0) {
@@ -122,10 +119,17 @@ export async function runCommandInContainer(
             return
         }
 
+        const ssmPlugin = await getOrInstallCli('session-manager-plugin', true, window, settings)
+
+        if (!ssmPlugin) {
+            result = 'Failed'
+            throw Error('SSM Plugin not installed and cannot auto install')
+        }
+
         const execCommand = await node.ecs.executeCommand(node.clusterArn, node.containerName, task, command)
         const cp = await new ChildProcess(
             true,
-            'session-manager-plugin',
+            ssmPlugin,
             undefined,
             JSON.stringify(execCommand.session),
             node.ecs.regionCode,
@@ -145,20 +149,6 @@ export async function runCommandInContainer(
     } finally {
         recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })
     }
-}
-
-async function verifySsmPlugin(window: Window): Promise<boolean> {
-    const verifySsmPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
-    if (verifySsmPluginResponse.exitCode !== 0) {
-        window.showErrorMessage(
-            localize(
-                'AWS.command.ecs.runCommandInContainer.noPluginFound',
-                'This feature requires the SSM Session Manager plugin (session-manager-plugin) to be installed and available on your $PATH'
-            )
-        )
-        return false
-    }
-    return true
 }
 
 async function deploymentsInProgress(node: EcsContainerNode): Promise<{ ACTIVE: number; IN_PROGRESS: number }> {
