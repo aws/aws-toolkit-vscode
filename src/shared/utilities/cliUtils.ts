@@ -43,7 +43,7 @@ interface Cli {
     name: string
 }
 
-type AwsClis = Pick<telemetry.ToolId, 'session-manager-plugin'>
+type AwsClis = Extract<telemetry.ToolId, 'session-manager-plugin'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
