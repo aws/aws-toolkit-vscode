@@ -8,7 +8,7 @@ import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
 import { Timeout, waitUntil } from './timeoutUtils'
 
-interface StartParameterContext {
+interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
     reportError(err: string | Error): void
     /** Attempts to stop the running process. See {@link ChildProcess.stop}. */
@@ -39,9 +39,9 @@ export interface ChildProcessOptions {
     /** Options sent to the `spawn` command. This is merged in with the base options if they exist. */
     spawnOptions?: child_process.SpawnOptions
     /** Callback for intercepting text from the stdout stream. */
-    onStdout?(this: StartParameterContext, text: string): void
+    onStdout?: (text: string, context: RunParameterContext) => void
     /** Callback for intercepting text from the stderr stream. */
-    onStderr?(this: StartParameterContext, text: string): void
+    onStderr?: (text: string, context: RunParameterContext) => void
 }
 
 export interface ChildProcessRunOptions extends ChildProcessOptions {
@@ -70,6 +70,8 @@ export class ChildProcess {
     private processErrors: Error[] = []
     private processResult: ChildProcessResult | undefined
     private log: logger.Logger
+
+    // TODO: we probably should keep track of all spawned processes in the prototype to make sure they are cleaned up
 
     /** Collects stdout data if the process was started with `collect=true`. */
     private stdoutChunks: string[] = []
@@ -142,7 +144,7 @@ export class ChildProcess {
                 }
             }
 
-            const paramsContext: StartParameterContext = {
+            const paramsContext: RunParameterContext = {
                 timeout,
                 logger: this.log,
                 stop: this.stop.bind(this),
@@ -183,7 +185,7 @@ export class ChildProcess {
                     this.stdoutChunks.push(data.toString())
                 }
 
-                mergedOptions.onStdout?.call(paramsContext, data.toString())
+                mergedOptions.onStdout?.(data.toString(), paramsContext)
             })
 
             this.childProcess.stderr?.on('data', (data: { toString(): string }) => {
@@ -191,14 +193,14 @@ export class ChildProcess {
                     this.stderrChunks.push(data.toString())
                 }
 
-                mergedOptions.onStderr?.call(paramsContext, data.toString())
+                mergedOptions.onStderr?.(data.toString(), paramsContext)
             })
 
             // Emitted when streams are closed.
+            // This will not be fired if `waitForStreams` is false
             this.childProcess.once('close', (code, signal) => {
                 this.processResult = this.makeResult(code, signal)
                 resolve(this.processResult)
-                cleanup()
             })
 
             // Emitted when process exits or terminates.
@@ -222,7 +224,7 @@ export class ChildProcess {
                     resolve(this.processResult)
                 }
             })
-        }).finally(() => this.childProcess?.killed && cleanup())
+        }).finally(() => cleanup())
     }
 
     /**

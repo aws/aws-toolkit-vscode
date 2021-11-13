@@ -304,9 +304,9 @@ describe('ChildProcess', async function () {
             it('can report errors', async function () {
                 const result = childProcess.run({
                     rejectOnError: true,
-                    onStdout(text) {
+                    onStdout: (text, context) => {
                         if (text.includes('2')) {
-                            this.reportError('Got 2')
+                            context.reportError('Got 2')
                         }
                     },
                 })
@@ -318,8 +318,8 @@ describe('ChildProcess', async function () {
                 return await assert.rejects(() =>
                     childProcess.run({
                         rejectOnError: true,
-                        onStdout() {
-                            this.reportError('An error')
+                        onStdout: (text, context) => {
+                            context.reportError('An error')
                         },
                     })
                 )
@@ -329,8 +329,8 @@ describe('ChildProcess', async function () {
                 const result = await childProcess.run({
                     stopOnError: true,
                     waitForStreams: false,
-                    onStdout() {
-                        this.reportError('An error')
+                    onStdout: (text, context) => {
+                        context.reportError('An error')
                     },
                 })
                 assert.notStrictEqual(result.exitCode, 1)
@@ -342,9 +342,9 @@ describe('ChildProcess', async function () {
                     stopOnError: true,
                     waitForStreams: false,
                     extraArgs: ['4'],
-                    onStdout(text) {
+                    onStdout: (text, context) => {
                         if (text.includes('4')) {
-                            this.reportError('Got 4')
+                            context.reportError('Got 4')
                         }
                     },
                 })
@@ -368,8 +368,8 @@ describe('ChildProcess', async function () {
                 await childProcess.run({
                     stopOnError: true,
                     waitForStreams: false,
-                    onStdout() {
-                        this.reportError('Got stuff')
+                    onStdout: (text, context) => {
+                        context.reportError('Got stuff')
                     },
                 })
 

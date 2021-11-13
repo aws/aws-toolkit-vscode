@@ -9,7 +9,7 @@ import * as https from 'https'
 import * as vscode from 'vscode'
 import * as semver from 'semver'
 import * as stream from 'stream'
-import got, { Response, RequestError } from 'got'
+import got, { Response, RequestError, CancelError } from 'got'
 import urlToOptions from 'got/dist/source/core/utils/url-to-options'
 import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
@@ -51,7 +51,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
      * @param {boolean} params.showUrl Whether or not to the URL in log statements.
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
      * @param {function} params.onSuccess Function to execute on successful request. No effect if piping to a location.
-     * @param {Timeout} params.timeout Timeout token to abort/cancel the request. Similar to `AbortSignal`. Only used if using a pipe.
+     * @param {Timeout} params.timeout Timeout token to abort/cancel the request. Similar to `AbortSignal`.
      */
     public constructor(
         private readonly url: string,
@@ -86,7 +86,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
     private async downloadRequest(): Promise<string | undefined> {
         try {
-            const contents = (await this.getResponseFromGetRequest()).body
+            const contents = (await this.getResponseFromGetRequest(this.params.timeout)).body
             if (this.params.onSuccess) {
                 this.params.onSuccess(contents)
             }
@@ -95,7 +95,8 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
             return contents
         } catch (err) {
-            this.logger.verbose(`Error downloading ${this.logText()}: %s`, (err as Error).message)
+            const error = err as CancelError | { message?: string; code?: number }
+            this.logger.verbose(`Error downloading ${this.logText()}: %s`, error.message ?? error.code)
 
             return undefined
         }
@@ -125,11 +126,18 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return { requestStream, fsStream, done }
     }
 
-    private async getResponseFromGetRequest(): Promise<Response<string>> {
+    private async getResponseFromGetRequest(timeout?: Timeout): Promise<Response<string>> {
         const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
-        return requester(this.url, {
+        const promise = requester(this.url, {
             headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
-        }).catch((err: RequestError) => {
+        })
+        timeout?.timer.catch(err => promise.cancel(err.message))
+
+        return promise.catch((err: RequestError | CancelError) => {
+            // Cancel error has no sensitive info
+            if (err instanceof CancelError) {
+                throw err
+            }
             throw { code: err.code } // Swallow URL since it may contain sensitive data
         })
     }
