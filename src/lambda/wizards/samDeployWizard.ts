@@ -25,7 +25,7 @@ import { Wizard, WIZARD_BACK, WIZARD_FORCE_EXIT } from '../../shared/wizards/wiz
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
-import { createS3BucketPrompter } from '../../shared/ui/common/s3Bucket'
+import { createS3BucketPrompter, S3BucketPrompter } from '../../shared/ui/common/s3Bucket'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { AwsContext } from '../../shared/awsContext'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -40,6 +40,9 @@ export interface SavedBuckets {
     [profile: string]: { [region: string]: string }
 }
 
+/**
+ * A template with the URI plus any missing parameters and overrides if applicable.
+ */
 type CFNTemplate = CloudFormation.Template & {
     uri: vscode.Uri
     parameterOverrides?: Map<string, string>
@@ -48,8 +51,6 @@ type CFNTemplate = CloudFormation.Template & {
 export const CONFIGURE_PARAMETERS = new Map<string, string>()
 
 export interface SamDeployWizardResponse {
-    missingParameters?: Set<string>
-    parameterOverrides: Map<string, string>
     region: string
     template: CFNTemplate
     s3Bucket: string
@@ -73,20 +74,18 @@ export function createSamTemplatePrompter(samContext: SamCliContext): QuickPickP
  * Prompts the user to configure parameter overrides, then either pre-fills and opens
  * `templates.json`, or returns true.
  *
- * @param options.templateUri The URL of the SAM template to inspect.
- * @param options.missingParameters The names of required parameters that are not yet overridden.
- * @returns A value indicating whether the wizard should proceed. `false` if `missingParameters` was
- *          non-empty, or if it was empty and the user opted to configure overrides instead of continuing.
+ * @param template Template to check for missing parameters
+ *
+ * The prompter will return a set of default parameter overrides if the user chooses to continue, otherwise
+ * the wizard will exit.
  */
 
-export function createParametersPrompter(
-    templateUri: vscode.Uri,
-    missingParameters: Set<string> = new Set<string>()
-): QuickPickPrompter<Map<string, string>> {
+export function createParametersPrompter(template: CFNTemplate): QuickPickPrompter<Map<string, string>> {
+    const missingParameters = template.missingParameters ?? new Set()
     const configure = async () => {
         configureParameterOverrides({
-            templateUri,
-            requiredParameterNames: missingParameters?.keys(),
+            templateUri: template.uri,
+            requiredParameterNames: missingParameters.keys(),
         })
         return WIZARD_FORCE_EXIT
     }
@@ -96,7 +95,7 @@ export function createParametersPrompter(
             'AWS.samcli.deploy.parameters.optionalPrompt.message',
             // prettier-ignore
             'The template {0} contains parameters. Would you like to override the default values for these parameters?',
-            templateUri.fsPath
+            template.uri.fsPath
         )
 
         const items: DataQuickPickItem<Map<string, string>>[] = [
@@ -110,7 +109,7 @@ export function createParametersPrompter(
             'AWS.samcli.deploy.parameters.mandatoryPrompt.message',
             // prettier-ignore
             'The template {0} contains parameters without default values. In order to deploy, you must provide values for these parameters. Configure them now?',
-            templateUri.fsPath
+            template.uri.fsPath
         )
         const responseConfigure = localize(
             'AWS.samcli.deploy.parameters.mandatoryPrompt.responseConfigure',
@@ -163,14 +162,10 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
 
         form.template.bindPrompter(() => createSamTemplatePrompter(context.samCliContext()))
 
-        this.form.parameterOverrides.bindPrompter(
-            ({ template }) => createParametersPrompter(template.uri, template.missingParameters),
-            {
-                showWhen: state => !state.template.parameterOverrides,
-                setDefault: () => new Map(),
-                dependencies: [this.form.template],
-            }
-        )
+        form.template.parameterOverrides.bindPrompter(({ template }) => createParametersPrompter(template), {
+            showWhen: ({ template }) => !template.parameterOverrides,
+            dependencies: [form.template],
+        })
 
         this.form.region.bindPrompter(() =>
             createRegionPrompter({
@@ -182,12 +177,20 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
 
         form.s3Bucket.bindPrompter(
             state =>
+                new S3BucketPrompter({
+                    profile,
+                    region: state.region,
+                    baseBuckets: isCloud9() ? [`cloud9-${accountId}-sam-deployments-${state.region}`] : [],
+                    title: localize('AWS.samcli.deploy.s3Bucket.title', 'Select an AWS S3 Bucket to deploy code to'),
+                }).transform(({ name }) => name),
+            /*
                 createS3BucketPrompter({
                     profile,
                     region: state.region,
                     baseBuckets: isCloud9() ? [`cloud9-${accountId}-sam-deployments-${state.region}`] : [],
                     title: localize('AWS.samcli.deploy.s3Bucket.title', 'Select an AWS S3 Bucket to deploy code to'),
                 }).transform(({ name }) => name),
+                */
             { dependencies: [this.form.region] }
         )
 
@@ -203,7 +206,7 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
                     resp => `${resp.repo.repositoryUri}${resp.repo.tag === 'latest' ? '' : `:${resp.repo.tag}`}`
                 ),
             {
-                showWhen: state => isImage(state.template),
+                showWhen: state => hasImage(state.template),
                 dependencies: [this.form.template, this.form.region],
             }
         )
@@ -212,15 +215,14 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
     }
 }
 
-function isImage(template: CloudFormation.Template): boolean {
+function hasImage(template: CloudFormation.Template): boolean {
     const resources = template.Resources
 
     return (
         resources !== undefined &&
         Object.keys(resources)
             .filter(key => resources[key]?.Type === 'AWS::Serverless::Function')
-            .map(key => resources[key]?.Properties?.PackageType)
-            .some(it => it === 'Image')
+            .some(key => resources[key]?.Properties?.PackageType === 'Image')
     )
 }
 
@@ -244,7 +246,7 @@ function localeSortItem(a: vscode.QuickPickItem, b: vscode.QuickPickItem): numbe
 }
 
 async function parseTemplate(template: CFNTemplate, context: SamCliContext): Promise<PromptResult<CFNTemplate>> {
-    if (isImage(template)) {
+    if (hasImage(template)) {
         // TODO: remove check when min version is high enough
         const samCliVersion = await getSamCliVersion(context)
         if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {

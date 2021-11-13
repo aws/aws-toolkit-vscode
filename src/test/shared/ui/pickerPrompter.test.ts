@@ -400,10 +400,10 @@ describe('FilterBoxQuickPickPrompter', function () {
         await tester.result(Number(input))
     })
 
-    it('validates the custom input', async function () {
+    it('validates the custom input, preventing the item from being accepted', async function () {
         const input = 'not a number'
 
-        tester = createQuickPickTester(testPrompter, { forceEmits: true })
+        tester = createQuickPickTester(testPrompter)
         tester.setValue(input)
         tester.acceptItem(filterBoxInput.label)
         tester.setValue(undefined)
@@ -422,7 +422,7 @@ describe('FilterBoxQuickPickPrompter', function () {
 
         const newPicker = vscode.window.createQuickPick() as DataQuickPick<number>
         testPrompter = new FilterBoxQuickPickPrompter(newPicker, { filterBoxInput: filterBox })
-        tester = createQuickPickTester(testPrompter, { forceEmits: true })
+        tester = createQuickPickTester(testPrompter)
         testPrompter.loadItems(testItems)
 
         tester.setValue(input)

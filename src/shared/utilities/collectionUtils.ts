@@ -276,7 +276,7 @@ export function stripUndefined(obj: any): void {
 }
 
 export function isAsyncIterable<T = unknown>(obj: any): obj is AsyncIterable<T> {
-    return obj && typeof obj[Symbol.asyncIterator || Symbol.for('asyncIterator')] === 'function'
+    return obj && typeof obj[Symbol.asyncIterator] === 'function'
 }
 
 /**
@@ -299,6 +299,8 @@ export interface CachedFunctionOptions<F extends Func> {
     cache?: { [key: string]: ReturnType<F> }
     /**
      * Caches the result of an {@link AsyncIterable} rather than the iterable itself. (default: true)
+     *
+     * Disposal of iterables after clearing the cache is left up to the caller.
      */
     resolveAsyncIterables?: boolean
     /** Extra options passed to the hashing library. See {@link hasher.HasherOptions HasherOptions}. */
@@ -358,7 +360,7 @@ export function createCachedFunction<F extends Func>(
     const keys = new Set<string>()
     let lastKey: string
 
-    const wrapped = (...args: Parameters<F>) => {
+    const cached = (...args: Parameters<F>) => {
         const argHasher = hasher(options.hashOptions)
         const key = argHasher.hash(args.map(a => argHasher.hash(a)).join(''))
         lastKey = key
@@ -396,7 +398,7 @@ export function createCachedFunction<F extends Func>(
         cache[lastKey] = result
     }
 
-    return Object.assign(wrapped, { clearCache, supplantLast })
+    return Object.assign(cached, { clearCache, supplantLast })
 }
 
 export type DeferredCachedFunction<

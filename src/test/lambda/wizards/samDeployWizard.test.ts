@@ -70,7 +70,7 @@ describe('SamDeployWizard', async function () {
 
     it('skips configuring overrides and continues wizard if `parameterOverrides` is defined', async function () {
         tester.template.applyInput({ uri: vscode.Uri.file(''), parameterOverrides: new Map() })
-        tester.parameterOverrides.assertDoesNotShow()
+        tester.template.parameterOverrides.assertDoesNotShow()
     })
 
     it('prompts for ECR repository after region if template is an image', async function () {
@@ -101,7 +101,7 @@ describe('createParametersPrompter', function () {
     })
 
     beforeEach(function () {
-        tester = createQuickPickTester(createParametersPrompter(templateUri))
+        tester = createQuickPickTester(createParametersPrompter({ uri: templateUri }))
         configureStub.reset()
     })
 
@@ -117,14 +117,24 @@ describe('createParametersPrompter', function () {
     })
 
     it('presents a mandatory prompt when missing parameters is not empty', async function () {
-        tester = createQuickPickTester(createParametersPrompter(templateUri, new Set('x')))
+        tester = createQuickPickTester(
+            createParametersPrompter({
+                uri: templateUri,
+                missingParameters: new Set('x'),
+            })
+        )
         tester.acceptItem('Configure')
         assert.strictEqual(await tester.result(), WIZARD_FORCE_EXIT)
         assert.strictEqual(configureStub.callCount, 1)
     })
 
     it('presents a mandatory prompt when missing parameters is not empty ("cancel")', async function () {
-        tester = createQuickPickTester(createParametersPrompter(templateUri, new Set('x')))
+        tester = createQuickPickTester(
+            createParametersPrompter({
+                uri: templateUri,
+                missingParameters: new Set('x'),
+            })
+        )
         tester.acceptItem(localizedText.cancel)
         assert.strictEqual(await tester.result(), WIZARD_FORCE_EXIT)
         assert.strictEqual(configureStub.callCount, 0)

@@ -88,19 +88,15 @@ class TestPrompter<T, S = any> extends Prompter<T> {
         throw new Error('Wizards should not call this method')
     }
 
-    public async promptControl(): Promise<PromptResult<T>> {
+    public async promptControl(config: PrompterConfiguration<T>): Promise<PromptResult<T>> {
+        config.steps && this.setSteps(config.steps.current, config.steps.total)
+        config.stepEstimator && this.setStepEstimator(config.stepEstimator)
+
         if (this.responses.length === this.promptCount) {
             this.fail('Ran out of responses')
         }
-        const resp = await this.convertFunctionResponse(this.promptCount++)
-        this._lastResponse = !(resp instanceof WizardControl) ? resp : this._lastResponse
 
-        return resp
-    }
-
-    public configure(config: PrompterConfiguration<T>): void {
-        config.steps && this.setSteps(config.steps.current, config.steps.total)
-        config.stepEstimator && this.setStepEstimator(config.stepEstimator)
+        return (this._lastResponse = await this.convertFunctionResponse(this.promptCount++))
     }
 
     protected promptUser(): Promise<PromptResult<T>> {
@@ -422,6 +418,8 @@ describe('Wizard', function () {
         //
         // Execution order:
         // Start -> Path 1 -> End -> Path 1 -> Start -> Path 2 -> Start -> Path 1 -> Start -> Path 2 -> End -> Path 2 -> End
+        // Path 1 is treated as being two steps
+        // Path 2 is treated as being three steps
         it('sets total steps correctly when branching', async function () {
             const helloFunction = (state: BoundState<TestWizardForm, []>) =>
                 state.prop1 === 'B' ? `hello ${state.prop3}` : `extra step`

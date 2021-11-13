@@ -296,10 +296,9 @@ function createQuickInputTester<T>(
         }
 
         await new Promise<void>(r => {
-            const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
-        })
-        await new Promise<void>(r => {
-            const d = testPicker.onDidChangeActive(() => (d.dispose(), r()))
+            const d1 = testPicker.onDidChangeValue(() => {
+                const d2 = testPicker.onDidChangeActive(() => (d1.dispose(), d2.dispose(), r()))
+            })
         })
     }
 
@@ -410,7 +409,8 @@ function createQuickInputTester<T>(
                 const filteredItems = filterItems()
                 const match = matchItems(filteredItems, [action[1][0]])
                 if (match.length === 0) {
-                    throwError(`Unable to find item: ${JSON.stringify(action[1][0])}`) // TODO: add ways to format
+                    const currentItems = `Current items:\n${filteredItems.map(i => `\t${i.label}`).join('\n')}`
+                    throwError(`Unable to find item: ${JSON.stringify(action[1][0])}\n\n${currentItems}`) // TODO: add ways to format
                 }
                 testPicker.selectedItems = match
                 if (resolvedOptions.forceEmits) {

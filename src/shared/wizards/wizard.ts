@@ -251,7 +251,8 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
         if (impliedResponse === undefined) {
             state.stepCache.picked = prompter.recentItem
-        } else {
+        }
+        if (!isValidResponse(answer)) {
             delete state.stepCache.stepOffset
         }
 

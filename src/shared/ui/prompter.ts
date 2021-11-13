@@ -24,13 +24,12 @@ type SinglePromptConfiguration = Pick<PrompterConfiguration, 'title' | 'cache'>
  * @experimental Currently not used. This will replace the base {@link Prompter} class.
  */
 export interface IPrompter<T> {
-    readonly totalSteps: number
-    readonly id: string // might be useful?
+    readonly totalSteps?: number
+    readonly id?: string // might be useful?
     recentItem: any
     dipose(): void
     prompt(): Promise<T | undefined>
-    promptControl(): Promise<PromptResult<T>>
-    configure(config: PrompterConfiguration<T>): void
+    promptControl(config: PrompterConfiguration<T>): Promise<PromptResult<T>>
 }
 
 /**

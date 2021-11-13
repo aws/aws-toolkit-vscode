@@ -164,7 +164,7 @@ type AsyncIterableOpt<T> = AsyncIterable<T | T[]>
  * * A plain array of items
  * * A promise for an array of items
  * * An AsyncIterable that generates an array of items every iteration
- * * A {@link DeferredCachedFunction} that returns one of the above
+ * * A function or {@link DeferredCachedFunction} that returns one of the above
  */
 type ItemLoadTypes<T> =
     | Promise<DataQuickPickItem<T>[]>
@@ -369,6 +369,13 @@ export class QuickPickPrompter<T> extends QuickInputPrompter<T> {
     // Placeholder can be any 'ephemeral' item such as `noItemsItem` or `errorItem` that should be removed on refresh
     private isShowingPlaceholder?: boolean
     private _recentItem: T | DataQuickPickItem<T> | undefined
+    /**
+     * Used to invalidate 'stale' iterators after a refresh.
+     *
+     * It's technically possible to have the caching decorator handle this but it's more complicated and involves
+     * using `.throw` to abort the next yield. This is much simpler.
+     */
+    private _refreshCounter: number = 0
 
     /**
      * Sets the "last selected/accepted" item or input, making it the active selection.
@@ -398,6 +405,7 @@ export class QuickPickPrompter<T> extends QuickInputPrompter<T> {
     public async refreshItems(): Promise<void> {
         if (this._itemLoader !== undefined) {
             this._itemLoader.clearCache?.()
+            this._refreshCounter += 1
             this.clearItems()
             await Promise.all([this.loadItems(this.options.baseItems ?? []), this.loadItems(this._itemLoader())])
         }
@@ -476,26 +484,20 @@ export class QuickPickPrompter<T> extends QuickInputPrompter<T> {
     }
 
     protected async loadFromAsyncIterable(items: AsyncIterableOpt<DataQuickPickItem<T>>): Promise<void> {
-        // Technically AsyncIterators have three types: one for yield, one for return, and one
-        // for parameters to `next`. We only care about the first two, where the yield type will
-        // always be the same as the AsyncIterable type variable, and the second will potentially
-        // be undefined
-        const iterator = items[Symbol.asyncIterator]() as AsyncIterator<
-            DataQuickPickItem<T> | DataQuickPickItem<T>[],
-            DataQuickPickItem<T> | DataQuickPickItem<T>[] | undefined
-        >
+        const iterator = items[Symbol.asyncIterator]()
         // Any caching of the iterator should be handled externally; we will not keep track of
         // where we left off when the prompt has been hidden
         let hidden = false
         const checkHidden = this.quickPick.onDidHide(() => (hidden = true))
+        const refreshCounter = this._refreshCounter
         try {
             while (!hidden) {
                 const { value, done } = await iterator.next()
+                if (done || this._refreshCounter !== refreshCounter) {
+                    break
+                }
                 if (value) {
                     this.appendItems(Array.isArray(value) ? value : [value])
-                }
-                if (done) {
-                    break
                 }
             }
         } finally {
@@ -503,7 +505,6 @@ export class QuickPickPrompter<T> extends QuickInputPrompter<T> {
         }
     }
 
-    // TODO: add options to this to clear items _before_ loading them
     /**
      * Loads items into the QuickPick. Can accept an array or a Promise for items. Promises will cause the
      * QuickPick to become 'busy', disabling user-input until loading is finished. Items are appended to
@@ -515,9 +516,6 @@ export class QuickPickPrompter<T> extends QuickInputPrompter<T> {
      * @returns A promise that is resolved when loading has finished
      */
     public async loadItems(items: ItemLoadTypes<T>, disableInput?: boolean): Promise<void> {
-        // This code block assumes that callers never try to load items in parallel
-        // For now this okay since we don't have any pickers that require that capability
-
         if (this.isShowingPlaceholder) {
             this.clearItems()
         }
@@ -643,6 +641,13 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         return this._lastPicked
     }
 
+    public override async refreshItems(): Promise<void> {
+        // If the 'filter box' hook was per-item we wouldn't need to override refresh (or even have this class)
+        const p = super.refreshItems()
+        this.quickPick.value = this.quickPick.value
+        return p
+    }
+
     public constructor(quickPick: DataQuickPick<T>, options: RequireKey<QuickPickOptions<T>, 'filterBoxInput'>) {
         super(quickPick, options)
         this.settings = options.filterBoxInput
@@ -672,7 +677,7 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
                 description: picker.value,
                 alwaysShow: true,
                 data: CUSTOM_USER_INPUT,
-                invalidSelection: false,
+                invalidSelection: !!detail,
                 detail,
             } as DataQuickPickItem<T | symbol>
         }

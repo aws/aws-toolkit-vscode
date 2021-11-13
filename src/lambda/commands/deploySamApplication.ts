@@ -87,7 +87,7 @@ export async function deploySamApplication(
             destinationStackName: deployWizardResponse.stackName,
             packageBucketName: deployWizardResponse.s3Bucket,
             ecrRepo: deployWizardResponse.ecrRepo,
-            parameterOverrides: deployWizardResponse.parameterOverrides,
+            parameterOverrides: deployWizardResponse.template.parameterOverrides ?? new Map(),
             environmentVariables: asEnvironmentVariables(credentials),
             region: deployWizardResponse.region,
             sourceTemplatePath: deployWizardResponse.template.uri.fsPath,

@@ -36,7 +36,7 @@ class ExitPrompter extends Prompter<boolean> {
     }
 
     protected async promptUser(config: PrompterConfiguration): Promise<PromptResult<boolean>> {
-        // Exit was initiated from the first step, so the prompt would be step 2
+        // Immediately exit if on the first step
         if (config.steps?.current === 2) {
             return true
         }

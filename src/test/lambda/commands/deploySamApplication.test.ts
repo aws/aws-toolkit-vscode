@@ -139,11 +139,10 @@ describe('deploySamApplication', async function () {
         testCredentials = placeholderCredentials
         invokerCalledCount = 0
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
             region: 'region',
             s3Bucket: 'bucket',
             stackName: 'stack',
-            template: { uri: vscode.Uri.file(templatePath) },
+            template: { uri: vscode.Uri.file(templatePath), parameterOverrides: new Map<string, string>() },
         }
 
         runningDeployProcess = undefined
@@ -244,11 +243,10 @@ describe('deploySamApplication', async function () {
 
     it('saves one bucket max to multiple regions', async () => {
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
             region: 'region0',
             s3Bucket: 'bucket0',
             stackName: 'stack',
-            template: { uri: vscode.Uri.file(templatePath) },
+            template: { uri: vscode.Uri.file(templatePath), parameterOverrides: new Map<string, string>() },
         }
 
         await deploySamApplication(
@@ -265,11 +263,10 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
             region: 'region1',
             s3Bucket: 'bucket1',
             stackName: 'stack',
-            template: { uri: vscode.Uri.file(templatePath) },
+            template: { uri: vscode.Uri.file(templatePath), parameterOverrides: new Map<string, string>() },
         }
         await deploySamApplication(
             {
@@ -285,11 +282,10 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
             region: 'region2',
             s3Bucket: 'bucket2',
             stackName: 'stack',
-            template: { uri: vscode.Uri.file(templatePath) },
+            template: { uri: vscode.Uri.file(templatePath), parameterOverrides: new Map<string, string>() },
         }
         await deploySamApplication(
             {
@@ -305,11 +301,10 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
             region: 'region0',
             s3Bucket: 'bucket3',
             stackName: 'stack',
-            template: { uri: vscode.Uri.file(templatePath) },
+            template: { uri: vscode.Uri.file(templatePath), parameterOverrides: new Map<string, string>() },
         }
         await deploySamApplication(
             {
@@ -337,11 +332,10 @@ describe('deploySamApplication', async function () {
     it('saves one bucket per region per profile', async () => {
         profile = 'testAcct0'
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
             region: 'region0',
             s3Bucket: 'bucket0',
             stackName: 'stack',
-            template: { uri: vscode.Uri.file(templatePath) },
+            template: { uri: vscode.Uri.file(templatePath), parameterOverrides: new Map<string, string>() },
         }
 
         await deploySamApplication(
@@ -359,11 +353,10 @@ describe('deploySamApplication', async function () {
         await waitForDeployToComplete()
         profile = 'testAcct1'
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
             region: 'region0',
             s3Bucket: 'bucket1',
             stackName: 'stack',
-            template: { uri: vscode.Uri.file(templatePath) },
+            template: { uri: vscode.Uri.file(templatePath), parameterOverrides: new Map<string, string>() },
         }
         await deploySamApplication(
             {
