@@ -31,7 +31,6 @@ import { StsClient } from '../../../shared/clients/stsClient'
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
-import '../../../shared/utilities/asyncIteratorShim'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     S3Client,

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import './asyncIteratorShim'
-
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
 
@@ -275,8 +273,5 @@ export function stripUndefined(obj: any): void {
 }
 
 export function isAsyncIterable(obj: any): obj is AsyncIterable<unknown> {
-    return (
-        Object.getOwnPropertySymbols(obj).includes(Symbol.asyncIterator) &&
-        typeof obj[Symbol.asyncIterator] === 'function'
-    )
+    return obj && typeof obj === 'object' && typeof obj[Symbol.asyncIterator] === 'function'
 }
