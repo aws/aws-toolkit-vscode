@@ -237,6 +237,19 @@ describe('QuickPickPrompter', function () {
         assert.strictEqual(picker.items.length, 3)
     })
 
+    it('handles AsyncIterables that yield empty arrays', async function () {
+        async function* generator() {
+            for (const _ of testItems) {
+                yield []
+            }
+        }
+        const noItemsFoundItem = { label: 'placeholder', data: 0 }
+        testPrompter = new QuickPickPrompter(picker, { noItemsFoundItem })
+
+        await testPrompter.clearAndLoadItems(generator())
+        assert.deepStrictEqual(testPrompter.quickPick.items, [noItemsFoundItem])
+    })
+
     it('handles AsyncIterables that throw', async function () {
         const errorItem = { label: 'error', data: 0 }
         testPrompter = new QuickPickPrompter(picker, { errorItem })
