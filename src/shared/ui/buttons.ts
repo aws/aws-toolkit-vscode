@@ -9,7 +9,6 @@ import { documentationUrl } from '../constants'
 import { ext } from '../extensionGlobals'
 import { UnionPromise } from '../utilities/tsUtils'
 import { WizardControl } from '../wizards/util'
-import { WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
 import { Prompter, PromptResult } from './prompter'
 
 const localize = nls.loadMessageBundle()
@@ -102,7 +101,7 @@ export class QuickInputToggleButton implements QuickInputButton {
             this.options.offCallBack()
         }
 
-        return WIZARD_RETRY
+        return WizardControl.Retry
     }
 }
 
@@ -120,7 +119,7 @@ export function createExitButton(): QuickInputButton {
             dark: ext.iconPaths.dark.exit,
         },
         tooltip: localize('AWS.generic.exit', 'Exit'),
-        onClick: () => WIZARD_EXIT,
+        onClick: () => WizardControl.Exit,
     }
 }
 

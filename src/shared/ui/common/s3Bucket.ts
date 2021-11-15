@@ -7,7 +7,7 @@ import { createCommonButtons } from '../buttons'
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import * as telemetry from '../../../shared/telemetry/telemetry'
-import { createLabelQuickPick, createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import { ext } from '../../extensionGlobals'
 import { Bucket } from '../../clients/s3Client'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../settingsConfiguration'
@@ -19,7 +19,7 @@ import { deferredCached } from '../../utilities/collectionUtils'
 import { addCodiconToString } from '../../utilities/textUtilities'
 import { isCloud9 } from '../../extensionUtilities'
 import { Prompter, PrompterConfiguration, PromptResult } from '../prompter'
-import { isValidResponse, WIZARD_BACK, WIZARD_RETRY } from '../../wizards/wizard'
+import { WizardControl } from '../../wizards/util'
 
 const localize = nls.loadMessageBundle()
 
@@ -131,14 +131,12 @@ export function validateBucket(name: string, region: string): string | undefined
     const client = ext.toolkitClientBuilder.createS3Client(region)
     // For now we'll just treat any error as the bucket existing.
     // There's a few edge-cases here and we should only block if we _know_ that the bucket doesn't exist.
-    /*
     return client
         .checkBucketExists(name)
         .catch(() => true)
         .then(exists => {
             return exists ? '' : addCodiconToString('error', DOES_NOT_EXIST)
         })
-    */
 }
 
 export interface S3BucketPrompterOptions {
@@ -154,6 +152,9 @@ export interface S3BucketPrompterOptions {
     helpUri?: string | vscode.Uri
 }
 
+// TODO: this class implements the bucket creation as a new 'Yes/No' step but currently it is not a very smooth UX
+// since there is no instant feedback after the user selects the item. Need to have a way to show an empty quick
+// input to show loading while we check + create the bucket.
 export class S3BucketPrompter extends Prompter<Bucket> {
     private _recentItem: Bucket | undefined
 
@@ -171,7 +172,7 @@ export class S3BucketPrompter extends Prompter<Bucket> {
         const bucketPrompt = createS3BucketPrompter(this.options)
         const bucket = await bucketPrompt.promptControl(config)
 
-        if (!isValidResponse(bucket)) {
+        if (!WizardControl.isValidResponse(bucket)) {
             return bucket
         }
 
@@ -189,7 +190,7 @@ export class S3BucketPrompter extends Prompter<Bucket> {
                     },
                     {
                         label: 'No',
-                        data: WIZARD_RETRY,
+                        data: WizardControl.Retry,
                     },
                 ],
                 {
@@ -258,7 +259,6 @@ export function createS3BucketPrompter(options: S3BucketPrompterOptions = {}): Q
 
     // The below logic is bypassing the normal `prompter` control flow and manipulating it externally
     // This is not the preferred way to implement actions from the 'filter box' item, though it works for now
-    /*
     prompter.quickPick.onDidAccept(() => {
         const active = prompter.quickPick.activeItems[0]
         if (active && active.invalidSelection && active.detail?.includes(DOES_NOT_EXIST)) {
@@ -280,7 +280,6 @@ export function createS3BucketPrompter(options: S3BucketPrompterOptions = {}): Q
             prompter.loadItems(createBucket, true)
         }
     })
-    */
 
     return prompter
 }

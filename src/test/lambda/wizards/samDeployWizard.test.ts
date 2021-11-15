@@ -22,13 +22,13 @@ import * as configureParameterOverrides from '../../../lambda/config/configurePa
 import * as parameterUtils from '../../../lambda/config/parameterUtils'
 import * as localizedText from '../../../shared/localizedText'
 import { ext } from '../../../shared/extensionGlobals'
-import { WIZARD_FORCE_EXIT } from '../../../shared/wizards/wizard'
 import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
 import {
     createBaseImageTemplate,
     makeSampleSamTemplateYaml,
     strToYamlFile,
 } from '../../shared/cloudformation/cloudformationTestUtils'
+import { WizardControl } from '../../../shared/wizards/util'
 
 let extContext: ExtContext
 
@@ -112,7 +112,7 @@ describe('createParametersPrompter', function () {
 
     it('configures overrides and exits wizard', async function () {
         tester.acceptItem(localizedText.yes)
-        assert.strictEqual(await tester.result(), WIZARD_FORCE_EXIT)
+        assert.strictEqual(await tester.result(), WizardControl.ForceExit)
         assert.strictEqual(configureStub.callCount, 1)
     })
 
@@ -124,7 +124,7 @@ describe('createParametersPrompter', function () {
             })
         )
         tester.acceptItem('Configure')
-        assert.strictEqual(await tester.result(), WIZARD_FORCE_EXIT)
+        assert.strictEqual(await tester.result(), WizardControl.ForceExit)
         assert.strictEqual(configureStub.callCount, 1)
     })
 
@@ -136,7 +136,7 @@ describe('createParametersPrompter', function () {
             })
         )
         tester.acceptItem(localizedText.cancel)
-        assert.strictEqual(await tester.result(), WIZARD_FORCE_EXIT)
+        assert.strictEqual(await tester.result(), WizardControl.ForceExit)
         assert.strictEqual(configureStub.callCount, 0)
     })
 })

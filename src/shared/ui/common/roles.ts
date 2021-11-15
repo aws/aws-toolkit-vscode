@@ -11,9 +11,9 @@ import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import { getLogger } from '../../logger/logger'
 import { showViewLogsMessage } from '../../utilities/messages'
-import { WIZARD_BACK } from '../../wizards/wizard'
 import { deferredCached } from '../../utilities/collectionUtils'
 import { parse } from '@aws-sdk/util-arn-parser'
+import { WizardControl } from '../../wizards/util'
 
 const localize = nls.loadMessageBundle()
 
@@ -41,7 +41,7 @@ async function* loadRoles(
 export function createRolePrompter(client: IamClient, options: RolePrompterOptions = {}): QuickPickPrompter<IAM.Role> {
     const placeholderItem: DataQuickPickItem<IAM.Role> = {
         label: localize('AWS.rolePrompter.noRoles.title', 'No valid roles found'),
-        data: WIZARD_BACK,
+        data: WizardControl.Back,
         detail: options.noRoleDetail,
     }
 

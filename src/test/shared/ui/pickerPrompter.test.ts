@@ -16,11 +16,11 @@ import {
     QuickPickPrompter,
     CUSTOM_USER_INPUT,
 } from '../../../shared/ui/pickerPrompter'
-import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
 import { recentlyUsed } from '../../../shared/localizedText'
 import { deferredCached } from '../../../shared/utilities/collectionUtils'
 import { createQuickPickTester, QuickPickTester } from './testUtils'
+import { WizardControl } from '../../../shared/wizards/util'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -164,7 +164,7 @@ describe('QuickPickPrompter', function () {
 
     it('can handle back button', async function () {
         testPrompter.onDidShow(() => picker.fireOnDidTriggerButton(createBackButton()))
-        assert.strictEqual(await testPrompter.promptControl(), WIZARD_BACK)
+        assert.strictEqual(await testPrompter.promptControl(), WizardControl.Back)
     })
 
     it('can accept input from buttons', async function () {
@@ -280,19 +280,6 @@ describe('QuickPickPrompter', function () {
             }
             done()
         })
-    })
-
-    it('handles AsyncIterables that return something', async function () {
-        async function* generator() {
-            for (const item of testItems.slice(0, -1)) {
-                yield [item]
-            }
-
-            return testItems.slice(-1)
-        }
-
-        await testPrompter.clearAndLoadItems(generator())
-        assert.strictEqual(picker.items.length, 3)
     })
 
     it('handles AsyncIterables that throw', async function () {

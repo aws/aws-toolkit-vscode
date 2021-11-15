@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { applyPrimitives } from '../utilities/collectionUtils'
 import { WizardControl } from '../wizards/util'
-import { StepEstimator, WIZARD_EXIT } from '../wizards/wizard'
+import { StepEstimator } from '../wizards/wizard'
 import { PrompterButtons } from './buttons'
 import { PrompterConfiguration, PromptResult } from './prompter'
 import { QuickInputPrompter } from './quickInput'
@@ -126,7 +126,7 @@ export class InputBoxPrompter extends QuickInputPrompter<string> {
 
         const promptPromise = new Promise<PromptResult<string>>(resolve => {
             this.inputBox.onDidAccept(() => accept(resolve))
-            this.inputBox.onDidHide(() => resolve(WIZARD_EXIT))
+            this.inputBox.onDidHide(() => resolve(WizardControl.Exit))
             this.inputBox.onDidTriggerButton(button => this.handleButton(button, resolve))
             this.show()
         }).finally(() => {

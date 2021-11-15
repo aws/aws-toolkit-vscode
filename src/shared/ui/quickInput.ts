@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { UnionPromise } from '../utilities/tsUtils'
-import { WIZARD_BACK } from '../wizards/wizard'
+import { WizardControl } from '../wizards/util'
 import { PrompterButtons, QuickInputButton } from './buttons'
 import { Prompter, PromptResult } from './prompter'
 
@@ -70,7 +70,7 @@ export abstract class QuickInputPrompter<T = any> extends Prompter<T> {
         resolve: (result: PromptResult<T>) => void
     ): void {
         if (button === vscode.QuickInputButtons.Back) {
-            resolve(WIZARD_BACK)
+            resolve(WizardControl.Back)
         } else if (button.onClick !== undefined && typeof button.onClick === 'function') {
             const response = button.onClick()
             if (response !== undefined) {

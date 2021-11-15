@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
+import { StepEstimator } from '../wizards/wizard'
 import { createRefreshButton, PrompterButtons } from './buttons'
 import { PrompterConfiguration, PromptResult, Transform } from './prompter'
 import { applyPrimitives, DeferredCachedFunction } from '../utilities/collectionUtils'
@@ -14,6 +14,7 @@ import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
 import { RequireKey, UnionPromise } from '../utilities/tsUtils'
 import { QuickInputPrompter } from './quickInput'
+import { WizardControl } from '../wizards/util'
 
 const localize = nls.loadMessageBundle()
 
@@ -89,7 +90,7 @@ const DEFAULT_NO_ITEMS_ITEM = {
     label: localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
     detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
     alwaysShow: true,
-    data: WIZARD_BACK,
+    data: WizardControl.Back,
 }
 
 /** See {@link QuickPickOptions.errorItem errorItem} for setting a different error item */
@@ -97,7 +98,7 @@ const DEFAULT_ERROR_ITEM = {
     // TODO: add icon, check for C9
     label: localize('AWS.picker.dynamic.error.label', '[Error loading items]'),
     alwaysShow: true,
-    data: WIZARD_BACK,
+    data: WizardControl.Back,
 }
 
 export const DEFAULT_QUICKPICK_OPTIONS: QuickPickOptions<any> = {
@@ -584,7 +585,7 @@ export class QuickPickPrompter<T> extends QuickInputPrompter<T> {
             const cast = (result: PromptResult<T>) => resolve(castDatumToItems(result))
             this.disposables.push(
                 picker.onDidAccept(() => acceptItems(picker, resolve)),
-                picker.onDidHide(() => resolve(castDatumToItems(WIZARD_EXIT))),
+                picker.onDidHide(() => resolve(castDatumToItems(WizardControl.Exit))),
                 picker.onDidTriggerButton(button => this.handleButton(button, cast))
             )
             this.show()
@@ -643,9 +644,8 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
 
     public override async refreshItems(): Promise<void> {
         // If the 'filter box' hook was per-item we wouldn't need to override refresh (or even have this class)
-        const p = super.refreshItems()
-        this.quickPick.value = this.quickPick.value
-        return p
+        // TODO: re-add the filter box item on refresh
+        await super.refreshItems()
     }
 
     public constructor(quickPick: DataQuickPick<T>, options: RequireKey<QuickPickOptions<T>, 'filterBoxInput'>) {

@@ -21,11 +21,11 @@ import * as semver from 'semver'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
-import { Wizard, WIZARD_BACK, WIZARD_FORCE_EXIT } from '../../shared/wizards/wizard'
+import { Wizard } from '../../shared/wizards/wizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
-import { createS3BucketPrompter, S3BucketPrompter } from '../../shared/ui/common/s3Bucket'
+import { createS3BucketPrompter } from '../../shared/ui/common/s3Bucket'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { AwsContext } from '../../shared/awsContext'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -33,6 +33,7 @@ import { createEcrPrompter } from '../../shared/ui/common/ecrRepository'
 import { PromptResult } from '../../shared/ui/prompter'
 import { getOverriddenParameters, getParameters } from '../config/parameterUtils'
 import { BasicExitPrompter } from '../../shared/ui/common/basicExit'
+import { WizardControl } from '../../shared/wizards/util'
 
 export const CHOSEN_BUCKET_KEY = 'manuallySelectedBuckets'
 
@@ -87,7 +88,7 @@ export function createParametersPrompter(template: CFNTemplate): QuickPickPrompt
             templateUri: template.uri,
             requiredParameterNames: missingParameters.keys(),
         })
-        return WIZARD_FORCE_EXIT
+        return WizardControl.ForceExit
     }
 
     if (missingParameters.size < 1) {
@@ -119,7 +120,7 @@ export function createParametersPrompter(template: CFNTemplate): QuickPickPrompt
 
         const items: DataQuickPickItem<Map<string, string>>[] = [
             { label: responseConfigure, data: configure },
-            { label: responseCancel, data: WIZARD_FORCE_EXIT },
+            { label: responseCancel, data: WizardControl.ForceExit },
         ]
 
         return createQuickPick(items, { title, buttons: createCommonButtons(samDeployDocUrl) })
@@ -177,20 +178,12 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
 
         form.s3Bucket.bindPrompter(
             state =>
-                new S3BucketPrompter({
-                    profile,
-                    region: state.region,
-                    baseBuckets: isCloud9() ? [`cloud9-${accountId}-sam-deployments-${state.region}`] : [],
-                    title: localize('AWS.samcli.deploy.s3Bucket.title', 'Select an AWS S3 Bucket to deploy code to'),
-                }).transform(({ name }) => name),
-            /*
                 createS3BucketPrompter({
                     profile,
                     region: state.region,
                     baseBuckets: isCloud9() ? [`cloud9-${accountId}-sam-deployments-${state.region}`] : [],
                     title: localize('AWS.samcli.deploy.s3Bucket.title', 'Select an AWS S3 Bucket to deploy code to'),
                 }).transform(({ name }) => name),
-                */
             { dependencies: [this.form.region] }
         )
 
@@ -256,7 +249,7 @@ async function parseTemplate(template: CFNTemplate, context: SamCliContext): Pro
                     'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
                 )
             )
-            return WIZARD_BACK
+            return WizardControl.Back
         }
     }
 

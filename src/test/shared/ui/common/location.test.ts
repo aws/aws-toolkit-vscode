@@ -6,7 +6,7 @@
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { createFolderPrompt } from '../../../../shared/ui/common/location'
-import { WIZARD_RETRY } from '../../../../shared/wizards/wizard'
+import { WizardControl } from '../../../../shared/wizards/util'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 
 describe('createLocationPrompt', function () {
@@ -43,6 +43,6 @@ describe('createLocationPrompt', function () {
     it('retries if user closes out of the dialog', async function () {
         openDialog.resolves([])
         tester.acceptItem(/Select a folder/)
-        await tester.result(WIZARD_RETRY)
+        await tester.result(WizardControl.Retry)
     })
 })

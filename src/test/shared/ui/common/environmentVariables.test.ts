@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { createVariablesPrompter } from '../../../../shared/ui/common/environmentVariables'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
-import { WIZARD_RETRY } from '../../../../shared/wizards/wizard'
+import { WizardControl } from '../../../../shared/wizards/util'
 
 describe('createVariablesPrompter', function () {
     const FILE_SELECTION = 'Use file...'
@@ -54,13 +54,13 @@ describe('createVariablesPrompter', function () {
         tester.acceptItem(FILE_SELECTION)
         openDialog.returns(Promise.resolve([file]))
         readFile.returns(Promise.resolve(Buffer.from('VAR1')))
-        assert.strictEqual(await tester.result(), WIZARD_RETRY)
+        assert.strictEqual(await tester.result(), WizardControl.Retry)
     })
 
     it('retries the prompt if cancel open dialog', async function () {
         tester.acceptItem(FILE_SELECTION)
         openDialog.returns(Promise.resolve(undefined))
-        assert.strictEqual(await tester.result(), WIZARD_RETRY)
+        assert.strictEqual(await tester.result(), WizardControl.Retry)
     })
 
     it('retries the prompt for a bad file load', async function () {
@@ -68,6 +68,6 @@ describe('createVariablesPrompter', function () {
         tester.acceptItem(FILE_SELECTION)
         openDialog.returns(Promise.resolve([badFile]))
         readFile.callsFake(() => Promise.reject(new Error('Bad file')))
-        assert.strictEqual(await tester.result(), WIZARD_RETRY)
+        assert.strictEqual(await tester.result(), WizardControl.Retry)
     })
 })

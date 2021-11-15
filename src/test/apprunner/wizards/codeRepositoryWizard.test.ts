@@ -16,7 +16,7 @@ import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
 import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtils'
-import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
+import { WizardControl } from '../../../shared/wizards/util'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
@@ -152,7 +152,7 @@ describe('createConnectionPrompter', function () {
         tester.assertItems(['No connections found'])
         tester.acceptItem('No connections found')
         tester.hide()
-        await tester.result(WIZARD_EXIT)
+        await tester.result(WizardControl.Exit)
         assert.strictEqual(openExternal.firstCall.args[0].toString(), apprunnerConnectionHelpUrl)
     })
 })

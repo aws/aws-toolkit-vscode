@@ -97,7 +97,7 @@ describe('EcrRepositoryWizard', function () {
 
         await tester.repo.runPrompt(prompter => {
             const input = createRepo('repo')
-            const tester = createQuickPickTester(prompter, { forceEmits: true })
+            const tester = createQuickPickTester(prompter)
             tester.setValue(`${input.repositoryUri}`)
             tester.addCallback(() => repositories.push(createRepo('my-repo')))
             tester.pressButton('Refresh')

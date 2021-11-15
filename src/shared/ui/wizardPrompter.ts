@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StepCache, StepEstimator, Wizard, WIZARD_BACK } from '../wizards/wizard'
+import { WizardControl } from '../wizards/util'
+import { StepCache, StepEstimator, Wizard } from '../wizards/wizard'
 import { Prompter, PrompterConfiguration, PromptResult } from './prompter'
 
 type WizardCache = Record<string, StepCache>
@@ -63,6 +64,6 @@ export class WizardPrompter<T> extends Prompter<T> {
         }
 
         this.response = await this.wizard.run()
-        return this.response ?? WIZARD_BACK
+        return this.response ?? WizardControl.Back
     }
 }

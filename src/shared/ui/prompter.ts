@@ -5,7 +5,7 @@
 
 import * as _ from 'lodash'
 import { WizardControl } from '../wizards/util'
-import { isValidResponse, StepEstimator } from '../wizards/wizard'
+import { StepEstimator } from '../wizards/wizard'
 
 export type PromptResult<T> = T | WizardControl
 export type Transform<T, R> = (result: T) => R
@@ -82,7 +82,7 @@ export abstract class Prompter<T> {
         callbacks: (Transform<T, any> | ResultListener<T>)[]
     ): PromptResult<T> {
         for (const cb of callbacks) {
-            if (!isValidResponse(result)) {
+            if (!WizardControl.isValidResponse(result)) {
                 return result
             }
             const transform: T | undefined = cb(result)
@@ -118,7 +118,7 @@ export abstract class Prompter<T> {
      */
     public async prompt(config: SinglePromptConfiguration = {}): Promise<T | undefined> {
         const response = await this.promptOrThrow(config)
-        return isValidResponse(response) ? response : undefined
+        return WizardControl.isValidResponse(response) ? response : undefined
     }
 
     /**

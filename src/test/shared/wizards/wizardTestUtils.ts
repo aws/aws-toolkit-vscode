@@ -7,10 +7,11 @@ import * as _ from 'lodash'
 import * as assert from 'assert'
 import chalk from 'chalk'
 import { ExpandWithObject } from '../../../shared/utilities/tsUtils'
-import { isValidResponse, Wizard } from '../../../shared/wizards/wizard'
+import { Wizard } from '../../../shared/wizards/wizard'
 import { WizardForm } from '../../../shared/wizards/wizardForm'
 import { PrompterTester } from '../ui/testUtils'
 import { QuickInputPrompter } from '../../../shared/ui/quickInput'
+import { WizardControl } from '../../../shared/wizards/util'
 
 interface MockWizardFormElement<TProp> {
     /** Directly assigns input to the property, skipping any prompt. */
@@ -153,7 +154,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
         const prompter = provider!({ ...defaults, stepCache: {}, estimator: () => 0 })
         const tester = callback(prompter as QuickInputPrompter)
         return tester.result().then(result => {
-            failIf(!isValidResponse(result), 'Testing with control signals is not currently supported.')
+            failIf(!WizardControl.isValidResponse(result), 'Testing with control signals is not currently supported.')
             _.set(state, assigned[0], result)
             evaluate()
         })

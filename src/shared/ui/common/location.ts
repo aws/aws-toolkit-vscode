@@ -7,9 +7,9 @@ import * as vscode from 'vscode'
 import * as os from 'os'
 import { addCodiconToString } from '../../utilities/textUtilities'
 import * as nls from 'vscode-nls'
-import { WIZARD_RETRY } from '../../wizards/wizard'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import { PrompterButtons } from '../buttons'
+import { WizardControl } from '../../wizards/util'
 
 const localize = nls.loadMessageBundle()
 
@@ -28,7 +28,7 @@ function createBrowseFolderQuickPickItem(
         })
 
         if (!result || !result.length) {
-            return WIZARD_RETRY
+            return WizardControl.Retry
         }
 
         return result[0]

@@ -6,12 +6,12 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { showViewLogsMessage } from '../../utilities/messages'
-import { WIZARD_RETRY } from '../../wizards/wizard'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import * as nls from 'vscode-nls'
 import { PrompterButtons } from '../buttons'
 import { promisifyThenable } from '../../utilities/vsCodeUtils'
 import { getLogger } from '../../logger/logger'
+import { WizardControl } from '../../wizards/util'
 
 const localize = nls.loadMessageBundle()
 
@@ -86,7 +86,7 @@ export function createVariablesPrompter(
                             'No environment variables found. Files are expected to be in a `.env` format.'
                         )
                     )
-                    return WIZARD_RETRY
+                    return WizardControl.Retry
                 }
 
                 getLogger().debug('Parsed environment variables:\n%s', JSON.stringify(result, undefined, 2))
@@ -100,7 +100,7 @@ export function createVariablesPrompter(
                     )
                 }
 
-                return WIZARD_RETRY
+                return WizardControl.Retry
             })
     }
 

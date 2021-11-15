@@ -12,8 +12,8 @@ import { createS3BucketPrompter, S3BucketPrompterOptions } from '../../../../sha
 import { Bucket, DefaultS3Client } from '../../../../shared/clients/s3Client'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 import { ext } from '../../../../shared/extensionGlobals'
-import { WIZARD_BACK } from '../../../../shared/wizards/wizard'
 import { sleep } from '../../../../shared/utilities/promiseUtilities'
+import { WizardControl } from '../../../../shared/wizards/util'
 
 const mochaIt = it
 
@@ -117,7 +117,7 @@ describe('createS3BucketPrompter', function () {
     it('shows placeholder', { options: { noBucketMessage: 'placeholder' } }, async function () {
         tester.assertItems(['placeholder'])
         tester.acceptItem('placeholder')
-        assert.strictEqual(await tester.result(), WIZARD_BACK)
+        assert.strictEqual(await tester.result(), WizardControl.Back)
     })
 
     // TODO: verify this differentiates based off region

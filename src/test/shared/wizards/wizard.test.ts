@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { Prompter, PrompterConfiguration, PromptResult } from '../../../shared/ui/prompter'
 import { WizardControl } from '../../../shared/wizards/util'
-import { StateWithCache, StepEstimator, Wizard, WIZARD_BACK, WIZARD_EXIT } from '../../../shared/wizards/wizard'
+import { StateWithCache, StepEstimator, Wizard } from '../../../shared/wizards/wizard'
 import { BoundState } from '../../../shared/wizards/wizardForm'
 
 interface TestWizardForm {
@@ -239,14 +239,14 @@ describe('Wizard', function () {
 
     it('processes exit signal', async function () {
         wizard.form.prop1.bindPrompter(() => helloPrompter)
-        wizard.form.prop3.bindPrompter(() => new TestPrompter<string>(WIZARD_EXIT).setName('Exit'))
+        wizard.form.prop3.bindPrompter(() => new TestPrompter<string>(WizardControl.Exit).setName('Exit'))
 
         assert.strictEqual(await wizard.run(), undefined)
         helloPrompter.assertCallCount(1)
     })
 
     it('disposes of the last prompter if exiting the wizard', async function () {
-        const exitPrompter = new TestPrompter<string>(WIZARD_BACK).setName('Exit')
+        const exitPrompter = new TestPrompter<string>(WizardControl.Back).setName('Exit')
         wizard.form.prop1.bindPrompter(() => exitPrompter)
 
         assert.strictEqual(await wizard.run(), undefined)
@@ -255,7 +255,7 @@ describe('Wizard', function () {
 
     // test is mostly redundant (state controller handles this logic) but good to have
     it('regenerates prompters when going back', async function () {
-        const testPrompter = new TestPrompter(WIZARD_BACK, 'goodbye').setName('Goodbye')
+        const testPrompter = new TestPrompter(WizardControl.Back, 'goodbye').setName('Goodbye')
 
         wizard.form.prop1.bindPrompter(() => helloPrompter)
         wizard.form.prop3.bindPrompter(() => testPrompter)
@@ -290,8 +290,8 @@ describe('Wizard', function () {
     it('uses a parent estimator if provided', async function () {
         const parentEstimator = (state: TestWizardForm) => (state.prop1 === '1' ? (state.prop3 === '1' ? 2 : 1) : 0)
         const firstStep = new TestPrompter('1', '0', '1')
-        const secondStep = new TestPrompter<string>(WIZARD_BACK, '1')
-        const thirdStep = new TestPrompter(WIZARD_BACK, 1)
+        const secondStep = new TestPrompter<string>(WizardControl.Back, '1')
+        const thirdStep = new TestPrompter(WizardControl.Back, 1)
 
         wizard.parentEstimator = parentEstimator
         wizard.form.prop1.bindPrompter(state => firstStep.acceptState(state))
@@ -316,7 +316,7 @@ describe('Wizard', function () {
         }
 
         const testPrompter1 = new TestPrompter('first', noWizardControl).setName('Test 1')
-        const testPrompter2 = new TestPrompter(WIZARD_BACK, 22).setName('Test 2')
+        const testPrompter2 = new TestPrompter(WizardControl.Back, 22).setName('Test 2')
 
         wizard.form.prop1.bindPrompter(state => testPrompter1.acceptState(state))
         wizard.form.prop2.bindPrompter(() => testPrompter2)
@@ -331,7 +331,7 @@ describe('Wizard', function () {
         beforeEach(function () {
             const checkForHello = (state: TestWizardForm) => state.prop1 !== 'hello'
             exitPrompter = new TestPrompter(checkForHello, true).setName('Exit Dialog')
-            exitSignalPrompter = new TestPrompter<string>(WIZARD_EXIT, WIZARD_EXIT).setName('Exit Signal')
+            exitSignalPrompter = new TestPrompter<string>(WizardControl.Exit, WizardControl.Exit).setName('Exit Signal')
             wizard = new Wizard({ exitPrompter: state => exitPrompter.acceptState(state as any) })
             wizard.form.prop1.bindPrompter(() => helloPrompter)
             wizard.form.prop3.bindPrompter(() => exitSignalPrompter)
@@ -371,7 +371,7 @@ describe('Wizard', function () {
         // This test is meant to be somewhat contrived and is more of a smoke test than anything else
         it('can use cache to reconstruct internal state, showing the last step', async function () {
             const reuseState = (back: boolean) => (state: BoundState<TestWizardForm, []>) =>
-                state.prop1 === 'hello' ? (back ? WIZARD_BACK : 'hello') : 'unknown'
+                state.prop1 === 'hello' ? (back ? WizardControl.Back : 'hello') : 'unknown'
             const testPrompter = new TestPrompter('goodbye', reuseState(true), reuseState(false)).setName('Goodbye')
 
             wizard.form.prop1.bindPrompter(() => helloPrompter)
@@ -396,7 +396,7 @@ describe('Wizard', function () {
         // Execution order: 1 -> 2 -> 1 -> 2
         it('accurately assigns current/total steps', async function () {
             const testPrompter1 = new TestPrompter('1', '2', '3').setName('Test 1')
-            const testPrompter2 = new TestPrompter(WIZARD_BACK, 4).setName('Test 2')
+            const testPrompter2 = new TestPrompter(WizardControl.Back, 4).setName('Test 2')
 
             testPrompter1.setTotalSteps(2)
 
@@ -424,9 +424,11 @@ describe('Wizard', function () {
             const helloFunction = (state: BoundState<TestWizardForm, []>) =>
                 state.prop1 === 'B' ? `hello ${state.prop3}` : `extra step`
             const testPrompterStart = new TestPrompter('A', 'B', 'A', 'B').setName('Start')
-            const testPrompterPath1 = new TestPrompter(99, WIZARD_BACK, WIZARD_BACK, 10).setName('Path 1')
-            const testPrompterPath2 = new TestPrompter(WIZARD_BACK, 'alice', 'bob').setName('Path 2')
-            const testPrompterEnd = new TestPrompter(WIZARD_BACK, WIZARD_BACK, helloFunction).setName('End')
+            const testPrompterPath1 = new TestPrompter(99, WizardControl.Back, WizardControl.Back, 10).setName('Path 1')
+            const testPrompterPath2 = new TestPrompter(WizardControl.Back, 'alice', 'bob').setName('Path 2')
+            const testPrompterEnd = new TestPrompter(WizardControl.Back, WizardControl.Back, helloFunction).setName(
+                'End'
+            )
 
             testPrompterPath1.setTotalSteps(2)
             testPrompterPath2.setTotalSteps(3)

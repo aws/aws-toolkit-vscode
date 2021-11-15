@@ -5,11 +5,11 @@
 
 import * as assert from 'assert'
 import { createBackButton, QuickInputButton } from '../../../shared/ui/buttons'
-import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import * as vscode from 'vscode'
 import { createInputBox, DEFAULT_INPUTBOX_OPTIONS, InputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
 import { PromptResult } from '../../../shared/ui/prompter'
+import { WizardControl } from '../../../shared/wizards/util'
 
 describe('createInputBox', function () {
     it('creates a new prompter with options', async function () {
@@ -93,7 +93,7 @@ describe('InputBoxPrompter', function () {
             const didHide = new Promise((r1, r2) => (inputBox.onDidHide(r1), setTimeout(r2, 1000)))
             inputBox.fireOnDidTriggerButton(back)
 
-            assert.strictEqual(await result, WIZARD_BACK)
+            assert.strictEqual(await result, WizardControl.Back)
             await assert.doesNotReject(didHide)
         })
 
