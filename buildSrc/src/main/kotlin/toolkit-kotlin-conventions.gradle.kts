@@ -14,12 +14,13 @@ plugins {
     id("toolkit-detekt")
 }
 
+// TODO: https://github.com/gradle/gradle/issues/15383
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+    implementation(versionCatalog.findBundle("kotlin").get())
+    implementation(versionCatalog.findDependency("kotlin-coroutines").get())
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
+    testImplementation(versionCatalog.findDependency("kotlin-test").get())
 }
 
 sourceSets {

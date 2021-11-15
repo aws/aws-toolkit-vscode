@@ -20,7 +20,6 @@ import org.mockito.kotlin.stub
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
-import org.mockito.kotlin.verifyZeroInteractions
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import java.io.File
@@ -161,7 +160,7 @@ class ToolkitCredentialProcessProviderTest {
         val sut = createSut("$cmd non-existing-folder")
 
         assertThatThrownBy { sut.resolveCredentials() }.hasMessageContaining("Failed to execute credential_process ($cmd)")
-        verifyZeroInteractions(parser)
+        verifyNoMoreInteractions(parser)
     }
 
     @Test

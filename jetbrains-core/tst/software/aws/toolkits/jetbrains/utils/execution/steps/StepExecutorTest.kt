@@ -13,7 +13,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +45,7 @@ class StepExecutorTest {
         verify(step1).run(any(), any(), any())
         verify(step2).run(any(), any(), any())
         verify(successCallback).invoke(any())
-        verifyZeroInteractions(errorCallback)
+        verifyNoMoreInteractions(errorCallback)
 
         verify(workflowEmitter).workflowStarted()
         verify(workflowEmitter).workflowCompleted()
@@ -61,8 +61,8 @@ class StepExecutorTest {
         createExecutor(step1, step2).startExecution().waitFor(2_000)
 
         verify(step1).run(any(), any(), any())
-        verifyZeroInteractions(step2)
-        verifyZeroInteractions(successCallback)
+        verifyNoMoreInteractions(step2)
+        verifyNoMoreInteractions(successCallback)
         verify(errorCallback).invoke(any())
 
         verify(workflowEmitter).workflowStarted()
@@ -104,7 +104,7 @@ class StepExecutorTest {
         stepPaused.countDown()
         execution.waitFor(2_000)
 
-        verifyZeroInteractions(successCallback)
+        verifyNoMoreInteractions(successCallback)
         verify(errorCallback).invoke(any())
 
         verify(workflowEmitter).workflowStarted()

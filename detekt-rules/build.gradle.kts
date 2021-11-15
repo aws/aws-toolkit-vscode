@@ -12,8 +12,8 @@ plugins {
 }
 
 dependencies {
-    implementation("io.gitlab.arturbosch.detekt:detekt-api:$detektVersion")
-    testImplementation("io.gitlab.arturbosch.detekt:detekt-test:$detektVersion")
-    testImplementation("junit:junit:$junitVersion")
-    testImplementation("org.assertj:assertj-core:$assertjVersion")
+    compileOnly(libs.detekt.api)
+    testImplementation(libs.detekt.test)
+    testImplementation(libs.junit4)
+    testImplementation(libs.assertj)
 }

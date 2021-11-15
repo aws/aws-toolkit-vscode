@@ -8,8 +8,10 @@ plugins {
     id("toolkit-testing")
 }
 
+// TODO: https://github.com/gradle/gradle/issues/15383
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 dependencies {
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
+    detektPlugins(versionCatalog.findDependency("detekt-formattingRules").get())
     detektPlugins(project(":detekt-rules"))
 }
 

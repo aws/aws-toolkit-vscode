@@ -1,0 +1,87 @@
+[versions]
+apacheCommons = "2.8.0"
+assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.com/issue/KT-17765
+awsSdk = "2.17.76"
+commonmark = "0.17.1"
+detekt = "1.18.1"
+intellijGradle = "1.2.1"
+intellijRemoteRobot = "0.11.4"
+jackson = "2.11.1"
+jacoco = "0.8.7"
+jgit = "5.11.0.202103091610-r"
+junit4 = "4.13.1"
+junit5 = "5.6.2"
+kotlin = "1.5.31"
+kotlinCoroutines = "1.3.9"
+mockito = "4.0.0"
+telemetryGenerator = "1.0.25"
+testLogger = "3.1.0"
+testRetry = "1.2.1"
+wiremock = "2.27.2"
+zjsonpatch = "0.4.11"
+
+[libraries]
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
+aws-apacheClient = { module = "software.amazon.awssdk:apache-client", version.ref = "awsSdk" }
+aws-apprunner = { module = "software.amazon.awssdk:apprunner", version.ref = "awsSdk" }
+aws-cloudcontrol = { module = "software.amazon.awssdk:cloudcontrol", version.ref = "awsSdk" }
+aws-cloudformation = { module = "software.amazon.awssdk:cloudformation", version.ref = "awsSdk" }
+aws-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version.ref = "awsSdk" }
+aws-codeGen = { module = "software.amazon.awssdk:codegen", version.ref = "awsSdk" }
+aws-cognitoidentity = { module = "software.amazon.awssdk:cognitoidentity", version.ref = "awsSdk" }
+aws-dynamodb = { module = "software.amazon.awssdk:dynamodb", version.ref = "awsSdk" }
+aws-ec2 = { module = "software.amazon.awssdk:ec2", version.ref = "awsSdk" }
+aws-ecr = { module = "software.amazon.awssdk:ecr", version.ref = "awsSdk" }
+aws-ecs = { module = "software.amazon.awssdk:ecs", version.ref = "awsSdk" }
+aws-iam = { module = "software.amazon.awssdk:iam", version.ref = "awsSdk" }
+aws-jsonProtocol = { module = "software.amazon.awssdk:aws-json-protocol", version.ref = "awsSdk" }
+aws-lambda = { module = "software.amazon.awssdk:lambda", version.ref = "awsSdk" }
+aws-queryProtocol = { module = "software.amazon.awssdk:aws-query-protocol", version.ref = "awsSdk" }
+aws-rds = { module = "software.amazon.awssdk:rds", version.ref = "awsSdk" }
+aws-redshift = { module = "software.amazon.awssdk:redshift", version.ref = "awsSdk" }
+aws-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awsSdk" }
+aws-schemas = { module = "software.amazon.awssdk:schemas", version.ref = "awsSdk" }
+aws-secretsmanager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "awsSdk" }
+aws-services = { module = "software.amazon.awssdk:services", version.ref = "awsSdk" }
+aws-sns = { module = "software.amazon.awssdk:sns", version.ref = "awsSdk" }
+aws-sqs = { module = "software.amazon.awssdk:sqs", version.ref = "awsSdk" }
+aws-sso = { module = "software.amazon.awssdk:sso", version.ref = "awsSdk" }
+aws-ssooidc = { module = "software.amazon.awssdk:ssooidc", version.ref = "awsSdk" }
+aws-sts = { module = "software.amazon.awssdk:sts", version.ref = "awsSdk" }
+commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
+commons-io = { module = "commons-io:commons-io", version.ref = "apacheCommons" }
+detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
+detekt-formattingRules = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
+gradlePlugin-detekt = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+gradlePlugin-intellij = { module = "org.jetbrains.intellij.plugins:gradle-intellij-plugin", version.ref = "intellijGradle" }
+gradlePlugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+gradlePlugin-testLogger = { module = "com.adarshr:gradle-test-logger-plugin", version.ref = "testLogger" }
+gradlePlugin-testRetry = { module = "org.gradle:test-retry-gradle-plugin", version.ref = "testRetry" }
+intellijRemoteFixtures = { module = "com.intellij.remoterobot:remote-fixtures", version.ref = "intellijRemoteRobot" }
+intellijRemoteRobot = { module = "com.intellij.remoterobot:remote-robot", version.ref = "intellijRemoteRobot" }
+jackson-datetime = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jackson-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jackson" }
+jackson-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
+jacoco = { module = "org.jacoco:org.jacoco.core", version.ref = "jacoco" }
+jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "jgit" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+junit5-jupiterApi = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
+junit5-jupiterEngione = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
+kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
+kotlin-coroutinesDebug = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-debug", version.ref = "kotlinCoroutines" }
+kotlin-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinCoroutines" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-stdLibJdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito" }
+telemetryGenerator = { module = "software.aws.toolkits:telemetry-generator", version.ref = "telemetryGenerator" }
+wiremock = { module = "com.github.tomakehurst:wiremock", version.ref = "wiremock" }
+zjsonpatch = { module = "com.flipkart.zjsonpatch:zjsonpatch", version.ref = "zjsonpatch" }
+
+[bundles]
+jackson = ["jackson-datetime", "jackson-kotlin", "jackson-yaml", "jackson-xml"]
+kotlin = ["kotlin-stdLibJdk8", "kotlin-reflect"]
+mockito = ["mockito-core", "mockito-kotlin"]

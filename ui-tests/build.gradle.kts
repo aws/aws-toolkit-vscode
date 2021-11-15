@@ -5,11 +5,6 @@ import software.aws.toolkits.gradle.jacoco.RemoteCoverage.Companion.enableRemote
 // SPDX-License-Identifier: Apache-2.0
 
 val remoteRobotPort: String by project
-val junit5Version: String by project
-val remoteRobotVersion: String by project
-val awsSdkVersion: String by project
-val coroutinesVersion: String by project
-val apacheCommonsVersion: String by project
 
 repositories {
     maven { url = uri("https://cache-redirector.jetbrains.com/intellij-dependencies") }
@@ -24,21 +19,20 @@ dependencies {
     testImplementation(gradleApi())
     testImplementation(project(":core"))
     testImplementation(project(path = ":core", configuration = "testArtifacts"))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     testImplementation(project(":resources"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5Version")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
-    testImplementation("com.intellij.remoterobot:remote-robot:$remoteRobotVersion")
-    testImplementation("com.intellij.remoterobot:remote-fixtures:$remoteRobotVersion")
-    testImplementation("software.amazon.awssdk:cloudformation:$awsSdkVersion")
-    testImplementation("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
-    testImplementation("software.amazon.awssdk:s3:$awsSdkVersion")
-    testImplementation("software.amazon.awssdk:dynamodb:$awsSdkVersion")
-    testImplementation("software.amazon.awssdk:sns:$awsSdkVersion")
-    testImplementation("software.amazon.awssdk:sqs:$awsSdkVersion")
+    testImplementation(libs.kotlin.coroutines)
+    testImplementation(libs.junit5.jupiterApi)
+    testImplementation(libs.intellijRemoteFixtures)
+    testImplementation(libs.intellijRemoteRobot)
+    testImplementation(libs.aws.cloudformation)
+    testImplementation(libs.aws.cloudwatchlogs)
+    testImplementation(libs.aws.dynamodb)
+    testImplementation(libs.aws.s3)
+    testImplementation(libs.aws.sns)
+    testImplementation(libs.aws.sqs)
+    testImplementation(libs.commons.io)
 
-    testImplementation("commons-io:commons-io:$apacheCommonsVersion")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5Version")
+    testRuntimeOnly(libs.junit5.jupiterEngione)
 }
 
 // don't run gui tests as part of check

@@ -16,7 +16,6 @@ val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intel
 val ideProfile = IdeVersions.ideProfile(project)
 val toolkitVersion: String by project
 val remoteRobotPort: String by project
-val remoteRobotVersion: String by project
 
 // please check changelog generation logic if this format is changed
 version = "$toolkitVersion-${ideProfile.shortName}"
@@ -117,8 +116,10 @@ tasks.runIde {
     }
 }
 
+// TODO: https://github.com/gradle/gradle/issues/15383
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 tasks.withType<DownloadRobotServerPluginTask> {
-    version.set(remoteRobotVersion)
+    version.set(versionCatalog.findVersion("intellijRemoteRobot").get().preferredVersion)
 }
 
 // Enable coverage for the UI test target IDE

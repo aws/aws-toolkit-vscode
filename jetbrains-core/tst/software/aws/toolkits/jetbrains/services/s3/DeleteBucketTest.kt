@@ -14,7 +14,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest
@@ -100,7 +100,7 @@ class DeleteBucketTest {
         }
 
         s3Mock.deleteBucketAndContents("")
-        verifyZeroInteractions(s3Mock.deleteBucket(any<Consumer<DeleteBucketRequest.Builder>>()))
+        verifyNoMoreInteractions(s3Mock.deleteBucket(any<Consumer<DeleteBucketRequest.Builder>>()))
     }
 
     @Test

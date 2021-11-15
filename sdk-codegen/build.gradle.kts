@@ -11,3 +11,9 @@ sdkGenerator {
     c2jFolder.set(file("$projectDir/codegen-resources"))
     outputDir.set(file("$buildDir/generated-sources"))
 }
+
+dependencies {
+    implementation(libs.aws.services)
+    implementation(libs.aws.jsonProtocol)
+    implementation(libs.aws.queryProtocol)
+}

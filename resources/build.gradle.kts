@@ -19,7 +19,7 @@ sourceSets {
 }
 
 dependencies {
-    testImplementation("junit:junit:$junitVersion")
+    testImplementation(libs.junit4)
 }
 
 val download = tasks.register<Download>("downloadResources") {

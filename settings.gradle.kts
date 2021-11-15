@@ -1,5 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+enableFeaturePreview("VERSION_CATALOGS")
+
 rootProject.name = "aws-toolkit-jetbrains"
 
 include("resources")

@@ -23,7 +23,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import java.io.File
 
 class CreateOrUpdateCredentialProfilesActionTest {
@@ -86,7 +86,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
-        verifyZeroInteractions(writer)
+        verifyNoMoreInteractions(writer)
 
         assertThat(fileEditorManager.openFiles).hasSize(2)
             .anySatisfy { assertThat(it.name).isEqualTo("config") }
@@ -106,7 +106,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
-        verifyZeroInteractions(writer)
+        verifyNoMoreInteractions(writer)
 
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo("config") }
     }
@@ -124,7 +124,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
-        verifyZeroInteractions(writer)
+        verifyNoMoreInteractions(writer)
 
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo("credentials") }
     }
@@ -154,7 +154,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
-        verifyZeroInteractions(writer)
+        verifyNoMoreInteractions(writer)
 
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying {
             assertThat(it.name).isEqualTo("credentials")
@@ -174,6 +174,6 @@ class CreateOrUpdateCredentialProfilesActionTest {
 
         sut.actionPerformed(TestActionEvent { projectRule.project })
 
-        verifyZeroInteractions(writer)
+        verifyNoMoreInteractions(writer)
     }
 }

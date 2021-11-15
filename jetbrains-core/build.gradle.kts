@@ -13,16 +13,10 @@ plugins {
 }
 
 buildscript {
-    val telemetryVersion: String by project
     dependencies {
-        classpath("software.aws.toolkits:telemetry-generator:$telemetryVersion")
+        classpath(libs.telemetryGenerator)
     }
 }
-
-val telemetryVersion: String by project
-val awsSdkVersion: String by project
-val coroutinesVersion: String by project
-val jacksonVersion: String by project
 
 intellijToolkit {
     ideFlavor.set(IdeFlavor.IC)
@@ -64,30 +58,30 @@ tasks.processTestResources {
 
 dependencies {
     api(project(":core"))
-    api("software.amazon.awssdk:s3:$awsSdkVersion")
-    api("software.amazon.awssdk:dynamodb:$awsSdkVersion")
-    api("software.amazon.awssdk:lambda:$awsSdkVersion")
-    api("software.amazon.awssdk:iam:$awsSdkVersion")
-    api("software.amazon.awssdk:ecr:$awsSdkVersion")
-    api("software.amazon.awssdk:ecs:$awsSdkVersion")
-    api("software.amazon.awssdk:cloudformation:$awsSdkVersion")
-    api("software.amazon.awssdk:cloudcontrol:$awsSdkVersion")
-    api("software.amazon.awssdk:schemas:$awsSdkVersion")
-    api("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
-    api("software.amazon.awssdk:apache-client:$awsSdkVersion")
-    api("software.amazon.awssdk:resourcegroupstaggingapi:$awsSdkVersion")
-    api("software.amazon.awssdk:rds:$awsSdkVersion")
-    api("software.amazon.awssdk:redshift:$awsSdkVersion")
-    api("software.amazon.awssdk:secretsmanager:$awsSdkVersion")
-    api("software.amazon.awssdk:sns:$awsSdkVersion")
-    api("software.amazon.awssdk:sqs:$awsSdkVersion")
-    api("software.amazon.awssdk:apprunner:$awsSdkVersion")
-    api("software.amazon.awssdk:ec2:$awsSdkVersion")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
-    implementation("com.flipkart.zjsonpatch:zjsonpatch:0.4.11")
+    api(libs.aws.apacheClient)
+    api(libs.aws.apprunner)
+    api(libs.aws.cloudcontrol)
+    api(libs.aws.cloudformation)
+    api(libs.aws.cloudwatchlogs)
+    api(libs.aws.dynamodb)
+    api(libs.aws.ec2)
+    api(libs.aws.ecr)
+    api(libs.aws.ecs)
+    api(libs.aws.iam)
+    api(libs.aws.lambda)
+    api(libs.aws.rds)
+    api(libs.aws.redshift)
+    api(libs.aws.s3)
+    api(libs.aws.schemas)
+    api(libs.aws.secretsmanager)
+    api(libs.aws.sns)
+    api(libs.aws.sqs)
+
+    implementation(libs.bundles.jackson)
+    implementation(libs.zjsonpatch)
 
     testImplementation(project(path = ":core", configuration = "testArtifacts"))
-    testImplementation("com.github.tomakehurst:wiremock:2.27.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:$coroutinesVersion")
+    testImplementation(libs.wiremock)
+    testImplementation(libs.kotlin.coroutinesTest)
+    testImplementation(libs.kotlin.coroutinesDebug)
 }

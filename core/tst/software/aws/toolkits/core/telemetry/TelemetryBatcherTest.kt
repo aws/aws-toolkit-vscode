@@ -14,7 +14,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verifyBlocking
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.stubbing.Answer
 import software.amazon.awssdk.core.exception.SdkServiceException
 import java.util.concurrent.CountDownLatch
@@ -125,7 +125,7 @@ class TelemetryBatcherTest {
         batcher.enqueue(createEmptyMetricEvent())
         batcher.flush(false)
 
-        verifyZeroInteractions(publisher)
+        verifyNoMoreInteractions(publisher)
 
         assertThat(batcher.eventQueue).isEmpty()
     }
@@ -139,7 +139,7 @@ class TelemetryBatcherTest {
 
         batcher.flush(false)
 
-        verifyZeroInteractions(publisher)
+        verifyNoMoreInteractions(publisher)
 
         assertThat(batcher.eventQueue).isEmpty()
     }

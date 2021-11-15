@@ -72,10 +72,6 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String
                 id 'java'
             }
 
-            repositories {
-                mavenCentral()
-            }
-            
             sourceCompatibility = '$compatibility'
             targetCompatibility = '$compatibility'
         """.trimIndent()
@@ -166,7 +162,7 @@ fun HeavyJavaCodeInsightTestFixtureRule.addBreakpoint() {
 
 private fun HeavyJavaCodeInsightTestFixtureRule.copyGradleFiles() {
     val gradleRoot = findGradlew()
-    val gradleFiles = setOf("gradle/", "gradlew.bat", "gradlew")
+    val gradleFiles = setOf("gradle/wrapper", "gradlew.bat", "gradlew")
 
     gradleFiles.forEach {
         val gradleFile = gradleRoot.resolve(it)

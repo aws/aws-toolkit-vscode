@@ -11,7 +11,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.slf4j.Logger
 import org.slf4j.event.Level
@@ -59,13 +59,13 @@ class LogUtilsTest {
     @Test
     fun nullableIsOkInTryOrThrowNullable() {
         log.tryOrThrowNullable("message") { null }
-        verifyZeroInteractions(log)
+        verifyNoMoreInteractions(log)
     }
 
     @Test
     fun nullIsOkInTryOrNull() {
         log.tryOrNull("message") { null }
-        verifyZeroInteractions(log)
+        verifyNoMoreInteractions(log)
     }
 
     @Test

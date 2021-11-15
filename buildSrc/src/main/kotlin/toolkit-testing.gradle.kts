@@ -14,10 +14,11 @@ plugins {
     id("com.adarshr.test-logger")
 }
 
+// TODO: https://github.com/gradle/gradle/issues/15383
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 dependencies {
-    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
-    testImplementation("org.mockito:mockito-core:$mockitoVersion")
-    testImplementation("org.assertj:assertj-core:$assertjVersion")
+    testImplementation(versionCatalog.findBundle("mockito").get())
+    testImplementation(versionCatalog.findDependency("assertj").get())
 
     // Don't add a test framework by default since we use junit4, junit5, and testng depending on project
 }
