@@ -6,7 +6,6 @@
 import { Schemas } from 'aws-sdk'
 
 import { ext } from '../extensionGlobals'
-import '../utilities/asyncIteratorShim'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type SchemaClient = ClassToInterfaceType<DefaultSchemaClient>
