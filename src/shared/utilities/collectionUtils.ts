@@ -257,7 +257,7 @@ export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]): T[] {
 export function applyPrimitives<T1 extends Record<string, any>, T2 extends T1>(obj: T2, settings: T1): void {
     const clone = Object.assign({}, settings)
     Object.keys(clone)
-        .filter(key => typeof clone[key] === 'object')
+        .filter(key => typeof clone[key] === 'object' || clone[key] === undefined)
         .forEach(key => delete clone[key])
 
     Object.assign(obj, clone)
