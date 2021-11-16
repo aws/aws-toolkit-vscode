@@ -88,9 +88,9 @@ configure<RdGenExtension> {
     hashFolder = rdgenDir.toString()
 
     classpath({
-        val ijDependency = intellij.getIdeaDependency(project)
+        val ijDependency = tasks.setupDependencies.flatMap { it.idea }.map { it.classes }.get()
         println("Calculating classpath for rdgen, intellij.ideaDependency is: $ijDependency")
-        File(ijDependency.classes, "lib/rd").resolve("rider-model.jar").absolutePath
+        File(ijDependency, "lib/rd").resolve("rider-model.jar").absolutePath
     })
 
     sources(projectDir.resolve("protocol/model"))
@@ -157,6 +157,8 @@ val prepareBuildProps = tasks.register("prepareBuildProps") {
 val prepareNuGetConfig = tasks.register("prepareNuGetConfig") {
     group = backendGroup
 
+    dependsOn(tasks.setupDependencies)
+
     val nugetConfigPath = File(projectDir, "NuGet.Config")
     // FIX_WHEN_MIN_IS_211 remove the projectDir one above
     val nugetConfigPath211 = Path.of(projectDir.absolutePath, "testData", "NuGet.config").toFile()
@@ -199,7 +201,7 @@ val buildReSharperPlugin = tasks.register("buildReSharperPlugin") {
 }
 
 fun getNugetPackagesPath(): File {
-    val sdkPath = intellij.getIdeaDependency(project).classes
+    val sdkPath = tasks.setupDependencies.flatMap { it.idea }.map { it.classes }.get()
     println("SDK path: $sdkPath")
 
     val riderSdk = File(sdkPath, "lib/DotNetSdkForRdPlugins")

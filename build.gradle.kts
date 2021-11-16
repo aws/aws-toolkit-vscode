@@ -9,7 +9,7 @@ plugins {
     id("base")
     id("toolkit-changelog")
     id("toolkit-jacoco-report")
-    id("org.jetbrains.gradle.plugin.idea-ext") version "1.1.1"
+    id("org.jetbrains.gradle.plugin.idea-ext")
 }
 
 val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL").forUseAtConfigurationTime()
