@@ -29,7 +29,7 @@ reported the issue. Please try to include as much information as you can. Detail
     ```
     brew install --cask dotnet-sdk
     ```
-
+  * It is recommended dotnet version `5.0.403` and `below`. If your dotnet versions were higher, you should refer to this [link](https://github.com/isen-ng/homebrew-dotnet-sdk-versions).
 ### Instructions
 
 1. Clone the github repository and run `./gradlew :intellij:buildPlugin` <br/> (This will produce a plugin zip under `intellij/build/distributions`)
