@@ -48,43 +48,39 @@ describe('editPolicyVersionCommand', function () {
     })
 
     it('inserts policy document into editor', async function () {
-        const insertStub = stubTextEditInsert()
+        const textEditor = {} as vscode.TextDocument
+        const openTextDocumentStub = sandbox
+            .stub(vscode.workspace, 'openTextDocument')
+            .returns(Promise.resolve(textEditor))
+        const showTextDocumentStub = sandbox.stub(vscode.window, 'showTextDocument').resolves({} as vscode.TextEditor)
+
         when(iot.getPolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).thenResolve({
             policyDocument: AWS_IOT_EXAMPLE_POLICY,
         })
         await editPolicyVersionCommand(node)
 
-        assert.strictEqual(insertStub.calledOnce, true, 'should be called once')
-        assert.strictEqual(insertStub.getCalls()[0].args[1], expectedPolicy, 'should insert pretty json')
+        assert.strictEqual(openTextDocumentStub.calledOnce, true, 'should be called once')
+        assert.deepStrictEqual(
+            openTextDocumentStub.getCalls()[0].args[0],
+            {
+                language: 'json',
+                content: expectedPolicy,
+            },
+            'should open with correct content and language'
+        )
+
+        assert.strictEqual(showTextDocumentStub.calledOnce, true, 'should be called once')
+        assert.strictEqual(showTextDocumentStub.getCall(0).args[0], textEditor)
     })
 
     it('does nothing when policy retrieval fails', async function () {
-        const insertStub = stubTextEditInsert()
+        const openTextDocumentStub = sandbox
+            .stub(vscode.workspace, 'openTextDocument')
+            .returns(Promise.resolve({} as vscode.TextDocument))
         when(iot.getPolicyVersion(anything())).thenReject(new Error('Expected failure'))
 
         await editPolicyVersionCommand(node)
 
-        assert.strictEqual(insertStub.notCalled, true, 'should not be called')
+        assert.strictEqual(openTextDocumentStub.notCalled, true, 'should not be called')
     })
-
-    function stubTextEditInsert() {
-        const textEdit = {
-            insert: () => {},
-        } as any as vscode.TextEditorEdit
-
-        const textEditor = {
-            edit: () => {},
-        } as any as vscode.TextEditor
-
-        sinon.stub(textEditor, 'edit').callsFake(async editBuilder => {
-            editBuilder(textEdit)
-
-            return true
-        })
-
-        sandbox.stub(vscode.window, 'showTextDocument').returns(Promise.resolve(textEditor))
-        const insertStub = sandbox.stub(textEdit, 'insert')
-
-        return insertStub
-    }
 })
