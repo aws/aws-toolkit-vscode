@@ -127,14 +127,8 @@ export async function runCommandInContainer(
         }
 
         const execCommand = await node.ecs.executeCommand(node.clusterArn, node.containerName, task, command)
-        const cp = await new ChildProcess(
-            true,
-            ssmPlugin,
-            undefined,
-            JSON.stringify(execCommand.session),
-            node.ecs.regionCode,
-            'StartSession'
-        ).run()
+        const args = [JSON.stringify(execCommand.session), node.ecs.regionCode, 'StartSession']
+        const cp = await new ChildProcess(ssmPlugin, args).run()
         if (cp.exitCode !== 0) {
             result = 'Failed'
             showOutputMessage(cp.stderr, outputChannel)

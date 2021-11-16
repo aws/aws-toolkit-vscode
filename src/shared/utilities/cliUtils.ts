@@ -188,7 +188,7 @@ export async function getCliCommand(cli: Cli): Promise<string | undefined> {
  */
 async function hasCliCommand(cli: Cli, global: boolean): Promise<string | undefined> {
     const command = global ? path.parse(getOsCommand(cli)).base : path.join(getToolkitLocalCliPath(), getOsCommand(cli))
-    const result = await new ChildProcess(true, command, undefined, '--version').run()
+    const result = await new ChildProcess(command, ['--version']).run()
 
     return result.exitCode === 0 ? command : undefined
 }
@@ -248,15 +248,10 @@ async function installSsmCli(
             return new Promise<string>(async (resolve, reject) => {
                 try {
                     const tempPath = path.join(tempDir, 'tmp')
-                    await new ChildProcess(
-                        true,
-                        'pkgutil',
-                        { cwd: tempDir },
-                        '--expand',
-                        'session-manager-plugin.pkg',
-                        tempPath
-                    ).run()
-                    await new ChildProcess(true, 'tar', { cwd: tempPath }, '-xzf', path.join(tempPath, 'Payload')).run()
+                    const pkgArgs = ['--expand', 'session-manager-plugin.pkg', tempPath]
+                    const tarArgs = ['-xzf', path.join(tempPath, 'Payload')]
+                    await new ChildProcess('pkgutil', pkgArgs, { spawnOptions: { cwd: tempDir } }).run()
+                    await new ChildProcess('tar', tarArgs, { spawnOptions: { cwd: tempPath } }).run()
 
                     fs.copySync(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
                         recursive: true,
@@ -286,17 +281,13 @@ async function installSsmCli(
         case 'linux': {
             return new Promise<string>(async (resolve, reject) => {
                 // extract deb file (using ar) to ssmInstaller dir
-                await new ChildProcess(true, 'ar', { cwd: path.dirname(ssmInstaller) }, '-x', ssmInstaller).run()
+                await new ChildProcess('ar', ['-x', ssmInstaller], {
+                    spawnOptions: { cwd: path.dirname(ssmInstaller) },
+                }).run()
                 // extract data.tar.gz to CLI dir
-                await new ChildProcess(
-                    true,
-                    'tar',
-                    { cwd: path.dirname(ssmInstaller) },
-                    '-xzf',
-                    path.join(path.dirname(ssmInstaller), 'data.tar.gz')
-                ).run()
-
-                fs.mkdirSync(outDir, { recursive: true })
+                const tarArgs = ['-xzf', path.join(path.dirname(ssmInstaller), 'data.tar.gz')]
+                await new ChildProcess('tar', tarArgs, { spawnOptions: { cwd: path.dirname(ssmInstaller) } }).run(),
+                    fs.mkdirSync(outDir, { recursive: true })
                 fs.copySync(path.join(path.dirname(ssmInstaller), 'usr', 'local', 'sessionmanagerplugin'), outDir, {
                     recursive: true,
                 })
