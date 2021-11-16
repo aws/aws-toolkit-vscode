@@ -9,7 +9,8 @@ import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { sleep } from '../../../shared/utilities/promiseUtilities'
+import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 describe('ChildProcess', async function () {
     let tempFolder: string
@@ -30,7 +31,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(true, batchFile)
+                const childProcess = new ChildProcess(batchFile)
 
                 const result = await childProcess.run()
 
@@ -49,7 +50,7 @@ describe('ChildProcess', async function () {
 
                 writeWindowsCommandFile(command)
 
-                const childProcess = new ChildProcess(true, command)
+                const childProcess = new ChildProcess(command)
 
                 const result = await childProcess.run()
 
@@ -64,7 +65,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(true, batchFile)
+                const childProcess = new ChildProcess(batchFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -83,7 +84,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(true, scriptFile)
+                const childProcess = new ChildProcess(scriptFile)
 
                 const result = await childProcess.run()
 
@@ -98,7 +99,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(true, scriptFile)
+                const childProcess = new ChildProcess(scriptFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -128,7 +129,7 @@ describe('ChildProcess', async function () {
                 writeShellFile(command)
             }
 
-            const childProcess = new ChildProcess(true, command)
+            const childProcess = new ChildProcess(command)
 
             const result = await childProcess.run()
 
@@ -142,7 +143,7 @@ describe('ChildProcess', async function () {
         it('reports error for missing executable', async function () {
             const batchFile = path.join(tempFolder, 'nonExistentScript')
 
-            const childProcess = new ChildProcess(true, batchFile)
+            const childProcess = new ChildProcess(batchFile)
 
             const result = await childProcess.run()
 
@@ -173,19 +174,14 @@ describe('ChildProcess', async function () {
         }
     })
 
-    describe('start', async function () {
+    describe('run', async function () {
         async function assertRegularRun(childProcess: ChildProcess): Promise<void> {
-            await new Promise<void>(async (resolve, reject) => {
-                await childProcess.start({
-                    onStdout: text => {
-                        assert.strictEqual(text, 'hi' + os.EOL, 'Unexpected stdout')
-                    },
-                    onClose: (code, signal) => {
-                        assert.strictEqual(code, 0, 'Unexpected close code')
-                        resolve()
-                    },
-                })
+            const result = await childProcess.run({
+                onStdout: text => {
+                    assert.strictEqual(text, 'hi' + os.EOL, 'Unexpected stdout')
+                },
             })
+            assert.strictEqual(result.exitCode, 0, 'Unexpected close code')
         }
 
         if (process.platform === 'win32') {
@@ -193,7 +189,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(true, batchFile)
+                const childProcess = new ChildProcess(batchFile)
 
                 await assertRegularRun(childProcess)
             })
@@ -206,7 +202,7 @@ describe('ChildProcess', async function () {
 
                 writeWindowsCommandFile(command)
 
-                const childProcess = new ChildProcess(true, command)
+                const childProcess = new ChildProcess(command)
 
                 await assertRegularRun(childProcess)
             })
@@ -215,14 +211,14 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(true, batchFile)
+                const childProcess = new ChildProcess(batchFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
-                childProcess.start({})
+                childProcess.run()
 
                 try {
-                    await childProcess.start({})
+                    await childProcess.run()
                 } catch (err) {
                     return
                 }
@@ -236,7 +232,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(true, scriptFile)
+                const childProcess = new ChildProcess(scriptFile)
 
                 await assertRegularRun(childProcess)
             })
@@ -245,14 +241,14 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(true, scriptFile)
+                const childProcess = new ChildProcess(scriptFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
-                childProcess.start({})
+                childProcess.run()
 
                 try {
-                    await childProcess.start({})
+                    await childProcess.run()
                 } catch (err) {
                     return
                 }
@@ -275,7 +271,7 @@ describe('ChildProcess', async function () {
                 writeShellFile(command)
             }
 
-            const childProcess = new ChildProcess(true, command)
+            const childProcess = new ChildProcess(command)
 
             await assertRegularRun(childProcess)
         })
@@ -283,15 +279,107 @@ describe('ChildProcess', async function () {
         it('reports error for missing executable', async function () {
             const batchFile = path.join(tempFolder, 'nonExistentScript')
 
-            const childProcess = new ChildProcess(true, batchFile)
+            const childProcess = new ChildProcess(batchFile)
 
-            await new Promise<void>(async (resolve, reject) => {
-                await childProcess.start({
-                    onClose: (code, signal) => {
-                        assert.notStrictEqual(code, 0, 'Expected an error close code')
-                        resolve()
+            const result = await childProcess.run()
+            assert.notStrictEqual(result.exitCode, 0, 'Expected an error close code')
+        })
+
+        describe('Extra options', function () {
+            let childProcess: ChildProcess
+
+            beforeEach(function () {
+                const isWindows = process.platform === 'win32'
+                const command = path.join(tempFolder, `test-script.${isWindows ? 'bat' : 'sh'}`)
+
+                if (isWindows) {
+                    writeBatchFile(command, ['@echo %1', '@echo %2', '@echo "%3"', 'SLEEP 20', 'exit 1'].join(os.EOL))
+                } else {
+                    writeShellFile(command, ['echo $1', 'echo $2', 'echo "$3"', 'sleep 20', 'exit 1'].join(os.EOL))
+                }
+
+                childProcess = new ChildProcess(command, ['1', '2'], { collect: false })
+            })
+
+            it('can report errors', async function () {
+                const result = childProcess.run({
+                    rejectOnError: true,
+                    onStdout: (text, context) => {
+                        if (text.includes('2')) {
+                            context.reportError('Got 2')
+                        }
                     },
                 })
+
+                return assert.rejects(result, { message: 'Got 2' })
+            })
+
+            it('can reject on errors if `rejectOnError` is set', async function () {
+                return await assert.rejects(() =>
+                    childProcess.run({
+                        rejectOnError: true,
+                        onStdout: (text, context) => {
+                            context.reportError('An error')
+                        },
+                    })
+                )
+            })
+
+            it('kills the process if an error is reported', async function () {
+                const result = await childProcess.run({
+                    waitForStreams: false,
+                    onStdout: (text, context) => {
+                        context.reportError('An error')
+                    },
+                })
+                assert.notStrictEqual(result.exitCode, 1)
+            })
+
+            it('can merge with base options', async function () {
+                const result = await childProcess.run({
+                    collect: true,
+                    waitForStreams: false,
+                    extraArgs: ['4'],
+                    onStdout: (text, context) => {
+                        if (text.includes('4')) {
+                            context.reportError('Got 4')
+                        }
+                    },
+                })
+                assert.ok(result.stdout.length !== 0)
+                assert.ok(result.error?.message.includes('Got 4'))
+            })
+
+            it('uses `Timeout` objects', async function () {
+                await childProcess.run({
+                    waitForStreams: false,
+                    timeout: new Timeout(10),
+                })
+                assert.strictEqual(childProcess.result()?.signal, 'SIGTERM')
+                assert.notStrictEqual(childProcess.result()?.error, undefined)
+            })
+
+            it('still runs if the timer completed (not rejected) after starting', async function () {
+                const timer = new Timeout(10)
+                setTimeout(() => timer.complete())
+                await childProcess.run({
+                    waitForStreams: false,
+                    onStdout: (text, context) => {
+                        context.reportError('Got stuff')
+                    },
+                })
+
+                assert.strictEqual(childProcess.result()?.error?.message, 'Got stuff')
+            })
+
+            it('rejects if using a completed timer', async function () {
+                const timer = new Timeout(10)
+                timer.complete()
+                await assert.rejects(childProcess.run({ timeout: timer }))
+                assert.strictEqual(childProcess.result(), undefined)
+                // Just make sure no process was ever ran
+                await sleep(20)
+                assert.strictEqual(childProcess.result(), undefined)
             })
         })
     })
@@ -302,7 +390,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
-                const childProcess = new ChildProcess(true, batchFile)
+                const childProcess = new ChildProcess(batchFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
                 childProcess.run()
@@ -317,7 +405,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
-                const childProcess = new ChildProcess(true, batchFile)
+                const childProcess = new ChildProcess(batchFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
                 childProcess.run()
@@ -336,7 +424,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
-                const childProcess = new ChildProcess(true, 'sh', {}, scriptFile)
+                const childProcess = new ChildProcess('sh', [scriptFile])
 
                 // `await` is intentionally not used, we want to check the process while it runs.
                 childProcess.run()
@@ -351,7 +439,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
-                const childProcess = new ChildProcess(true, scriptFile)
+                const childProcess = new ChildProcess(scriptFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
                 childProcess.run()
@@ -366,8 +454,8 @@ describe('ChildProcess', async function () {
         } // END Unix-only tests
     })
 
-    function writeBatchFile(filename: string): void {
-        fs.writeFileSync(filename, '@echo hi')
+    function writeBatchFile(filename: string, contents?: string): void {
+        fs.writeFileSync(filename, contents ?? '@echo hi')
     }
 
     function writeBatchFileWithDelays(filename: string): void {
@@ -382,8 +470,8 @@ describe('ChildProcess', async function () {
         fs.writeFileSync(filename, `@echo OFF${os.EOL}echo hi`)
     }
 
-    function writeShellFile(filename: string): void {
-        fs.writeFileSync(filename, 'echo hi')
+    function writeShellFile(filename: string, contents?: string): void {
+        fs.writeFileSync(filename, contents ?? 'echo hi')
         fs.chmodSync(filename, 0o744)
     }
 

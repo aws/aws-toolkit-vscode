@@ -5,13 +5,13 @@
 
 import { SpawnOptions } from 'child_process'
 import { getLogger } from '../../logger'
-import { ChildProcessResult, ChildProcessStartArguments } from '../../utilities/childProcess'
+import { ChildProcessResult, ChildProcessOptions } from '../../utilities/childProcess'
 
 export interface SamCliProcessInvokeOptions {
     spawnOptions?: SpawnOptions
     arguments?: string[]
-    onStdout?: ChildProcessStartArguments['onStdout']
-    onStderr?: ChildProcessStartArguments['onStderr']
+    onStdout?: ChildProcessOptions['onStdout']
+    onStderr?: ChildProcessOptions['onStderr']
     /** Log command invocations (default: true). */
     logging?: boolean
 }
