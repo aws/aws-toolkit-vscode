@@ -41,7 +41,7 @@ export async function showPolicyContent(
     const prettyPolicyContent = policyFormatter(rawPolicyContent, tabSize)
     const newDoc = await vscode.workspace.openTextDocument({
         language: 'json',
+        content: prettyPolicyContent,
     })
-    const editor = await vscode.window.showTextDocument(newDoc, vscode.ViewColumn.One, false)
-    await editor.edit(edit => edit.insert(new vscode.Position(/*line*/ 0, /*character*/ 0), prettyPolicyContent))
+    await vscode.window.showTextDocument(newDoc, vscode.ViewColumn.One, false)
 }
