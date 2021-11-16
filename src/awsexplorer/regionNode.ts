@@ -11,6 +11,7 @@ import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNod
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
+import { EcsNode } from '../ecs/explorer/ecsNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ext } from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
@@ -59,12 +60,16 @@ export class RegionNode extends AWSTreeNodeBase {
                     new AppRunnerNode(this.regionCode, ext.toolkitClientBuilder.createAppRunnerClient(this.regionCode)),
             },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
+            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 'ecr',
                 createFn: () => new EcrNode(ext.toolkitClientBuilder.createEcrClient(this.regionCode)),
             },
+            {
+                serviceId: 'ecs',
+                createFn: () => new EcsNode(ext.toolkitClientBuilder.createEcsClient(this.regionCode)),
+            },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
-            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 's3',
                 createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),

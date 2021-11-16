@@ -23,6 +23,7 @@ describe('RegionNode', function () {
         const clientBuilder = {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
+            createEcsClient: sandbox.stub().returns({}),
             createCloudFormationClient: sandbox.stub().returns({}),
             createAppRunnerClient: sandbox.stub().returns({}),
             createCloudControlClient: sandbox.stub().returns({}),
