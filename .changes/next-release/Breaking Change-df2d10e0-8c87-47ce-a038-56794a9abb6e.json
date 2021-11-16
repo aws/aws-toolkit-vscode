@@ -1,0 +1,4 @@
+{
+	"type": "Breaking Change",
+	"description": "Bumping VS Code minimum version: 1.42.0 => 1.44.2"
+}

@@ -194,10 +194,25 @@
                     "description": "%AWS.configuration.description.suppressPrompts%",
                     "default": {
                         "apprunnerNotifyPricing": false,
+                        "ecsRunCommand": false,
+                        "ecsRunCommandDisable": false,
+                        "ecsRunCommandEnable": false,
                         "yamlExtPrompt": false
                     },
                     "properties": {
                         "apprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommand": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommandEnable": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "ecsRunCommandDisable": {
                             "type": "boolean",
                             "default": false
                         },
@@ -881,6 +896,22 @@
                 {
                     "command": "aws.resources.viewDocs",
                     "when": "false"
+                },
+                {
+                    "command": "aws.ecs.runCommandInContainer",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ecs.enableEcsExec",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ecs.disableEcsExec",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ecs.viewDocumentation",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1179,7 +1210,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$|^awsAppRunnerServiceNode/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsEcsClusterNode)$|^awsAppRunnerServiceNode|^awsEcsServiceNode/",
                     "group": "2@2"
                 },
                 {
@@ -1241,6 +1272,26 @@
                     "command": "aws.ssmDocument.deleteDocument",
                     "group": "3@2",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                },
+                {
+                    "command": "aws.ecs.runCommandInContainer",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
+                },
+                {
+                    "command": "aws.ecs.enableEcsExec",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode.DISABLED"
+                },
+                {
+                    "command": "aws.ecs.disableEcsExec",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode.ENABLED"
+                },
+                {
+                    "command": "aws.ecs.viewDocumentation",
+                    "group": "1@3",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsClusterNode|awsEcsContainerNode)$|^awsEcsServiceNode/"
                 },
                 {
                     "command": "aws.resources.configure",
@@ -2003,6 +2054,36 @@
                 }
             },
             {
+                "command": "aws.ecs.runCommandInContainer",
+                "title": "%AWS.ecs.runCommandInContainer%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ecs.enableEcsExec",
+                "title": "%AWS.ecs.enableEcsExec%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ecs.viewDocumentation",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.resources.copyIdentifier",
                 "title": "%AWS.command.resources.copyIdentifier%",
                 "category": "%AWS.title%",
@@ -2113,6 +2194,16 @@
             {
                 "command": "aws.apprunner.createService",
                 "title": "%AWS.command.apprunner.createService%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ecs.disableEcsExec",
+                "title": "%AWS.ecs.disableEcsExec%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2373,7 +2464,7 @@
         "serve": "webpack serve --config-name vue-hmr --mode development"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.21",
+        "@aws-toolkits/telemetry": "1.0.25",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",
