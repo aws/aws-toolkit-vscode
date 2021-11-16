@@ -6,7 +6,6 @@
 import { Lambda } from 'aws-sdk'
 import { _Blob } from 'aws-sdk/clients/lambda'
 import { ext } from '../extensionGlobals'
-import '../utilities/asyncIteratorShim'
 import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 

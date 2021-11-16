@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import './asyncIteratorShim'
-
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
 
@@ -257,7 +255,7 @@ export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]): T[] {
 export function applyPrimitives<T1 extends Record<string, any>, T2 extends T1>(obj: T2, settings: T1): void {
     const clone = Object.assign({}, settings)
     Object.keys(clone)
-        .filter(key => typeof clone[key] === 'object')
+        .filter(key => typeof clone[key] === 'object' || clone[key] === undefined)
         .forEach(key => delete clone[key])
 
     Object.assign(obj, clone)
@@ -275,8 +273,5 @@ export function stripUndefined(obj: any): void {
 }
 
 export function isAsyncIterable(obj: any): obj is AsyncIterable<unknown> {
-    return (
-        Object.getOwnPropertySymbols(obj).includes(Symbol.asyncIterator) &&
-        typeof obj[Symbol.asyncIterator] === 'function'
-    )
+    return obj && typeof obj === 'object' && typeof obj[Symbol.asyncIterator] === 'function'
 }
