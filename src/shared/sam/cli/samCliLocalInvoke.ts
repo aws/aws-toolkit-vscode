@@ -61,90 +61,80 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     ) {}
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {
-        const childProcess = new ChildProcess(true, params.command, options, ...params.args)
+        const childProcess = new ChildProcess(params.command, params.args, { spawnOptions: options })
         getLogger('channel').info('AWS.running.command', 'Running: {0}', `${childProcess}`)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
-        let timeExpired: boolean = true
         const checkForCues: boolean = params.waitForCues && this.debuggerAttachCues.length !== 0
-        const runDebugger = new Promise<void>((resolve, reject) => {
-            return childProcess.start({
-                onStdout: (text: string): void => {
-                    getLogger('debugConsole').info(text, { raw: true })
-                    // If we have a timeout (as we do on debug) refresh the timeout as we receive text
-                    params.timeout?.refresh()
-                    this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
-                },
-                onStderr: (text: string): void => {
-                    getLogger('debugConsole').error(text, { raw: true })
-                    // If we have a timeout (as we do on debug) refresh the timeout as we receive text
-                    params.timeout?.refresh()
-                    this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
-                    if (checkForCues) {
-                        // Look for messages like "Debugger attached" before returning back to caller
-                        if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
-                            this.logger.verbose(
-                                `SAM: pid ${childProcess.pid()}: local SAM app is ready for debugger to attach`
-                            )
-                            // Process will continue running, while user debugs it.
-                            resolve()
+        const runDebugger = new Promise<void>(async (resolve, reject) => {
+            const result = await childProcess
+                .run({
+                    waitForStreams: true,
+                    rejectOnError: true,
+                    timeout: params.timeout,
+                    onStdout: (text: string): void => {
+                        getLogger('debugConsole').info(text, { raw: true })
+                        // If we have a timeout (as we do on debug) refresh the timeout as we receive text
+                        params.timeout?.refresh()
+                        this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
+                    },
+                    onStderr: (text: string): void => {
+                        getLogger('debugConsole').error(text, { raw: true })
+                        // If we have a timeout (as we do on debug) refresh the timeout as we receive text
+                        params.timeout?.refresh()
+                        this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
+                        if (checkForCues) {
+                            // Look for messages like "Debugger attached" before returning back to caller
+                            if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
+                                this.logger.verbose(
+                                    `SAM: pid ${childProcess.pid()}: local SAM app is ready for debugger to attach`
+                                )
+                                // Process will continue running, while user debugs it.
+                                resolve()
+                            }
                         }
-                    }
-                },
-                onClose: (code: number, _: string): void => {
-                    this.logger.verbose(`SAM: command exited (code: ${code}): ${childProcess}`)
-                    // onStdout/onStderr may print partial lines. Force a newline
-                    // to ensure "Command stopped" appears on its own line.
-                    ext.outputChannel.appendLine('')
-                    ext.outputChannel.appendLine(
-                        localize('AWS.samcli.stopped', 'Command stopped: "{0}"', samCommandName)
-                    )
-
-                    // Process ended without emitting a known "cue" message.
-                    // Possible causes:
-                    // - User killed Docker or the process directly.
-                    // - User manually attached before we found a "cue" message.
-                    // - We need to update the list of "cue" messages.
-                    if (code === 0) {
-                        resolve()
-                    } else if (code !== 0) {
-                        reject(new Error(`"${samCommandName}" command stopped (error code: ${code})`))
-                    }
-
-                    // Forces debugger to disconnect (sometimes it fails to disconnect on its own)
-                    // Note that VSCode 1.44 only allows us to get the active debug session, so
-                    // the user will have to manually disconnect if using multiple debug sessions
-                    const debugSession: vscode.DebugSession | undefined = vscode.debug.activeDebugSession
-                    if (debugSession && debugSession.name === params.name) {
-                        getLogger().debug(`forcing debugger to disconnect: name=${debugSession.name}`)
-                        debugSession.customRequest('disconnect')
-                    }
-                },
-                onError: (error: Error): void => {
+                    },
+                })
+                .catch(error => {
                     getLogger('channel').error(
                         localize('AWS.samcli.error', 'Error running command "{0}": {1}', samCommandName, error.message)
                     )
                     reject(error)
-                },
-            })
-        }).then(() => {
-            timeExpired = false
-        })
+                })
 
-        const awaitedPromises = params.timeout ? [runDebugger, params.timeout.timer] : [runDebugger]
+            if (result) {
+                const code = result.exitCode
 
-        await Promise.race(awaitedPromises).catch(async () => {
-            if (timeExpired) {
-                getLogger('channel').error(
-                    localize('AWS.samcli.timeout', 'Timeout while waiting for command: "{0}"', samCommandName)
-                )
-                if (!childProcess.stopped) {
-                    childProcess.stop()
+                this.logger.verbose(`SAM: command exited (code: ${code}): ${childProcess}`)
+                // onStdout/onStderr may print partial lines. Force a newline
+                // to ensure "Command stopped" appears on its own line.
+                ext.outputChannel.appendLine('')
+                ext.outputChannel.appendLine(localize('AWS.samcli.stopped', 'Command stopped: "{0}"', samCommandName))
+
+                // Process ended without emitting a known "cue" message.
+                // Possible causes:
+                // - User killed Docker or the process directly.
+                // - User manually attached before we found a "cue" message.
+                // - We need to update the list of "cue" messages.
+                if (code === 0) {
+                    resolve()
+                } else if (code !== 0) {
+                    reject(new Error(`"${samCommandName}" command stopped (error code: ${code})`))
                 }
-                throw new Error(`Timeout while waiting for command: "${samCommandName}"`)
+
+                // Forces debugger to disconnect (sometimes it fails to disconnect on its own)
+                // Note that VSCode 1.42 only allows us to get the active debug session, so
+                // the user will have to manually disconnect if using multiple debug sessions
+                const debugSession: vscode.DebugSession | undefined = vscode.debug.activeDebugSession
+                if (debugSession && debugSession.name === params.name) {
+                    getLogger().debug(`forcing debugger to disconnect: name=${debugSession.name}`)
+                    debugSession.customRequest('disconnect')
+                }
             }
         })
+
+        await runDebugger
 
         return childProcess
     }

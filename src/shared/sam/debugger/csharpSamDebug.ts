@@ -165,27 +165,20 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
             installArgs = ['-v', vsDbgVersion, '-r', vsDbgRuntime, '-l', debuggerPath]
         }
 
-        const childProcess = new ChildProcess(true, installCommand, {}, ...installArgs)
+        const childProcess = new ChildProcess(installCommand, installArgs)
 
-        const installPromise = new Promise<void>(async (resolve, reject) => {
-            await childProcess.start({
-                onStdout: (text: string) => {
-                    ext.outputChannel.append(text)
-                },
-                onStderr: (text: string) => {
-                    ext.outputChannel.append(text)
-                },
-                onClose(code: number) {
-                    if (code) {
-                        reject(`command failed (exit code: ${code}): ${installCommand}`)
-                    } else {
-                        resolve()
-                    }
-                },
-            })
+        const install = await childProcess.run({
+            onStdout: (text: string) => {
+                ext.outputChannel.append(text)
+            },
+            onStderr: (text: string) => {
+                ext.outputChannel.append(text)
+            },
         })
 
-        await installPromise
+        if (install.exitCode) {
+            throw new Error(`command failed (exit code: ${install.exitCode}): ${installCommand}`)
+        }
     } catch (err) {
         getLogger('channel').info(
             localize(

@@ -81,7 +81,7 @@ export class SystemUtilities {
             if (vsc !== 'code' && !fs.existsSync(vsc)) {
                 continue
             }
-            const proc = new ChildProcess(true, vsc, undefined, '--version')
+            const proc = new ChildProcess(vsc, ['--version'])
             const r = await proc.run()
             if (r.exitCode === 0) {
                 SystemUtilities.vscPath = vsc
@@ -109,7 +109,7 @@ export class SystemUtilities {
 
         for (const tsc of tscPaths) {
             // Try to run "tsc -v".
-            const result = await new ChildProcess(true, tsc, undefined, '-v').run()
+            const result = await new ChildProcess(tsc, ['-v']).run()
             if (result.exitCode === 0 && result.stdout.includes('Version')) {
                 return tsc
             }
@@ -124,7 +124,6 @@ export class SystemUtilities {
      */
     public static async findSshPath(): Promise<string | undefined> {
         if (SystemUtilities.sshPath !== undefined) {
-            // TODO: cache the fs call rather than use a single variable
             return SystemUtilities.sshPath
         }
 
@@ -136,12 +135,11 @@ export class SystemUtilities {
             '/usr/bin/ssh',
             'C:/Windows/System32/OpenSSH/ssh.exe',
         ]
-
         for (const p of paths) {
             if (!p || ('ssh' !== p && !fs.existsSync(p))) {
                 continue
             }
-            const proc = new ChildProcess(true, p, undefined, '-G', 'x')
+            const proc = new ChildProcess(p, ['-G', 'x'])
             const r = await proc.run()
             if (r.exitCode === 0) {
                 SystemUtilities.sshPath = p
@@ -166,7 +164,7 @@ export class SystemUtilities {
             if (!p || ('git' !== p && !fs.existsSync(p))) {
                 continue
             }
-            const proc = new ChildProcess(true, p, undefined, '--version')
+            const proc = new ChildProcess(p, ['--version'])
             const r = await proc.run()
             if (r.exitCode === 0) {
                 SystemUtilities.gitPath = p
@@ -189,7 +187,7 @@ export class SystemUtilities {
             if (!p || ('bash' !== p && !fs.existsSync(p))) {
                 continue
             }
-            const proc = new ChildProcess(true, p, undefined, '--version')
+            const proc = new ChildProcess(p, ['--version'])
             const r = await proc.run()
             if (r.exitCode === 0) {
                 SystemUtilities.bashPath = p

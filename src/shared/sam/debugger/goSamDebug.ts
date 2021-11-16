@@ -246,25 +246,20 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
             return true
         }
 
-        const childProcess = new ChildProcess(true, installScript.path, installScript.options)
-
-        await new Promise<void>((resolve, reject) => {
-            childProcess.start({
-                onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
-                onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
-                onExit: (code: number | null) => {
-                    if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
-                        reject(`Install script did not generate the Delve binary: exit code ${code}`)
-                    } else if (code) {
-                        getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
-                        resolve()
-                    } else {
-                        getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
-                        resolve()
-                    }
-                },
-            })
+        const childProcess = new ChildProcess(installScript.path, [], { spawnOptions: installScript.options })
+        const install = await childProcess.run({
+            onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
+            onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
         })
+
+        const code = install.exitCode
+        if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
+            throw new Error(`Install script did not generate the Delve binary: exit code ${code}`)
+        } else if (code) {
+            getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
+        } else {
+            getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
+        }
     } catch (e) {
         if (installScript && (await SystemUtilities.fileExists(installScript.path))) {
             fs.unlinkSync(installScript.path) // Removes the install script since it failed
