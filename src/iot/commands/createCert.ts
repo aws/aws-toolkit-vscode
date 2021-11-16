@@ -4,14 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import * as localizedText from '../../shared/localizedText'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getLogger } from '../../shared/logger'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../shared/filesystemUtilities'
 import { Iot } from 'aws-sdk'
@@ -30,19 +29,6 @@ export async function createCertificateCommand(
     commands = Commands.vscode()
 ): Promise<void> {
     getLogger().debug('CreateCertificate called for %O', node)
-
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize('AWS.iot.createCert.prompt', 'Create a new X.509 certificate and RSA key pair?'),
-            confirm: localize('AWS.iot.createCert.confirm', 'Confirm'),
-            cancel: localizedText.cancel,
-        },
-        window
-    )
-    if (!isConfirmed) {
-        getLogger().info('CreateCertificate canceled')
-        return
-    }
 
     const folderLocation = await promptFunc(window)
     if (!folderLocation) {
