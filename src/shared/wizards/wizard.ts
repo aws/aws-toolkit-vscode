@@ -162,7 +162,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             const impliedResponse = useImplied ? impliedState : undefined
             const response = await this.promptUser(stateWithCache, provider, impliedResponse)
 
-            if (response === WizardControl.ForceExit && this.exitStep !== undefined) {
+            if (response === WizardControl.Exit && this.exitStep !== undefined) {
                 return {
                     nextState: state,
                     nextSteps: [this.exitStep],

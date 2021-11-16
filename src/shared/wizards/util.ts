@@ -10,7 +10,7 @@ import { ControlSignal } from './stateController'
 /** Control signals allow for alterations of the normal wizard flow */
 export class WizardControl {
     /** Forcibly exit a wizard, bypassing confirmation prompts. */
-    public static ForceExit = new this(ControlSignal.Exit, 'force')
+    public static ForceExit = new this(ControlSignal.Exit)
     /** Exits a wizard and executes a 'exit' prompt if available. */
     public static Exit = new this(ControlSignal.Exit)
     /** Goes back to the previous prompt. */
@@ -18,17 +18,10 @@ export class WizardControl {
     /** Retries the current prompt. */
     public static Retry = new this(ControlSignal.Retry)
 
-    private constructor(
-        public readonly type: ControlSignal,
-        private readonly internalType: ControlSignal | 'force' = type
-    ) {}
+    private constructor(public readonly type: ControlSignal) {}
 
     public toString() {
         return `[WIZARD_CONTROL] ${this.type}`
-    }
-
-    public valueOf(): string {
-        return this.internalType
     }
 
     /** Checks if the user response is 'valid' (i.e. not undefined and not a control signal) */
