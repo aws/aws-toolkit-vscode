@@ -33,7 +33,6 @@ import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { IotClient, ListThingCertificatesResponse } from '../../../shared/clients/iotClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
-import '../../../shared/utilities/asyncIteratorShim'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     S3Client,
