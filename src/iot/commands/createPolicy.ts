@@ -25,6 +25,7 @@ export async function createPolicyCommand(
     const policyName = await window.showInputBox({
         prompt: localize('AWS.iot.createPolicy.prompt', 'Enter a new policy name'),
         placeHolder: localize('AWS.iot.createPolicy.placeHolder', 'Policy Name'),
+        validateInput: validatePolicyName,
     })
 
     if (!policyName) {
@@ -77,4 +78,25 @@ export async function getPolicyDocument(window: Window): Promise<Buffer | undefi
     }
 
     return data
+}
+
+/**
+ * Validates a Policy name for the CreatePolicy API. See
+ * https://docs.aws.amazon.com/iot/latest/apireference/API_CreatePolicy.html
+ * for more information. Pattern: `[\w+=,.@-]+`.
+ */
+function validatePolicyName(name: string): string | undefined {
+    if (name.length < 1 || name.length > 128) {
+        return localize(
+            'AWS.iot.validatePolicyName.error.invalidLength',
+            'Policy name must be between 1 and 128 characters long'
+        )
+    }
+    if (!/^[\w+=,.@-]+$/.test(name)) {
+        return localize(
+            'AWS.iot.validatePolicyName.error.invalidCharacters',
+            "Policy name must only contain characters that are alphanumeric, or one of the following symbols: '+', '=', ',', '.', '@', '-'"
+        )
+    }
+    return undefined
 }
