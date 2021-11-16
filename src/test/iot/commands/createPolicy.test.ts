@@ -58,7 +58,7 @@ describe('createPolicyCommand', function () {
         verify(iot.createPolicy(anything())).never()
     })
 
-    it('warns when thing name has invalid length', async function () {
+    it('warns when policy name has invalid length', async function () {
         const window = new FakeWindow({ inputBox: { input: '' } })
         const commands = new FakeCommands()
         await createPolicyCommand(node, getPolicy, window, commands)
@@ -66,7 +66,7 @@ describe('createPolicyCommand', function () {
         assert.strictEqual(window.inputBox.errorMessage, 'Policy name must be between 1 and 128 characters long')
     })
 
-    it('warns when thing name is invalid', async function () {
+    it('warns when policy name has invalid characters', async function () {
         const window = new FakeWindow({ inputBox: { input: 'illegal/characters' } })
         const commands = new FakeCommands()
         await createPolicyCommand(node, getPolicy, window, commands)

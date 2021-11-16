@@ -54,7 +54,7 @@ describe('createThingCommand', function () {
         assert.strictEqual(window.inputBox.errorMessage, 'Thing name must be between 1 and 128 characters long')
     })
 
-    it('warns when thing name is invalid', async function () {
+    it('warns when thing name has invalid characters', async function () {
         const window = new FakeWindow({ inputBox: { input: 'illegal/characters' } })
         const commands = new FakeCommands()
         await createThingCommand(node, window, commands)
