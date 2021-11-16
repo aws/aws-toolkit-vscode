@@ -184,7 +184,7 @@ function statFile(file: vscode.Uri) {
     return statSync(file.fsPath).size
 }
 
-async function uploadWithProgress({
+export async function uploadWithProgress({
     bucketName,
     key,
     fileLocation,

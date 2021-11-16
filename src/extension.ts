@@ -73,6 +73,7 @@ import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCrede
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
+import { S3FileViewerManager } from './s3/util/fileViewerManager'
 
 let localize: nls.LocalizeFunc
 
@@ -127,6 +128,7 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         ext.schemaService = new SchemaService(context)
         ext.resourceManager = new AwsResourceManager(context)
+        ext.s3fileViewerManager = new S3FileViewerManager()
 
         await initializeCredentials({
             extensionContext: context,
@@ -278,7 +280,6 @@ export async function activate(context: vscode.ExtensionContext) {
         throw error
     }
 }
-
 export async function deactivate() {
     await ext.telemetry.shutdown()
     await ext.resourceManager.dispose()

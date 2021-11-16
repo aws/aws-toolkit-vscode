@@ -5,6 +5,7 @@
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
+import { S3FileViewerManager } from '../s3/util/fileViewerManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
@@ -34,6 +35,7 @@ export namespace ext {
     export let schemaService: SchemaService
     export let codelensRootRegistry: CodelensRootRegistry
     export let resourceManager: AwsResourceManager
+    export let s3fileViewerManager: S3FileViewerManager
 
     let _didReload = false
 
