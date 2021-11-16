@@ -19,7 +19,6 @@ import software.aws.toolkits.core.credentials.CredentialSourceId
 import software.aws.toolkits.core.credentials.CredentialType
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
-import software.aws.toolkits.core.credentials.sso.SSO_URL
 import software.aws.toolkits.core.credentials.sso.SsoCache
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
@@ -203,7 +202,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
     }
 
     private fun createAwsCredentialProvider(profile: Profile, region: AwsRegion) = when {
-        profile.propertyExists(SSO_URL) -> createSsoProvider(profile)
+        profile.propertyExists(ProfileProperty.SSO_START_URL) -> createSsoProvider(profile)
         profile.propertyExists(ProfileProperty.ROLE_ARN) -> createAssumeRoleProvider(profile, region)
         profile.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> createStaticSessionProvider(profile)
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> createBasicProvider(profile)
@@ -253,7 +252,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
                 name,
                 defaultRegion,
                 ssoCache,
-                this.traverseCredentialChain(profiles).map { it.property(SSO_URL) }.first { it.isPresent }.get(),
+                this.traverseCredentialChain(profiles).map { it.property(ProfileProperty.SSO_START_URL) }.first { it.isPresent }.get(),
                 requestedProfileType
             )
             else -> ProfileCredentialsIdentifier(name, defaultRegion, requestedProfileType)
@@ -264,11 +263,11 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         .any { it.propertyExists(ProfileProperty.MFA_SERIAL) }
 
     private fun Profile.requiresSso(profiles: Map<String, Profile>) = this.traverseCredentialChain(profiles)
-        .any { it.propertyExists(SSO_URL) }
+        .any { it.propertyExists(ProfileProperty.SSO_START_URL) }
 }
 
 private fun Profile.toCredentialType(): CredentialType? = when {
-    this.propertyExists(SSO_URL) -> CredentialType.SsoProfile
+    this.propertyExists(ProfileProperty.SSO_START_URL) -> CredentialType.SsoProfile
     this.propertyExists(ProfileProperty.ROLE_ARN) -> {
         if (this.propertyExists(ProfileProperty.MFA_SERIAL)) {
             CredentialType.AssumeMfaRoleProfile

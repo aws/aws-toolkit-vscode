@@ -6,10 +6,6 @@ package software.aws.toolkits.jetbrains.core.credentials.profiles
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileFile
 import software.amazon.awssdk.profiles.ProfileProperty
-import software.aws.toolkits.core.credentials.sso.SSO_ACCOUNT
-import software.aws.toolkits.core.credentials.sso.SSO_REGION
-import software.aws.toolkits.core.credentials.sso.SSO_ROLE_NAME
-import software.aws.toolkits.core.credentials.sso.SSO_URL
 import software.aws.toolkits.resources.message
 
 data class Profiles(val validProfiles: Map<String, Profile>, val invalidProfiles: Map<String, Exception>)
@@ -37,7 +33,7 @@ fun validateAndGetProfiles(): Profiles {
 
 private fun validateProfile(profile: Profile, allProfiles: Map<String, Profile>) {
     when {
-        profile.propertyExists(SSO_URL) -> validateSsoProfile(profile)
+        profile.propertyExists(ProfileProperty.SSO_START_URL) -> validateSsoProfile(profile)
         profile.propertyExists(ProfileProperty.ROLE_ARN) -> validateAssumeRoleProfile(profile, allProfiles)
         profile.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> validateStaticSessionProfile(profile)
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> validateBasicProfile(profile)
@@ -51,9 +47,9 @@ private fun validateProfile(profile: Profile, allProfiles: Map<String, Profile>)
 }
 
 fun validateSsoProfile(profile: Profile) {
-    profile.requiredProperty(SSO_ACCOUNT)
-    profile.requiredProperty(SSO_REGION)
-    profile.requiredProperty(SSO_ROLE_NAME)
+    profile.requiredProperty(ProfileProperty.SSO_ACCOUNT_ID)
+    profile.requiredProperty(ProfileProperty.SSO_REGION)
+    profile.requiredProperty(ProfileProperty.SSO_ROLE_NAME)
 }
 
 private fun validateAssumeRoleProfile(profile: Profile, allProfiles: Map<String, Profile>) {
