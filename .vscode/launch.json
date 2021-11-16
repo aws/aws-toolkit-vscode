@@ -9,14 +9,20 @@
             "name": "Extension",
             "type": "extensionHost",
             "request": "launch",
+            "debugWebviews": true,
+            "rendererDebugOptions": {
+                "urlFilter": "*amazonwebservices.aws-toolkit-vscode*",
+                "webRoot": "${workspaceFolder}"
+            },
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
-                "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010"
+                "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
+                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "watch"
         },
         {
             "name": "Attach to ASL Server",
@@ -101,6 +107,25 @@
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"
+        },
+        {
+            "name": "Integration Tests (current file)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
+            ],
+            "env": {
+                "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
+                "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
+                "NO_COVERAGE": "true"
+            },
+            "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
+            "preLaunchTask": "${defaultBuildTask}"
         }
     ],
     "compounds": [

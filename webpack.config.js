@@ -8,6 +8,7 @@
 'use strict'
 
 const path = require('path')
+const glob = require('glob')
 const webpack = require('webpack')
 const { ESBuildMinifyPlugin } = require('esbuild-loader')
 const fs = require('fs')
@@ -92,14 +93,36 @@ const baseConfig = {
     },
 }
 
-// TODO: use webpack merge? probably not worth it if switching over to esbuild
+/**
+ * Generates a name given a filepath to an entry file.
+ * Example: `src/lambda/vue/entry.ts` -> `lambdaVue.js`
+ * @param {string} file
+ */
+const createVueBundleName = file => {
+    return path
+        .relative('src', path.dirname(file))
+        .split(path.sep)
+        .filter(s => s !== 'vue')
+        .map((s, i) => (i ? s.charAt(0).toUpperCase().concat(s.slice(1)) : s))
+        .concat('Vue')
+        .join('')
+}
+
+/**
+ * Generates Vue entry points if the filename is called `entry.ts` and is under a `vue` directory.
+ */
+const createVueEntries = () => {
+    return glob
+        .sync(path.resolve(__dirname, 'src', '**', 'vue', '**', 'entry.ts'))
+        .map(f => ({ name: createVueBundleName(f), path: f }))
+        .reduce((a, b) => ((a[b.name] = b.path), a), {})
+}
+
 const vueConfig = {
     ...baseConfig,
     name: 'vue',
     target: 'web',
-    entry: {
-        samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeEntry.ts'),
-    },
+    entry: createVueEntries(),
     module: {
         rules: baseConfig.module.rules.concat(
             {
@@ -115,4 +138,22 @@ const vueConfig = {
     plugins: baseConfig.plugins.concat(new VueLoaderPlugin()),
 }
 
-module.exports = [baseConfig, vueConfig]
+const vueHotReload = {
+    ...vueConfig,
+    name: 'vue-hmr',
+    devServer: {
+        static: {
+            directory: path.resolve(__dirname, 'dist'),
+        },
+        // This is not ideal, but since we're only running the server locally it's not too bad
+        // The webview debugger tries to establish a websocket with a GUID as its origin, so not much of a workaround
+        allowedHosts: 'all',
+    },
+    // Normally we want to exclude Vue from the bundle, but for hot reloads we need it
+    externals: {
+        vscode: 'commonjs vscode',
+    },
+}
+
+module.exports =
+    process.env.npm_lifecycle_event === 'serve' ? [baseConfig, vueConfig, vueHotReload] : [baseConfig, vueConfig]

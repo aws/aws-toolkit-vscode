@@ -15,7 +15,7 @@ import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { Prompter } from '../../../shared/ui/prompter'
 import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../../shared/vscode/testUtils'
-import { APPRUNNER_CONNECTION_HELP_URL } from '../../../shared/constants'
+import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
@@ -192,6 +192,6 @@ describe('ConnectionPrompter', function () {
         fakePicker.selectedItems = fakePicker.activeItems
         fakePicker.hide()
         assert.strictEqual(await result, WIZARD_EXIT)
-        assert.strictEqual(openExternal.firstCall.args[0].toString(), APPRUNNER_CONNECTION_HELP_URL)
+        assert.strictEqual(openExternal.firstCall.args[0].toString(), apprunnerConnectionHelpUrl)
     })
 })

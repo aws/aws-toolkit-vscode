@@ -324,7 +324,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         // selectedItems will change as options are clicked (and not when accepting).
         this.quickPick.activeItems = this.quickPick.items.filter(item => selected.has(item.label))
 
-        if (this.quickPick.activeItems.length === 0) {
+        if (this.quickPick.activeItems.length === 0 && this.quickPick.items.length > 0) {
             this.quickPick.activeItems = [this.quickPick.items[0]]
         }
     }
@@ -492,11 +492,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
                 return isRecent ? -1 : 0
             }
             this.quickPick.items = [...this.quickPick.items].sort(recentFirst)
-            this.quickPick.activeItems = [this.quickPick.items[0]]
+            this.quickPick.activeItems = this.quickPick.items.length > 0 ? [this.quickPick.items[0]] : []
         }
 
         if (this.quickPick.activeItems.length === 0) {
-            this.quickPick.activeItems = [this.quickPick.items[0]]
+            this.quickPick.activeItems = this.quickPick.items.length > 0 ? [this.quickPick.items[0]] : []
         }
     }
 
