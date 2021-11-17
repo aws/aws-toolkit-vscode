@@ -32,7 +32,7 @@ describe('uploadFileCommand', function () {
     let s3: S3Client
     let bucketNode: S3BucketNode
     let window: FakeWindow
-    let getBucket: (s3client: S3Client, window?: Window) => Promise<S3.Bucket | string>
+    let getBucket: (s3client: S3Client, window?: Window) => Promise<S3.Bucket | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
     let mockedUpload: S3.ManagedUpload
@@ -95,8 +95,6 @@ describe('uploadFileCommand', function () {
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
-                'Successfully uploaded file.jpg',
-                '1/1 file(s) uploaded to s3://bucket-name',
                 'Successfully uploaded 1/1 file(s)',
             ])
         })
@@ -160,8 +158,6 @@ describe('uploadFileCommand', function () {
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
-                'Successfully uploaded file.jpg',
-                '1/1 file(s) uploaded to s3://bucket-name',
                 'Successfully uploaded 1/1 file(s)',
             ])
         })
@@ -238,8 +234,6 @@ describe('uploadFileCommand', function () {
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
-            'Successfully uploaded file.jpg',
-            '1/1 file(s) uploaded to s3://bucket-name',
             `Successfully uploaded 1/1 file(s)`,
         ])
     })
@@ -263,7 +257,6 @@ describe('uploadFileCommand', function () {
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
             `Failed to upload file file.jpg: Expected failure`,
-            '0/1 file(s) uploaded to s3://bucket-name',
             'Successfully uploaded 0/1 file(s)',
             'Failed uploads:',
             `${key}`,

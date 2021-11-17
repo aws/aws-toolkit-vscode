@@ -203,7 +203,7 @@
     "AWS.command.s3.presignedURL": "Generate Presigned URL...",
     "AWS.command.s3.createBucket": "Create Bucket...",
     "AWS.command.s3.createFolder": "Create Folder...",
-    "AWS.command.s3.uploadFile": "Upload File...",
+    "AWS.command.s3.uploadFile": "Upload Files...",
     "AWS.command.s3.uploadFileToParent": "Upload to Parent...",
     "AWS.command.stepFunctions.createStateMachineFromTemplate": "Create a new Step Functions state machine",
     "AWS.command.stepFunctions.publishStateMachine": "Publish state machine to Step Functions",
