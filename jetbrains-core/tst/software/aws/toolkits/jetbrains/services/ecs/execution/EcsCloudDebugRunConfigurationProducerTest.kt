@@ -15,11 +15,17 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.ecs.model.Service
+import software.aws.toolkits.jetbrains.services.ecs.EcsCloudDebugExperiment
+import software.aws.toolkits.jetbrains.utils.rules.ExperimentRule
 
 class EcsCloudDebugRunConfigurationProducerTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
+
+    @Rule
+    @JvmField
+    val experiment = ExperimentRule(EcsCloudDebugExperiment)
 
     @Test
     fun validRunConfigurationIsCreated() {

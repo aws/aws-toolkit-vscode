@@ -9,12 +9,12 @@ import software.aws.toolkits.resources.message
 object EcsExecExperiment : ToolkitExperiment(
     "ecsExec",
     { message("ecs.execute_command.experiment.title") },
-    { message("ecs.execute_command.experiment.description") }
+    { message("ecs.execute_command.experiment.description") },
+    default = true
 )
 
 object EcsCloudDebugExperiment : ToolkitExperiment(
     "ecsCloudDebug",
     { message("cloud_debug.experiment.title") },
-    { message("cloud_debug.experiment.description") },
-    default = true
+    { message("cloud_debug.experiment.description") }
 )
