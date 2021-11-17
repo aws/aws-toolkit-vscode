@@ -1112,6 +1112,11 @@
                     "group": "inline@1"
                 },
                 {
+                    "command": "aws.iot.createPolicy",
+                    "when": "view == aws.explorer && viewItem == awsIotPoliciesNode",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.iot.deletePolicy",
                     "when": "view == aws.explorer && viewItem =~ /^(awsIotPolicyNode.WithVersions)$/",
                     "group": "inline@1"
@@ -1834,10 +1839,6 @@
                 "command": "aws.iot.createPolicyVersion",
                 "title": "%AWS.command.iot.createPolicyVersion%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/plus.svg",
-                    "dark": "resources/dark/plus.svg"
-                },
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

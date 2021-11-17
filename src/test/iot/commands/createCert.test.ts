@@ -49,11 +49,9 @@ describe('createCertificateCommand', function () {
     it('prompts for save location, creates certificate, and saves to filesystem', async function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve(certificate)
 
-        const window = new FakeWindow({ message: { warningSelection: 'Confirm' } })
+        const window = new FakeWindow()
         const commands = new FakeCommands()
         await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
-
-        assert.strictEqual(window.message.warning, 'Create a new X.509 certificate and RSA key pair?')
 
         assert.strictEqual(window.message.information, 'Created certificate new-certificate')
 
@@ -63,18 +61,9 @@ describe('createCertificateCommand', function () {
         assert.deepStrictEqual(commands.args, [node])
     })
 
-    it('does nothing when creation is canceled', async function () {
-        const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
-        const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
-
-        verify(iot.createCertificateAndKeys(anything())).never()
-        assert.strictEqual(commands.command, undefined)
-    })
-
     it('does nothing when no save folder is selected', async function () {
         saveLocation = undefined
-        const window = new FakeWindow({ message: { warningSelection: 'Confirm' } })
+        const window = new FakeWindow()
         const commands = new FakeCommands()
         await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
 
@@ -85,7 +74,7 @@ describe('createCertificateCommand', function () {
     it('shows an error message if creating certificate fails', async function () {
         when(iot.createCertificateAndKeys(anything())).thenReject(new Error('Expected failure'))
 
-        const window = new FakeWindow({ message: { warningSelection: 'Confirm' } })
+        const window = new FakeWindow()
         const commands = new FakeCommands()
         await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
 
@@ -97,7 +86,7 @@ describe('createCertificateCommand', function () {
     it('shows an error message if created certificate is invalid', async function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve({})
 
-        const window = new FakeWindow({ message: { warningSelection: 'Confirm' } })
+        const window = new FakeWindow()
         const commands = new FakeCommands()
         await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
 
@@ -110,7 +99,7 @@ describe('createCertificateCommand', function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve(certificate)
         saveSuccess = false
 
-        const window = new FakeWindow({ message: { warningSelection: 'Confirm' } })
+        const window = new FakeWindow()
         const commands = new FakeCommands()
         await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
 
@@ -124,7 +113,7 @@ describe('createCertificateCommand', function () {
         when(iot.deleteCertificate(anything())).thenReject(new Error('Expected failure'))
         saveSuccess = false
 
-        const window = new FakeWindow({ message: { warningSelection: 'Confirm' } })
+        const window = new FakeWindow()
         const commands = new FakeCommands()
         await createCertificateCommand(node, promptFolder, saveFiles, window, commands)
 

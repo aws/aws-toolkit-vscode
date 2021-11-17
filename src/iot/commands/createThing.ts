@@ -27,6 +27,7 @@ export async function createThingCommand(
     const thingName = await window.showInputBox({
         prompt: localize('AWS.iot.createThing.prompt', 'Enter a new Thing name'),
         placeHolder: localize('AWS.iot.createThing.placeHolder', 'Thing Name'),
+        validateInput: validateThingName,
     })
 
     if (!thingName) {
@@ -47,4 +48,25 @@ export async function createThingCommand(
 
     //Refresh the Things Folder node
     await node.refreshNode(commands)
+}
+
+/**
+ * Validates a Thing name for the CreateThing API. See
+ * https://docs.aws.amazon.com/iot/latest/apireference/API_CreateThing.html
+ * for more information. Pattern: `[a-zA-Z0-9:_-]+`.
+ */
+function validateThingName(name: string): string | undefined {
+    if (name.length < 1 || name.length > 128) {
+        return localize(
+            'AWS.iot.validateThingName.error.invalidLength',
+            'Thing name must be between 1 and 128 characters long'
+        )
+    }
+    if (!/^[a-zA-Z0-9:_-]+$/.test(name)) {
+        return localize(
+            'AWS.iot.validateThingName.error.invalidCharacters',
+            'Thing name must only contain alphanumeric characters, hyphens, underscores, or colons'
+        )
+    }
+    return undefined
 }
