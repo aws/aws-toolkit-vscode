@@ -1,12 +1,10 @@
-// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 @file:Suppress("BannedImports")
 
-package software.aws.toolkits.core.credentials.sso
+package software.aws.toolkits.jetbrains.core.credentials.sso
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
@@ -15,6 +13,7 @@ import software.amazon.awssdk.services.sso.model.UnauthorizedException
 import software.amazon.awssdk.utils.SdkAutoCloseable
 import software.amazon.awssdk.utils.cache.CachedSupplier
 import software.amazon.awssdk.utils.cache.RefreshResult
+import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
 import java.time.Duration
 import java.time.Instant
 
@@ -34,10 +33,10 @@ class SsoCredentialProvider(
     override fun resolveCredentials(): AwsCredentials = sessionCache.get().credentials
 
     private fun refreshCredentials(): RefreshResult<SsoCredentialsHolder> {
+        assertIsNonDispatchThread()
+
         val roleCredentials = try {
-            val accessToken = runBlocking(Dispatchers.IO) {
-                ssoAccessTokenProvider.accessToken()
-            }
+            val accessToken = ssoAccessTokenProvider.accessToken()
 
             ssoClient.getRoleCredentials {
                 it.accessToken(accessToken.accessToken)
@@ -58,8 +57,7 @@ class SsoCredentialProvider(
 
         val expirationTime = Instant.ofEpochMilli(roleCredentials.roleCredentials().expiration())
 
-        val ssoCredentials =
-            SsoCredentialsHolder(awsCredentials, expirationTime)
+        val ssoCredentials = SsoCredentialsHolder(awsCredentials, expirationTime)
 
         return RefreshResult.builder(ssoCredentials)
             .staleTime(expirationTime.minus(Duration.ofMinutes(1)))

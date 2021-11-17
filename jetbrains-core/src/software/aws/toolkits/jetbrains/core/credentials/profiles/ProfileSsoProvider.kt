@@ -12,11 +12,11 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.utils.SdkAutoCloseable
-import software.aws.toolkits.core.credentials.sso.SsoAccessTokenProvider
-import software.aws.toolkits.core.credentials.sso.SsoCredentialProvider
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.SsoPrompt
 import software.aws.toolkits.jetbrains.core.credentials.diskCache
+import software.aws.toolkits.jetbrains.core.credentials.sso.SsoAccessTokenProvider
+import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCredentialProvider
 
 class ProfileSsoProvider(profile: Profile) : AwsCredentialsProvider, SdkAutoCloseable {
     private val ssoClient: SsoClient

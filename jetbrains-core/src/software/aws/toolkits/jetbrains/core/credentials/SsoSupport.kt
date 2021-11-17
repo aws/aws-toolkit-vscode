@@ -5,13 +5,13 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.ui.Messages
-import kotlinx.coroutines.withContext
-import software.aws.toolkits.core.credentials.sso.Authorization
-import software.aws.toolkits.core.credentials.sso.DiskCache
-import software.aws.toolkits.core.credentials.sso.SsoCache
-import software.aws.toolkits.core.credentials.sso.SsoLoginCallback
-import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.core.credentials.sso.Authorization
+import software.aws.toolkits.jetbrains.core.credentials.sso.DiskCache
+import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
+import software.aws.toolkits.jetbrains.core.credentials.sso.SsoLoginCallback
+import software.aws.toolkits.jetbrains.utils.computeOnEdt
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
@@ -21,8 +21,8 @@ import software.aws.toolkits.resources.message
 val diskCache by lazy { DiskCache() }
 
 object SsoPrompt : SsoLoginCallback {
-    override suspend fun tokenPending(authorization: Authorization) {
-        withContext(getCoroutineUiContext()) {
+    override fun tokenPending(authorization: Authorization) {
+        computeOnEdt {
             val result = Messages.showOkCancelDialog(
                 message("credentials.sso.login.message", authorization.verificationUri, authorization.userCode),
                 message("credentials.sso.login.title"),
@@ -34,7 +34,7 @@ object SsoPrompt : SsoLoginCallback {
             if (result == Messages.OK) {
                 BrowserUtil.browse(authorization.verificationUriComplete)
             } else {
-                throw IllegalStateException(message("credentials.sso.login.cancelled"))
+                throw ProcessCanceledException(IllegalStateException(message("credentials.sso.login.cancelled")))
             }
         }
     }

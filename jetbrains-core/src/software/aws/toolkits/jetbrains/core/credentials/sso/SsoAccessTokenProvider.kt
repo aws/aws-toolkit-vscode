@@ -1,13 +1,15 @@
-// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.core.credentials.sso
+package software.aws.toolkits.jetbrains.core.credentials.sso
 
-import kotlinx.coroutines.delay
+import com.intellij.openapi.progress.ProgressManager
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.ssooidc.model.AuthorizationPendingException
 import software.amazon.awssdk.services.ssooidc.model.InvalidClientException
 import software.amazon.awssdk.services.ssooidc.model.SlowDownException
+import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
+import software.aws.toolkits.jetbrains.utils.sleepWithCancellation
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -23,7 +25,9 @@ class SsoAccessTokenProvider(
     private val client: SsoOidcClient,
     private val clock: Clock = Clock.systemUTC()
 ) {
-    suspend fun accessToken(): AccessToken {
+    fun accessToken(): AccessToken {
+        assertIsNonDispatchThread()
+
         cache.loadAccessToken(ssoUrl)?.let {
             return it
         }
@@ -81,7 +85,8 @@ class SsoAccessTokenProvider(
         )
     }
 
-    private suspend fun pollForToken(): AccessToken {
+    private fun pollForToken(): AccessToken {
+        val progressIndicator = ProgressManager.getInstance().progressIndicator
         val registration = registerClient()
         val authorization = authorizeClient(registration)
 
@@ -117,7 +122,7 @@ class SsoAccessTokenProvider(
                 throw e
             }
 
-            delay(backOffTime.toMillis())
+            sleepWithCancellation(backOffTime, progressIndicator)
         }
     }
 
