@@ -14,6 +14,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
     -   CloudWatch Logs
     -   ECR
     -   EventBridge schemas
+    -   IoT explorer
     -   Lambda functions
     -   S3 explorer
     -   Step Functions
