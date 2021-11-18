@@ -28,7 +28,7 @@ import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
@@ -58,7 +58,7 @@ export async function resumeCreateNewSamApp(
     extContext: ExtContext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
-    let createResult: Result = 'Succeeded'
+    let createResult: telemetry.Result = 'Succeeded'
     let reason: CreateReason = 'complete'
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
@@ -106,19 +106,20 @@ export async function resumeCreateNewSamApp(
         getLogger().error('Error resuming new SAM Application: %O', err as Error)
     } finally {
         activationReloadState.clearSamInitState()
-        recordSamInit({
+        telemetry.recordSamInit({
             lambdaPackageType: samInitState?.isImage ? 'Image' : 'Zip',
             result: createResult,
             reason: reason,
-            runtime: samInitState?.runtime as TelemetryRuntime,
+            runtime: samInitState?.runtime as telemetry.Runtime,
             version: samVersion,
+            architecture: samInitState?.architecture as telemetry.Architecture,
         })
     }
 }
 
 export interface CreateNewSamApplicationResults {
     runtime: string
-    result: Result
+    result: telemetry.Result
 }
 
 /**
@@ -131,7 +132,7 @@ export async function createNewSamApplication(
 ): Promise<void> {
     const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
-    let createResult: Result = 'Succeeded'
+    let createResult: telemetry.Result = 'Succeeded'
     let reason: CreateReason = 'unknown'
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
@@ -257,6 +258,7 @@ export async function createNewSamApplication(
             readme: readmeUri.fsPath,
             runtime: createRuntime,
             isImage: config.runtimeAndPackage.packageType === 'Image',
+            architecture: initArguments?.architecture,
         })
 
         await addFolderToWorkspace(
@@ -333,11 +335,11 @@ export async function createNewSamApplication(
         // An error occured, so do not try to continue during the next extension activation
         activationReloadState.clearSamInitState()
     } finally {
-        recordSamInit({
+        telemetry.recordSamInit({
             lambdaPackageType: lambdaPackageType,
             result: createResult,
             reason: reason,
-            runtime: createRuntime as TelemetryRuntime,
+            runtime: createRuntime as telemetry.Runtime,
             version: samVersion,
             architecture: initArguments?.architecture,
         })

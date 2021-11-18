@@ -45,6 +45,7 @@ describe('ActivationReloadState', async function () {
                 readme: 'somepath',
                 runtime: undefined,
                 isImage: false,
+                architecture: 'arm64',
             })
 
             assert.strictEqual(
@@ -75,6 +76,7 @@ describe('ActivationReloadState', async function () {
                 readme: 'somepath',
                 runtime: 'someruntime',
                 isImage: false,
+                architecture: 'arm64',
             })
 
             assert.strictEqual(
@@ -105,6 +107,7 @@ describe('ActivationReloadState', async function () {
                 readme: 'somepath',
                 runtime: 'someruntime',
                 isImage: true,
+                architecture: 'arm64',
             })
 
             assert.strictEqual(
@@ -220,6 +223,7 @@ describe('ActivationReloadState', async function () {
             readme: 'somepath',
             runtime: 'someruntime',
             isImage: true,
+            architecture: 'x86_64',
         })
         activationReloadState.clearSamInitState()
 
