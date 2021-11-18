@@ -321,16 +321,21 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockS3.upload(anything())).thenReturn(failure())
+            const managedMocked: S3.ManagedUpload = mock()
+            const expectedError = new Error('Expected an error')
+            when(mockS3.upload(anything())).thenReturn(instance(managedMocked))
+            when(managedMocked.promise()).thenReject(expectedError)
 
-            await assert.rejects(
-                createClient().uploadFile({
-                    bucketName,
-                    key: fileKey,
-                    fileLocation: fileLocation,
-                }),
-                error
-            )
+            const managedUpload = await createClient().uploadFile({
+                bucketName,
+                key: fileKey,
+                fileLocation: fileLocation,
+            })
+            try {
+                await managedUpload.promise()
+            } catch (e) {
+                assert.strictEqual(e, expectedError)
+            }
         })
     })
 
