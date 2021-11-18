@@ -119,7 +119,7 @@ tasks.runIde {
 // TODO: https://github.com/gradle/gradle/issues/15383
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 tasks.withType<DownloadRobotServerPluginTask> {
-    version.set(versionCatalog.findVersion("intellijRemoteRobot").get().preferredVersion)
+    version.set(versionCatalog.findVersion("intellijRemoteRobot").get().requiredVersion)
 }
 
 // Enable coverage for the UI test target IDE
