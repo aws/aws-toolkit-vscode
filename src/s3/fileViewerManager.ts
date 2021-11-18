@@ -6,30 +6,43 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as mime from 'mime-types'
+import * as telemetry from '../shared/telemetry/telemetry'
 import { mkdirp } from 'fs-extra'
 import { OutputChannel } from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { showOutputMessage } from '../../shared/utilities/messages'
-import { Commands } from '../../shared/vscode/commands'
-import { downloadWithProgress } from '../commands/downloadFileAs'
-import { S3FileNode } from '../explorer/s3FileNode'
-import { readablePath } from '../util'
-import { getLogger } from '../../shared/logger'
-import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { uploadWithProgress } from '../commands/uploadFile'
-import { normalize } from '../../shared/utilities/pathUtils'
+import { ext } from '../shared/extensionGlobals'
+import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
+import { showOutputMessage, showViewLogsMessage } from '../shared/utilities/messages'
+import { Commands } from '../shared/vscode/commands'
+import { downloadWithProgress } from './commands/downloadFileAs'
+import { S3FileNode } from './explorer/s3FileNode'
+import { readablePath } from './util'
+import { getLogger } from '../shared/logger'
+import { showConfirmationMessage } from '../shared/utilities/messages'
+import { localize } from '../shared/utilities/vsCodeUtils'
+import { uploadWithProgress } from './commands/uploadFile'
+import { normalize } from '../shared/utilities/pathUtils'
 
-const SIZE_LIMIT = 4 * Math.pow(10, 6)
+const SIZE_LIMIT = 4 * Math.pow(10, 6) // 4 MB
 export interface S3Tab {
     fileUri: vscode.Uri
     s3Uri: vscode.Uri
     editor: vscode.TextEditor | undefined
-    s3FileNode: S3FileNode
+    s3FileNode: S3FileNode // Reference to a node will be stale on a tree refresh
+}
+
+// Temporary until we have a better means to log error without the trace
+const logError = (msg: string, err: any) => {
+    showViewLogsMessage(msg)
+    getLogger().error(`${msg}: %s`, err.message)
+}
+
+const isTextDocument = (fileName: string) => {
+    const type = mime.contentType(fileName)
+    return type && type.startsWith('text')
 }
 
 export class S3FileViewerManager {
+    private disposables: vscode.Disposable[] = []
     private outputChannel: OutputChannel
     private promptOnEdit = true
     //onDidChange to trigger refresh of contents on the document provider
@@ -51,63 +64,66 @@ export class S3FileViewerManager {
         private activeTabs: Map<string, S3Tab> = new Map<string, S3Tab>()
     ) {
         this.outputChannel = ext.outputChannel
+        this.disposables.push(this.registerForDocumentSave())
+    }
+
+    private registerForDocumentSave(): vscode.Disposable {
         let ongoingUpload = false
-        vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
+
+        return vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
             if (ongoingUpload) {
                 return
             }
             ongoingUpload = true
-            if (this.activeTabs.has(savedTextDoc.uri.fsPath)) {
-                const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)!
-                let upload = true
+            const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)
 
-                if (!(await this.isValidFile(activeTab.s3FileNode, activeTab.fileUri))) {
-                    const cancelUpload = localize('AWS.s3.fileViewer.button.cancelUpload', 'Cancel download')
-                    const overwrite = localize('AWS.s3.fileViewer.button.overwrite', 'Overwrite')
-
-                    const response = await window.showErrorMessage(
-                        localize(
-                            'AWS.s3.fileViewer.error.invalidUpload',
-                            'File has changed in S3 since last cache download. Compare your version with the one in S3, then choose to overwrite it or cancel this upload.'
-                        ),
-                        cancelUpload,
-                        overwrite
-                    )
-                    if (response === cancelUpload) {
-                        //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
-                        //telemetry.recordS3UploadObject({result: 'Cancelled', kind: viewer})
-                        upload = false
-                    }
-                }
-
-                if (upload) {
-                    if (!(await this.uploadChangesToS3(activeTab))) {
-                        //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
-                        //telemetry.recordS3UploadObject({result: 'Failed', kind: viewer})
-                        this.window.showErrorMessage('Error uploading file to S3.')
-                        return
-                    }
-                    //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
-                    //telemetry.recordS3UploadObject({result: 'Success', kind: viewer})
-                }
-
-                const fileNode = await this.refreshNode(activeTab.s3FileNode)
-
-                await this.focusAndCloseTab(activeTab.fileUri, activeTab.editor)
-                activeTab.editor = undefined
-                await this.openInReadMode(fileNode)
-                this._onDidChange.fire(activeTab.s3Uri)
-
-                if (upload) {
-                    if (!(await this.uploadChangesToS3(activeTab))) {
-                        this.window.showErrorMessage(
-                            'Error uploading file to S3. Changes were not saved back to S3. Please try and resave this edit mode file'
-                        )
-                    }
-                }
-
-                ongoingUpload = false
+            if (!activeTab) {
+                return
             }
+
+            if (!(await this.isValidFile(activeTab.s3FileNode, activeTab.fileUri))) {
+                const cancelUpload = localize('AWS.s3.fileViewer.button.cancelUpload', 'Cancel download')
+                const overwrite = localize('AWS.s3.fileViewer.button.overwrite', 'Overwrite')
+
+                const response = await this.window.showErrorMessage(
+                    localize(
+                        'AWS.s3.fileViewer.error.invalidUpload',
+                        'File has changed in S3 since last cache download. Compare your version with the one in S3, then choose to overwrite it or cancel this upload.'
+                    ),
+                    cancelUpload,
+                    overwrite
+                )
+                if (response === cancelUpload) {
+                    telemetry.recordS3UploadObject({ result: 'Cancelled', component: 'viewer' })
+                    return
+                }
+            }
+
+            if (!(await this.uploadChangesToS3(activeTab))) {
+                telemetry.recordS3UploadObject({ result: 'Failed', component: 'viewer' })
+                this.window.showErrorMessage('Error uploading file to S3.')
+                return
+            }
+
+            const fileNode = await this.refreshNode(activeTab.s3FileNode)
+
+            await this.focusAndCloseTab(activeTab.fileUri, activeTab.editor)
+            activeTab.editor = undefined
+            await this.openInReadMode(fileNode)
+            this._onDidChange.fire(activeTab.s3Uri)
+
+            // why is this block repeated?
+            /*
+            if (upload) {
+                if (!(await this.uploadChangesToS3(activeTab))) {
+                    this.window.showErrorMessage(
+                        'Error uploading file to S3. Changes were not saved back to S3. Please try and resave this edit mode file'
+                    )
+                }
+            }
+            */
+
+            ongoingUpload = false
         })
     }
 
@@ -134,17 +150,11 @@ export class S3FileViewerManager {
      * @param fileNode
      */
     public async openInReadMode(fileNode: S3FileNode): Promise<void> {
-        if (fileNode.file.sizeBytes! < SIZE_LIMIT) {
-            this.toPreview = fileNode.file.arn
-        }
-
         getLogger().verbose(`S3FileViewer: Retrieving and displaying file: ${fileNode.file.key}`)
         showOutputMessage(
             localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
             this.outputChannel
         )
-
-        const charset = await fileNode.s3.getCharset({ key: fileNode.file.key, bucketName: fileNode.bucket.name })
 
         const fileLocation = await this.getFile(fileNode)
         if (!fileLocation) {
@@ -155,7 +165,7 @@ export class S3FileViewerManager {
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
         const s3Uri = vscode.Uri.parse('s3:' + fileLocation.fsPath)
 
-        if (charset != 'UTF-8') {
+        if (!isTextDocument(fileNode.file.name)) {
             const prompt = "Can't open this file type in read-only mode, do you want to try opening in edit?"
             const edit = 'Open in edit mode'
             const read = 'Try in read-only'
@@ -167,7 +177,7 @@ export class S3FileViewerManager {
 
         let tab: S3Tab | undefined
         if (fileNode.file.sizeBytes! < SIZE_LIMIT) {
-            const pathToPreview = await this.arnToFsPath(this.toPreview!)
+            const pathToPreview = await this.arnToFsPath(fileNode.file.arn)
             if (normalize(s3Uri.fsPath) !== normalize(pathToPreview)) {
                 return
             }
@@ -176,7 +186,6 @@ export class S3FileViewerManager {
                 ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode } as S3Tab)
 
             await this.openTextFile(tab, tab.s3Uri, true)
-            this.toPreview = undefined
         } else {
             tab =
                 this.activeTabs.get(fileLocation.fsPath) ??
@@ -208,6 +217,7 @@ export class S3FileViewerManager {
 
             this.window.showWarningMessage(message, dontShow, help).then(selection => {
                 if (selection === dontShow) {
+                    // TODO: save selection
                     this.promptOnEdit = false
                 }
 
@@ -247,10 +257,6 @@ export class S3FileViewerManager {
                 )
             }
         } else {
-            //was activated from the explorer, need to get the file
-            const fileNode = uriOrNode
-            const charset = await fileNode.s3.getCharset({ key: fileNode.file.key, bucketName: fileNode.bucket.name })
-
             const fileLocation = await this.getFile(uriOrNode)
             if (!fileLocation) {
                 //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
@@ -264,8 +270,7 @@ export class S3FileViewerManager {
                 tab = { fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: uriOrNode } as S3Tab
             }
 
-            //If not UTF-8 (text file), differ to vscode's open functionality
-            if (charset != 'UTF-8') {
+            if (!isTextDocument(fileLocation.fsPath)) {
                 tab.editor = await vscode.commands.executeCommand('vscode.open', tab.fileUri, { preview: false })
             } else {
                 tab.editor = await this.openTextFile(tab, tab.fileUri, false)
@@ -320,7 +325,6 @@ export class S3FileViewerManager {
             tab.editor = undefined
             return tab.editor
         }
-        //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
         //telemetry.recordS3EditObject({ result: 'Success' })
     }
 
@@ -336,21 +340,31 @@ export class S3FileViewerManager {
         const targetPath = await this.createTargetPath(fileNode)
         const targetLocation = vscode.Uri.file(targetPath)
 
-        const tempFile: vscode.Uri | undefined = await this.getFromTemp(fileNode)
+        const tempFile = await this.getFromTemp(fileNode)
         //If it was found in temp, return the Uri location
         if (tempFile) {
             return tempFile
         }
 
-        if (fileNode.file.sizeBytes === undefined) {
-            getLogger().debug(`FileViewer: File size couldn't be determined, prompting user file: ${fileNode}`)
+        const fileSize = fileNode.file.sizeBytes
+        const warningMessage = (function () {
+            if (fileSize === undefined) {
+                getLogger().debug(`FileViewer: File size couldn't be determined, prompting user file: ${fileNode}`)
 
-            const message = localize(
-                'AWS.s3.fileViewer.warning.noSize',
-                "File size couldn't be determined. Continue with download?"
-            )
+                return localize(
+                    'AWS.s3.fileViewer.warning.noSize',
+                    "File size couldn't be determined. Continue with download?"
+                )
+            } else if (fileSize > SIZE_LIMIT) {
+                getLogger().debug(`FileViewer: File size ${fileSize} is >4MB, prompting user`)
+
+                return localize('AWS.s3.fileViewer.warning.4mb', 'File size is more than 4MB. Continue with download?')
+            }
+        })()
+
+        if (warningMessage) {
             const args = {
-                prompt: message,
+                prompt: warningMessage,
                 confirm: localize('AWS.generic.continueDownload', 'Continue with download'),
                 cancel: localize('AWS.generic.cancel', 'Cancel'),
             }
@@ -358,50 +372,22 @@ export class S3FileViewerManager {
             if (!(await showConfirmationMessage(args, this.window))) {
                 getLogger().debug(`FileViewer: User cancelled download`)
                 showOutputMessage(
-                    localize('AWS.s3.fileViewer.message.noSizeCancellation', 'Download cancelled'),
+                    localize('AWS.s3.fileViewer.message.downloadCancelled', 'Download cancelled'),
                     this.outputChannel
                 )
                 return undefined
             }
-        } else if (fileNode.file.sizeBytes > SIZE_LIMIT) {
-            getLogger().debug(`FileViewer: File size ${fileNode.file.sizeBytes} is >4MB, prompting user`)
-
-            const message = localize(
-                'AWS.s3.fileViewer.warning.4mb',
-                'File size is more than 4MB. Continue with download?'
-            )
-            const args = {
-                prompt: message,
-                confirm: localize('AWS.generic.continueDownload', 'Continue with download'),
-                cancel: localize('AWS.generic.cancel', 'Cancel'),
-            }
-
-            if (!(await showConfirmationMessage(args, this.window))) {
-                getLogger().debug(`FileViewer: User cancelled download`)
-                showOutputMessage(
-                    localize('AWS.s3.fileViewer.message.sizeLimitCancellation', 'Download cancelled'),
-                    this.outputChannel
-                )
-                //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
-                //telemetry.recordS3DownloadObject({ result: 'Cancelled', kind: 'Viewer' })
-                return undefined
-            }
-
+            // TODO: add telem
             getLogger().debug(`FileViewer: User confirmed download, continuing`)
         }
 
-        if (!(await this.createSubFolders(targetPath))) {
-            //error creating the folder structure
-            return undefined
-        }
+        await this.createSubFolders(targetPath)
 
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
-            //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
-            //telemetry.recordS3DownloadObject({ result: 'Success', kind: 'Viewer' })
+            telemetry.recordS3DownloadObject({ result: 'Succeeded', component: 'viewer' })
         } catch (err) {
-            //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
-            //telemetry.recordS3DownloadObject({ result: 'Cancelled', kind: 'Viewer' })
+            telemetry.recordS3DownloadObject({ result: 'Cancelled', component: 'viewer' })
             getLogger().error(`FileViewer: error calling downloadWithProgress: ${err.toString()}`)
             showOutputMessage(
                 localize(
@@ -466,16 +452,13 @@ export class S3FileViewerManager {
         return Promise.resolve(completePath)
     }
 
-    private async createSubFolders(targetPath: string): Promise<boolean> {
-        const folderStructure = targetPath.slice(undefined, targetPath.lastIndexOf('/'))
-
-        try {
-            await mkdirp(folderStructure)
-        } catch (e) {
-            getLogger().error(`S3FileViewer: Error creating S3 folder structure on system error: ${e}`)
-            return false
-        }
-        return true
+    /**
+     * Ensures the correct directory structure.
+     * @throws On filesystem call errors
+     */
+    private async createSubFolders(targetPath: string): Promise<void | never> {
+        const folderStructure = targetPath.slice(0, targetPath.lastIndexOf('/'))
+        await mkdirp(folderStructure)
     }
 
     /**
@@ -484,34 +467,29 @@ export class S3FileViewerManager {
      * @param fileNode
      * @returns
      */
-    async refreshNode(fileNode: S3FileNode): Promise<S3FileNode> {
+    private async refreshNode(fileNode: S3FileNode): Promise<S3FileNode> {
         const parent = fileNode.parent
         parent.clearChildren()
 
         await this.commands.execute('aws.refreshAwsExplorerNode', parent)
-        await this.commands.execute('aws.loadMoreChildren', parent)
+        await this.commands.execute('aws.loadMoreChildren', parent) // TODO: this won't reload all nodes
 
         const children = await parent.getChildren()
-
-        children.forEach(child => {
-            if ((child as any).name === fileNode.name) fileNode = child as S3FileNode
-        })
-
-        return fileNode
+        // TODO: handle case where child does not exist
+        return (
+            (children.find(child => child instanceof S3FileNode && child.name === fileNode.name) as S3FileNode) ??
+            fileNode
+        )
     }
 
     public async createTemp(): Promise<string> {
-        this.tempLocation = await makeTemporaryToolkitFolder()
+        const temp = await makeTemporaryToolkitFolder()
         showOutputMessage(
-            localize(
-                'AWS.s3.message.tempCreation',
-                'Temp folder for FileViewer created with location: {0}',
-                this.tempLocation
-            ),
+            localize('AWS.s3.message.tempCreation', 'Temp folder for FileViewer created with location: {0}', temp),
             this.outputChannel
         )
-        getLogger().info(`S3FileViewer: Temp folder for FileViewer created with location: ${this._tempLocation}`)
-        return this._tempLocation!
+        getLogger().info(`S3FileViewer: Temp folder for FileViewer created with location: ${temp}`)
+        return (this._tempLocation = temp)
     }
 
     public get tempLocation(): string | undefined {
@@ -519,7 +497,7 @@ export class S3FileViewerManager {
     }
 
     public set tempLocation(temp: string | undefined) {
-        this._tempLocation = temp
+        this._tempLocation = temp // Doesn't seem like we should expose this. Who would clean up the temp?
     }
 
     /**
@@ -580,10 +558,7 @@ export class S3FileViewerManager {
         const s3Path = arn.split(':::')[1]
         const indexOfFileName = s3Path.lastIndexOf('/')
         const fileName = s3Path.slice(indexOfFileName + 1)
-        const fsPath = `${this.tempLocation!}${path.sep}${s3Path.slice(
-            undefined,
-            s3Path.lastIndexOf('/') + 1
-        )}[S3]${fileName}`
+        const fsPath = `${this.tempLocation!}${path.sep}${s3Path.slice(0, s3Path.lastIndexOf('/') + 1)}[S3]${fileName}`
         return Promise.resolve(fsPath)
     }
 }

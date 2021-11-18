@@ -21,7 +21,7 @@ import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { S3DocumentProvider } from './document/s3DocumentProvider'
-import { S3FileViewerManager } from './util/fileViewerManager'
+import { S3FileViewerManager } from './fileViewerManager'
 
 /**
  * Activates S3 components.

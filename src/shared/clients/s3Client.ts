@@ -298,24 +298,6 @@ export class DefaultS3Client {
         }
     }
 
-    public async getCharset(request: CharsetRequest): Promise<string> {
-        let headResponse
-        try {
-            headResponse = await this.getHeadObject({
-                bucketName: request.bucketName,
-                key: request.key,
-            })
-        } catch (e) {
-            getLogger().error('S3FileViewer: Error calling getHeadObject, error: ', e)
-            return ''
-        }
-
-        const type = mime.contentType(headResponse.ContentType!)
-        const charset = mime.charset(type.toString())
-
-        return charset ? charset : ''
-    }
-
     /**
      * Generates a presigned URL for the given file in S3.
      * Takes a valid time option, which must be in seconds. This is the time the URL will be valid for

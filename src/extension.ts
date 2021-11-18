@@ -73,7 +73,7 @@ import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCrede
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
-import { S3FileViewerManager } from './s3/util/fileViewerManager'
+import { S3FileViewerManager } from './s3/fileViewerManager'
 
 let localize: nls.LocalizeFunc
 

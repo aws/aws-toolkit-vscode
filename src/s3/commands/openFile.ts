@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { S3FileViewerManager } from '../util/fileViewerManager'
+import { S3FileViewerManager } from '../fileViewerManager'
 import { downloadFileAsCommand } from './downloadFileAs'
 
 const SIZE_LIMIT = 50 * Math.pow(10, 6)

@@ -449,7 +449,6 @@
     "AWS.s3.fileViewer.message.noSizeCancellation": "Download cancelled",
     "AWS.s3.fileViewer.error.download": "Error downloading file {0} from S3: {1}",
     "AWS.s3.fileViewer.error.upload": "Error uploading file to S3. Changes will not be saved. Please try and resave this edit mode file",
-    "AWS.s3.fileViewer.warning.editStateWarning": "You are now editing an S3 file. Saved changes will be synced to S3.",
     "AWS.s3.fileViewer.error.invalidSize": "Files over 50MB currently not supported for file display, use the \"Download as...\" action",
     "AWS.s3.fileViewer.error.invalidUpload": "File has changed in S3 since last cache download. Compare your version with the one in S3, then choose to overwrite it or cancel this upload.",
     "AWS.s3.fileViewer.warning.noSize": "File size couldn't be determined. Continue with download?",
