@@ -98,7 +98,7 @@ export class LoginManager {
     /**
      * Removes Credentials from the Toolkit. Essentially the Toolkit becomes "logged out".
      */
-    public async logout(): Promise<void> {
-        await this.awsContext.setCredentials(undefined)
+    public async logout(force?: boolean): Promise<void> {
+        await this.awsContext.setCredentials(undefined, force)
     }
 }

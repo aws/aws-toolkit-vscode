@@ -67,6 +67,7 @@ export async function loginWithMostRecentCredentials(
         return false
     }
 
+    // Auto-connect if there is a recently-used profile.
     if (previousCredentialsId) {
         // Migrate from old Toolkits: default to "shared" provider type.
         const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
@@ -80,21 +81,28 @@ export async function loginWithMostRecentCredentials(
 
     const providerMap = await manager.getCredentialProviderNames()
     const profileNames = Object.keys(providerMap)
+    // Look for "default" profile or exactly one (any name).
+    const defaultProfile = profileNames.includes('profile:default')
+        ? 'profile:default'
+        : profileNames.length === 1
+        ? profileNames[0]
+        : undefined
 
-    if (!previousCredentialsId && !(providerMap && profileNames.length === 1)) {
-        await loginManager.logout()
-        getLogger().info('autoconnect: skipped')
+    if (!previousCredentialsId && !defaultProfile) {
+        await loginManager.logout(true)
+        getLogger().info('autoconnect: skipped (profileNames=%d)', profileNames.length)
         return
     }
 
-    if (providerMap && profileNames.length === 1) {
-        // Auto-connect if there is exactly one profile.
-        if (await tryConnect(providerMap[profileNames[0]], !isCloud9())) {
+    // Auto-connect if there is a default profile.
+    if (defaultProfile) {
+        getLogger().debug('autoconnect: trying "%s"', defaultProfile)
+        if (await tryConnect(providerMap[defaultProfile], !isCloud9())) {
             return
         }
     }
 
-    await loginManager.logout()
+    await loginManager.logout(true)
 }
 
 function updateMruWhenAwsContextChanges(awsContext: AwsContext, extensionContext: vscode.ExtensionContext) {
