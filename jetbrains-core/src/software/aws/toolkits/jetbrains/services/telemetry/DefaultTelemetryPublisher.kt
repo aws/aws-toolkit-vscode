@@ -38,7 +38,7 @@ class DefaultTelemetryPublisher(
         }
     }
 
-    override suspend fun sendFeedback(sentiment: Sentiment, comment: String) {
+    override suspend fun sendFeedback(sentiment: Sentiment, comment: String, metadata: Map<String, String>) {
         withContext(getCoroutineBgContext()) {
             client.postFeedback {
                 it.awsProduct(clientMetadata.productName)
@@ -49,6 +49,9 @@ class DefaultTelemetryPublisher(
                 it.parentProductVersion(clientMetadata.parentProductVersion)
                 it.sentiment(sentiment)
                 it.comment(comment)
+                if (metadata.isNotEmpty()) {
+                    it.metadata(metadata.map { (k, v) -> MetadataEntry.builder().key(k).value(v).build() })
+                }
             }
         }
     }

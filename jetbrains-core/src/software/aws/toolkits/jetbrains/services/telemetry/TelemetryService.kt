@@ -114,8 +114,8 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         batcher.enqueue(event)
     }
 
-    suspend fun sendFeedback(sentiment: Sentiment, comment: String) {
-        publisher.sendFeedback(sentiment, comment)
+    suspend fun sendFeedback(sentiment: Sentiment, comment: String, metadata: Map<String, String> = emptyMap()) {
+        publisher.sendFeedback(sentiment, comment, metadata)
     }
 
     companion object {

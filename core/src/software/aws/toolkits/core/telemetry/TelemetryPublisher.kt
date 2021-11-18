@@ -8,5 +8,5 @@ import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 interface TelemetryPublisher : AutoCloseable {
     suspend fun publish(metricEvents: Collection<MetricEvent>)
 
-    suspend fun sendFeedback(sentiment: Sentiment, comment: String)
+    suspend fun sendFeedback(sentiment: Sentiment, comment: String, metadata: Map<String, String>)
 }
