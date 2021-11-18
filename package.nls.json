@@ -442,7 +442,6 @@
     "AWS.s3.uploadFile.progressReport": "{0}/{1} file(s) uploaded to {3}",
     "AWS.s3.uploadFile.openButton": "Upload",
     "AWS.s3.uploadFile.startUpload": "Uploading file from {0} to {1}",
-    "AWS.s3.uploadFile.success": "Successfully uploaded {0}/{1} file(s)",
     "AWS.s3.uploadFile.failed": "Failed uploads:\n{0}",
     "AWS.s3.uploadFile.failedMany": "Failed uploads:\n{0}\nSee logs for full list of failed items",
     "AWS.s3.uploadFile.retryPrompt": "S3 Upload: {0}/{1} failed.",

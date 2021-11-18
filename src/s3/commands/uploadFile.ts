@@ -14,7 +14,6 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { readablePath } from '../util'
-import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
@@ -24,6 +23,7 @@ import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import * as localizedText from '../../shared/localizedText'
+import bytes = require('bytes')
 
 export interface FileSizeBytes {
     /**
@@ -193,8 +193,8 @@ async function runBatchUploads(
 
     showOutputMessage(
         localize(
-            'AWS.s3.uploadFile.success',
-            'Successfully uploaded {0}/{1} file(s)',
+            'AWS.s3.uploadFile.complete',
+            'Uploaded {0}/{1} file(s)',
             uploadRequests.length - failedRequests.length,
             uploadRequests.length
         ),
@@ -278,8 +278,6 @@ async function uploadBatchOfFiles(
                 return failedRequests
             })
 
-            const progressListener = progressReporter({ progress, totalBytes: uploadRequests.length })
-
             while (!token.isCancellationRequested && requestIdx < uploadRequests.length) {
                 const request = uploadRequests[requestIdx]
                 const fileName = path.basename(request.key)
@@ -291,11 +289,13 @@ async function uploadBatchOfFiles(
 
                 // TODO: don't use `withProgress`, it makes it hard to have control over the individual outputs
                 // For now we will hide the noisy info to the channel.
-                const nullProgress = {
-                    report() {},
+                const progressWithCount: typeof progress = {
+                    report(value) {
+                        progress.report({ message: `${fileName} (${value.message})` })
+                    },
                 }
 
-                const uploadResult = await uploadWithProgress(request, nullProgress, token).catch(err => {
+                const uploadResult = await uploadWithProgress(request, progressWithCount, token).catch(err => {
                     showOutputMessage(
                         localize(
                             'AWS.s3.uploadFile.error.general',
@@ -315,9 +315,7 @@ async function uploadBatchOfFiles(
                 }
 
                 requestIdx += 1
-                if (progressListener) {
-                    progressListener(requestIdx)
-                }
+                progress.report({ increment: 100.0 / uploadRequests.length })
             }
 
             return failedRequests.concat(uploadRequests.slice(requestIdx))
@@ -348,12 +346,34 @@ async function uploadWithProgress(
     token: vscode.CancellationToken
 ): Promise<UploadRequest | undefined> {
     const fileName = request.key
+    const totalBytes = request.fileSizeBytes
+
+    // TODO: share this code better. We have a `ProgressReporter` class but all it does is output the increment?
+    let lastBytes = 0
+    const increment = (newBytes: number) => {
+        if (request.fileSizeBytes === 0) {
+            return 0
+        }
+        const percentage = (newBytes - lastBytes) / request.fileSizeBytes
+        lastBytes = newBytes
+        return percentage
+    }
+    const format = (newBytes: number) => bytes(newBytes, { unitSeparator: ' ', decimalPlaces: 0 })
+    const report = (newBytes: number) => {
+        progress.report({
+            message: totalBytes ? `${format(newBytes)} / ${format(totalBytes)}` : '',
+            increment: totalBytes ? increment(newBytes) : 100,
+        })
+    }
+
+    // Let the progress callback know we're starting
+    report(0)
 
     const currentStream = await request.s3Client.uploadFile({
         bucketName: request.bucketName,
         key: request.key,
         fileLocation: request.fileLocation,
-        progressListener: progressReporter({ progress, totalBytes: request.fileSizeBytes }),
+        progressListener: report,
     })
 
     request.ongoingUpload = currentStream

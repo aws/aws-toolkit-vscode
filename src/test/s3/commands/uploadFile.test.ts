@@ -95,7 +95,7 @@ describe('uploadFileCommand', function () {
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
-                'Successfully uploaded 1/1 file(s)',
+                'Uploaded 1/1 file(s)',
             ])
         })
 
@@ -158,7 +158,7 @@ describe('uploadFileCommand', function () {
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
-                'Successfully uploaded 1/1 file(s)',
+                'Uploaded 1/1 file(s)',
             ])
         })
 
@@ -234,7 +234,7 @@ describe('uploadFileCommand', function () {
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
-            `Successfully uploaded 1/1 file(s)`,
+            `Uploaded 1/1 file(s)`,
         ])
     })
 
@@ -257,7 +257,7 @@ describe('uploadFileCommand', function () {
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
             `Failed to upload file file.jpg: Expected failure`,
-            'Successfully uploaded 0/1 file(s)',
+            'Uploaded 0/1 file(s)',
             'Failed uploads:',
             `${key}`,
         ])
