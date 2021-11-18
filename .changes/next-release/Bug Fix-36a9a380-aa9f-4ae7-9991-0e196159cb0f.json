@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Credentials: Handle case when running in an ECS container but no credentials are available."
+}

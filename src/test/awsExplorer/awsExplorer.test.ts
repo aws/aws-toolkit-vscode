@@ -17,6 +17,18 @@ import {
     makeFakeAwsContextWithPlaceholderIds,
 } from '../utilities/fakeAwsContext'
 
+/**
+ * Used for the 'replacer' argument for the JSON.stringify call
+ * Ignores the 'moreResults' property on LoadMoreNodes which contain a circular reference,
+ * where the JSON.stringify call will error
+ */
+function ignoreMoreResultsProperty(key: any, value: any) {
+    if (key === 'moreResults') {
+        return undefined
+    }
+    return value
+}
+
 describe('AwsExplorer', function () {
     let sandbox: sinon.SinonSandbox
 
@@ -26,6 +38,7 @@ describe('AwsExplorer', function () {
         const clientBuilder = {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
+            createEcsClient: sandbox.stub().returns({}),
             createCloudFormationClient: sandbox.stub().returns({}),
             createAppRunnerClient: sandbox.stub().returns({}),
             createCloudControlClient: sandbox.stub().returns({}),
@@ -50,7 +63,11 @@ describe('AwsExplorer', function () {
 
         assert.ok(
             treeNodes[0] instanceof RegionNode,
-            `Expected Explorer node to be RegionNode - node contents: ${JSON.stringify(treeNodes[0], undefined, 4)}`
+            `Expected Explorer node to be RegionNode - node contents: ${JSON.stringify(
+                treeNodes[0],
+                ignoreMoreResultsProperty,
+                4
+            )}`
         )
         const regionNode = treeNodes[0] as RegionNode
         assert.strictEqual(regionNode.regionCode, DEFAULT_TEST_REGION_CODE)
