@@ -23,10 +23,9 @@ import software.aws.toolkits.telemetry.Result.Failed
 import software.aws.toolkits.telemetry.Result.Succeeded
 
 class AwsConnectionRunConfigurationExtension<T : RunConfigurationBase<*>> {
-    private val regionProvider = AwsRegionProvider.getInstance()
-    private val credentialManager = CredentialManager.getInstance()
-
     fun addEnvironmentVariables(configuration: T, environment: MutableMap<String, String>, runtimeString: () -> String? = { null }) {
+        val regionProvider = AwsRegionProvider.getInstance()
+        val credentialManager = CredentialManager.getInstance()
         val credentialConfiguration = configuration.getCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY) ?: return
 
         try {

@@ -126,8 +126,11 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
     }
 }
 
-class DefaultTelemetryService : TelemetryService(PUBLISHER, DefaultTelemetryBatcher(PUBLISHER)) {
+class DefaultTelemetryService : TelemetryService {
+    constructor() : super(publisher, batcher)
+
     private companion object {
-        val PUBLISHER = DefaultTelemetryPublisher()
+        private val publisher: TelemetryPublisher by lazy { DefaultTelemetryPublisher() }
+        private val batcher: TelemetryBatcher by lazy { DefaultTelemetryBatcher(publisher) }
     }
 }
