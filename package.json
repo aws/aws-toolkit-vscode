@@ -850,7 +850,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.iot.editPolicyVersion",
+                    "command": "aws.iot.viewPolicyVersion",
                     "when": "false"
                 },
                 {
@@ -1277,7 +1277,7 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.iot.editPolicyVersion",
+                    "command": "aws.iot.viewPolicyVersion",
                     "when": "view == aws.explorer && viewItem =~ /^awsIotPolicyVersionNode./",
                     "group": "0@1"
                 },
@@ -1880,8 +1880,8 @@
                 }
             },
             {
-                "command": "aws.iot.editPolicyVersion",
-                "title": "%AWS.command.iot.editPolicyVersion%",
+                "command": "aws.iot.viewPolicyVersion",
+                "title": "%AWS.command.iot.viewPolicyVersion%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

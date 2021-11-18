@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { editPolicyVersionCommand } from '../../../iot/commands/editPolicyVersion'
+import { viewPolicyVersionCommand } from '../../../iot/commands/viewPolicyVersion'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
@@ -19,7 +19,7 @@ const AWS_IOT_EXAMPLE_POLICY =
 
 const expectedPolicy = JSON.stringify(JSON.parse(AWS_IOT_EXAMPLE_POLICY), undefined, getTabSizeSetting())
 
-describe('editPolicyVersionCommand', function () {
+describe('viewPolicyVersionCommand', function () {
     const policyName = 'test-policy'
     let iot: IotClient
     let node: IotPolicyVersionNode
@@ -57,7 +57,7 @@ describe('editPolicyVersionCommand', function () {
         when(iot.getPolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).thenResolve({
             policyDocument: AWS_IOT_EXAMPLE_POLICY,
         })
-        await editPolicyVersionCommand(node)
+        await viewPolicyVersionCommand(node)
 
         assert.strictEqual(openTextDocumentStub.calledOnce, true, 'should be called once')
         assert.deepStrictEqual(
@@ -79,7 +79,7 @@ describe('editPolicyVersionCommand', function () {
             .returns(Promise.resolve({} as vscode.TextDocument))
         when(iot.getPolicyVersion(anything())).thenReject(new Error('Expected failure'))
 
-        await editPolicyVersionCommand(node)
+        await viewPolicyVersionCommand(node)
 
         assert.strictEqual(openTextDocumentStub.notCalled, true, 'should not be called')
     })
