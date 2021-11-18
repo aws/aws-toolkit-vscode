@@ -54,7 +54,17 @@ fun validateSsoProfile(profile: Profile) {
 
 private fun validateAssumeRoleProfile(profile: Profile, allProfiles: Map<String, Profile>) {
     val rootProfile = profile.traverseCredentialChain(allProfiles).last()
-    validateProfile(rootProfile, allProfiles)
+    val credentialSource = rootProfile.property(ProfileProperty.CREDENTIAL_SOURCE)
+
+    if (credentialSource.isPresent) {
+        try {
+            CredentialSourceType.parse(credentialSource.get())
+        } catch (e: Exception) {
+            throw IllegalArgumentException(message("credentials.profile.assume_role.invalid_credential_source", rootProfile.name()))
+        }
+    } else {
+        validateProfile(rootProfile, allProfiles)
+    }
 }
 
 private fun validateStaticSessionProfile(profile: Profile) {

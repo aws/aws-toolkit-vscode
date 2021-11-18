@@ -8,8 +8,13 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.credentials.SystemPropertyCredentialsProvider
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileProperty
 import software.aws.toolkits.core.credentials.CredentialIdentifier
@@ -24,6 +29,7 @@ import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCr
 import software.aws.toolkits.jetbrains.core.credentials.SsoRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
 import software.aws.toolkits.jetbrains.core.credentials.diskCache
+import software.aws.toolkits.jetbrains.core.credentials.profiles.Ec2MetadataConfigProvider.getEc2MedataEndpoint
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.ProfilesNotification
@@ -172,7 +178,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
 
         // Some profiles failed to load
         if (newProfiles.invalidProfiles.isNotEmpty()) {
-            val message = newProfiles.invalidProfiles.values.joinToString("\n") { it.message ?: it::class.java.name }
+            val message = newProfiles.invalidProfiles.values.joinToString("\n")
 
             val errorDialogTitle = message("credentials.profile.failed_load")
             val numErrorMessage = message("credentials.profile.refresh_errors", newProfiles.invalidProfiles.size)
@@ -215,13 +221,41 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
     private fun createSsoProvider(profile: Profile): AwsCredentialsProvider = ProfileSsoProvider(profile)
 
     private fun createAssumeRoleProvider(profile: Profile, region: AwsRegion): AwsCredentialsProvider {
-        val sourceProfileName = profile.requiredProperty(ProfileProperty.SOURCE_PROFILE)
-        val sourceProfile = profileHolder.getProfile(sourceProfileName)
-            ?: throw IllegalStateException("Profile $sourceProfileName looks to have been removed")
-        val parentCredentialProvider = createAwsCredentialProvider(sourceProfile, region)
+        val sourceProfileName = profile.property(ProfileProperty.SOURCE_PROFILE)
+        val credentialSource = profile.property(ProfileProperty.CREDENTIAL_SOURCE)
+
+        val parentCredentialProvider = when {
+            sourceProfileName.isPresent -> {
+                val sourceProfile = profileHolder.getProfile(sourceProfileName.get())
+                    ?: throw IllegalStateException("Profile $sourceProfileName looks to have been removed")
+                createAwsCredentialProvider(sourceProfile, region)
+            }
+            credentialSource.isPresent -> {
+                // Can we parse the credential_source
+                credentialSourceCredentialProvider(CredentialSourceType.parse(credentialSource.get()), profile)
+            }
+            else -> {
+                throw IllegalArgumentException(message("credentials.profile.assume_role.missing_source", profile.name()))
+            }
+        }
 
         return ProfileAssumeRoleProvider(parentCredentialProvider, region, profile)
     }
+
+    private fun credentialSourceCredentialProvider(credentialSource: CredentialSourceType, profile: Profile): AwsCredentialsProvider =
+        when (credentialSource) {
+            CredentialSourceType.ECS_CONTAINER -> ContainerCredentialsProvider.builder().build()
+            CredentialSourceType.EC2_INSTANCE_METADATA -> {
+                // The IMDS credentials provider should source the endpoint config properties from the currently active profile
+                InstanceProfileCredentialsProvider.builder()
+                    .endpoint(profile.getEc2MedataEndpoint())
+                    .build()
+            }
+            CredentialSourceType.ENVIRONMENT -> AwsCredentialsProviderChain.builder()
+                .addCredentialsProvider(SystemPropertyCredentialsProvider.create())
+                .addCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
+                .build()
+        }
 
     private fun createBasicProvider(profile: Profile) = StaticCredentialsProvider.create(
         AwsBasicCredentials.create(

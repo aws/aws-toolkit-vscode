@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
+import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.profiles.Profile
@@ -17,7 +18,7 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.promptForMfaToken
 import java.util.function.Supplier
 
-class ProfileAssumeRoleProvider(private val parentProvider: AwsCredentialsProvider, region: AwsRegion, profile: Profile) :
+class ProfileAssumeRoleProvider(@get:TestOnly internal val parentProvider: AwsCredentialsProvider, region: AwsRegion, profile: Profile) :
     AwsCredentialsProvider, SdkAutoCloseable {
     private val stsClient: StsClient
     private val credentialsProvider: StsAssumeRoleCredentialsProvider
@@ -31,7 +32,7 @@ class ProfileAssumeRoleProvider(private val parentProvider: AwsCredentialsProvid
         // https://docs.aws.amazon.com/sdkref/latest/guide/setting-global-duration_seconds.html
         val durationSecs = profile.property(ProfileProperty.DURATION_SECONDS).map { it.toIntOrNull() }.orElse(null) ?: 3600
 
-        stsClient = AwsClientManager.getInstance().createUnmanagedClient(parentProvider, Region.of(region.id),)
+        stsClient = AwsClientManager.getInstance().createUnmanagedClient(parentProvider, Region.of(region.id))
 
         credentialsProvider = StsAssumeRoleCredentialsProvider.builder()
             .stsClient(stsClient)

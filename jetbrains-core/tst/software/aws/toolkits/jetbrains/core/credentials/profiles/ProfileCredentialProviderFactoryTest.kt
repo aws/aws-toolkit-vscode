@@ -27,7 +27,11 @@ import org.mockito.kotlin.stub
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.sts.StsClient
@@ -513,7 +517,7 @@ class ProfileCredentialProviderFactoryTest {
     }
 
     @Test
-    fun `assume role profile creates a provider`() {
+    fun `assume role profile with a source_profile creates a provider`() {
         writeProfileFile(
             """
             [profile role]
@@ -534,7 +538,75 @@ class ProfileCredentialProviderFactoryTest {
         val validProfile = findCredentialIdentifier("role")
         val credentialsProvider = providerFactory.createProvider(validProfile)
 
-        assertThat(credentialsProvider).isInstanceOf<ProfileAssumeRoleProvider>()
+        assertThat(credentialsProvider).isInstanceOfSatisfying<ProfileAssumeRoleProvider> {
+            assertThat(it.parentProvider).isInstanceOf<StaticCredentialsProvider>()
+        }
+    }
+
+    @Test
+    fun `assume role profile with a credential_source of ec2 creates a provider`() {
+        writeProfileFile(
+            """
+            [profile role]
+            role_arn=arn1
+            role_session_name=testSession
+            credential_source=Ec2InstanceMetadata
+            """.trimIndent()
+        )
+
+        clientManager.create<StsClient>()
+
+        val providerFactory = createProviderFactory()
+        val validProfile = findCredentialIdentifier("role")
+        val credentialsProvider = providerFactory.createProvider(validProfile)
+
+        assertThat(credentialsProvider).isInstanceOfSatisfying<ProfileAssumeRoleProvider> {
+            assertThat(it.parentProvider).isInstanceOf<InstanceProfileCredentialsProvider>()
+        }
+    }
+
+    @Test
+    fun `assume role profile with a credential_source of ecs creates a provider`() {
+        writeProfileFile(
+            """
+            [profile role]
+            role_arn=arn1
+            role_session_name=testSession
+            credential_source=EcsContainer
+            """.trimIndent()
+        )
+
+        clientManager.create<StsClient>()
+
+        val providerFactory = createProviderFactory()
+        val validProfile = findCredentialIdentifier("role")
+        val credentialsProvider = providerFactory.createProvider(validProfile)
+
+        assertThat(credentialsProvider).isInstanceOfSatisfying<ProfileAssumeRoleProvider> {
+            assertThat(it.parentProvider).isInstanceOf<ContainerCredentialsProvider>()
+        }
+    }
+
+    @Test
+    fun `assume role profile with a credential_source of env vars creates a provider`() {
+        writeProfileFile(
+            """
+            [profile role]
+            role_arn=arn1
+            role_session_name=testSession
+            credential_source=Environment
+            """.trimIndent()
+        )
+
+        clientManager.create<StsClient>()
+
+        val providerFactory = createProviderFactory()
+        val validProfile = findCredentialIdentifier("role")
+        val credentialsProvider = providerFactory.createProvider(validProfile)
+
+        assertThat(credentialsProvider).isInstanceOfSatisfying<ProfileAssumeRoleProvider> {
+            assertThat(it.parentProvider).isInstanceOf<AwsCredentialsProviderChain>()
+        }
     }
 
     @Test

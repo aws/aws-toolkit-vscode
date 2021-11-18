@@ -34,7 +34,7 @@ class ProfileReaderTest {
     }
 
     @Test
-    fun testSourceProfileDoesNotExist() {
+    fun `source_profile points to a profile that does not exist`() {
         configFile.writeText(
             """
             [profile role]
@@ -52,7 +52,7 @@ class ProfileReaderTest {
     }
 
     @Test
-    fun testCircularChainProfiles() {
+    fun `source_profile chain can't go in a circle`() {
         configFile.writeText(
             """
             [profile role]
@@ -85,7 +85,7 @@ class ProfileReaderTest {
     }
 
     @Test
-    fun testSelfReferencingChain() {
+    fun `source_profile can't reference itself`() {
         configFile.writeText(
             """
             [profile role]
@@ -101,7 +101,7 @@ class ProfileReaderTest {
     }
 
     @Test
-    fun testAssumeRoleWithoutSourceProfile() {
+    fun `assume a role requires either a source_profile or credential_source`() {
         configFile.writeText(
             """
             [profile role]
@@ -112,11 +112,48 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to message("credentials.profile.missing_property", "role", "source_profile"))
+            .contains("role" to message("credentials.profile.assume_role.missing_source", "role"))
     }
 
     @Test
-    fun testNestedAssumeRoleWithoutSourceProfile() {
+    fun `assume a role can't specify both a source_profile or credential_source`() {
+        configFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+            credential_source=EcsContainer
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).containsKey("source_profile")
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("role" to message("credentials.profile.assume_role.duplicate_source", "role"))
+    }
+
+    @Test
+    fun `credential_source with invalid type is invalid`() {
+        configFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            credential_source=Foo
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).isEmpty()
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("role" to message("credentials.profile.assume_role.invalid_credential_source", "role"))
+    }
+
+    @Test
+    fun `assume a role with an invalid profile bubbles error`() {
         configFile.writeText(
             """
             [profile role]
@@ -131,7 +168,68 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to message("credentials.profile.missing_property", "source_profile", "source_profile"))
-            .contains("source_profile" to message("credentials.profile.missing_property", "source_profile", "source_profile"))
+            .contains("role" to message("credentials.profile.assume_role.missing_source", "source_profile"))
+            .contains("source_profile" to message("credentials.profile.assume_role.missing_source", "source_profile"))
+    }
+
+    @Test
+    fun `valid assume role with source_profile returns valid`() {
+        configFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).hasSize(2)
+        assertThat(invalidProfiles).isEmpty()
+    }
+
+    @Test
+    fun `valid assume role with credential_source returns valid`() {
+        configFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            credential_source=EcsContainer
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).hasSize(1)
+        assertThat(invalidProfiles).isEmpty()
+    }
+
+    @Test
+    fun `valid assume role with credential_source in a chain returns valid`() {
+        configFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+
+            [profile source_profile]
+            role_arn=arn2
+            source_profile=source_profile2
+
+            [profile source_profile2]
+            role_arn=arn3
+            source_profile=source_profile3
+
+            [profile source_profile3]
+            role_arn=arn4
+            credential_source=EcsContainer
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).hasSize(4)
+        assertThat(invalidProfiles).isEmpty()
     }
 }

@@ -19,7 +19,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileProperty
 import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
@@ -190,9 +189,4 @@ class ProfileAssumeRoleProviderTest {
         verify(stsClient).close()
         verify(parentProvider as SdkAutoCloseable).close()
     }
-
-    private fun profile(properties: MutableMap<String, String>.() -> Unit) = Profile.builder()
-        .name(aString())
-        .properties(mutableMapOf<String, String>().apply { properties(this) })
-        .build()
 }

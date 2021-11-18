@@ -21,17 +21,30 @@ fun Profile.traverseCredentialChain(profiles: Map<String, Profile>): Sequence<Pr
             throw IllegalArgumentException(message("credentials.profile.circular_profiles", name(), chain))
         }
 
-        val sourceProfile = currentProfile.requiredProperty(ProfileProperty.SOURCE_PROFILE)
-        currentProfile = profiles[sourceProfile]
-            ?: throw IllegalArgumentException(
-                message(
-                    "credentials.profile.source_profile_not_found",
-                    currentProfileName,
-                    sourceProfile
-                )
-            )
+        val sourceProfile = currentProfile.property(ProfileProperty.SOURCE_PROFILE)
+        val credentialSource = currentProfile.property(ProfileProperty.CREDENTIAL_SOURCE)
 
-        yield(currentProfile)
+        if (sourceProfile.isPresent && credentialSource.isPresent) {
+            throw IllegalArgumentException(message("credentials.profile.assume_role.duplicate_source", currentProfileName))
+        }
+
+        if (sourceProfile.isPresent) {
+            val sourceProfileName = sourceProfile.get()
+            currentProfile = profiles[sourceProfileName]
+                ?: throw IllegalArgumentException(
+                    message(
+                        "credentials.profile.source_profile_not_found",
+                        currentProfileName,
+                        sourceProfileName
+                    )
+                )
+
+            yield(currentProfile)
+        } else if (credentialSource.isPresent) {
+            return@sequence
+        } else {
+            throw IllegalArgumentException(message("credentials.profile.assume_role.missing_source", currentProfileName))
+        }
     }
 }
 
