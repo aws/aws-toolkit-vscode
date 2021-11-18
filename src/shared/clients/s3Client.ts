@@ -301,9 +301,10 @@ export class DefaultS3Client {
      * Assigns the target content type based on the mime type of the file.
      * If content type cannot be determined, defaults to {@link DEFAULT_CONTENT_TYPE}.
      *
+     * @returns The S3.ManagedUpload stream
      * @throws Error if there is an error calling S3 or piping between streams.
      */
-    public async uploadFile(request: UploadFileRequest): Promise<void> {
+    public async uploadFile(request: UploadFileRequest): Promise<S3.ManagedUpload> {
         getLogger().debug(
             'UploadFile called for bucketName: %s, key: %s, fileLocation: %s',
             request.bucketName,
@@ -330,13 +331,17 @@ export class DefaultS3Client {
             })
         }
 
-        try {
-            await Promise.all([promisifyReadStream(readStream), managedUploaded.promise()])
-        } catch (e) {
-            getLogger().error('Failed to upload %s to bucket %s: %O', request.key, request.bucketName, e)
-            throw e
-        }
-        getLogger().debug('UploadFile succeeded')
+        Promise.all([promisifyReadStream(readStream), managedUploaded.promise()]).then(
+            () => {
+                getLogger().debug('UploadFile succeeded')
+            },
+            err => {
+                getLogger().error('Failed to upload %s to bucket %s: %O', request.key, request.bucketName, err)
+                throw err
+            }
+        )
+
+        return managedUploaded
     }
 
     /**
