@@ -18,6 +18,7 @@ import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/m
 
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import globals from '../../shared/extensionGlobals'
+import { removeAnsi } from '../../shared/utilities/textUtilities'
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
@@ -132,11 +133,11 @@ export async function runCommandInContainer(
         const cp = await new ChildProcess(ssmPlugin, args).run()
         if (cp.exitCode !== 0) {
             result = 'Failed'
-            showOutputMessage(cp.stderr, outputChannel)
+            showOutputMessage(removeAnsi(cp.stderr), outputChannel)
             throw cp.error
         } else {
             result = 'Succeeded'
-            showOutputMessage(cp.stdout, outputChannel)
+            showOutputMessage(removeAnsi(cp.stdout), outputChannel)
         }
     } catch (error) {
         getLogger().error('Failed to execute command in container, %O', error)
