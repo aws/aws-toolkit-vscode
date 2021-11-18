@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Added support for AWS profiles that use the `credential_source` key"
-}

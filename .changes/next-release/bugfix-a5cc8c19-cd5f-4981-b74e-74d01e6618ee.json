@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix copying out of the DynamoDB table viewer copying the in-memory representation instead of displayed value"
-}

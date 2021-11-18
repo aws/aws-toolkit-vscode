@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix Python Lambda gutter icons not generating handler paths relative to the requirements.txt file (#2853)"
-}

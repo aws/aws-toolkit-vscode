@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix NullPointerException on combobox browse components (#2866)"
-}

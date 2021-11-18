@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix incorrect behavior with RDS Secrets Manager Auth when SSH tunneling is enabled (#2781)"
-}

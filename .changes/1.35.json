@@ -1,0 +1,35 @@
+{
+  "date" : "2021-11-18",
+  "version" : "1.35",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Respect the `duration_seconds` property when assuming a role if set on the profile"
+  }, {
+    "type" : "feature",
+    "description" : "Added 2021.3 support"
+  }, {
+    "type" : "feature",
+    "description" : "Added support for AWS profiles that use the `credential_source` key"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Python Lambda gutter icons not generating handler paths relative to the requirements.txt file (#2853)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix file changes not being saved before running Local Lambda run configurations (#2889)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix incorrect behavior with RDS Secrets Manager Auth when SSH tunneling is enabled (#2781)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix copying out of the DynamoDB table viewer copying the in-memory representation instead of displayed value"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix error about write actions when opening files from the S3 browser (#2913)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix NullPointerException on combobox browse components (#2866)"
+  }, {
+    "type" : "removal",
+    "description" : "Dropped support for the no longer supported Lambda runtime .NET Core 2.1"
+  } ]
+}

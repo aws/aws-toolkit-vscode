@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix file changes not being saved before running Local Lambda run configurations (#2889)"
-}

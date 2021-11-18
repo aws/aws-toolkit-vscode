@@ -1,3 +1,15 @@
+# _1.35_ (2021-11-18)
+- **(Feature)** Respect the `duration_seconds` property when assuming a role if set on the profile
+- **(Feature)** Added 2021.3 support
+- **(Feature)** Added support for AWS profiles that use the `credential_source` key
+- **(Bug Fix)** Fix Python Lambda gutter icons not generating handler paths relative to the requirements.txt file ([#2853](https://github.com/aws/aws-toolkit-jetbrains/issues/2853))
+- **(Bug Fix)** Fix file changes not being saved before running Local Lambda run configurations ([#2889](https://github.com/aws/aws-toolkit-jetbrains/issues/2889))
+- **(Bug Fix)** Fix incorrect behavior with RDS Secrets Manager Auth when SSH tunneling is enabled ([#2781](https://github.com/aws/aws-toolkit-jetbrains/issues/2781))
+- **(Bug Fix)** Fix copying out of the DynamoDB table viewer copying the in-memory representation instead of displayed value
+- **(Bug Fix)** Fix error about write actions when opening files from the S3 browser ([#2913](https://github.com/aws/aws-toolkit-jetbrains/issues/2913))
+- **(Bug Fix)** Fix NullPointerException on combobox browse components ([#2866](https://github.com/aws/aws-toolkit-jetbrains/issues/2866))
+- **(Removal)** Dropped support for the no longer supported Lambda runtime .NET Core 2.1
+
 # _1.34_ (2021-10-21)
 - **(Bug Fix)** Fix issue in Resources where some S3 Buckets fail to open
 - **(Bug Fix)** Fix null exception when view documentation action executed for types with missing doc urls

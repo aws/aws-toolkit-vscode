@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix error about write actions when opening files from the S3 browser (#2913)"
-}
