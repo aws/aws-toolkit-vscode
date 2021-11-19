@@ -1,0 +1,8 @@
+{
+    "experiments": [
+        {
+            "id": "jsonResourceModification",
+            "description": "Basic JSON-based create, update, and delete support for cloud resources in the Explorer"
+        }
+    ]
+}
