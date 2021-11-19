@@ -73,6 +73,7 @@ import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCrede
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
+import { configureExperiments } from './awsexplorer/commands/configureExperiments'
 
 let localize: nls.LocalizeFunc
 
@@ -205,6 +206,12 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.aboutToolkit', async () => {
                 await aboutToolkit()
+            })
+        )
+
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.configureExperiments', async () => {
+                await configureExperiments()
             })
         )
 
