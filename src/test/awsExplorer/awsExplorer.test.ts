@@ -29,6 +29,7 @@ describe('AwsExplorer', function () {
             createCloudFormationClient: sandbox.stub().returns({}),
             createAppRunnerClient: sandbox.stub().returns({}),
             createCloudControlClient: sandbox.stub().returns({}),
+            createIotClient: sandbox.stub().returns({}),
         }
         ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
