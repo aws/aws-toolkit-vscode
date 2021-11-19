@@ -304,7 +304,6 @@ with what features/services are supported.
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.OtherResourcesRootNode"/>
 
         <!-- Experiments -->
-        <experiment implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.DynamoDbTableViewer"/>
         <experiment implementation="software.aws.toolkits.jetbrains.services.ecs.EcsCloudDebugExperiment"/>
         <experiment implementation="software.aws.toolkits.jetbrains.services.ecs.EcsExecExperiment"/>
         <experiment implementation="software.aws.toolkits.jetbrains.services.dynamic.JsonResourceModificationExperiment"/>
