@@ -270,8 +270,6 @@
     "AWS.explorerNode.registry.error": "Error loading registry schema items",
     "AWS.explorerNode.registry.noSchemas": "[No Registry Schemas]",
     "AWS.explorerNode.registry.registryName.Not.Found": "Registry name not found",
-    "AWS.explorerNode.connecting.label": "Connecting...",
-    "AWS.explorerNode.connecting.tooltip": "Connecting...",
     "AWS.explorerNode.signIn": "Connect to {0}...",
     "AWS.explorerNode.signIn.tooltip": "Click here to select credentials for the {0} Toolkit",
     "AWS.explorerNode.error.label": "Failed to load resources (click for logs)",

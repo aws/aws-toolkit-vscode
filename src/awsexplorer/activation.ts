@@ -34,7 +34,6 @@ import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { RegionNode } from './regionNode'
-import { extensionSettingsPrefix } from '../shared/constants'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 
@@ -65,18 +64,8 @@ export async function activate(args: {
 
     ext.context.subscriptions.push(
         view.onDidChangeVisibility(async e => {
-            try {
-                if (!didTryAutoConnect && e.visible && !(await args.awsContext.getCredentials())) {
-                    didTryAutoConnect = true
-                    const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-                    const loginManager = new LoginManager(args.awsContext, new CredentialsStore())
-                    await loginWithMostRecentCredentials(toolkitSettings, loginManager)
-                }
-            } catch (err) {
-                getLogger().error('credentials: failed to auto-connect: %O', err)
-                showViewLogsMessage(
-                    localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting')
-                )
+            if (e.visible) {
+                await tryAutoConnect(args.awsContext)
             }
         })
     )
@@ -84,6 +73,21 @@ export async function activate(args: {
     args.awsContextTrees.addTree(awsExplorer)
 
     updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, ext.context)
+}
+
+async function tryAutoConnect(awsContext: AwsContext) {
+    try {
+        if (!didTryAutoConnect && !(await awsContext.getCredentials())) {
+            getLogger().debug('credentials: attempting autoconnect...')
+            didTryAutoConnect = true
+            const toolkitSettings = new DefaultSettingsConfiguration()
+            const loginManager = new LoginManager(awsContext, new CredentialsStore())
+            await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+        }
+    } catch (err) {
+        getLogger().error('credentials: failed to auto-connect: %O', (err as Error).message)
+        showViewLogsMessage(localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting'))
+    }
 }
 
 async function registerAwsExplorerCommands(
