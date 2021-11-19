@@ -156,7 +156,7 @@ To run a single test in VSCode, do any one of:
 
 #### Coverage report
 
-You can find the coverage report at `./coverage/index.html` after running the tests.
+You can find the coverage report at `./.coverage/index.html` after running the tests.
 
 ## Pull Requests
 
