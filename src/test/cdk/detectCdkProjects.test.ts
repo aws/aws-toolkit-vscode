@@ -12,7 +12,7 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { saveCdkJson } from './treeTestUtils'
 import { createTestWorkspaceFolder } from '../testUtil'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { writeJSON } from 'fs-extra'
+import { mkdirp, writeJSON } from 'fs-extra'
 
 describe('detectCdkProjects', function () {
     const workspacePaths: string[] = []
@@ -68,6 +68,22 @@ describe('detectCdkProjects', function () {
         assert.strictEqual(project.cdkJsonPath, cdkJsonPath)
         assert.strictEqual(project.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
         assert.strictEqual(project.treePath, path.normalize(path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json')))
+    })
+
+    it('detects deep projects', async function () {
+        const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'directory1', 'directory2', 'cdk.json')
+        await mkdirp(path.dirname(cdkJsonPath))
+        await saveCdkJson(cdkJsonPath)
+        const actual = await detectCdkProjects(workspaceFolders)
+        assert.strictEqual(actual[0]?.cdkJsonPath, cdkJsonPath)
+    })
+
+    it('ignores projects in `node_modules`', async function () {
+        const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'node_modules', 'lib', 'cdk.json')
+        await mkdirp(path.dirname(cdkJsonPath))
+        await saveCdkJson(cdkJsonPath)
+        const actual = await detectCdkProjects(workspaceFolders)
+        assert.strictEqual(actual.length, 0)
     })
 
     it('takes into account `output` from cdk.json to build tree.json path', async function () {
