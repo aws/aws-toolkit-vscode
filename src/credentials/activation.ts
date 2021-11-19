@@ -77,6 +77,7 @@ export async function loginWithMostRecentCredentials(
         if (await tryConnect(loginCredentialsId, false)) {
             return
         }
+        getLogger().warn('autoconnect: failed to login "%s"', previousCredentialsId)
     }
 
     const providerMap = await manager.getCredentialProviderNames()
