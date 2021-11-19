@@ -49,6 +49,6 @@ export async function createPolicyVersionCommand(
         return
     }
 
-    //Refresh the Policy folder node so that this node's children are cleared
-    await node.parent.refreshNode(commands)
+    //Refresh the node
+    node.refresh()
 }

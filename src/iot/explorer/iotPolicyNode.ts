@@ -88,6 +88,9 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
 
                 return [...this.versionNodes.values()]
             },
+            sort: (a: IotPolicyVersionNode, b: IotPolicyVersionNode) => {
+                return b.version.createDate!.getTime() - a.version.createDate!.getTime()
+            },
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.iot.noVersions', '[No Policy Versions found]')),
