@@ -35,6 +35,8 @@ export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResource
                 version.isDefaultVersion ? '*' : ''
             )
         )
+        // View policy by clicking the node in the explorer view
+        this.command = { title: 'View', command: 'aws.iot.viewPolicyVersion', arguments: [this] }
         this.update(version)
     }
 

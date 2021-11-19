@@ -73,7 +73,7 @@ describe('createPolicyCommand', function () {
 
         assert.strictEqual(
             window.inputBox.errorMessage,
-            "Policy name must only contain characters that are alphanumeric, or one of the following symbols: '+', '=', ',', '.', '@', '-'"
+            'Policy name must contain only alphanumeric characters and/or the following: +=.,@-'
         )
     })
 
