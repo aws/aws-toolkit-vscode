@@ -11,6 +11,7 @@ import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNod
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
+import { IotNode } from '../iot/explorer/iotNodes'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ext } from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
@@ -62,6 +63,10 @@ export class RegionNode extends AWSTreeNodeBase {
             {
                 serviceId: 'ecr',
                 createFn: () => new EcrNode(ext.toolkitClientBuilder.createEcrClient(this.regionCode)),
+            },
+            {
+                serviceId: 'iot',
+                createFn: () => new IotNode(ext.toolkitClientBuilder.createIotClient(this.regionCode)),
             },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
