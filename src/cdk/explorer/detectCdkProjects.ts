@@ -30,7 +30,7 @@ async function detectCdkProjectsFromWorkspaceFolder(
 ): Promise<CdkAppLocation[]> {
     const result = []
     const pattern = new vscode.RelativePattern(workspaceFolder, '**/cdk.json')
-    const cdkJsonFiles = await vscode.workspace.findFiles(pattern)
+    const cdkJsonFiles = await vscode.workspace.findFiles(pattern, '**/node_modules/**')
 
     for await (const cdkJson of cdkJsonFiles) {
         try {
