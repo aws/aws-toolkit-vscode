@@ -210,7 +210,7 @@
     "AWS.command.iot.revokeCert": "Revoke...",
     "AWS.command.iot.detachCert": "Detach...",
     "AWS.command.iot.setDefaultPolicy": "Set as Default",
-    "AWS.command.iot.editPolicyVersion": "Edit...",
+    "AWS.command.iot.viewPolicyVersion": "View...",
     "AWS.command.iot.copyEndpoint": "Copy Endpoint...",
     "AWS.command.s3.downloadFileAs": "Download As...",
     "AWS.command.s3.copyPath": "Copy Path",

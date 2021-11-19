@@ -10,8 +10,8 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 
-export async function editPolicyVersionCommand(node: IotPolicyVersionNode) {
-    getLogger().debug('EditPolicyVersion called for %O', node)
+export async function viewPolicyVersionCommand(node: IotPolicyVersionNode) {
+    getLogger().debug('viewPolicyVersion called for %O', node)
 
     const policyVersionId = node.version.versionId!
     const policyName = node.policy.name
@@ -23,7 +23,7 @@ export async function editPolicyVersionCommand(node: IotPolicyVersionNode) {
         await showPolicyContent(document)
     } catch (e) {
         getLogger().error('Failed to retrieve policy document')
-        showViewLogsMessage(localize('AWS.iot.editPolicyVersion.error', 'Failed to retrieve policy document'))
+        showViewLogsMessage(localize('AWS.iot.viewPolicyVersion.error', 'Failed to retrieve policy document'))
         return undefined
     }
 }

@@ -22,6 +22,11 @@ export async function createPolicyCommand(
 ): Promise<void> {
     getLogger().debug('CreatePolicy called for %O', node)
 
+    const data = await getPolicyDoc(window)
+    if (!data) {
+        return
+    }
+
     const policyName = await window.showInputBox({
         prompt: localize('AWS.iot.createPolicy.prompt', 'Enter a new policy name'),
         placeHolder: localize('AWS.iot.createPolicy.placeHolder', 'Policy Name'),
@@ -30,11 +35,6 @@ export async function createPolicyCommand(
 
     if (!policyName) {
         getLogger().info('CreatePolicy canceled')
-        return
-    }
-
-    const data = await getPolicyDoc(window)
-    if (!data) {
         return
     }
 
