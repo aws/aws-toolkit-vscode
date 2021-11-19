@@ -59,9 +59,12 @@ export class DefaultAwsContext implements AwsContext {
     /**
      * Sets the credentials to be used by the Toolkit.
      * Passing in undefined represents that there are no active credentials.
+     *
+     * @param credentials  Sets the Toolkit global credentials
+     * @param force  Force emit of "changed" event (useful on startup)
      */
-    public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
-        if (JSON.stringify(this.currentCredentials) === JSON.stringify(credentials)) {
+    public async setCredentials(credentials?: AwsContextCredentials, force?: boolean): Promise<void> {
+        if (!force && JSON.stringify(this.currentCredentials) === JSON.stringify(credentials)) {
             // Do nothing. Besides performance, this avoids infinite loops.
             return
         }
