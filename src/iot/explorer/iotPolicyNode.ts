@@ -12,7 +12,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Workspace } from '../../shared/vscode/workspace'
 import { inspect } from 'util'
 import { IotPolicyFolderNode } from './iotPolicyFolderNode'
-import { IotCertWithPoliciesNode } from './iotCertificateNode'
+import { IotCertificateNode } from './iotCertificateNode'
 import { IotPolicyVersionNode } from './iotPolicyVersionNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -28,7 +28,7 @@ import { Commands } from '../../shared/vscode/commands'
 export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly policy: IotPolicy,
-        public readonly parent: IotPolicyFolderNode | IotCertWithPoliciesNode,
+        public readonly parent: IotPolicyFolderNode | IotCertificateNode,
         public readonly iot: IotClient,
         collapsibleState: vscode.TreeItemCollapsibleState,
         protected readonly workspace = Workspace.vscode()
@@ -58,7 +58,7 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
 export class IotPolicyCertNode extends IotPolicyNode {
     public constructor(
         public readonly policy: IotPolicy,
-        public readonly parent: IotCertWithPoliciesNode,
+        public readonly parent: IotCertificateNode,
         public readonly iot: IotClient,
         protected readonly workspace = Workspace.vscode()
     ) {
