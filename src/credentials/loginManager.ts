@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { TimeoutError } from '../shared/utilities/timeoutUtils'
 import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
@@ -67,8 +68,7 @@ export class LoginManager {
             telemetryResult = 'Succeeded'
             return true
         } catch (err) {
-            // TODO: don't hardcode logic using error message, have a 'type' field instead
-            if (!(err as Error).message.includes('cancel')) {
+            if (!TimeoutError.isCancelled(err)) {
                 const msg = `login: failed to connect with "${asString(args.providerId)}": ${(err as Error).message}`
                 if (!args.passive) {
                     notifyUserInvalidCredentials(args.providerId)
