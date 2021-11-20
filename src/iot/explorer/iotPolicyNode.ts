@@ -31,10 +31,16 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
         public readonly parent: IotPolicyFolderNode | IotCertificateNode,
         public readonly iot: IotClient,
         collapsibleState: vscode.TreeItemCollapsibleState,
+        certs?: string[],
         protected readonly workspace = Workspace.vscode()
     ) {
         super(policy.name, collapsibleState)
-        this.tooltip = policy.name
+        this.tooltip = localize(
+            'AWS.explorerNode.iot.policyToolTip',
+            '{0}{1}',
+            policy.name,
+            certs?.length ?? 0 > 0 ? `\nAttached to: ${certs?.join(', ')}` : ''
+        )
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.policy),
             light: vscode.Uri.file(ext.iconPaths.light.policy),
@@ -62,7 +68,7 @@ export class IotPolicyCertNode extends IotPolicyNode {
         public readonly iot: IotClient,
         protected readonly workspace = Workspace.vscode()
     ) {
-        super(policy, parent, iot, vscode.TreeItemCollapsibleState.None, workspace)
+        super(policy, parent, iot, vscode.TreeItemCollapsibleState.None, undefined, workspace)
         this.contextValue = 'awsIotPolicyNode.Certificates'
     }
 }
@@ -74,9 +80,10 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
         public readonly policy: IotPolicy,
         public readonly parent: IotPolicyFolderNode,
         public readonly iot: IotClient,
+        certs?: string[],
         protected readonly workspace = Workspace.vscode()
     ) {
-        super(policy, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, workspace)
+        super(policy, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, certs, workspace)
         this.contextValue = 'awsIotPolicyNode.WithVersions'
         this.versionNodes = new Map<string, IotPolicyVersionNode>()
     }

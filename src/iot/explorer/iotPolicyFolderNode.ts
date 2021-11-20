@@ -67,18 +67,23 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
             response.policies
                 ?.filter(policy => policy.policyArn && policy.policyName)
                 .map(
-                    policy =>
+                    async policy =>
                         new IotPolicyWithVersionsNode(
                             { arn: policy.policyArn!, name: policy.policyName! },
                             this,
-                            this.iot
+                            this.iot,
+                            (await this.iot.listPolicyTargets({ policyName: policy.policyName! })).map(certId =>
+                                certId.substr(certId.length - 8, 8)
+                            )
                         )
                 ) ?? []
+
+        const resolvedPolicies = await Promise.all(newPolicies)
 
         getLogger().debug(`Loaded policies: %O`, newPolicies)
         return {
             newContinuationToken: response.nextMarker ?? undefined,
-            newChildren: [...newPolicies],
+            newChildren: [...resolvedPolicies],
         }
     }
 

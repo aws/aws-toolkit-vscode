@@ -38,6 +38,7 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
         public readonly parent: IotCertsFolderNode | IotThingNode,
         public readonly iot: IotClient,
         collapsibleState: vscode.TreeItemCollapsibleState,
+        public readonly things?: string[],
         protected readonly workspace = Workspace.vscode()
     ) {
         //Show only 8 characters in the explorer instead of the full 64. The entire
@@ -45,10 +46,11 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
         super(certificate.id.substring(0, 8).concat('...'), collapsibleState)
         this.tooltip = localize(
             'AWS.explorerNode.iot.certTooltip',
-            '{0}\nStatus: {1}\nCreated: {2}',
+            '{0}\nStatus: {1}\nCreated: {2}{3}',
             this.certificate.id,
             this.certificate.activeStatus,
-            moment(this.certificate.creationDate).format(LOCALIZED_DATE_FORMAT)
+            moment(this.certificate.creationDate).format(LOCALIZED_DATE_FORMAT),
+            things?.length ?? 0 > 0 ? `\nAttached to: ${things!.join(', ')}` : ''
         )
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.certificate),
@@ -133,9 +135,10 @@ export class IotThingCertNode extends IotCertificateNode {
         public readonly certificate: IotCertificate,
         public readonly parent: IotThingNode,
         public readonly iot: IotClient,
+        public readonly things?: string[],
         protected readonly workspace = Workspace.vscode()
     ) {
-        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, workspace)
+        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
         this.contextValue = `${CONTEXT_BASE}.Things.${this.certificate.activeStatus}`
     }
 }
@@ -148,9 +151,10 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
         public readonly certificate: IotCertificate,
         public readonly parent: IotCertsFolderNode,
         public readonly iot: IotClient,
+        public readonly things?: string[],
         protected readonly workspace = Workspace.vscode()
     ) {
-        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, workspace)
+        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
         this.contextValue = `${CONTEXT_BASE}.Policies.${this.certificate.activeStatus}`
     }
 }
