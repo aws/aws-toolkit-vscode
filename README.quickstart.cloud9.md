@@ -13,6 +13,7 @@ See [Get help](#get-help) for support.
     -   CloudFormation stacks
     -   [CloudWatch Logs](https://docs.aws.amazon.com/cloud9/latest/user-guide/cloudwatch-logs-toolkit.html)
     -   ECR
+    -   IoT explorer
     -   Lambda functions
     -   S3 explorer
 -   [AWS Serverless Applications (SAM)](#sam-and-lambda)
