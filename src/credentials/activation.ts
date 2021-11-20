@@ -34,10 +34,16 @@ export async function initialize(parameters: CredentialsInitializeParameters): P
     )
 }
 
+/**
+ * Auto-connects with the last-used credentials, else the "default" profile,
+ * else randomly tries the first three profiles (for Cloud9, ECS, or other
+ * container-like environments).
+ */
 export async function loginWithMostRecentCredentials(
     toolkitSettings: SettingsConfiguration,
     loginManager: LoginManager
 ): Promise<void> {
+    const defaultName = 'profile:default'
     const manager = CredentialsProviderManager.getInstance()
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
 
@@ -48,7 +54,7 @@ export async function loginWithMostRecentCredentials(
             getLogger().warn('autoconnect: getCredentialsProvider() lookup failed for profile: %O', asString(creds))
         } else if (provider.canAutoConnect()) {
             if (!(await loginManager.login({ passive: true, providerId: creds }))) {
-                getLogger().warn('autoconnect: failed to connect: %O', asString(creds))
+                getLogger().warn('autoconnect: failed to connect: "%s"', asString(creds))
                 return false
             }
             getLogger().info('autoconnect: connected: %O', asString(creds))
@@ -77,28 +83,40 @@ export async function loginWithMostRecentCredentials(
         if (await tryConnect(loginCredentialsId, false)) {
             return
         }
-        getLogger().warn('autoconnect: failed to login "%s"', previousCredentialsId)
+        getLogger().warn('autoconnect: login failed: "%s"', previousCredentialsId)
     }
 
     const providerMap = await manager.getCredentialProviderNames()
     const profileNames = Object.keys(providerMap)
     // Look for "default" profile or exactly one (any name).
-    const defaultProfile = profileNames.includes('profile:default')
-        ? 'profile:default'
+    const defaultProfile = profileNames.includes(defaultName)
+        ? defaultName
         : profileNames.length === 1
         ? profileNames[0]
         : undefined
 
-    if (!previousCredentialsId && !defaultProfile) {
+    if (!previousCredentialsId && profileNames.length === 0) {
         await loginManager.logout(true)
         getLogger().info('autoconnect: skipped (profileNames=%d)', profileNames.length)
         return
     }
 
-    // Auto-connect if there is a default profile.
+    // Try to auto-connect the default profile.
     if (defaultProfile) {
-        getLogger().debug('autoconnect: trying "%s"', defaultProfile)
+        getLogger().info('autoconnect: trying "%s"', defaultProfile)
         if (await tryConnect(providerMap[defaultProfile], !isCloud9())) {
+            return
+        }
+    }
+
+    // Try to auto-connect up to 3 other profiles (useful for Cloud9, ECS, …).
+    for (let i = 0; i < 4 && i < profileNames.length; i++) {
+        const p = profileNames[i]
+        if (p === defaultName) {
+            continue
+        }
+        getLogger().info('autoconnect: trying "%s"', p)
+        if (await tryConnect(providerMap[p], !isCloud9())) {
             return
         }
     }

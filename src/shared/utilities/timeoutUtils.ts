@@ -13,6 +13,10 @@ export class TimeoutError extends Error {
     public constructor(public readonly type: 'expired' | 'cancelled') {
         super(type === 'cancelled' ? TIMEOUT_CANCELLED_MESSAGE : TIMEOUT_EXPIRED_MESSAGE)
     }
+
+    public static isCancelled(err: any): err is TimeoutError & { type: 'cancelled' } {
+        return err instanceof TimeoutError && err.type === 'cancelled'
+    }
 }
 
 /**
