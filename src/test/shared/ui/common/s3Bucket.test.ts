@@ -12,10 +12,7 @@ import { createS3BucketPrompter, S3BucketPrompterOptions } from '../../../../sha
 import { Bucket, DefaultS3Client } from '../../../../shared/clients/s3Client'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 import { ext } from '../../../../shared/extensionGlobals'
-import { sleep } from '../../../../shared/utilities/promiseUtilities'
 import { WizardControl } from '../../../../shared/wizards/util'
-
-const mochaIt = it
 
 interface Scenario {
     buckets?: Bucket[] | Bucket[][]
@@ -28,18 +25,7 @@ function createBucket(name: string, region: string = '', arn: string = '') {
 
 describe('createS3BucketPrompter', function () {
     const client = mock(DefaultS3Client)
-    const scenarios = new Map<string, Scenario>()
-    // TODO: make this work with mocha Func/AsyncFunc
-    const it = <T extends (this: Mocha.Context & { scenario: S }) => any, S extends Scenario>(
-        title: string,
-        scenario: S,
-        func?: T
-    ) => {
-        scenarios.set(title, scenario)
-        mochaIt.call(this.ctx, title, function (this: Mocha.Context) {
-            return func?.call(Object.assign({ scenario: _.cloneDeep(scenario) }, this))
-        })
-    }
+    const scenarios: Record<string, Scenario> = {}
 
     before(function () {
         ext.toolkitClientBuilder = {} as any
@@ -48,7 +34,7 @@ describe('createS3BucketPrompter', function () {
     let tester: QuickPickTester<Bucket>
 
     beforeEach(function () {
-        const scenario = scenarios.get(this.currentTest?.title ?? '') ?? {}
+        const scenario = scenarios[this.currentTest?.title ?? '']
         const buckets = scenario.buckets ?? []
         const current = () => (!Array.isArray(buckets[0]) ? buckets : buckets.pop() ?? []) as Bucket[]
 
@@ -74,23 +60,33 @@ describe('createS3BucketPrompter', function () {
         })
 
         tester = createQuickPickTester(createS3BucketPrompter(scenario.options))
+        this.scenario = scenario
     })
 
     afterEach(function () {
         sinon.restore()
     })
 
-    it('uses a title', { options: { title: 'title' } }, function () {
+    function withScenario<S extends Scenario>(
+        title: string,
+        scenario: S,
+        fn: (this: Mocha.Context & { scenario: S }) => any
+    ) {
+        scenarios[title] = scenario
+        it(title, fn as any) // Mocha lies about the context type
+    }
+
+    withScenario('uses a title', { options: { title: 'title' } }, function () {
         assert.strictEqual(tester.quickPick.title, this.scenario.options.title)
     })
 
-    it('prompts for bucket', { buckets: [createBucket('bucket')] }, async function () {
+    withScenario('prompts for bucket', { buckets: [createBucket('bucket')] }, async function () {
         tester.assertItems(['bucket'])
         tester.acceptItem('bucket')
         assert.deepStrictEqual(await tester.result(), this.scenario.buckets[0])
     })
 
-    it(
+    withScenario(
         'can filter buckets',
         {
             buckets: [createBucket('bucket'), createBucket('other')],
@@ -103,7 +99,7 @@ describe('createS3BucketPrompter', function () {
         }
     )
 
-    it(
+    withScenario(
         'adds `baseBuckets`',
         { buckets: [createBucket('bucket')], options: { baseBuckets: ['base'] } },
         async function () {
@@ -114,7 +110,7 @@ describe('createS3BucketPrompter', function () {
         }
     )
 
-    it('shows placeholder', { options: { noBucketMessage: 'placeholder' } }, async function () {
+    withScenario('shows placeholder', { options: { noBucketMessage: 'placeholder' } }, async function () {
         tester.assertItems(['placeholder'])
         tester.acceptItem('placeholder')
         assert.strictEqual(await tester.result(), WizardControl.Back)
@@ -122,27 +118,29 @@ describe('createS3BucketPrompter', function () {
 
     // TODO: verify this differentiates based off region
     // we need some better mocking constructs to make this not so tedious
-    it('allows user to input their own bucket name', { buckets: [createBucket('my-bucket')] }, async function () {
-        if (vscode.version.startsWith('1.44')) {
-            return
+    withScenario(
+        'allows user to input their own bucket name',
+        { buckets: [createBucket('my-bucket')] },
+        async function () {
+            if (vscode.version.startsWith('1.44')) {
+                return
+            }
+
+            tester.setValue('my-bucket')
+            // TODO: use fake timer? Need to do this since the filter box is debounced
+            tester.acceptItem('Enter bucket name: ')
+            const result = await tester.result()
+            // TODO: we should fetch the real bucket and return rather than just the name
+            assert.strictEqual((result as Bucket).name, this.scenario.buckets[0].name)
         }
+    )
 
-        tester.setValue('my-bucket')
-        // TODO: use fake timer? Need to do this since the filter box is debounced
-        tester.addCallback(() => sleep(300))
-        tester.acceptItem('Enter bucket name: ')
-        const result = await tester.result()
-        // TODO: we should fetch the real bucket and return rather than just the name
-        assert.strictEqual((result as Bucket).name, this.scenario.buckets[0].name)
-    })
-
-    it('can create buckets from the filter box', {}, async function () {
+    withScenario('can create buckets from the filter box', {}, async function () {
         if (vscode.version.startsWith('1.44')) {
             return
         }
 
         tester.setValue('newbucket')
-        tester.addCallback(() => sleep(300))
         tester.acceptItem('Enter bucket name: ')
         await tester.result(createBucket('newbucket'))
     })

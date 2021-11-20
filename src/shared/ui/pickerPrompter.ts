@@ -15,6 +15,7 @@ import { getLogger } from '../logger/logger'
 import { RequireKey, UnionPromise } from '../utilities/tsUtils'
 import { QuickInputPrompter } from './quickInput'
 import { WizardControl } from '../wizards/util'
+import { Timeout } from '../utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -30,10 +31,11 @@ interface FilterBoxInput<T> {
      * Checks for any errors in the input.
      * Returned strings are shown in the 'detail' part of the user-input QuickPickItem.
      *
-     * If a Promise is returned, then a 'checking' message will be shown until the Promise is fulfilled
-     * after a constant debounce time.
+     * If a Promise is returned, then a 'checking' message will be shown until the Promise is fulfilled.
+     * Callers are expected to debounce if necessary. The cancellation token is fired if the input has
+     * changed since being called.
      */
-    readonly validator?: (input: string) => UnionPromise<string | undefined>
+    readonly validator?: (input: string, timeout: Timeout) => UnionPromise<string | undefined>
     /** TODO: Allows for any item to be used as opposed to the default. */
     // This is quite a bit more involved than just continuing to add more options, though it is the preferred way
     // itemFactory?: (input: string, validationMessage?: string) => DataQuickPickItem<T>
@@ -662,14 +664,10 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
 
     // TODO: this hook can be generalized to a per-item basis rather than a prompter as a whole
     private addFilterBoxInput(): vscode.Disposable {
-        const DEBOUNCE_TIME = 250
         const picker = this.quickPick as DataQuickPick<T | symbol>
-        const validator = (input: string) =>
-            this.settings.validator !== undefined ? this.settings.validator(input) : undefined
+        const validator = (input: string, token: Timeout) =>
+            this.settings.validator !== undefined ? this.settings.validator(input, token) : undefined
         const { label } = this.settings
-        let timer: NodeJS.Timeout
-        let pendingValidation: Promise<string | undefined> | undefined
-        let pendingValue: string | undefined
 
         const createItem = (detail: string = '') => {
             return {
@@ -682,30 +680,31 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
             } as DataQuickPickItem<T | symbol>
         }
 
+        const tokenSource = new (class {
+            private token?: Timeout
+            public create(): Timeout {
+                this.token?.complete(true)
+                this.token = new Timeout(5000)
+                this.token.timer.catch(() => {}) // So we don't get yelled at about unhandled promises
+                return this.token
+            }
+        })()
+
         const update = (value: string = '') => {
             const items = picker.items.filter(item => item.data !== CUSTOM_USER_INPUT)
-            clearTimeout(timer)
+            const token = tokenSource.create()
 
             if (value !== '') {
-                const validate = pendingValidation ?? validator(value)
+                const validate = validator(value, token)
                 if (validate instanceof Promise) {
-                    pendingValidation = validate
-                    pendingValue ??= value
-                    timer = setTimeout(() => {
-                        this.addBusyUpdate(
-                            validate.then(result => {
-                                const validatedValue = pendingValue
-                                pendingValidation = pendingValue = undefined
-                                if (validatedValue !== picker.value) {
-                                    // stale validation
-                                    update(picker.value)
-                                    return
-                                }
+                    this.addBusyUpdate(
+                        validate.then(result => {
+                            if (value === picker.value) {
                                 const inputItem = createItem(result)
                                 picker.items = [inputItem, ...items]
-                            })
-                        )
-                    }, DEBOUNCE_TIME)
+                            }
+                        })
+                    )
                 }
                 const inputItem = createItem(validate instanceof Promise ? 'Checking...' : validate)
                 picker.items = [inputItem, ...items]

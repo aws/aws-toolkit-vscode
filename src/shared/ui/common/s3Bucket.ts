@@ -18,8 +18,6 @@ import { showViewLogsMessage } from '../../utilities/messages'
 import { deferredCached } from '../../utilities/collectionUtils'
 import { addCodiconToString } from '../../utilities/textUtilities'
 import { isCloud9 } from '../../extensionUtilities'
-import { Prompter, PrompterConfiguration, PromptResult } from '../prompter'
-import { WizardControl } from '../../wizards/util'
 
 const localize = nls.loadMessageBundle()
 
@@ -122,12 +120,7 @@ async function createNewBucket(region: string, name: string): Promise<Bucket | u
 
 const DOES_NOT_EXIST = localize('AWS.prompts.s3Bucket.doesNotExists', 'Bucket does not exist, select to create')
 
-export function validateBucket(name: string, region: string): string | undefined | Promise<string> {
-    const checkName = validateBucketName(name)
-    if (checkName) {
-        return addCodiconToString('error', checkName)
-    }
-
+const checkBucket = debounce((name: string, region: string) => {
     const client = ext.toolkitClientBuilder.createS3Client(region)
     // For now we'll just treat any error as the bucket existing.
     // There's a few edge-cases here and we should only block if we _know_ that the bucket doesn't exist.
@@ -137,6 +130,37 @@ export function validateBucket(name: string, region: string): string | undefined
         .then(exists => {
             return exists ? '' : addCodiconToString('error', DOES_NOT_EXIST)
         })
+}, 500) // Hard-coded debounce, make configurable instead
+
+/**
+ * First check for things that are obviously wrong (like invalid characters), then check if the bucket exists
+ * by making an API call.
+ *
+ * This means this function can return a primitive or a promise, which the prompter will handle by 'buffering'
+ */
+export function validateBucket(name: string, region: string): string | undefined | Promise<string> {
+    const checkName = validateBucketName(name)
+    if (checkName) {
+        return addCodiconToString('error', checkName)
+    }
+
+    return checkBucket(name, region)
+}
+
+// How many debounce implementations have I added?
+function debounce<F extends (...args: any[]) => any>(fn: F, interval: number): F {
+    let timeout: NodeJS.Timeout
+    let promise: Promise<any> | undefined
+
+    return ((...args: any[]) => {
+        clearTimeout(timeout)
+        return (promise ??= new Promise(resolve => {
+            setTimeout(() => {
+                promise = undefined
+                resolve(fn(...args))
+            }, interval)
+        }))
+    }) as F
 }
 
 export interface S3BucketPrompterOptions {
@@ -150,62 +174,6 @@ export interface S3BucketPrompterOptions {
     /** These buckets are always shown. */
     baseBuckets?: string[]
     helpUri?: string | vscode.Uri
-}
-
-// TODO: this class implements the bucket creation as a new 'Yes/No' step but currently it is not a very smooth UX
-// since there is no instant feedback after the user selects the item. Need to have a way to show an empty quick
-// input to show loading while we check + create the bucket.
-export class S3BucketPrompter extends Prompter<Bucket> {
-    private _recentItem: Bucket | undefined
-
-    constructor(private readonly options: S3BucketPrompterOptions) {
-        super()
-    }
-
-    public get recentItem(): Bucket | undefined {
-        return this._recentItem
-    }
-    public set recentItem(response: Bucket | undefined) {
-        this._recentItem = response ?? this._recentItem
-    }
-    protected async promptUser(config: PrompterConfiguration<Bucket>): Promise<PromptResult<Bucket>> {
-        const bucketPrompt = createS3BucketPrompter(this.options)
-        const bucket = await bucketPrompt.promptControl(config)
-
-        if (!WizardControl.isValidResponse(bucket)) {
-            return bucket
-        }
-
-        const client = ext.toolkitClientBuilder.createS3Client(this.options.region ?? 'us-east-1')
-        // For now we'll just treat any error as the bucket existing.
-        // There's a few edge-cases here and we should only block if we _know_ that the bucket doesn't exist.
-        const exists = await client.checkBucketExists(bucket.name).catch(() => true)
-
-        if (!exists) {
-            const createBucketPrompter = createQuickPick(
-                [
-                    {
-                        label: 'Yes',
-                        data: async () => client.createBucket({ bucketName: bucket.name }).then(r => r.bucket),
-                    },
-                    {
-                        label: 'No',
-                        data: WizardControl.Retry,
-                    },
-                ],
-                {
-                    title: 'Bucket does not exist. Create a new one?',
-                }
-            )
-            createBucketPrompter.recentItem = this._recentItem
-            createBucketPrompter.onResponse(b => (this._recentItem = b))
-            const newConfig = { ...config }
-            delete newConfig.steps
-            return createBucketPrompter.promptControl(newConfig)
-        }
-
-        return bucket
-    }
 }
 
 export function createS3BucketPrompter(options: S3BucketPrompterOptions = {}): QuickPickPrompter<Bucket> {

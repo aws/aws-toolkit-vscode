@@ -21,6 +21,7 @@ import { recentlyUsed } from '../../../shared/localizedText'
 import { deferredCached } from '../../../shared/utilities/collectionUtils'
 import { createQuickPickTester, QuickPickTester } from './testUtils'
 import { WizardControl } from '../../../shared/wizards/util'
+import { Timeout } from '../../../shared/utilities/timeoutUtils'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -399,27 +400,60 @@ describe('FilterBoxQuickPickPrompter', function () {
         await tester.result(testItems[0].data)
     })
 
-    it('can handle async validation', async function () {
-        const input = 'not a number'
-        const validator = async (val: string) => {
-            await new Promise(r => setImmediate(r))
-            return filterBoxInput.validator(val)
-        }
-        const filterBox = { ...filterBoxInput, validator }
+    describe('async validation', function () {
+        const badInput = 'not a number'
+        let resolve: () => void
 
-        const newPicker = vscode.window.createQuickPick() as DataQuickPick<number>
-        testPrompter = new FilterBoxQuickPickPrompter(newPicker, { filterBoxInput: filterBox })
-        tester = createQuickPickTester(testPrompter)
-        testPrompter.loadItems(testItems)
+        beforeEach(function () {
+            const validatePromise = new Promise<void>(r => (resolve = r))
+            const validator = (val: string, token: Timeout) => {
+                // Simulates a function that can return primitives or promises
+                const validation = filterBoxInput.validator(val)
 
-        tester.setValue(input)
-        tester.addCallback(prompter => {
-            assert.strictEqual(prompter.quickPick.items[0].detail, 'Checking...')
+                if (validation === 'NaN') {
+                    return validatePromise.then(() => {
+                        return token.completed ? '' : validation
+                    })
+                }
+                return validation
+            }
+            const filterBox = { ...filterBoxInput, validator }
+
+            const newPicker = vscode.window.createQuickPick() as DataQuickPick<number>
+            testPrompter = new FilterBoxQuickPickPrompter(newPicker, { filterBoxInput: filterBox })
+            tester = createQuickPickTester(testPrompter, { ignoreBusy: true })
+            testPrompter.loadItems(testItems)
         })
-        tester.setValue(undefined)
-        tester.assertItems(testItems)
-        tester.hide()
 
-        await tester.result()
+        it('can handle async validation', async function () {
+            tester.setValue(badInput)
+            tester.addCallback(prompter => {
+                assert.strictEqual(prompter.quickPick.activeItems[0].detail, 'Checking...')
+            })
+            tester.addCallback(resolve)
+            tester.addCallback(prompter => {
+                const inputItem = prompter.quickPick.items.find(i => i.label === filterBoxInput.label)
+                assert.strictEqual(inputItem?.detail, 'NaN')
+            })
+            tester.setValue(undefined)
+            tester.assertItems(testItems)
+            tester.hide()
+
+            await tester.result()
+        })
+
+        it('can cancel stale validation', async function () {
+            tester.setValue(badInput)
+            tester.addCallback(prompter => {
+                assert.strictEqual(prompter.quickPick.items[0].detail, 'Checking...')
+            })
+            tester.setValue('100')
+            tester.addCallback(prompter => {
+                assert.strictEqual(prompter.quickPick.items[0].detail, '')
+            })
+            tester.acceptItem(filterBoxInput.label)
+
+            await tester.result(100)
+        })
     })
 })

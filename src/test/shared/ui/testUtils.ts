@@ -166,13 +166,15 @@ interface TestOptions {
     timeout?: number
     /** Forcefully fire event emitters when they normally wouldn't. (default: false) */
     forceEmits?: boolean
+    /** Ignores the input's `busy` flag when deciding if the UI is ready for an action. (default: false) */
+    ignoreBusy?: boolean
     // TODO: add formatting options?
 }
 
 const TEST_DEFAULTS: Required<TestOptions> = {
-    /** Timeout per-action */
     timeout: 2500,
     forceEmits: false,
+    ignoreBusy: false,
 }
 
 /**
@@ -235,7 +237,7 @@ function createQuickInputTester<T>(
     const testInputBox = quickInput as unknown as InputBox
 
     /* Waits until the picker is both enabled and not busy. */
-    function whenReady(): Promise<void[]> {
+    function whenReady(options: TestOptions): Promise<void[]> {
         return Promise.all([
             new Promise(r => {
                 if (quickInput.enabled) {
@@ -245,7 +247,7 @@ function createQuickInputTester<T>(
                 const d = prompter.onDidChangeEnablement(e => e && (d.dispose(), r()))
             }),
             new Promise(r => {
-                if (!quickInput.busy) {
+                if (!quickInput.busy || options.ignoreBusy) {
                     return r()
                 }
 
@@ -489,7 +491,7 @@ function createQuickInputTester<T>(
         while (actions.length > 0) {
             const trace = traces.shift()!
             const timeout = setTimeout(() => throwErrorWithTrace(trace, timeoutMessage), resolvedOptions.timeout)
-            await whenReady()
+            await whenReady(options)
             await executeAction(actions.shift()!, trace)
             clearTimeout(timeout)
         }
