@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CDK: fixed performance issue with project detection. Detection is no longer limited to a depth of two directories."
-}
