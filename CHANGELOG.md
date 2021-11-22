@@ -1,3 +1,12 @@
+## 1.34.0 2021-11-22
+
+- **Bug Fix** Improve auto-connect reliability
+- **Bug Fix** Toolkit appeared stuck at "Connecting..."
+- **Bug Fix** CDK: fixed performance issue with project detection. Detection is no longer limited to a depth of two directories.
+- **Feature** S3: Upload now supports multiple files
+- **Feature** Add AWS IoT Explorer
+- **Feature** AWS Explorer shows ECS resources and supports "Run command in container"
+
 ## 1.33.0 2021-11-04
 
 - **Breaking Change** Bumping VS Code minimum version: 1.42.0 => 1.44.2
