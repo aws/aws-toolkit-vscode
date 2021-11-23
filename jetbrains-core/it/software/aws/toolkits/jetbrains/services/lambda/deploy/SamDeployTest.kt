@@ -4,23 +4,19 @@
 package software.aws.toolkits.jetbrains.services.lambda.deploy
 
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.ExceptionUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.Parameter
 import software.amazon.awssdk.services.cloudformation.model.Tag
-import software.amazon.awssdk.services.ecr.EcrClient
-import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.EcrTemporaryRepositoryRule
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
-import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.lambda.steps.DeployLambda
 import software.aws.toolkits.jetbrains.services.lambda.steps.createDeployWorkflow
 import software.aws.toolkits.jetbrains.utils.assumeImageSupport
@@ -28,6 +24,8 @@ import software.aws.toolkits.jetbrains.utils.execution.steps.ConsoleViewWorkflow
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.readProject
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.RunWithRealCredentials
+import software.aws.toolkits.jetbrains.utils.rules.RunWithRealCredentials.RequiresRealCredentials
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.io.File
@@ -35,39 +33,26 @@ import java.nio.file.Paths
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
+@RequiresRealCredentials
 class SamDeployTest {
-    private val s3Client = S3Client.builder()
-        .region(Region.US_WEST_2)
-        .serviceConfiguration { it.pathStyleAccessEnabled(true) }
-        .build()
-
-    private val cfnClient = CloudFormationClient.builder()
-        .region(Region.US_WEST_2)
-        .build()
-
-    private val ecrClient = EcrClient.builder()
-        .region(Region.US_WEST_2)
-        .build()
-
     private val largeTemplateLocation = Paths.get(System.getProperty("testDataPath"), "testFiles", "LargeTemplate.yml").toString()
+    private val projectRule = HeavyJavaCodeInsightTestFixtureRule()
+    private val bucketRule = S3TemporaryBucketRule { projectRule.project.awsClient() }
+    private val repositoryRule = EcrTemporaryRepositoryRule { projectRule.project.awsClient() }
+    private val realCredentials = RunWithRealCredentials(projectRule)
 
     @Rule
     @JvmField
-    val projectRule = HeavyJavaCodeInsightTestFixtureRule()
-
-    @Rule
-    @JvmField
-    val bucketRule = S3TemporaryBucketRule(s3Client)
-
-    @Rule
-    @JvmField
-    val repositoryRule = EcrTemporaryRepositoryRule(ecrClient)
+    val ruleChain = RuleChain(
+        projectRule,
+        realCredentials,
+        repositoryRule,
+        bucketRule
+    )
 
     @Before
     fun setUp() {
         setSamExecutableFromEnvironment()
-
-        MockAwsConnectionManager.getInstance(projectRule.project).changeRegion(AwsRegion(Region.US_WEST_2.id(), "us-west-2", "aws"))
 
         // we need at least one module for deploy image (for read project)
         projectRule.fixture.addModule("main")
@@ -80,9 +65,8 @@ class SamDeployTest {
         runAssertsAndClean(stackName) {
             val changeSetArn = createChangeSet(templateFile, stackName, hasImage = false)
 
-            assertThat(changeSetArn).isNotNull()
-
-            val describeChangeSetResponse = cfnClient.describeChangeSet {
+            assertThat(changeSetArn).isNotNull
+            val describeChangeSetResponse = projectRule.project.awsClient<CloudFormationClient>().describeChangeSet {
                 it.stackName(stackName)
                 it.changeSetName(changeSetArn)
             }
@@ -105,9 +89,8 @@ class SamDeployTest {
         runAssertsAndClean(stackName) {
             val changeSetArn = createChangeSet(templateFile, stackName, hasImage = false, parameters = mapOf("InstanceType" to "t2.small"))
 
-            assertThat(changeSetArn).isNotNull()
-
-            val describeChangeSetResponse = cfnClient.describeChangeSet {
+            assertThat(changeSetArn).isNotNull
+            val describeChangeSetResponse = projectRule.project.awsClient<CloudFormationClient>().describeChangeSet {
                 it.stackName(stackName)
                 it.changeSetName(changeSetArn)
             }
@@ -129,9 +112,8 @@ class SamDeployTest {
         runAssertsAndClean(stackName) {
             val changeSetArn = createChangeSet(templateFile, stackName, hasImage = false, parameters = mapOf("TestParameter" to "FooBar"))
 
-            assertThat(changeSetArn).isNotNull()
-
-            val describeChangeSetResponse = cfnClient.describeChangeSet {
+            assertThat(changeSetArn).isNotNull
+            val describeChangeSetResponse = projectRule.project.awsClient<CloudFormationClient>().describeChangeSet {
                 it.stackName(stackName)
                 it.changeSetName(changeSetArn)
             }
@@ -158,9 +140,8 @@ class SamDeployTest {
         runAssertsAndClean(stackName) {
             val changeSetArn = createChangeSet(templateFile, stackName, hasImage = true)
 
-            assertThat(changeSetArn).isNotNull()
-
-            val describeChangeSetResponse = cfnClient.describeChangeSet {
+            assertThat(changeSetArn).isNotNull
+            val describeChangeSetResponse = projectRule.project.awsClient<CloudFormationClient>().describeChangeSet {
                 it.stackName(stackName)
                 it.changeSetName(changeSetArn)
             }
@@ -186,9 +167,9 @@ class SamDeployTest {
                 )
             )
 
-            assertThat(changeSetArn).isNotNull()
+            assertThat(changeSetArn).isNotNull
 
-            val describeChangeSetResponse = cfnClient.describeChangeSet {
+            val describeChangeSetResponse = projectRule.project.awsClient<CloudFormationClient>().describeChangeSet {
                 it.stackName(stackName)
                 it.changeSetName(changeSetArn)
             }
@@ -263,47 +244,49 @@ class SamDeployTest {
         hasImage: Boolean,
         parameters: Map<String, String> = emptyMap(),
         tags: Map<String, String> = emptyMap()
-    ): String? =
-        runUnderRealCredentials(projectRule.project) {
-            var changeSetArn: String? = null
-            val deployDialog = runInEdtAndGet {
-                val workflow = StepExecutor(
+    ): String? {
+        val bucket = bucketRule.createBucket(stackName)
+        val ecrRepo = if (hasImage) repositoryRule.createRepository(stackName).repositoryUri() else null
+
+        var changeSetArn: String? = null
+        val deployDialog = runInEdtAndGet {
+            val workflow = StepExecutor(
+                projectRule.project,
+                createDeployWorkflow(
                     projectRule.project,
-                    createDeployWorkflow(
-                        projectRule.project,
-                        templateFile,
-                        DeployServerlessApplicationSettings(
-                            stackName = stackName,
-                            bucket = bucketRule.createBucket(stackName),
-                            ecrRepo = if (hasImage) repositoryRule.createRepository(stackName).repositoryUri() else null,
-                            autoExecute = true,
-                            parameters = parameters,
-                            tags = tags,
-                            useContainer = false,
-                            capabilities = CreateCapabilities.values().toList()
-                        )
-                    ),
-                    ConsoleViewWorkflowEmitter.createEmitter(stackName)
-                )
+                    templateFile,
+                    DeployServerlessApplicationSettings(
+                        stackName = stackName,
+                        bucket = bucket,
+                        ecrRepo = ecrRepo,
+                        autoExecute = true,
+                        parameters = parameters,
+                        tags = tags,
+                        useContainer = false,
+                        capabilities = CreateCapabilities.values().toList()
+                    )
+                ),
+                ConsoleViewWorkflowEmitter.createEmitter(stackName)
+            )
 
-                workflow.onSuccess = {
-                    changeSetArn = it.getRequiredAttribute(DeployLambda.CHANGE_SET_ARN)
-                }
-
-                workflow.startExecution()
+            workflow.onSuccess = {
+                changeSetArn = it.getRequiredAttribute(DeployLambda.CHANGE_SET_ARN)
             }
 
-            deployDialog.waitFor(TimeUnit.MINUTES.toMillis(5))
-
-            changeSetArn
+            workflow.startExecution()
         }
+
+        deployDialog.waitFor(TimeUnit.MINUTES.toMillis(5))
+
+        return changeSetArn
+    }
 
     private fun runAssertsAndClean(stackName: String, asserts: () -> Unit) {
         try {
             asserts.invoke()
         } finally {
             try {
-                cfnClient.deleteStack {
+                projectRule.project.awsClient<CloudFormationClient>().deleteStack {
                     it.stackName(stackName)
                 }
             } catch (e: Exception) {

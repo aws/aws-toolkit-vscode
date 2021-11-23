@@ -24,16 +24,6 @@ phases:
 
     commands:
       - startDesktop.sh
-      - mkdir -p /tmp/.aws
-      - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name ui-test > /tmp/.aws/creds.json
-      - export KEY_ID=`jq -r '.Credentials.AccessKeyId' /tmp/.aws/creds.json`
-      - export SECRET=`jq -r '.Credentials.SecretAccessKey' /tmp/.aws/creds.json`
-      - export TOKEN=`jq -r '.Credentials.SessionToken' /tmp/.aws/creds.json`
-      - |
-        >/tmp/.aws/credentials echo "[default]
-        aws_access_key_id=$KEY_ID
-        aws_secret_access_key=$SECRET
-        aws_session_token=$TOKEN"
 
       # login to DockerHub so we don't get throttled
       - export DOCKER_USERNAME=`echo $DOCKER_HUB_TOKEN | jq -r '.username'`
@@ -48,11 +38,17 @@ phases:
           CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain $CODEARTIFACT_DOMAIN_NAME --query authorizationToken --output text --duration-seconds 3600)
         fi
 
+      - AWS_CONFIG_FILE=`mktemp`
+      - |        
+        >$AWS_CONFIG_FILE echo "[default]
+        role_arn=$ASSUME_ROLE_ARN
+        credential_source=EcsContainer"
+        
       - chmod +x gradlew
       - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin --console plain --info
 
       - ffmpeg -loglevel quiet -nostdin -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -vf drawtext="fontsize=48:box=1:boxcolor=black@0.75:boxborderw=5:fontcolor=white:x=0:y=h-text_h:text='%{gmtime\:%H\\\\\:%M\\\\\:%S}'" -framerate 12 -g 12 /tmp/screen_recording.mp4 &
-      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME uiTestCore coverageReport --console plain --info
+      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME uiTestCore coverageReport --console plain --info
 
   post_build:
     commands:

@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
-import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.ThreadTracker
 import com.intellij.testFramework.replaceService
 import org.junit.rules.ExternalResource
@@ -64,7 +63,6 @@ class MockClientManager : AwsClientManager() {
          */
         fun useRealImplementations(disposable: Disposable) {
             val clientManager = AwsClientManager()
-            Disposer.register(disposable, clientManager)
             ApplicationManager.getApplication().replaceService(ToolkitClientManager::class.java, clientManager, disposable)
 
             // Need to use real region provider to know about global services
@@ -77,7 +75,6 @@ class MockClientManager : AwsClientManager() {
             ThreadTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "idle-connection-reaper")
 
             val httpClient = AwsSdkClient()
-            Disposer.register(disposable, httpClient)
             ApplicationManager.getApplication().replaceService(SdkClientProvider::class.java, httpClient, disposable)
         }
     }

@@ -16,6 +16,7 @@ import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.core.utils.test.notNull
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.selectedPartition
+import software.aws.toolkits.jetbrains.core.credentials.profiles.DEFAULT_PROFILE_ID
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
@@ -480,9 +481,5 @@ class DefaultAwsConnectionManagerTest {
         manager.changeRegion(region)
 
         manager.waitUntilConnectionStateIsStable()
-    }
-
-    companion object {
-        const val DEFAULT_PROFILE_ID = "profile:default"
     }
 }
