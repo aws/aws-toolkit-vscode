@@ -1,3 +1,5 @@
+# _1.36_ (2021-11-23)
+
 # _1.35_ (2021-11-18)
 - **(Feature)** Respect the `duration_seconds` property when assuming a role if set on the profile
 - **(Feature)** Added 2021.3 support
