@@ -49,6 +49,7 @@ module.exports = {
         '@typescript-eslint/no-non-null-assertion': 'off',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/explicit-function-return-type': 'off',
         // TODO reenable this rule, tests mostly break this one (by changing off to error)
@@ -73,7 +74,7 @@ module.exports = {
         '@typescript-eslint/restrict-template-expressions': 'off', // 294 errors, forces template literals to be a certain type
         '@typescript-eslint/no-floating-promises': 'off', // 274 errors, promises should catch errors or be awaited
         '@typescript-eslint/ban-ts-comment': 'off', // 27 errors, bans compiler error exceptions
-        '@typescript-eslint/explicit-module-boundary-types': 'off', // Remove this once 'explicit-function-return-type' is on 
+        '@typescript-eslint/explicit-module-boundary-types': 'off', // Remove this once 'explicit-function-return-type' is on
         // Do not check loops so while(true) works. Potentially reevalute this.
         'no-constant-condition': ['error', { checkLoops: false }],
         'no-empty': 'off',
