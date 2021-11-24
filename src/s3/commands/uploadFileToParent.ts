@@ -12,5 +12,5 @@ import { S3FileNode } from '../explorer/s3FileNode'
  */
 export async function uploadFileToParentCommand(node: S3FileNode): Promise<void> {
     getLogger().debug('UploadFileToParent called for %O', node)
-    return vscode.commands.executeCommand('aws.s3.uploadFile', [node.parent])
+    return vscode.commands.executeCommand('aws.s3.uploadFile', node.parent)
 }
