@@ -2885,7 +2885,7 @@
         "@typescript-eslint/parser": "^5.4.0",
         "@vue/compiler-sfc": "^3.2.6",
         "circular-dependency-plugin": "^5.2.2",
-        "css-loader": "^6.2.0",
+        "css-loader": "^6.5.1",
         "decache": "^4.4.0",
         "esbuild-loader": "2.16.0",
         "eslint": "^8.3.0",
