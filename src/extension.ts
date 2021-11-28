@@ -64,7 +64,9 @@ import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { activate as activateDynamicResources } from './dynamicResources/activation'
+import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
+import { activate as activateIot } from './iot/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
@@ -245,6 +247,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateDynamicResources(context)
 
+        await activateIot(extContext)
+
+        await activateEcs(extContext)
+
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
             await activateSchemas({
@@ -334,6 +340,24 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.bucket = context.asAbsolutePath('resources/dark/s3/bucket.svg')
     ext.iconPaths.light.bucket = context.asAbsolutePath('resources/light/s3/bucket.svg')
+
+    ext.iconPaths.dark.thing = context.asAbsolutePath('resources/dark/iot/thing.svg')
+    ext.iconPaths.light.thing = context.asAbsolutePath('resources/light/iot/thing.svg')
+
+    ext.iconPaths.dark.certificate = context.asAbsolutePath('resources/dark/iot/certificate.svg')
+    ext.iconPaths.light.certificate = context.asAbsolutePath('resources/light/iot/certificate.svg')
+
+    ext.iconPaths.dark.policy = context.asAbsolutePath('resources/dark/iot/policy.svg')
+    ext.iconPaths.light.policy = context.asAbsolutePath('resources/light/iot/policy.svg')
+
+    ext.iconPaths.light.cluster = context.asAbsolutePath('resources/light/ecs/cluster.svg')
+    ext.iconPaths.dark.cluster = context.asAbsolutePath('resources/dark/ecs/cluster.svg')
+
+    ext.iconPaths.light.service = context.asAbsolutePath('resources/light/ecs/service.svg')
+    ext.iconPaths.dark.service = context.asAbsolutePath('resources/dark/ecs/service.svg')
+
+    ext.iconPaths.light.container = context.asAbsolutePath('resources/light/ecs/container.svg')
+    ext.iconPaths.dark.container = context.asAbsolutePath('resources/dark/ecs/container.svg')
 
     // temporary icons while Cloud9 does not have Codicon support
     ext.iconPaths.dark.plus = context.asAbsolutePath('resources/dark/plus.svg')

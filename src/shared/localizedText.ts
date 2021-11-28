@@ -7,18 +7,17 @@ import * as nls from 'vscode-nls'
 import { getIdeProperties } from './extensionUtilities'
 const localize = nls.loadMessageBundle()
 
-export const yes: string = localize('AWS.generic.response.yes', 'Yes')
-export const no: string = localize('AWS.generic.response.no', 'No')
-export const ok: string = localize('AWS.generic.response.ok', 'OK')
-export const localizedDelete: string = localize('AWS.generic.delete', 'Delete')
-export const cancel: string = localize('AWS.generic.cancel', 'Cancel')
-export const help: string = localize('AWS.generic.help', 'Help')
-export const invalidNumberWarning: string = localize(
-    'AWS.validateTime.error.invalidNumber',
-    'Input must be a positive number'
-)
-export const viewDocs: string = localize('AWS.generic.viewDocs', 'View Documentation')
-export const recentlyUsed: string = localize('AWS.generic.recentlyUsed', 'recently used')
+export const yes = localize('AWS.generic.response.yes', 'Yes')
+export const no = localize('AWS.generic.response.no', 'No')
+export const ok = localize('AWS.generic.response.ok', 'OK')
+export const retry = localize('AWS.generic.response.retry', 'Retry')
+export const skip = localize('AWS.generic.response.skip', 'Skip')
+export const localizedDelete = localize('AWS.generic.delete', 'Delete')
+export const cancel = localize('AWS.generic.cancel', 'Cancel')
+export const help = localize('AWS.generic.help', 'Help')
+export const invalidNumberWarning = localize('AWS.validateTime.error.invalidNumber', 'Input must be a positive number')
+export const viewDocs = localize('AWS.generic.viewDocs', 'View Documentation')
+export const recentlyUsed = localize('AWS.generic.recentlyUsed', 'recently used')
 
 export function checklogs(): string {
     const message = localize(
