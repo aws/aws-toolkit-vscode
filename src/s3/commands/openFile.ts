@@ -14,7 +14,7 @@ const SIZE_LIMIT = 50 * Math.pow(10, 6)
 
 export async function openFileCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
     if (await isFileSizeValid(node.file.sizeBytes, node)) {
-        await manager.openInReadMode(node)
+        await manager.openInReadMode({ bucket: node.bucket, ...node.file })
     }
 }
 
@@ -26,7 +26,7 @@ export async function openFileEditModeCommand(
         const size = uriOrNode.file.sizeBytes
 
         if (await isFileSizeValid(size, uriOrNode)) {
-            await manager.openInEditMode(uriOrNode)
+            await manager.openInEditMode({ bucket: uriOrNode.bucket, ...uriOrNode.file })
         }
     } else {
         return await manager.openInEditMode(uriOrNode)

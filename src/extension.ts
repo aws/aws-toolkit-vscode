@@ -130,7 +130,6 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         ext.schemaService = new SchemaService(context)
         ext.resourceManager = new AwsResourceManager(context)
-        ext.s3fileViewerManager = new S3FileViewerManager()
 
         await initializeCredentials({
             extensionContext: context,
@@ -156,6 +155,8 @@ export async function activate(context: vscode.ExtensionContext) {
             telemetryService: ext.telemetry,
             credentialsStore,
         }
+
+        ext.s3fileViewerManager = new S3FileViewerManager(extContext)
 
         // Used as a command for decoration-only codelenses.
         context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))

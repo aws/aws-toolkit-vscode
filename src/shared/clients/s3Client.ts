@@ -283,19 +283,10 @@ export class DefaultS3Client {
         getLogger().debug('DownloadFile succeeded')
     }
 
-    public async getHeadObject(request: HeadObjectRequest): Promise<S3.HeadObjectOutput> {
+    public async headObject(request: HeadObjectRequest): Promise<S3.HeadObjectOutput> {
         const s3 = await this.createS3()
-
         getLogger().debug('HeadObject called with request: %O', request)
-
-        try {
-            const response = await s3.headObject({ Bucket: request.bucketName, Key: request.key }).promise()
-
-            return response
-        } catch (e) {
-            getLogger().error('Failed to retrieve bucket header %s: %O', request.bucketName, e)
-            throw e
-        }
+        return s3.headObject({ Bucket: request.bucketName, Key: request.key }).promise()
     }
 
     /**
@@ -486,6 +477,7 @@ export class DefaultS3Client {
                         bucketName: request.bucketName,
                         lastModified: file.LastModified,
                         sizeBytes: file.Size,
+                        eTag: file.ETag,
                     })
             )
             .value()
@@ -718,6 +710,7 @@ export class DefaultFile {
     public readonly arn: string
     public readonly lastModified?: Date
     public readonly sizeBytes?: number
+    public readonly eTag?: string
 
     public constructor({
         partitionId,
@@ -725,18 +718,21 @@ export class DefaultFile {
         key,
         lastModified,
         sizeBytes,
+        eTag,
     }: {
         partitionId: string
         bucketName: string
         key: string
         lastModified?: Date
         sizeBytes?: number
+        eTag?: string
     }) {
         this.name = _(key).split(DEFAULT_DELIMITER).last()!
         this.key = key
         this.arn = buildArn({ partitionId, bucketName, key })
         this.lastModified = lastModified
         this.sizeBytes = sizeBytes
+        this.eTag = eTag
     }
 
     public [inspect.custom](): string {

@@ -67,7 +67,7 @@ export async function showViewLogsMessage(
  */
 export async function showConfirmationMessage(
     { prompt, confirm, cancel }: { prompt: string; confirm: string; cancel: string },
-    window: Window
+    window: Window = Window.vscode()
 ): Promise<boolean> {
     const confirmItem: vscode.MessageItem = { title: confirm }
     const cancelItem: vscode.MessageItem = { title: cancel, isCloseAffordance: true }

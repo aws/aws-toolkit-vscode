@@ -73,7 +73,11 @@ async function promptForSaveLocation(fileName: string, window: Window): Promise<
     })
 }
 
-export async function downloadWithProgress(node: S3FileNode, saveLocation: vscode.Uri, window: Window): Promise<void> {
+export async function downloadWithProgress(
+    node: S3FileNode,
+    saveLocation: vscode.Uri,
+    window: Window = Window.vscode()
+): Promise<void> {
     return window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,

@@ -28,7 +28,7 @@ import { S3FileViewerManager } from './fileViewerManager'
  */
 
 export async function activate(ctx: ExtContext): Promise<void> {
-    const manager = new S3FileViewerManager()
+    const manager = new S3FileViewerManager(ctx)
 
     ctx.extensionContext.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider('s3', new S3DocumentProvider(manager.onDidChange)),
