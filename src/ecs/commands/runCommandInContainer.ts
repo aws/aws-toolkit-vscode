@@ -21,7 +21,7 @@ import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 export async function runCommandInContainer(
     node: EcsContainerNode,
     window = Window.vscode(),
-    outputChannel = ext.outputChannel,
+    outputChannel = awsToolkit.outputChannel,
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)

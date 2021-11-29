@@ -20,7 +20,7 @@ describe('IotCertificateNode', function () {
 
     let iot: IotClient
     const certArn = 'certArn'
-    const cert = { id: 'cert', arn: certArn, activeStatus: 'ACTIVE', creationDate: new ext.clock.Date(0) }
+    const cert = { id: 'cert', arn: certArn, activeStatus: 'ACTIVE', creationDate: new awsToolkit.clock.Date(0) }
     const policy: Iot.Policy = { policyName: 'policy', policyArn: 'arn' }
     const expectedPolicy: IotPolicy = { name: 'policy', arn: 'arn' }
 

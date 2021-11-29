@@ -21,8 +21,8 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
         super('')
         this.update(logGroup)
         this.iconPath = {
-            dark: Uri.file(ext.iconPaths.dark.cloudWatchLogGroup),
-            light: Uri.file(ext.iconPaths.light.cloudWatchLogGroup),
+            dark: Uri.file(awsToolkit.iconPaths.dark.cloudWatchLogGroup),
+            light: Uri.file(awsToolkit.iconPaths.light.cloudWatchLogGroup),
         }
         this.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG
     }

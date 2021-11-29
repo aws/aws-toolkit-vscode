@@ -24,10 +24,12 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public constructor(
         public readonly region: string,
-        public readonly cloudFormation: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(
+        public readonly cloudFormation: CloudFormationClient = awsToolkit.toolkitClientBuilder.createCloudFormationClient(
             region
         ),
-        private readonly cloudControl: CloudControlClient = ext.toolkitClientBuilder.createCloudControlClient(region)
+        private readonly cloudControl: CloudControlClient = awsToolkit.toolkitClientBuilder.createCloudControlClient(
+            region
+        )
     ) {
         super(localize('AWS.explorerNode.resources.label', 'Resources'), vscode.TreeItemCollapsibleState.Collapsed)
         this.resourceTypeNodes = new Map<string, ResourceTypeNode>()

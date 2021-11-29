@@ -24,7 +24,7 @@ describe('cliUtils', async function () {
     })
 
     afterEach(async function () {
-        fs.remove(path.join(ext.context.globalStoragePath, 'tools'))
+        fs.remove(path.join(awsToolkit.context.globalStoragePath, 'tools'))
     })
 
     describe('installCli', async function () {

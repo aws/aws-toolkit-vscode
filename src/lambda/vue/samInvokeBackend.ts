@@ -163,7 +163,7 @@ async function getSamplePayload(): Promise<string | undefined> {
 async function getTemplate() {
     const items: (vscode.QuickPickItem & { templatePath: string })[] = []
     const NO_TEMPLATE = 'NOTEMPLATEFOUND'
-    for (const template of ext.templateRegistry.registeredItems) {
+    for (const template of awsToolkit.templateRegistry.registeredItems) {
         const resources = template.item.Resources
         if (resources) {
             for (const resource of Object.keys(resources)) {

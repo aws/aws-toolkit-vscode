@@ -114,7 +114,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
 
         // S3::Bucket's resource handler LIST is not regionalized at this time
         if (this.typeName === 'AWS::S3::Bucket') {
-            const s3 = ext.toolkitClientBuilder.createS3Client(this.parent.region)
+            const s3 = awsToolkit.toolkitClientBuilder.createS3Client(this.parent.region)
             const buckets = await s3.listBuckets()
             newResources = buckets.buckets.map(bucket => new ResourceNode(this, bucket.name, this.childContextValue))
         } else {

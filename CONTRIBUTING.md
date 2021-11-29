@@ -271,7 +271,7 @@ requests just from the model/types.
     src/shared/foo.d.ts
     ```
 4. To make requests with the SDK, pass the `*.api.json` service model to
-   `ext.sdkClientBuilder.createAndConfigureServiceClient` as a generic
+   `aws.sdkClientBuilder.createAndConfigureServiceClient` as a generic
    `Service` with `apiConfig=require('foo.api.json')`.
 
     ```ts
@@ -282,7 +282,7 @@ requests just from the model/types.
 
     ...
 
-    const c = await ext.sdkClientBuilder.createAwsService(
+    const c = await awsToolkit.sdkClientBuilder.createAwsService(
         opts => new Service(opts),
         {
             apiConfig: apiConfig,

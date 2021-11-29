@@ -142,7 +142,7 @@ async function downloadAndUnzipLambda(
     functionNode: LambdaFunctionNode,
     extractLocation: string,
     window = Window.vscode(),
-    lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
+    lambda = awsToolkit.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
     let tempDir: string | undefined

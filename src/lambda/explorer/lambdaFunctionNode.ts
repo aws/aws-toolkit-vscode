@@ -19,8 +19,8 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
         super('')
         this.update(configuration)
         this.iconPath = {
-            dark: Uri.file(ext.iconPaths.dark.lambda),
-            light: Uri.file(ext.iconPaths.light.lambda),
+            dark: Uri.file(awsToolkit.iconPaths.dark.lambda),
+            light: Uri.file(awsToolkit.iconPaths.light.lambda),
         }
     }
 

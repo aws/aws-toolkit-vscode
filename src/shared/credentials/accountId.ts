@@ -13,7 +13,7 @@ export async function getAccountId(credentials: AWS.Credentials, region: string)
     try {
         getLogger().verbose(`Getting AccountId from region ${region}`)
 
-        const sts = ext.toolkitClientBuilder.createStsClient(region, {
+        const sts = awsToolkit.toolkitClientBuilder.createStsClient(region, {
             credentials: credentials,
         })
 

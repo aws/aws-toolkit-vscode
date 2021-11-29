@@ -65,7 +65,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(this.regionCode)
+        const client: StepFunctionsClient = awsToolkit.toolkitClientBuilder.createStepFunctionsClient(this.regionCode)
         const functions: Map<string, StepFunctions.StateMachineListItem> = toMap(
             await toArrayAsync(listStateMachines(client)),
             details => details.name
@@ -89,8 +89,8 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
         super('')
         this.update(details)
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.statemachine),
-            light: vscode.Uri.file(ext.iconPaths.light.statemachine),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.statemachine),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.statemachine),
         }
     }
 

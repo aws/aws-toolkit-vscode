@@ -28,7 +28,7 @@ describe('SsoAccessTokenProvider', function () {
         startUrl: ssoUrl,
         region: ssoRegion,
         accessToken: 'dummyAccessToken',
-        expiresAt: new ext.clock.Date(HOUR_IN_MS).toISOString(),
+        expiresAt: new awsToolkit.clock.Date(HOUR_IN_MS).toISOString(),
     }
 
     const fakeCreateTokenResponse: SSOOIDC.CreateTokenResponse = {
@@ -39,7 +39,7 @@ describe('SsoAccessTokenProvider', function () {
     const validRegistation: SsoClientRegistration = {
         clientId: 'aString',
         clientSecret: 'aString',
-        expiresAt: new ext.clock.Date(HOUR_IN_MS).toISOString(),
+        expiresAt: new awsToolkit.clock.Date(HOUR_IN_MS).toISOString(),
     }
 
     const validAuthorization: StartDeviceAuthorizationResponse = {
@@ -217,7 +217,7 @@ describe('SsoAccessTokenProvider', function () {
             const dummyRegistration = {
                 clientId: 'badClient',
                 clientSecret: 'badSecret',
-                expiresAt: new ext.clock.Date(clock.Date.now() + HOUR_IN_MS).toISOString(),
+                expiresAt: new awsToolkit.clock.Date(clock.Date.now() + HOUR_IN_MS).toISOString(),
             }
 
             await assert.rejects(sut.authorizeClient(dummyRegistration))

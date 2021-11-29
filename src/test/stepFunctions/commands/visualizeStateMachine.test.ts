@@ -217,25 +217,25 @@ const mockExtensionContext: vscode.ExtensionContext = {
 describe('StepFunctions VisualizeStateMachine', async function () {
     let mockVsCode: MockVSCode
 
-    const oldWebviewScriptsPath = ext.visualizationResourcePaths.localWebviewScriptsPath
-    const oldWebviewBodyPath = ext.visualizationResourcePaths.webviewBodyScript
-    const oldCachePath = ext.visualizationResourcePaths.visualizationLibraryCachePath
-    const oldScriptPath = ext.visualizationResourcePaths.visualizationLibraryScript
-    const oldCssPath = ext.visualizationResourcePaths.visualizationLibraryCSS
-    const oldThemePath = ext.visualizationResourcePaths.stateMachineCustomThemePath
-    const oldThemeCssPath = ext.visualizationResourcePaths.stateMachineCustomThemeCSS
+    const oldWebviewScriptsPath = awsToolkit.visualizationResourcePaths.localWebviewScriptsPath
+    const oldWebviewBodyPath = awsToolkit.visualizationResourcePaths.webviewBodyScript
+    const oldCachePath = awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath
+    const oldScriptPath = awsToolkit.visualizationResourcePaths.visualizationLibraryScript
+    const oldCssPath = awsToolkit.visualizationResourcePaths.visualizationLibraryCSS
+    const oldThemePath = awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath
+    const oldThemeCssPath = awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS
 
     // Before all
     before(function () {
         mockVsCode = new MockVSCode()
 
-        ext.visualizationResourcePaths.localWebviewScriptsPath = mockUriOne
-        ext.visualizationResourcePaths.visualizationLibraryCachePath = mockUriOne
-        ext.visualizationResourcePaths.stateMachineCustomThemePath = mockUriOne
-        ext.visualizationResourcePaths.webviewBodyScript = mockUriOne
-        ext.visualizationResourcePaths.visualizationLibraryScript = mockUriOne
-        ext.visualizationResourcePaths.visualizationLibraryCSS = mockUriOne
-        ext.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUriOne
+        awsToolkit.visualizationResourcePaths.localWebviewScriptsPath = mockUriOne
+        awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath = mockUriOne
+        awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath = mockUriOne
+        awsToolkit.visualizationResourcePaths.webviewBodyScript = mockUriOne
+        awsToolkit.visualizationResourcePaths.visualizationLibraryScript = mockUriOne
+        awsToolkit.visualizationResourcePaths.visualizationLibraryCSS = mockUriOne
+        awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUriOne
 
         sandbox = sinon.createSandbox()
         sandbox.stub(StateMachineGraphCache.prototype, 'updateCachedFile').callsFake(async options => {
@@ -256,13 +256,13 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     // After all
     after(function () {
         sandbox.restore()
-        ext.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
-        ext.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
-        ext.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
-        ext.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
-        ext.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
-        ext.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
-        ext.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
+        awsToolkit.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
+        awsToolkit.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
+        awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
+        awsToolkit.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
+        awsToolkit.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
+        awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
+        awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
     })
 
     // Tests

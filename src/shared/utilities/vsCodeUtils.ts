@@ -22,8 +22,8 @@ export function fileIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: vs
     // Once this is resolved, ThemeIcons can be used for seti as well
     if (isFileIconThemeSeti()) {
         return {
-            dark: vscode.Uri.file(ext.iconPaths.dark.file),
-            light: vscode.Uri.file(ext.iconPaths.light.file),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.file),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.file),
         }
     } else {
         return vscode.ThemeIcon.File
@@ -35,8 +35,8 @@ export function folderIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: 
     // Once this is resolved, ThemeIcons can be used for seti as well
     if (isFileIconThemeSeti()) {
         return {
-            dark: vscode.Uri.file(ext.iconPaths.dark.folder),
-            light: vscode.Uri.file(ext.iconPaths.light.folder),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.folder),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.folder),
         }
     } else {
         return vscode.ThemeIcon.Folder

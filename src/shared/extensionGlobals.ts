@@ -31,7 +31,7 @@ function copyClock(): Clock {
     return { ...globalThis, Date, Promise } as Clock
 }
 
-function initializeManifestPaths(context: ExtensionContext): typeof ext['manifestPaths'] {
+function initializeManifestPaths(context: ExtensionContext): typeof awsToolkit['manifestPaths'] {
     return {
         endpoints: context.asAbsolutePath(path.join('resources', 'endpoints.json')),
         lambdaSampleRequests: context.asAbsolutePath(path.join('resources', 'vs-lambda-sample-request-manifest.xml')),
@@ -45,10 +45,10 @@ export function checkDidReload(context: ExtensionContext): boolean {
 /**
  * Initializes the global `ext` object and assigns it.
  */
-export function initializeExt(context: ExtensionContext, window: Window): typeof ext {
+export function initializeExt(context: ExtensionContext, window: Window): typeof awsToolkit {
     // TODO: we should throw here if already assigned. A few tests actually depend on the combined state
     // of the extension activating plus test setup, so for now we have to do it like this :(
-    return (globalThis.ext = {
+    return (globalThis.awsToolkit = {
         context,
         window,
         clock: copyClock(),
@@ -56,7 +56,7 @@ export function initializeExt(context: ExtensionContext, window: Window): typeof
         iconPaths: initializeIconPaths(context),
         manifestPaths: initializeManifestPaths(context),
         visualizationResourcePaths: {}, // TODO: initialize here instead of wherever else
-    } as typeof ext) // Need to cast for now until we can move more of the initialization to one place
+    } as typeof awsToolkit) // Need to cast for now until we can move more of the initialization to one place
 }
 
 /**
@@ -64,7 +64,7 @@ export function initializeExt(context: ExtensionContext, window: Window): typeof
  * All variables here must be initialized in the activate() method of extension.ts
  */
 declare global {
-    namespace ext {
+    namespace awsToolkit {
         // TODO: change these all to constants
         let context: ExtensionContext
         let window: Window

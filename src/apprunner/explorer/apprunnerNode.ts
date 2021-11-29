@@ -92,14 +92,14 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
     private clearPollTimer(): void {
         if (this.pollingNodes.size === 0 && this.pollTimer) {
-            ext.clock.clearInterval(this.pollTimer)
+            awsToolkit.clock.clearInterval(this.pollTimer)
             this.pollTimer = undefined
         }
     }
 
     public startPolling(id: string): void {
         this.pollingNodes.add(id)
-        this.pollTimer = this.pollTimer ?? ext.clock.setInterval(this.refresh.bind(this), POLLING_INTERVAL)
+        this.pollTimer = this.pollTimer ?? awsToolkit.clock.setInterval(this.refresh.bind(this), POLLING_INTERVAL)
     }
 
     public stopPolling(id: string): void {

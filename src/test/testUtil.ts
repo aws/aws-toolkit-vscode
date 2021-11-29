@@ -119,7 +119,7 @@ export function createExecutableFile(filepath: string, contents: string): void {
  * Always uses the extension-scoped clock instead of the real one.
  */
 export function installFakeClock(): FakeTimers.InstalledClock {
-    return FakeTimers.withGlobal(ext.clock).install({
+    return FakeTimers.withGlobal(awsToolkit.clock).install({
         shouldClearNativeTimers: true,
         shouldAdvanceTime: false,
     })

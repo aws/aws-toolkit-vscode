@@ -36,7 +36,7 @@ describe('getAccountId', function () {
 
         createStsClientStub = sandbox.stub(clientBuilder, 'createStsClient').returns(stsClient)
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
 
     afterEach(async function () {

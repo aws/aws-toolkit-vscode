@@ -25,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const resourceDiagnostics = vscode.languages.createDiagnosticCollection(
         localize('AWS.explorerNode.resources.label', 'Resources')
     )
-    const resourceManager = ext.resourceManager
+    const resourceManager = awsToolkit.resourceManager
 
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider('awsResource', new VirtualDocumentProvider()),

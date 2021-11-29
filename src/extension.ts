@@ -90,7 +90,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
-    ext.outputChannel = toolkitOutputChannel
+    awsToolkit.outputChannel = toolkitOutputChannel
 
     try {
         initializeCredentialsProviderManager()
@@ -100,7 +100,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const endpointsProvider = makeEndpointsProvider()
 
         const awsContext = new DefaultAwsContext(context)
-        ext.awsContext = awsContext
+        awsToolkit.awsContext = awsContext
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
@@ -114,17 +114,17 @@ export async function activate(context: vscode.ExtensionContext) {
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
-        ext.regionProvider = regionProvider
-        ext.awsContextCommands = new DefaultAWSContextCommands(
+        awsToolkit.regionProvider = regionProvider
+        awsToolkit.awsContextCommands = new DefaultAWSContextCommands(
             awsContext,
             awsContextTrees,
             regionProvider,
             loginManager
         )
-        ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-        ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
-        ext.schemaService = new SchemaService(context)
-        ext.resourceManager = new AwsResourceManager(context)
+        awsToolkit.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
+        awsToolkit.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
+        awsToolkit.schemaService = new SchemaService(context)
+        awsToolkit.resourceManager = new AwsResourceManager(context)
 
         await initializeCredentials({
             extensionContext: context,
@@ -137,8 +137,8 @@ export async function activate(context: vscode.ExtensionContext) {
             awsContext: awsContext,
             toolkitSettings: toolkitSettings,
         })
-        await ext.telemetry.start()
-        await ext.schemaService.start()
+        await awsToolkit.telemetry.start()
+        await awsToolkit.schemaService.start()
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -147,7 +147,7 @@ export async function activate(context: vscode.ExtensionContext) {
             regionProvider: regionProvider,
             settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
-            telemetryService: ext.telemetry,
+            telemetryService: awsToolkit.telemetry,
             credentialsStore,
         }
 
@@ -155,16 +155,22 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))
 
         context.subscriptions.push(
-            vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
+            vscode.commands.registerCommand(
+                'aws.login',
+                async () => await awsToolkit.awsContextCommands.onCommandLogin()
+            )
         )
         context.subscriptions.push(
-            vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
+            vscode.commands.registerCommand(
+                'aws.logout',
+                async () => await awsToolkit.awsContextCommands.onCommandLogout()
+            )
         )
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.credential.profile.create', async () => {
                 try {
-                    await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+                    await awsToolkit.awsContextCommands.onCommandCreateCredentialsProfile()
                 } finally {
                     recordAwsCreateCredentials()
                 }
@@ -261,7 +267,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        ext.telemetry.assertPassiveTelemetry(ext.didReload)
+        awsToolkit.telemetry.assertPassiveTelemetry(awsToolkit.didReload)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
@@ -282,8 +288,8 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-    await ext.telemetry.shutdown()
-    await ext.resourceManager.dispose()
+    await awsToolkit.telemetry.shutdown()
+    await awsToolkit.resourceManager.dispose()
 }
 
 function initializeCredentialsProviderManager() {
@@ -293,7 +299,7 @@ function initializeCredentialsProviderManager() {
 }
 
 function makeEndpointsProvider(): EndpointsProvider {
-    const localManifestFetcher = new FileResourceFetcher(ext.manifestPaths.endpoints)
+    const localManifestFetcher = new FileResourceFetcher(awsToolkit.manifestPaths.endpoints)
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
 
     const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)

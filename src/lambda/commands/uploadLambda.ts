@@ -417,7 +417,7 @@ async function uploadZipBuffer(
         message?: string | undefined
         increment?: number | undefined
     }>,
-    lambdaClient = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
+    lambdaClient = awsToolkit.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<telemetry.Result> {
     try {
         progress.report({

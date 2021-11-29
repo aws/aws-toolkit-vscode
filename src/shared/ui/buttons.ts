@@ -33,8 +33,8 @@ export function createHelpButton(
     tooltip: string = HELP_TOOLTIP
 ): QuickInputLinkButton {
     const iconPath = {
-        light: vscode.Uri.file(ext.iconPaths.light.help),
-        dark: vscode.Uri.file(ext.iconPaths.dark.help),
+        light: vscode.Uri.file(awsToolkit.iconPaths.light.help),
+        dark: vscode.Uri.file(awsToolkit.iconPaths.dark.help),
     }
 
     return new QuickInputLinkButton(uri, iconPath, tooltip)
@@ -114,8 +114,8 @@ export function createBackButton(): QuickInputButton<WizardControl> {
 export function createExitButton(): QuickInputButton<WizardControl> {
     return {
         iconPath: {
-            light: ext.iconPaths.light.exit,
-            dark: ext.iconPaths.dark.exit,
+            light: awsToolkit.iconPaths.light.exit,
+            dark: awsToolkit.iconPaths.dark.exit,
         },
         tooltip: localize('AWS.generic.exit', 'Exit'),
         onClick: () => WIZARD_EXIT,
@@ -125,8 +125,8 @@ export function createExitButton(): QuickInputButton<WizardControl> {
 export function createRefreshButton(): QuickInputButton<void> {
     return {
         iconPath: {
-            light: ext.iconPaths.light.refresh,
-            dark: ext.iconPaths.dark.refresh,
+            light: awsToolkit.iconPaths.light.refresh,
+            dark: awsToolkit.iconPaths.dark.refresh,
         },
         tooltip: localize('AWS.generic.refresh', 'Refresh'),
     }
@@ -136,8 +136,8 @@ export function createRefreshButton(): QuickInputButton<void> {
 export function createPlusButton(tooltip?: string): QuickInputButton<void> {
     return {
         iconPath: {
-            light: ext.iconPaths.light.plus,
-            dark: ext.iconPaths.dark.plus,
+            light: awsToolkit.iconPaths.light.plus,
+            dark: awsToolkit.iconPaths.dark.plus,
         },
         tooltip,
     }

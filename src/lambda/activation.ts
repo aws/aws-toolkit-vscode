@@ -25,7 +25,7 @@ export async function activate(context: ExtContext): Promise<void> {
             async (node: LambdaFunctionNode) =>
                 await deleteLambda({
                     deleteParams: { functionName: node.configuration.FunctionName || '' },
-                    lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
+                    lambdaClient: awsToolkit.toolkitClientBuilder.createLambdaClient(node.regionCode),
                     outputChannel,
                     onRefresh: async () =>
                         await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent),

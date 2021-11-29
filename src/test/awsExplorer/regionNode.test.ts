@@ -19,7 +19,7 @@ describe('RegionNode', function () {
         sandbox = sinon.createSandbox()
         console.log('initializing...')
 
-        // contingency for current Node impl: requires a client built from ext.toolkitClientBuilder.
+        // contingency for current Node impl: requires a client built from awsToolkit.toolkitClientBuilder.
         const clientBuilder = {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
@@ -29,7 +29,7 @@ describe('RegionNode', function () {
             createCloudControlClient: sandbox.stub().returns({}),
             createIotClient: sandbox.stub().returns({}),
         }
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         testNode = new RegionNode({ id: regionCode, name: regionName }, new FakeRegionProvider())
     })

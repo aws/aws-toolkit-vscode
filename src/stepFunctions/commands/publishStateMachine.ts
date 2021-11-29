@@ -75,7 +75,7 @@ export async function publishStateMachine(
         region = isValidResponse(r) ? r.id : awsContext.getCredentialDefaultRegion()
     }
 
-    const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(region)
+    const client: StepFunctionsClient = awsToolkit.toolkitClientBuilder.createStepFunctionsClient(region)
 
     try {
         const wizardContext: PublishStateMachineWizardContext = new DefaultPublishStateMachineWizardContext(region)

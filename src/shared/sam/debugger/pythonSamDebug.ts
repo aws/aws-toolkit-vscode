@@ -98,7 +98,7 @@ export async function makePythonDebugConfig(
 
         if (!config.useIkpdb) {
             // Mounted in the Docker container as: /tmp/lambci_debug_files
-            config.debuggerPath = ext.context.asAbsolutePath(path.join('resources', 'debugger'))
+            config.debuggerPath = awsToolkit.context.asAbsolutePath(path.join('resources', 'debugger'))
             // NOTE: SAM CLI splits on each *single* space in `--debug-args`!
             //       Extra spaces will be passed as spurious "empty" arguments :(
             const debugArgs = `${DEBUGPY_WRAPPER_PATH} --listen 0.0.0.0:${config.debugPort} --wait-for-client --log-to-stderr`

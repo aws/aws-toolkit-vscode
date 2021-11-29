@@ -164,7 +164,7 @@ describe('isStepFunctionsRole', function () {
         RoleName: '',
         RoleId: 'myRole',
         Arn: 'arn:aws:iam::123456789012:role/myRole',
-        CreateDate: new ext.clock.Date(),
+        CreateDate: new awsToolkit.clock.Date(),
     }
 
     it('return true if the Step Functions service principal is in the AssumeRolePolicyDocument', function () {

@@ -92,7 +92,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(this.regionCode)
+        const client: SsmDocumentClient = awsToolkit.toolkitClientBuilder.createSsmClient(this.regionCode)
         const documents = new Map<string, SSM.Types.DocumentIdentifier>()
 
         const docs = await this.getDocumentByOwner(client)

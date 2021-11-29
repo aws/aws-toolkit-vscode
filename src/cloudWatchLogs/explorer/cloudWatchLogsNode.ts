@@ -50,7 +50,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
+        const client: CloudWatchLogsClient = awsToolkit.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
         const logGroups = await this.getLogGroups(client)
 
         updateInPlace(

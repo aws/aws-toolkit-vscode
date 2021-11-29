@@ -56,7 +56,7 @@ export async function uploadFileCommand(
     getBucket = promptUserForBucket,
     getFile = getFilesToUpload,
     window = Window.vscode(),
-    outputChannel = ext.outputChannel,
+    outputChannel = awsToolkit.outputChannel,
     commands = Commands.vscode()
 ): Promise<void> {
     let node: S3BucketNode | S3FolderNode | undefined
@@ -187,7 +187,7 @@ function statFile(file: vscode.Uri) {
 async function runBatchUploads(
     uploadRequests: UploadRequest[],
     window = Window.vscode(),
-    outputChannel = ext.outputChannel
+    outputChannel = awsToolkit.outputChannel
 ): Promise<void> {
     let failedRequests = await uploadBatchOfFiles(uploadRequests, window, outputChannel)
 
@@ -254,7 +254,7 @@ async function runBatchUploads(
 async function uploadBatchOfFiles(
     uploadRequests: UploadRequest[],
     window = Window.vscode(),
-    outputChannel = ext.outputChannel
+    outputChannel = awsToolkit.outputChannel
 ): Promise<UploadRequest[]> {
     const response = await window.withProgress(
         {

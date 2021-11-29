@@ -85,7 +85,7 @@ export async function invokeLambda(params: {
                     onPostMessage: message => view.webview.postMessage(message),
                 }),
                 undefined,
-                ext.context.subscriptions
+                awsToolkit.context.subscriptions
             )
         } catch (err) {
             invokeResult = 'Failed'
@@ -161,7 +161,7 @@ function createMessageReceivedFunc({
                     if (!fn.configuration.FunctionArn) {
                         throw new Error(`Could not determine ARN for function ${fn.configuration.FunctionName}`)
                     }
-                    const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
+                    const client: LambdaClient = awsToolkit.toolkitClientBuilder.createLambdaClient(fn.regionCode)
                     const funcResponse = await client.invoke(fn.configuration.FunctionArn, message.value)
                     const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ''
                     const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})

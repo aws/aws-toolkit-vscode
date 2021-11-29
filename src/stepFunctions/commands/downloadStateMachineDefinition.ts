@@ -26,7 +26,7 @@ export async function downloadStateMachineDefinition(params: {
     let downloadResult: Result = 'Succeeded'
     const stateMachineName = params.stateMachineNode.details.name
     try {
-        const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(
+        const client: StepFunctionsClient = awsToolkit.toolkitClientBuilder.createStepFunctionsClient(
             params.stateMachineNode.regionCode
         )
         const stateMachineDetails: StepFunctions.DescribeStateMachineOutput = await client.getStateMachineDetails(

@@ -95,7 +95,7 @@ export class SchemaService {
 
     // TODO: abstract into a common abstraction for background pollers
     private async startTimer(): Promise<void> {
-        this.timer = ext.clock.setTimeout(
+        this.timer = awsToolkit.clock.setTimeout(
             // this is async so that we don't have pseudo-concurrent invocations of the callback
             async () => {
                 await this.processUpdates()

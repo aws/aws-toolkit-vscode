@@ -252,7 +252,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean> {
-        const template = ext.templateRegistry.getRegisteredItem(templatePath.fsPath)
+        const template = awsToolkit.templateRegistry.getRegisteredItem(templatePath.fsPath)
         const resources = template?.item?.Resources
         if (resources === undefined) {
             return false
@@ -463,15 +463,15 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     ): Promise<string | undefined> {
         const createBucket = {
             iconPath: {
-                light: vscode.Uri.file(ext.iconPaths.light.plus),
-                dark: vscode.Uri.file(ext.iconPaths.dark.plus),
+                light: vscode.Uri.file(awsToolkit.iconPaths.light.plus),
+                dark: vscode.Uri.file(awsToolkit.iconPaths.dark.plus),
             },
             tooltip: CREATE_NEW_BUCKET,
         }
         const enterBucket = {
             iconPath: {
-                light: vscode.Uri.file(ext.iconPaths.light.edit),
-                dark: vscode.Uri.file(ext.iconPaths.dark.edit),
+                light: vscode.Uri.file(awsToolkit.iconPaths.light.edit),
+                dark: vscode.Uri.file(awsToolkit.iconPaths.dark.edit),
             },
             tooltip: ENTER_BUCKET,
         }
@@ -594,7 +594,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
 
         const populator = new IteratorTransformer<EcrRepository, vscode.QuickPickItem>(
-            () => ext.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
+            () => awsToolkit.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
             response => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
         )
         const controller = new picker.IteratingQuickPickController(quickPick, populator)
@@ -846,7 +846,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
 
             try {
-                const s3Client = ext.toolkitClientBuilder.createS3Client(this.response.region!)
+                const s3Client = awsToolkit.toolkitClientBuilder.createS3Client(this.response.region!)
                 const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
@@ -984,7 +984,7 @@ function validateStackName(value: string): string | undefined {
 }
 
 async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
-    const templateUris = ext.templateRegistry.registeredItems.map(o => vscode.Uri.file(o.path))
+    const templateUris = awsToolkit.templateRegistry.registeredItems.map(o => vscode.Uri.file(o.path))
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
@@ -1049,7 +1049,7 @@ async function populateS3QuickPick(
         }
 
         try {
-            const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
+            const s3Client = awsToolkit.toolkitClientBuilder.createS3Client(selectedRegion)
 
             quickPick.items = [...baseItems]
 

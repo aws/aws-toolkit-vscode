@@ -306,7 +306,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
         const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
             const region = this.getDefaultRegion() ?? 'us-east-1'
-            const stsClient = ext.toolkitClientBuilder.createStsClient(region, { credentials })
+            const stsClient = awsToolkit.toolkitClientBuilder.createStsClient(region, { credentials })
             const response = await stsClient.assumeRole(params)
             return {
                 accessKeyId: response.Credentials!.AccessKeyId!,

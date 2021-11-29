@@ -57,7 +57,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     public async pickLogStream(): Promise<string | undefined> {
         let telemetryResult: telemetry.Result = 'Succeeded'
 
-        const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
+        const client: CloudWatchLogsClient = awsToolkit.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupName: this.logGroupName,
             orderBy: 'LastEventTime',

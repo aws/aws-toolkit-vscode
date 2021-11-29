@@ -12,13 +12,15 @@ import { CredentialsProvider, CredentialsId, asString } from '../../../credentia
 describe('CredentialsStore', async function () {
     let sandbox: sinon.SinonSandbox
     let sut: CredentialsStore
-    const sampleCredentials = { expiration: new ext.clock.Date(ext.clock.Date.now() + 1000 * 60 * 60) } as Credentials
+    const sampleCredentials = {
+        expiration: new awsToolkit.clock.Date(awsToolkit.clock.Date.now() + 1000 * 60 * 60),
+    } as Credentials
     const sampleCredentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: 'someId',
     }
     const sampleExpiredCredentials = {
-        expiration: new ext.clock.Date(ext.clock.Date.now() - 1000 * 60 * 60),
+        expiration: new awsToolkit.clock.Date(awsToolkit.clock.Date.now() - 1000 * 60 * 60),
     } as Credentials
 
     beforeEach(async function () {

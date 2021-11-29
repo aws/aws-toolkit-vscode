@@ -37,7 +37,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             if (!node) {
                 const awsContext = ctx.awsContext
                 const regionCode = awsContext.getCredentialDefaultRegion()
-                const s3Client = ext.toolkitClientBuilder.createS3Client(regionCode)
+                const s3Client = awsToolkit.toolkitClientBuilder.createS3Client(regionCode)
                 const document = vscode.window.activeTextEditor?.document.uri
                 await uploadFileCommand(s3Client, document)
             } else {

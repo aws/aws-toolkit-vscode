@@ -215,7 +215,7 @@ export class LogStreamRegistry {
         },
         nextToken?: string
     ): Promise<CloudWatchLogs.GetLogEventsResponse> {
-        const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(
+        const client: CloudWatchLogsClient = awsToolkit.toolkitClientBuilder.createCloudWatchLogsClient(
             logGroupInfo.regionName
         )
 

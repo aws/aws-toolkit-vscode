@@ -15,7 +15,7 @@ export async function createFromEcr(node: EcrTagNode | EcrRepositoryNode): Promi
 
     try {
         const ecrNode = (node as any).tag === undefined ? (node as EcrRepositoryNode) : (node as EcrTagNode).parent
-        const client = ext.toolkitClientBuilder.createAppRunnerClient(ecrNode.regionCode)
+        const client = awsToolkit.toolkitClientBuilder.createAppRunnerClient(ecrNode.regionCode)
         const wizard = new CreateAppRunnerServiceWizard(ecrNode.regionCode, {
             SourceConfiguration: {
                 ImageRepository: {

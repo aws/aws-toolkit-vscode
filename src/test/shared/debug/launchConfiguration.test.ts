@@ -104,7 +104,7 @@ describe('LaunchConfiguration', function () {
     const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp2.1-plain-sam-app/template.yaml'))
 
     beforeEach(async function () {
-        await ext.templateRegistry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
+        await awsToolkit.templateRegistry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
         mockConfigSource = mock()
@@ -114,7 +114,7 @@ describe('LaunchConfiguration', function () {
     })
 
     afterEach(function () {
-        ext.templateRegistry.reset()
+        awsToolkit.templateRegistry.reset()
     })
 
     it('getConfigsMappedToTemplates(type=api)', async function () {

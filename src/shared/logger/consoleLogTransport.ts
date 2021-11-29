@@ -23,7 +23,7 @@ export class ConsoleLogTransport extends Transport {
     }
 
     public log(info: LogEntry, next: () => void): void {
-        ext.clock.setImmediate(() => {
+        awsToolkit.clock.setImmediate(() => {
             this.emit('logged', info)
             console.log(info[MESSAGE])
         })

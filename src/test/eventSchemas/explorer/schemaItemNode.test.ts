@@ -44,8 +44,8 @@ describe('SchemaItemNode', function () {
 
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.schema, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.schema, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, awsToolkit.iconPaths.dark.schema, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, awsToolkit.iconPaths.light.schema, 'Unexpected light icon path')
     })
 
     // Validates we don't yield some unexpected value that our command triggers
@@ -118,7 +118,7 @@ describe('RegistryItemNode', function () {
     it('Sorts Schema Items By Name', async function () {
         const inputSchemaNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const schemaClient = new SchemaNamesMockSchemaClient(inputSchemaNames)
-        ext.toolkitClientBuilder = new TestMockToolkitClientBuilder(schemaClient)
+        awsToolkit.toolkitClientBuilder = new TestMockToolkitClientBuilder(schemaClient)
 
         const registryItemNode = new RegistryItemNode(fakeRegion, fakeRegistry)
         const children = await registryItemNode.getChildren()

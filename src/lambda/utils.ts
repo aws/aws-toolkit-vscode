@@ -115,6 +115,6 @@ export async function getSampleLambdaPayloads(): Promise<SampleRequest[]> {
 function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
     return new CompositeResourceFetcher(
         new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
-        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
+        new FileResourceFetcher(awsToolkit.manifestPaths.lambdaSampleRequests)
     )
 }

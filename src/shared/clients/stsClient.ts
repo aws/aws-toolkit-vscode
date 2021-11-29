@@ -27,7 +27,7 @@ export class DefaultStsClient {
     }
 
     private async createSdkClient(): Promise<STS> {
-        return await ext.sdkClientBuilder.createAwsService(
+        return await awsToolkit.sdkClientBuilder.createAwsService(
             STS,
             {
                 ...this.credentials,

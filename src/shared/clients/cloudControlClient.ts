@@ -92,7 +92,7 @@ export class DefaultCloudControlClient implements CloudControlClient {
             }
 
             if (i + 1 < maxRetries) {
-                await new Promise<void>(resolve => ext.clock.setTimeout(resolve, baseDelay * 2 ** i))
+                await new Promise<void>(resolve => awsToolkit.clock.setTimeout(resolve, baseDelay * 2 ** i))
                 const resourceRequestStatus = await client
                     .getResourceRequestStatus({
                         RequestToken: progressEvent.RequestToken!,
@@ -111,6 +111,6 @@ export class DefaultCloudControlClient implements CloudControlClient {
     }
 
     private async createSdkClient(): Promise<CloudControl> {
-        return await ext.sdkClientBuilder.createAwsService(CloudControl, undefined, this.regionCode)
+        return await awsToolkit.sdkClientBuilder.createAwsService(CloudControl, undefined, this.regionCode)
     }
 }

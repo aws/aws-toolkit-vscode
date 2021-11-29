@@ -78,7 +78,7 @@ export async function createResource(
             cancellable: false,
         },
         async progress => {
-            const startTime = new ext.clock.Date()
+            const startTime = new awsToolkit.clock.Date()
             let result: Result = 'Succeeded'
 
             try {
@@ -145,7 +145,7 @@ export async function updateResource(
             cancellable: false,
         },
         async progress => {
-            const startTime = new ext.clock.Date()
+            const startTime = new awsToolkit.clock.Date()
             let result: Result = 'Succeeded'
             try {
                 progress.report({

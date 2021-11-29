@@ -162,7 +162,7 @@ namespace LimitExceededWarnings {
     export function cancel(uri: string) {
         const warning = pendingWarnings[uri]
         if (warning && warning.timeout) {
-            ext.clock.clearTimeout(warning.timeout)
+            awsToolkit.clock.clearTimeout(warning.timeout)
             delete pendingWarnings[uri]
         }
     }
@@ -179,7 +179,7 @@ namespace LimitExceededWarnings {
                 warning.timeout.refresh()
             } else {
                 warning = { features: { [name]: name } }
-                warning.timeout = ext.clock.setTimeout(() => {
+                warning.timeout = awsToolkit.clock.setTimeout(() => {
                     connection.sendNotification(
                         ResultLimitReachedNotification.type,
                         `${posix.basename(uri)}: For performance reasons, ${Object.keys(warning.features).join(
@@ -255,14 +255,14 @@ const validationDelayMs = 500
 function cleanPendingValidation(textDocument: TextDocument): void {
     const request = pendingValidationRequests[textDocument.uri]
     if (request) {
-        ext.clock.clearTimeout(request)
+        awsToolkit.clock.clearTimeout(request)
         delete pendingValidationRequests[textDocument.uri]
     }
 }
 
 function triggerValidation(textDocument: TextDocument): void {
     cleanPendingValidation(textDocument)
-    pendingValidationRequests[textDocument.uri] = ext.clock.setTimeout(() => {
+    pendingValidationRequests[textDocument.uri] = awsToolkit.clock.setTimeout(() => {
         delete pendingValidationRequests[textDocument.uri]
         validateTextDocument(textDocument)
     }, validationDelayMs)
@@ -297,7 +297,7 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
         .doValidation(textDocument, jsonDocument, documentSettings)
         .then(
             diagnostics => {
-                ext.clock.setTimeout(() => {
+                awsToolkit.clock.setTimeout(() => {
                     const currDocument = documents.get(textDocument.uri)
                     if (currDocument && currDocument.version === version) {
                         respond(diagnostics) // Send the computed diagnostics to VSCode.

@@ -159,6 +159,6 @@ export class DefaultSchemaClient {
     }
 
     private async createSdkClient(): Promise<Schemas> {
-        return await ext.sdkClientBuilder.createAwsService(Schemas, undefined, this.regionCode)
+        return await awsToolkit.sdkClientBuilder.createAwsService(Schemas, undefined, this.regionCode)
     }
 }

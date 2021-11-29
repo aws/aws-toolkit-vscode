@@ -11,8 +11,8 @@ export interface IconPath {
     dark: vscode.Uri
 }
 
-export function initializeIconPaths(context: vscode.ExtensionContext): typeof ext['iconPaths'] {
-    const iconPaths = { dark: {}, light: {} } as typeof ext['iconPaths']
+export function initializeIconPaths(context: vscode.ExtensionContext): typeof awsToolkit['iconPaths'] {
+    const iconPaths = { dark: {}, light: {} } as typeof awsToolkit['iconPaths']
 
     iconPaths.dark.help = isCloud9()
         ? context.asAbsolutePath('resources/dark/cloud9/help.svg')
@@ -104,62 +104,62 @@ export function initializeIconPaths(context: vscode.ExtensionContext): typeof ex
 }
 
 export function setupTestIconPaths() {
-    ext.iconPaths.dark.help = '/icons/dark/help'
-    ext.iconPaths.light.help = '/icons/light/help'
+    awsToolkit.iconPaths.dark.help = '/icons/dark/help'
+    awsToolkit.iconPaths.light.help = '/icons/light/help'
 
-    ext.iconPaths.dark.cloudFormation = '/icons/dark/cloudformation'
-    ext.iconPaths.light.cloudFormation = '/icons/light/cloudformation'
+    awsToolkit.iconPaths.dark.cloudFormation = '/icons/dark/cloudformation'
+    awsToolkit.iconPaths.light.cloudFormation = '/icons/light/cloudformation'
 
-    ext.iconPaths.dark.cloudWatchLogGroup = '/icons/dark/cloudWatchLogGroup'
-    ext.iconPaths.light.cloudWatchLogGroup = '/icons/light/cloudWatchLogGroup'
+    awsToolkit.iconPaths.dark.cloudWatchLogGroup = '/icons/dark/cloudWatchLogGroup'
+    awsToolkit.iconPaths.light.cloudWatchLogGroup = '/icons/light/cloudWatchLogGroup'
 
-    ext.iconPaths.dark.lambda = '/icons/dark/lambda'
-    ext.iconPaths.light.lambda = '/icons/light/lambda'
+    awsToolkit.iconPaths.dark.lambda = '/icons/dark/lambda'
+    awsToolkit.iconPaths.light.lambda = '/icons/light/lambda'
 
-    ext.iconPaths.dark.settings = '/icons/dark/settings'
-    ext.iconPaths.light.settings = '/icons/light/settings'
+    awsToolkit.iconPaths.dark.settings = '/icons/dark/settings'
+    awsToolkit.iconPaths.light.settings = '/icons/light/settings'
 
-    ext.iconPaths.dark.registry = '/icons/dark/registry'
-    ext.iconPaths.light.registry = '/icons/light/registry'
+    awsToolkit.iconPaths.dark.registry = '/icons/dark/registry'
+    awsToolkit.iconPaths.light.registry = '/icons/light/registry'
 
-    ext.iconPaths.dark.s3 = '/icons/dark/s3'
-    ext.iconPaths.light.s3 = '/icons/light/s3'
+    awsToolkit.iconPaths.dark.s3 = '/icons/dark/s3'
+    awsToolkit.iconPaths.light.s3 = '/icons/light/s3'
 
-    ext.iconPaths.dark.folder = '/icons/dark/folder'
-    ext.iconPaths.light.folder = '/icons/light/folder'
+    awsToolkit.iconPaths.dark.folder = '/icons/dark/folder'
+    awsToolkit.iconPaths.light.folder = '/icons/light/folder'
 
-    ext.iconPaths.dark.file = '/icons/dark/file'
-    ext.iconPaths.light.file = '/icons/light/file'
+    awsToolkit.iconPaths.dark.file = '/icons/dark/file'
+    awsToolkit.iconPaths.light.file = '/icons/light/file'
 
-    ext.iconPaths.dark.schema = '/icons/dark/schema'
-    ext.iconPaths.light.schema = '/icons/light/schema'
+    awsToolkit.iconPaths.dark.schema = '/icons/dark/schema'
+    awsToolkit.iconPaths.light.schema = '/icons/light/schema'
 }
 
 export function clearTestIconPaths() {
-    ext.iconPaths.dark.help = ''
-    ext.iconPaths.light.help = ''
+    awsToolkit.iconPaths.dark.help = ''
+    awsToolkit.iconPaths.light.help = ''
 
-    ext.iconPaths.dark.cloudFormation = ''
-    ext.iconPaths.light.cloudFormation = ''
+    awsToolkit.iconPaths.dark.cloudFormation = ''
+    awsToolkit.iconPaths.light.cloudFormation = ''
 
-    ext.iconPaths.dark.lambda = ''
-    ext.iconPaths.light.lambda = ''
+    awsToolkit.iconPaths.dark.lambda = ''
+    awsToolkit.iconPaths.light.lambda = ''
 
-    ext.iconPaths.dark.settings = ''
-    ext.iconPaths.light.settings = ''
+    awsToolkit.iconPaths.dark.settings = ''
+    awsToolkit.iconPaths.light.settings = ''
 
-    ext.iconPaths.dark.registry = ''
-    ext.iconPaths.light.registry = ''
+    awsToolkit.iconPaths.dark.registry = ''
+    awsToolkit.iconPaths.light.registry = ''
 
-    ext.iconPaths.dark.s3 = ''
-    ext.iconPaths.light.s3 = ''
+    awsToolkit.iconPaths.dark.s3 = ''
+    awsToolkit.iconPaths.light.s3 = ''
 
-    ext.iconPaths.dark.folder = ''
-    ext.iconPaths.light.folder = ''
+    awsToolkit.iconPaths.dark.folder = ''
+    awsToolkit.iconPaths.light.folder = ''
 
-    ext.iconPaths.dark.file = ''
-    ext.iconPaths.light.file = ''
+    awsToolkit.iconPaths.dark.file = ''
+    awsToolkit.iconPaths.light.file = ''
 
-    ext.iconPaths.dark.schema = ''
-    ext.iconPaths.light.schema = ''
+    awsToolkit.iconPaths.dark.schema = ''
+    awsToolkit.iconPaths.light.schema = ''
 }

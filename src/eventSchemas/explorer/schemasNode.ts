@@ -41,7 +41,7 @@ export class SchemasNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(this.regionCode)
+        const client: SchemaClient = awsToolkit.toolkitClientBuilder.createSchemaClient(this.regionCode)
         const registries = await toMapAsync(listRegistryItems(client), registry => registry.RegistryName)
 
         updateInPlace(

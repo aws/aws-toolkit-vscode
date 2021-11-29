@@ -65,9 +65,9 @@ export class StateMachineGraphCache {
         this.writeFile = writeFileCustom ?? writeFile
         this.logger = getLogger()
         this.getFileData = getFileData ?? httpsGetRequestWrapper
-        this.cssFilePath = options.cssFilePath ?? ext.visualizationResourcePaths.visualizationLibraryCSS.fsPath
-        this.jsFilePath = options.jsFilePath ?? ext.visualizationResourcePaths.visualizationLibraryScript.fsPath
-        this.dirPath = options.dirPath ?? ext.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
+        this.cssFilePath = options.cssFilePath ?? awsToolkit.visualizationResourcePaths.visualizationLibraryCSS.fsPath
+        this.jsFilePath = options.jsFilePath ?? awsToolkit.visualizationResourcePaths.visualizationLibraryScript.fsPath
+        this.dirPath = options.dirPath ?? awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
         this.fileExists = fileExistsCustom ?? fileExists
     }
 

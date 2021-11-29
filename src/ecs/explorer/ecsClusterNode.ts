@@ -35,8 +35,8 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
         this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
 
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.cluster),
-            light: vscode.Uri.file(ext.iconPaths.light.cluster),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.cluster),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.cluster),
         }
     }
 

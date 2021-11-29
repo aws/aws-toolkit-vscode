@@ -73,33 +73,33 @@ async function registerStepFunctionCommands(
 export function initalizeWebviewPaths(context: vscode.ExtensionContext) {
     // Location for script in body of webview that handles input from user
     // and calls the code to render state machine graph
-    ext.visualizationResourcePaths.localWebviewScriptsPath = vscode.Uri.file(
+    awsToolkit.visualizationResourcePaths.localWebviewScriptsPath = vscode.Uri.file(
         context.asAbsolutePath(join('media', 'js'))
     )
 
-    ext.visualizationResourcePaths.webviewBodyScript = vscode.Uri.file(
+    awsToolkit.visualizationResourcePaths.webviewBodyScript = vscode.Uri.file(
         context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js'))
     )
 
     // Locations for script and css that render the state machine
     const visualizationLibraryCache = join(context.globalStoragePath, 'visualization')
 
-    ext.visualizationResourcePaths.visualizationLibraryCachePath = vscode.Uri.file(visualizationLibraryCache)
+    awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath = vscode.Uri.file(visualizationLibraryCache)
 
-    ext.visualizationResourcePaths.visualizationLibraryScript = vscode.Uri.file(
+    awsToolkit.visualizationResourcePaths.visualizationLibraryScript = vscode.Uri.file(
         join(visualizationLibraryCache, 'graph.js')
     )
 
-    ext.visualizationResourcePaths.visualizationLibraryCSS = vscode.Uri.file(
+    awsToolkit.visualizationResourcePaths.visualizationLibraryCSS = vscode.Uri.file(
         join(visualizationLibraryCache, 'graph.css')
     )
 
     // Locations for an additional stylesheet to add Light/Dark/High-Contrast theme support
-    ext.visualizationResourcePaths.stateMachineCustomThemePath = vscode.Uri.file(
+    awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath = vscode.Uri.file(
         context.asAbsolutePath(join('media', 'css'))
     )
 
-    ext.visualizationResourcePaths.stateMachineCustomThemeCSS = vscode.Uri.file(
+    awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS = vscode.Uri.file(
         context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css'))
     )
 }

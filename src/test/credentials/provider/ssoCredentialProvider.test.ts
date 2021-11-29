@@ -32,7 +32,7 @@ describe('SsoCredentialProvider', () => {
             startUrl: ssoUrl,
             region: ssoRegion,
             accessToken: 'dummyAccessToken',
-            expiresAt: new ext.clock.Date(HOUR_IN_MS).toISOString(),
+            expiresAt: new awsToolkit.clock.Date(HOUR_IN_MS).toISOString(),
         }
 
         afterEach(() => {

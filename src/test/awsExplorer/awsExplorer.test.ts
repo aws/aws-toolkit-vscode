@@ -34,7 +34,7 @@ describe('AwsExplorer', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        // contingency for current Node impl: requires a client built from ext.toolkitClientBuilder.
+        // contingency for current Node impl: requires a client built from awsToolkit.toolkitClientBuilder.
         const clientBuilder = {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
@@ -44,7 +44,7 @@ describe('AwsExplorer', function () {
             createCloudControlClient: sandbox.stub().returns({}),
             createIotClient: sandbox.stub().returns({}),
         }
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
 
     afterEach(function () {

@@ -106,9 +106,9 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             exitPrompterProvider: new BasicExitPrompterProvider(),
         })
 
-        const ecrClient = ext.toolkitClientBuilder.createEcrClient(region)
-        const iamClient = ext.toolkitClientBuilder.createIamClient(region)
-        const apprunnerClient = ext.toolkitClientBuilder.createAppRunnerClient(region)
+        const ecrClient = awsToolkit.toolkitClientBuilder.createEcrClient(region)
+        const iamClient = awsToolkit.toolkitClientBuilder.createIamClient(region)
+        const apprunnerClient = awsToolkit.toolkitClientBuilder.createAppRunnerClient(region)
         const autoDeployButton = makeDeploymentButton()
         const gitExtension = GitExtension.instance
         const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(apprunnerClient, gitExtension, autoDeployButton)

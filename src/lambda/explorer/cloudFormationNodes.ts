@@ -47,7 +47,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
+        const client: CloudFormationClient = awsToolkit.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
         const stacks = await toMapAsync(listCloudFormationStacks(client), stack => stack.StackId)
 
         updateInPlace(
@@ -73,8 +73,8 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, LambdaFunctionNode>()
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.cloudFormation),
-            light: vscode.Uri.file(ext.iconPaths.light.cloudFormation),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.cloudFormation),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.cloudFormation),
         }
     }
 
@@ -123,7 +123,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 
     private async updateChildren(): Promise<void> {
         const resources: string[] = await this.resolveLambdaResources()
-        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
+        const client: LambdaClient = awsToolkit.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(client)),
             functionInfo => functionInfo.FunctionName
@@ -138,7 +138,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
     }
 
     private async resolveLambdaResources(): Promise<string[]> {
-        const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
+        const client: CloudFormationClient = awsToolkit.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
         const response = await client.describeStackResources(this.stackSummary.StackName)
 
         if (response.StackResources) {

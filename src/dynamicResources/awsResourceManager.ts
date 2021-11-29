@@ -98,7 +98,7 @@ export class AwsResourceManager {
             if (uri.scheme === 'file') {
                 remove(uri.fsPath)
 
-                ext.schemaService.registerMapping({
+                awsToolkit.schemaService.registerMapping({
                     path: uri.fsPath,
                     type: 'json',
                     schema: undefined,
@@ -196,7 +196,7 @@ export class AwsResourceManager {
             }
         }
 
-        ext.schemaService.registerMapping({
+        awsToolkit.schemaService.registerMapping({
             path: file.fsPath,
             type: 'json',
             schema: location,

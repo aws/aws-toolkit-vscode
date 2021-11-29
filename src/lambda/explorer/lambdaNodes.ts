@@ -50,7 +50,7 @@ export class LambdaNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
+        const client: LambdaClient = awsToolkit.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(client)),
             configuration => configuration.FunctionName

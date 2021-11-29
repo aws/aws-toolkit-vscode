@@ -168,10 +168,10 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
 
         const install = await childProcess.run({
             onStdout: (text: string) => {
-                ext.outputChannel.append(text)
+                awsToolkit.outputChannel.append(text)
             },
             onStderr: (text: string) => {
-                ext.outputChannel.append(text)
+                awsToolkit.outputChannel.append(text)
             },
         })
 

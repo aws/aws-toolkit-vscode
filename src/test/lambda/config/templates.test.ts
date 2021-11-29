@@ -784,7 +784,7 @@ describe('getExistingConfiguration', async function () {
 
     afterEach(async function () {
         await remove(tempFolder)
-        ext.templateRegistry.reset()
+        awsToolkit.templateRegistry.reset()
     })
 
     it("returns undefined if the legacy config file doesn't exist", async () => {
@@ -795,7 +795,7 @@ describe('getExistingConfiguration', async function () {
     it('returns undefined if the legacy config file is not valid JSON', async function () {
         await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
-        await ext.templateRegistry.addItemToRegistry(tempTemplateFile)
+        await awsToolkit.templateRegistry.addItemToRegistry(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.strictEqual(val, undefined)
     })
@@ -816,7 +816,7 @@ describe('getExistingConfiguration', async function () {
             },
         }
         await writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
-        await ext.templateRegistry.addItemToRegistry(tempTemplateFile)
+        await awsToolkit.templateRegistry.addItemToRegistry(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.ok(val)
         if (val) {

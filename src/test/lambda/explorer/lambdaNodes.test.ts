@@ -105,6 +105,6 @@ describe('LambdaNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

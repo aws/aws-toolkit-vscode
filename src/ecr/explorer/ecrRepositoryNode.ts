@@ -28,8 +28,8 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
     ) {
         super(repository.repositoryName, vscode.TreeItemCollapsibleState.Collapsed)
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.ecr),
-            light: vscode.Uri.file(ext.iconPaths.light.ecr),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.ecr),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.ecr),
         }
         this.contextValue = 'awsEcrRepositoryNode'
         this.regionCode = ecr.regionCode

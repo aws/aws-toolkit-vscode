@@ -110,19 +110,19 @@ export function isCn(): boolean {
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(ext.context.extensionPath, 'media', 'libs')
+        const basePath = path.join(awsToolkit.context.extensionPath, 'media', 'libs')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }
 
     public static getScriptsForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(ext.context.extensionPath, 'media', 'js')
+        const basePath = path.join(awsToolkit.context.extensionPath, 'media', 'js')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }
 
     public static getCssForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(ext.context.extensionPath, 'media', 'css')
+        const basePath = path.join(awsToolkit.context.extensionPath, 'media', 'css')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }

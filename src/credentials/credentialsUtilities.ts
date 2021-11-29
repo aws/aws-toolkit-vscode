@@ -78,7 +78,7 @@ export async function resolveProviderWithCancel(
         timeout = new Timeout(timeout)
     }
 
-    ext.clock.setTimeout(() => {
+    awsToolkit.clock.setTimeout(() => {
         timeout = timeout as Timeout // Typescript lost scope of the correct type here
         if (timeout.completed !== true) {
             showMessageWithCancel(

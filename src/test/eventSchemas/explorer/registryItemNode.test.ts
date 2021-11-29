@@ -53,8 +53,8 @@ describe('RegistryItemNode', function () {
 
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.registry, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.registry, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, awsToolkit.iconPaths.dark.registry, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, awsToolkit.iconPaths.light.registry, 'Unexpected light icon path')
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -66,7 +66,7 @@ describe('RegistryItemNode', function () {
             },
         } as any as SchemaClient
 
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        awsToolkit.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
         const testNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
@@ -112,7 +112,7 @@ describe('RegistryItemNode', function () {
         const schemaItems: Schemas.SchemaSummary[] = [schema1Item, schema2Item, schema3Item]
 
         const schemaClient = new TestMockSchemaClient(schemaItems)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        awsToolkit.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
         const testNode: RegistryItemNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
@@ -162,7 +162,7 @@ describe('DefaultRegistryNode', function () {
     it('Sorts Registries', async function () {
         const inputRegistryNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const schemaClient = new RegistryNamesMockSchemaClient(inputRegistryNames)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        awsToolkit.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
 
         const schemasNode = new SchemasNode(fakeRegion)
         const children = await schemasNode.getChildren()
@@ -194,7 +194,7 @@ describe('DefaultRegistryNode', function () {
     it('returns placeholder node if no children are present', async function () {
         const inputRegistryNames: string[] = []
         const schemaClient = new RegistryNamesMockSchemaClient(inputRegistryNames)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        awsToolkit.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
 
         const schemasNode = new SchemasNode(fakeRegion)
         const childNodes = await schemasNode.getChildren()

@@ -40,7 +40,7 @@ export async function deleteLambda({
     if (!deleteParams.functionName) {
         return
     }
-    const startTime = new ext.clock.Date()
+    const startTime = new awsToolkit.clock.Date()
     let deleteResult: Result = 'Succeeded'
     try {
         const isConfirmed = await onConfirm()

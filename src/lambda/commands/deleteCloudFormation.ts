@@ -48,7 +48,9 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
         )
 
         if (userResponse) {
-            const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(node.regionCode)
+            const client: CloudFormationClient = awsToolkit.toolkitClientBuilder.createCloudFormationClient(
+                node.regionCode
+            )
 
             await client.deleteStack(stackName)
 

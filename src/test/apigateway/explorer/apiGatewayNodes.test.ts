@@ -107,6 +107,6 @@ describe('ApiGatewayNode', function () {
             createApiGatewayClient: sandbox.stub().returns(apiGatewayClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

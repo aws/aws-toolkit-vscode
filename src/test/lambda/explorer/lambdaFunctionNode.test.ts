@@ -59,8 +59,8 @@ describe('LambdaFunctionNode', function () {
     it('initializes the icon', async function () {
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.lambda, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.lambda, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, awsToolkit.iconPaths.dark.lambda, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, awsToolkit.iconPaths.light.lambda, 'Unexpected light icon path')
     })
 
     it('has no children', async function () {

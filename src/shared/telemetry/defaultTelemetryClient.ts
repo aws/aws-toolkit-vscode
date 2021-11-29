@@ -97,7 +97,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
         return new DefaultTelemetryClient(
             clientId,
-            (await ext.sdkClientBuilder.createAwsService(
+            (await awsToolkit.sdkClientBuilder.createAwsService(
                 Service,
                 {
                     // apiConfig is internal and not in the TS declaration file

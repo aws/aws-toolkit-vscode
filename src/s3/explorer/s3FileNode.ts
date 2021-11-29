@@ -33,7 +33,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
         public readonly file: File,
         public readonly parent: S3BucketNode | S3FolderNode,
         public readonly s3: S3Client,
-        now: Date = new ext.clock.Date()
+        now: Date = new awsToolkit.clock.Date()
     ) {
         super(file.name)
         if (file.sizeBytes !== undefined && file.lastModified) {

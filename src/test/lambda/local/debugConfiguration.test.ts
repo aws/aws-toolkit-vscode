@@ -130,7 +130,7 @@ describe('isImageLambdaConfig', function () {
             name: 'It was me, fakeWorkspaceFolder!',
             index: 0,
         }
-        registry = ext.templateRegistry
+        registry = awsToolkit.templateRegistry
         appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
     })
 

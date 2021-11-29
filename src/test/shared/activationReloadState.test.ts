@@ -26,12 +26,12 @@ describe('ActivationReloadState', async function () {
         activationReloadState.clearSamInitState()
     })
 
-    it('decides ext.didReload', async function () {
-        await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
-        assert.strictEqual(checkDidReload(ext.context), false)
+    it('decides awsToolkit.didReload', async function () {
+        await awsToolkit.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
+        assert.strictEqual(checkDidReload(awsToolkit.context), false)
 
-        await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, '/some/path')
-        assert.strictEqual(checkDidReload(ext.context), true)
+        await awsToolkit.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, '/some/path')
+        assert.strictEqual(checkDidReload(awsToolkit.context), true)
     })
 
     describe('setSamInitState', async function () {
@@ -45,22 +45,22 @@ describe('ActivationReloadState', async function () {
             })
 
             assert.strictEqual(
-                ext.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+                awsToolkit.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
                 'somepath',
                 'Unexpected Launch Path value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                awsToolkit.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
                 'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(SAM_INIT_RUNTIME_KEY),
+                awsToolkit.context.globalState.get(SAM_INIT_RUNTIME_KEY),
                 undefined,
                 'Unexpected init runtime key value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                awsToolkit.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
                 false,
                 'Unexpected init image boolean value was set'
             )
@@ -76,22 +76,22 @@ describe('ActivationReloadState', async function () {
             })
 
             assert.strictEqual(
-                ext.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+                awsToolkit.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
                 'somepath',
                 'Unexpected Launch Path value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                awsToolkit.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
                 'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(SAM_INIT_RUNTIME_KEY),
+                awsToolkit.context.globalState.get(SAM_INIT_RUNTIME_KEY),
                 'someruntime',
                 'Unexpected init runtime value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                awsToolkit.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
                 false,
                 'Unexpected init image boolean value was set'
             )
@@ -107,22 +107,22 @@ describe('ActivationReloadState', async function () {
             })
 
             assert.strictEqual(
-                ext.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+                awsToolkit.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
                 'somepath',
                 'Unexpected Launch Path value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                awsToolkit.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
                 'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(SAM_INIT_RUNTIME_KEY),
+                awsToolkit.context.globalState.get(SAM_INIT_RUNTIME_KEY),
                 'someruntime',
                 'Unexpected init runtime value was set'
             )
             assert.strictEqual(
-                ext.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                awsToolkit.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
                 true,
                 'Unexpected init image boolean value was set'
             )
@@ -131,9 +131,9 @@ describe('ActivationReloadState', async function () {
 
     describe('getSamInitState', async function () {
         it('path defined, without runtime', async function () {
-            await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
-            await ext.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
-            await ext.context.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
+            await awsToolkit.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
+            await awsToolkit.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
+            await awsToolkit.context.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
 
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.readme,
@@ -158,9 +158,9 @@ describe('ActivationReloadState', async function () {
         })
 
         it('path defined, with runtime', async function () {
-            await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
-            await ext.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
-            await ext.context.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
+            await awsToolkit.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
+            await awsToolkit.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
+            await awsToolkit.context.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
 
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.readme,
@@ -185,10 +185,10 @@ describe('ActivationReloadState', async function () {
         })
 
         it('path defined, with runtime and isImage', async function () {
-            await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
-            await ext.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
-            await ext.context.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
-            await ext.context.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, true)
+            await awsToolkit.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
+            await awsToolkit.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
+            await awsToolkit.context.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
+            await awsToolkit.context.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, true)
 
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.readme,
@@ -224,25 +224,25 @@ describe('ActivationReloadState', async function () {
         activationReloadState.clearSamInitState()
 
         assert.strictEqual(
-            ext.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+            awsToolkit.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
             undefined,
             'Expected launch path to be cleared (undefined)'
         )
 
         assert.strictEqual(
-            ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+            awsToolkit.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
             undefined,
             'Expected template path to be cleared (undefined)'
         )
 
         assert.strictEqual(
-            ext.context.globalState.get(SAM_INIT_RUNTIME_KEY),
+            awsToolkit.context.globalState.get(SAM_INIT_RUNTIME_KEY),
             undefined,
             'Expected runtime key to be cleared (undefined)'
         )
 
         assert.strictEqual(
-            ext.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+            awsToolkit.context.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
             undefined,
             'Expected isImage key to be cleared (undefined)'
         )

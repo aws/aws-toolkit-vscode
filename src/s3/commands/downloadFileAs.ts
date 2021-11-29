@@ -27,7 +27,7 @@ import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/m
 export async function downloadFileAsCommand(
     node: S3FileNode,
     window = Window.vscode(),
-    outputChannel = ext.outputChannel
+    outputChannel = awsToolkit.outputChannel
 ): Promise<void> {
     getLogger().debug('DownloadFile called for %O', node)
 

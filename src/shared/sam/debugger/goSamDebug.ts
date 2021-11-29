@@ -112,7 +112,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
     // We want to persist the binary we build since it takes a non-trivial amount of time to build
-    config.debuggerPath = path.join(ext.context.globalStoragePath, 'debuggers', 'delve')
+    config.debuggerPath = path.join(awsToolkit.context.globalStoragePath, 'debuggers', 'delve')
 
     const isImageLambda = isImageLambdaConfig(config)
 

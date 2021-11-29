@@ -65,7 +65,7 @@ describe('ResourceManager', function () {
         const fakeContext = new FakeExtensionContext()
         fakeContext.globalStoragePath = tempFolder
         resourceManager = new AwsResourceManager(fakeContext)
-        ext.schemaService = instance(schemaService)
+        awsToolkit.schemaService = instance(schemaService)
     })
 
     afterEach(async function () {

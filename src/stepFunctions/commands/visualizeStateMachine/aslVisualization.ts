@@ -112,10 +112,10 @@ export class AslVisualization {
 
         // Set the initial html for the webpage
         panel.webview.html = this.getWebviewContent(
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.webviewBodyScript),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryScript),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryCSS),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.stateMachineCustomThemeCSS),
+            panel.webview.asWebviewUri(awsToolkit.visualizationResourcePaths.webviewBodyScript),
+            panel.webview.asWebviewUri(awsToolkit.visualizationResourcePaths.visualizationLibraryScript),
+            panel.webview.asWebviewUri(awsToolkit.visualizationResourcePaths.visualizationLibraryCSS),
+            panel.webview.asWebviewUri(awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS),
             panel.webview.cspSource,
             {
                 inSync: localize(
@@ -224,9 +224,9 @@ export class AslVisualization {
             {
                 enableScripts: true,
                 localResourceRoots: [
-                    ext.visualizationResourcePaths.localWebviewScriptsPath,
-                    ext.visualizationResourcePaths.visualizationLibraryCachePath,
-                    ext.visualizationResourcePaths.stateMachineCustomThemePath,
+                    awsToolkit.visualizationResourcePaths.localWebviewScriptsPath,
+                    awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath,
+                    awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath,
                 ],
                 retainContextWhenHidden: true,
             }

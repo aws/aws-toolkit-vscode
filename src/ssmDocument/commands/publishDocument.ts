@@ -76,7 +76,7 @@ export async function publishSSMDocument(awsContext: AwsContext, regionProvider:
 export async function createDocument(
     wizardResponse: PublishSSMDocumentWizardResponse,
     textDocument: vscode.TextDocument,
-    client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(wizardResponse.region)
+    client: SsmDocumentClient = awsToolkit.toolkitClientBuilder.createSsmClient(wizardResponse.region)
 ) {
     let result: telemetry.Result = 'Succeeded'
     const ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
@@ -110,7 +110,7 @@ export async function createDocument(
 export async function updateDocument(
     wizardResponse: PublishSSMDocumentWizardResponse,
     textDocument: vscode.TextDocument,
-    client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(wizardResponse.region),
+    client: SsmDocumentClient = awsToolkit.toolkitClientBuilder.createSsmClient(wizardResponse.region),
     window = Window.vscode()
 ) {
     let result: telemetry.Result = 'Succeeded'

@@ -127,7 +127,7 @@ export class DefaultAWSContextCommands {
      */
     private async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
         while (true) {
-            const dataProvider = new DefaultCredentialSelectionDataProvider([], ext.context)
+            const dataProvider = new DefaultCredentialSelectionDataProvider([], awsToolkit.context)
             const state: CredentialSelectionState = await promptToDefineCredentialsProfile(dataProvider)
 
             if (!state.profileName || !state.accesskey || !state.secretKey) {
@@ -168,7 +168,7 @@ export class DefaultAWSContextCommands {
                     '{0} credentials appear invalid. Try again?',
                     getIdeProperties().company
                 ),
-                ext.window,
+                awsToolkit.window,
                 'warn',
                 [localizedText.yes, localizedText.no]
             )
@@ -193,7 +193,7 @@ export class DefaultAWSContextCommands {
         const profileNames = Object.keys(providerMap)
         if (profileNames.length > 0) {
             // There are credentials for the user to choose from
-            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
+            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, awsToolkit.context)
             const state = await credentialProfileSelector(dataProvider)
             if (state && state.credentialProfile) {
                 return state.credentialProfile.label

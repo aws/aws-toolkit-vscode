@@ -100,7 +100,7 @@ function createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<Depen
 }
 
 function createRegistryPrompter(region: string, credentials?: AWS.Credentials): QuickPickPrompter<string> {
-    const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(region)
+    const client: SchemaClient = awsToolkit.toolkitClientBuilder.createSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getRegistries(region, client, credentials!)
         .then(registryNames => {
@@ -130,7 +130,7 @@ function createSchemaPrompter(
     registry: string,
     credentials?: AWS.Credentials
 ): QuickPickPrompter<string> {
-    const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(region)
+    const client: SchemaClient = awsToolkit.toolkitClientBuilder.createSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getSchemas(region, registry, client, credentials!)
         .then(schemas => {

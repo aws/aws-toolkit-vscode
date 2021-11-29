@@ -220,7 +220,7 @@ async function downloadCliSource(cli: Cli, tempDir: string): Promise<string> {
 }
 
 function getToolkitCliDir(): string {
-    return path.join(ext.context.globalStoragePath, 'tools')
+    return path.join(awsToolkit.context.globalStoragePath, 'tools')
 }
 
 /**

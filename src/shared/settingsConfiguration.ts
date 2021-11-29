@@ -222,8 +222,8 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         if (val === undefined) {
             return undefined
         }
-        if (ext.awsContext) {
-            ext.awsContext.setDeveloperMode(true, key)
+        if (awsToolkit.awsContext) {
+            awsToolkit.awsContext.setDeveloperMode(true, key)
         }
         return val
     }

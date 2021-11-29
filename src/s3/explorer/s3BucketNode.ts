@@ -43,8 +43,8 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         super(bucket.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = bucket.name
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.s3),
-            light: vscode.Uri.file(ext.iconPaths.light.s3),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.s3),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.s3),
         }
         this.contextValue = 'awsS3BucketNode'
     }

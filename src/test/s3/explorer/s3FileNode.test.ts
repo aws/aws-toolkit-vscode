@@ -14,8 +14,8 @@ describe('S3FileNode', function () {
     const name = 'file.jpg'
     const key = 'path/to/file.jpg'
     const sizeBytes = 1024
-    const lastModified = new ext.clock.Date(2020, 5, 4, 3, 2, 1)
-    const now = new ext.clock.Date(2020, 6, 4)
+    const lastModified = new awsToolkit.clock.Date(2020, 5, 4, 3, 2, 1)
+    const now = new awsToolkit.clock.Date(2020, 6, 4)
     const lastModifiedReadable = moment(lastModified).format(S3_DATE_FORMAT)
 
     it('creates an S3 File Node', async function () {

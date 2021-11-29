@@ -44,7 +44,7 @@ before(async function () {
     const fakeAws = new FakeAwsContext()
     const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
     const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
-    ext.telemetry = service
+    awsToolkit.telemetry = service
     await initializeComputeRegion()
 })
 
@@ -55,17 +55,17 @@ after(async function () {
 beforeEach(function () {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
-    ext.templateRegistry = new CloudFormationTemplateRegistry()
-    ext.codelensRootRegistry = new CodelensRootRegistry()
-    ext.schemaService = new SchemaService(ext.context)
+    awsToolkit.templateRegistry = new CloudFormationTemplateRegistry()
+    awsToolkit.codelensRootRegistry = new CodelensRootRegistry()
+    awsToolkit.schemaService = new SchemaService(awsToolkit.context)
 })
 
 afterEach(function () {
     // Prevent other tests from using the same TestLogger instance
     teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
-    ext.templateRegistry.dispose()
-    ext.codelensRootRegistry.dispose()
+    awsToolkit.templateRegistry.dispose()
+    awsToolkit.codelensRootRegistry.dispose()
 })
 
 /**

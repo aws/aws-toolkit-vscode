@@ -361,7 +361,7 @@ describe('SAM Integration Tests', async function () {
         config.update('server.launchMode', 'Standard')
 
         await activateExtensions()
-        await testUtils.configureAwsToolkitExtension()
+        await testUtils.configureawsToolkitExtension()
         await testUtils.configurePythonExtension()
         await testUtils.configureGoExtension()
 
@@ -604,7 +604,7 @@ describe('SAM Integration Tests', async function () {
                     }
 
                     // XXX: force load since template registry seems a bit flakey
-                    await ext.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
+                    await awsToolkit.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
                     await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
                 }

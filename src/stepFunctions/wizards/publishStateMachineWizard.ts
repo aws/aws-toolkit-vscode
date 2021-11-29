@@ -89,8 +89,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
 
     public constructor(private readonly defaultRegion: string) {
         super()
-        this.stepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
-        this.iamClient = ext.toolkitClientBuilder.createIamClient(this.defaultRegion)
+        this.stepFunctionsClient = awsToolkit.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
+        this.iamClient = awsToolkit.toolkitClientBuilder.createIamClient(this.defaultRegion)
     }
 
     public async promptUserForPublishAction(

@@ -29,7 +29,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         try {
             template = await CloudFormation.load(path)
         } catch (e) {
-            ext.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
+            awsToolkit.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
             return undefined
         }
 
@@ -38,22 +38,22 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                ext.schemaService.registerMapping({ path, type: 'yaml', schema: 'sam' })
+                awsToolkit.schemaService.registerMapping({ path, type: 'yaml', schema: 'sam' })
             } else {
                 // apply cfn schema
-                ext.schemaService.registerMapping({ path, type: 'yaml', schema: 'cfn' })
+                awsToolkit.schemaService.registerMapping({ path, type: 'yaml', schema: 'cfn' })
             }
 
             return template
         }
 
-        ext.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
+        awsToolkit.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
         return undefined
     }
 
     // handles delete case
     public async remove(path: string | vscode.Uri): Promise<void> {
-        ext.schemaService.registerMapping({
+        awsToolkit.schemaService.registerMapping({
             path: typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
             type: 'yaml',
             schema: undefined,
@@ -72,7 +72,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
 export function getResourcesForHandler(
     filepath: string,
     handler: string,
-    unfilteredTemplates: WatchedItem<CloudFormation.Template>[] = ext.templateRegistry.registeredItems
+    unfilteredTemplates: WatchedItem<CloudFormation.Template>[] = awsToolkit.templateRegistry.registeredItems
 ): { templateDatum: WatchedItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
     const o = unfilteredTemplates.map(templateDatum => {

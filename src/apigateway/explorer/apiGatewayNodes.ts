@@ -46,7 +46,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: ApiGatewayClient = ext.toolkitClientBuilder.createApiGatewayClient(this.regionCode)
+        const client: ApiGatewayClient = awsToolkit.toolkitClientBuilder.createApiGatewayClient(this.regionCode)
         const apis: Map<string, RestApi> = toMap(
             await toArrayAsync(client.listApis()),
             configuration => `${configuration.name} (${configuration.id})`

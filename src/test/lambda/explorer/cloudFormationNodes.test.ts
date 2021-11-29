@@ -41,7 +41,7 @@ describe('CloudFormationStackNode', function () {
     before(async function () {
         setupTestIconPaths()
         fakeStackSummary = {
-            CreationTime: new ext.clock.Date(),
+            CreationTime: new awsToolkit.clock.Date(),
             StackId: '1',
             StackName: 'myStack',
             StackStatus: 'UPDATE_COMPLETE',
@@ -75,8 +75,8 @@ describe('CloudFormationStackNode', function () {
     it('initializes icon', async function () {
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.cloudFormation, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, awsToolkit.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, awsToolkit.iconPaths.light.cloudFormation, 'Unexpected light icon path')
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -156,7 +156,7 @@ describe('CloudFormationStackNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const childNodes = await testNode.getChildren()
         assertNodeListOnlyContainsErrorNode(childNodes)
@@ -199,7 +199,7 @@ describe('CloudFormationStackNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
 
@@ -222,7 +222,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -243,7 +243,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -261,7 +261,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -288,7 +288,7 @@ describe('CloudFormationNode', function () {
                         return {
                             StackId: name,
                             StackName: name,
-                            CreationTime: new ext.clock.Date(),
+                            CreationTime: new awsToolkit.clock.Date(),
                             StackStatus: 'CREATE_COMPLETE',
                         }
                     })

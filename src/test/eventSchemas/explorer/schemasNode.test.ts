@@ -93,6 +93,6 @@ describe('SchemasNode', function () {
             createSchemaClient: sandbox.stub().returns(schemaClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

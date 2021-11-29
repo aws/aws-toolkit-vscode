@@ -65,17 +65,17 @@ describe('findParentProjectFile', async function () {
     before(async function () {
         await mkdirp(path.join(workspaceDir, 'someproject', 'src'))
         await mkdirp(path.join(workspaceDir, 'someotherproject'))
-        globalRegistry = ext.codelensRootRegistry
+        globalRegistry = awsToolkit.codelensRootRegistry
     })
 
     after(async function () {
         remove(path.join(workspaceDir, 'someproject'))
         remove(path.join(workspaceDir, 'someotherproject'))
-        ext.codelensRootRegistry = globalRegistry
+        awsToolkit.codelensRootRegistry = globalRegistry
     })
 
     beforeEach(function () {
-        ext.codelensRootRegistry = new CodelensRootRegistry()
+        awsToolkit.codelensRootRegistry = new CodelensRootRegistry()
     })
 
     afterEach(async function () {
@@ -83,7 +83,7 @@ describe('findParentProjectFile', async function () {
             remove(file.fsPath)
         }
         filesToDelete = []
-        ext.codelensRootRegistry.dispose()
+        awsToolkit.codelensRootRegistry.dispose()
     })
 
     testScenarios.forEach(test => {
@@ -93,7 +93,7 @@ describe('findParentProjectFile', async function () {
                 await writeFile(file.fsPath, '')
                 // Add it to the registry. The registry is async and we are not
                 // testing the registry in this test, so manually use it
-                await ext.codelensRootRegistry.addItemToRegistry(file)
+                await awsToolkit.codelensRootRegistry.addItemToRegistry(file)
             }
             const projectFile = await findParentProjectFile(sourceCodeUri, /^.*\.csproj$/)
             if (test.expectedResult) {

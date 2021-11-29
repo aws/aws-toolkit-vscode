@@ -51,6 +51,6 @@ export class ActivationReloadState {
     }
 
     protected get extensionContext(): vscode.ExtensionContext {
-        return ext.context
+        return awsToolkit.context
     }
 }

@@ -33,7 +33,7 @@ describe('UI buttons', function () {
     })
 
     function assertIconPath(iconPath: IconPath) {
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.help)
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.help)
+        assert.strictEqual(iconPath.dark.path, awsToolkit.iconPaths.dark.help)
+        assert.strictEqual(iconPath.light.path, awsToolkit.iconPaths.light.help)
     }
 })

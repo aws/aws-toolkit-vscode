@@ -32,9 +32,9 @@ describe('AppRunnerServiceNode', function () {
         mockCloudWatchLogsClient = mock()
         // Forces assignment of the property key without affecting its value
         // eslint-disable-next-line no-self-assign
-        ext.toolkitClientBuilder = ext.toolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = awsToolkit.toolkitClientBuilder
         sinon.stub(AWSTreeNodeBase.prototype, 'refresh')
-        sinon.stub(ext, 'toolkitClientBuilder').value({
+        sinon.stub(awsToolkit, 'toolkitClientBuilder').value({
             createCloudWatchLogsClient: () => instance(mockCloudWatchLogsClient),
         } as any)
     })

@@ -20,8 +20,8 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         this.contextValue = 'awsEcsContainerNode'
 
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.container),
-            light: vscode.Uri.file(ext.iconPaths.light.container),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.container),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.container),
         }
     }
 

@@ -31,14 +31,14 @@ export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionA
 const CURRENT_TELEMETRY_NOTICE_VERSION = 2
 
 /**
- * Sets up the Metrics system and initializes ext.telemetry
+ * Sets up the Metrics system and initializes awsToolkit.telemetry
  */
 export async function activate(activateArguments: {
     extensionContext: vscode.ExtensionContext
     awsContext: AwsContext
     toolkitSettings: SettingsConfiguration
 }) {
-    ext.telemetry = new DefaultTelemetryService(
+    awsToolkit.telemetry = new DefaultTelemetryService(
         activateArguments.extensionContext,
         activateArguments.awsContext,
         getComputeRegion()
@@ -48,7 +48,7 @@ export async function activate(activateArguments: {
     await sanitizeTelemetrySetting(activateArguments.toolkitSettings)
 
     // Configure telemetry based on settings, and default to enabled
-    applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
+    applyTelemetryEnabledState(awsToolkit.telemetry, activateArguments.toolkitSettings)
 
     // Prompt user about telemetry if they haven't been
     if (!isCloud9() && !hasUserSeenTelemetryNotice(activateArguments.extensionContext)) {
@@ -62,7 +62,7 @@ export async function activate(activateArguments: {
                 event.affectsConfiguration('telemetry.enableTelemetry') ||
                 event.affectsConfiguration('aws.telemetry')
             ) {
-                if (!ext.telemetry) {
+                if (!awsToolkit.telemetry) {
                     getLogger().warn(
                         'Telemetry configuration changed, but telemetry is undefined. This can happen during testing. #1071'
                     )
@@ -70,7 +70,7 @@ export async function activate(activateArguments: {
                 }
 
                 validateTelemetrySettingType(activateArguments.toolkitSettings)
-                applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
+                applyTelemetryEnabledState(awsToolkit.telemetry, activateArguments.toolkitSettings)
             }
         },
         undefined,

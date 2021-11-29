@@ -25,7 +25,7 @@ describe('detachThingCertCommand', function () {
         iot = mock()
         parentNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
         node = new IotThingCertNode(
-            { id: certificateId, arn: principal, activeStatus: 'ACTIVE', creationDate: new ext.clock.Date() },
+            { id: certificateId, arn: principal, activeStatus: 'ACTIVE', creationDate: new awsToolkit.clock.Date() },
             parentNode,
             instance(iot)
         )

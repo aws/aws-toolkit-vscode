@@ -514,5 +514,5 @@ export class DefaultIotClient {
 }
 
 async function createSdkClient(regionCode: string): Promise<Iot> {
-    return await ext.sdkClientBuilder.createAwsService(Iot, undefined, regionCode)
+    return await awsToolkit.sdkClientBuilder.createAwsService(Iot, undefined, regionCode)
 }

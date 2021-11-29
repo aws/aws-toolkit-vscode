@@ -15,16 +15,16 @@ const localize = nls.loadMessageBundle()
 function makeDeployButtons() {
     const autoDeploymentsEnable: QuickInputButton<void> = {
         iconPath: {
-            light: ext.iconPaths.light.syncIgnore,
-            dark: ext.iconPaths.dark.syncIgnore,
+            light: awsToolkit.iconPaths.light.syncIgnore,
+            dark: awsToolkit.iconPaths.dark.syncIgnore,
         },
         tooltip: localize('AWS.apprunner.buttons.enableAutoDeploy', 'Turn on automatic deployment'),
     }
 
     const autoDeploymentsDisable: QuickInputButton<void> = {
         iconPath: {
-            light: ext.iconPaths.light.sync,
-            dark: ext.iconPaths.dark.sync,
+            light: awsToolkit.iconPaths.light.sync,
+            dark: awsToolkit.iconPaths.dark.sync,
         },
         tooltip: localize('AWS.apprunner.buttons.disableAutoDeploy', 'Turn off automatic deployment'),
     }

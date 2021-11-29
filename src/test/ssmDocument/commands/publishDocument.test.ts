@@ -141,7 +141,7 @@ describe('publishSSMDocument', async function () {
             createSsmClient: sandbox.stub().returns(ssmDocumentClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
 

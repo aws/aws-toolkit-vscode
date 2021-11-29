@@ -139,7 +139,7 @@ function getLogPath(): string {
     }
 
     // TODO: 'globalStoragePath' is deprecated in later versions of VS Code, use 'globalStorageUri' when min >= 1.48
-    const logsDir = path.join(ext.context.globalStoragePath, 'logs')
+    const logsDir = path.join(awsToolkit.context.globalStoragePath, 'logs')
 
     return path.join(logsDir, makeLogFilename())
 }

@@ -63,7 +63,7 @@ export async function executeStateMachine(params: {
                 onPostMessage: message => view.webview.postMessage(message),
             }),
             undefined,
-            ext.context.subscriptions
+            awsToolkit.context.subscriptions
         )
     } catch (err) {
         logger.error(err as Error)
@@ -101,7 +101,7 @@ function createMessageReceivedFunc({
                     if (!stateMachine.details.stateMachineArn) {
                         throw new Error(`Could not determine ARN for state machine ${stateMachine.details.name}`)
                     }
-                    const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(
+                    const client: StepFunctionsClient = awsToolkit.toolkitClientBuilder.createStepFunctionsClient(
                         stateMachine.regionCode
                     )
                     const startExecResponse = await client.executeStateMachine(

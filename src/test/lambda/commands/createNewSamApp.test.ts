@@ -73,7 +73,7 @@ describe('createNewSamApp', function () {
 
     afterEach(async function () {
         await fs.remove(tempFolder)
-        ext.templateRegistry.reset()
+        awsToolkit.templateRegistry.reset()
     })
 
     describe('getProjectUri', function () {
@@ -106,7 +106,7 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await awsToolkit.templateRegistry.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -142,7 +142,7 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await awsToolkit.templateRegistry.addItemToRegistry(tempTemplate)
             const launchConfigs = (await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -179,7 +179,7 @@ describe('createNewSamApp', function () {
         it('returns a blank array if it does not match any launch configs', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await awsToolkit.templateRegistry.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -195,7 +195,7 @@ describe('createNewSamApp', function () {
 
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await awsToolkit.templateRegistry.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -229,9 +229,9 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
             testutil.toFile('target file', path.join(otherFolder1, TEMPLATE_YAML))
 
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
-            await ext.templateRegistry.addItemToRegistry(otherTemplate1)
-            await ext.templateRegistry.addItemToRegistry(otherTemplate2)
+            await awsToolkit.templateRegistry.addItemToRegistry(tempTemplate)
+            await awsToolkit.templateRegistry.addItemToRegistry(otherTemplate1)
+            await awsToolkit.templateRegistry.addItemToRegistry(otherTemplate2)
 
             const launchConfigs1 = await addInitialLaunchConfiguration(
                 fakeContext,

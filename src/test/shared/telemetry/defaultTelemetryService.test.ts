@@ -22,7 +22,7 @@ import { FakeTelemetryPublisher } from '../../fake/fakeTelemetryService'
 import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
 import { installFakeClock } from '../../testUtil'
 
-const originalTelemetryClient: TelemetryService = ext.telemetry
+const originalTelemetryClient: TelemetryService = awsToolkit.telemetry
 let mockContext: FakeExtensionContext
 let mockAws: FakeAwsContext
 let mockPublisher: FakeTelemetryPublisher
@@ -33,13 +33,13 @@ beforeEach(function () {
     mockAws = new FakeAwsContext()
     mockPublisher = new FakeTelemetryPublisher()
     service = new DefaultTelemetryService(mockContext, mockAws, undefined, mockPublisher)
-    ext.telemetry = service
+    awsToolkit.telemetry = service
 })
 
 afterEach(async function () {
     // Remove the persist file as it is saved
-    await fs.remove(ext.telemetry.persistFilePath)
-    ext.telemetry = originalTelemetryClient
+    await fs.remove(awsToolkit.telemetry.persistFilePath)
+    awsToolkit.telemetry = originalTelemetryClient
 })
 
 function fakeMetric(value: number, passive: boolean) {
@@ -48,7 +48,7 @@ function fakeMetric(value: number, passive: boolean) {
         MetricName: `metric${value}`,
         Value: value,
         Unit: 'None',
-        EpochTimestamp: new ext.clock.Date().getTime(),
+        EpochTimestamp: new awsToolkit.clock.Date().getTime(),
     }
 }
 
@@ -113,7 +113,7 @@ describe('DefaultTelemetryService', function () {
             MetricName: 'namespace',
             Value: 1,
             Unit: 'None',
-            EpochTimestamp: new ext.clock.Date().getTime(),
+            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
         })
 
         await service.start()
@@ -130,11 +130,16 @@ describe('DefaultTelemetryService', function () {
     it('events automatically inject the active account id into the metadata', async function () {
         const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
         service = new DefaultTelemetryService(mockContext, mockAwsWithIds, undefined, mockPublisher)
-        ext.telemetry = service
+        awsToolkit.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() })
+        service.record({
+            MetricName: 'name',
+            Value: 1,
+            Unit: 'None',
+            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+        })
 
         assert.strictEqual(service.records.length, 1)
 
@@ -169,11 +174,16 @@ describe('DefaultTelemetryService', function () {
             getCredentialAccountId: () => 'this is bad!',
         } as any as AwsContext
         service = new DefaultTelemetryService(mockContext, mockAwsBad, undefined, mockPublisher)
-        ext.telemetry = service
+        awsToolkit.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() })
+        service.record({
+            MetricName: 'name',
+            Value: 1,
+            Unit: 'None',
+            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+        })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -192,7 +202,12 @@ describe('DefaultTelemetryService', function () {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() })
+        service.record({
+            MetricName: 'name',
+            Value: 1,
+            Unit: 'None',
+            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+        })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -215,7 +230,12 @@ describe('DefaultTelemetryService', function () {
         assert.notStrictEqual(service.timer, undefined)
 
         // telemetry off: events are never recorded
-        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() })
+        service.record({
+            MetricName: 'name',
+            Value: 1,
+            Unit: 'None',
+            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+        })
 
         clock.tick(testFlushPeriod + 1)
         await service.shutdown()

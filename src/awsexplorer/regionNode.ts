@@ -57,26 +57,29 @@ export class RegionNode extends AWSTreeNodeBase {
             {
                 serviceId: 'apprunner',
                 createFn: () =>
-                    new AppRunnerNode(this.regionCode, ext.toolkitClientBuilder.createAppRunnerClient(this.regionCode)),
+                    new AppRunnerNode(
+                        this.regionCode,
+                        awsToolkit.toolkitClientBuilder.createAppRunnerClient(this.regionCode)
+                    ),
             },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 'ecr',
-                createFn: () => new EcrNode(ext.toolkitClientBuilder.createEcrClient(this.regionCode)),
+                createFn: () => new EcrNode(awsToolkit.toolkitClientBuilder.createEcrClient(this.regionCode)),
             },
             {
                 serviceId: 'ecs',
-                createFn: () => new EcsNode(ext.toolkitClientBuilder.createEcsClient(this.regionCode)),
+                createFn: () => new EcsNode(awsToolkit.toolkitClientBuilder.createEcsClient(this.regionCode)),
             },
             {
                 serviceId: 'iot',
-                createFn: () => new IotNode(ext.toolkitClientBuilder.createIotClient(this.regionCode)),
+                createFn: () => new IotNode(awsToolkit.toolkitClientBuilder.createIotClient(this.regionCode)),
             },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             {
                 serviceId: 's3',
-                createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
+                createFn: () => new S3Node(awsToolkit.toolkitClientBuilder.createS3Client(this.regionCode)),
             },
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },

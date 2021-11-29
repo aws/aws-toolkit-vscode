@@ -10,11 +10,11 @@ import { CreateAppRunnerServiceWizard } from '../../../apprunner/wizards/apprunn
 
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<AppRunner.CreateServiceRequest>
-    let lastClientBuilder: typeof ext.toolkitClientBuilder
+    let lastClientBuilder: typeof awsToolkit.toolkitClientBuilder
 
     before(function () {
-        lastClientBuilder = ext.toolkitClientBuilder
-        ext.toolkitClientBuilder = {
+        lastClientBuilder = awsToolkit.toolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = {
             createAppRunnerClient: () => ({} as any),
             createEcrClient: () => ({} as any),
             createIamClient: () => ({} as any),
@@ -27,7 +27,7 @@ describe('CreateServiceWizard', function () {
     })
 
     after(function () {
-        ext.toolkitClientBuilder = lastClientBuilder
+        awsToolkit.toolkitClientBuilder = lastClientBuilder
     })
 
     describe('CreateAppRunnerServiceWizard', function () {

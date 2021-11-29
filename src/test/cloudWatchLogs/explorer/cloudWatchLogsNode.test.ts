@@ -103,6 +103,6 @@ describe('CloudWatchLogsNode', function () {
             createCloudWatchLogsClient: sandbox.stub().returns(cloudWatchLogsClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

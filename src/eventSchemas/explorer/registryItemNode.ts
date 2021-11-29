@@ -31,8 +31,8 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         this.contextValue = 'awsRegistryItemNode'
         this.schemaNodes = new Map<string, SchemaItemNode>()
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.registry),
-            light: vscode.Uri.file(ext.iconPaths.light.registry),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.registry),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.registry),
         }
     }
 
@@ -68,7 +68,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(this.regionCode)
+        const client: SchemaClient = awsToolkit.toolkitClientBuilder.createSchemaClient(this.regionCode)
         const schemas = await toMapAsync(listSchemaItems(client, this.registryName), schema => schema.SchemaName)
 
         updateInPlace(

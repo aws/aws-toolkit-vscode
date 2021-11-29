@@ -39,7 +39,7 @@ export async function deleteResource(
         },
         async progress => {
             let result: Result = 'Succeeded'
-            const startTime = new ext.clock.Date()
+            const startTime = new awsToolkit.clock.Date()
 
             try {
                 progress.report({

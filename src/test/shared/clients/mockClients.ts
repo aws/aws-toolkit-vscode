@@ -489,7 +489,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             name: '',
             definition: '',
             type: '',
-            creationDate: new ext.clock.Date(),
+            creationDate: new awsToolkit.clock.Date(),
         }),
 
         public readonly executeStateMachine: (
@@ -497,7 +497,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             input: string
         ) => Promise<StepFunctions.StartExecutionOutput> = async (arn: string, input: string) => ({
             executionArn: '',
-            startDate: new ext.clock.Date(),
+            startDate: new awsToolkit.clock.Date(),
         }),
 
         public readonly createStateMachine: (
@@ -506,7 +506,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             params: StepFunctions.CreateStateMachineInput
         ) => ({
             stateMachineArn: '',
-            creationDate: new ext.clock.Date(),
+            creationDate: new awsToolkit.clock.Date(),
         }),
 
         public readonly updateStateMachine: (
@@ -514,7 +514,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
         ) => Promise<StepFunctions.UpdateStateMachineOutput> = async (
             params: StepFunctions.UpdateStateMachineInput
         ) => ({
-            updateDate: new ext.clock.Date(),
+            updateDate: new awsToolkit.clock.Date(),
         })
     ) {}
 }

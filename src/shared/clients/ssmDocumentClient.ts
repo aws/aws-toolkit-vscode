@@ -109,6 +109,6 @@ export class DefaultSsmDocumentClient {
     }
 
     private async createSdkClient(): Promise<SSM> {
-        return await ext.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
+        return await awsToolkit.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 }

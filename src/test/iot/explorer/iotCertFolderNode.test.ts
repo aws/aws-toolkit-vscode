@@ -23,13 +23,13 @@ describe('IotCertFolderNode', function () {
         certificateId: 'cert',
         certificateArn: 'arn',
         status: 'ACTIVE',
-        creationDate: new ext.clock.Date(0),
+        creationDate: new awsToolkit.clock.Date(0),
     }
     const expectedCert: IotCertificate = {
         id: 'cert',
         arn: 'arn',
         activeStatus: 'ACTIVE',
-        creationDate: new ext.clock.Date(0),
+        creationDate: new awsToolkit.clock.Date(0),
     }
 
     function assertCertNode(node: AWSTreeNodeBase, expectedCert: IotCertificate): void {

@@ -33,7 +33,7 @@ export async function copyUrlCommand(
 ): Promise<void> {
     const region = node.regionCode
     const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || DEFAULT_DNS_SUFFIX
-    const client: ApiGatewayClient = ext.toolkitClientBuilder.createApiGatewayClient(region)
+    const client: ApiGatewayClient = awsToolkit.toolkitClientBuilder.createApiGatewayClient(region)
 
     let stages: Stage[]
     try {

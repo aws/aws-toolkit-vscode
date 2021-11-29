@@ -49,8 +49,8 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
         )
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.apprunner),
-            light: vscode.Uri.file(ext.iconPaths.light.apprunner),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.apprunner),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.apprunner),
         }
         this.id = `AppRunnerService-${_info.ServiceArn}`
         this.name = _info.ServiceName

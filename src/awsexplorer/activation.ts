@@ -52,17 +52,17 @@ export async function activate(args: {
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(ext.context, args.awsContext, args.regionProvider)
+    const awsExplorer = new AwsExplorer(awsToolkit.context, args.awsContext, args.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
         showCollapseAll: true,
     })
-    ext.context.subscriptions.push(view)
+    awsToolkit.context.subscriptions.push(view)
 
-    await registerAwsExplorerCommands(ext.context, awsExplorer, args.toolkitOutputChannel)
+    await registerAwsExplorerCommands(awsToolkit.context, awsExplorer, args.toolkitOutputChannel)
 
-    ext.context.subscriptions.push(
+    awsToolkit.context.subscriptions.push(
         view.onDidChangeVisibility(async e => {
             if (e.visible) {
                 await tryAutoConnect(args.awsContext)
@@ -72,7 +72,7 @@ export async function activate(args: {
 
     args.awsContextTrees.addTree(awsExplorer)
 
-    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, ext.context)
+    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, awsToolkit.context)
 }
 
 async function tryAutoConnect(awsContext: AwsContext) {
@@ -98,7 +98,7 @@ async function registerAwsExplorerCommands(
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.showRegion', async () => {
             try {
-                await ext.awsContextCommands.onCommandShowRegion()
+                await awsToolkit.awsContextCommands.onCommandShowRegion()
             } finally {
                 recordAwsShowRegion()
                 recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
@@ -109,7 +109,7 @@ async function registerAwsExplorerCommands(
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
             try {
-                await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+                await awsToolkit.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
             } finally {
                 recordAwsHideRegion()
                 recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })

@@ -26,8 +26,8 @@ export function getLanguageModelCache<T>(
 
     let cleanupInterval: NodeJS.Timer | undefined
     if (cleanupIntervalTimeInSec > 0) {
-        cleanupInterval = ext.clock.setInterval(() => {
-            const cutoffTime = ext.clock.Date.now() - cleanupIntervalTimeInSec * 1000
+        cleanupInterval = awsToolkit.clock.setInterval(() => {
+            const cutoffTime = awsToolkit.clock.Date.now() - cleanupIntervalTimeInSec * 1000
             const uris = Object.keys(languageModels)
             for (const uri of uris) {
                 const languageModelInfo = languageModels[uri]
@@ -49,12 +49,12 @@ export function getLanguageModelCache<T>(
                 languageModelInfo.version === version &&
                 languageModelInfo.languageId === languageId
             ) {
-                languageModelInfo.cTime = ext.clock.Date.now()
+                languageModelInfo.cTime = awsToolkit.clock.Date.now()
 
                 return languageModelInfo.languageModel
             }
             const languageModel = parse(document)
-            languageModels[document.uri] = { languageModel, version, languageId, cTime: ext.clock.Date.now() }
+            languageModels[document.uri] = { languageModel, version, languageId, cTime: awsToolkit.clock.Date.now() }
             if (!languageModelInfo) {
                 nModels++
             }
@@ -86,7 +86,7 @@ export function getLanguageModelCache<T>(
         },
         dispose() {
             if (typeof cleanupInterval !== 'undefined') {
-                ext.clock.clearInterval(cleanupInterval)
+                awsToolkit.clock.clearInterval(cleanupInterval)
                 cleanupInterval = undefined
                 languageModels = {}
                 nModels = 0

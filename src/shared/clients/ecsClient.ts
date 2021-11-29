@@ -92,7 +92,7 @@ export class DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return await ext.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
+        return await awsToolkit.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
     }
 
     public async executeCommand(

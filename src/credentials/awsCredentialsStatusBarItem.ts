@@ -41,7 +41,7 @@ export async function updateCredentialsStatusBarItem(
     credentialsId?: string,
     developerMode?: Set<string>
 ): Promise<void> {
-    ext.clock.clearTimeout(timeoutID)
+    awsToolkit.clock.clearTimeout(timeoutID)
     const connectedMsg = localize(
         'AWS.credentials.statusbar.connected',
         'Connected to {0} with "{1}" (click to change)',
@@ -73,7 +73,7 @@ export async function updateCredentialsStatusBarItem(
 
     return new Promise<void>(
         resolve =>
-            (timeoutID = ext.clock.setTimeout(() => {
+            (timeoutID = awsToolkit.clock.setTimeout(() => {
                 const company = getIdeProperties().company
                 ;(statusBarItem.text = credentialsId ? `${company}: ${credentialsId}` : company), resolve()
             }, delay))

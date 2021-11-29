@@ -419,7 +419,7 @@ export async function runLambdaFunction(
             })
             .catch(e => {
                 getLogger().error(`Failed to debug: ${e}`)
-                ext.outputChannel.appendLine(`Failed to debug: ${e}`)
+                awsToolkit.outputChannel.appendLine(`Failed to debug: ${e}`)
             })
     }
 

@@ -228,7 +228,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                     Values: [documentType],
                 })
             }
-            const client = ext.toolkitClientBuilder.createSsmClient(region)
+            const client = awsToolkit.toolkitClientBuilder.createSsmClient(region)
             this.documents = await toArrayAsync(
                 client.listDocuments({
                     Filters: filters,

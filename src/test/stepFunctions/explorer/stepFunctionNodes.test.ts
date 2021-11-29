@@ -100,7 +100,7 @@ describe('StepFunctionsNode', function () {
                             name: name,
                             stateMachineArn: 'arn:aws:states:us-east-1:123412341234:stateMachine:' + name,
                             type: 'STANDARD',
-                            creationDate: new ext.clock.Date(),
+                            creationDate: new awsToolkit.clock.Date(),
                         }
                     })
                 )
@@ -111,6 +111,6 @@ describe('StepFunctionsNode', function () {
             createStepFunctionsClient: sandbox.stub().returns(stepFunctionsClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

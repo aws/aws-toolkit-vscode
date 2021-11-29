@@ -29,8 +29,8 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
         this.contextValue = this.service.enableExecuteCommand ? CONTEXT_EXEC_ENABLED : CONTEXT_EXEC_DISABLED
 
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.service),
-            light: vscode.Uri.file(ext.iconPaths.light.service),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.service),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.service),
         }
     }
 

@@ -67,7 +67,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
                 // Normalize to absolute path for use in the runner.
                 config.invokeTarget.templatePath = fullpath
-                cfnTemplate = ext.templateRegistry.getRegisteredItem(fullpath)?.item
+                cfnTemplate = awsToolkit.templateRegistry.getRegisteredItem(fullpath)?.item
             }
             rv = this.validateTemplateConfig(config, config.invokeTarget.templatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {

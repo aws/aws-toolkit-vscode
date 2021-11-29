@@ -97,7 +97,7 @@ export async function findParentProjectFile(
         return undefined
     }
 
-    const workspaceProjectFiles = ext.codelensRootRegistry.registeredItems
+    const workspaceProjectFiles = awsToolkit.codelensRootRegistry.registeredItems
         .filter(item => item.item.match(projectFile))
         .map(item => item.path)
 

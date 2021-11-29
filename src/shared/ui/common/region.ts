@@ -24,7 +24,7 @@ export function createRegionPrompter(
 ): QuickPickPrompter<Region> {
     const lastRegionKey = 'lastSelectedRegion'
     if (!regions) {
-        regions = getRegionsForActiveCredentials(ext.awsContext, ext.regionProvider)
+        regions = getRegionsForActiveCredentials(awsToolkit.awsContext, awsToolkit.regionProvider)
     }
 
     const items = regions.map(region => ({
@@ -49,7 +49,7 @@ export function createRegionPrompter(
         },
     })
 
-    const lastRegion = ext.context.globalState.get<Region>(lastRegionKey)
+    const lastRegion = awsToolkit.context.globalState.get<Region>(lastRegionKey)
     if (lastRegion !== undefined && (lastRegion as any).id) {
         const found = regions.find(val => val.id === lastRegion.id)
         if (found) {
@@ -58,7 +58,7 @@ export function createRegionPrompter(
     }
     return prompter.transform(item => {
         getLogger().debug('createRegionPrompter: selected %O', item)
-        ext.context.globalState.update(lastRegionKey, item)
+        awsToolkit.context.globalState.update(lastRegionKey, item)
         return item
     })
 }

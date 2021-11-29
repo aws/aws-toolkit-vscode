@@ -56,7 +56,7 @@ export class DefaultTelemetryService implements TelemetryService {
             fs.mkdirSync(persistPath)
         }
 
-        this.startTime = new ext.clock.Date()
+        this.startTime = new awsToolkit.clock.Date()
 
         this._eventQueue = []
         this._flushPeriod = DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
@@ -75,10 +75,10 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public async shutdown(): Promise<void> {
         if (this._timer !== undefined) {
-            ext.clock.clearTimeout(this._timer)
+            awsToolkit.clock.clearTimeout(this._timer)
             this._timer = undefined
         }
-        const currTime = new ext.clock.Date()
+        const currTime = new awsToolkit.clock.Date()
         recordSessionEnd({ value: currTime.getTime() - this.startTime.getTime() })
 
         // only write events to disk if telemetry is enabled at shutdown time
@@ -156,7 +156,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
     // TODO: replace this with `setInterval`
     private async startTimer(): Promise<void> {
-        this._timer = ext.clock.setTimeout(
+        this._timer = awsToolkit.clock.setTimeout(
             // this is async so that we don't have pseudo-concurrent invocations of the callback
             async () => {
                 await this.flushRecords()

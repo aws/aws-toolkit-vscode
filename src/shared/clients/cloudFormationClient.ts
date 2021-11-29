@@ -82,6 +82,6 @@ export class DefaultCloudFormationClient {
     }
 
     private async createSdkClient(): Promise<CloudFormation> {
-        return await ext.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
+        return await awsToolkit.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
     }
 }

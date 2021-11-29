@@ -46,7 +46,7 @@ export function submitFeedback(listener?: (message: any) => Promise<void>): vsco
     })
 
     const feedbackListener = listener === undefined ? createListener(panel) : listener
-    panel.webview.onDidReceiveMessage(feedbackListener, undefined, ext.context.subscriptions)
+    panel.webview.onDidReceiveMessage(feedbackListener, undefined, awsToolkit.context.subscriptions)
 
     return panel
 }
@@ -61,5 +61,5 @@ function createListener(panel: vscode.WebviewPanel) {
         showInformationMessage: (message: string) => vscode.window.showInformationMessage(message),
     }
 
-    return submitFeedbackListener(feedbackPanel, window, ext.telemetry)
+    return submitFeedbackListener(feedbackPanel, window, awsToolkit.telemetry)
 }

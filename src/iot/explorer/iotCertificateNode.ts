@@ -49,8 +49,8 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
             moment(this.certificate.creationDate).format(LOCALIZED_DATE_FORMAT)
         )
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.certificate),
-            light: vscode.Uri.file(ext.iconPaths.light.certificate),
+            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.certificate),
+            light: vscode.Uri.file(awsToolkit.iconPaths.light.certificate),
         }
         this.description = `\t[${this.certificate.activeStatus}]`
         this.contextValue = `${CONTEXT_BASE}.${this.certificate.activeStatus}`

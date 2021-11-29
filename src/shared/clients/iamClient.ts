@@ -58,6 +58,6 @@ export class DefaultIamClient {
     }
 
     private async createSdkClient(): Promise<IAM> {
-        return await ext.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
+        return await awsToolkit.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
     }
 }

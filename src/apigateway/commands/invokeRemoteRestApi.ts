@@ -64,7 +64,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
 
         const invokeTemplateFn = template(APIG_REMOTE_INVOKE_TEMPLATE)
 
-        const client = ext.toolkitClientBuilder.createApiGatewayClient(params.apiNode.regionCode)
+        const client = awsToolkit.toolkitClientBuilder.createApiGatewayClient(params.apiNode.regionCode)
         logger.info(`Loading API Resources for API ${apiNode.name} (id: ${apiNode.id})`)
 
         const resources: Map<string, Resource> = toMap(
@@ -109,7 +109,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
                 postMessage: message => view.webview.postMessage(message),
             }),
             undefined,
-            ext.context.subscriptions
+            awsToolkit.context.subscriptions
         )
     } catch (err) {
         logger.error(err as Error)

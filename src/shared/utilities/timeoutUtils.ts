@@ -36,7 +36,7 @@ export class Timeout {
     private _completed: boolean = false
 
     public constructor(timeoutLength: number) {
-        this.startTime = ext.clock.Date.now()
+        this.startTime = awsToolkit.clock.Date.now()
         this.endTime = this.startTime + timeoutLength
         this.timeoutLength = timeoutLength
 
@@ -45,7 +45,7 @@ export class Timeout {
             this.timerResolve = resolve
         })
 
-        this.timerTimeout = ext.clock.setTimeout(() => {
+        this.timerTimeout = awsToolkit.clock.setTimeout(() => {
             this.timerReject(new TimeoutError('expired'))
             this._completed = true
         }, timeoutLength)
@@ -57,7 +57,7 @@ export class Timeout {
      * Minimum is 0.
      */
     public get remainingTime(): number {
-        const remainingTime = this.endTime - ext.clock.Date.now()
+        const remainingTime = this.endTime - awsToolkit.clock.Date.now()
 
         return remainingTime > 0 ? remainingTime : 0
     }
@@ -80,7 +80,7 @@ export class Timeout {
         // These will not align, but we don't have visibility into a NodeJS.Timeout
         // so remainingtime will be approximate. Timers are approximate anyway and are
         // not highly accurate in when they fire.
-        this.endTime = ext.clock.Date.now() + this.timeoutLength
+        this.endTime = awsToolkit.clock.Date.now() + this.timeoutLength
         this.timerTimeout = this.timerTimeout.refresh()
     }
 
@@ -97,7 +97,7 @@ export class Timeout {
      * Returns the elapsed time from the initial Timeout object creation
      */
     public get elapsedTime(): number {
-        return (this._completed ? this.endTime : ext.clock.Date.now()) - this.startTime
+        return (this._completed ? this.endTime : awsToolkit.clock.Date.now()) - this.startTime
     }
 
     /**
@@ -114,8 +114,8 @@ export class Timeout {
             return
         }
 
-        this.endTime = ext.clock.Date.now()
-        ext.clock.clearTimeout(this.timerTimeout)
+        this.endTime = awsToolkit.clock.Date.now()
+        awsToolkit.clock.clearTimeout(this.timerTimeout)
 
         if (reject) {
             this.timerReject(new TimeoutError('cancelled'))
@@ -142,18 +142,18 @@ export async function waitUntil<T>(
     opt: { timeout: number; interval: number; truthy: boolean } = { timeout: 5000, interval: 500, truthy: true }
 ): Promise<T | undefined> {
     for (let i = 0; true; i++) {
-        const start: number = ext.clock.Date.now()
+        const start: number = awsToolkit.clock.Date.now()
         let result: T
 
         // Needed in case a caller uses a 0 timeout (function is only called once)
         if (opt.timeout > 0) {
-            result = await Promise.race([fn(), new Promise<T>(r => ext.clock.setTimeout(r, opt.timeout))])
+            result = await Promise.race([fn(), new Promise<T>(r => awsToolkit.clock.setTimeout(r, opt.timeout))])
         } else {
             result = await fn()
         }
 
         // Ensures that we never overrun the timeout
-        opt.timeout -= ext.clock.Date.now() - start
+        opt.timeout -= awsToolkit.clock.Date.now() - start
 
         if ((opt.truthy && result) || (!opt.truthy && result !== undefined)) {
             return result

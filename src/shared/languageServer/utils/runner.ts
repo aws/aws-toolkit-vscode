@@ -31,7 +31,7 @@ export function runSafeAsync<T>(
     token: CancellationToken
 ): Thenable<any | ResponseError<any>> {
     return new Promise<T | ResponseError<any>>(resolve => {
-        ext.clock.setImmediate(() => {
+        awsToolkit.clock.setImmediate(() => {
             if (token.isCancellationRequested) {
                 resolve(cancelValue())
             }
@@ -62,7 +62,7 @@ export function runSafe<T, E>(
     token: CancellationToken
 ): Thenable<T | ResponseError<E>> {
     return new Promise<T | ResponseError<E>>(resolve => {
-        ext.clock.setImmediate(() => {
+        awsToolkit.clock.setImmediate(() => {
             if (token.isCancellationRequested) {
                 resolve(cancelValue())
             } else {

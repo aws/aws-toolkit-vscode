@@ -138,7 +138,7 @@ describe('deploySamApplication', async function () {
 
         // TODO: is this safe? will add output channel across all tests
         // we are using this pattern in other tests...
-        ext.outputChannel = vscode.window.createOutputChannel('test channel')
+        awsToolkit.outputChannel = vscode.window.createOutputChannel('test channel')
 
         testCredentials = placeholderCredentials
         invokerCalledCount = 0
