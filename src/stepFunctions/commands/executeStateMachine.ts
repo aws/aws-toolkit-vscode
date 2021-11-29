@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import {

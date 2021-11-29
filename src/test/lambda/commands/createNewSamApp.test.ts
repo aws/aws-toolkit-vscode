@@ -25,7 +25,6 @@ import {
     AwsSamDebuggerConfiguration,
     TemplateTargetProperties,
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
-import { ext } from '../../../shared/extensionGlobals'
 import { normalize } from '../../../shared/utilities/pathUtils'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 

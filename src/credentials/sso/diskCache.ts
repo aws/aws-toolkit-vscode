@@ -96,7 +96,7 @@ export class DiskCache implements SsoCache {
     }
 
     private isNotExpired(token: any): boolean {
-        return Date.parse(token.expiresAt) - this.TOKEN_EXPIRATION_BUFFER_MS > Date.now()
+        return Date.parse(token.expiresAt) - this.TOKEN_EXPIRATION_BUFFER_MS > ext.clock.Date.now()
     }
 
     private registrationCache(ssoRegion: string): string {

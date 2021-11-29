@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { documentationUrl } from '../constants'
-import { ext } from '../extensionGlobals'
 import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
 
 const localize = nls.loadMessageBundle()

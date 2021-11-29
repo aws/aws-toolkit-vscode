@@ -8,7 +8,7 @@ import { readFileSync } from 'fs'
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'

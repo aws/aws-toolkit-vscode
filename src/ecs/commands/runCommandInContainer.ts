@@ -15,7 +15,7 @@ import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 
 export async function runCommandInContainer(

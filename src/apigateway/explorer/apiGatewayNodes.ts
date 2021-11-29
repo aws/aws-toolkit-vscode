@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'

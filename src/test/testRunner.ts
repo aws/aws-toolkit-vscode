@@ -91,7 +91,7 @@ export function runTestsInFolder(testFolder: string, initTests: string[] = []): 
 
 // Adapted from https://github.com/codecov/example-typescript-vscode-extension
 class CoverageRunner {
-    private coverageVar: string = `$$cov_${new Date().getTime()}$$`
+    private coverageVar: string = `$$cov_${new ext.clock.Date().getTime()}$$`
     private transformer: any = undefined
     private matchFn: any = undefined
     private instrumenter: any = undefined

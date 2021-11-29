@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 
 /*

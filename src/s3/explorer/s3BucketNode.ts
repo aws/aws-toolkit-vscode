@@ -12,7 +12,7 @@ import {
     S3Client,
     UploadFileRequest,
 } from '../../shared/clients/s3Client'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'

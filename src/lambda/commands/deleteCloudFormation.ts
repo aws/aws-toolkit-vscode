@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordCloudformationDelete, Result } from '../../shared/telemetry/telemetry'

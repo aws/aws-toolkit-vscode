@@ -8,7 +8,6 @@ import * as sinon from 'sinon'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { getAccountId } from '../../../shared/credentials/accountId'
-import { ext } from '../../../shared/extensionGlobals'
 
 describe('getAccountId', function () {
     let sandbox: sinon.SinonSandbox

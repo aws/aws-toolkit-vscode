@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import { ClassToInterfaceType } from './utilities/tsUtils'
-import { ext } from './extensionGlobals'
 import { isReleaseVersion } from './vscode/env'
 import * as logger from './logger'
 

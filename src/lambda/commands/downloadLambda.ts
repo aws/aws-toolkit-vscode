@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
-import { ext } from '../../shared/extensionGlobals'
+
 import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'

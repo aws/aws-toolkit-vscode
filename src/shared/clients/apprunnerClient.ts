@@ -4,7 +4,7 @@
  */
 
 import { AppRunner } from 'aws-sdk'
-import { ext } from '../../shared/extensionGlobals'
+
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type AppRunnerClient = ClassToInterfaceType<DefaultAppRunnerClient>

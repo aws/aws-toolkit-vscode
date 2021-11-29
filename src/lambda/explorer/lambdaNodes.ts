@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'

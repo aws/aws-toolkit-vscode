@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { ext } from '../../shared/extensionGlobals'
+
 import { RegionNode } from '../../awsexplorer/regionNode'
 import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
 import { DEFAULT_TEST_REGION_CODE, DEFAULT_TEST_REGION_NAME, FakeRegionProvider } from '../utilities/fakeAwsContext'

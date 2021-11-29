@@ -102,7 +102,9 @@ export class SsoAccessTokenProvider {
                     startUrl: this.ssoUrl,
                     region: this.ssoRegion,
                     accessToken: tokenResponse.accessToken!,
-                    expiresAt: new Date(this.currentTimePlusSecondsInMs(tokenResponse.expiresIn!)).toISOString(),
+                    expiresAt: new ext.clock.Date(
+                        this.currentTimePlusSecondsInMs(tokenResponse.expiresIn!)
+                    ).toISOString(),
                 }
                 return accessToken
             } catch (err) {
@@ -119,7 +121,7 @@ export class SsoAccessTokenProvider {
                     throw err
                 }
             }
-            if (Date.now() + retryInterval > deviceCodeExpiration) {
+            if (ext.clock.Date.now() + retryInterval > deviceCodeExpiration) {
                 throw Error(deviceCodeExpiredMsg)
             }
 
@@ -167,7 +169,9 @@ export class SsoAccessTokenProvider {
             clientName: CLIENT_NAME,
         }
         const registerResponse = await this.ssoOidcClient.registerClient(registerParams)
-        const formattedExpiry = new Date(registerResponse.clientSecretExpiresAt! * MS_PER_SECOND).toISOString()
+        const formattedExpiry = new ext.clock.Date(
+            registerResponse.clientSecretExpiresAt! * MS_PER_SECOND
+        ).toISOString()
 
         const registration: SsoClientRegistration = {
             clientId: registerResponse.clientId!,
@@ -185,6 +189,6 @@ export class SsoAccessTokenProvider {
      * @param seconds Number of seconds to add
      */
     private currentTimePlusSecondsInMs(seconds: number) {
-        return seconds * MS_PER_SECOND + Date.now()
+        return seconds * MS_PER_SECOND + ext.clock.Date.now()
     }
 }

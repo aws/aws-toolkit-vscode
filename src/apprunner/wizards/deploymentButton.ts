@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { apprunnerPricingUrl, extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'

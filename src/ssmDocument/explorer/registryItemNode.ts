@@ -10,7 +10,7 @@ import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'

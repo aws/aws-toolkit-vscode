@@ -20,7 +20,7 @@ import {
 } from '../../eventSchemas/templates/schemasAppTemplateUtils'
 import { ActivationReloadState, SamInitState } from '../../shared/activationReloadState'
 import { AwsContext } from '../../shared/awsContext'
-import { ext } from '../../shared/extensionGlobals'
+
 import { fileExists, isInDirectory, readFileAsString } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'

@@ -11,7 +11,6 @@ import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
-import { ext } from '../shared/extensionGlobals'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import * as extWindow from '../shared/vscode/window'
@@ -23,6 +22,7 @@ import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { SchemaService } from '../shared/schemas'
 import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
+import { initializeExt } from '../shared/extensionGlobals'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -40,10 +40,10 @@ before(async function () {
     const fakeContext = new FakeExtensionContext()
     // set global storage path
     fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
+    initializeExt(fakeContext, extWindow.Window.vscode())
     const fakeAws = new FakeAwsContext()
     const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
     const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
-    ext.init(fakeContext, extWindow.Window.vscode())
     ext.telemetry = service
     await initializeComputeRegion()
 })

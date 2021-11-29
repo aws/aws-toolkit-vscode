@@ -11,7 +11,6 @@ import * as vscode from 'vscode'
 
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import * as publish from '../../../ssmDocument/commands/publishDocument'
 import * as ssmUtils from '../../../ssmDocument/util/util'
 import {

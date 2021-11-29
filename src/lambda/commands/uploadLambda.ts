@@ -12,7 +12,7 @@ import * as AdmZip from 'adm-zip'
 import * as fs from 'fs'
 import * as path from 'path'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { ext } from '../../shared/extensionGlobals'
+
 import { fileExists, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'

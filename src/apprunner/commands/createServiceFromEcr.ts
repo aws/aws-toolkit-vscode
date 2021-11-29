@@ -7,7 +7,7 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { EcrRepositoryNode } from '../../ecr/explorer/ecrRepositoryNode'
 import { EcrTagNode } from '../../ecr/explorer/ecrTagNode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'
 
 export async function createFromEcr(node: EcrTagNode | EcrRepositoryNode): Promise<void> {

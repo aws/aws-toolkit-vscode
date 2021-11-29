@@ -10,7 +10,6 @@ import { Disposable } from 'vscode-languageclient'
 import { AslVisualization } from '../../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { AslVisualizationManager } from '../../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualizationManager'
 
-import { ext } from '../../../shared/extensionGlobals'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 
 import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'

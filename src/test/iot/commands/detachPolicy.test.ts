@@ -23,7 +23,7 @@ describe('detachPolicyCommand', function () {
     beforeEach(function () {
         iot = mock()
         parentNode = new IotCertWithPoliciesNode(
-            { id: 'id', arn: target, activeStatus: 'ACTIVE', creationDate: new Date() },
+            { id: 'id', arn: target, activeStatus: 'ACTIVE', creationDate: new ext.clock.Date() },
             {} as IotCertsFolderNode,
             instance(iot)
         )

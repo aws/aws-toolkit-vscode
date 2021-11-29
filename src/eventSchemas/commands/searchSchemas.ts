@@ -15,7 +15,7 @@ import { SchemaItemNode } from '../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
 import { listRegistryItems, searchSchemas } from '../../eventSchemas/utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasSearch, recordSchemasView, Result } from '../../shared/telemetry/telemetry'
@@ -247,7 +247,11 @@ export async function getSearchListForSingleRegistry(
     return results
 }
 
-export async function getSearchResults(schemaClient: SchemaClient, registries: string[], keyword: string): Promise<SchemaVersionedSummary[]> {
+export async function getSearchResults(
+    schemaClient: SchemaClient,
+    registries: string[],
+    keyword: string
+): Promise<SchemaVersionedSummary[]> {
     let results: SchemaVersionedSummary[] = []
 
     await Promise.all(

@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
-import { ext } from '../../shared/extensionGlobals'
+
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { checklogs } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'

@@ -9,7 +9,7 @@ import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { CloudWatchLogsBase } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { CloudWatchLogs } from 'aws-sdk'

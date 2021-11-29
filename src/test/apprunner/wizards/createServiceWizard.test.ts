@@ -7,7 +7,6 @@ import * as _ from 'lodash'
 import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
 import { AppRunner } from 'aws-sdk'
 import { CreateAppRunnerServiceWizard } from '../../../apprunner/wizards/apprunnerCreateServiceWizard'
-import { ext } from '../../../shared/extensionGlobals'
 
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<AppRunner.CreateServiceRequest>

@@ -9,7 +9,6 @@ import * as sinon from 'sinon'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
@@ -94,6 +93,6 @@ describe('SchemasNode', function () {
             createSchemaClient: sandbox.stub().returns(schemaClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

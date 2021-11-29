@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { ext } from '../../../shared/extensionGlobals'
 import * as buttons from '../../../shared/ui/buttons'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
 

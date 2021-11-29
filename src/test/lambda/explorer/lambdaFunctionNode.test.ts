@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { ext } from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 

@@ -21,7 +21,6 @@ import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
-import { ext } from '../../extensionGlobals'
 import { getLogger } from '../../logger'
 import { Window } from '../../vscode/window'
 

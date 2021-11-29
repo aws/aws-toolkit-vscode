@@ -8,7 +8,7 @@ import { Schemas } from 'aws-sdk'
 import * as os from 'os'
 import { Uri } from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 

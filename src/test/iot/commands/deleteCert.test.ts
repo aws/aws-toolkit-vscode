@@ -24,7 +24,7 @@ describe('deleteCertCommand', function () {
         iot = mock()
         parentNode = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)))
         node = new IotCertWithPoliciesNode(
-            { id: certificateId, arn: 'arn', activeStatus: status, creationDate: new Date() },
+            { id: certificateId, arn: 'arn', activeStatus: status, creationDate: new ext.clock.Date() },
             parentNode,
             instance(iot)
         )
@@ -68,7 +68,7 @@ describe('deleteCertCommand', function () {
 
     it('does nothing if certificate is active', async function () {
         node = new IotCertWithPoliciesNode(
-            { id: certificateId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new Date() },
+            { id: certificateId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new ext.clock.Date() },
             parentNode,
             instance(iot)
         )

@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
-import { ext } from '../../shared/extensionGlobals'
+
 import { ExtContext } from '../../shared/extensions'
 import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'

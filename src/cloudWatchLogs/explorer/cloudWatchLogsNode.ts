@@ -10,7 +10,7 @@ import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { toMap, updateInPlace, toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'

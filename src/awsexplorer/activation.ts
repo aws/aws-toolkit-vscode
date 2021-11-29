@@ -11,7 +11,7 @@ import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
-import { ext } from '../shared/extensionGlobals'
+
 import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'

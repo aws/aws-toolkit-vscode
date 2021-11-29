@@ -17,7 +17,6 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import * as path from 'path'
 import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
 import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
-import { ext } from '../../../shared/extensionGlobals'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
 describe('makeCoreCLRDebugConfiguration', function () {

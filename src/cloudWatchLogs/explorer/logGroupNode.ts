@@ -6,7 +6,7 @@
 import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
 import { Uri } from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 

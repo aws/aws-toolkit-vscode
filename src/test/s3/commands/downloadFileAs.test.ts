@@ -18,7 +18,7 @@ describe('downloadFileAsCommand', function () {
     const bucketName = 'bucket-name'
     const key = 'path/to/file.jpg'
     const fileName = 'file.jpg'
-    const lastModified = new Date(2020, 5, 4)
+    const lastModified = new ext.clock.Date(2020, 5, 4)
     const sizeBytes = 16
     const saveLocation = vscode.Uri.file('/file.jpg')
 

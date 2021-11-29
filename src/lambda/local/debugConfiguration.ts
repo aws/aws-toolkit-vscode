@@ -17,7 +17,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { Architecture, RuntimeFamily } from '../models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger } from '../../shared/logger'
 
 /**

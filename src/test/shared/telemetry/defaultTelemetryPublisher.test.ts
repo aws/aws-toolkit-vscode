@@ -39,15 +39,21 @@ describe('DefaultTelemetryPublisher', function () {
 
     it('enqueues events', function () {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
-        publisher.enqueue(...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }])
+        publisher.enqueue(
+            ...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() }]
+        )
         assert.strictEqual(publisher.queue.length, 1)
-        publisher.enqueue(...[{ MetricName: 'name3', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }])
+        publisher.enqueue(
+            ...[{ MetricName: 'name3', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() }]
+        )
         assert.strictEqual(publisher.queue.length, 2)
     })
 
     it('can flush single event', async function () {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
-        publisher.enqueue(...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }])
+        publisher.enqueue(
+            ...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() }]
+        )
 
         assert.strictEqual(publisher.queue.length, 1)
 
@@ -56,7 +62,7 @@ describe('DefaultTelemetryPublisher', function () {
     })
 
     it('retains queue on flush failure', async function () {
-        const batch = [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }]
+        const batch = [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() }]
         const publisher = new DefaultTelemetryPublisher(
             '',
             '',

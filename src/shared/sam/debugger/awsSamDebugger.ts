@@ -57,7 +57,6 @@ import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUt
 import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliVersion } from '../cli/samCliContext'
-import { ext } from '../../extensionGlobals'
 import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,

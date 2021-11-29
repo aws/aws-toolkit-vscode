@@ -5,7 +5,6 @@
 
 import { Schemas } from 'aws-sdk'
 
-import { ext } from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type SchemaClient = ClassToInterfaceType<DefaultSchemaClient>

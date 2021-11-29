@@ -19,7 +19,6 @@ import {
     API_TARGET_TYPE,
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
-import { ext } from '../../extensionGlobals'
 
 export interface ValidationResult {
     isValid: boolean

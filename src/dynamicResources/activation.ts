@@ -15,7 +15,6 @@ import { ResourcesNode } from './explorer/nodes/resourcesNode'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { RESOURCE_FILE_GLOB_PATTERN } from './awsResourceManager'
-import { ext } from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 

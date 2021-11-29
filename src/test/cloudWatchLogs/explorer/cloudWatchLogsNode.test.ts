@@ -9,7 +9,6 @@ import * as sinon from 'sinon'
 import { CONTEXT_VALUE_CLOUDWATCH_LOG, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
@@ -104,6 +103,6 @@ describe('CloudWatchLogsNode', function () {
             createCloudWatchLogsClient: sandbox.stub().returns(cloudWatchLogsClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

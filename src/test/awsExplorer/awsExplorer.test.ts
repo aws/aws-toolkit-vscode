@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { RegionNode } from '../../awsexplorer/regionNode'
 import { ToolkitClientBuilder } from '../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../shared/extensionGlobals'
+
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import {
     DEFAULT_TEST_REGION_CODE,

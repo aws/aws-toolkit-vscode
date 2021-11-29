@@ -9,7 +9,6 @@ import { IAM, StepFunctions } from 'aws-sdk'
 import { mkdir, writeFile } from 'fs-extra'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
-import { ext } from '../shared/extensionGlobals'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
 import {

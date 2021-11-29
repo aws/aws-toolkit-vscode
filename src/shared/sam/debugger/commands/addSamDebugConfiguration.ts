@@ -18,7 +18,6 @@ import {
     TEMPLATE_TARGET_TYPE,
 } from '../awsSamDebugConfiguration'
 import { CloudFormation } from '../../../cloudformation/cloudformation'
-import { ext } from '../../../extensionGlobals'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import { getIdeProperties } from '../../../extensionUtilities'
 import { isValidResponse } from '../../../wizards/wizard'

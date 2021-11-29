@@ -36,7 +36,7 @@ describe('attachPolicyCommand', function () {
     beforeEach(function () {
         iot = mock()
         certNode = new IotCertWithPoliciesNode(
-            { id: certId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new Date() },
+            { id: certId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new ext.clock.Date() },
             {} as IotCertsFolderNode,
             instance(iot)
         )

@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
-import { ext } from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { Timeout } from './timeoutUtils'
 

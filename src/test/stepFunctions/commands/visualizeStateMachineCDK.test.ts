@@ -12,7 +12,6 @@ import { AslVisualizationCDKManager } from '../../../stepFunctions/commands/visu
 import { ConstructNode, isStateMachine } from '../../../cdk/explorer/nodes/constructNode'
 import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
 import { Disposable } from 'vscode-languageclient'
-import { ext } from '../../../shared/extensionGlobals'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { getLogger, Logger } from '../../../shared/logger'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'

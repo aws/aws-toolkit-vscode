@@ -16,7 +16,7 @@ import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { anything, capture, deepEqual, instance, mock, verify, when } from '../utilities/mockito'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { ext } from '../../shared/extensionGlobals'
+
 import { SchemaService } from '../../shared/schemas'
 import { remove } from 'fs-extra'
 import { existsSync } from 'fs'

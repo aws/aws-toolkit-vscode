@@ -12,7 +12,6 @@ import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTeleme
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-import { ext } from '../../../shared/extensionGlobals'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import {
     DEFAULT_TEST_ACCOUNT_ID,
@@ -49,7 +48,7 @@ function fakeMetric(value: number, passive: boolean) {
         MetricName: `metric${value}`,
         Value: value,
         Unit: 'None',
-        EpochTimestamp: new Date().getTime(),
+        EpochTimestamp: new ext.clock.Date().getTime(),
     }
 }
 
@@ -110,7 +109,12 @@ describe('DefaultTelemetryService', function () {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ MetricName: 'namespace', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
+        service.record({
+            MetricName: 'namespace',
+            Value: 1,
+            Unit: 'None',
+            EpochTimestamp: new ext.clock.Date().getTime(),
+        })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -130,7 +134,7 @@ describe('DefaultTelemetryService', function () {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
+        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() })
 
         assert.strictEqual(service.records.length, 1)
 
@@ -169,7 +173,7 @@ describe('DefaultTelemetryService', function () {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
+        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -188,7 +192,7 @@ describe('DefaultTelemetryService', function () {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
+        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -211,7 +215,7 @@ describe('DefaultTelemetryService', function () {
         assert.notStrictEqual(service.timer, undefined)
 
         // telemetry off: events are never recorded
-        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
+        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new ext.clock.Date().getTime() })
 
         clock.tick(testFlushPeriod + 1)
         await service.shutdown()

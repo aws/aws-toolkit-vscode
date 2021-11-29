@@ -4,7 +4,6 @@
  */
 
 import { APIGateway } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
 import { RestApi, Stages } from 'aws-sdk/clients/apigateway'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 

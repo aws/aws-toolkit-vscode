@@ -10,8 +10,6 @@ import * as vscode from 'vscode'
 
 import { listRegistryItems } from '../../eventSchemas/utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-
-import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'

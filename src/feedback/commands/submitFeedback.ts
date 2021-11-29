@@ -6,7 +6,7 @@
 import { _Blob } from 'aws-sdk/clients/lambda'
 import _ = require('lodash')
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { localize } from '../../shared/utilities/vsCodeUtils'

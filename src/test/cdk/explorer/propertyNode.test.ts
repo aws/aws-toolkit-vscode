@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
-import { ext } from '../../../shared/extensionGlobals'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 describe('PropertyNode', function () {

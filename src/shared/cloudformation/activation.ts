@@ -8,7 +8,6 @@ import { getLogger } from '../logger'
 import { localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
-import { ext } from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../watchedFiles'
 import { createStarterTemplateFile } from './cloudformation'

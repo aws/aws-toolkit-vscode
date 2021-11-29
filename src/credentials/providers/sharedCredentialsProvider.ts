@@ -24,7 +24,6 @@ import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
-import { ext } from '../../shared/extensionGlobals'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger } from '../logger/logger'
 import { waitUntil } from './timeoutUtils'
 

@@ -22,7 +22,6 @@ import {
     promptToDefineCredentialsProfile,
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
-import { ext } from './extensionGlobals'
 import * as localizedText from './localizedText'
 import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'

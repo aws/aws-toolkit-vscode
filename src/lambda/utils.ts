@@ -17,7 +17,6 @@ import { ResourceFetcher } from '../shared/resourcefetcher/resourcefetcher'
 import { CompositeResourceFetcher } from '../shared/resourcefetcher/compositeResourceFetcher'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
-import { ext } from '../shared/extensionGlobals'
 import { sampleRequestManifestPath } from './constants'
 
 export async function* listCloudFormationStacks(
@@ -55,9 +54,7 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaDetails(
-    configuration: Lambda.FunctionConfiguration
-): {
+export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
     fileName: string
     functionName: string
 } {

@@ -24,7 +24,7 @@ export class DebugConsoleTransport extends Transport {
     }
 
     public log(info: LogEntry, next: () => void): void {
-        setImmediate(() => {
+        ext.clock.setImmediate(() => {
             vscode.debug.activeDebugConsole.append(info[MESSAGE])
             this.emit('logged', info)
         })

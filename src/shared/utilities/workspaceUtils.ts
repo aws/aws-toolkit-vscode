@@ -8,7 +8,6 @@ import * as path from 'path'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
 import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
-import { ext } from '../extensionGlobals'
 
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if

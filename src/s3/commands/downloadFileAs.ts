@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { downloadsDir } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'

@@ -14,7 +14,6 @@ import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/co
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
-import { ext } from '../../../shared/extensionGlobals'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 

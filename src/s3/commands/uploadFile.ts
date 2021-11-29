@@ -7,7 +7,7 @@ import { S3 } from 'aws-sdk'
 import * as path from 'path'
 import { statSync } from 'fs'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger } from '../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { Commands } from '../../shared/vscode/commands'

@@ -34,7 +34,7 @@ export class OutputChannelTransport extends Transport {
     }
 
     public log(info: LogEntry, next: () => void): void {
-        setImmediate(() => {
+        ext.clock.setImmediate(() => {
             const msg: string = this.stripAnsi ? removeAnsi(info[MESSAGE]) : info[MESSAGE]
 
             if (info.raw) {

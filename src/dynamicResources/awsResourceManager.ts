@@ -18,7 +18,6 @@ import { getLogger } from '../shared/logger/logger'
 import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
-import { ext } from '../shared/extensionGlobals'
 import { isCloud9 } from '../shared/extensionUtilities'
 
 export const RESOURCE_FILE_GLOB_PATTERN = '**/*.awsResource.json'

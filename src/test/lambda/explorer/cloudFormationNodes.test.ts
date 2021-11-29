@@ -14,7 +14,6 @@ import {
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
@@ -42,7 +41,7 @@ describe('CloudFormationStackNode', function () {
     before(async function () {
         setupTestIconPaths()
         fakeStackSummary = {
-            CreationTime: new Date(),
+            CreationTime: new ext.clock.Date(),
             StackId: '1',
             StackName: 'myStack',
             StackStatus: 'UPDATE_COMPLETE',
@@ -157,7 +156,7 @@ describe('CloudFormationStackNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const childNodes = await testNode.getChildren()
         assertNodeListOnlyContainsErrorNode(childNodes)
@@ -200,7 +199,7 @@ describe('CloudFormationStackNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
 
@@ -223,7 +222,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -244,7 +243,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -262,7 +261,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -289,7 +288,7 @@ describe('CloudFormationNode', function () {
                         return {
                             StackId: name,
                             StackName: name,
-                            CreationTime: new Date(),
+                            CreationTime: new ext.clock.Date(),
                             StackStatus: 'CREATE_COMPLETE',
                         }
                     })

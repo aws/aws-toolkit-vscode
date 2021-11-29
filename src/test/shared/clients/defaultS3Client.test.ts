@@ -44,7 +44,7 @@ describe('DefaultS3Client', function () {
     const fileKey = 'foo/bar/file.jpg'
     const fileVersionId = 'fileVersionId'
     const fileSizeBytes = 5
-    const fileLastModified = new Date(2020, 5, 4)
+    const fileLastModified = new ext.clock.Date(2020, 5, 4)
     const fileData = 'fileData'
     const fileLocation = vscode.Uri.file('/file.jpg')
     const continuationToken = 'continuationToken'
@@ -641,13 +641,13 @@ describe('DefaultFile', function () {
             partitionId: 'partitionId',
             bucketName: 'bucketName',
             key: 'key/for/file.jpg',
-            lastModified: new Date(2020, 5, 4),
+            lastModified: new ext.clock.Date(2020, 5, 4),
             sizeBytes: 1337,
         })
         assert.strictEqual(file.name, 'file.jpg')
         assert.strictEqual(file.key, 'key/for/file.jpg')
         assert.strictEqual(file.arn, 'arn:partitionId:s3:::bucketName/key/for/file.jpg')
-        assert.strictEqual(file.lastModified?.toString(), new Date(2020, 5, 4).toString())
+        assert.strictEqual(file.lastModified?.toString(), new ext.clock.Date(2020, 5, 4).toString())
         assert.strictEqual(file.sizeBytes, 1337)
     })
 })

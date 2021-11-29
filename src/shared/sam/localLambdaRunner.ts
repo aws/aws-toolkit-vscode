@@ -27,7 +27,6 @@ import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
-import { ext } from '../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerContext'
 import { DefaultSamCliConfiguration } from './cli/samCliConfiguration'
 import { extensionSettingsPrefix } from '../constants'
@@ -35,6 +34,7 @@ import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
+import { sleep } from '../utilities/promiseUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -523,9 +523,7 @@ export async function attachDebugger({
     onStartDebugging = vscode.debug.startDebugging,
     onWillRetry = async (): Promise<void> => {
         getLogger().debug('attachDebugger: retrying...')
-        await new Promise<void>(resolve => {
-            setTimeout(resolve, retryDelayMillis)
-        })
+        await sleep(retryDelayMillis)
     },
     ...params
 }: AttachDebuggerContext): Promise<{ success: boolean }> {

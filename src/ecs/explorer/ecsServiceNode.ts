@@ -14,7 +14,6 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { EcsClusterNode } from './ecsClusterNode'
 import { EcsContainerNode } from './ecsContainerNode'
-import { ext } from '../../shared/extensionGlobals'
 
 const CONTEXT_EXEC_ENABLED = 'awsEcsServiceNode.ENABLED'
 const CONTEXT_EXEC_DISABLED = 'awsEcsServiceNode.DISABLED'

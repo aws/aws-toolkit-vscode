@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { mkdir, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
-import { ext } from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import {
     getExistingConfiguration,

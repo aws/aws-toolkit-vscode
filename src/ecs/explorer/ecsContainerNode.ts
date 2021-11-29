@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { EcsClient } from '../../shared/clients/ecsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class EcsContainerNode extends AWSTreeNodeBase {

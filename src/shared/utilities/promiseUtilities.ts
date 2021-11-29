@@ -55,5 +55,5 @@ export function isThenable<T>(obj: any): obj is Promise<T> {
 
 /** Sleeps for the specified duration in milliseconds. Note that a duration of 0 will always wait 1 event loop. */
 export function sleep(duration: number = 0): Promise<void> {
-    return new Promise(r => setTimeout(r, Math.max(duration, 0)))
+    return new Promise(r => ext.clock.setTimeout(r, Math.max(duration, 0)))
 }

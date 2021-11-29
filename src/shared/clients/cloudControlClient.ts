@@ -4,7 +4,6 @@
  */
 
 import { CloudControl } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { localize } from '../utilities/vsCodeUtils'
 
@@ -93,7 +92,7 @@ export class DefaultCloudControlClient implements CloudControlClient {
             }
 
             if (i + 1 < maxRetries) {
-                await new Promise<void>(resolve => setTimeout(resolve, baseDelay * 2 ** i))
+                await new Promise<void>(resolve => ext.clock.setTimeout(resolve, baseDelay * 2 ** i))
                 const resourceRequestStatus = await client
                     .getResourceRequestStatus({
                         RequestToken: progressEvent.RequestToken!,

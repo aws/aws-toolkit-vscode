@@ -78,7 +78,7 @@ export async function createResource(
             cancellable: false,
         },
         async progress => {
-            const startTime = new Date()
+            const startTime = new ext.clock.Date()
             let result: Result = 'Succeeded'
 
             try {
@@ -145,7 +145,7 @@ export async function updateResource(
             cancellable: false,
         },
         async progress => {
-            const startTime = new Date()
+            const startTime = new ext.clock.Date()
             let result: Result = 'Succeeded'
             try {
                 progress.report({

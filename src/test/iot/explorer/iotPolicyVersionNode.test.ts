@@ -14,7 +14,7 @@ import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
 describe('IotPolicyVersionNode', function () {
     const policyName = 'policy'
     const expectedPolicy: IotPolicy = { name: policyName, arn: 'arn' }
-    const createDate = new Date(2021, 1, 1)
+    const createDate = new ext.clock.Date(2021, 1, 1)
     const createDateFormatted = moment(createDate).format(LOCALIZED_DATE_FORMAT)
     const policyVersion: Iot.PolicyVersion = { versionId: 'V1', isDefaultVersion: true, createDate }
     const nonDefaultVersion: Iot.PolicyVersion = { versionId: 'V2', isDefaultVersion: false, createDate }

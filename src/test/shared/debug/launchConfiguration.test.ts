@@ -18,7 +18,6 @@ import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
 import { TEMPLATE_FILE_GLOB_PATTERN } from '../../../shared/cloudformation/activation'
-import { ext } from '../../../shared/extensionGlobals'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',

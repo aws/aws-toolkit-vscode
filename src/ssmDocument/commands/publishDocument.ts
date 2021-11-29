@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { ssmJson, ssmYaml } from '../../shared/constants'
-import { ext } from '../../shared/extensionGlobals'
+
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'

@@ -115,7 +115,12 @@ export function createExecutableFile(filepath: string, contents: string): void {
 
 /**
  * Installs a fake clock, making sure to set a flag to clear real timers.
+ *
+ * Always uses the extension-scoped clock instead of the real one.
  */
 export function installFakeClock(): FakeTimers.InstalledClock {
-    return FakeTimers.install({ shouldClearNativeTimers: true, shouldAdvanceTime: true })
+    return FakeTimers.withGlobal(ext.clock).install({
+        shouldClearNativeTimers: true,
+        shouldAdvanceTime: false,
+    })
 }

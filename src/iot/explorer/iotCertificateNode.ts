@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as moment from 'moment'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { IotClient, IotCertificate } from '../../shared/clients/iotClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'

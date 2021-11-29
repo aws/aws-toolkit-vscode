@@ -10,7 +10,6 @@ import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNod
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
-import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
@@ -59,13 +58,13 @@ describe('RegistryItemNode', function () {
     })
 
     it('returns placeholder node if no children are present', async function () {
-        const schemaClient = ({
+        const schemaClient = {
             regionCode: 'code',
 
             async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
                 yield* []
             },
-        } as any) as SchemaClient
+        } as any as SchemaClient
 
         ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
         const testNode = generateTestNode()

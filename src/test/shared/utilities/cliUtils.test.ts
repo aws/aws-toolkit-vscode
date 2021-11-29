@@ -9,7 +9,6 @@ import * as path from 'path'
 import { installCli } from '../../../shared/utilities/cliUtils'
 import { FakeWindow } from '../vscode/fakeWindow'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
-import { ext } from '../../../shared/extensionGlobals'
 
 describe('cliUtils', async function () {
     const settingsConfig = new TestSettingsConfiguration()

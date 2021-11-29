@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../extensionGlobals'
 
 interface ProgressEntry {
     message?: string

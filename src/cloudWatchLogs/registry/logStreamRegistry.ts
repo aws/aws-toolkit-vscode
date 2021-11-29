@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'

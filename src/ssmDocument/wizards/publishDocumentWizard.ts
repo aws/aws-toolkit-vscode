@@ -7,8 +7,6 @@ import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
-
-import { ext } from '../../shared/extensionGlobals'
 import { recentlyUsed } from '../../shared/localizedText'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'

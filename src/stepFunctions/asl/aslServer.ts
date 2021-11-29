@@ -33,11 +33,9 @@ import {
 } from 'vscode-languageserver'
 
 import { posix } from 'path'
-import { clearTimeout, setTimeout } from 'timers'
 import * as URL from 'url'
 import { getLanguageModelCache } from '../../shared/languageServer/languageModelCache'
 import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/utils/runner'
-
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
 
 namespace ResultLimitReachedNotification {
@@ -97,56 +95,54 @@ let resultLimit = Number.MAX_VALUE
 
 // After the server has started the client sends an initialize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilities.
-connection.onInitialize(
-    (params: InitializeParams): InitializeResult => {
-        aslJsonLanguageService = getAslJsonLanguageService({
-            workspaceContext,
-            contributions: [],
-            clientCapabilities: params.capabilities,
-        })
+connection.onInitialize((params: InitializeParams): InitializeResult => {
+    aslJsonLanguageService = getAslJsonLanguageService({
+        workspaceContext,
+        contributions: [],
+        clientCapabilities: params.capabilities,
+    })
 
-        aslYamlLanguageService = getAslYamlLanguageService({
-            workspaceContext,
-            contributions: [],
-            clientCapabilities: params.capabilities,
-        })
+    aslYamlLanguageService = getAslYamlLanguageService({
+        workspaceContext,
+        contributions: [],
+        clientCapabilities: params.capabilities,
+    })
 
-        function getClientCapability<T>(name: string, def: T) {
-            const keys = name.split('.')
-            let c: any = params.capabilities
-            for (let i = 0; c && i < keys.length; i++) {
-                if (!Object.prototype.hasOwnProperty.call(c, keys[i])) {
-                    return def
-                }
-                c = c[keys[i]]
+    function getClientCapability<T>(name: string, def: T) {
+        const keys = name.split('.')
+        let c: any = params.capabilities
+        for (let i = 0; c && i < keys.length; i++) {
+            if (!Object.prototype.hasOwnProperty.call(c, keys[i])) {
+                return def
             }
-
-            return c
+            c = c[keys[i]]
         }
 
-        clientSnippetSupport = getClientCapability('textDocument.completion.completionItem.snippetSupport', false)
-        dynamicFormatterRegistration =
-            getClientCapability('textDocument.rangeFormatting.dynamicRegistration', false) &&
-            typeof params.initializationOptions.provideFormatter !== 'boolean'
-        foldingRangeLimitDefault = getClientCapability('textDocument.foldingRange.rangeLimit', Number.MAX_VALUE)
-        hierarchicalDocumentSymbolSupport = getClientCapability(
-            'textDocument.documentSymbol.hierarchicalDocumentSymbolSupport',
-            false
-        )
-        const capabilities: ServerCapabilities = {
-            textDocumentSync: TextDocumentSyncKind.Incremental,
-            completionProvider: clientSnippetSupport ? { resolveProvider: true, triggerCharacters: ['"'] } : undefined,
-            hoverProvider: true,
-            documentSymbolProvider: true,
-            documentRangeFormattingProvider: params.initializationOptions.provideFormatter === true,
-            colorProvider: {},
-            foldingRangeProvider: true,
-            selectionRangeProvider: true,
-        }
-
-        return { capabilities }
+        return c
     }
-)
+
+    clientSnippetSupport = getClientCapability('textDocument.completion.completionItem.snippetSupport', false)
+    dynamicFormatterRegistration =
+        getClientCapability('textDocument.rangeFormatting.dynamicRegistration', false) &&
+        typeof params.initializationOptions.provideFormatter !== 'boolean'
+    foldingRangeLimitDefault = getClientCapability('textDocument.foldingRange.rangeLimit', Number.MAX_VALUE)
+    hierarchicalDocumentSymbolSupport = getClientCapability(
+        'textDocument.documentSymbol.hierarchicalDocumentSymbolSupport',
+        false
+    )
+    const capabilities: ServerCapabilities = {
+        textDocumentSync: TextDocumentSyncKind.Incremental,
+        completionProvider: clientSnippetSupport ? { resolveProvider: true, triggerCharacters: ['"'] } : undefined,
+        hoverProvider: true,
+        documentSymbolProvider: true,
+        documentRangeFormattingProvider: params.initializationOptions.provideFormatter === true,
+        colorProvider: {},
+        foldingRangeProvider: true,
+        selectionRangeProvider: true,
+    }
+
+    return { capabilities }
+})
 
 // The settings interface describes the server relevant settings part
 interface Settings {
@@ -166,7 +162,7 @@ namespace LimitExceededWarnings {
     export function cancel(uri: string) {
         const warning = pendingWarnings[uri]
         if (warning && warning.timeout) {
-            clearTimeout(warning.timeout)
+            ext.clock.clearTimeout(warning.timeout)
             delete pendingWarnings[uri]
         }
     }
@@ -183,7 +179,7 @@ namespace LimitExceededWarnings {
                 warning.timeout.refresh()
             } else {
                 warning = { features: { [name]: name } }
-                warning.timeout = setTimeout(() => {
+                warning.timeout = ext.clock.setTimeout(() => {
                     connection.sendNotification(
                         ResultLimitReachedNotification.type,
                         `${posix.basename(uri)}: For performance reasons, ${Object.keys(warning.features).join(
@@ -259,14 +255,14 @@ const validationDelayMs = 500
 function cleanPendingValidation(textDocument: TextDocument): void {
     const request = pendingValidationRequests[textDocument.uri]
     if (request) {
-        clearTimeout(request)
+        ext.clock.clearTimeout(request)
         delete pendingValidationRequests[textDocument.uri]
     }
 }
 
 function triggerValidation(textDocument: TextDocument): void {
     cleanPendingValidation(textDocument)
-    pendingValidationRequests[textDocument.uri] = setTimeout(() => {
+    pendingValidationRequests[textDocument.uri] = ext.clock.setTimeout(() => {
         delete pendingValidationRequests[textDocument.uri]
         validateTextDocument(textDocument)
     }, validationDelayMs)
@@ -301,7 +297,7 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
         .doValidation(textDocument, jsonDocument, documentSettings)
         .then(
             diagnostics => {
-                setTimeout(() => {
+                ext.clock.setTimeout(() => {
                     const currDocument = documents.get(textDocument.uri)
                     if (currDocument && currDocument.version === version) {
                         respond(diagnostics) // Send the computed diagnostics to VSCode.

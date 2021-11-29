@@ -4,7 +4,6 @@
  */
 
 import { ECR } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 export interface EcrRepository {
     repositoryName: string

@@ -31,7 +31,7 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
         }
 
         this.available = false
-        const start = Date.now()
+        const start = ext.clock.Date.now()
         try {
             const iamInfo = await this.metadata.getIamInfo()
             if (!iamInfo || iamInfo.Code !== 'Success') {
@@ -49,7 +49,7 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
         } catch (err) {
             getLogger().verbose(`credentials: EC2 metadata service unavailable: ${err}`)
         } finally {
-            const elapsed = Date.now() - start
+            const elapsed = ext.clock.Date.now() - start
             getLogger().verbose(`credentials: EC2 metadata service call took ${elapsed}ms`)
         }
         return this.available

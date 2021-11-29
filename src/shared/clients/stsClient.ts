@@ -5,7 +5,6 @@
 
 import { STS } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import { ext } from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type StsClient = ClassToInterfaceType<DefaultStsClient>

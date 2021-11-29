@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { RestApiNode } from '../explorer/apiNodes'
 import { getLogger, Logger } from '../../shared/logger'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
-import { ext } from '../../shared/extensionGlobals'
+
 import { template } from 'lodash'
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'

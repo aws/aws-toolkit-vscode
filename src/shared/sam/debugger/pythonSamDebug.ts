@@ -14,12 +14,12 @@ import {
     PythonPathMapping,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { ext } from '../../extensionGlobals'
 import { ExtContext } from '../../extensions'
 import { fileExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
+import { sleep } from '../../utilities/promiseUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
@@ -237,9 +237,7 @@ async function waitForIkpdb(debugPort: number, timeout: Timeout) {
     // - We cannot consumed the first message on the socket.
     // - We must wait for the debugger to be ready, else cloud9 startDebugging() waits forever.
     getLogger().info('waitForIkpdb: wait 2 seconds')
-    await new Promise<void>(resolve => {
-        setTimeout(resolve, 2000)
-    })
+    await sleep(2000)
 }
 
 function getPythonExeAndBootstrap(runtime: Runtime) {

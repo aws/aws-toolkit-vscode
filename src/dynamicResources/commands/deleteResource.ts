@@ -39,7 +39,7 @@ export async function deleteResource(
         },
         async progress => {
             let result: Result = 'Succeeded'
-            const startTime = new Date()
+            const startTime = new ext.clock.Date()
 
             try {
                 progress.report({

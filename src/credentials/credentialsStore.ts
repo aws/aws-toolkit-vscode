@@ -31,7 +31,7 @@ export class CredentialsStore {
     public isValid(key: string): boolean {
         if (this.credentialsCache[key]) {
             const expiration = this.credentialsCache[key].credentials.expiration
-            return expiration !== undefined ? expiration >= new Date() : true
+            return expiration !== undefined ? expiration >= new ext.clock.Date() : true
         }
 
         return false

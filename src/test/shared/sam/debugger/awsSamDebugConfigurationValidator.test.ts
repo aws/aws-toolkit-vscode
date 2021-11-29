@@ -15,7 +15,6 @@ import {
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { DefaultAwsSamDebugConfigurationValidator } from '../../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { createBaseTemplate } from '../../cloudformation/cloudformationTestUtils'
-import { ext } from '../../../../shared/extensionGlobals'
 import { WatchedItem } from '../../../../shared/watchedFiles'
 
 function createTemplateConfig(): AwsSamDebuggerConfiguration {

@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 import { StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'

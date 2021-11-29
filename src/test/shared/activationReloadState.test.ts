@@ -13,7 +13,7 @@ import {
     SAM_INIT_IMAGE_BOOLEAN_KEY,
     ACTIVATION_TEMPLATE_PATH_KEY,
 } from '../../shared/activationReloadState'
-import { ext } from '../../shared/extensionGlobals'
+import { checkDidReload } from '../../shared/extensionGlobals'
 
 describe('ActivationReloadState', async function () {
     const activationReloadState = new ActivationReloadState()
@@ -26,16 +26,12 @@ describe('ActivationReloadState', async function () {
         activationReloadState.clearSamInitState()
     })
 
-    it('decides ext.didReload()', async function () {
+    it('decides ext.didReload', async function () {
         await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
-        // Force ext to re-initialize.
-        ext.init(ext.context, ext.window)
-        assert.strictEqual(ext.didReload(), false)
+        assert.strictEqual(checkDidReload(ext.context), false)
 
         await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, '/some/path')
-        // Force ext to re-initialize.
-        ext.init(ext.context, ext.window)
-        assert.strictEqual(ext.didReload(), true)
+        assert.strictEqual(checkDidReload(ext.context), true)
     })
 
     describe('setSamInitState', async function () {

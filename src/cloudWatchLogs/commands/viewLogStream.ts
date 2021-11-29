@@ -12,7 +12,7 @@ import * as picker from '../../shared/ui/picker'
 import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { ext } from '../../shared/extensionGlobals'
+
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'

@@ -20,7 +20,6 @@ import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
-import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
@@ -77,7 +76,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
-    if (ext.didReload()) {
+    if (ext.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
 }

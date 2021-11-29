@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../shared/extensionGlobals'
 import { deleteLambda } from './commands/deleteLambda'
 import { invokeLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'

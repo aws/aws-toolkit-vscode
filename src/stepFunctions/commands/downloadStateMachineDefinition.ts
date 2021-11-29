@@ -12,7 +12,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger, Logger } from '../../shared/logger'
 import { recordStepfunctionsDownloadStateMachineDefinition, Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'

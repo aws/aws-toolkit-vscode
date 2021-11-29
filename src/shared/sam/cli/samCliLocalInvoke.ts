@@ -11,7 +11,6 @@ import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
-import { ext } from '../../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import * as vscode from 'vscode'
 

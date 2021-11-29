@@ -4,7 +4,6 @@
  */
 
 import * as nls from 'vscode-nls'
-import { ext } from '../../extensionGlobals'
 import { getLogger } from '../../logger/logger'
 import { Region } from '../../regions/endpoints'
 import { getRegionsForActiveCredentials } from '../../regions/regionUtilities'

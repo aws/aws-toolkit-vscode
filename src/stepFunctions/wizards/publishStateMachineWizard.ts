@@ -14,7 +14,7 @@ import {
     sfnDeveloperGuideUrl,
     sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { recentlyUsed } from '../../shared/localizedText'
 import { createHelpButton } from '../../shared/ui/buttons'

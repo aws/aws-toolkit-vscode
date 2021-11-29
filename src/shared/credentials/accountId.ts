@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import * as AWS from '@aws-sdk/types'
 

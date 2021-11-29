@@ -17,7 +17,6 @@ import { S3BucketNode } from './explorer/s3BucketNode'
 import { S3FolderNode } from './explorer/s3FolderNode'
 import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
-import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 
 /**

@@ -6,7 +6,6 @@
 import * as _ from 'lodash'
 import { Iot } from 'aws-sdk'
 import { parse } from '@aws-sdk/util-arn-parser'
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 

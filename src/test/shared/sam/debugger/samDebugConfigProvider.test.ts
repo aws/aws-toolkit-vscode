@@ -44,7 +44,6 @@ import { CredentialsProviderManager } from '../../../../credentials/providers/cr
 import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
 import { mkdir, remove } from 'fs-extra'
-import { ext } from '../../../../shared/extensionGlobals'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CredentialsProvider } from '../../../../credentials/providers/credentials'
 

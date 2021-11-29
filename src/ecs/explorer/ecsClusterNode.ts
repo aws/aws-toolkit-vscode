@@ -17,7 +17,6 @@ import { EcsServiceNode } from './ecsServiceNode'
 import { ECS } from 'aws-sdk'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { getLogger } from '../../shared/logger'
-import { ext } from '../../shared/extensionGlobals'
 
 /**
  * Represents an ECS cluster

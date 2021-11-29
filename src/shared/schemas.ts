@@ -95,15 +95,11 @@ export class SchemaService {
 
     // TODO: abstract into a common abstraction for background pollers
     private async startTimer(): Promise<void> {
-        this.timer = setTimeout(
+        this.timer = ext.clock.setTimeout(
             // this is async so that we don't have pseudo-concurrent invocations of the callback
             async () => {
                 await this.processUpdates()
-                // Race: _timer may be undefined after shutdown() (this async
-                // closure may be pending on the event-loop, despite clearTimeout()).
-                if (this.timer !== undefined) {
-                    this.timer!.refresh()
-                }
+                this.timer?.refresh()
             },
             this.updatePeriod
         )

@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import { SSM } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
-import { ext } from '../../../shared/extensionGlobals'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -77,6 +76,6 @@ describe('RegistryItemNode', function () {
             createSsmClient: sandbox.stub().returns(ssmDocumentClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

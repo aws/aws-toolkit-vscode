@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../../../shared/extensionGlobals'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { getLogger } from '../../../shared/logger'

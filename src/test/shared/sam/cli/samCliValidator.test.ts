@@ -15,7 +15,7 @@ import {
 
 describe('DefaultSamCliValidator', async function () {
     class TestSamCliValidatorContext implements SamCliValidatorContext {
-        public samCliVersionId: string = new Date().valueOf().toString()
+        public samCliVersionId: string = new ext.clock.Date().valueOf().toString()
         public getInfoCallCount: number = 0
         public mockSamLocation: string = ''
 

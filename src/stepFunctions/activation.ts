@@ -6,7 +6,6 @@
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { ext } from '../shared/extensionGlobals'
 import * as telemetry from '../shared/telemetry/telemetry'
 import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'

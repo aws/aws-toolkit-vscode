@@ -8,7 +8,7 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { EcrNode } from './ecrNode'
 import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'

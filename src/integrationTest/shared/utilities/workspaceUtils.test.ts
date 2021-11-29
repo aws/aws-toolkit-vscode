@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { writeFile, mkdirp, remove } from 'fs-extra'
 import * as path from 'path'
-import { ext } from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { findParentProjectFile, getWorkspaceRelativePath } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'

@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
-import { ext } from '../../shared/extensionGlobals'
+
 import {
     Architecture,
     createRuntimeQuickPick,

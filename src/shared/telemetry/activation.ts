@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { DefaultTelemetryService } from './defaultTelemetryService'
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { TelemetryService } from './telemetryService'
 
