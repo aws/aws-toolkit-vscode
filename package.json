@@ -2922,7 +2922,7 @@
     "dependencies": {
         "@aws-sdk/client-sso": "^3.16.0",
         "@aws-sdk/client-sso-oidc": "^3.16.0",
-        "@aws-sdk/credential-provider-ini": "^3.36.1",
+        "@aws-sdk/credential-provider-ini": "^3.41.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.38.0",
         "@aws-sdk/util-arn-parser": "^3.37.0",
