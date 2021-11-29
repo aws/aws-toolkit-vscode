@@ -75,7 +75,6 @@ import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCrede
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
-import { S3FileViewerManager } from './s3/fileViewerManager'
 
 let localize: nls.LocalizeFunc
 
@@ -155,8 +154,6 @@ export async function activate(context: vscode.ExtensionContext) {
             telemetryService: ext.telemetry,
             credentialsStore,
         }
-
-        ext.s3fileViewerManager = new S3FileViewerManager(extContext)
 
         // Used as a command for decoration-only codelenses.
         context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))
@@ -287,9 +284,9 @@ export async function activate(context: vscode.ExtensionContext) {
         throw error
     }
 }
-export async function deactivate() {
-    await ext.telemetry.shutdown()
-    await ext.resourceManager.dispose()
+export async function deactivate(): Promise<void> {
+    // TODO: just use subscriptions instead of the explicit `deactivate`
+    await Promise.all([ext.telemetry.shutdown(), ext.resourceManager.dispose()])
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {

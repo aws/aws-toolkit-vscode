@@ -12,6 +12,8 @@ import { downloadFileAsCommand } from './downloadFileAs'
 
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
 
+// TODO: add telemetry for success/fail/cancelled
+
 export async function openFileCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
     if (await isFileSizeValid(node.file.sizeBytes, node)) {
         await manager.openInReadMode({ bucket: node.bucket, ...node.file })

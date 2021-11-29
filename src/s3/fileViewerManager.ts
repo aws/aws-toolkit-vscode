@@ -49,12 +49,20 @@ export class S3FileViewerManager {
 
     public constructor(private readonly context: ExtContext) {
         this.cachePath = path.join(context.extensionContext.globalStoragePath, CACHE_PATH)
+        context.extensionContext.subscriptions.push(this)
     }
 
     /**
      * Removes all active editors as well as any underlying files
      */
-    public async dispose(): Promise<void> {}
+    public async dispose(): Promise<void> {
+        await Promise.all([
+            ...Object.values(this.arnCache).map(v => v?.dispose()),
+            ...Object.values(this.activeTabs).map(v => v?.dispose()),
+        ])
+
+        // Whatever is left we will persist to restore later
+    }
 
     private registerForDocumentSave(tab: S3Tab): vscode.Disposable {
         let ongoingUpload = false
@@ -65,7 +73,7 @@ export class S3FileViewerManager {
                 throw new Error('Invalid state: cached file is expected to exist')
             }
 
-            // upload conflict
+            // TODO: show diff view
             if (!(await this.isValidFile(tab.file, cached.eTag))) {
                 const cancelUpload = localize('AWS.s3.fileViewer.button.cancelUpload', 'Cancel download')
                 const overwrite = localize('AWS.s3.fileViewer.button.overwrite', 'Overwrite')
@@ -89,6 +97,7 @@ export class S3FileViewerManager {
             this._onDidChange.fire(tab.editor.document.uri.with({ scheme: 's3' }))
         }
 
+        // TODO: dispose of tab after the document is closed (the text editor is stale at that point)
         return vscode.workspace.onDidSaveTextDocument(async doc => {
             if (ongoingUpload || doc.fileName !== tab.editor.document.fileName) {
                 return
