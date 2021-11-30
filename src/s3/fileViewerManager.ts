@@ -60,8 +60,7 @@ export class S3FileViewerManager {
             ...Object.values(this.arnCache).map(v => v?.dispose()),
             ...Object.values(this.activeTabs).map(v => v?.dispose()),
         ])
-
-        // Whatever is left we will persist to restore later
+        // We could technically check what editors are open and save those to restore later, though probably not worth it.
     }
 
     private registerForDocumentSave(tab: S3Tab): vscode.Disposable {
