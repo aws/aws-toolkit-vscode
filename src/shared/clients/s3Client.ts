@@ -11,8 +11,9 @@ import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
-import { DefaultFileStreams, FileStreams, pipe, promisifyReadStream } from '../utilities/streamUtilities'
+import { DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
+import { Readable } from 'stream'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -283,6 +284,14 @@ export class DefaultS3Client {
         getLogger().debug('DownloadFile succeeded')
     }
 
+    /**
+     * Lighter version of {@link downloadFile} that just returns the stream.
+     */
+    public async downloadFileStream(bucketName: string, key: string): Promise<Readable> {
+        const s3 = await this.createS3()
+        return s3.getObject({ Bucket: bucketName, Key: key }).createReadStream()
+    }
+
     public async headObject(request: HeadObjectRequest): Promise<S3.HeadObjectOutput> {
         const s3 = await this.createS3()
         getLogger().debug('HeadObject called with request: %O', request)
@@ -347,16 +356,6 @@ export class DefaultS3Client {
                 progressListener(progress.loaded)
             })
         }
-
-        Promise.all([promisifyReadStream(readStream), managedUploaded.promise()]).then(
-            () => {
-                getLogger().debug('UploadFile succeeded')
-            },
-            err => {
-                getLogger().error('Failed to upload %s to bucket %s: %O', request.key, request.bucketName, err)
-                throw err
-            }
-        )
 
         return managedUploaded
     }

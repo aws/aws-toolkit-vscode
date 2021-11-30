@@ -204,7 +204,8 @@
                         "ecsRunCommand": false,
                         "ecsRunCommandDisable": false,
                         "ecsRunCommandEnable": false,
-                        "yamlExtPrompt": false
+                        "yamlExtPrompt": false,
+                        "fileViewerEdit": false
                     },
                     "properties": {
                         "apprunnerNotifyPricing": {
@@ -224,6 +225,10 @@
                             "default": false
                         },
                         "yamlExtPrompt": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "fileViewerEdit": {
                             "type": "boolean",
                             "default": false
                         }
@@ -786,7 +791,7 @@
                 },
                 {
                     "command": "aws.s3.openFileEditMode",
-                    "when": "resourceScheme == s3"
+                    "when": "resourceScheme == s3-readonly"
                 },
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
@@ -1018,7 +1023,7 @@
                 },
                 {
                     "command": "aws.s3.openFileEditMode",
-                    "when": "resourceScheme == s3",
+                    "when": "resourceScheme == s3-readonly",
                     "group": "navigation"
                 },
                 {

@@ -4,6 +4,11 @@
  */
 
 import * as vscode from 'vscode'
+import { getLogger } from '../../shared/logger'
+import * as telemetry from '../../shared/telemetry/telemetry'
+import { ToolkitError } from '../../shared/toolkitError'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { TimeoutError } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -12,11 +17,9 @@ import { downloadFileAsCommand } from './downloadFileAs'
 
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
 
-// TODO: add telemetry for success/fail/cancelled
-
-export async function openFileCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
+export async function openFileReadModeCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
     if (await isFileSizeValid(node.file.sizeBytes, node)) {
-        await manager.openInReadMode({ bucket: node.bucket, ...node.file })
+        return runWithTelemetry(() => manager.openInReadMode({ bucket: node.bucket, ...node.file }), 'read')
     }
 }
 
@@ -27,34 +30,57 @@ export async function openFileEditModeCommand(
     if (uriOrNode instanceof S3FileNode) {
         const size = uriOrNode.file.sizeBytes
 
-        if (await isFileSizeValid(size, uriOrNode)) {
-            await manager.openInEditMode({ bucket: uriOrNode.bucket, ...uriOrNode.file })
+        if (!(await isFileSizeValid(size, uriOrNode))) {
+            return
         }
-    } else {
-        return await manager.openInEditMode(uriOrNode)
+
+        return runWithTelemetry(() => manager.openInEditMode({ bucket: uriOrNode.bucket, ...uriOrNode.file }), 'edit')
     }
+
+    return runWithTelemetry(() => manager.openInEditMode(uriOrNode), 'edit')
+}
+
+function runWithTelemetry(fn: () => Promise<void>, mode: 'read' | 'edit'): Promise<void> {
+    const recordMetric = (result: telemetry.Result) =>
+        mode === 'read' ? telemetry.recordS3OpenEditor({ result }) : telemetry.recordS3EditObject({ result })
+
+    return fn().catch(err => {
+        if (TimeoutError.isCancelled(err)) {
+            return recordMetric('Cancelled')
+        }
+        if (!(err instanceof ToolkitError)) {
+            throw err
+        }
+
+        const result: telemetry.Result = err.cancelled ? 'Cancelled' : 'Failed'
+        if (result !== 'Cancelled') {
+            if (err.detail) {
+                getLogger().error(err.detail)
+            }
+            showViewLogsMessage(err.message)
+        }
+        recordMetric(result)
+    })
 }
 
 async function isFileSizeValid(
     size: number | undefined,
-    fileNode?: S3FileNode,
+    fileNode: S3FileNode,
     window = Window.vscode()
 ): Promise<boolean> {
-    if (!size) {
-        return true
-    }
-    if (size > SIZE_LIMIT) {
+    if (size && size > SIZE_LIMIT) {
+        const downloadAs = localize('AWS.s3.button.downloadAs', 'Download as..')
         window
             .showErrorMessage(
                 localize(
                     'AWS.s3.fileViewer.error.invalidSize',
-                    'Files over 50MB currently not supported for file display, use the "Download as..." action'
+                    'Files over 50MB cannot be viewed and instead must be downloaded manually.'
                 ),
-                localize('AWS.s3.button.downloadAs', 'Download as..')
+                downloadAs
             )
             .then(async response => {
-                if (response === 'Download as..') {
-                    await downloadFileAsCommand(fileNode!)
+                if (response === downloadAs) {
+                    await downloadFileAsCommand(fileNode)
                 }
             })
         return false

@@ -23,7 +23,7 @@ import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import * as localizedText from '../../shared/localizedText'
-import bytes = require('bytes')
+import { TimeoutError } from '../../shared/utilities/timeoutUtils'
 
 export interface FileSizeBytes {
     /**
@@ -345,45 +345,25 @@ async function uploadWithProgress(
     progress: vscode.Progress<{ message?: string; increment?: number }>,
     token: vscode.CancellationToken
 ): Promise<UploadRequest | undefined> {
-    const fileName = request.key
-    const totalBytes = request.fileSizeBytes
-
-    // TODO: share this code better. We have a `ProgressReporter` class but all it does is output the increment?
-    let lastBytes = 0
-    const increment = (newBytes: number) => {
-        if (request.fileSizeBytes === 0) {
-            return 0
-        }
-        const percentage = (newBytes - lastBytes) / request.fileSizeBytes
-        lastBytes = newBytes
-        return percentage
-    }
-    const format = (newBytes: number) => bytes(newBytes, { unitSeparator: ' ', decimalPlaces: 0 })
-    const report = (newBytes: number) => {
-        progress.report({
-            message: totalBytes ? `${format(newBytes)} / ${format(totalBytes)}` : '',
-            increment: totalBytes ? increment(newBytes) : 100,
-        })
-    }
-
-    // Let the progress callback know we're starting
-    report(0)
+    progress.report({ increment: 0 })
 
     const currentStream = await request.s3Client.uploadFile({
         bucketName: request.bucketName,
         key: request.key,
         fileLocation: request.fileLocation,
-        progressListener: report,
+        progressListener: newBytes => progress.report({ increment: newBytes }),
     })
 
     request.ongoingUpload = currentStream
 
-    token.onCancellationRequested(e => {
-        currentStream.abort()
-        throw new Error(`User cancelled upload for ${fileName}`)
+    const cancelled = new Promise<void>((_, reject) => {
+        token.onCancellationRequested(e => {
+            currentStream.abort()
+            reject(new TimeoutError('cancelled'))
+        })
     })
 
-    await currentStream.promise()
+    await Promise.race([currentStream.promise(), cancelled])
 
     return (request.ongoingUpload = undefined)
 }

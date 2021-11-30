@@ -11,7 +11,7 @@ import { deleteBucketCommand } from './commands/deleteBucket'
 import { deleteFileCommand } from './commands/deleteFile'
 import { downloadFileAsCommand } from './commands/downloadFileAs'
 import { presignedURLCommand } from './commands/presignedURL'
-import { openFileCommand, openFileEditModeCommand } from './commands/openFile'
+import { openFileEditModeCommand, openFileReadModeCommand } from './commands/openFile'
 import { uploadFileCommand } from './commands/uploadFile'
 import { uploadFileToParentCommand } from './commands/uploadFileToParent'
 import { S3BucketNode } from './explorer/s3BucketNode'
@@ -22,16 +22,19 @@ import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { S3DocumentProvider } from './document/s3DocumentProvider'
 import { S3FileViewerManager } from './fileViewerManager'
+import { MemoryFileSystem } from '../shared/memoryFilesystem'
 
 /**
  * Activates S3 components.
  */
 
 export async function activate(ctx: ExtContext): Promise<void> {
-    const manager = new S3FileViewerManager(ctx)
+    const memFs = new MemoryFileSystem()
+    const manager = new S3FileViewerManager(ctx, memFs)
 
     ctx.extensionContext.subscriptions.push(
-        vscode.workspace.registerTextDocumentContentProvider('s3', new S3DocumentProvider(manager.onDidChange)),
+        vscode.workspace.registerFileSystemProvider('s3', memFs),
+        vscode.workspace.registerFileSystemProvider('s3-readonly', memFs, { isReadonly: true }),
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
         }),
@@ -42,7 +45,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await downloadFileAsCommand(node)
         }),
         vscode.commands.registerCommand('aws.s3.openFile', async (node: S3FileNode) => {
-            await openFileCommand(node, manager)
+            await openFileReadModeCommand(node, manager)
         }),
         vscode.commands.registerCommand('aws.s3.openFileEditMode', async (uriOrNode: vscode.Uri | S3FileNode) => {
             await openFileEditModeCommand(uriOrNode, manager)
