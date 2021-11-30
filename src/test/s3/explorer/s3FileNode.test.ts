@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as moment from 'moment'
+import globals from '../../../shared/extensionGlobals'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3_DATE_FORMAT, S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Client } from '../../../shared/clients/s3Client'
@@ -14,8 +15,8 @@ describe('S3FileNode', function () {
     const name = 'file.jpg'
     const key = 'path/to/file.jpg'
     const sizeBytes = 1024
-    const lastModified = new awsToolkit.clock.Date(2020, 5, 4, 3, 2, 1)
-    const now = new awsToolkit.clock.Date(2020, 6, 4)
+    const lastModified = new globals.clock.Date(2020, 5, 4, 3, 2, 1)
+    const now = new globals.clock.Date(2020, 6, 4)
     const lastModifiedReadable = moment(lastModified).format(S3_DATE_FORMAT)
 
     it('creates an S3 File Node', async function () {

@@ -4,6 +4,7 @@
  */
 
 import { ECR } from 'aws-sdk'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 export interface EcrRepository {
     repositoryName: string
@@ -75,6 +76,6 @@ export class DefaultEcrClient {
     }
 
     protected async createSdkClient(): Promise<ECR> {
-        return await awsToolkit.sdkClientBuilder.createAwsService(ECR, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(ECR, undefined, this.regionCode)
     }
 }

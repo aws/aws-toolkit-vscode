@@ -23,6 +23,7 @@ import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
+import globals from '../shared/extensionGlobals'
 
 /**
  * An AWS Explorer node representing a region.
@@ -59,27 +60,27 @@ export class RegionNode extends AWSTreeNodeBase {
                 createFn: () =>
                     new AppRunnerNode(
                         this.regionCode,
-                        awsToolkit.toolkitClientBuilder.createAppRunnerClient(this.regionCode)
+                        globals.toolkitClientBuilder.createAppRunnerClient(this.regionCode)
                     ),
             },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 'ecr',
-                createFn: () => new EcrNode(awsToolkit.toolkitClientBuilder.createEcrClient(this.regionCode)),
+                createFn: () => new EcrNode(globals.toolkitClientBuilder.createEcrClient(this.regionCode)),
             },
             {
                 serviceId: 'ecs',
-                createFn: () => new EcsNode(awsToolkit.toolkitClientBuilder.createEcsClient(this.regionCode)),
+                createFn: () => new EcsNode(globals.toolkitClientBuilder.createEcsClient(this.regionCode)),
             },
             {
                 serviceId: 'iot',
-                createFn: () => new IotNode(awsToolkit.toolkitClientBuilder.createIotClient(this.regionCode)),
+                createFn: () => new IotNode(globals.toolkitClientBuilder.createIotClient(this.regionCode)),
             },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             {
                 serviceId: 's3',
-                createFn: () => new S3Node(awsToolkit.toolkitClientBuilder.createS3Client(this.regionCode)),
+                createFn: () => new S3Node(globals.toolkitClientBuilder.createS3Client(this.regionCode)),
             },
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },

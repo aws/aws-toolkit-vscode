@@ -14,6 +14,7 @@ import {
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
 import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
+import globals from '../../../shared/extensionGlobals'
 
 const FAKE_PARTITION_ID = 'aws'
 const FAKE_REGION_CODE = 'someregioncode'
@@ -107,6 +108,6 @@ describe('ApiGatewayNode', function () {
             createApiGatewayClient: sandbox.stub().returns(apiGatewayClient),
         }
 
-        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

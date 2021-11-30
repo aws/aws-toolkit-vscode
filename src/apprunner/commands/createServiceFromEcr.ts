@@ -9,13 +9,14 @@ import { EcrRepositoryNode } from '../../ecr/explorer/ecrRepositoryNode'
 import { EcrTagNode } from '../../ecr/explorer/ecrTagNode'
 
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'
+import globals from '../../shared/extensionGlobals'
 
 export async function createFromEcr(node: EcrTagNode | EcrRepositoryNode): Promise<void> {
     let telemetryResult: telemetry.Result = 'Failed'
 
     try {
         const ecrNode = (node as any).tag === undefined ? (node as EcrRepositoryNode) : (node as EcrTagNode).parent
-        const client = awsToolkit.toolkitClientBuilder.createAppRunnerClient(ecrNode.regionCode)
+        const client = globals.toolkitClientBuilder.createAppRunnerClient(ecrNode.regionCode)
         const wizard = new CreateAppRunnerServiceWizard(ecrNode.regionCode, {
             SourceConfiguration: {
                 ImageRepository: {

@@ -27,6 +27,7 @@ import { Window } from '../../vscode/window'
 import * as nls from 'vscode-nls'
 import { getSamCliVersion } from '../cli/samCliContext'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_DOTNET_31_SUPPORT } from '../cli/samCliValidator'
+import globals from '../../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -168,10 +169,10 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
 
         const install = await childProcess.run({
             onStdout: (text: string) => {
-                awsToolkit.outputChannel.append(text)
+                globals.outputChannel.append(text)
             },
             onStderr: (text: string) => {
-                awsToolkit.outputChannel.append(text)
+                globals.outputChannel.append(text)
             },
         })
 

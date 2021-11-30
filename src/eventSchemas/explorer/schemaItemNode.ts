@@ -6,6 +6,7 @@
 import { Schemas } from 'aws-sdk'
 
 import * as os from 'os'
+import globals from '../../shared/extensionGlobals'
 import { Uri } from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
@@ -22,8 +23,8 @@ export class SchemaItemNode extends AWSTreeNodeBase {
         this.update(schemaItem)
         this.contextValue = 'awsSchemaItemNode'
         this.iconPath = {
-            dark: Uri.file(awsToolkit.iconPaths.dark.schema),
-            light: Uri.file(awsToolkit.iconPaths.light.schema),
+            dark: Uri.file(globals.iconPaths.dark.schema),
+            light: Uri.file(globals.iconPaths.light.schema),
         }
     }
 

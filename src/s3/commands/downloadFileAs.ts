@@ -15,6 +15,7 @@ import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/messages'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Downloads a file represented by the given node.
@@ -27,7 +28,7 @@ import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/m
 export async function downloadFileAsCommand(
     node: S3FileNode,
     window = Window.vscode(),
-    outputChannel = awsToolkit.outputChannel
+    outputChannel = globals.outputChannel
 ): Promise<void> {
     getLogger().debug('DownloadFile called for %O', node)
 

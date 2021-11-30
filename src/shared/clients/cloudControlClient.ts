@@ -4,6 +4,7 @@
  */
 
 import { CloudControl } from 'aws-sdk'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { localize } from '../utilities/vsCodeUtils'
 
@@ -92,7 +93,7 @@ export class DefaultCloudControlClient implements CloudControlClient {
             }
 
             if (i + 1 < maxRetries) {
-                await new Promise<void>(resolve => awsToolkit.clock.setTimeout(resolve, baseDelay * 2 ** i))
+                await new Promise<void>(resolve => globals.clock.setTimeout(resolve, baseDelay * 2 ** i))
                 const resourceRequestStatus = await client
                     .getResourceRequestStatus({
                         RequestToken: progressEvent.RequestToken!,
@@ -111,6 +112,6 @@ export class DefaultCloudControlClient implements CloudControlClient {
     }
 
     private async createSdkClient(): Promise<CloudControl> {
-        return await awsToolkit.sdkClientBuilder.createAwsService(CloudControl, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(CloudControl, undefined, this.regionCode)
     }
 }

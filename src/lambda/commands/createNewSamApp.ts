@@ -47,6 +47,7 @@ import { execSync } from 'child_process'
 import { writeFile } from 'fs-extra'
 import { checklogs } from '../../shared/localizedText'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
+import globals from '../../shared/extensionGlobals'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -98,7 +99,7 @@ export async function resumeCreateNewSamApp(
         createResult = 'Failed'
         reason = 'error'
 
-        awsToolkit.outputChannel.show(true)
+        globals.outputChannel.show(true)
         getLogger('channel').error(
             localize('AWS.samcli.initWizard.resume.error', 'Error resuming SAM Application creation. {0}', checklogs())
         )
@@ -178,7 +179,7 @@ export async function createNewSamApplication(
         let schemaTemplateParameters: SchemaTemplateParameters
         let client: SchemaClient
         if (config.template === eventBridgeStarterAppTemplate) {
-            client = awsToolkit.toolkitClientBuilder.createSchemaClient(config.region!)
+            client = globals.toolkitClientBuilder.createSchemaClient(config.region!)
             schemaTemplateParameters = await buildSchemaTemplateParameters(
                 config.schemaName!,
                 config.registryName!,
@@ -232,7 +233,7 @@ export async function createNewSamApplication(
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
-            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, awsToolkit.outputChannel)
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, globals.outputChannel)
             getLogger('channel').info(
                 localize(
                     'AWS.message.info.schemas.downloadCodeBindings.start',
@@ -272,7 +273,7 @@ export async function createNewSamApplication(
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
         const isTemplateRegistered = await waitUntil(
-            async () => awsToolkit.templateRegistry.getRegisteredItem(templateUri),
+            async () => globals.templateRegistry.getRegisteredItem(templateUri),
             {
                 timeout: 5000,
                 interval: 500,
@@ -328,7 +329,7 @@ export async function createNewSamApplication(
         createResult = 'Failed'
         reason = 'error'
 
-        awsToolkit.outputChannel.show(true)
+        globals.outputChannel.show(true)
         getLogger('channel').error(
             localize('AWS.samcli.initWizard.general.error', 'Error creating new SAM Application. {0}', checklogs())
         )
@@ -455,7 +456,7 @@ export async function writeToolkitReadme(
 ): Promise<boolean> {
     try {
         const configString: string = configurations.reduce((acc, cur) => `${acc}\n* ${cur.name}`, '')
-        const readme = (await getText(awsToolkit.context.asAbsolutePath(SAM_INIT_README_SOURCE)))
+        const readme = (await getText(globals.context.asAbsolutePath(SAM_INIT_README_SOURCE)))
             .replace(/\$\{PRODUCTNAME\}/g, `${getIdeProperties().company} Toolkit For ${getIdeProperties().longName}`)
             .replace(/\$\{IDE\}/g, getIdeProperties().shortName)
             .replace(/\$\{CODELENS\}/g, getIdeProperties().codelens)

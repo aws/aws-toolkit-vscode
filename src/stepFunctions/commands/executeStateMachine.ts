@@ -20,6 +20,7 @@ import {
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import { StepFunctionsTemplates } from '../templates/stepFunctionsTemplates'
+import globals from '../../shared/extensionGlobals'
 
 interface CommandMessage {
     command: string
@@ -63,7 +64,7 @@ export async function executeStateMachine(params: {
                 onPostMessage: message => view.webview.postMessage(message),
             }),
             undefined,
-            awsToolkit.context.subscriptions
+            globals.context.subscriptions
         )
     } catch (err) {
         logger.error(err as Error)
@@ -101,7 +102,7 @@ function createMessageReceivedFunc({
                     if (!stateMachine.details.stateMachineArn) {
                         throw new Error(`Could not determine ARN for state machine ${stateMachine.details.name}`)
                     }
-                    const client: StepFunctionsClient = awsToolkit.toolkitClientBuilder.createStepFunctionsClient(
+                    const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(
                         stateMachine.regionCode
                     )
                     const startExecResponse = await client.executeStateMachine(

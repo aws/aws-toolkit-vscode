@@ -4,6 +4,7 @@
  */
 
 import { load } from 'js-yaml'
+import globals from '../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
@@ -75,7 +76,7 @@ export async function publishStateMachine(
         region = isValidResponse(r) ? r.id : awsContext.getCredentialDefaultRegion()
     }
 
-    const client: StepFunctionsClient = awsToolkit.toolkitClientBuilder.createStepFunctionsClient(region)
+    const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(region)
 
     try {
         const wizardContext: PublishStateMachineWizardContext = new DefaultPublishStateMachineWizardContext(region)

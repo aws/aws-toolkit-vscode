@@ -35,6 +35,7 @@ import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
 import { sleep } from '../utilities/promiseUtilities'
+import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -419,7 +420,7 @@ export async function runLambdaFunction(
             })
             .catch(e => {
                 getLogger().error(`Failed to debug: ${e}`)
-                awsToolkit.outputChannel.appendLine(`Failed to debug: ${e}`)
+                globals.outputChannel.appendLine(`Failed to debug: ${e}`)
             })
     }
 

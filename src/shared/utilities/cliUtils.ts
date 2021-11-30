@@ -20,6 +20,7 @@ import { Timeout } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { extensionSettingsPrefix } from '../constants'
+import globals from '../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -220,7 +221,7 @@ async function downloadCliSource(cli: Cli, tempDir: string): Promise<string> {
 }
 
 function getToolkitCliDir(): string {
-    return path.join(awsToolkit.context.globalStoragePath, 'tools')
+    return path.join(globals.context.globalStoragePath, 'tools')
 }
 
 /**

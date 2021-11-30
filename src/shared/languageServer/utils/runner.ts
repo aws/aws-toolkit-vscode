@@ -8,6 +8,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import globals from '../../extensionGlobals'
 import { CancellationToken, ErrorCodes, ResponseError } from 'vscode-languageserver'
 
 export function formatError(message: string, err: any): string {
@@ -31,7 +32,7 @@ export function runSafeAsync<T>(
     token: CancellationToken
 ): Thenable<any | ResponseError<any>> {
     return new Promise<T | ResponseError<any>>(resolve => {
-        awsToolkit.clock.setImmediate(() => {
+        globals.clock.setImmediate(() => {
             if (token.isCancellationRequested) {
                 resolve(cancelValue())
             }
@@ -62,7 +63,7 @@ export function runSafe<T, E>(
     token: CancellationToken
 ): Thenable<T | ResponseError<E>> {
     return new Promise<T | ResponseError<E>>(resolve => {
-        awsToolkit.clock.setImmediate(() => {
+        globals.clock.setImmediate(() => {
             if (token.isCancellationRequested) {
                 resolve(cancelValue())
             } else {

@@ -4,6 +4,7 @@
  */
 
 import { AppRunner } from 'aws-sdk'
+import globals from '../extensionGlobals'
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -65,6 +66,6 @@ export class DefaultAppRunnerClient {
     }
 
     protected async createSdkClient(): Promise<AppRunner> {
-        return await awsToolkit.sdkClientBuilder.createAwsService(AppRunner, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(AppRunner, undefined, this.regionCode)
     }
 }

@@ -21,8 +21,9 @@ import {
 import { FakeTelemetryPublisher } from '../../fake/fakeTelemetryService'
 import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
 import { installFakeClock } from '../../testUtil'
+import globals from '../../../shared/extensionGlobals'
 
-const originalTelemetryClient: TelemetryService = awsToolkit.telemetry
+const originalTelemetryClient: TelemetryService = globals.telemetry
 let mockContext: FakeExtensionContext
 let mockAws: FakeAwsContext
 let mockPublisher: FakeTelemetryPublisher
@@ -33,13 +34,13 @@ beforeEach(function () {
     mockAws = new FakeAwsContext()
     mockPublisher = new FakeTelemetryPublisher()
     service = new DefaultTelemetryService(mockContext, mockAws, undefined, mockPublisher)
-    awsToolkit.telemetry = service
+    globals.telemetry = service
 })
 
 afterEach(async function () {
     // Remove the persist file as it is saved
-    await fs.remove(awsToolkit.telemetry.persistFilePath)
-    awsToolkit.telemetry = originalTelemetryClient
+    await fs.remove(globals.telemetry.persistFilePath)
+    globals.telemetry = originalTelemetryClient
 })
 
 function fakeMetric(value: number, passive: boolean) {
@@ -48,7 +49,7 @@ function fakeMetric(value: number, passive: boolean) {
         MetricName: `metric${value}`,
         Value: value,
         Unit: 'None',
-        EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+        EpochTimestamp: new globals.clock.Date().getTime(),
     }
 }
 
@@ -113,7 +114,7 @@ describe('DefaultTelemetryService', function () {
             MetricName: 'namespace',
             Value: 1,
             Unit: 'None',
-            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+            EpochTimestamp: new globals.clock.Date().getTime(),
         })
 
         await service.start()
@@ -130,7 +131,7 @@ describe('DefaultTelemetryService', function () {
     it('events automatically inject the active account id into the metadata', async function () {
         const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
         service = new DefaultTelemetryService(mockContext, mockAwsWithIds, undefined, mockPublisher)
-        awsToolkit.telemetry = service
+        globals.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
@@ -138,7 +139,7 @@ describe('DefaultTelemetryService', function () {
             MetricName: 'name',
             Value: 1,
             Unit: 'None',
-            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+            EpochTimestamp: new globals.clock.Date().getTime(),
         })
 
         assert.strictEqual(service.records.length, 1)
@@ -174,7 +175,7 @@ describe('DefaultTelemetryService', function () {
             getCredentialAccountId: () => 'this is bad!',
         } as any as AwsContext
         service = new DefaultTelemetryService(mockContext, mockAwsBad, undefined, mockPublisher)
-        awsToolkit.telemetry = service
+        globals.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
@@ -182,7 +183,7 @@ describe('DefaultTelemetryService', function () {
             MetricName: 'name',
             Value: 1,
             Unit: 'None',
-            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+            EpochTimestamp: new globals.clock.Date().getTime(),
         })
 
         await service.start()
@@ -206,7 +207,7 @@ describe('DefaultTelemetryService', function () {
             MetricName: 'name',
             Value: 1,
             Unit: 'None',
-            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+            EpochTimestamp: new globals.clock.Date().getTime(),
         })
 
         await service.start()
@@ -234,7 +235,7 @@ describe('DefaultTelemetryService', function () {
             MetricName: 'name',
             Value: 1,
             Unit: 'None',
-            EpochTimestamp: new awsToolkit.clock.Date().getTime(),
+            EpochTimestamp: new globals.clock.Date().getTime(),
         })
 
         clock.tick(testFlushPeriod + 1)

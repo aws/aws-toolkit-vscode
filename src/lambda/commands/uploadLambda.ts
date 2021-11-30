@@ -26,6 +26,7 @@ import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { getLambdaDetails } from '../utils'
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Executes the "Upload Lambda..." command.
@@ -417,7 +418,7 @@ async function uploadZipBuffer(
         message?: string | undefined
         increment?: number | undefined
     }>,
-    lambdaClient = awsToolkit.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
+    lambdaClient = globals.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<telemetry.Result> {
     try {
         progress.report({

@@ -41,6 +41,7 @@ import { createRegionPrompter } from '../../shared/ui/common/region'
 import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -100,7 +101,7 @@ function createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<Depen
 }
 
 function createRegistryPrompter(region: string, credentials?: AWS.Credentials): QuickPickPrompter<string> {
-    const client: SchemaClient = awsToolkit.toolkitClientBuilder.createSchemaClient(region)
+    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getRegistries(region, client, credentials!)
         .then(registryNames => {
@@ -130,7 +131,7 @@ function createSchemaPrompter(
     registry: string,
     credentials?: AWS.Credentials
 ): QuickPickPrompter<string> {
-    const client: SchemaClient = awsToolkit.toolkitClientBuilder.createSchemaClient(region)
+    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getSchemas(region, registry, client, credentials!)
         .then(schemas => {

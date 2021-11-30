@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
+import globals from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { Timeout } from './timeoutUtils'
 
@@ -28,7 +29,7 @@ export function makeFailedWriteMessage(filename: string): string {
  */
 export async function showViewLogsMessage(
     message: string,
-    window: Window = awsToolkit.window,
+    window: Window = globals.window,
     kind: 'info' | 'warn' | 'error' = 'error',
     extraItems: string[] = []
 ): Promise<string | undefined> {
@@ -95,7 +96,7 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
 async function showProgressWithTimeout(
     options: vscode.ProgressOptions,
     timeout: Timeout,
-    window: Window = awsToolkit.window
+    window: Window = globals.window
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     // Cloud9 doesn't support Progress notifications. User won't be able to cancel.
     if (isCloud9()) {
@@ -118,14 +119,14 @@ async function showProgressWithTimeout(
  *
  * @param message Message to display
  * @param timeout Timeout object that will be killed if the user clicks 'Cancel'
- * @param window Window to display the message on (default: awsToolkit.window)
+ * @param window Window to display the message on (default: globals.window)
  *
  * @returns Progress object allowing the caller to update progress status
  */
 export async function showMessageWithCancel(
     message: string,
     timeout: Timeout,
-    window: Window = awsToolkit.window
+    window: Window = globals.window
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout, window)

@@ -16,6 +16,7 @@ import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion } from './vscode/env'
+import globals from './extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -24,7 +25,7 @@ const CLOUD9_APPNAME = 'AWS Cloud9'
 const CLOUD9_CN_APPNAME = 'Amazon Cloud9'
 const NOT_INITIALIZED = 'notInitialized'
 
-export const mostRecentVersionKey: string = 'awsToolkitMostRecentVersion'
+export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
 
 export enum IDE {
     vscode,
@@ -110,19 +111,19 @@ export function isCn(): boolean {
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(awsToolkit.context.extensionPath, 'media', 'libs')
+        const basePath = path.join(globals.context.extensionPath, 'media', 'libs')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }
 
     public static getScriptsForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(awsToolkit.context.extensionPath, 'media', 'js')
+        const basePath = path.join(globals.context.extensionPath, 'media', 'js')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }
 
     public static getCssForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(awsToolkit.context.extensionPath, 'media', 'css')
+        const basePath = path.join(globals.context.extensionPath, 'media', 'css')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }

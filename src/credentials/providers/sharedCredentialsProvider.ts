@@ -24,6 +24,7 @@ import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
+import globals from '../../shared/extensionGlobals'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -306,7 +307,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
         const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
             const region = this.getDefaultRegion() ?? 'us-east-1'
-            const stsClient = awsToolkit.toolkitClientBuilder.createStsClient(region, { credentials })
+            const stsClient = globals.toolkitClientBuilder.createStsClient(region, { credentials })
             const response = await stsClient.assumeRole(params)
             return {
                 accessKeyId: response.Credentials!.AccessKeyId!,

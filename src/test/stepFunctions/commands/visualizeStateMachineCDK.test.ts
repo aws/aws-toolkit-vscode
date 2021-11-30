@@ -15,6 +15,7 @@ import { Disposable } from 'vscode-languageclient'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { getLogger, Logger } from '../../../shared/logger'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
+import globals from '../../../shared/extensionGlobals'
 
 // Top level defintions
 let mockAslVisualizationCDKManager: MockAslVisualizationCDKManager
@@ -131,23 +132,23 @@ const mockStateMachineNodeSameAppDiffName = new ConstructNode(
 )
 
 describe('StepFunctions VisualizeStateMachine', async function () {
-    const oldWebviewScriptsPath = awsToolkit.visualizationResourcePaths.localWebviewScriptsPath
-    const oldWebviewBodyPath = awsToolkit.visualizationResourcePaths.webviewBodyScript
-    const oldCachePath = awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath
-    const oldScriptPath = awsToolkit.visualizationResourcePaths.visualizationLibraryScript
-    const oldCssPath = awsToolkit.visualizationResourcePaths.visualizationLibraryCSS
-    const oldThemePath = awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath
-    const oldThemeCssPath = awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS
+    const oldWebviewScriptsPath = globals.visualizationResourcePaths.localWebviewScriptsPath
+    const oldWebviewBodyPath = globals.visualizationResourcePaths.webviewBodyScript
+    const oldCachePath = globals.visualizationResourcePaths.visualizationLibraryCachePath
+    const oldScriptPath = globals.visualizationResourcePaths.visualizationLibraryScript
+    const oldCssPath = globals.visualizationResourcePaths.visualizationLibraryCSS
+    const oldThemePath = globals.visualizationResourcePaths.stateMachineCustomThemePath
+    const oldThemeCssPath = globals.visualizationResourcePaths.stateMachineCustomThemeCSS
 
     // Before all
     before(function () {
-        awsToolkit.visualizationResourcePaths.localWebviewScriptsPath = mockUri
-        awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath = mockUri
-        awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath = mockUri
-        awsToolkit.visualizationResourcePaths.webviewBodyScript = mockUri
-        awsToolkit.visualizationResourcePaths.visualizationLibraryScript = mockUri
-        awsToolkit.visualizationResourcePaths.visualizationLibraryCSS = mockUri
-        awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUri
+        globals.visualizationResourcePaths.localWebviewScriptsPath = mockUri
+        globals.visualizationResourcePaths.visualizationLibraryCachePath = mockUri
+        globals.visualizationResourcePaths.stateMachineCustomThemePath = mockUri
+        globals.visualizationResourcePaths.webviewBodyScript = mockUri
+        globals.visualizationResourcePaths.visualizationLibraryScript = mockUri
+        globals.visualizationResourcePaths.visualizationLibraryCSS = mockUri
+        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUri
 
         sandbox = sinon.createSandbox()
         sandbox.stub(StateMachineGraphCache.prototype, 'updateCachedFile').callsFake(async options => {
@@ -163,13 +164,13 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     // After all
     after(function () {
         sandbox.restore()
-        awsToolkit.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
-        awsToolkit.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
-        awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
-        awsToolkit.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
-        awsToolkit.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
-        awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
-        awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
+        globals.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
+        globals.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
+        globals.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
+        globals.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
+        globals.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
+        globals.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
+        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
     })
 
     // Tests

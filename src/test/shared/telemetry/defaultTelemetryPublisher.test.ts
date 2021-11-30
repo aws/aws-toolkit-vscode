@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import AWS = require('aws-sdk')
+import globals from '../../../shared/extensionGlobals'
 import { DefaultTelemetryPublisher } from '../../../shared/telemetry/defaultTelemetryPublisher'
 import { TelemetryClient } from '../../../shared/telemetry/telemetryClient'
 import { TelemetryFeedback } from '../../../shared/telemetry/telemetryFeedback'
@@ -40,11 +41,11 @@ describe('DefaultTelemetryPublisher', function () {
     it('enqueues events', function () {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
         publisher.enqueue(
-            ...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new awsToolkit.clock.Date().getTime() }]
+            ...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new globals.clock.Date().getTime() }]
         )
         assert.strictEqual(publisher.queue.length, 1)
         publisher.enqueue(
-            ...[{ MetricName: 'name3', Value: 1, Unit: 'None', EpochTimestamp: new awsToolkit.clock.Date().getTime() }]
+            ...[{ MetricName: 'name3', Value: 1, Unit: 'None', EpochTimestamp: new globals.clock.Date().getTime() }]
         )
         assert.strictEqual(publisher.queue.length, 2)
     })
@@ -52,7 +53,7 @@ describe('DefaultTelemetryPublisher', function () {
     it('can flush single event', async function () {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
         publisher.enqueue(
-            ...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new awsToolkit.clock.Date().getTime() }]
+            ...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new globals.clock.Date().getTime() }]
         )
 
         assert.strictEqual(publisher.queue.length, 1)
@@ -63,7 +64,7 @@ describe('DefaultTelemetryPublisher', function () {
 
     it('retains queue on flush failure', async function () {
         const batch = [
-            { MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new awsToolkit.clock.Date().getTime() },
+            { MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new globals.clock.Date().getTime() },
         ]
         const publisher = new DefaultTelemetryPublisher(
             '',

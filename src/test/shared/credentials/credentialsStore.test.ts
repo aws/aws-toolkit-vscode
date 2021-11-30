@@ -8,19 +8,20 @@ import * as sinon from 'sinon'
 import { CredentialsStore } from '../../../credentials/credentialsStore'
 import { Credentials } from '@aws-sdk/types'
 import { CredentialsProvider, CredentialsId, asString } from '../../../credentials/providers/credentials'
+import globals from '../../../shared/extensionGlobals'
 
 describe('CredentialsStore', async function () {
     let sandbox: sinon.SinonSandbox
     let sut: CredentialsStore
     const sampleCredentials = {
-        expiration: new awsToolkit.clock.Date(awsToolkit.clock.Date.now() + 1000 * 60 * 60),
+        expiration: new globals.clock.Date(globals.clock.Date.now() + 1000 * 60 * 60),
     } as Credentials
     const sampleCredentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: 'someId',
     }
     const sampleExpiredCredentials = {
-        expiration: new awsToolkit.clock.Date(awsToolkit.clock.Date.now() - 1000 * 60 * 60),
+        expiration: new globals.clock.Date(globals.clock.Date.now() - 1000 * 60 * 60),
     } as Credentials
 
     beforeEach(async function () {

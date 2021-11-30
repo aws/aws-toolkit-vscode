@@ -16,6 +16,7 @@ import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RestApiNode } from './apiNodes'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * An AWS Explorer node representing the API Gateway (v1) service.
@@ -46,7 +47,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: ApiGatewayClient = awsToolkit.toolkitClientBuilder.createApiGatewayClient(this.regionCode)
+        const client: ApiGatewayClient = globals.toolkitClientBuilder.createApiGatewayClient(this.regionCode)
         const apis: Map<string, RestApi> = toMap(
             await toArrayAsync(client.listApis()),
             configuration => `${configuration.name} (${configuration.id})`

@@ -17,6 +17,7 @@ import { EcsServiceNode } from './ecsServiceNode'
 import { ECS } from 'aws-sdk'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Represents an ECS cluster
@@ -35,8 +36,8 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
         this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
 
         this.iconPath = {
-            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.cluster),
-            light: vscode.Uri.file(awsToolkit.iconPaths.light.cluster),
+            dark: vscode.Uri.file(globals.iconPaths.dark.cluster),
+            light: vscode.Uri.file(globals.iconPaths.light.cluster),
         }
     }
 

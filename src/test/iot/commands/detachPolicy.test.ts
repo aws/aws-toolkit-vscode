@@ -12,6 +12,7 @@ import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import globals from '../../../shared/extensionGlobals'
 
 describe('detachPolicyCommand', function () {
     const policyName = 'test-policy'
@@ -23,7 +24,7 @@ describe('detachPolicyCommand', function () {
     beforeEach(function () {
         iot = mock()
         parentNode = new IotCertWithPoliciesNode(
-            { id: 'id', arn: target, activeStatus: 'ACTIVE', creationDate: new awsToolkit.clock.Date() },
+            { id: 'id', arn: target, activeStatus: 'ACTIVE', creationDate: new globals.clock.Date() },
             {} as IotCertsFolderNode,
             instance(iot)
         )

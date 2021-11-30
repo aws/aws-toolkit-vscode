@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { mkdir, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
+import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import {
     getExistingConfiguration,
@@ -784,7 +785,7 @@ describe('getExistingConfiguration', async function () {
 
     afterEach(async function () {
         await remove(tempFolder)
-        awsToolkit.templateRegistry.reset()
+        globals.templateRegistry.reset()
     })
 
     it("returns undefined if the legacy config file doesn't exist", async () => {
@@ -795,7 +796,7 @@ describe('getExistingConfiguration', async function () {
     it('returns undefined if the legacy config file is not valid JSON', async function () {
         await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
-        await awsToolkit.templateRegistry.addItemToRegistry(tempTemplateFile)
+        await globals.templateRegistry.addItemToRegistry(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.strictEqual(val, undefined)
     })
@@ -816,7 +817,7 @@ describe('getExistingConfiguration', async function () {
             },
         }
         await writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
-        await awsToolkit.templateRegistry.addItemToRegistry(tempTemplateFile)
+        await globals.templateRegistry.addItemToRegistry(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.ok(val)
         if (val) {

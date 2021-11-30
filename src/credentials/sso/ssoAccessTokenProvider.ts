@@ -9,6 +9,7 @@ import { openSsoPortalLink, SsoAccessToken } from './sso'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
 import { sleep } from '../../shared/utilities/promiseUtilities'
+import globals from '../../shared/extensionGlobals'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const CLIENT_NAME = 'aws-toolkit-vscode'
@@ -102,7 +103,7 @@ export class SsoAccessTokenProvider {
                     startUrl: this.ssoUrl,
                     region: this.ssoRegion,
                     accessToken: tokenResponse.accessToken!,
-                    expiresAt: new awsToolkit.clock.Date(
+                    expiresAt: new globals.clock.Date(
                         this.currentTimePlusSecondsInMs(tokenResponse.expiresIn!)
                     ).toISOString(),
                 }
@@ -121,7 +122,7 @@ export class SsoAccessTokenProvider {
                     throw err
                 }
             }
-            if (awsToolkit.clock.Date.now() + retryInterval > deviceCodeExpiration) {
+            if (globals.clock.Date.now() + retryInterval > deviceCodeExpiration) {
                 throw Error(deviceCodeExpiredMsg)
             }
 
@@ -169,7 +170,7 @@ export class SsoAccessTokenProvider {
             clientName: CLIENT_NAME,
         }
         const registerResponse = await this.ssoOidcClient.registerClient(registerParams)
-        const formattedExpiry = new awsToolkit.clock.Date(
+        const formattedExpiry = new globals.clock.Date(
             registerResponse.clientSecretExpiresAt! * MS_PER_SECOND
         ).toISOString()
 
@@ -189,6 +190,6 @@ export class SsoAccessTokenProvider {
      * @param seconds Number of seconds to add
      */
     private currentTimePlusSecondsInMs(seconds: number) {
-        return seconds * MS_PER_SECOND + awsToolkit.clock.Date.now()
+        return seconds * MS_PER_SECOND + globals.clock.Date.now()
     }
 }

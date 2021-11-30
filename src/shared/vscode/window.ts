@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import globals from '../extensionGlobals'
 
 interface ProgressEntry {
     message?: string
@@ -140,7 +141,7 @@ class DefaultWindow implements Window {
         task: (progress: vscode.Progress<ProgressEntry>, token: vscode.CancellationToken) => Thenable<R>
     ): Thenable<R> {
         if (options.title) {
-            awsToolkit.outputChannel.appendLine(options.title)
+            globals.outputChannel.appendLine(options.title)
         }
 
         // hijack the returned task to wrap progress with an output channel adapter
@@ -152,7 +153,7 @@ class DefaultWindow implements Window {
                 ...progress,
                 report: (value: ProgressEntry) => {
                     if (value.message) {
-                        awsToolkit.outputChannel.appendLine(value.message)
+                        globals.outputChannel.appendLine(value.message)
                     }
                     progress.report(value)
                 },

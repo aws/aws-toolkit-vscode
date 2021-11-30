@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import globals from '../../../shared/extensionGlobals'
 import * as buttons from '../../../shared/ui/buttons'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
 
@@ -33,7 +34,7 @@ describe('UI buttons', function () {
     })
 
     function assertIconPath(iconPath: IconPath) {
-        assert.strictEqual(iconPath.dark.path, awsToolkit.iconPaths.dark.help)
-        assert.strictEqual(iconPath.light.path, awsToolkit.iconPaths.light.help)
+        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.help)
+        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.help)
     }
 })

@@ -12,6 +12,7 @@ import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenP
 import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
 import { installFakeClock } from '../../testUtil'
+import globals from '../../../shared/extensionGlobals'
 
 describe('SsoAccessTokenProvider', function () {
     let sandbox: sinon.SinonSandbox
@@ -28,7 +29,7 @@ describe('SsoAccessTokenProvider', function () {
         startUrl: ssoUrl,
         region: ssoRegion,
         accessToken: 'dummyAccessToken',
-        expiresAt: new awsToolkit.clock.Date(HOUR_IN_MS).toISOString(),
+        expiresAt: new globals.clock.Date(HOUR_IN_MS).toISOString(),
     }
 
     const fakeCreateTokenResponse: SSOOIDC.CreateTokenResponse = {
@@ -39,7 +40,7 @@ describe('SsoAccessTokenProvider', function () {
     const validRegistation: SsoClientRegistration = {
         clientId: 'aString',
         clientSecret: 'aString',
-        expiresAt: new awsToolkit.clock.Date(HOUR_IN_MS).toISOString(),
+        expiresAt: new globals.clock.Date(HOUR_IN_MS).toISOString(),
     }
 
     const validAuthorization: StartDeviceAuthorizationResponse = {
@@ -217,7 +218,7 @@ describe('SsoAccessTokenProvider', function () {
             const dummyRegistration = {
                 clientId: 'badClient',
                 clientSecret: 'badSecret',
-                expiresAt: new awsToolkit.clock.Date(clock.Date.now() + HOUR_IN_MS).toISOString(),
+                expiresAt: new globals.clock.Date(clock.Date.now() + HOUR_IN_MS).toISOString(),
             }
 
             await assert.rejects(sut.authorizeClient(dummyRegistration))

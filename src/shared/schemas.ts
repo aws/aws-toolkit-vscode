@@ -6,6 +6,7 @@
 import { mkdirSync, writeFileSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import globals from './extensionGlobals'
 import { activateYamlExtension, YamlExtension } from './extensions/yaml'
 import * as filesystemUtilities from './filesystemUtilities'
 import { getLogger } from './logger'
@@ -95,7 +96,7 @@ export class SchemaService {
 
     // TODO: abstract into a common abstraction for background pollers
     private async startTimer(): Promise<void> {
-        this.timer = awsToolkit.clock.setTimeout(
+        this.timer = globals.clock.setTimeout(
             // this is async so that we don't have pseudo-concurrent invocations of the callback
             async () => {
                 await this.processUpdates()

@@ -20,6 +20,7 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -36,8 +37,8 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
         super(policy.name, collapsibleState)
         this.tooltip = policy.name
         this.iconPath = {
-            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.policy),
-            light: vscode.Uri.file(awsToolkit.iconPaths.light.policy),
+            dark: vscode.Uri.file(globals.iconPaths.dark.policy),
+            light: vscode.Uri.file(globals.iconPaths.light.policy),
         }
         this.contextValue = 'awsIotPolicyNode.Certificates'
     }

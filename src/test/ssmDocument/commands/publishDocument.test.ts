@@ -20,6 +20,7 @@ import {
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext, FakeRegionProvider } from '../../utilities/fakeAwsContext'
+import globals from '../../../shared/extensionGlobals'
 
 let sandbox: sinon.SinonSandbox
 
@@ -141,7 +142,7 @@ describe('publishSSMDocument', async function () {
             createSsmClient: sandbox.stub().returns(ssmDocumentClient),
         }
 
-        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
 

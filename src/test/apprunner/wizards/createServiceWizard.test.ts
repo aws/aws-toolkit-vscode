@@ -7,14 +7,15 @@ import * as _ from 'lodash'
 import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
 import { AppRunner } from 'aws-sdk'
 import { CreateAppRunnerServiceWizard } from '../../../apprunner/wizards/apprunnerCreateServiceWizard'
+import globals from '../../../shared/extensionGlobals'
 
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<AppRunner.CreateServiceRequest>
-    let lastClientBuilder: typeof awsToolkit.toolkitClientBuilder
+    let lastClientBuilder: typeof globals.toolkitClientBuilder
 
     before(function () {
-        lastClientBuilder = awsToolkit.toolkitClientBuilder
-        awsToolkit.toolkitClientBuilder = {
+        lastClientBuilder = globals.toolkitClientBuilder
+        globals.toolkitClientBuilder = {
             createAppRunnerClient: () => ({} as any),
             createEcrClient: () => ({} as any),
             createIamClient: () => ({} as any),
@@ -27,7 +28,7 @@ describe('CreateServiceWizard', function () {
     })
 
     after(function () {
-        awsToolkit.toolkitClientBuilder = lastClientBuilder
+        globals.toolkitClientBuilder = lastClientBuilder
     })
 
     describe('CreateAppRunnerServiceWizard', function () {

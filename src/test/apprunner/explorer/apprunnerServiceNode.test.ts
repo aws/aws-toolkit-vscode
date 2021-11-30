@@ -13,6 +13,7 @@ import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import globals from '../../../shared/extensionGlobals'
 
 describe('AppRunnerServiceNode', function () {
     let mockApprunnerClient: AppRunnerClient
@@ -32,9 +33,9 @@ describe('AppRunnerServiceNode', function () {
         mockCloudWatchLogsClient = mock()
         // Forces assignment of the property key without affecting its value
         // eslint-disable-next-line no-self-assign
-        awsToolkit.toolkitClientBuilder = awsToolkit.toolkitClientBuilder
+        globals.toolkitClientBuilder = globals.toolkitClientBuilder
         sinon.stub(AWSTreeNodeBase.prototype, 'refresh')
-        sinon.stub(awsToolkit, 'toolkitClientBuilder').value({
+        sinon.stub(globals, 'toolkitClientBuilder').value({
             createCloudWatchLogsClient: () => instance(mockCloudWatchLogsClient),
         } as any)
     })

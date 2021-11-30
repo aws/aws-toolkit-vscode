@@ -6,6 +6,7 @@
 import { _Blob } from 'aws-sdk/clients/lambda'
 import _ = require('lodash')
 import * as vscode from 'vscode'
+import globals from '../../shared/extensionGlobals'
 
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
@@ -46,7 +47,7 @@ export function submitFeedback(listener?: (message: any) => Promise<void>): vsco
     })
 
     const feedbackListener = listener === undefined ? createListener(panel) : listener
-    panel.webview.onDidReceiveMessage(feedbackListener, undefined, awsToolkit.context.subscriptions)
+    panel.webview.onDidReceiveMessage(feedbackListener, undefined, globals.context.subscriptions)
 
     return panel
 }
@@ -61,5 +62,5 @@ function createListener(panel: vscode.WebviewPanel) {
         showInformationMessage: (message: string) => vscode.window.showInformationMessage(message),
     }
 
-    return submitFeedbackListener(feedbackPanel, window, awsToolkit.telemetry)
+    return submitFeedbackListener(feedbackPanel, window, globals.telemetry)
 }

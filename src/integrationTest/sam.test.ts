@@ -26,6 +26,7 @@ import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguratio
 import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 import { sleep } from '../shared/utilities/promiseUtilities'
+import globals from '../shared/extensionGlobals'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
@@ -361,7 +362,7 @@ describe('SAM Integration Tests', async function () {
         config.update('server.launchMode', 'Standard')
 
         await activateExtensions()
-        await testUtils.configureawsToolkitExtension()
+        await testUtils.configureAwsToolkitExtension()
         await testUtils.configurePythonExtension()
         await testUtils.configureGoExtension()
 
@@ -604,7 +605,7 @@ describe('SAM Integration Tests', async function () {
                     }
 
                     // XXX: force load since template registry seems a bit flakey
-                    await awsToolkit.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
+                    await globals.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
                     await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
                 }

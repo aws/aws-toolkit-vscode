@@ -17,6 +17,7 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 const CONTEXT_BASE = 'awsAppRunnerServiceNode'
@@ -49,8 +50,8 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
         )
         this.iconPath = {
-            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.apprunner),
-            light: vscode.Uri.file(awsToolkit.iconPaths.light.apprunner),
+            dark: vscode.Uri.file(globals.iconPaths.dark.apprunner),
+            light: vscode.Uri.file(globals.iconPaths.light.apprunner),
         }
         this.id = `AppRunnerService-${_info.ServiceArn}`
         this.name = _info.ServiceName

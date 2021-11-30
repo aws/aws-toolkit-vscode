@@ -18,6 +18,7 @@ import {
     TextDocument as ASLTextDocument,
 } from 'amazon-states-language-service'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
+import globals from '../shared/extensionGlobals'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -65,9 +66,9 @@ export class StateMachineGraphCache {
         this.writeFile = writeFileCustom ?? writeFile
         this.logger = getLogger()
         this.getFileData = getFileData ?? httpsGetRequestWrapper
-        this.cssFilePath = options.cssFilePath ?? awsToolkit.visualizationResourcePaths.visualizationLibraryCSS.fsPath
-        this.jsFilePath = options.jsFilePath ?? awsToolkit.visualizationResourcePaths.visualizationLibraryScript.fsPath
-        this.dirPath = options.dirPath ?? awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
+        this.cssFilePath = options.cssFilePath ?? globals.visualizationResourcePaths.visualizationLibraryCSS.fsPath
+        this.jsFilePath = options.jsFilePath ?? globals.visualizationResourcePaths.visualizationLibraryScript.fsPath
+        this.dirPath = options.dirPath ?? globals.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
         this.fileExists = fileExistsCustom ?? fileExists
     }
 

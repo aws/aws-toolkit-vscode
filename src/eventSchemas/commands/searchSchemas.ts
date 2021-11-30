@@ -24,13 +24,14 @@ import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaTemplates } from '../templates/searchSchemasTemplates'
+import globals from '../../shared/extensionGlobals'
 
 export async function createSearchSchemasWebView(params: {
     node: RegistryItemNode | SchemasNode
     outputChannel: vscode.OutputChannel
 }): Promise<void> {
     const logger: Logger = getLogger()
-    const client: SchemaClient = awsToolkit.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
+    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
     const registryNames = await getRegistryNames(params.node, client)
     let webviewResult: Result = 'Succeeded'
 
@@ -48,7 +49,7 @@ export async function createSearchSchemasWebView(params: {
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.file(path.join(awsToolkit.context.extensionPath, 'media'))],
+                localResourceRoots: [vscode.Uri.file(path.join(globals.context.extensionPath, 'media'))],
             }
         )
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
@@ -84,12 +85,12 @@ export async function createSearchSchemasWebView(params: {
             createMessageReceivedFunc({
                 registryNames: registryNames,
                 schemaClient: client,
-                telemetryService: awsToolkit.telemetry,
+                telemetryService: globals.telemetry,
                 onPostMessage: message => view.webview.postMessage(message),
                 outputChannel: params.outputChannel,
             }),
             undefined,
-            awsToolkit.context.subscriptions
+            globals.context.subscriptions
         )
     } catch (err) {
         webviewResult = 'Failed'

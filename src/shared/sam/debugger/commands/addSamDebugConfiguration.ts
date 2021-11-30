@@ -21,6 +21,7 @@ import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import { getIdeProperties } from '../../../extensionUtilities'
 import { isValidResponse } from '../../../wizards/wizard'
+import globals from '../../../extensionGlobals'
 
 /**
  * Holds information required to create a launch config
@@ -56,7 +57,7 @@ export async function addSamDebugConfiguration(
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
-            const templateDatum = awsToolkit.templateRegistry.getRegisteredItem(rootUri)
+            const templateDatum = globals.templateRegistry.getRegisteredItem(rootUri)
             if (templateDatum) {
                 const resource = templateDatum.item.Resources![resourceName]
                 if (!resource) {

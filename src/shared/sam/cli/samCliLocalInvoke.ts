@@ -13,6 +13,7 @@ import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import * as vscode from 'vscode'
+import globals from '../../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -108,8 +109,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 this.logger.verbose(`SAM: command exited (code: ${code}): ${childProcess}`)
                 // onStdout/onStderr may print partial lines. Force a newline
                 // to ensure "Command stopped" appears on its own line.
-                awsToolkit.outputChannel.appendLine('')
-                awsToolkit.outputChannel.appendLine(
+                globals.outputChannel.appendLine('')
+                globals.outputChannel.appendLine(
                     localize('AWS.samcli.stopped', 'Command stopped: "{0}"', samCommandName)
                 )
 

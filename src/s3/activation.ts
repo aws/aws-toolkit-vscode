@@ -18,6 +18,7 @@ import { S3FolderNode } from './explorer/s3FolderNode'
 import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
 import { ExtContext } from '../shared/extensions'
+import globals from '../shared/extensionGlobals'
 
 /**
  * Activates S3 components.
@@ -37,7 +38,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             if (!node) {
                 const awsContext = ctx.awsContext
                 const regionCode = awsContext.getCredentialDefaultRegion()
-                const s3Client = awsToolkit.toolkitClientBuilder.createS3Client(regionCode)
+                const s3Client = globals.toolkitClientBuilder.createS3Client(regionCode)
                 const document = vscode.window.activeTextEditor?.document.uri
                 await uploadFileCommand(s3Client, document)
             } else {

@@ -4,6 +4,7 @@
  */
 
 import { SSM } from 'aws-sdk'
+import globals from '../extensionGlobals'
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -109,6 +110,6 @@ export class DefaultSsmDocumentClient {
     }
 
     private async createSdkClient(): Promise<SSM> {
-        return await awsToolkit.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 }

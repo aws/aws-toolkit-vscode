@@ -17,6 +17,7 @@ import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
 import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -106,9 +107,9 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             exitPrompterProvider: new BasicExitPrompterProvider(),
         })
 
-        const ecrClient = awsToolkit.toolkitClientBuilder.createEcrClient(region)
-        const iamClient = awsToolkit.toolkitClientBuilder.createIamClient(region)
-        const apprunnerClient = awsToolkit.toolkitClientBuilder.createAppRunnerClient(region)
+        const ecrClient = globals.toolkitClientBuilder.createEcrClient(region)
+        const iamClient = globals.toolkitClientBuilder.createIamClient(region)
+        const apprunnerClient = globals.toolkitClientBuilder.createAppRunnerClient(region)
         const autoDeployButton = makeDeploymentButton()
         const gitExtension = GitExtension.instance
         const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(apprunnerClient, gitExtension, autoDeployButton)

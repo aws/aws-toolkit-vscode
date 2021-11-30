@@ -19,6 +19,7 @@ import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
+import globals from '../../shared/extensionGlobals'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -57,7 +58,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     public async pickLogStream(): Promise<string | undefined> {
         let telemetryResult: telemetry.Result = 'Succeeded'
 
-        const client: CloudWatchLogsClient = awsToolkit.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
+        const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupName: this.logGroupName,
             orderBy: 'LastEventTime',

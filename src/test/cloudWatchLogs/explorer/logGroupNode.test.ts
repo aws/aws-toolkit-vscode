@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
+import globals from '../../../shared/extensionGlobals'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
@@ -56,14 +57,10 @@ describe('LogGroupNode', function () {
     it('initializes the icon', async function () {
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(
-            iconPath.dark.path,
-            awsToolkit.iconPaths.dark.cloudWatchLogGroup,
-            'Unexpected dark icon path'
-        )
+        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.cloudWatchLogGroup, 'Unexpected dark icon path')
         assert.strictEqual(
             iconPath.light.path,
-            awsToolkit.iconPaths.light.cloudWatchLogGroup,
+            globals.iconPaths.light.cloudWatchLogGroup,
             'Unexpected light icon path'
         )
     })

@@ -13,6 +13,7 @@ import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 import { IotCertWithPoliciesNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
+import globals from '../../../shared/extensionGlobals'
 
 describe('IotCertFolderNode', function () {
     const nextMarker = 'nextToken'
@@ -23,13 +24,13 @@ describe('IotCertFolderNode', function () {
         certificateId: 'cert',
         certificateArn: 'arn',
         status: 'ACTIVE',
-        creationDate: new awsToolkit.clock.Date(0),
+        creationDate: new globals.clock.Date(0),
     }
     const expectedCert: IotCertificate = {
         id: 'cert',
         arn: 'arn',
         activeStatus: 'ACTIVE',
-        creationDate: new awsToolkit.clock.Date(0),
+        creationDate: new globals.clock.Date(0),
     }
 
     function assertCertNode(node: AWSTreeNodeBase, expectedCert: IotCertificate): void {

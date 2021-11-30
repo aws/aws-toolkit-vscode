@@ -10,6 +10,7 @@ import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
+import globals from '../../../shared/extensionGlobals'
 
 describe('RegistryItemNode', function () {
     let sandbox: sinon.SinonSandbox
@@ -76,6 +77,6 @@ describe('RegistryItemNode', function () {
             createSsmClient: sandbox.stub().returns(ssmDocumentClient),
         }
 
-        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

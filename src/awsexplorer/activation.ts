@@ -40,6 +40,7 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 let didTryAutoConnect = false
 
 import * as nls from 'vscode-nls'
+import globals from '../shared/extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -52,17 +53,17 @@ export async function activate(args: {
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(awsToolkit.context, args.awsContext, args.regionProvider)
+    const awsExplorer = new AwsExplorer(globals.context, args.awsContext, args.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
         showCollapseAll: true,
     })
-    awsToolkit.context.subscriptions.push(view)
+    globals.context.subscriptions.push(view)
 
-    await registerAwsExplorerCommands(awsToolkit.context, awsExplorer, args.toolkitOutputChannel)
+    await registerAwsExplorerCommands(globals.context, awsExplorer, args.toolkitOutputChannel)
 
-    awsToolkit.context.subscriptions.push(
+    globals.context.subscriptions.push(
         view.onDidChangeVisibility(async e => {
             if (e.visible) {
                 await tryAutoConnect(args.awsContext)
@@ -72,7 +73,7 @@ export async function activate(args: {
 
     args.awsContextTrees.addTree(awsExplorer)
 
-    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, awsToolkit.context)
+    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, globals.context)
 }
 
 async function tryAutoConnect(awsContext: AwsContext) {
@@ -98,7 +99,7 @@ async function registerAwsExplorerCommands(
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.showRegion', async () => {
             try {
-                await awsToolkit.awsContextCommands.onCommandShowRegion()
+                await globals.awsContextCommands.onCommandShowRegion()
             } finally {
                 recordAwsShowRegion()
                 recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
@@ -109,7 +110,7 @@ async function registerAwsExplorerCommands(
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
             try {
-                await awsToolkit.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+                await globals.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
             } finally {
                 recordAwsHideRegion()
                 recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })

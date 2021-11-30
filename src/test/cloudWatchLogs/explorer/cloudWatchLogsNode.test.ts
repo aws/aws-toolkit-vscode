@@ -14,6 +14,7 @@ import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
+import globals from '../../../shared/extensionGlobals'
 
 const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
@@ -103,6 +104,6 @@ describe('CloudWatchLogsNode', function () {
             createCloudWatchLogsClient: sandbox.stub().returns(cloudWatchLogsClient),
         }
 
-        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

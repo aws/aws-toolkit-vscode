@@ -13,6 +13,7 @@ import { isDocumentValid } from '../../utils'
 import * as yaml from 'yaml'
 
 import { YAML_FORMATS } from '../../constants/aslFormats'
+import globals from '../../../shared/extensionGlobals'
 
 const YAML_OPTIONS: yaml.Options = {
     merge: false,
@@ -112,10 +113,10 @@ export class AslVisualization {
 
         // Set the initial html for the webpage
         panel.webview.html = this.getWebviewContent(
-            panel.webview.asWebviewUri(awsToolkit.visualizationResourcePaths.webviewBodyScript),
-            panel.webview.asWebviewUri(awsToolkit.visualizationResourcePaths.visualizationLibraryScript),
-            panel.webview.asWebviewUri(awsToolkit.visualizationResourcePaths.visualizationLibraryCSS),
-            panel.webview.asWebviewUri(awsToolkit.visualizationResourcePaths.stateMachineCustomThemeCSS),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.webviewBodyScript),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.visualizationLibraryScript),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.visualizationLibraryCSS),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.stateMachineCustomThemeCSS),
             panel.webview.cspSource,
             {
                 inSync: localize(
@@ -224,9 +225,9 @@ export class AslVisualization {
             {
                 enableScripts: true,
                 localResourceRoots: [
-                    awsToolkit.visualizationResourcePaths.localWebviewScriptsPath,
-                    awsToolkit.visualizationResourcePaths.visualizationLibraryCachePath,
-                    awsToolkit.visualizationResourcePaths.stateMachineCustomThemePath,
+                    globals.visualizationResourcePaths.localWebviewScriptsPath,
+                    globals.visualizationResourcePaths.visualizationLibraryCachePath,
+                    globals.visualizationResourcePaths.stateMachineCustomThemePath,
                 ],
                 retainContextWhenHidden: true,
             }

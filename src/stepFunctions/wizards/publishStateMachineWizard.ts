@@ -14,6 +14,7 @@ import {
     sfnDeveloperGuideUrl,
     sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
+import globals from '../../shared/extensionGlobals'
 
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { recentlyUsed } from '../../shared/localizedText'
@@ -89,8 +90,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
 
     public constructor(private readonly defaultRegion: string) {
         super()
-        this.stepFunctionsClient = awsToolkit.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
-        this.iamClient = awsToolkit.toolkitClientBuilder.createIamClient(this.defaultRegion)
+        this.stepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
+        this.iamClient = globals.toolkitClientBuilder.createIamClient(this.defaultRegion)
     }
 
     public async promptUserForPublishAction(

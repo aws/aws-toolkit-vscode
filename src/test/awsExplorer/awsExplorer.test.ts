@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
+import globals from '../../shared/extensionGlobals'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { RegionNode } from '../../awsexplorer/regionNode'
 import { ToolkitClientBuilder } from '../../shared/clients/toolkitClientBuilder'
@@ -34,7 +35,7 @@ describe('AwsExplorer', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        // contingency for current Node impl: requires a client built from awsToolkit.toolkitClientBuilder.
+        // contingency for current Node impl: requires a client built from globals.toolkitClientBuilder.
         const clientBuilder = {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
@@ -44,7 +45,7 @@ describe('AwsExplorer', function () {
             createCloudControlClient: sandbox.stub().returns({}),
             createIotClient: sandbox.stub().returns({}),
         }
-        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
 
     afterEach(function () {

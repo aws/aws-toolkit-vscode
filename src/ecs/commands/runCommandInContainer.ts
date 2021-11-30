@@ -17,11 +17,12 @@ import { extensionSettingsPrefix } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
+import globals from '../../shared/extensionGlobals'
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
     window = Window.vscode(),
-    outputChannel = awsToolkit.outputChannel,
+    outputChannel = globals.outputChannel,
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)

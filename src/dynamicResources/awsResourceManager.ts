@@ -19,6 +19,7 @@ import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { isCloud9 } from '../shared/extensionUtilities'
+import globals from '../shared/extensionGlobals'
 
 export const RESOURCE_FILE_GLOB_PATTERN = '**/*.awsResource.json'
 
@@ -98,7 +99,7 @@ export class AwsResourceManager {
             if (uri.scheme === 'file') {
                 remove(uri.fsPath)
 
-                awsToolkit.schemaService.registerMapping({
+                globals.schemaService.registerMapping({
                     path: uri.fsPath,
                     type: 'json',
                     schema: undefined,
@@ -196,7 +197,7 @@ export class AwsResourceManager {
             }
         }
 
-        awsToolkit.schemaService.registerMapping({
+        globals.schemaService.registerMapping({
             path: file.fsPath,
             type: 'json',
             schema: location,

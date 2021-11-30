@@ -19,6 +19,7 @@ import { Architecture, RuntimeFamily } from '../models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
 
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Magic path on the Docker image.
@@ -192,7 +193,7 @@ export function getTemplate(
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
-    const cfnTemplate = awsToolkit.templateRegistry.getRegisteredItem(fullPath)?.item
+    const cfnTemplate = globals.templateRegistry.getRegisteredItem(fullPath)?.item
     return cfnTemplate
 }
 

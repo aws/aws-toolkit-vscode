@@ -22,7 +22,7 @@ import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { SchemaService } from '../shared/schemas'
 import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
-import { initializeExt } from '../shared/extensionGlobals'
+import globals, { initialize } from '../shared/extensionGlobals'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -40,11 +40,11 @@ before(async function () {
     const fakeContext = new FakeExtensionContext()
     // set global storage path
     fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
-    initializeExt(fakeContext, extWindow.Window.vscode())
+    initialize(fakeContext, extWindow.Window.vscode())
     const fakeAws = new FakeAwsContext()
     const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
     const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
-    awsToolkit.telemetry = service
+    globals.telemetry = service
     await initializeComputeRegion()
 })
 
@@ -55,17 +55,17 @@ after(async function () {
 beforeEach(function () {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
-    awsToolkit.templateRegistry = new CloudFormationTemplateRegistry()
-    awsToolkit.codelensRootRegistry = new CodelensRootRegistry()
-    awsToolkit.schemaService = new SchemaService(awsToolkit.context)
+    globals.templateRegistry = new CloudFormationTemplateRegistry()
+    globals.codelensRootRegistry = new CodelensRootRegistry()
+    globals.schemaService = new SchemaService(globals.context)
 })
 
 afterEach(function () {
     // Prevent other tests from using the same TestLogger instance
     teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
-    awsToolkit.templateRegistry.dispose()
-    awsToolkit.codelensRootRegistry.dispose()
+    globals.templateRegistry.dispose()
+    globals.codelensRootRegistry.dispose()
 })
 
 /**

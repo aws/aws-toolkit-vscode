@@ -16,6 +16,7 @@ import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
+import globals from '../../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -24,10 +25,10 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public constructor(
         public readonly region: string,
-        public readonly cloudFormation: CloudFormationClient = awsToolkit.toolkitClientBuilder.createCloudFormationClient(
+        public readonly cloudFormation: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(
             region
         ),
-        private readonly cloudControl: CloudControlClient = awsToolkit.toolkitClientBuilder.createCloudControlClient(
+        private readonly cloudControl: CloudControlClient = globals.toolkitClientBuilder.createCloudControlClient(
             region
         )
     ) {

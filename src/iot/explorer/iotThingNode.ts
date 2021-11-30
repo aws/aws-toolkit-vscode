@@ -21,6 +21,7 @@ import { getLogger } from '../../shared/logger'
 import { IotThingFolderNode } from './iotThingFolderNode'
 import { IotThingCertNode } from './iotCertificateNode'
 import { Commands } from '../../shared/vscode/commands'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Represents an IoT Thing that may have attached certificates.
@@ -37,8 +38,8 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         super(thing.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = thing.name
         this.iconPath = {
-            dark: vscode.Uri.file(awsToolkit.iconPaths.dark.thing),
-            light: vscode.Uri.file(awsToolkit.iconPaths.light.thing),
+            dark: vscode.Uri.file(globals.iconPaths.dark.thing),
+            light: vscode.Uri.file(globals.iconPaths.light.thing),
         }
         this.contextValue = 'awsIotThingNode'
     }

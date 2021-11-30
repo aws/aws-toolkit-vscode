@@ -12,6 +12,7 @@ import { inspect } from 'util'
 import { getLogger } from '../logger'
 import { DefaultFileStreams, FileStreams, pipe, promisifyReadStream } from '../utilities/streamUtilities'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
+import globals from '../extensionGlobals'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -728,7 +729,7 @@ function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucke
 async function createSdkClient(regionCode: string): Promise<S3> {
     clearInternalBucketCache()
 
-    return await awsToolkit.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
+    return await globals.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
 }
 
 /**

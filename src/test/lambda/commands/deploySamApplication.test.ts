@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
 import {
@@ -138,7 +139,7 @@ describe('deploySamApplication', async function () {
 
         // TODO: is this safe? will add output channel across all tests
         // we are using this pattern in other tests...
-        awsToolkit.outputChannel = vscode.window.createOutputChannel('test channel')
+        globals.outputChannel = vscode.window.createOutputChannel('test channel')
 
         testCredentials = placeholderCredentials
         invokerCalledCount = 0

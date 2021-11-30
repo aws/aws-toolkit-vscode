@@ -17,6 +17,7 @@ import {
     assertNodeListOnlyContainsPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
+import globals from '../../../shared/extensionGlobals'
 
 const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
@@ -100,7 +101,7 @@ describe('StepFunctionsNode', function () {
                             name: name,
                             stateMachineArn: 'arn:aws:states:us-east-1:123412341234:stateMachine:' + name,
                             type: 'STANDARD',
-                            creationDate: new awsToolkit.clock.Date(),
+                            creationDate: new globals.clock.Date(),
                         }
                     })
                 )
@@ -111,6 +112,6 @@ describe('StepFunctionsNode', function () {
             createStepFunctionsClient: sandbox.stub().returns(stepFunctionsClient),
         }
 
-        awsToolkit.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

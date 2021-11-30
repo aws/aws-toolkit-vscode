@@ -8,6 +8,7 @@ import { IAM } from 'aws-sdk'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
+import globals from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { isDocumentValid, isStepFunctionsRole, StateMachineGraphCache } from '../../stepFunctions/utils'
 
@@ -164,7 +165,7 @@ describe('isStepFunctionsRole', function () {
         RoleName: '',
         RoleId: 'myRole',
         Arn: 'arn:aws:iam::123456789012:role/myRole',
-        CreateDate: new awsToolkit.clock.Date(),
+        CreateDate: new globals.clock.Date(),
     }
 
     it('return true if the Step Functions service principal is in the AssumeRolePolicyDocument', function () {

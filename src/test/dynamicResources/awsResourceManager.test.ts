@@ -21,6 +21,7 @@ import { SchemaService } from '../../shared/schemas'
 import { remove } from 'fs-extra'
 import { existsSync } from 'fs'
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
+import globals from '../../shared/extensionGlobals'
 
 describe('ResourceManager', function () {
     let sandbox: sinon.SinonSandbox
@@ -65,7 +66,7 @@ describe('ResourceManager', function () {
         const fakeContext = new FakeExtensionContext()
         fakeContext.globalStoragePath = tempFolder
         resourceManager = new AwsResourceManager(fakeContext)
-        awsToolkit.schemaService = instance(schemaService)
+        globals.schemaService = instance(schemaService)
     })
 
     afterEach(async function () {

@@ -63,6 +63,7 @@ import {
 } from '../cli/samCliValidator'
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 import { resolve } from 'path'
+import globals from '../../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -204,7 +205,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = awsToolkit.templateRegistry.registeredItems
+            const templates = globals.templateRegistry.registeredItems
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {

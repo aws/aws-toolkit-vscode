@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
-import { initializeIconPaths } from '../test/shared/utilities/iconPathUtils'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
@@ -31,88 +29,82 @@ function copyClock(): Clock {
     return { ...globalThis, Date, Promise } as Clock
 }
 
-function initializeManifestPaths(context: ExtensionContext): typeof awsToolkit['manifestPaths'] {
-    return {
-        endpoints: context.asAbsolutePath(path.join('resources', 'endpoints.json')),
-        lambdaSampleRequests: context.asAbsolutePath(path.join('resources', 'vs-lambda-sample-request-manifest.xml')),
-    }
-}
+const globals = {} as ToolkitGlobals
 
 export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
-/**
- * Initializes the global `ext` object and assigns it.
- */
-export function initializeExt(context: ExtensionContext, window: Window): typeof awsToolkit {
+export function initialize(context: ExtensionContext, window: Window): ToolkitGlobals {
     // TODO: we should throw here if already assigned. A few tests actually depend on the combined state
     // of the extension activating plus test setup, so for now we have to do it like this :(
-    return (globalThis.awsToolkit = {
+
+    Object.assign(globals, {
         context,
         window,
         clock: copyClock(),
         didReload: checkDidReload(context),
-        iconPaths: initializeIconPaths(context),
-        manifestPaths: initializeManifestPaths(context),
-        visualizationResourcePaths: {}, // TODO: initialize here instead of wherever else
-    } as typeof awsToolkit) // Need to cast for now until we can move more of the initialization to one place
+        iconPaths: { dark: {}, light: {} } as ToolkitGlobals['iconPaths'],
+        manifestPaths: {} as ToolkitGlobals['manifestPaths'],
+        visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
+    })
+
+    return globals
 }
+
+export default globals
 
 /**
  * Namespace for common variables used globally in the extension.
  * All variables here must be initialized in the activate() method of extension.ts
  */
-declare global {
-    namespace awsToolkit {
-        // TODO: change these all to constants
-        let context: ExtensionContext
-        let window: Window
-        let outputChannel: OutputChannel
-        let awsContextCommands: AWSContextCommands
-        let awsContext: AwsContext
-        let regionProvider: RegionProvider
-        let sdkClientBuilder: AWSClientBuilder
-        let toolkitClientBuilder: ToolkitClientBuilder
-        let telemetry: TelemetryService
-        let templateRegistry: CloudFormationTemplateRegistry
-        let schemaService: SchemaService
-        let codelensRootRegistry: CodelensRootRegistry
-        let resourceManager: AwsResourceManager
+interface ToolkitGlobals {
+    readonly context: ExtensionContext
+    readonly window: Window
+    // TODO: make the rest of these readonly
+    outputChannel: OutputChannel
+    awsContextCommands: AWSContextCommands
+    awsContext: AwsContext
+    regionProvider: RegionProvider
+    sdkClientBuilder: AWSClientBuilder
+    toolkitClientBuilder: ToolkitClientBuilder
+    telemetry: TelemetryService
+    templateRegistry: CloudFormationTemplateRegistry
+    schemaService: SchemaService
+    codelensRootRegistry: CodelensRootRegistry
+    resourceManager: AwsResourceManager
 
-        /**
-         * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.
-         */
-        const didReload: boolean
+    /**
+     * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.
+     */
+    readonly didReload: boolean
 
-        /**
-         * This is a 'copy' of the global `this` object.
-         *
-         * Using a separate clock from the global one allows us to scope down behavior for testing.
-         * This is not perfect but it's better than the alternative of trying to cobble together mocks with the real thing.
-         * Keep in mind that this clock's `Date` constructor will be different than the global one when mocked.
-         */
-        const clock: Clock
+    /**
+     * This is a shallow copy of the global `this` object.
+     *
+     * Using a separate clock from the global one allows us to scope down behavior for testing.
+     * Keep in mind that this clock's `Date` constructor will be different than the global one when mocked.
+     */
+    readonly clock: Clock
 
-        namespace iconPaths {
-            const dark: IconPaths
-            const light: IconPaths
-        }
+    readonly iconPaths: {
+        readonly dark: IconPaths
+        readonly light: IconPaths
+    }
 
-        namespace visualizationResourcePaths {
-            let localWebviewScriptsPath: Uri
-            let webviewBodyScript: Uri
-            let visualizationLibraryCachePath: Uri
-            let visualizationLibraryScript: Uri
-            let visualizationLibraryCSS: Uri
-            let stateMachineCustomThemePath: Uri
-            let stateMachineCustomThemeCSS: Uri
-        }
+    visualizationResourcePaths: {
+        localWebviewScriptsPath: Uri
+        webviewBodyScript: Uri
+        visualizationLibraryCachePath: Uri
+        visualizationLibraryScript: Uri
+        visualizationLibraryCSS: Uri
+        stateMachineCustomThemePath: Uri
+        stateMachineCustomThemeCSS: Uri
+    }
 
-        namespace manifestPaths {
-            let endpoints: string
-            let lambdaSampleRequests: string
-        }
+    readonly manifestPaths: {
+        endpoints: string
+        lambdaSampleRequests: string
     }
 }
 

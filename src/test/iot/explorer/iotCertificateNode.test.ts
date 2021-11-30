@@ -13,6 +13,7 @@ import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 import { IotPolicyCertNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotCertWithPoliciesNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
+import globals from '../../../shared/extensionGlobals'
 
 describe('IotCertificateNode', function () {
     const nextMarker = 'nextMarker'
@@ -20,7 +21,7 @@ describe('IotCertificateNode', function () {
 
     let iot: IotClient
     const certArn = 'certArn'
-    const cert = { id: 'cert', arn: certArn, activeStatus: 'ACTIVE', creationDate: new awsToolkit.clock.Date(0) }
+    const cert = { id: 'cert', arn: certArn, activeStatus: 'ACTIVE', creationDate: new globals.clock.Date(0) }
     const policy: Iot.Policy = { policyName: 'policy', policyArn: 'arn' }
     const expectedPolicy: IotPolicy = { name: 'policy', arn: 'arn' }
 

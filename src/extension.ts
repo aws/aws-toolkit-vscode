@@ -73,7 +73,8 @@ import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCrede
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
-import { initializeExt } from './shared/extensionGlobals'
+import globals, { initialize } from './shared/extensionGlobals'
+import { join } from 'path'
 
 let localize: nls.LocalizeFunc
 
@@ -81,7 +82,9 @@ export async function activate(context: vscode.ExtensionContext) {
     await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
-    initializeExt(context, extWindow.Window.vscode())
+    initialize(context, extWindow.Window.vscode())
+    initializeIconPaths(context)
+    initializeManifestPaths(context)
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company)
@@ -90,7 +93,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
-    awsToolkit.outputChannel = toolkitOutputChannel
+    globals.outputChannel = toolkitOutputChannel
 
     try {
         initializeCredentialsProviderManager()
@@ -100,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const endpointsProvider = makeEndpointsProvider()
 
         const awsContext = new DefaultAwsContext(context)
-        awsToolkit.awsContext = awsContext
+        globals.awsContext = awsContext
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
@@ -114,17 +117,17 @@ export async function activate(context: vscode.ExtensionContext) {
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
-        awsToolkit.regionProvider = regionProvider
-        awsToolkit.awsContextCommands = new DefaultAWSContextCommands(
+        globals.regionProvider = regionProvider
+        globals.awsContextCommands = new DefaultAWSContextCommands(
             awsContext,
             awsContextTrees,
             regionProvider,
             loginManager
         )
-        awsToolkit.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-        awsToolkit.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
-        awsToolkit.schemaService = new SchemaService(context)
-        awsToolkit.resourceManager = new AwsResourceManager(context)
+        globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
+        globals.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
+        globals.schemaService = new SchemaService(context)
+        globals.resourceManager = new AwsResourceManager(context)
 
         await initializeCredentials({
             extensionContext: context,
@@ -137,8 +140,8 @@ export async function activate(context: vscode.ExtensionContext) {
             awsContext: awsContext,
             toolkitSettings: toolkitSettings,
         })
-        await awsToolkit.telemetry.start()
-        await awsToolkit.schemaService.start()
+        await globals.telemetry.start()
+        await globals.schemaService.start()
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -147,7 +150,7 @@ export async function activate(context: vscode.ExtensionContext) {
             regionProvider: regionProvider,
             settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
-            telemetryService: awsToolkit.telemetry,
+            telemetryService: globals.telemetry,
             credentialsStore,
         }
 
@@ -155,22 +158,19 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))
 
         context.subscriptions.push(
-            vscode.commands.registerCommand(
-                'aws.login',
-                async () => await awsToolkit.awsContextCommands.onCommandLogin()
-            )
+            vscode.commands.registerCommand('aws.login', async () => await globals.awsContextCommands.onCommandLogin())
         )
         context.subscriptions.push(
             vscode.commands.registerCommand(
                 'aws.logout',
-                async () => await awsToolkit.awsContextCommands.onCommandLogout()
+                async () => await globals.awsContextCommands.onCommandLogout()
             )
         )
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.credential.profile.create', async () => {
                 try {
-                    await awsToolkit.awsContextCommands.onCommandCreateCredentialsProfile()
+                    await globals.awsContextCommands.onCommandCreateCredentialsProfile()
                 } finally {
                     recordAwsCreateCredentials()
                 }
@@ -267,7 +267,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        awsToolkit.telemetry.assertPassiveTelemetry(awsToolkit.didReload)
+        globals.telemetry.assertPassiveTelemetry(globals.didReload)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
@@ -288,8 +288,103 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-    await awsToolkit.telemetry.shutdown()
-    await awsToolkit.resourceManager.dispose()
+    await globals.telemetry.shutdown()
+    await globals.resourceManager.dispose()
+}
+
+function initializeIconPaths(context: vscode.ExtensionContext) {
+    globals.iconPaths.dark.help = isCloud9()
+        ? context.asAbsolutePath('resources/dark/cloud9/help.svg')
+        : context.asAbsolutePath('resources/dark/help.svg')
+    globals.iconPaths.light.help = isCloud9()
+        ? context.asAbsolutePath('resources/light/cloud9/help.svg')
+        : context.asAbsolutePath('resources/light/help.svg')
+
+    globals.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
+    globals.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
+
+    globals.iconPaths.dark.ecr = context.asAbsolutePath('resources/dark/ecr.svg')
+    globals.iconPaths.light.ecr = context.asAbsolutePath('resources/light/ecr.svg')
+
+    globals.iconPaths.dark.lambda = context.asAbsolutePath('resources/dark/lambda.svg')
+    globals.iconPaths.light.lambda = context.asAbsolutePath('resources/light/lambda.svg')
+
+    globals.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/gear.svg')
+    globals.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/gear.svg')
+
+    globals.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
+    globals.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
+
+    globals.iconPaths.dark.s3 = context.asAbsolutePath('resources/dark/s3/bucket.svg')
+    globals.iconPaths.light.s3 = context.asAbsolutePath('resources/light/s3/bucket.svg')
+
+    globals.iconPaths.dark.folder = context.asAbsolutePath('third-party/resources/from-vscode/dark/folder.svg')
+    globals.iconPaths.light.folder = context.asAbsolutePath('third-party/resources/from-vscode/light/folder.svg')
+
+    globals.iconPaths.dark.file = context.asAbsolutePath('third-party/resources/from-vscode/dark/document.svg')
+    globals.iconPaths.light.file = context.asAbsolutePath('third-party/resources/from-vscode/light/document.svg')
+
+    globals.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
+    globals.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
+
+    globals.iconPaths.dark.apprunner = context.asAbsolutePath('resources/dark/apprunner.svg')
+    globals.iconPaths.light.apprunner = context.asAbsolutePath('resources/light/apprunner.svg')
+
+    globals.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
+    globals.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
+
+    globals.iconPaths.dark.cloudWatchLogGroup = context.asAbsolutePath('resources/dark/log-group.svg')
+    globals.iconPaths.light.cloudWatchLogGroup = context.asAbsolutePath('resources/light/log-group.svg')
+
+    globals.iconPaths.dark.createBucket = context.asAbsolutePath('resources/dark/s3/create-bucket.svg')
+    globals.iconPaths.light.createBucket = context.asAbsolutePath('resources/light/s3/create-bucket.svg')
+
+    globals.iconPaths.dark.bucket = context.asAbsolutePath('resources/dark/s3/bucket.svg')
+    globals.iconPaths.light.bucket = context.asAbsolutePath('resources/light/s3/bucket.svg')
+
+    globals.iconPaths.dark.thing = context.asAbsolutePath('resources/dark/iot/thing.svg')
+    globals.iconPaths.light.thing = context.asAbsolutePath('resources/light/iot/thing.svg')
+
+    globals.iconPaths.dark.certificate = context.asAbsolutePath('resources/dark/iot/certificate.svg')
+    globals.iconPaths.light.certificate = context.asAbsolutePath('resources/light/iot/certificate.svg')
+
+    globals.iconPaths.dark.policy = context.asAbsolutePath('resources/dark/iot/policy.svg')
+    globals.iconPaths.light.policy = context.asAbsolutePath('resources/light/iot/policy.svg')
+
+    globals.iconPaths.light.cluster = context.asAbsolutePath('resources/light/ecs/cluster.svg')
+    globals.iconPaths.dark.cluster = context.asAbsolutePath('resources/dark/ecs/cluster.svg')
+
+    globals.iconPaths.light.service = context.asAbsolutePath('resources/light/ecs/service.svg')
+    globals.iconPaths.dark.service = context.asAbsolutePath('resources/dark/ecs/service.svg')
+
+    globals.iconPaths.light.container = context.asAbsolutePath('resources/light/ecs/container.svg')
+    globals.iconPaths.dark.container = context.asAbsolutePath('resources/dark/ecs/container.svg')
+
+    // temporary icons while Cloud9 does not have Codicon support
+    globals.iconPaths.dark.plus = context.asAbsolutePath('resources/dark/plus.svg')
+    globals.iconPaths.light.plus = context.asAbsolutePath('resources/light/plus.svg')
+
+    globals.iconPaths.dark.edit = context.asAbsolutePath('resources/dark/edit.svg')
+    globals.iconPaths.light.edit = context.asAbsolutePath('resources/light/edit.svg')
+
+    globals.iconPaths.dark.sync = context.asAbsolutePath('resources/dark/sync.svg')
+    globals.iconPaths.light.sync = context.asAbsolutePath('resources/light/sync.svg')
+
+    globals.iconPaths.dark.syncIgnore = context.asAbsolutePath('resources/dark/sync-ignore.svg')
+    globals.iconPaths.light.syncIgnore = context.asAbsolutePath('resources/light/sync-ignore.svg')
+
+    globals.iconPaths.dark.refresh = context.asAbsolutePath('resources/dark/refresh.svg')
+    globals.iconPaths.light.refresh = context.asAbsolutePath('resources/light/refresh.svg')
+
+    globals.iconPaths.dark.exit = context.asAbsolutePath('resources/dark/exit.svg')
+    globals.iconPaths.light.exit = context.asAbsolutePath('resources/light/exit.svg')
+}
+
+function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
+    globals.manifestPaths.endpoints = extensionContext.asAbsolutePath(join('resources', 'endpoints.json'))
+    globals.manifestPaths.lambdaSampleRequests = extensionContext.asAbsolutePath(
+        join('resources', 'vs-lambda-sample-request-manifest.xml')
+    )
 }
 
 function initializeCredentialsProviderManager() {
@@ -299,7 +394,7 @@ function initializeCredentialsProviderManager() {
 }
 
 function makeEndpointsProvider(): EndpointsProvider {
-    const localManifestFetcher = new FileResourceFetcher(awsToolkit.manifestPaths.endpoints)
+    const localManifestFetcher = new FileResourceFetcher(globals.manifestPaths.endpoints)
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
 
     const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)

@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { findParentProjectFile, getWorkspaceRelativePath } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import { CodelensRootRegistry } from '../../../shared/sam/codelensRootRegistry'
+import globals from '../../../shared/extensionGlobals'
 
 describe('findParentProjectFile', async function () {
     const workspaceDir = getTestWorkspaceFolder()
@@ -65,17 +66,17 @@ describe('findParentProjectFile', async function () {
     before(async function () {
         await mkdirp(path.join(workspaceDir, 'someproject', 'src'))
         await mkdirp(path.join(workspaceDir, 'someotherproject'))
-        globalRegistry = awsToolkit.codelensRootRegistry
+        globalRegistry = globals.codelensRootRegistry
     })
 
     after(async function () {
         remove(path.join(workspaceDir, 'someproject'))
         remove(path.join(workspaceDir, 'someotherproject'))
-        awsToolkit.codelensRootRegistry = globalRegistry
+        globals.codelensRootRegistry = globalRegistry
     })
 
     beforeEach(function () {
-        awsToolkit.codelensRootRegistry = new CodelensRootRegistry()
+        globals.codelensRootRegistry = new CodelensRootRegistry()
     })
 
     afterEach(async function () {
@@ -83,7 +84,7 @@ describe('findParentProjectFile', async function () {
             remove(file.fsPath)
         }
         filesToDelete = []
-        awsToolkit.codelensRootRegistry.dispose()
+        globals.codelensRootRegistry.dispose()
     })
 
     testScenarios.forEach(test => {
@@ -93,7 +94,7 @@ describe('findParentProjectFile', async function () {
                 await writeFile(file.fsPath, '')
                 // Add it to the registry. The registry is async and we are not
                 // testing the registry in this test, so manually use it
-                await awsToolkit.codelensRootRegistry.addItemToRegistry(file)
+                await globals.codelensRootRegistry.addItemToRegistry(file)
             }
             const projectFile = await findParentProjectFile(sourceCodeUri, /^.*\.csproj$/)
             if (test.expectedResult) {

@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
+import globals from '../../../shared/extensionGlobals'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
@@ -59,8 +60,8 @@ describe('LambdaFunctionNode', function () {
     it('initializes the icon', async function () {
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, awsToolkit.iconPaths.dark.lambda, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, awsToolkit.iconPaths.light.lambda, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.lambda, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.lambda, 'Unexpected light icon path')
     })
 
     it('has no children', async function () {

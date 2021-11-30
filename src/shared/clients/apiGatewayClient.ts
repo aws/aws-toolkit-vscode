@@ -5,6 +5,7 @@
 
 import { APIGateway } from 'aws-sdk'
 import { RestApi, Stages } from 'aws-sdk/clients/apigateway'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type ApiGatewayClient = ClassToInterfaceType<DefaultApiGatewayClient>
@@ -77,6 +78,6 @@ export class DefaultApiGatewayClient {
     }
 
     private async createSdkClient(): Promise<APIGateway> {
-        return await awsToolkit.sdkClientBuilder.createAwsService(APIGateway, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(APIGateway, undefined, this.regionCode)
     }
 }

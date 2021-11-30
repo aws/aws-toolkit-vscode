@@ -16,6 +16,7 @@ import {
 import { DefaultAwsSamDebugConfigurationValidator } from '../../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { createBaseTemplate } from '../../cloudformation/cloudformationTestUtils'
 import { WatchedItem } from '../../../../shared/watchedFiles'
+import globals from '../../../../shared/extensionGlobals'
 
 function createTemplateConfig(): AwsSamDebuggerConfiguration {
     return {
@@ -106,18 +107,18 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     let savedRegistry: CloudFormationTemplateRegistry
 
     before(function () {
-        savedRegistry = awsToolkit.templateRegistry
+        savedRegistry = globals.templateRegistry
     })
 
     after(function () {
-        awsToolkit.templateRegistry = savedRegistry
+        globals.templateRegistry = savedRegistry
     })
 
     beforeEach(function () {
         when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
         when(mockRegistry.getRegisteredItem('/image')).thenReturn(imageTemplateData)
 
-        awsToolkit.templateRegistry = mockRegistry
+        globals.templateRegistry = mockRegistry
 
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
     })

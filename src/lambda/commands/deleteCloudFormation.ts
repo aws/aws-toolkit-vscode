@@ -16,6 +16,7 @@ import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import globals from '../../shared/extensionGlobals'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()
@@ -48,7 +49,7 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
         )
 
         if (userResponse) {
-            const client: CloudFormationClient = awsToolkit.toolkitClientBuilder.createCloudFormationClient(
+            const client: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(
                 node.regionCode
             )
 

@@ -5,6 +5,7 @@
 
 import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
+import globals from '../../shared/extensionGlobals'
 import { Uri } from 'vscode'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -21,8 +22,8 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
         super('')
         this.update(logGroup)
         this.iconPath = {
-            dark: Uri.file(awsToolkit.iconPaths.dark.cloudWatchLogGroup),
-            light: Uri.file(awsToolkit.iconPaths.light.cloudWatchLogGroup),
+            dark: Uri.file(globals.iconPaths.dark.cloudWatchLogGroup),
+            light: Uri.file(globals.iconPaths.light.cloudWatchLogGroup),
         }
         this.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG
     }

@@ -19,6 +19,7 @@ import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
+import globals from '../../shared/extensionGlobals'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined
@@ -33,7 +34,7 @@ export async function copyUrlCommand(
 ): Promise<void> {
     const region = node.regionCode
     const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || DEFAULT_DNS_SUFFIX
-    const client: ApiGatewayClient = awsToolkit.toolkitClientBuilder.createApiGatewayClient(region)
+    const client: ApiGatewayClient = globals.toolkitClientBuilder.createApiGatewayClient(region)
 
     let stages: Stage[]
     try {
