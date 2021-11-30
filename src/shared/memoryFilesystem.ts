@@ -4,42 +4,52 @@
  */
 
 import * as vscode from 'vscode'
-import { basename } from 'path'
 
-type StatNoType = Omit<vscode.FileStat, 'type'>
+type ReducedStat = Omit<vscode.FileStat, 'size' | 'type'>
 
 interface File {
     content: Uint8Array
-    stat: StatNoType & { type: vscode.FileType.File }
+    stat: ReducedStat & { type: vscode.FileType.File }
 }
 
-interface Directory {
-    children: Record<string, File | Directory>
-    stat: StatNoType & { type: vscode.FileType.Directory }
-}
-
-interface FileProvider {
+/**
+ * Basic 'provider' for an in-memory file
+ *
+ * Contents for the file are read as-needed based on the `onDidChange` event.
+ * It is up to callers to dispose of the registered provider to free-up memory.
+ */
+export interface FileProvider {
     read(): Promise<Uint8Array> | Uint8Array
-    stat(): Promise<StatNoType> | StatNoType
+    stat(): Promise<ReducedStat> | ReducedStat
     write(content: Uint8Array): Promise<void> | void
     onDidChange: vscode.Event<void>
 }
 
 /**
  * Bare-bones file system to support in-memory operations on documents
+ * Does not support directories
  */
 export class MemoryFileSystem implements vscode.FileSystemProvider {
     private readonly _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
     public readonly onDidChangeFile = this._onDidChangeFile.event
-    private readonly files: Record<string, File | Directory | undefined> = {}
+    private readonly files: Record<string, File | undefined> = {}
     private readonly fileProviders: Record<string, FileProvider | undefined> = {}
 
     public watch(uri: vscode.Uri, options: { recursive: boolean; excludes: string[] }): vscode.Disposable {
+        // By ignoring the arguments we essentially are watching all file changes, which is ok for our use-case
         return { dispose: () => {} }
     }
 
+    /**
+     * Adds a new {@link FileProvider} for the given URI.
+     *
+     * Registering a new provider greedily loads the content into memory, so this function call
+     * should be awaited before attempting to open a document for the given URI.
+     *
+     * @returns A {@link vscode.Disposable} to free-up memory
+     */
     public async registerProvider(uri: vscode.Uri, provider: FileProvider): Promise<vscode.Disposable> {
-        const key = uri.toString()
+        const key = this.uriToKey(uri)
         if (this.fileProviders[key] !== undefined) {
             throw new Error('Cannot re-register a provider for the same URI')
         }
@@ -61,40 +71,29 @@ export class MemoryFileSystem implements vscode.FileSystemProvider {
         }
     }
 
-    private getFromMemory(uri: vscode.Uri): File | Directory {
-        const key = uri.toString()
-        const object = this.files[key]
-        if (!object) {
-            throw vscode.FileSystemError.FileNotFound()
-        }
-        return object
-    }
-
-    private getDirectory(uri: vscode.Uri): Directory {
-        const directory = this.getFromMemory(uri)
-        if (directory.stat.type === vscode.FileType.File) {
-            throw vscode.FileSystemError.FileNotADirectory()
-        }
-        return directory as Directory
-    }
-
     private getFile(uri: vscode.Uri): File {
-        const file = this.getFromMemory(uri)
-        if (file.stat.type !== vscode.FileType.File) {
+        const file = this.files[this.uriToKey(uri)]
+        if (file?.stat.type !== vscode.FileType.File) {
             throw vscode.FileSystemError.FileIsADirectory()
         }
-        return file as File
+        return file
     }
 
     public stat(uri: vscode.Uri): vscode.FileStat {
-        return this.getFromMemory(uri).stat
+        const file = this.getFile(uri)
+        return { ...file.stat, size: file.content.length }
     }
 
+    /**
+     * @notimplemented
+     */
     public readDirectory(uri: vscode.Uri): [string, vscode.FileType][] {
-        const directory = this.getDirectory(uri)
-        return Object.entries(directory.children).map(([k, v]) => [basename(k), v.stat.type])
+        throw vscode.FileSystemError.NoPermissions()
     }
 
+    /**
+     * @notimplemented
+     */
     public createDirectory(uri: vscode.Uri): void | Thenable<void> {
         throw vscode.FileSystemError.NoPermissions()
     }
@@ -115,11 +114,24 @@ export class MemoryFileSystem implements vscode.FileSystemProvider {
         await provider.write(content)
     }
 
+    /**
+     * @notimplemented
+     */
     public delete(uri: vscode.Uri, options: { recursive: boolean }): void | Thenable<void> {
         throw vscode.FileSystemError.NoPermissions()
     }
 
+    /**
+     * @notimplemented
+     */
     public rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void | Thenable<void> {
         throw vscode.FileSystemError.NoPermissions()
+    }
+
+    /**
+     * Converts a URI to something usable by the file system
+     */
+    public uriToKey(uri: vscode.Uri): string {
+        return uri.with({ query: '', fragment: '' }).toString()
     }
 }

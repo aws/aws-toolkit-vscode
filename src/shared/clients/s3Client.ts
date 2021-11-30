@@ -13,7 +13,8 @@ import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
-import { Readable } from 'stream'
+import { Readable, Stream } from 'stream'
+import { createReadStream } from 'fs'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -86,7 +87,7 @@ export interface UploadFileRequest {
     readonly bucketName: string
     readonly key: string
     readonly progressListener?: (loadedBytes: number) => void
-    readonly fileLocation: vscode.Uri
+    readonly content: vscode.Uri | Uint8Array
 }
 
 export interface HeadObjectRequest {
@@ -331,17 +332,24 @@ export class DefaultS3Client {
      * @throws Error if there is an error calling S3 or piping between streams.
      */
     public async uploadFile(request: UploadFileRequest): Promise<S3.ManagedUpload> {
-        getLogger().debug(
-            'UploadFile called for bucketName: %s, key: %s, fileLocation: %s',
-            request.bucketName,
-            request.key,
-            request.fileLocation
-        )
+        getLogger().debug('UploadFile called for bucketName: %s, key: %s', request.bucketName, request.key)
         const s3 = await this.createS3()
 
         // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-example-creating-buckets.html#s3-example-creating-buckets-upload-file
-        const readStream = this.fileStreams.createReadStream(request.fileLocation)
-        const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
+        const readStream =
+            request.content instanceof vscode.Uri
+                ? this.fileStreams.createReadStream(request.content)
+                : new Readable({
+                      read() {
+                          this.push(request.content)
+                          // eslint-disable-next-line no-null/no-null
+                          this.push(null)
+                      },
+                  })
+        const contentType =
+            request.content instanceof vscode.Uri
+                ? mime.lookup(path.basename(request.content.fsPath)) || DEFAULT_CONTENT_TYPE
+                : DEFAULT_CONTENT_TYPE
 
         const managedUploaded = s3.upload({
             Bucket: request.bucketName,
