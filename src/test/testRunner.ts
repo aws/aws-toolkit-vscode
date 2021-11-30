@@ -9,7 +9,7 @@ import * as Mocha from 'mocha'
 import * as glob from 'glob'
 import * as fs from 'fs'
 import * as os from 'os'
-import globals from '../shared/extensionGlobals'
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const istanbul = require('istanbul')
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -92,7 +92,7 @@ export function runTestsInFolder(testFolder: string, initTests: string[] = []): 
 
 // Adapted from https://github.com/codecov/example-typescript-vscode-extension
 class CoverageRunner {
-    private coverageVar: string = `$$cov_${new globals.clock.Date().getTime()}$$`
+    private coverageVar: string = `$$cov_${new Date().getTime()}$$`
     private transformer: any = undefined
     private matchFn: any = undefined
     private instrumenter: any = undefined
