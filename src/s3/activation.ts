@@ -21,7 +21,7 @@ import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { S3DocumentProvider } from './document/s3DocumentProvider'
-import { S3FileViewerManager } from './fileViewerManager'
+import { S3FileViewerManager, S3_EDIT_SCHEME, S3_READ_SCHEME } from './fileViewerManager'
 import { MemoryFileSystem } from '../shared/memoryFilesystem'
 
 /**
@@ -33,8 +33,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const manager = new S3FileViewerManager(ctx, memFs)
 
     ctx.extensionContext.subscriptions.push(
-        vscode.workspace.registerFileSystemProvider('s3', memFs),
-        vscode.workspace.registerFileSystemProvider('s3-readonly', memFs, { isReadonly: true }),
+        vscode.workspace.registerFileSystemProvider(S3_EDIT_SCHEME, memFs),
+        vscode.workspace.registerFileSystemProvider(S3_READ_SCHEME, memFs, { isReadonly: true }),
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
         }),

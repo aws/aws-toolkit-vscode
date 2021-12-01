@@ -11,10 +11,9 @@ import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
-import { DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
+import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
-import { Readable, Stream } from 'stream'
-import { createReadStream } from 'fs'
+import { Readable } from 'stream'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -339,13 +338,8 @@ export class DefaultS3Client {
         const readStream =
             request.content instanceof vscode.Uri
                 ? this.fileStreams.createReadStream(request.content)
-                : new Readable({
-                      read() {
-                          this.push(request.content)
-                          // eslint-disable-next-line no-null/no-null
-                          this.push(null)
-                      },
-                  })
+                : bufferToStream(request.content)
+
         const contentType =
             request.content instanceof vscode.Uri
                 ? mime.lookup(path.basename(request.content.fsPath)) || DEFAULT_CONTENT_TYPE
@@ -360,8 +354,10 @@ export class DefaultS3Client {
 
         const progressListener = request.progressListener
         if (progressListener) {
+            let lastLoaded = 0
             managedUploaded.on('httpUploadProgress', progress => {
-                progressListener(progress.loaded)
+                progressListener(progress.loaded - lastLoaded)
+                lastLoaded = progress.loaded
             })
         }
 

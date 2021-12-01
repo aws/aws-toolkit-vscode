@@ -16,10 +16,9 @@ import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/messages'
 import { Bucket, File } from '../../shared/clients/s3Client'
-import { pipeline, Readable, Writable } from 'stream'
-import { createWriteStream } from 'fs-extra'
 import { Timeout, TimeoutError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/toolkitError'
+import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtilities'
 
 interface DownloadFileOptions {
     /**
@@ -49,54 +48,6 @@ interface FileOptions extends DownloadFileOptions {
 }
 interface BufferOptions extends DownloadFileOptions {
     readonly saveLocation?: never
-}
-
-/**
- * It's assumed that the stream is not using any encoding
- */
-function streamToBuffer(stream: Readable, size?: number): Promise<Buffer> {
-    const buffer = Buffer.alloc(size || 1000000)
-    const writer = {
-        offset: 0,
-        write(chunk: Buffer) {
-            chunk.forEach(byte => (this.offset = buffer.writeUInt8(byte, this.offset)))
-        },
-    }
-
-    return new Promise<Buffer>((resolve, reject) => {
-        stream.on('error', reject)
-        stream.on('data', chunk => writer.write(chunk))
-        stream.on('end', () => resolve(buffer))
-    })
-}
-
-function createWorkspaceWritable(target: vscode.Uri): Writable {
-    const content: number[] = []
-
-    return new Writable({
-        write(chunk: Buffer | string, encoding, callback) {
-            if (typeof chunk === 'string') {
-                callback(new Error('Expected stream chunk to be a Buffer, not a string'))
-            } else {
-                content.push(...chunk)
-                callback()
-            }
-        },
-        final(callback) {
-            vscode.workspace.fs.writeFile(target, Buffer.from(content)).then(
-                () => callback(),
-                err => callback(err)
-            )
-        },
-    })
-}
-
-function streamToFile(stream: Readable, target: vscode.Uri): Promise<void> {
-    const destination = target.scheme === 'file' ? createWriteStream(target.fsPath) : createWorkspaceWritable(target)
-
-    return new Promise<void>((resolve, reject) => {
-        pipeline(stream, destination, err => (err ? reject(err) : resolve()))
-    })
 }
 
 async function downloadS3File(

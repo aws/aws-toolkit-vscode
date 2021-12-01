@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.35.0-SNAPSHOT",
+    "version": "1.35.0-866763287e49",
     "extensionKind": [
         "workspace"
     ],
@@ -82,7 +82,9 @@
         "onCommand:aws.addSamDebugConfig",
         "onCommand:aws.s3.uploadFile",
         "onCommand:aws.cloudFormation.newTemplate",
-        "onCommand:aws.sam.newTemplate"
+        "onCommand:aws.sam.newTemplate",
+        "onFileSystem:s3",
+        "onFileSystem:s3-readonly"
     ],
     "main": "./extensionMain",
     "contributes": {
