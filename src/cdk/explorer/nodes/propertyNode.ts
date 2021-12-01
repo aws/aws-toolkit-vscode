@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
-import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 
 /*
@@ -20,8 +20,8 @@ export class PropertyNode extends AWSTreeNodeBase {
         super(label, collapsibleState)
         this.contextValue = 'awsCdkPropertyNode'
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.settings),
-            light: vscode.Uri.file(ext.iconPaths.light.settings),
+            dark: vscode.Uri.file(globals.iconPaths.dark.settings),
+            light: vscode.Uri.file(globals.iconPaths.light.settings),
         }
     }
 

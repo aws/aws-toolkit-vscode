@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
@@ -15,6 +14,7 @@ import {
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
 import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
+import globals from '../../../shared/extensionGlobals'
 
 const FAKE_PARTITION_ID = 'aws'
 const FAKE_REGION_CODE = 'someregioncode'
@@ -108,6 +108,6 @@ describe('ApiGatewayNode', function () {
             createApiGatewayClient: sandbox.stub().returns(apiGatewayClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

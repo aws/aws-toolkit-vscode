@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
 import {
@@ -16,7 +17,6 @@ import {
     CHOSEN_BUCKET_KEY,
 } from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
-import { ext } from '../../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SamCliContext } from '../../../shared/sam/cli/samCliContext'
 import { SamCliProcessInvoker } from '../../../shared/sam/cli/samCliInvokerUtils'
@@ -139,7 +139,7 @@ describe('deploySamApplication', async function () {
 
         // TODO: is this safe? will add output channel across all tests
         // we are using this pattern in other tests...
-        ext.outputChannel = vscode.window.createOutputChannel('test channel')
+        globals.outputChannel = vscode.window.createOutputChannel('test channel')
 
         testCredentials = placeholderCredentials
         invokerCalledCount = 0

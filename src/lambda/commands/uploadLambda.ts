@@ -12,7 +12,7 @@ import * as AdmZip from 'adm-zip'
 import * as fs from 'fs'
 import * as path from 'path'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { ext } from '../../shared/extensionGlobals'
+
 import { fileExists, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
@@ -26,6 +26,7 @@ import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { getLambdaDetails } from '../utils'
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Executes the "Upload Lambda..." command.
@@ -417,7 +418,7 @@ async function uploadZipBuffer(
         message?: string | undefined
         increment?: number | undefined
     }>,
-    lambdaClient = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
+    lambdaClient = globals.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<telemetry.Result> {
     try {
         progress.report({

@@ -19,6 +19,7 @@ import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
 import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telemetryTypes'
+import globals from '../extensionGlobals'
 
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
@@ -56,7 +57,7 @@ export class DefaultTelemetryService implements TelemetryService {
             fs.mkdirSync(persistPath)
         }
 
-        this.startTime = new Date()
+        this.startTime = new globals.clock.Date()
 
         this._eventQueue = []
         this._flushPeriod = DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
@@ -75,10 +76,10 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public async shutdown(): Promise<void> {
         if (this._timer !== undefined) {
-            clearTimeout(this._timer)
+            globals.clock.clearTimeout(this._timer)
             this._timer = undefined
         }
-        const currTime = new Date()
+        const currTime = new globals.clock.Date()
         recordSessionEnd({ value: currTime.getTime() - this.startTime.getTime() })
 
         // only write events to disk if telemetry is enabled at shutdown time
@@ -154,16 +155,13 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
+    // TODO: replace this with `setInterval`
     private async startTimer(): Promise<void> {
-        this._timer = setTimeout(
+        this._timer = globals.clock.setTimeout(
             // this is async so that we don't have pseudo-concurrent invocations of the callback
             async () => {
                 await this.flushRecords()
-                // Race: _timer may be undefined after shutdown() (this async
-                // closure may be pending on the event-loop, despite clearTimeout()).
-                if (this._timer !== undefined) {
-                    this._timer!.refresh()
-                }
+                this._timer?.refresh()
             },
             this._flushPeriod
         )

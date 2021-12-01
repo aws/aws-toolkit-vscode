@@ -15,6 +15,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../../shared/ui/prompter'
 import { Window } from '../../../shared/vscode/window'
+import globals from '../../../shared/extensionGlobals'
 
 describe('attachCertCommand', function () {
     const thingName = 'iot-thing'
@@ -38,8 +39,18 @@ describe('attachCertCommand', function () {
         iot = mock()
         thingNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
         certs = [
-            { certificateId: 'cert1', certificateArn: 'arn1', status: 'ACTIVE', creationDate: new Date() },
-            { certificateId: 'cert2', certificateArn: 'arn2', status: 'INACTIVE', creationDate: new Date() },
+            {
+                certificateId: 'cert1',
+                certificateArn: 'arn1',
+                status: 'ACTIVE',
+                creationDate: new globals.clock.Date(),
+            },
+            {
+                certificateId: 'cert2',
+                certificateArn: 'arn2',
+                status: 'INACTIVE',
+                creationDate: new globals.clock.Date(),
+            },
             { certificateId: 'cert3', certificateArn: 'arn3', status: 'ACTIVE' },
         ]
         window = new FakeWindow()

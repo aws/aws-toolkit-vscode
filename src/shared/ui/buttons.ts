@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { documentationUrl } from '../constants'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
 
 const localize = nls.loadMessageBundle()
@@ -34,8 +34,8 @@ export function createHelpButton(
     tooltip: string = HELP_TOOLTIP
 ): QuickInputLinkButton {
     const iconPath = {
-        light: vscode.Uri.file(ext.iconPaths.light.help),
-        dark: vscode.Uri.file(ext.iconPaths.dark.help),
+        light: vscode.Uri.file(globals.iconPaths.light.help),
+        dark: vscode.Uri.file(globals.iconPaths.dark.help),
     }
 
     return new QuickInputLinkButton(uri, iconPath, tooltip)
@@ -115,8 +115,8 @@ export function createBackButton(): QuickInputButton<WizardControl> {
 export function createExitButton(): QuickInputButton<WizardControl> {
     return {
         iconPath: {
-            light: ext.iconPaths.light.exit,
-            dark: ext.iconPaths.dark.exit,
+            light: globals.iconPaths.light.exit,
+            dark: globals.iconPaths.dark.exit,
         },
         tooltip: localize('AWS.generic.exit', 'Exit'),
         onClick: () => WIZARD_EXIT,
@@ -126,8 +126,8 @@ export function createExitButton(): QuickInputButton<WizardControl> {
 export function createRefreshButton(): QuickInputButton<void> {
     return {
         iconPath: {
-            light: ext.iconPaths.light.refresh,
-            dark: ext.iconPaths.dark.refresh,
+            light: globals.iconPaths.light.refresh,
+            dark: globals.iconPaths.dark.refresh,
         },
         tooltip: localize('AWS.generic.refresh', 'Refresh'),
     }
@@ -137,8 +137,8 @@ export function createRefreshButton(): QuickInputButton<void> {
 export function createPlusButton(tooltip?: string): QuickInputButton<void> {
     return {
         iconPath: {
-            light: ext.iconPaths.light.plus,
-            dark: ext.iconPaths.dark.plus,
+            light: globals.iconPaths.light.plus,
+            dark: globals.iconPaths.dark.plus,
         },
         tooltip,
     }

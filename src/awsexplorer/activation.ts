@@ -11,7 +11,7 @@ import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
-import { ext } from '../shared/extensionGlobals'
+
 import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -40,6 +40,7 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 let didTryAutoConnect = false
 
 import * as nls from 'vscode-nls'
+import globals from '../shared/extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -52,17 +53,17 @@ export async function activate(args: {
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(ext.context, args.awsContext, args.regionProvider)
+    const awsExplorer = new AwsExplorer(globals.context, args.awsContext, args.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
         showCollapseAll: true,
     })
-    ext.context.subscriptions.push(view)
+    globals.context.subscriptions.push(view)
 
-    await registerAwsExplorerCommands(ext.context, awsExplorer, args.toolkitOutputChannel)
+    await registerAwsExplorerCommands(globals.context, awsExplorer, args.toolkitOutputChannel)
 
-    ext.context.subscriptions.push(
+    globals.context.subscriptions.push(
         view.onDidChangeVisibility(async e => {
             if (e.visible) {
                 await tryAutoConnect(args.awsContext)
@@ -72,7 +73,7 @@ export async function activate(args: {
 
     args.awsContextTrees.addTree(awsExplorer)
 
-    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, ext.context)
+    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, globals.context)
 }
 
 async function tryAutoConnect(awsContext: AwsContext) {
@@ -98,7 +99,7 @@ async function registerAwsExplorerCommands(
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.showRegion', async () => {
             try {
-                await ext.awsContextCommands.onCommandShowRegion()
+                await globals.awsContextCommands.onCommandShowRegion()
             } finally {
                 recordAwsShowRegion()
                 recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
@@ -109,7 +110,7 @@ async function registerAwsExplorerCommands(
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
             try {
-                await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+                await globals.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
             } finally {
                 recordAwsHideRegion()
                 recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })

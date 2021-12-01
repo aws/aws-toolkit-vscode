@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as moment from 'moment'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { IotClient, IotCertificate } from '../../shared/clients/iotClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
@@ -24,6 +24,7 @@ import { IotThingNode } from './iotThingNode'
 import { IotPolicyCertNode } from './iotPolicyNode'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { Commands } from '../../shared/vscode/commands'
+import globals from '../../shared/extensionGlobals'
 
 const CONTEXT_BASE = 'awsIotCertificateNode'
 /**
@@ -53,8 +54,8 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
             things?.length ?? 0 > 0 ? `\nAttached to: ${things!.join(', ')}` : ''
         )
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.certificate),
-            light: vscode.Uri.file(ext.iconPaths.light.certificate),
+            dark: vscode.Uri.file(globals.iconPaths.dark.certificate),
+            light: vscode.Uri.file(globals.iconPaths.light.certificate),
         }
         this.description = `\t[${this.certificate.activeStatus}]`
         this.contextValue = `${CONTEXT_BASE}.${this.certificate.activeStatus}`

@@ -13,6 +13,7 @@ import * as vscode from 'vscode'
 import { DefaultBucket, DefaultFile, DefaultFolder, DefaultS3Client } from '../../../shared/clients/s3Client'
 import { DEFAULT_DELIMITER, DEFAULT_MAX_KEYS } from '../../../shared/clients/s3Client'
 import { FakeFileStreams } from './fakeFileStreams'
+import globals from '../../../shared/extensionGlobals'
 
 class FakeProgressCaptor {
     public progress = 0
@@ -321,6 +322,7 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on failure', async function () {
+            // TODO: rejected promise here since the impl. does not await the upload anymore
             const managedMocked: S3.ManagedUpload = mock()
             const expectedError = new Error('Expected an error')
             when(mockS3.upload(anything())).thenReturn(instance(managedMocked))
@@ -641,13 +643,13 @@ describe('DefaultFile', function () {
             partitionId: 'partitionId',
             bucketName: 'bucketName',
             key: 'key/for/file.jpg',
-            lastModified: new Date(2020, 5, 4),
+            lastModified: new globals.clock.Date(2020, 5, 4),
             sizeBytes: 1337,
         })
         assert.strictEqual(file.name, 'file.jpg')
         assert.strictEqual(file.key, 'key/for/file.jpg')
         assert.strictEqual(file.arn, 'arn:partitionId:s3:::bucketName/key/for/file.jpg')
-        assert.strictEqual(file.lastModified?.toString(), new Date(2020, 5, 4).toString())
+        assert.strictEqual(file.lastModified?.toString(), new globals.clock.Date(2020, 5, 4).toString())
         assert.strictEqual(file.sizeBytes, 1337)
     })
 })

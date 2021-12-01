@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { Iot } from 'aws-sdk'
 import { IotClient, IotPolicy } from '../../shared/clients/iotClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Workspace } from '../../shared/vscode/workspace'
@@ -20,6 +20,7 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -42,8 +43,8 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
             certs?.length ?? 0 > 0 ? `\nAttached to: ${certs?.join(', ')}` : ''
         )
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.policy),
-            light: vscode.Uri.file(ext.iconPaths.light.policy),
+            dark: vscode.Uri.file(globals.iconPaths.dark.policy),
+            light: vscode.Uri.file(globals.iconPaths.light.policy),
         }
         this.contextValue = 'awsIotPolicyNode.Certificates'
     }

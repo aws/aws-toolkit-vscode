@@ -10,10 +10,10 @@ import { verify, anything, instance, mock, when } from 'ts-mockito'
 import { AppRunnerNode } from '../../../apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../apprunner/explorer/apprunnerServiceNode'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
-import { ext } from '../../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import globals from '../../../shared/extensionGlobals'
 
 describe('AppRunnerServiceNode', function () {
     let mockApprunnerClient: AppRunnerClient
@@ -33,9 +33,9 @@ describe('AppRunnerServiceNode', function () {
         mockCloudWatchLogsClient = mock()
         // Forces assignment of the property key without affecting its value
         // eslint-disable-next-line no-self-assign
-        ext.toolkitClientBuilder = ext.toolkitClientBuilder
+        globals.toolkitClientBuilder = globals.toolkitClientBuilder
         sinon.stub(AWSTreeNodeBase.prototype, 'refresh')
-        sinon.stub(ext, 'toolkitClientBuilder').value({
+        sinon.stub(globals, 'toolkitClientBuilder').value({
             createCloudWatchLogsClient: () => instance(mockCloudWatchLogsClient),
         } as any)
     })

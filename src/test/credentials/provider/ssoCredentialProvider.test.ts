@@ -32,7 +32,7 @@ describe('SsoCredentialProvider', () => {
             startUrl: ssoUrl,
             region: ssoRegion,
             accessToken: 'dummyAccessToken',
-            expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
+            expiresAt: new Date(HOUR_IN_MS).toISOString(),
         }
 
         afterEach(() => {

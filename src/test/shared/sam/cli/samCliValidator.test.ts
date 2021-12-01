@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import globals from '../../../../shared/extensionGlobals'
 import { SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
 import {
     DefaultSamCliValidator,
@@ -15,7 +16,7 @@ import {
 
 describe('DefaultSamCliValidator', async function () {
     class TestSamCliValidatorContext implements SamCliValidatorContext {
-        public samCliVersionId: string = new Date().valueOf().toString()
+        public samCliVersionId: string = new globals.clock.Date().valueOf().toString()
         public getInfoCallCount: number = 0
         public mockSamLocation: string = ''
 

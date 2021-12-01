@@ -11,6 +11,7 @@ import { getLogger } from '../../shared/logger'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './credentials'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Credentials received from EC2 metadata service.
@@ -31,7 +32,7 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
         }
 
         this.available = false
-        const start = Date.now()
+        const start = globals.clock.Date.now()
         try {
             const iamInfo = await this.metadata.getIamInfo()
             if (!iamInfo || iamInfo.Code !== 'Success') {
@@ -49,7 +50,7 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
         } catch (err) {
             getLogger().verbose(`credentials: EC2 metadata service unavailable: ${err}`)
         } finally {
-            const elapsed = Date.now() - start
+            const elapsed = globals.clock.Date.now() - start
             getLogger().verbose(`credentials: EC2 metadata service call took ${elapsed}ms`)
         }
         return this.available

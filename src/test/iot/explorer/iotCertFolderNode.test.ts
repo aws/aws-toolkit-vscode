@@ -25,7 +25,12 @@ describe('IotCertFolderNode', function () {
         status: 'ACTIVE',
         creationDate: new Date(0),
     }
-    const expectedCert: IotCertificate = { id: 'cert', arn: 'arn', activeStatus: 'ACTIVE', creationDate: new Date(0) }
+    const expectedCert: IotCertificate = {
+        id: 'cert',
+        arn: 'arn',
+        activeStatus: 'ACTIVE',
+        creationDate: new Date(0),
+    }
 
     function assertCertNode(node: AWSTreeNodeBase, expectedCert: IotCertificate): void {
         assert.ok(node instanceof IotCertWithPoliciesNode, `Node ${node} should be a Certificate Node`)

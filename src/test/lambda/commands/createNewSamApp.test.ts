@@ -25,9 +25,9 @@ import {
     AwsSamDebuggerConfiguration,
     TemplateTargetProperties,
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
-import { ext } from '../../../shared/extensionGlobals'
 import { normalize } from '../../../shared/utilities/pathUtils'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
+import globals from '../../../shared/extensionGlobals'
 
 const TEMPLATE_YAML = 'template.yaml'
 
@@ -74,7 +74,7 @@ describe('createNewSamApp', function () {
 
     afterEach(async function () {
         await fs.remove(tempFolder)
-        ext.templateRegistry.reset()
+        globals.templateRegistry.reset()
     })
 
     describe('getProjectUri', function () {
@@ -107,7 +107,7 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -143,7 +143,7 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
             // without runtime
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.addItemToRegistry(tempTemplate)
             const launchConfigs = (await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -180,7 +180,7 @@ describe('createNewSamApp', function () {
         it('returns a blank array if it does not match any launch configs', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -196,7 +196,7 @@ describe('createNewSamApp', function () {
 
             testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.addItemToRegistry(tempTemplate)
             const launchConfigs = await addInitialLaunchConfiguration(
                 fakeContext,
                 fakeWorkspaceFolder,
@@ -230,9 +230,9 @@ describe('createNewSamApp', function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate2.fsPath)
             testutil.toFile('target file', path.join(otherFolder1, TEMPLATE_YAML))
 
-            await ext.templateRegistry.addItemToRegistry(tempTemplate)
-            await ext.templateRegistry.addItemToRegistry(otherTemplate1)
-            await ext.templateRegistry.addItemToRegistry(otherTemplate2)
+            await globals.templateRegistry.addItemToRegistry(tempTemplate)
+            await globals.templateRegistry.addItemToRegistry(otherTemplate1)
+            await globals.templateRegistry.addItemToRegistry(otherTemplate2)
 
             const launchConfigs1 = await addInitialLaunchConfiguration(
                 fakeContext,

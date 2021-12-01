@@ -12,6 +12,7 @@ import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenP
 import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
 import { installFakeClock } from '../../testUtil'
+import globals from '../../../shared/extensionGlobals'
 
 describe('SsoAccessTokenProvider', function () {
     let sandbox: sinon.SinonSandbox
@@ -28,7 +29,7 @@ describe('SsoAccessTokenProvider', function () {
         startUrl: ssoUrl,
         region: ssoRegion,
         accessToken: 'dummyAccessToken',
-        expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
+        expiresAt: new Date(HOUR_IN_MS).toISOString(),
     }
 
     const fakeCreateTokenResponse: SSOOIDC.CreateTokenResponse = {
@@ -39,7 +40,7 @@ describe('SsoAccessTokenProvider', function () {
     const validRegistation: SsoClientRegistration = {
         clientId: 'aString',
         clientSecret: 'aString',
-        expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
+        expiresAt: new Date(HOUR_IN_MS).toISOString(),
     }
 
     const validAuthorization: StartDeviceAuthorizationResponse = {
@@ -142,11 +143,11 @@ describe('SsoAccessTokenProvider', function () {
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
-            const startTime = Date.now()
+            const startTime = clock.Date.now()
             const tokenPromise = sut.accessToken()
             clock.runAllAsync()
             const receivedToken = await tokenPromise
-            const endTime = Date.now()
+            const endTime = clock.Date.now()
 
             const durationInSeconds = (endTime - startTime) / 1000
 
@@ -187,11 +188,11 @@ describe('SsoAccessTokenProvider', function () {
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
-            const startTime = Date.now()
+            const startTime = clock.Date.now()
             const tokenPromise = sut.accessToken()
             clock.runAllAsync()
             const receivedToken = await tokenPromise
-            const endTime = Date.now()
+            const endTime = clock.Date.now()
 
             const durationInSeconds = (endTime - startTime) / 1000
 
@@ -217,7 +218,7 @@ describe('SsoAccessTokenProvider', function () {
             const dummyRegistration = {
                 clientId: 'badClient',
                 clientSecret: 'badSecret',
-                expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
+                expiresAt: new globals.clock.Date(clock.Date.now() + HOUR_IN_MS).toISOString(),
             }
 
             await assert.rejects(sut.authorizeClient(dummyRegistration))

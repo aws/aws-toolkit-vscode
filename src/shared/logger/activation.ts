@@ -15,7 +15,7 @@ import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
 import { LOG_OUTPUT_CHANNEL } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -140,7 +140,7 @@ function getLogPath(): string {
     }
 
     // TODO: 'globalStoragePath' is deprecated in later versions of VS Code, use 'globalStorageUri' when min >= 1.48
-    const logsDir = path.join(ext.context.globalStoragePath, 'logs')
+    const logsDir = path.join(globals.context.globalStoragePath, 'logs')
 
     return path.join(logsDir, makeLogFilename())
 }

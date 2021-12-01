@@ -4,7 +4,7 @@
  */
 
 import { ECS } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
@@ -93,7 +93,7 @@ export class DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return await ext.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
     }
 
     public async executeCommand(
