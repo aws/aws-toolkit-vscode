@@ -106,7 +106,7 @@ describe('timeoutUtils', async function () {
             await sleep(5)
             longTimer.refresh()
             assert.strictEqual(longTimer.remainingTime, 10)
-            await sleep(6)
+            await sleep(10)
             //assert.strictEqual(longTimer.elapsedTime, 10)
             //assert.strictEqual(longTimer.remainingTime, 5)
             assert.ok(longTimer.elapsedTime > 10)
