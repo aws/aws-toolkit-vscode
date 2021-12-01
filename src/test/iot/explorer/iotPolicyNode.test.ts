@@ -48,6 +48,7 @@ describe('IotPolicyNode', function () {
                 expectedPolicy,
                 {} as IotPolicyFolderNode,
                 instance(iot),
+                undefined,
                 workspace
             )
             const [policyVersionNode, ...otherNodes] = await node.getChildren()

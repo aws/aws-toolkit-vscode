@@ -51,6 +51,7 @@ describe('IotCertFolderNode', function () {
                 certificates: [cert],
                 nextMarker: undefined,
             })
+            when(iot.listThingsForCert(deepEqual({ principal: 'arn' }))).thenResolve([])
 
             const workspace = new FakeWorkspace({
                 section: 'aws',
@@ -68,6 +69,7 @@ describe('IotCertFolderNode', function () {
                 certificates: [cert],
                 nextMarker,
             })
+            when(iot.listPolicyTargets(deepEqual({ policyName: 'policy' }))).thenResolve([])
 
             const workspace = new FakeWorkspace({
                 section: 'aws',
