@@ -11,7 +11,6 @@ import { fileExists, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../s
 import { DiskCache } from '../../credentials/sso/diskCache'
 import { SsoClientRegistration } from '../../credentials/sso/ssoClientRegistration'
 import { SsoAccessToken } from '../../credentials/sso/sso'
-import globals from '../../shared/extensionGlobals'
 
 describe('SSO diskCache', () => {
     let tempFolder: string
@@ -26,14 +25,14 @@ describe('SSO diskCache', () => {
     const validRegistration: SsoClientRegistration = {
         clientId: 'dummyId',
         clientSecret: 'dummySecret',
-        expiresAt: new globals.clock.Date(globals.clock.Date.now() + HOUR_IN_MS).toISOString(),
+        expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
     }
 
     const validAccessToken: SsoAccessToken = {
         startUrl: startUrl,
         region: ssoRegion,
         accessToken: 'longstringofrandomcharacters',
-        expiresAt: new globals.clock.Date(globals.clock.Date.now() + HOUR_IN_MS).toISOString(),
+        expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
     }
 
     beforeEach(async () => {
@@ -66,7 +65,7 @@ describe('SSO diskCache', () => {
             const expiredRegistration: SsoClientRegistration = {
                 clientId: 'dummyId',
                 clientSecret: 'dummySecret',
-                expiresAt: new globals.clock.Date(globals.clock.Date.now() - HOUR_IN_MS).toISOString(),
+                expiresAt: new Date(Date.now() - HOUR_IN_MS).toISOString(),
             }
 
             writeFileSync(registrationFilename, JSON.stringify(expiredRegistration))
@@ -79,7 +78,7 @@ describe('SSO diskCache', () => {
             const expiredSoonRegistration: SsoClientRegistration = {
                 clientId: 'dummyId',
                 clientSecret: 'dummySecret',
-                expiresAt: new globals.clock.Date(globals.clock.Date.now() + FOURTEEN_MINS_IN_MS).toISOString(),
+                expiresAt: new Date(Date.now() + FOURTEEN_MINS_IN_MS).toISOString(),
             }
 
             writeFileSync(registrationFilename, JSON.stringify(expiredSoonRegistration))
@@ -134,7 +133,7 @@ describe('SSO diskCache', () => {
                 startUrl: startUrl,
                 region: ssoRegion,
                 accessToken: 'longstringofrandomcharacters',
-                expiresAt: new globals.clock.Date(globals.clock.Date.now() - HOUR_IN_MS).toISOString(),
+                expiresAt: new Date(Date.now() - HOUR_IN_MS).toISOString(),
             }
             writeFileSync(accessTokenFileName, JSON.stringify(expiredAccessToken))
 
@@ -148,7 +147,7 @@ describe('SSO diskCache', () => {
                 startUrl: startUrl,
                 region: ssoRegion,
                 accessToken: 'longstringofrandomcharacters',
-                expiresAt: new globals.clock.Date(globals.clock.Date.now() + FOURTEEN_MINS_IN_MS).toISOString(),
+                expiresAt: new Date(Date.now() + FOURTEEN_MINS_IN_MS).toISOString(),
             }
             writeFileSync(accessTokenFileName, JSON.stringify(expiredAccessToken))
 
