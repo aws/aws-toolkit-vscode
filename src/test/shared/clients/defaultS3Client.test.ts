@@ -322,6 +322,7 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on failure', async function () {
+            // TODO: rejected promise here since the impl. does not await the upload anymore
             const managedMocked: S3.ManagedUpload = mock()
             const expectedError = new Error('Expected an error')
             when(mockS3.upload(anything())).thenReturn(instance(managedMocked))

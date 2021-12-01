@@ -23,6 +23,7 @@ import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { SchemaService } from '../shared/schemas'
 import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
 import globals, { initialize } from '../shared/extensionGlobals'
+import { initializeIconPaths } from '../shared/icons'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -41,6 +42,7 @@ before(async function () {
     // set global storage path
     fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
     initialize(fakeContext, extWindow.Window.vscode())
+    initializeIconPaths(fakeContext)
     const fakeAws = new FakeAwsContext()
     const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
     const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
