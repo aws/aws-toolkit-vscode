@@ -128,18 +128,18 @@ object IdeVersions {
             name = "2021.3",
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "213.5449-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "2021.3",
                 plugins = commonPlugins + listOf(
                     "java",
                     "com.intellij.gradle",
                     "org.jetbrains.idea.maven",
-                    "PythonCore:213.5449.26",
-                    "Docker:213.5449.24"
+                    "PythonCore:213.5744.248",
+                    "Docker:213.5744.202"
                 )
             ),
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "213.5449-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "2021.3",
                 plugins = commonPlugins + listOf(
                     "JavaScript",
                     // Transitive dependency needed for javascript
@@ -147,8 +147,8 @@ object IdeVersions {
                     "com.intellij.css",
                     "JavaScriptDebugger",
                     "com.intellij.database",
-                    "Pythonid:213.5449.25",
-                    "org.jetbrains.plugins.go:213.5449.25"
+                    "Pythonid:213.5744.248",
+                    "org.jetbrains.plugins.go:213.5744.223"
                 )
             ),
             rider = RiderProfile(
@@ -158,7 +158,7 @@ object IdeVersions {
                 ),
                 netFrameworkTarget = "net472",
                 rdGenVersion = "0.213.394",
-                nugetVersion = "2021.3.0-eap06"
+                nugetVersion = "2021.3.0-eap10"
             )
         )
     ).associateBy { it.name }
