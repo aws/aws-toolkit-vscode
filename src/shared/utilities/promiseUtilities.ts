@@ -54,7 +54,12 @@ export function isThenable<T>(obj: any): obj is Promise<T> {
     return obj && typeof (<Promise<any>>obj).then === 'function'
 }
 
-/** Sleeps for the specified duration in milliseconds. Note that a duration of 0 will always wait 1 event loop. */
+/**
+ * Sleeps for the specified duration in milliseconds. Note that a duration of 0 will always wait 1 event loop.
+ *
+ * Attempts to use the extension-scoped `setTimeout` if it exists, otherwise will fallback to the global scheduler.
+ */
 export function sleep(duration: number = 0): Promise<void> {
-    return new Promise(r => globals.clock.setTimeout(r, Math.max(duration, 0)))
+    const schedule = globals?.clock?.setTimeout ?? setTimeout
+    return new Promise(r => schedule(r, Math.max(duration, 0)))
 }
