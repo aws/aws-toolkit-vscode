@@ -31,11 +31,14 @@ const CONTEXT_BASE = 'awsIotCertificateNode'
  * Certificate Folder Node as a parent.
  */
 export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSResourceNode {
+    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+
     public constructor(
         public readonly certificate: IotCertificate,
         public readonly parent: IotCertsFolderNode | IotThingNode,
         public readonly iot: IotClient,
         collapsibleState: vscode.TreeItemCollapsibleState,
+        public readonly things?: string[],
         protected readonly workspace = Workspace.vscode()
     ) {
         //Show only 8 characters in the explorer instead of the full 64. The entire
@@ -43,10 +46,11 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
         super(certificate.id.substring(0, 8).concat('...'), collapsibleState)
         this.tooltip = localize(
             'AWS.explorerNode.iot.certTooltip',
-            '{0}\nStatus: {1}\nCreated: {2}',
+            '{0}\nStatus: {1}\nCreated: {2}{3}',
             this.certificate.id,
             this.certificate.activeStatus,
-            moment(this.certificate.creationDate).format(LOCALIZED_DATE_FORMAT)
+            moment(this.certificate.creationDate).format(LOCALIZED_DATE_FORMAT),
+            things?.length ?? 0 > 0 ? `\nAttached to: ${things!.join(', ')}` : ''
         )
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.certificate),
@@ -58,47 +62,6 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
 
     public update(): void {
         return undefined
-    }
-
-    public get arn(): string {
-        return this.certificate.arn
-    }
-
-    public get name(): string {
-        return this.certificate.id
-    }
-
-    public [inspect.custom](): string {
-        return `IotCertificateNode (certificate=${this.certificate.id})`
-    }
-}
-
-export class IotThingCertNode extends IotCertificateNode {
-    public constructor(
-        public readonly certificate: IotCertificate,
-        public readonly parent: IotThingNode,
-        public readonly iot: IotClient,
-        protected readonly workspace = Workspace.vscode()
-    ) {
-        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.None, workspace)
-        this.contextValue = `${CONTEXT_BASE}.Things.${this.certificate.activeStatus}`
-    }
-}
-
-/**
- * Represents an IoT Certificate with the Certificate Folder Node as parent.
- */
-export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadMoreNode {
-    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
-
-    public constructor(
-        public readonly certificate: IotCertificate,
-        public readonly parent: IotCertsFolderNode,
-        public readonly iot: IotClient,
-        protected readonly workspace = Workspace.vscode()
-    ) {
-        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, workspace)
-        this.contextValue = `${CONTEXT_BASE}.Policies.${this.certificate.activeStatus}`
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -152,5 +115,46 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
 
     private getMaxItemsPerPage(): number | undefined {
         return this.workspace.getConfiguration('aws').get<number>('iot.maxItemsPerPage')
+    }
+
+    public get arn(): string {
+        return this.certificate.arn
+    }
+
+    public get name(): string {
+        return this.certificate.id
+    }
+
+    public [inspect.custom](): string {
+        return `IotCertificateNode (certificate=${this.certificate.id})`
+    }
+}
+
+export class IotThingCertNode extends IotCertificateNode {
+    public constructor(
+        public readonly certificate: IotCertificate,
+        public readonly parent: IotThingNode,
+        public readonly iot: IotClient,
+        public readonly things?: string[],
+        protected readonly workspace = Workspace.vscode()
+    ) {
+        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
+        this.contextValue = `${CONTEXT_BASE}.Things.${this.certificate.activeStatus}`
+    }
+}
+
+/**
+ * Represents an IoT Certificate with the Certificate Folder Node as parent.
+ */
+export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadMoreNode {
+    public constructor(
+        public readonly certificate: IotCertificate,
+        public readonly parent: IotCertsFolderNode,
+        public readonly iot: IotClient,
+        public readonly things?: string[],
+        protected readonly workspace = Workspace.vscode()
+    ) {
+        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
+        this.contextValue = `${CONTEXT_BASE}.Policies.${this.certificate.activeStatus}`
     }
 }

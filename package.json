@@ -1149,7 +1149,7 @@
                 },
                 {
                     "command": "aws.iot.attachPolicy",
-                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.Policies/",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.(Things|Policies)/",
                     "group": "inline@1"
                 },
                 {
@@ -1314,7 +1314,7 @@
                 },
                 {
                     "command": "aws.iot.attachPolicy",
-                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.Policies/",
+                    "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.(Things|Policies)/",
                     "group": "0@1"
                 },
                 {

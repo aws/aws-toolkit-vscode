@@ -15,6 +15,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../../shared/ui/prompter'
 import { Window } from '../../../shared/vscode/window'
+import { IotNode } from '../../../iot/explorer/iotNodes'
 
 describe('attachPolicyCommand', function () {
     const certId = 'iot-certificate'
@@ -37,7 +38,7 @@ describe('attachPolicyCommand', function () {
         iot = mock()
         certNode = new IotCertWithPoliciesNode(
             { id: certId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new Date() },
-            {} as IotCertsFolderNode,
+            new IotCertsFolderNode(instance(iot), new IotNode(instance(iot))),
             instance(iot)
         )
         policies = [
@@ -54,9 +55,6 @@ describe('attachPolicyCommand', function () {
         await attachPolicyCommand(certNode, prompt, window, commands)
 
         verify(iot.attachPolicy(deepEqual({ policyName: 'policy1', target: 'arn' }))).once()
-
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [certNode])
     })
 
     it('shows an error message if policies are not fetched', async function () {

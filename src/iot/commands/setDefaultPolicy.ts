@@ -45,7 +45,5 @@ export async function setDefaultPolicy(
 }
 
 async function refreshBase(node: IotPolicyWithVersionsNode, commands: Commands): Promise<void> {
-    const parent = node.parent
-    parent.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', parent)
+    return commands.execute('aws.refreshAwsExplorerNode', node)
 }

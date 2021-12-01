@@ -11,6 +11,8 @@ import { Window } from '../../shared/vscode/window'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotPolicyCertNode } from '../explorer/iotPolicyNode'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
+import { IotCertificateNode, IotCertWithPoliciesNode, IotThingCertNode } from '../explorer/iotCertificateNode'
+import { IotNode } from '../explorer/iotNodes'
 
 /**
  * Detaches an IoT Policy from a certificate.
@@ -57,6 +59,23 @@ export async function detachPolicyCommand(
         showViewLogsMessage(localize('AWS.iot.detachPolicy.error', 'Failed to detach {0}', policyName), window)
     }
 
-    //Refresh the parent certificate node
-    node.parent.refreshNode(commands)
+    /* Refresh both things and certificates nodes so the status is updated in
+     * both trees. */
+    const baseNode = getBaseNode(node.parent)
+    await baseNode?.thingFolderNode?.refreshNode(commands)
+    await baseNode?.certFolderNode?.refreshNode(commands)
+}
+
+/**
+ * Gets the node at the root of the IoT tree. This is so nodes in multiple
+ * subtrees can be refreshed when an action affects more than one node.
+ */
+function getBaseNode(node: IotCertificateNode): IotNode | undefined {
+    if (node instanceof IotThingCertNode) {
+        return node.parent.parent.parent
+    }
+    if (node instanceof IotCertWithPoliciesNode) {
+        return node.parent.parent
+    }
+    return undefined
 }
