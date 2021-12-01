@@ -50,7 +50,13 @@ describe('IotCertificateNode', function () {
                 section: 'aws',
                 configuration: { key: 'iot.maxItemsPerPage', value: pageSize },
             })
-            const node = new IotCertWithPoliciesNode(cert, {} as IotCertsFolderNode, instance(iot), workspace)
+            const node = new IotCertWithPoliciesNode(
+                cert,
+                {} as IotCertsFolderNode,
+                instance(iot),
+                undefined,
+                workspace
+            )
             const [policyNode, ...otherNodes] = await node.getChildren()
 
             assertPolicyNode(policyNode, expectedPolicy)
@@ -69,7 +75,13 @@ describe('IotCertificateNode', function () {
                 section: 'aws',
                 configuration: { key: 'iot.maxItemsPerPage', value: pageSize },
             })
-            const node = new IotCertWithPoliciesNode(cert, {} as IotCertsFolderNode, instance(iot), workspace)
+            const node = new IotCertWithPoliciesNode(
+                cert,
+                {} as IotCertsFolderNode,
+                instance(iot),
+                undefined,
+                workspace
+            )
             const [policyNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
             assertPolicyNode(policyNode, expectedPolicy)

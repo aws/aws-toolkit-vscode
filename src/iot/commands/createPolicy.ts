@@ -95,7 +95,7 @@ function validatePolicyName(name: string): string | undefined {
     if (!/^[\w+=,.@-]+$/.test(name)) {
         return localize(
             'AWS.iot.validatePolicyName.error.invalidCharacters',
-            "Policy name must only contain characters that are alphanumeric, or one of the following symbols: '+', '=', ',', '.', '@', '-'"
+            'Policy name must contain only alphanumeric characters and/or the following: +=.,@-'
         )
     }
     return undefined

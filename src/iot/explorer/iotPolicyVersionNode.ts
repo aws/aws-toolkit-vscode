@@ -49,6 +49,12 @@ export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResource
             this.isDefault ? 'DEFAULT\n' : '',
             moment(this.version.createDate).format(LOCALIZED_DATE_FORMAT)
         )
+        this.label = localize(
+            'AWS.explorerNode.iot.versionName',
+            'Version {0}{1}',
+            version.versionId,
+            version.isDefaultVersion ? '*' : ''
+        )
         this.contextValue = 'awsIotPolicyVersionNode.' + (this.isDefault ? 'DEFAULT' : 'NONDEFAULT')
     }
 

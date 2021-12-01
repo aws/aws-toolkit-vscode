@@ -41,6 +41,7 @@ describe('IotPolicyFolderNode', function () {
                 policies: [policy],
                 nextMarker: undefined,
             })
+            when(iot.listPolicyTargets(deepEqual({ policyName: 'policy' }))).thenResolve([])
 
             const workspace = new FakeWorkspace({
                 section: 'aws',
@@ -58,6 +59,7 @@ describe('IotPolicyFolderNode', function () {
                 policies: [policy],
                 nextMarker,
             })
+            when(iot.listPolicyTargets(deepEqual({ policyName: 'policy' }))).thenResolve([])
 
             const workspace = new FakeWorkspace({
                 section: 'aws',
