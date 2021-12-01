@@ -12,7 +12,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Workspace } from '../../shared/vscode/workspace'
 import { inspect } from 'util'
 import { IotPolicyFolderNode } from './iotPolicyFolderNode'
-import { IotCertWithPoliciesNode } from './iotCertificateNode'
+import { IotCertificateNode } from './iotCertificateNode'
 import { IotPolicyVersionNode } from './iotPolicyVersionNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -28,13 +28,19 @@ import { Commands } from '../../shared/vscode/commands'
 export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly policy: IotPolicy,
-        public readonly parent: IotPolicyFolderNode | IotCertWithPoliciesNode,
+        public readonly parent: IotPolicyFolderNode | IotCertificateNode,
         public readonly iot: IotClient,
         collapsibleState: vscode.TreeItemCollapsibleState,
+        certs?: string[],
         protected readonly workspace = Workspace.vscode()
     ) {
         super(policy.name, collapsibleState)
-        this.tooltip = policy.name
+        this.tooltip = localize(
+            'AWS.explorerNode.iot.policyToolTip',
+            '{0}{1}',
+            policy.name,
+            certs?.length ?? 0 > 0 ? `\nAttached to: ${certs?.join(', ')}` : ''
+        )
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.policy),
             light: vscode.Uri.file(ext.iconPaths.light.policy),
@@ -58,11 +64,11 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
 export class IotPolicyCertNode extends IotPolicyNode {
     public constructor(
         public readonly policy: IotPolicy,
-        public readonly parent: IotCertWithPoliciesNode,
+        public readonly parent: IotCertificateNode,
         public readonly iot: IotClient,
         protected readonly workspace = Workspace.vscode()
     ) {
-        super(policy, parent, iot, vscode.TreeItemCollapsibleState.None, workspace)
+        super(policy, parent, iot, vscode.TreeItemCollapsibleState.None, undefined, workspace)
         this.contextValue = 'awsIotPolicyNode.Certificates'
     }
 }
@@ -74,9 +80,10 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
         public readonly policy: IotPolicy,
         public readonly parent: IotPolicyFolderNode,
         public readonly iot: IotClient,
+        certs?: string[],
         protected readonly workspace = Workspace.vscode()
     ) {
-        super(policy, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, workspace)
+        super(policy, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, certs, workspace)
         this.contextValue = 'awsIotPolicyNode.WithVersions'
         this.versionNodes = new Map<string, IotPolicyVersionNode>()
     }
@@ -87,6 +94,9 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
                 await this.updateChildren()
 
                 return [...this.versionNodes.values()]
+            },
+            sort: (a: IotPolicyVersionNode, b: IotPolicyVersionNode) => {
+                return b.version.createDate!.getTime() - a.version.createDate!.getTime()
             },
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>

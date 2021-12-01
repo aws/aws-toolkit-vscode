@@ -68,7 +68,7 @@ export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
             response.certificates
                 ?.filter(cert => cert.certificateArn && cert.certificateId && cert.status && cert.creationDate)
                 .map(
-                    cert =>
+                    async cert =>
                         new IotCertWithPoliciesNode(
                             {
                                 arn: cert.certificateArn!,
@@ -77,14 +77,17 @@ export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
                                 creationDate: cert.creationDate!,
                             },
                             this,
-                            this.iot
+                            this.iot,
+                            await this.iot.listThingsForCert({ principal: cert.certificateArn! })
                         )
                 ) ?? []
+
+        const resolvedCerts = await Promise.all(newCerts)
 
         getLogger().debug(`Loaded certificates: %O`, newCerts)
         return {
             newContinuationToken: response.nextMarker ?? undefined,
-            newChildren: [...newCerts],
+            newChildren: [...resolvedCerts],
         }
     }
 

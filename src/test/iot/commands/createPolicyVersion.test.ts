@@ -48,9 +48,6 @@ describe('createPolicyVersionCommand', function () {
         assert.strictEqual(window.message.information, 'Created new version of test-policy')
 
         verify(iot.createPolicyVersion(deepEqual({ policyName, policyDocument, setAsDefault: true }))).once()
-
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
     })
 
     it('does nothing when policy document is not read', async function () {
@@ -59,7 +56,6 @@ describe('createPolicyVersionCommand', function () {
         await createPolicyVersionCommand(node, getPolicy, window, commands)
 
         verify(iot.createPolicyVersion(anything())).never()
-        assert.strictEqual(commands.command, undefined)
     })
 
     it('shows an error message when JSON is invalid', async function () {
@@ -71,8 +67,6 @@ describe('createPolicyVersionCommand', function () {
         assert.ok(window.message.error?.includes('Failed to create new version of test-policy'))
 
         verify(iot.createPolicyVersion(anything())).never()
-
-        assert.strictEqual(commands.command, undefined)
     })
 
     it('shows an error message if creating version fails', async function () {
@@ -83,7 +77,5 @@ describe('createPolicyVersionCommand', function () {
         await createPolicyVersionCommand(node, getPolicy, window, commands)
 
         assert.ok(window.message.error?.includes('Failed to create new version of test-policy'))
-
-        assert.strictEqual(commands.command, undefined)
     })
 })

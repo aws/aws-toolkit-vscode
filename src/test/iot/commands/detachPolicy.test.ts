@@ -12,6 +12,7 @@ import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import { IotNode } from '../../../iot/explorer/iotNodes'
 
 describe('detachPolicyCommand', function () {
     const policyName = 'test-policy'
@@ -24,7 +25,7 @@ describe('detachPolicyCommand', function () {
         iot = mock()
         parentNode = new IotCertWithPoliciesNode(
             { id: 'id', arn: target, activeStatus: 'ACTIVE', creationDate: new Date() },
-            {} as IotCertsFolderNode,
+            new IotCertsFolderNode(instance(iot), new IotNode(instance(iot))),
             instance(iot)
         )
         node = new IotPolicyCertNode({ name: policyName, arn: 'arn' }, parentNode, instance(iot))
@@ -38,9 +39,6 @@ describe('detachPolicyCommand', function () {
         assert.strictEqual(window.message.warning, 'Are you sure you want to detach policy test-policy?')
 
         verify(iot.detachPolicy(deepEqual({ policyName, target }))).once()
-
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
     })
 
     it('does nothing when cancelled', async function () {
@@ -58,8 +56,5 @@ describe('detachPolicyCommand', function () {
         await detachPolicyCommand(node, window, commands)
 
         assert.ok(window.message.error?.includes('Failed to detach test-policy'))
-
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
     })
 })

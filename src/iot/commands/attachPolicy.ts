@@ -13,8 +13,9 @@ import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompt
 import { PromptResult } from '../../shared/ui/prompter'
 import { IotClient } from '../../shared/clients/iotClient'
 import { isValidResponse } from '../../shared/wizards/wizard'
-import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
+import { IotCertWithPoliciesNode, IotThingCertNode } from '../explorer/iotCertificateNode'
 import { Iot } from 'aws-sdk'
+import { IotNode } from '../explorer/iotNodes'
 
 export type PolicyGen = typeof getPolicyList
 
@@ -26,7 +27,7 @@ export type PolicyGen = typeof getPolicyList
  * Refreshes the certificate node.
  */
 export async function attachPolicyCommand(
-    node: IotCertWithPoliciesNode,
+    node: IotThingCertNode | IotCertWithPoliciesNode,
     promptFun = promptForPolicy,
     window = Window.vscode(),
     commands = Commands.vscode()
@@ -54,8 +55,22 @@ export async function attachPolicyCommand(
 
     getLogger().debug('Attached policy %O', policy.policyName)
 
-    //Refresh the certificate node
-    await node.refreshNode(commands)
+    /* Refresh both things and certificates nodes so the status is updated in
+     * both trees. */
+    const baseNode = getBaseNode(node)
+    await baseNode.thingFolderNode?.refreshNode(commands)
+    await baseNode.certFolderNode?.refreshNode(commands)
+}
+
+/**
+ * Gets the node at the root of the IoT tree. This is so nodes in multiple
+ * subtrees can be refreshed when an action affects more than one node.
+ */
+function getBaseNode(node: IotThingCertNode | IotCertWithPoliciesNode): IotNode {
+    if (node instanceof IotThingCertNode) {
+        return node.parent.parent.parent
+    }
+    return node.parent.parent
 }
 
 /**

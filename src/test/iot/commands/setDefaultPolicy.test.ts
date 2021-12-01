@@ -14,7 +14,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
-describe('copyEndpointCommand', function () {
+describe('setDefaultPolicy', function () {
     const policyName = 'test-policy'
     let iot: IotClient
     let node: IotPolicyVersionNode
