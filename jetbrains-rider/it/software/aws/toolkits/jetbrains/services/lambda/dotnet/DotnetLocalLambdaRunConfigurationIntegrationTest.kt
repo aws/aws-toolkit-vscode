@@ -4,8 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import base.AwsReuseSolutionTestBase
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.ide.util.PropertiesComponent
 import com.jetbrains.rider.projectView.solutionDirectory
@@ -22,6 +20,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHan
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWaitRider
+import software.aws.toolkits.jetbrains.utils.jsonToMap
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.nio.file.Files
 
@@ -206,9 +205,4 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(debuggerIsHit.get()).isTrue
     }
-}
-
-// Extracts the first json structure. Needed since output has all build output and sam cli messages
-private fun jsonToMap(data: String) = data.substringAfter("{").substringBefore("}").let {
-    jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
 }

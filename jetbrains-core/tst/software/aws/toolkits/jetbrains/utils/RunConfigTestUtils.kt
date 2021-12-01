@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.utils
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.execution.ExecutionListener
 import com.intellij.execution.ExecutionManager
 import com.intellij.execution.ExecutorRegistry
@@ -255,4 +257,10 @@ fun assumeImageSupport() {
         SemVer.parseFromText(it)
     }
     assumeTrue(samVersion?.isGreaterOrEqualThan(minImageVersion) == true)
+}
+
+// Extracts the last json structure. Needed since output has all build output and sam cli messages
+// TODO: handle JSON with nested objects
+fun jsonToMap(data: String) = data.substringAfterLast("{").substringBefore("}").let {
+    jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
 }

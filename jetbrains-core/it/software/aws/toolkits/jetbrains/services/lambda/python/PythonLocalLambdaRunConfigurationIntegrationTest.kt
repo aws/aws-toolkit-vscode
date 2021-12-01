@@ -3,8 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.python
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -32,6 +30,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTem
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
+import software.aws.toolkits.jetbrains.utils.jsonToMap
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addBreakpoint
 import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
@@ -419,10 +418,5 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         val executeLambda = executeRunConfigurationAndWait(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
-    }
-
-    // Extracts the first json structure. Needed since output has all build output and sam cli messages
-    private fun jsonToMap(data: String) = data.substringAfter("{").substringBefore("}").let {
-        jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
     }
 }

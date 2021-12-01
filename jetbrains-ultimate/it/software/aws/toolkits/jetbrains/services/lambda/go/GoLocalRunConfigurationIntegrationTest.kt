@@ -3,8 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.go
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.goide.sdk.GoSdk
 import com.goide.sdk.GoSdkService
 import com.goide.sdk.GoSdkUtil
@@ -35,6 +33,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHan
 import software.aws.toolkits.jetbrains.utils.UltimateTestUtils
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
+import software.aws.toolkits.jetbrains.utils.jsonToMap
 import software.aws.toolkits.jetbrains.utils.rules.HeavyGoCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addGoModFile
 import software.aws.toolkits.jetbrains.utils.rules.compatibleGoForIde
@@ -293,11 +292,6 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
             input = input,
             addBreakpoint = { projectRule.addBreakpoint() }
         )
-    }
-
-    // Extracts the first json structure. Needed since output has all build output and sam cli messages
-    private fun jsonToMap(data: String) = data.substringAfter("{").substringBefore("}").let {
-        jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
     }
 
     private fun CodeInsightTestFixture.addLambdaFile(contents: String) {
