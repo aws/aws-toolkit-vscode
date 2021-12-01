@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../extensionGlobals'
 import { sleep } from './promiseUtilities'
 
 export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
@@ -26,7 +27,6 @@ export class TimeoutError extends Error {
  * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
-    private originalStartTime: number
     private startTime: number
     private endTime: number
     private readonly timeoutLength: number
@@ -37,8 +37,7 @@ export class Timeout {
     private _completed: boolean = false
 
     public constructor(timeoutLength: number) {
-        this.startTime = Date.now()
-        this.originalStartTime = this.startTime
+        this.startTime = globals.clock.Date.now()
         this.endTime = this.startTime + timeoutLength
         this.timeoutLength = timeoutLength
 
@@ -47,7 +46,7 @@ export class Timeout {
             this.timerResolve = resolve
         })
 
-        this.timerTimeout = setTimeout(() => {
+        this.timerTimeout = globals.clock.setTimeout(() => {
             this.timerReject(new TimeoutError('expired'))
             this._completed = true
         }, timeoutLength)
@@ -59,7 +58,7 @@ export class Timeout {
      * Minimum is 0.
      */
     public get remainingTime(): number {
-        const remainingTime = this.endTime - Date.now()
+        const remainingTime = this.endTime - globals.clock.Date.now()
 
         return remainingTime > 0 ? remainingTime : 0
     }
@@ -82,9 +81,8 @@ export class Timeout {
         // These will not align, but we don't have visibility into a NodeJS.Timeout
         // so remainingtime will be approximate. Timers are approximate anyway and are
         // not highly accurate in when they fire.
-        this.startTime = Date.now()
-        this.endTime = this.startTime + this.timeoutLength
-        this.timerTimeout.refresh()
+        this.endTime = globals.clock.Date.now() + this.timeoutLength
+        this.timerTimeout = this.timerTimeout.refresh()
     }
 
     /**
@@ -100,7 +98,7 @@ export class Timeout {
      * Returns the elapsed time from the initial Timeout object creation
      */
     public get elapsedTime(): number {
-        return (this._completed ? this.endTime : Date.now()) - this.originalStartTime
+        return (this._completed ? this.endTime : globals.clock.Date.now()) - this.startTime
     }
 
     /**
@@ -117,8 +115,8 @@ export class Timeout {
             return
         }
 
-        this.endTime = Date.now()
-        clearTimeout(this.timerTimeout!)
+        this.endTime = globals.clock.Date.now()
+        globals.clock.clearTimeout(this.timerTimeout)
 
         if (reject) {
             this.timerReject(new TimeoutError('cancelled'))
@@ -145,18 +143,18 @@ export async function waitUntil<T>(
     opt: { timeout: number; interval: number; truthy: boolean } = { timeout: 5000, interval: 500, truthy: true }
 ): Promise<T | undefined> {
     for (let i = 0; true; i++) {
-        const start: number = Date.now()
+        const start: number = globals.clock.Date.now()
         let result: T
 
         // Needed in case a caller uses a 0 timeout (function is only called once)
         if (opt.timeout > 0) {
-            result = await Promise.race([fn(), new Promise<T>(r => setTimeout(r, opt.timeout))])
+            result = await Promise.race([fn(), new Promise<T>(r => globals.clock.setTimeout(r, opt.timeout))])
         } else {
             result = await fn()
         }
 
         // Ensures that we never overrun the timeout
-        opt.timeout -= Date.now() - start
+        opt.timeout -= globals.clock.Date.now() - start
 
         if ((opt.truthy && result) || (!opt.truthy && result !== undefined)) {
             return result

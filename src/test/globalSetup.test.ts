@@ -11,7 +11,6 @@ import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
-import { ext } from '../shared/extensionGlobals'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import * as extWindow from '../shared/vscode/window'
@@ -23,6 +22,8 @@ import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { SchemaService } from '../shared/schemas'
 import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
+import globals, { initialize } from '../shared/extensionGlobals'
+import { initializeIconPaths } from '../shared/icons'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -40,11 +41,12 @@ before(async function () {
     const fakeContext = new FakeExtensionContext()
     // set global storage path
     fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
+    initialize(fakeContext, extWindow.Window.vscode())
+    initializeIconPaths(fakeContext)
     const fakeAws = new FakeAwsContext()
     const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
     const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
-    ext.init(fakeContext, extWindow.Window.vscode())
-    ext.telemetry = service
+    globals.telemetry = service
     await initializeComputeRegion()
 })
 
@@ -55,17 +57,17 @@ after(async function () {
 beforeEach(function () {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
-    ext.templateRegistry = new CloudFormationTemplateRegistry()
-    ext.codelensRootRegistry = new CodelensRootRegistry()
-    ext.schemaService = new SchemaService(ext.context)
+    globals.templateRegistry = new CloudFormationTemplateRegistry()
+    globals.codelensRootRegistry = new CodelensRootRegistry()
+    globals.schemaService = new SchemaService(globals.context)
 })
 
 afterEach(function () {
     // Prevent other tests from using the same TestLogger instance
     teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
-    ext.templateRegistry.dispose()
-    ext.codelensRootRegistry.dispose()
+    globals.templateRegistry.dispose()
+    globals.codelensRootRegistry.dispose()
 })
 
 /**

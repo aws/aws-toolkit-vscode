@@ -7,12 +7,12 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { DefaultTelemetryService } from './defaultTelemetryService'
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { TelemetryService } from './telemetryService'
 
 import * as nls from 'vscode-nls'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
+import globals from '../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
@@ -32,14 +32,14 @@ export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionA
 const CURRENT_TELEMETRY_NOTICE_VERSION = 2
 
 /**
- * Sets up the Metrics system and initializes ext.telemetry
+ * Sets up the Metrics system and initializes globals.telemetry
  */
 export async function activate(activateArguments: {
     extensionContext: vscode.ExtensionContext
     awsContext: AwsContext
     toolkitSettings: SettingsConfiguration
 }) {
-    ext.telemetry = new DefaultTelemetryService(
+    globals.telemetry = new DefaultTelemetryService(
         activateArguments.extensionContext,
         activateArguments.awsContext,
         getComputeRegion()
@@ -49,7 +49,7 @@ export async function activate(activateArguments: {
     await sanitizeTelemetrySetting(activateArguments.toolkitSettings)
 
     // Configure telemetry based on settings, and default to enabled
-    applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
+    applyTelemetryEnabledState(globals.telemetry, activateArguments.toolkitSettings)
 
     // Prompt user about telemetry if they haven't been
     if (!isCloud9() && !hasUserSeenTelemetryNotice(activateArguments.extensionContext)) {
@@ -63,7 +63,7 @@ export async function activate(activateArguments: {
                 event.affectsConfiguration('telemetry.enableTelemetry') ||
                 event.affectsConfiguration('aws.telemetry')
             ) {
-                if (!ext.telemetry) {
+                if (!globals.telemetry) {
                     getLogger().warn(
                         'Telemetry configuration changed, but telemetry is undefined. This can happen during testing. #1071'
                     )
@@ -71,7 +71,7 @@ export async function activate(activateArguments: {
                 }
 
                 validateTelemetrySettingType(activateArguments.toolkitSettings)
-                applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
+                applyTelemetryEnabledState(globals.telemetry, activateArguments.toolkitSettings)
             }
         },
         undefined,

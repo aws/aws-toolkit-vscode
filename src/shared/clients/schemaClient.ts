@@ -4,8 +4,8 @@
  */
 
 import { Schemas } from 'aws-sdk'
+import globals from '../extensionGlobals'
 
-import { ext } from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type SchemaClient = ClassToInterfaceType<DefaultSchemaClient>
@@ -160,6 +160,6 @@ export class DefaultSchemaClient {
     }
 
     private async createSdkClient(): Promise<Schemas> {
-        return await ext.sdkClientBuilder.createAwsService(Schemas, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(Schemas, undefined, this.regionCode)
     }
 }

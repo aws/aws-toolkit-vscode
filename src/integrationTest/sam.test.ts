@@ -22,11 +22,11 @@ import * as testUtils from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
-import { ext } from '../shared/extensionGlobals'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 import { sleep } from '../shared/utilities/promiseUtilities'
+import globals from '../shared/extensionGlobals'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
@@ -605,7 +605,7 @@ describe('SAM Integration Tests', async function () {
                     }
 
                     // XXX: force load since template registry seems a bit flakey
-                    await ext.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
+                    await globals.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
                     await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
                 }

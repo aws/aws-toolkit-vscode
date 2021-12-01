@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 import { StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
@@ -19,6 +19,7 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listStateMachines } from '../../stepFunctions/utils'
 import { Commands } from '../../shared/vscode/commands'
+import globals from '../../shared/extensionGlobals'
 
 export const CONTEXT_VALUE_STATE_MACHINE = 'awsStateMachineNode'
 
@@ -65,7 +66,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(this.regionCode)
+        const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(this.regionCode)
         const functions: Map<string, StepFunctions.StateMachineListItem> = toMap(
             await toArrayAsync(listStateMachines(client)),
             details => details.name
@@ -89,8 +90,8 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
         super('')
         this.update(details)
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.statemachine),
-            light: vscode.Uri.file(ext.iconPaths.light.statemachine),
+            dark: vscode.Uri.file(globals.iconPaths.dark.statemachine),
+            light: vscode.Uri.file(globals.iconPaths.light.statemachine),
         }
     }
 

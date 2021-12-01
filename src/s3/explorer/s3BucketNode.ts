@@ -12,7 +12,7 @@ import {
     S3Client,
     UploadFileRequest,
 } from '../../shared/clients/s3Client'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
@@ -27,6 +27,7 @@ import { S3FolderNode } from './s3FolderNode'
 import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { S3Node } from './s3Nodes'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Represents an S3 bucket that may contain folders and/or objects.
@@ -43,8 +44,8 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         super(bucket.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = bucket.name
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.s3),
-            light: vscode.Uri.file(ext.iconPaths.light.s3),
+            dark: vscode.Uri.file(globals.iconPaths.dark.s3),
+            light: vscode.Uri.file(globals.iconPaths.light.s3),
         }
         this.contextValue = 'awsS3BucketNode'
     }

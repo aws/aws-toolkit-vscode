@@ -14,9 +14,9 @@ import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/co
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
-import { ext } from '../../../shared/extensionGlobals'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
+import globals from '../../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -25,10 +25,12 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public constructor(
         public readonly region: string,
-        public readonly cloudFormation: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(
+        public readonly cloudFormation: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(
             region
         ),
-        private readonly cloudControl: CloudControlClient = ext.toolkitClientBuilder.createCloudControlClient(region)
+        private readonly cloudControl: CloudControlClient = globals.toolkitClientBuilder.createCloudControlClient(
+            region
+        )
     ) {
         super(localize('AWS.explorerNode.resources.label', 'Resources'), vscode.TreeItemCollapsibleState.Collapsed)
         this.resourceTypeNodes = new Map<string, ResourceTypeNode>()

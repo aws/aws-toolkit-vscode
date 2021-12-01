@@ -5,7 +5,7 @@
 
 import { Lambda } from 'aws-sdk'
 import { _Blob } from 'aws-sdk/clients/lambda'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -95,6 +95,6 @@ export class DefaultLambdaClient {
     }
 
     private async createSdkClient(): Promise<Lambda> {
-        return await ext.sdkClientBuilder.createAwsService(Lambda, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(Lambda, undefined, this.regionCode)
     }
 }

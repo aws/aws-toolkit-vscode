@@ -9,12 +9,12 @@ import * as sinon from 'sinon'
 import { CONTEXT_VALUE_CLOUDWATCH_LOG, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
+import globals from '../../../shared/extensionGlobals'
 
 const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
@@ -104,6 +104,6 @@ describe('CloudWatchLogsNode', function () {
             createCloudWatchLogsClient: sandbox.stub().returns(cloudWatchLogsClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

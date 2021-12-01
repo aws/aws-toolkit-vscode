@@ -19,6 +19,7 @@ import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import globals from '../../../shared/extensionGlobals'
 
 describe('updateCertificate', function () {
     const certificateId = 'test-cert'
@@ -35,7 +36,7 @@ describe('updateCertificate', function () {
         this.beforeEach(function () {
             parentNode = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)))
             node = new IotCertWithPoliciesNode(
-                { id: certificateId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new Date() },
+                { id: certificateId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new globals.clock.Date() },
                 parentNode,
                 instance(iot)
             )
@@ -77,7 +78,7 @@ describe('updateCertificate', function () {
                 instance(iot)
             )
             node = new IotThingCertNode(
-                { id: certificateId, arn: 'arn', activeStatus: 'INACTIVE', creationDate: new Date() },
+                { id: certificateId, arn: 'arn', activeStatus: 'INACTIVE', creationDate: new globals.clock.Date() },
                 thingParentNode,
                 instance(iot)
             )
@@ -115,7 +116,7 @@ describe('updateCertificate', function () {
         this.beforeEach(function () {
             parentNode = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)))
             node = new IotCertWithPoliciesNode(
-                { id: certificateId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new Date() },
+                { id: certificateId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new globals.clock.Date() },
                 parentNode,
                 instance(iot)
             )

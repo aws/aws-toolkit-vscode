@@ -12,10 +12,11 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger, Logger } from '../../shared/logger'
 import { recordStepfunctionsDownloadStateMachineDefinition, Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
+import globals from '../../shared/extensionGlobals'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -26,7 +27,7 @@ export async function downloadStateMachineDefinition(params: {
     let downloadResult: Result = 'Succeeded'
     const stateMachineName = params.stateMachineNode.details.name
     try {
-        const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(
+        const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(
             params.stateMachineNode.regionCode
         )
         const stateMachineDetails: StepFunctions.DescribeStateMachineOutput = await client.getStateMachineDetails(

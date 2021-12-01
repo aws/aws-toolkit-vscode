@@ -10,13 +10,14 @@ import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { toMap, updateInPlace, toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { LogGroupNode } from './logGroupNode'
+import globals from '../../shared/extensionGlobals'
 
 export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
     protected readonly logGroupNodes: Map<string, LogGroupNode>
@@ -50,7 +51,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
+        const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
         const logGroups = await this.getLogGroups(client)
 
         updateInPlace(

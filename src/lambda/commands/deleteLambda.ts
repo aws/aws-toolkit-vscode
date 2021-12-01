@@ -11,6 +11,7 @@ import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { millisecondsSince, recordLambdaDelete, Result } from '../../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -40,7 +41,7 @@ export async function deleteLambda({
     if (!deleteParams.functionName) {
         return
     }
-    const startTime = new Date()
+    const startTime = new globals.clock.Date()
     let deleteResult: Result = 'Succeeded'
     try {
         const isConfirmed = await onConfirm()

@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import { StepFunctions } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import {
     CONTEXT_VALUE_STATE_MACHINE,
     StateMachineNode,
@@ -18,6 +17,7 @@ import {
     assertNodeListOnlyContainsPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
+import globals from '../../../shared/extensionGlobals'
 
 const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
@@ -101,7 +101,7 @@ describe('StepFunctionsNode', function () {
                             name: name,
                             stateMachineArn: 'arn:aws:states:us-east-1:123412341234:stateMachine:' + name,
                             type: 'STANDARD',
-                            creationDate: new Date(),
+                            creationDate: new globals.clock.Date(),
                         }
                     })
                 )
@@ -112,6 +112,6 @@ describe('StepFunctionsNode', function () {
             createStepFunctionsClient: sandbox.stub().returns(stepFunctionsClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
