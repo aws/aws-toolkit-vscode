@@ -109,7 +109,6 @@ describe('timeoutUtils', async function () {
             await sleep(10)
             //assert.strictEqual(longTimer.elapsedTime, 10)
             //assert.strictEqual(longTimer.remainingTime, 5)
-            assert.ok(longTimer.elapsedTime > 10)
 
             clock = installFakeClock()
         })
