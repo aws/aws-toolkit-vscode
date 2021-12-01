@@ -2858,7 +2858,7 @@
         "serve": "webpack serve --config-name vue-hmr --mode development"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.27",
+        "@aws-toolkits/telemetry": "1.0.28",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",
@@ -2900,7 +2900,7 @@
         "mocha": "^9.1.3",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
-        "prettier": "^2.3.2",
+        "prettier": "^2.5.0",
         "prettier-plugin-sh": "^0.7.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
