@@ -260,9 +260,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         }
 
-        setImmediate(async () => {
-            await activateStepFunctions(context, awsContext, toolkitOutputChannel)
-        })
+        await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
         showWelcomeMessage(context)
 

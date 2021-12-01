@@ -28,7 +28,7 @@ export async function activate(
 ): Promise<void> {
     globals.visualizationResourcePaths = initalizeWebviewPaths(extensionContext)
 
-    await activateASL(extensionContext)
+    setImmediate(() => activateASL(extensionContext))
     await registerStepFunctionCommands(extensionContext, awsContext, outputChannel)
     initializeCodeLens(extensionContext)
 }
