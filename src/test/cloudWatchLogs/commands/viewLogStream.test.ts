@@ -16,6 +16,7 @@ import {
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
+import globals from '../../../shared/extensionGlobals'
 
 class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     public constructor(private readonly pickLogStreamResponses: (string | undefined)[] = []) {
@@ -66,7 +67,7 @@ describe('viewLogStreamWizard', async function () {
 
 describe('convertDescribeLogStreamsToQuickPickItems', function () {
     it('converts things correctly', function () {
-        const time = new Date().getTime()
+        const time = new globals.clock.Date().getTime()
         const results = convertDescribeLogStreamsToQuickPickItems({
             logStreams: [
                 {

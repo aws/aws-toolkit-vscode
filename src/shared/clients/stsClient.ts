@@ -5,7 +5,7 @@
 
 import { STS } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type StsClient = ClassToInterfaceType<DefaultStsClient>
@@ -28,7 +28,7 @@ export class DefaultStsClient {
     }
 
     private async createSdkClient(): Promise<STS> {
-        return await ext.sdkClientBuilder.createAwsService(
+        return await globals.sdkClientBuilder.createAwsService(
             STS,
             {
                 ...this.credentials,

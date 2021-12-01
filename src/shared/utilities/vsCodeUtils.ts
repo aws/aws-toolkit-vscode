@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../extensionGlobals'
+
 import { getLogger } from '../logger/logger'
 import { waitUntil } from './timeoutUtils'
 
@@ -22,8 +23,8 @@ export function fileIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: vs
     // Once this is resolved, ThemeIcons can be used for seti as well
     if (isFileIconThemeSeti()) {
         return {
-            dark: vscode.Uri.file(ext.iconPaths.dark.file),
-            light: vscode.Uri.file(ext.iconPaths.light.file),
+            dark: vscode.Uri.file(globals.iconPaths.dark.file),
+            light: vscode.Uri.file(globals.iconPaths.light.file),
         }
     } else {
         return vscode.ThemeIcon.File
@@ -35,8 +36,8 @@ export function folderIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: 
     // Once this is resolved, ThemeIcons can be used for seti as well
     if (isFileIconThemeSeti()) {
         return {
-            dark: vscode.Uri.file(ext.iconPaths.dark.folder),
-            light: vscode.Uri.file(ext.iconPaths.light.folder),
+            dark: vscode.Uri.file(globals.iconPaths.dark.folder),
+            light: vscode.Uri.file(globals.iconPaths.light.folder),
         }
     } else {
         return vscode.ThemeIcon.Folder

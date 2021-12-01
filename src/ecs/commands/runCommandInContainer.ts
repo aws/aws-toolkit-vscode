@@ -15,13 +15,14 @@ import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
+import globals from '../../shared/extensionGlobals'
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
     window = Window.vscode(),
-    outputChannel = ext.outputChannel,
+    outputChannel = globals.outputChannel,
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)

@@ -14,7 +14,8 @@ import {
     sfnDeveloperGuideUrl,
     sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
+
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { recentlyUsed } from '../../shared/localizedText'
 import { createHelpButton } from '../../shared/ui/buttons'
@@ -89,8 +90,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
 
     public constructor(private readonly defaultRegion: string) {
         super()
-        this.stepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
-        this.iamClient = ext.toolkitClientBuilder.createIamClient(this.defaultRegion)
+        this.stepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
+        this.iamClient = globals.toolkitClientBuilder.createIamClient(this.defaultRegion)
     }
 
     public async promptUserForPublishAction(

@@ -4,7 +4,7 @@
  */
 
 import { IAM } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -59,6 +59,6 @@ export class DefaultIamClient {
     }
 
     private async createSdkClient(): Promise<IAM> {
-        return await ext.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
     }
 }

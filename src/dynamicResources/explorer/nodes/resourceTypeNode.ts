@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../../../shared/extensionGlobals'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { getLogger } from '../../../shared/logger'
@@ -19,6 +18,7 @@ import { ResourceNode } from './resourceNode'
 import { recordDynamicresourceListResource, Result } from '../../../shared/telemetry/telemetry'
 import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../model/resources'
+import globals from '../../../shared/extensionGlobals'
 
 export const CONTEXT_VALUE_RESOURCE_OPERATIONS: any = {
     CREATE: 'Creatable',
@@ -115,7 +115,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
 
         // S3::Bucket's resource handler LIST is not regionalized at this time
         if (this.typeName === 'AWS::S3::Bucket') {
-            const s3 = ext.toolkitClientBuilder.createS3Client(this.parent.region)
+            const s3 = globals.toolkitClientBuilder.createS3Client(this.parent.region)
             const buckets = await s3.listBuckets()
             newResources = buckets.buckets.map(bucket => new ResourceNode(this, bucket.name, this.childContextValue))
         } else {

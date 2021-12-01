@@ -4,11 +4,10 @@
  */
 
 import { SSM } from 'aws-sdk'
+import globals from '../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
-
-import { ext } from '../../shared/extensionGlobals'
 import { recentlyUsed } from '../../shared/localizedText'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
@@ -230,7 +229,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                     Values: [documentType],
                 })
             }
-            const client = ext.toolkitClientBuilder.createSsmClient(region)
+            const client = globals.toolkitClientBuilder.createSsmClient(region)
             this.documents = await toArrayAsync(
                 client.listDocuments({
                     Filters: filters,

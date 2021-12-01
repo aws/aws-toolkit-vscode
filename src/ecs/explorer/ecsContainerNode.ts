@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode'
 import { EcsClient } from '../../shared/clients/ecsClient'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class EcsContainerNode extends AWSTreeNodeBase {
@@ -20,8 +21,8 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         this.contextValue = 'awsEcsContainerNode'
 
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.container),
-            light: vscode.Uri.file(ext.iconPaths.light.container),
+            dark: vscode.Uri.file(globals.iconPaths.dark.container),
+            light: vscode.Uri.file(globals.iconPaths.light.container),
         }
     }
 

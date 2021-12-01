@@ -12,10 +12,10 @@ import { AslVisualizationCDKManager } from '../../../stepFunctions/commands/visu
 import { ConstructNode, isStateMachine } from '../../../cdk/explorer/nodes/constructNode'
 import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
 import { Disposable } from 'vscode-languageclient'
-import { ext } from '../../../shared/extensionGlobals'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { getLogger, Logger } from '../../../shared/logger'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
+import globals from '../../../shared/extensionGlobals'
 
 // Top level defintions
 let mockAslVisualizationCDKManager: MockAslVisualizationCDKManager
@@ -132,23 +132,23 @@ const mockStateMachineNodeSameAppDiffName = new ConstructNode(
 )
 
 describe('StepFunctions VisualizeStateMachine', async function () {
-    const oldWebviewScriptsPath = ext.visualizationResourcePaths.localWebviewScriptsPath
-    const oldWebviewBodyPath = ext.visualizationResourcePaths.webviewBodyScript
-    const oldCachePath = ext.visualizationResourcePaths.visualizationLibraryCachePath
-    const oldScriptPath = ext.visualizationResourcePaths.visualizationLibraryScript
-    const oldCssPath = ext.visualizationResourcePaths.visualizationLibraryCSS
-    const oldThemePath = ext.visualizationResourcePaths.stateMachineCustomThemePath
-    const oldThemeCssPath = ext.visualizationResourcePaths.stateMachineCustomThemeCSS
+    const oldWebviewScriptsPath = globals.visualizationResourcePaths.localWebviewScriptsPath
+    const oldWebviewBodyPath = globals.visualizationResourcePaths.webviewBodyScript
+    const oldCachePath = globals.visualizationResourcePaths.visualizationLibraryCachePath
+    const oldScriptPath = globals.visualizationResourcePaths.visualizationLibraryScript
+    const oldCssPath = globals.visualizationResourcePaths.visualizationLibraryCSS
+    const oldThemePath = globals.visualizationResourcePaths.stateMachineCustomThemePath
+    const oldThemeCssPath = globals.visualizationResourcePaths.stateMachineCustomThemeCSS
 
     // Before all
     before(function () {
-        ext.visualizationResourcePaths.localWebviewScriptsPath = mockUri
-        ext.visualizationResourcePaths.visualizationLibraryCachePath = mockUri
-        ext.visualizationResourcePaths.stateMachineCustomThemePath = mockUri
-        ext.visualizationResourcePaths.webviewBodyScript = mockUri
-        ext.visualizationResourcePaths.visualizationLibraryScript = mockUri
-        ext.visualizationResourcePaths.visualizationLibraryCSS = mockUri
-        ext.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUri
+        globals.visualizationResourcePaths.localWebviewScriptsPath = mockUri
+        globals.visualizationResourcePaths.visualizationLibraryCachePath = mockUri
+        globals.visualizationResourcePaths.stateMachineCustomThemePath = mockUri
+        globals.visualizationResourcePaths.webviewBodyScript = mockUri
+        globals.visualizationResourcePaths.visualizationLibraryScript = mockUri
+        globals.visualizationResourcePaths.visualizationLibraryCSS = mockUri
+        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUri
 
         sandbox = sinon.createSandbox()
         sandbox.stub(StateMachineGraphCache.prototype, 'updateCachedFile').callsFake(async options => {
@@ -164,13 +164,13 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     // After all
     after(function () {
         sandbox.restore()
-        ext.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
-        ext.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
-        ext.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
-        ext.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
-        ext.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
-        ext.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
-        ext.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
+        globals.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
+        globals.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
+        globals.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
+        globals.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
+        globals.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
+        globals.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
+        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
     })
 
     // Tests

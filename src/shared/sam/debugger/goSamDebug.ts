@@ -20,9 +20,10 @@ import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execFileSync, SpawnOptions } from 'child_process'
-import { ext } from '../../../shared/extensionGlobals'
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
+import { sleep } from '../../utilities/promiseUtilities'
+import globals from '../../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -76,7 +77,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
  * @param timeout Cancellation token to prevent stalling
  */
 async function waitForDelve(debugPort: number, timeout: Timeout) {
-    await new Promise<void>(resolve => setTimeout(resolve, 1000))
+    await sleep(1000)
 }
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -112,7 +113,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
     // We want to persist the binary we build since it takes a non-trivial amount of time to build
-    config.debuggerPath = path.join(ext.context.globalStoragePath, 'debuggers', 'delve')
+    config.debuggerPath = path.join(globals.context.globalStoragePath, 'debuggers', 'delve')
 
     const isImageLambda = isImageLambdaConfig(config)
 

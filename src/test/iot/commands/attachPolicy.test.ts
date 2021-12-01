@@ -16,6 +16,7 @@ import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../../shared/ui/prompter'
 import { Window } from '../../../shared/vscode/window'
 import { IotNode } from '../../../iot/explorer/iotNodes'
+import globals from '../../../shared/extensionGlobals'
 
 describe('attachPolicyCommand', function () {
     const certId = 'iot-certificate'
@@ -37,7 +38,7 @@ describe('attachPolicyCommand', function () {
     beforeEach(function () {
         iot = mock()
         certNode = new IotCertWithPoliciesNode(
-            { id: certId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new Date() },
+            { id: certId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new globals.clock.Date() },
             new IotCertsFolderNode(instance(iot), new IotNode(instance(iot))),
             instance(iot)
         )

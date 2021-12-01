@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../shared/extensionGlobals'
 import { deleteLambda } from './commands/deleteLambda'
 import { invokeLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
@@ -13,6 +12,7 @@ import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { registerSamInvokeVueCommand } from './vue/samInvokeBackend'
 import { ExtContext } from '../shared/extensions'
+import globals from '../shared/extensionGlobals'
 
 /**
  * Activates Lambda components.
@@ -26,7 +26,7 @@ export async function activate(context: ExtContext): Promise<void> {
             async (node: LambdaFunctionNode) =>
                 await deleteLambda({
                     deleteParams: { functionName: node.configuration.FunctionName || '' },
-                    lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
+                    lambdaClient: globals.toolkitClientBuilder.createLambdaClient(node.regionCode),
                     outputChannel,
                     onRefresh: async () =>
                         await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent),

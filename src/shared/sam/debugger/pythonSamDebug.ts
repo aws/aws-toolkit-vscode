@@ -14,12 +14,13 @@ import {
     PythonPathMapping,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { ext } from '../../extensionGlobals'
+import globals from '../../extensionGlobals'
 import { ExtContext } from '../../extensions'
 import { fileExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
+import { sleep } from '../../utilities/promiseUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
@@ -98,7 +99,7 @@ export async function makePythonDebugConfig(
 
         if (!config.useIkpdb) {
             // Mounted in the Docker container as: /tmp/lambci_debug_files
-            config.debuggerPath = ext.context.asAbsolutePath(path.join('resources', 'debugger'))
+            config.debuggerPath = globals.context.asAbsolutePath(path.join('resources', 'debugger'))
             // NOTE: SAM CLI splits on each *single* space in `--debug-args`!
             //       Extra spaces will be passed as spurious "empty" arguments :(
             const debugArgs = `${DEBUGPY_WRAPPER_PATH} --listen 0.0.0.0:${config.debugPort} --wait-for-client --log-to-stderr`
@@ -237,9 +238,7 @@ async function waitForIkpdb(debugPort: number, timeout: Timeout) {
     // - We cannot consumed the first message on the socket.
     // - We must wait for the debugger to be ready, else cloud9 startDebugging() waits forever.
     getLogger().info('waitForIkpdb: wait 2 seconds')
-    await new Promise<void>(resolve => {
-        setTimeout(resolve, 2000)
-    })
+    await sleep(2000)
 }
 
 function getPythonExeAndBootstrap(runtime: Runtime) {

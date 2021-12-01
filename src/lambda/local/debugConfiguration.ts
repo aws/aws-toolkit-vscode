@@ -17,8 +17,9 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { Architecture, RuntimeFamily } from '../models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Magic path on the Docker image.
@@ -192,7 +193,7 @@ export function getTemplate(
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
-    const cfnTemplate = ext.templateRegistry.getRegisteredItem(fullPath)?.item
+    const cfnTemplate = globals.templateRegistry.getRegisteredItem(fullPath)?.item
     return cfnTemplate
 }
 
