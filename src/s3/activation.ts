@@ -20,7 +20,6 @@ import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
-import { S3DocumentProvider } from './document/s3DocumentProvider'
 import { S3FileViewerManager, S3_EDIT_SCHEME, S3_READ_SCHEME } from './fileViewerManager'
 import { MemoryFileSystem } from '../shared/memoryFilesystem'
 
@@ -50,7 +49,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.s3.openFileEditMode', async (uriOrNode: vscode.Uri | S3FileNode) => {
             await openFileEditModeCommand(uriOrNode, manager)
         }),
-        vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
+        vscode.commands.registerCommand('aws.s3.uploadFile', async (node?: S3BucketNode | S3FolderNode) => {
             if (!node) {
                 const awsContext = ctx.awsContext
                 const regionCode = awsContext.getCredentialDefaultRegion()
