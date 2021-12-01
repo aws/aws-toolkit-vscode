@@ -29,7 +29,7 @@ describe('SsoAccessTokenProvider', function () {
         startUrl: ssoUrl,
         region: ssoRegion,
         accessToken: 'dummyAccessToken',
-        expiresAt: new globals.clock.Date(HOUR_IN_MS).toISOString(),
+        expiresAt: new Date(HOUR_IN_MS).toISOString(),
     }
 
     const fakeCreateTokenResponse: SSOOIDC.CreateTokenResponse = {
@@ -40,7 +40,7 @@ describe('SsoAccessTokenProvider', function () {
     const validRegistation: SsoClientRegistration = {
         clientId: 'aString',
         clientSecret: 'aString',
-        expiresAt: new globals.clock.Date(HOUR_IN_MS).toISOString(),
+        expiresAt: new Date(HOUR_IN_MS).toISOString(),
     }
 
     const validAuthorization: StartDeviceAuthorizationResponse = {

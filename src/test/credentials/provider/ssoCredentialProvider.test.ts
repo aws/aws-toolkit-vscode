@@ -11,7 +11,6 @@ import { SsoCredentialProvider } from '../../../credentials/providers/ssoCredent
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { DiskCache } from '../../../credentials/sso/diskCache'
 import { GetRoleCredentialsResponse } from 'aws-sdk/clients/sso'
-import globals from '../../../shared/extensionGlobals'
 
 describe('SsoCredentialProvider', () => {
     describe('refreshCredentials', () => {
@@ -33,7 +32,7 @@ describe('SsoCredentialProvider', () => {
             startUrl: ssoUrl,
             region: ssoRegion,
             accessToken: 'dummyAccessToken',
-            expiresAt: new globals.clock.Date(HOUR_IN_MS).toISOString(),
+            expiresAt: new Date(HOUR_IN_MS).toISOString(),
         }
 
         afterEach(() => {

@@ -45,7 +45,7 @@ describe('DefaultS3Client', function () {
     const fileKey = 'foo/bar/file.jpg'
     const fileVersionId = 'fileVersionId'
     const fileSizeBytes = 5
-    const fileLastModified = new globals.clock.Date(2020, 5, 4)
+    const fileLastModified = new Date(2020, 5, 4)
     const fileData = 'fileData'
     const fileLocation = vscode.Uri.file('/file.jpg')
     const continuationToken = 'continuationToken'
