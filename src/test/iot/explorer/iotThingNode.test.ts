@@ -13,7 +13,6 @@ import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 import { IotThingCertNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
-import globals from '../../../shared/extensionGlobals'
 
 describe('IotThingNode', function () {
     const nextToken = 'nextToken'
@@ -26,13 +25,13 @@ describe('IotThingNode', function () {
         certificateId: 'cert',
         certificateArn: 'arn',
         status: 'ACTIVE',
-        creationDate: new globals.clock.Date(0),
+        creationDate: new Date(0),
     }
     const expectedCert: IotCertificate = {
         id: 'cert',
         arn: 'arn',
         activeStatus: 'ACTIVE',
-        creationDate: new globals.clock.Date(0),
+        creationDate: new Date(0),
     }
 
     function assertCertNode(node: AWSTreeNodeBase, expectedCert: IotCertificate): void {
