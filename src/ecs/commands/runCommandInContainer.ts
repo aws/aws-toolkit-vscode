@@ -7,13 +7,14 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as picker from '../../shared/ui/picker'
+import * as moment from 'moment'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
-import { extensionSettingsPrefix } from '../../shared/constants'
+import { extensionSettingsPrefix, LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { ext } from '../../shared/extensionGlobals'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
@@ -129,6 +130,7 @@ export async function runCommandInContainer(
 
         const execCommand = await node.ecs.executeCommand(node.clusterArn, node.containerName, task, command)
         const args = [JSON.stringify(execCommand.session), node.ecs.regionCode, 'StartSession']
+        showOutputMessage(`${moment().format(LOCALIZED_DATE_FORMAT)}  Running command: ${command}`, outputChannel)
         const cp = await new ChildProcess(ssmPlugin, args).run()
         if (cp.exitCode !== 0) {
             result = 'Failed'
