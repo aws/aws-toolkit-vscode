@@ -354,8 +354,7 @@ async function uploadWithProgress(
     progress: vscode.Progress<{ message?: string; increment?: number }>,
     token: vscode.CancellationToken
 ): Promise<UploadRequest | undefined> {
-    const progressListener = progressReporter({
-        progress,
+    const progressListener = progressReporter(progress, {
         reportMessage: true,
         totalBytes: request.fileSizeBytes,
     })

@@ -2,22 +2,22 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as mime from 'mime-types'
 import * as telemetry from '../shared/telemetry/telemetry'
 import * as S3 from '../shared/clients/s3Client'
-import { ext } from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { localize } from '../shared/utilities/vsCodeUtils'
-import { ExtContext } from '../shared/extensions'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { TimeoutError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, MemoryFileSystem } from '../shared/memoryFilesystem'
+import { S3Client } from '../shared/clients/s3Client'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
@@ -36,23 +36,23 @@ export interface S3Tab {
     readonly editor: vscode.TextEditor | undefined
 }
 
-interface S3File extends S3.File {
+// Essentially combines the File and Bucket interface as they mostly belong together
+export interface S3File extends S3.File {
     readonly bucket: S3.Bucket
 }
 
-class S3FileProvider implements FileProvider {
+export class S3FileProvider implements FileProvider {
     private readonly _onDidChange = new vscode.EventEmitter<void>()
     private readonly _file: { -readonly [P in keyof S3File]: S3File[P] }
     public readonly onDidChange = this._onDidChange.event
 
-    public constructor(file: S3File) {
+    public constructor(private readonly client: S3Client, file: S3File) {
         this._file = { ...file }
     }
 
     public async refresh(): Promise<void> {
         const { bucket, key } = this._file
-        const client = ext.toolkitClientBuilder.createS3Client(bucket.region)
-        const stats = await client.headObject({ bucketName: bucket.name, key })
+        const stats = await this.client.headObject({ bucketName: bucket.name, key })
 
         this._file.eTag = stats.ETag
         this._file.sizeBytes = stats.ContentLength
@@ -60,7 +60,8 @@ class S3FileProvider implements FileProvider {
     }
 
     public async read(): Promise<Uint8Array> {
-        const result = downloadFile(this._file.bucket, this._file, {
+        const result = downloadFile(this._file, {
+            client: this.client,
             progressLocation:
                 (this._file.sizeBytes ?? 0) < SIZE_LIMIT
                     ? vscode.ProgressLocation.Window
@@ -85,9 +86,8 @@ class S3FileProvider implements FileProvider {
         }
     }
 
-    public async write(content: Uint8Array, { overwrite }: { overwrite: boolean }): Promise<void> {
-        const client = ext.toolkitClientBuilder.createS3Client(this._file.bucket.region)
-        const result = await client
+    public async write(content: Uint8Array): Promise<void> {
+        const result = await this.client
             .uploadFile({
                 content,
                 bucketName: this._file.bucket.name,
@@ -97,17 +97,20 @@ class S3FileProvider implements FileProvider {
 
         this._file.eTag = result.ETag
         this._file.lastModified = new Date()
-        this._file.sizeBytes = content.length
-        await vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+        this._file.sizeBytes = content.byteLength
+        //await vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
     }
 }
+
+type S3ClientFactory = (region: string) => S3Client
 
 export class S3FileViewerManager {
     private readonly activeTabs: { [uri: string]: S3Tab | undefined } = {}
     private readonly providers: { [uri: string]: vscode.Disposable | undefined } = {}
+    private readonly disposables: vscode.Disposable[] = []
 
-    public constructor(context: ExtContext, private readonly fs: MemoryFileSystem) {
-        context.extensionContext.subscriptions.push(this, this.registerTabCleanup())
+    public constructor(private readonly clientFactory: S3ClientFactory, private readonly fs: MemoryFileSystem) {
+        this.disposables.push(this.registerTabCleanup())
     }
 
     /**
@@ -118,6 +121,7 @@ export class S3FileViewerManager {
             ...Object.values(this.activeTabs).map(v => v?.dispose()),
             ...Object.values(this.providers).map(v => v?.dispose()),
         ])
+        vscode.Disposable.from(...this.disposables).dispose()
     }
 
     private registerTabCleanup(): vscode.Disposable {
@@ -232,12 +236,12 @@ export class S3FileViewerManager {
      * Downloads file from S3 ands stores in cache
      * Opens the tab on read-only with the use of an S3Tab, or shifts focus to an edit tab if any.
      *
-     * @param uriOrNode to be opened
+     * @param uriOrFile to be opened
      */
-    public async openInEditMode(uriOrNode: vscode.Uri | S3File): Promise<void> {
-        const uri = uriOrNode instanceof vscode.Uri ? uriOrNode : this.fileToUri(uriOrNode, TabMode.Edit)
+    public async openInEditMode(uriOrFile: vscode.Uri | S3File): Promise<void> {
+        const uri = uriOrFile instanceof vscode.Uri ? uriOrFile : this.fileToUri(uriOrFile, TabMode.Edit)
         const activeTab = await this.tryFocusTab(uri)
-        const file = activeTab?.file ?? uriOrNode
+        const file = activeTab?.file ?? uriOrFile
 
         if (activeTab?.mode === 'edit') {
             return
@@ -254,7 +258,7 @@ export class S3FileViewerManager {
     }
 
     private registerProvider(file: S3File, uri: vscode.Uri): vscode.Disposable {
-        const provider = new S3FileProvider(file)
+        const provider = new S3FileProvider(this.clientFactory(file.bucket.region), file)
         return this.fs.registerProvider(uri, provider)
     }
 

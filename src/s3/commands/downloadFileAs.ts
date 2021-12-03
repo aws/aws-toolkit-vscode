@@ -15,10 +15,11 @@ import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/messages'
-import { Bucket, File } from '../../shared/clients/s3Client'
+import { S3Client } from '../../shared/clients/s3Client'
 import { Timeout, TimeoutError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/toolkitError'
 import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtilities'
+import { S3File } from '../fileViewerManager'
 
 interface DownloadFileOptions {
     /**
@@ -41,6 +42,10 @@ interface DownloadFileOptions {
      * the download is also cancellable.
      */
     readonly timeout?: Timeout
+    /**
+     * Client to use for the download. Creates one if not provided.
+     */
+    readonly client?: S3Client
 }
 
 interface FileOptions extends DownloadFileOptions {
@@ -51,12 +56,11 @@ interface BufferOptions extends DownloadFileOptions {
 }
 
 async function downloadS3File(
-    bucket: Bucket,
-    file: File,
+    client: S3Client,
+    file: S3File,
     options?: FileOptions | BufferOptions
 ): Promise<Buffer | void> {
-    const client = ext.toolkitClientBuilder.createS3Client(bucket.region)
-    const downloadStream = await client.downloadFileStream(bucket.name, file.key)
+    const downloadStream = await client.downloadFileStream(file.bucket.name, file.key)
     const result = options?.saveLocation
         ? streamToFile(downloadStream, options.saveLocation)
         : streamToBuffer(downloadStream, file.sizeBytes)
@@ -71,7 +75,7 @@ async function downloadS3File(
                 cancellable: !!options.timeout,
             },
             (progress, token) => {
-                const reporter = progressReporter({ progress, totalBytes: file.sizeBytes })
+                const reporter = progressReporter(progress, { totalBytes: file.sizeBytes })
                 const report = (chunk: Buffer | string) => reporter(chunk.length)
                 token.onCancellationRequested(() => downloadStream.destroy(new TimeoutError('cancelled')))
                 downloadStream.on('data', report)
@@ -84,23 +88,20 @@ async function downloadS3File(
     return result
 }
 
-export async function downloadFile(bucket: Bucket, file: File, options: FileOptions): Promise<void>
-export async function downloadFile(bucket: Bucket, file: File, options?: BufferOptions): Promise<Buffer>
-export async function downloadFile(
-    bucket: Bucket,
-    file: File,
-    options?: FileOptions | BufferOptions
-): Promise<Buffer | void> {
+export async function downloadFile(file: S3File, options: FileOptions): Promise<void>
+export async function downloadFile(file: S3File, options?: BufferOptions): Promise<Buffer>
+export async function downloadFile(file: S3File, options?: FileOptions | BufferOptions): Promise<Buffer | void> {
+    const client = options?.client ?? ext.toolkitClientBuilder.createS3Client(file.bucket.region)
     const recordMetric = (result: telemetry.Result) => () => telemetry.recordS3DownloadObject({ result })
 
-    return downloadS3File(bucket, file, options).catch(err => {
+    return downloadS3File(client, file, options).catch(err => {
         const result = TimeoutError.isCancelled(err) ? 'Cancelled' : 'Failed'
         const message = localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', file.name)
         const extraDetail = options?.saveLocation ? ` to ${options?.saveLocation.fsPath}` : ''
 
         throw new ToolkitError(message, {
             cause: err,
-            detail: `Failed to download ${readablePath({ bucket, path: file.key })}${extraDetail}`,
+            detail: `Failed to download ${readablePath({ bucket: file.bucket, path: file.key })}${extraDetail}`,
             metricName: 's3_downloadObject',
             recordMetric: recordMetric(result),
         })
@@ -135,11 +136,14 @@ export async function downloadFileAsCommand(
     try {
         showOutputMessage(`Downloading file from ${sourcePath} to ${saveLocation}`, outputChannel)
 
-        await downloadFile(bucket, file, {
-            window,
-            saveLocation,
-            progressLocation: vscode.ProgressLocation.Notification,
-        })
+        await downloadFile(
+            { ...file, bucket },
+            {
+                window,
+                saveLocation,
+                progressLocation: vscode.ProgressLocation.Notification,
+            }
+        )
 
         showOutputMessage(`Successfully downloaded file ${saveLocation}`, outputChannel)
         telemetry.recordS3DownloadObject({ result: 'Succeeded' })

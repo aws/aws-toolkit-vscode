@@ -11,6 +11,12 @@ import * as bytes from 'bytes'
 
 const DEFAULT_REPORTING_INTERVAL_MILLIS = 500
 
+interface ProgressReporterOptions {
+    readonly totalBytes?: number
+    readonly reportMessage?: boolean
+    readonly minIntervalMillis?: number
+}
+
 /**
  * Returns a function that pipes incremental byte progress to VSCode's incremental percentage Progress.
  *
@@ -20,22 +26,17 @@ const DEFAULT_REPORTING_INTERVAL_MILLIS = 500
  * @param minIntervalMillis the minimum delay between progress updates.
  * Used to throttle updates. Updates that occur between intervals are dropped.
  */
-export function progressReporter({
-    progress,
-    totalBytes,
-    reportMessage,
-    minIntervalMillis = DEFAULT_REPORTING_INTERVAL_MILLIS,
-}: {
-    progress: vscode.Progress<{ message?: string; increment?: number }>
-    totalBytes?: number
-    reportMessage?: boolean
-    minIntervalMillis?: number
-}): (loadedBytes: number) => void {
+export function progressReporter(
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    options: ProgressReporterOptions = {}
+): (loadedBytes: number) => void {
+    const { totalBytes, reportMessage, minIntervalMillis } = options
     const reporter = new ProgressReporter(progress, { totalBytes, reportMessage })
-    const reportProgressThrottled = throttle(() => reporter.report(), minIntervalMillis, {
-        leading: true,
-        trailing: false,
-    })
+    const reportProgressThrottled = throttle(
+        () => reporter.report(),
+        minIntervalMillis ?? DEFAULT_REPORTING_INTERVAL_MILLIS,
+        { leading: true, trailing: false }
+    )
 
     return newBytes => {
         reporter.update(newBytes)
@@ -68,10 +69,7 @@ class ProgressReporter {
      */
     public constructor(
         private readonly progress: vscode.Progress<{ message?: string; increment?: number }>,
-        private readonly options?: {
-            totalBytes?: number
-            reportMessage?: boolean
-        }
+        private readonly options?: Omit<ProgressReporterOptions, 'minIntervalMillis'>
     ) {
         this._totalBytes = options?.totalBytes
         if (this._totalBytes !== undefined) {
@@ -89,7 +87,7 @@ class ProgressReporter {
     }
 
     private formatMessage(): string {
-        const format = (newBytes: number) => bytes(newBytes, { unitSeparator: ' ', decimalPlaces: 0 })
+        const format = (b: number) => bytes(b, { unitSeparator: ' ', decimalPlaces: 0 })
         return this._totalBytes ? `${format(this._loadedBytes)} / ${format(this._totalBytes)}` : ''
     }
 

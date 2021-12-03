@@ -13,7 +13,6 @@ import {
     Iot,
     Lambda,
     Schemas,
-    S3,
     StepFunctions,
     STS,
     SSM,
@@ -34,28 +33,8 @@ import { IotClient, ListThingCertificatesResponse } from '../../../shared/client
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
-import {
-    S3Client,
-    CreateBucketRequest,
-    ListFilesRequest,
-    CreateFolderRequest,
-    DownloadFileRequest,
-    UploadFileRequest,
-    ListObjectVersionsRequest,
-    DeleteObjectRequest,
-    DeleteObjectsRequest,
-    DeleteBucketRequest,
-    CreateBucketResponse,
-    ListBucketsResponse,
-    ListFilesResponse,
-    CreateFolderResponse,
-    ListObjectVersionsResponse,
-    DeleteObjectsResponse,
-    HeadObjectRequest,
-    SignedUrlRequest,
-    CharsetRequest,
-} from '../../../shared/clients/s3Client'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { S3Client } from '../../../shared/clients/s3Client'
 
 interface Clients {
     apiGatewayClient: ApiGatewayClient
@@ -69,7 +48,6 @@ interface Clients {
     schemaClient: SchemaClient
     stepFunctionsClient: StepFunctionsClient
     stsClient: StsClient
-    s3Client: S3Client
     iotClient: IotClient
     ssmDocumentClient: SsmDocumentClient
     apprunnerClient: AppRunnerClient
@@ -90,7 +68,6 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             schemaClient: new MockSchemaClient(),
             stepFunctionsClient: new MockStepFunctionsClient(),
             stsClient: new MockStsClient({}),
-            s3Client: new MockS3Client({}),
             iotClient: new MockIotClient({}),
             ssmDocumentClient: new MockSsmDocumentClient(),
             apprunnerClient: new MockAppRunnerClient(),
@@ -147,7 +124,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
     }
 
     public createS3Client(regionCode: string): S3Client {
-        return this.clients.s3Client
+        throw new Error('Not implemented')
     }
 
     public createSsmClient(regionCode: string): SsmDocumentClient {
@@ -594,84 +571,6 @@ export class MockSsmDocumentClient implements SsmDocumentClient {
             documentVersion: string
         ) => ({})
     ) {}
-}
-export class MockS3Client implements S3Client {
-    public readonly regionCode: string
-
-    public readonly createBucket: (request: CreateBucketRequest) => Promise<CreateBucketResponse>
-    public readonly listAllBuckets: () => Promise<S3.Bucket[]>
-    public readonly listBuckets: () => Promise<ListBucketsResponse>
-    public readonly listFiles: (request: ListFilesRequest) => Promise<ListFilesResponse>
-    public readonly createFolder: (request: CreateFolderRequest) => Promise<CreateFolderResponse>
-    public readonly downloadFile: (request: DownloadFileRequest) => Promise<void>
-    public readonly getHeadObject: (request: HeadObjectRequest) => Promise<S3.HeadObjectOutput>
-    public readonly getCharset: (request: CharsetRequest) => Promise<string>
-    public readonly uploadFile: (request: UploadFileRequest) => Promise<S3.ManagedUpload>
-    public readonly listObjectVersions: (request: ListObjectVersionsRequest) => Promise<ListObjectVersionsResponse>
-    public readonly listObjectVersionsIterable: (
-        request: ListObjectVersionsRequest
-    ) => AsyncIterableIterator<ListObjectVersionsResponse>
-    public readonly deleteObject: (request: DeleteObjectRequest) => Promise<void>
-    public readonly deleteObjects: (request: DeleteObjectsRequest) => Promise<DeleteObjectsResponse>
-    public readonly deleteBucket: (request: DeleteBucketRequest) => Promise<void>
-    public readonly getSignedUrl: (request: SignedUrlRequest) => Promise<string>
-
-    public constructor({
-        regionCode = '',
-        createBucket = async (request: CreateBucketRequest) => ({ bucket: { name: '', region: '', arn: '' } }),
-        listAllBuckets = async () => [],
-        listBuckets = async () => ({ buckets: [] }),
-        listFiles = async (request: ListFilesRequest) => ({ files: [], folders: [] }),
-        createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
-        downloadFile = async (request: DownloadFileRequest) => {},
-        getHeadObject = async (request: HeadObjectRequest) => ({}),
-        getCharset = async (request: CharsetRequest) => '',
-        getSignedUrl = async (request: SignedUrlRequest) => '',
-        uploadFile = async (request: UploadFileRequest) => {
-            return new S3.ManagedUpload({})
-        },
-        listObjectVersions = async (request: ListObjectVersionsRequest) => ({ objects: [] }),
-        listObjectVersionsIterable = (request: ListObjectVersionsRequest) => asyncGenerator([]),
-        deleteObject = async (request: DeleteObjectRequest) => {},
-        deleteObjects = async (request: DeleteObjectsRequest) => ({ errors: [] }),
-        deleteBucket = async (request: DeleteBucketRequest) => {},
-    }: {
-        regionCode?: string
-        createBucket?(request: CreateBucketRequest): Promise<CreateBucketResponse>
-        listAllBuckets?(): Promise<S3.Bucket[]>
-        listBuckets?(): Promise<ListBucketsResponse>
-        listFiles?(request: ListFilesRequest): Promise<ListFilesResponse>
-        createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
-        downloadFile?(request: DownloadFileRequest): Promise<void>
-        getHeadObject?(request: HeadObjectRequest): Promise<S3.HeadObjectOutput>
-        getCharset?(request: CharsetRequest): Promise<string>
-        getSignedUrl?(request: SignedUrlRequest): Promise<string>
-        uploadFile?(request: UploadFileRequest): Promise<S3.ManagedUpload>
-        listObjectVersions?(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
-        listObjectVersionsIterable?(
-            request: ListObjectVersionsRequest
-        ): AsyncIterableIterator<ListObjectVersionsResponse>
-        deleteObject?(request: DeleteObjectRequest): Promise<void>
-        deleteObjects?(request: DeleteObjectsRequest): Promise<DeleteObjectsResponse>
-        deleteBucket?(request: DeleteBucketRequest): Promise<void>
-    }) {
-        this.regionCode = regionCode
-        this.createBucket = createBucket
-        this.listAllBuckets = listAllBuckets
-        this.listBuckets = listBuckets
-        this.listFiles = listFiles
-        this.createFolder = createFolder
-        this.downloadFile = downloadFile
-        this.getHeadObject = getHeadObject
-        this.getCharset = getCharset
-        this.getSignedUrl = getSignedUrl
-        this.uploadFile = uploadFile
-        this.listObjectVersions = listObjectVersions
-        this.listObjectVersionsIterable = listObjectVersionsIterable
-        this.deleteObject = deleteObject
-        this.deleteObjects = deleteObjects
-        this.deleteBucket = deleteBucket
-    }
 }
 
 export class MockIotClient implements IotClient {

@@ -29,8 +29,9 @@ import { MemoryFileSystem } from '../shared/memoryFilesystem'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const memFs = new MemoryFileSystem()
-    const manager = new S3FileViewerManager(ctx, memFs)
+    const manager = new S3FileViewerManager(region => ext.toolkitClientBuilder.createS3Client(region), memFs)
 
+    ctx.extensionContext.subscriptions.push(manager)
     ctx.extensionContext.subscriptions.push(
         vscode.workspace.registerFileSystemProvider(S3_EDIT_SCHEME, memFs),
         vscode.workspace.registerFileSystemProvider(S3_READ_SCHEME, memFs, { isReadonly: true }),

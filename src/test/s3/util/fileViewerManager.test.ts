@@ -4,60 +4,164 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
+import { ManagedUpload } from 'aws-sdk/clients/s3'
 import * as vscode from 'vscode'
-import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
-import { S3FileNode } from '../../../s3/explorer/s3FileNode'
-import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
-import { S3FileViewerManager, S3Tab } from '../../../s3/fileViewerManager'
-import { DefaultFile, S3Client } from '../../../shared/clients/s3Client'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import * as testutil from '../../testUtil'
-import { anything, capture, instance, mock, when } from '../../utilities/mockito'
+import { S3FileProvider, S3FileViewerManager } from '../../../s3/fileViewerManager'
+import {
+    DefaultBucket,
+    DefaultFile,
+    DefaultS3Client,
+    S3Client,
+    UploadFileRequest,
+} from '../../../shared/clients/s3Client'
+import { ext } from '../../../shared/extensionGlobals'
+import { MemoryFileSystem } from '../../../shared/memoryFilesystem'
+import { bufferToStream } from '../../../shared/utilities/streamUtilities'
+import { createTestWindow, TestWindow } from '../../shared/vscode/window'
+import { anything, instance, mock, when } from '../../utilities/mockito'
+import { MockOutputChannel } from '../../mockOutputChannel'
 
-describe('FileViewerManager', function () {
-    const bucketName = 'bucket-name'
-    const key = 'file.jpg'
-    const sizeBytes = 16
-    const creationDate = new Date(2020, 7, 7)
-    let file: DefaultFile
-    let testNode: S3FileNode
-    let s3: S3Client
-    let fileViewerManager: S3FileViewerManager
-    let mockedWindow: typeof vscode.window
-    let testCache: Set<string>
-    let tempPath: string
-    let parent: S3BucketNode | S3FolderNode
-    let commands: FakeCommands
-    let tempFile: vscode.Uri
-    let mockedWorkspace: typeof vscode.workspace
-    let s3TempFile: vscode.Uri
+describe('S3FileProvider', function () {
+    let s3: DefaultS3Client
+    let provider: S3FileProvider
+    let textFileContent: Buffer
+    let textFile: DefaultFile
+    let lastModified: Date
+    let mockedUpload: ManagedUpload
 
-    beforeEach(async function () {
-        mockedWindow = mock()
-        s3 = mock()
-        parent = mock()
-        mockedWorkspace = mock()
-        tempPath = await makeTemporaryToolkitFolder()
-        testCache = new Set<string>()
-        commands = new FakeCommands()
-        fileViewerManager = new S3FileViewerManager(testCache, instance(mockedWindow), commands, tempPath, undefined)
-        file = new DefaultFile({
-            partitionId: 'aws',
-            bucketName,
-            key,
-            lastModified: creationDate,
-            sizeBytes,
-        })
-        testNode = new S3FileNode({} as any, file, instance(parent), instance(s3))
-
-        const completePath = await fileViewerManager.createTargetPath(testNode)
-
-        tempFile = vscode.Uri.file(completePath)
-        s3TempFile = vscode.Uri.parse('s3:' + tempFile.fsPath)
-        testutil.toFile('bogus', tempFile.fsPath)
+    const bucket = new DefaultBucket({
+        name: 'bucket-name',
+        region: 'us-west-2',
+        partitionId: 'aws',
     })
 
+    const computeTag = (content: Buffer) => content.toString()
+    const makeFile = (key: string, content: Buffer) => {
+        return new DefaultFile({
+            key,
+            partitionId: 'aws',
+            bucketName: bucket.name,
+            eTag: computeTag(content),
+            sizeBytes: content.byteLength,
+        })
+    }
+
+    before(function () {
+        // TODO: fix this dependency
+        ext.outputChannel ??= new MockOutputChannel()
+    })
+
+    beforeEach(function () {
+        s3 = mock()
+        mockedUpload = mock()
+
+        textFileContent = Buffer.from('content', 'utf-8')
+        textFile = makeFile('file.txt', textFileContent)
+        lastModified = new Date()
+        provider = new S3FileProvider(instance(s3), { ...textFile, bucket })
+
+        when(s3.downloadFileStream(bucket.name, textFile.key)).thenCall(async () => bufferToStream(textFileContent))
+        when(s3.uploadFile(anything())).thenCall(async (request: UploadFileRequest) => {
+            // assumed that key + bucket is the same for all calls
+            if (request.content instanceof vscode.Uri) {
+                throw new Error('Did not expect a URI, expected a Buffer')
+            }
+            textFileContent = Buffer.from(request.content)
+            textFile = makeFile('file.txt', textFileContent)
+            lastModified = new Date()
+
+            return instance(mockedUpload)
+        })
+        when(s3.headObject(anything())).thenResolve({
+            ETag: textFile.eTag,
+            ContentLength: textFile.sizeBytes,
+            LastModified: lastModified,
+        })
+        when(mockedUpload.promise()).thenResolve({
+            ETag: textFile.eTag ?? '',
+            Key: textFile.key,
+            Bucket: bucket.name,
+            Location: textFile.key, // not correct, needs to be a URI but doesn't matter here
+        })
+    })
+
+    it('can read contents from s3', async function () {
+        const content = await provider.read()
+        assert.deepStrictEqual(content, textFileContent)
+    })
+
+    it('can upload to s3', async function () {
+        const newContent = Buffer.from('new content', 'utf-8')
+        await provider.write(newContent)
+        assert.deepStrictEqual(await provider.read(), newContent)
+    })
+
+    it('can use `stat`', async function () {
+        const stats = await provider.stat()
+        assert.deepStrictEqual(stats, {
+            ctime: 0,
+            size: textFile.sizeBytes,
+            mtime: lastModified.getTime(),
+        })
+    })
+})
+
+describe('FileViewerManager', function () {
+    let s3: S3Client
+    let fileViewerManager: S3FileViewerManager
+    let memFs: MemoryFileSystem
+    let testWindow: TestWindow
+
+    const bucket = new DefaultBucket({
+        name: 'bucket-name',
+        region: 'us-west-2',
+        partitionId: 'aws',
+    })
+
+    const bigImage = new DefaultFile({
+        bucketName: bucket.name,
+        eTag: '12345',
+        key: 'big-image.jpg',
+        sizeBytes: 5 * Math.pow(10, 6),
+        partitionId: 'aws',
+    })
+
+    before(function () {
+        // temporary stub to `showTextDocument` and `openTextDocument`
+        sinon.stub(vscode.window, 'showTextDocument').resolves()
+        sinon.stub(vscode.workspace, 'openTextDocument').resolves()
+    })
+
+    beforeEach(function () {
+        s3 = mock()
+        memFs = new MemoryFileSystem()
+        fileViewerManager = new S3FileViewerManager(() => instance(s3), memFs)
+        ext.window = testWindow = createTestWindow()
+    })
+
+    after(function () {
+        sinon.restore()
+    })
+
+    it('prompts for download if the file size is larger than 4mb', async function () {
+        const didOpen = fileViewerManager.openInReadMode({ ...bigImage, bucket })
+
+        // currently causes an unhandled rejected promise since it executes the `vscode.open` command
+        await testWindow.waitForMessage(/File size is more than 4MB/).then(message => message.selectItem(/Continue/))
+
+        await didOpen
+    })
+
+    it('throws if the user cancels a download', async function () {
+        const didOpen = fileViewerManager.openInReadMode({ ...bigImage, bucket })
+
+        await testWindow.waitForMessage(/File size is more than 4MB/).then(message => message.selectItem(/Cancel/))
+
+        await assert.rejects(didOpen)
+    })
+
+    /*
     describe('cache', function () {
         let managerWithoutCache: S3FileViewerManager
         this.beforeEach(async function () {
@@ -244,4 +348,5 @@ describe('FileViewerManager', function () {
 
         assert.ok(result)
     })
+    */
 })
