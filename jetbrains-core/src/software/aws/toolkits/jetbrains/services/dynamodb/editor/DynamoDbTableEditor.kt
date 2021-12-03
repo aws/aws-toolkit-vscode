@@ -9,6 +9,7 @@ import com.intellij.openapi.fileEditor.FileEditorLocation
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.fileEditor.FileEditorStateLevel
 import com.intellij.openapi.util.UserDataHolderBase
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBLoadingPanel
 import com.intellij.ui.components.JBPanelWithEmptyText
@@ -192,6 +193,8 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
     override fun removePropertyChangeListener(listener: PropertyChangeListener) {}
 
     override fun setState(state: FileEditorState) {}
+
+    override fun getFile(): VirtualFile = dynamoTable
 
     companion object {
         private val LOG = getLogger<SearchPanel>()
