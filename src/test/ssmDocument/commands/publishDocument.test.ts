@@ -11,7 +11,6 @@ import * as vscode from 'vscode'
 
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import * as publish from '../../../ssmDocument/commands/publishDocument'
 import * as ssmUtils from '../../../ssmDocument/util/util'
 import {
@@ -21,6 +20,7 @@ import {
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext, FakeRegionProvider } from '../../utilities/fakeAwsContext'
+import globals from '../../../shared/extensionGlobals'
 
 let sandbox: sinon.SinonSandbox
 
@@ -142,7 +142,7 @@ describe('publishSSMDocument', async function () {
             createSsmClient: sandbox.stub().returns(ssmDocumentClient),
         }
 
-        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
 

@@ -34,10 +34,16 @@ export async function initialize(parameters: CredentialsInitializeParameters): P
     )
 }
 
+/**
+ * Auto-connects with the last-used credentials, else the "default" profile,
+ * else randomly tries the first three profiles (for Cloud9, ECS, or other
+ * container-like environments).
+ */
 export async function loginWithMostRecentCredentials(
     toolkitSettings: SettingsConfiguration,
     loginManager: LoginManager
 ): Promise<void> {
+    const defaultName = 'profile:default'
     const manager = CredentialsProviderManager.getInstance()
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
 
@@ -48,7 +54,7 @@ export async function loginWithMostRecentCredentials(
             getLogger().warn('autoconnect: getCredentialsProvider() lookup failed for profile: %O', asString(creds))
         } else if (provider.canAutoConnect()) {
             if (!(await loginManager.login({ passive: true, providerId: creds }))) {
-                getLogger().warn('autoconnect: failed to connect: %O', asString(creds))
+                getLogger().warn('autoconnect: failed to connect: "%s"', asString(creds))
                 return false
             }
             getLogger().info('autoconnect: connected: %O', asString(creds))
@@ -67,6 +73,7 @@ export async function loginWithMostRecentCredentials(
         return false
     }
 
+    // Auto-connect if there is a recently-used profile.
     if (previousCredentialsId) {
         // Migrate from old Toolkits: default to "shared" provider type.
         const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
@@ -76,25 +83,45 @@ export async function loginWithMostRecentCredentials(
         if (await tryConnect(loginCredentialsId, false)) {
             return
         }
+        getLogger().warn('autoconnect: login failed: "%s"', previousCredentialsId)
     }
 
     const providerMap = await manager.getCredentialProviderNames()
     const profileNames = Object.keys(providerMap)
+    // Look for "default" profile or exactly one (any name).
+    const defaultProfile = profileNames.includes(defaultName)
+        ? defaultName
+        : profileNames.length === 1
+        ? profileNames[0]
+        : undefined
 
-    if (!previousCredentialsId && !(providerMap && profileNames.length === 1)) {
-        await loginManager.logout()
-        getLogger().info('autoconnect: skipped')
+    if (!previousCredentialsId && profileNames.length === 0) {
+        await loginManager.logout(true)
+        getLogger().info('autoconnect: skipped (profileNames=%d)', profileNames.length)
         return
     }
 
-    if (providerMap && profileNames.length === 1) {
-        // Auto-connect if there is exactly one profile.
-        if (await tryConnect(providerMap[profileNames[0]], !isCloud9())) {
+    // Try to auto-connect the default profile.
+    if (defaultProfile) {
+        getLogger().info('autoconnect: trying "%s"', defaultProfile)
+        if (await tryConnect(providerMap[defaultProfile], !isCloud9())) {
             return
         }
     }
 
-    await loginManager.logout()
+    // Try to auto-connect up to 3 other profiles (useful for Cloud9, ECS, …).
+    for (let i = 0; i < 4 && i < profileNames.length; i++) {
+        const p = profileNames[i]
+        if (p === defaultName) {
+            continue
+        }
+        getLogger().info('autoconnect: trying "%s"', p)
+        if (await tryConnect(providerMap[p], !isCloud9())) {
+            return
+        }
+    }
+
+    await loginManager.logout(true)
 }
 
 function updateMruWhenAwsContextChanges(awsContext: AwsContext, extensionContext: vscode.ExtensionContext) {

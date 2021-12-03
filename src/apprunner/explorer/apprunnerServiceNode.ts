@@ -9,7 +9,7 @@ import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { CloudWatchLogsBase } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { CloudWatchLogs } from 'aws-sdk'
@@ -17,6 +17,7 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 const CONTEXT_BASE = 'awsAppRunnerServiceNode'
@@ -49,8 +50,8 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
         )
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.apprunner),
-            light: vscode.Uri.file(ext.iconPaths.light.apprunner),
+            dark: vscode.Uri.file(globals.iconPaths.dark.apprunner),
+            light: vscode.Uri.file(globals.iconPaths.light.apprunner),
         }
         this.id = `AppRunnerService-${_info.ServiceArn}`
         this.name = _info.ServiceName

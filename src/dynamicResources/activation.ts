@@ -15,7 +15,7 @@ import { ResourcesNode } from './explorer/nodes/resourcesNode'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { RESOURCE_FILE_GLOB_PATTERN } from './awsResourceManager'
-import { ext } from '../shared/extensionGlobals'
+import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -26,7 +26,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const resourceDiagnostics = vscode.languages.createDiagnosticCollection(
         localize('AWS.explorerNode.resources.label', 'Resources')
     )
-    const resourceManager = ext.resourceManager
+    const resourceManager = globals.resourceManager
 
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider('awsResource', new VirtualDocumentProvider()),

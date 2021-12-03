@@ -12,12 +12,16 @@ import { CredentialsProvider, CredentialsId, asString } from '../../../credentia
 describe('CredentialsStore', async function () {
     let sandbox: sinon.SinonSandbox
     let sut: CredentialsStore
-    const sampleCredentials = { expiration: new Date(Date.now() + 1000 * 60 * 60) } as Credentials
+    const sampleCredentials = {
+        expiration: new Date(Date.now() + 1000 * 60 * 60),
+    } as Credentials
     const sampleCredentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: 'someId',
     }
-    const sampleExpiredCredentials = { expiration: new Date(Date.now() - 1000 * 60 * 60) } as Credentials
+    const sampleExpiredCredentials = {
+        expiration: new Date(Date.now() - 1000 * 60 * 60),
+    } as Credentials
 
     beforeEach(async function () {
         sandbox = sinon.createSandbox()

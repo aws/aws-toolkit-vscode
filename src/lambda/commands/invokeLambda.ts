@@ -8,7 +8,8 @@ import { readFileSync } from 'fs'
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
+
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
@@ -85,7 +86,7 @@ export async function invokeLambda(params: {
                     onPostMessage: message => view.webview.postMessage(message),
                 }),
                 undefined,
-                ext.context.subscriptions
+                globals.context.subscriptions
             )
         } catch (err) {
             invokeResult = 'Failed'
@@ -161,7 +162,7 @@ function createMessageReceivedFunc({
                     if (!fn.configuration.FunctionArn) {
                         throw new Error(`Could not determine ARN for function ${fn.configuration.FunctionName}`)
                     }
-                    const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(fn.regionCode)
+                    const client: LambdaClient = globals.toolkitClientBuilder.createLambdaClient(fn.regionCode)
                     const funcResponse = await client.invoke(fn.configuration.FunctionArn, message.value)
                     const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ''
                     const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})

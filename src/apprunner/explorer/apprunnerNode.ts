@@ -12,6 +12,7 @@ import * as nls from 'vscode-nls'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
 import { AppRunner } from 'aws-sdk'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -92,14 +93,14 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
     private clearPollTimer(): void {
         if (this.pollingNodes.size === 0 && this.pollTimer) {
-            clearInterval(this.pollTimer)
+            globals.clock.clearInterval(this.pollTimer)
             this.pollTimer = undefined
         }
     }
 
     public startPolling(id: string): void {
         this.pollingNodes.add(id)
-        this.pollTimer = this.pollTimer ?? setInterval(this.refresh.bind(this), POLLING_INTERVAL)
+        this.pollTimer = this.pollTimer ?? globals.clock.setInterval(this.refresh.bind(this), POLLING_INTERVAL)
     }
 
     public stopPolling(id: string): void {

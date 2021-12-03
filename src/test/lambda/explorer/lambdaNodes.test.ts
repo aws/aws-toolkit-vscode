@@ -6,10 +6,10 @@
 import * as assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as sinon from 'sinon'
+import globals from '../../../shared/extensionGlobals'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
@@ -106,6 +106,6 @@ describe('LambdaNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

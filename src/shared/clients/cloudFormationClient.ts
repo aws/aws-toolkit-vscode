@@ -4,7 +4,7 @@
  */
 
 import { CloudFormation } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type CloudFormationClient = ClassToInterfaceType<DefaultCloudFormationClient>
@@ -83,6 +83,6 @@ export class DefaultCloudFormationClient {
     }
 
     private async createSdkClient(): Promise<CloudFormation> {
-        return await ext.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
     }
 }

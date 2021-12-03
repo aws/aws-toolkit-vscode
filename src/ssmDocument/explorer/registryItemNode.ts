@@ -10,7 +10,7 @@ import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -18,6 +18,7 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { DocumentItemNode } from './documentItemNode'
 import { DocumentItemNodeWriteable } from './documentItemNodeWriteable'
+import globals from '../../shared/extensionGlobals'
 
 export const amazonRegistryName = localize('AWS.explorerNode.registry.name.amazon', 'Owned by Amazon')
 export const userRegistryName = localize('AWS.explorerNode.registry.name.self', 'Owned by me')
@@ -92,7 +93,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(this.regionCode)
+        const client: SsmDocumentClient = globals.toolkitClientBuilder.createSsmClient(this.regionCode)
         const documents = new Map<string, SSM.Types.DocumentIdentifier>()
 
         const docs = await this.getDocumentByOwner(client)

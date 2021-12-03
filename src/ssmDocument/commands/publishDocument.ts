@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { ssmJson, ssmYaml } from '../../shared/constants'
-import { ext } from '../../shared/extensionGlobals'
+
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -24,6 +24,7 @@ import { stringify } from 'querystring'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { showConfirmationMessage } from '../util/util'
+import globals from '../../shared/extensionGlobals'
 
 export async function publishSSMDocument(awsContext: AwsContext, regionProvider: RegionProvider): Promise<void> {
     const logger: Logger = getLogger()
@@ -76,7 +77,7 @@ export async function publishSSMDocument(awsContext: AwsContext, regionProvider:
 export async function createDocument(
     wizardResponse: PublishSSMDocumentWizardResponse,
     textDocument: vscode.TextDocument,
-    client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(wizardResponse.region)
+    client: SsmDocumentClient = globals.toolkitClientBuilder.createSsmClient(wizardResponse.region)
 ) {
     let result: telemetry.Result = 'Succeeded'
     const ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
@@ -110,7 +111,7 @@ export async function createDocument(
 export async function updateDocument(
     wizardResponse: PublishSSMDocumentWizardResponse,
     textDocument: vscode.TextDocument,
-    client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(wizardResponse.region),
+    client: SsmDocumentClient = globals.toolkitClientBuilder.createSsmClient(wizardResponse.region),
     window = Window.vscode()
 ) {
     let result: telemetry.Result = 'Succeeded'

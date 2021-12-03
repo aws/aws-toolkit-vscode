@@ -24,6 +24,7 @@ import {
 } from '../wizards/schemaCodeDownloadWizard'
 
 import * as admZip from 'adm-zip'
+import globals from '../../shared/extensionGlobals'
 
 enum CodeGenerationStatus {
     CREATE_COMPLETE = 'CREATE_COMPLETE',
@@ -234,7 +235,7 @@ export class CodeGenerationStatusPoller {
                 )
             }
 
-            await new Promise<void>(resolve => setTimeout(resolve, retryInterval))
+            await new Promise<void>(resolve => globals.clock.setTimeout(resolve, retryInterval))
         }
         throw new UserNotifiedError(
             localize(

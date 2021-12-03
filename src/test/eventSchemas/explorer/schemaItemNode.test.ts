@@ -6,10 +6,10 @@
 import * as assert from 'assert'
 import { Schemas } from 'aws-sdk'
 import * as os from 'os'
+import globals from '../../../shared/extensionGlobals'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
-import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
@@ -45,8 +45,8 @@ describe('SchemaItemNode', function () {
 
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.schema, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.schema, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.schema, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.schema, 'Unexpected light icon path')
     })
 
     // Validates we don't yield some unexpected value that our command triggers
@@ -119,7 +119,7 @@ describe('RegistryItemNode', function () {
     it('Sorts Schema Items By Name', async function () {
         const inputSchemaNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const schemaClient = new SchemaNamesMockSchemaClient(inputSchemaNames)
-        ext.toolkitClientBuilder = new TestMockToolkitClientBuilder(schemaClient)
+        globals.toolkitClientBuilder = new TestMockToolkitClientBuilder(schemaClient)
 
         const registryItemNode = new RegistryItemNode(fakeRegion, fakeRegistry)
         const children = await registryItemNode.getChildren()

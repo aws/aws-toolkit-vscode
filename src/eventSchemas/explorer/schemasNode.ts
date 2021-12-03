@@ -10,14 +10,13 @@ import * as vscode from 'vscode'
 
 import { listRegistryItems } from '../../eventSchemas/utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-
-import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RegistryItemNode } from './registryItemNode'
+import globals from '../../shared/extensionGlobals'
 
 export class SchemasNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
@@ -43,7 +42,7 @@ export class SchemasNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(this.regionCode)
+        const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(this.regionCode)
         const registries = await toMapAsync(listRegistryItems(client), registry => registry.RegistryName)
 
         updateInPlace(

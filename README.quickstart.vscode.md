@@ -14,6 +14,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
     -   CloudWatch Logs
     -   ECR
     -   EventBridge schemas
+    -   [IoT explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/iot-start.html)
     -   Lambda functions
     -   S3 explorer
     -   Step Functions

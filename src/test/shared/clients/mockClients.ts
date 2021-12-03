@@ -10,6 +10,7 @@ import {
     CloudWatchLogs,
     ECS,
     IAM,
+    Iot,
     Lambda,
     Schemas,
     S3,
@@ -29,6 +30,7 @@ import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { StepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { IotClient, ListThingCertificatesResponse } from '../../../shared/clients/iotClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -52,6 +54,7 @@ import {
     SignedUrlRequest,
 } from '../../../shared/clients/s3Client'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import globals from '../../../shared/extensionGlobals'
 
 interface Clients {
     apiGatewayClient: ApiGatewayClient
@@ -66,6 +69,7 @@ interface Clients {
     stepFunctionsClient: StepFunctionsClient
     stsClient: StsClient
     s3Client: S3Client
+    iotClient: IotClient
     ssmDocumentClient: SsmDocumentClient
     apprunnerClient: AppRunnerClient
 }
@@ -86,6 +90,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             stepFunctionsClient: new MockStepFunctionsClient(),
             stsClient: new MockStsClient({}),
             s3Client: new MockS3Client({}),
+            iotClient: new MockIotClient({}),
             ssmDocumentClient: new MockSsmDocumentClient(),
             apprunnerClient: new MockAppRunnerClient(),
             ...overrideClients,
@@ -146,6 +151,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createSsmClient(regionCode: string): SsmDocumentClient {
         return this.clients.ssmDocumentClient
+    }
+
+    public createIotClient(regionCode: string): IotClient {
+        return this.clients.iotClient
     }
 }
 
@@ -481,7 +490,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             name: '',
             definition: '',
             type: '',
-            creationDate: new Date(),
+            creationDate: new globals.clock.Date(),
         }),
 
         public readonly executeStateMachine: (
@@ -489,7 +498,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             input: string
         ) => Promise<StepFunctions.StartExecutionOutput> = async (arn: string, input: string) => ({
             executionArn: '',
-            startDate: new Date(),
+            startDate: new globals.clock.Date(),
         }),
 
         public readonly createStateMachine: (
@@ -498,7 +507,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             params: StepFunctions.CreateStateMachineInput
         ) => ({
             stateMachineArn: '',
-            creationDate: new Date(),
+            creationDate: new globals.clock.Date(),
         }),
 
         public readonly updateStateMachine: (
@@ -506,7 +515,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
         ) => Promise<StepFunctions.UpdateStateMachineOutput> = async (
             params: StepFunctions.UpdateStateMachineInput
         ) => ({
-            updateDate: new Date(),
+            updateDate: new globals.clock.Date(),
         })
     ) {}
 }
@@ -594,7 +603,7 @@ export class MockS3Client implements S3Client {
     public readonly listFiles: (request: ListFilesRequest) => Promise<ListFilesResponse>
     public readonly createFolder: (request: CreateFolderRequest) => Promise<CreateFolderResponse>
     public readonly downloadFile: (request: DownloadFileRequest) => Promise<void>
-    public readonly uploadFile: (request: UploadFileRequest) => Promise<void>
+    public readonly uploadFile: (request: UploadFileRequest) => Promise<S3.ManagedUpload>
     public readonly listObjectVersions: (request: ListObjectVersionsRequest) => Promise<ListObjectVersionsResponse>
     public readonly listObjectVersionsIterable: (
         request: ListObjectVersionsRequest
@@ -613,7 +622,9 @@ export class MockS3Client implements S3Client {
         createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
         downloadFile = async (request: DownloadFileRequest) => {},
         getSignedUrl = async (request: SignedUrlRequest) => '',
-        uploadFile = async (request: UploadFileRequest) => {},
+        uploadFile = async (request: UploadFileRequest) => {
+            return new S3.ManagedUpload({})
+        },
         listObjectVersions = async (request: ListObjectVersionsRequest) => ({ objects: [] }),
         listObjectVersionsIterable = (request: ListObjectVersionsRequest) => asyncGenerator([]),
         deleteObject = async (request: DeleteObjectRequest) => {},
@@ -628,7 +639,7 @@ export class MockS3Client implements S3Client {
         createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
         downloadFile?(request: DownloadFileRequest): Promise<void>
         getSignedUrl?(request: SignedUrlRequest): Promise<string>
-        uploadFile?(request: UploadFileRequest): Promise<void>
+        uploadFile?(request: UploadFileRequest): Promise<S3.ManagedUpload>
         listObjectVersions?(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
         listObjectVersionsIterable?(
             request: ListObjectVersionsRequest
@@ -651,6 +662,150 @@ export class MockS3Client implements S3Client {
         this.deleteObject = deleteObject
         this.deleteObjects = deleteObjects
         this.deleteBucket = deleteBucket
+    }
+}
+
+export class MockIotClient implements IotClient {
+    public readonly regionCode: string
+
+    public readonly listThings: () => Promise<Iot.ListThingsResponse>
+    public readonly createThing: (request: Iot.CreateThingRequest) => Promise<Iot.CreateThingResponse>
+    public readonly deleteThing: (request: Iot.DeleteThingRequest) => Promise<void>
+    public readonly listCertificates: (request: Iot.ListCertificatesRequest) => Promise<Iot.ListCertificatesResponse>
+    public readonly listThingCertificates: (
+        request: Iot.ListThingPrincipalsRequest
+    ) => Promise<ListThingCertificatesResponse>
+    public readonly createCertificateAndKeys: (
+        request: Iot.CreateKeysAndCertificateRequest
+    ) => Promise<Iot.CreateKeysAndCertificateResponse>
+    public readonly updateCertificate: (request: Iot.UpdateCertificateRequest) => Promise<void>
+    public readonly deleteCertificate: (request: Iot.DeleteCertificateRequest) => Promise<void>
+    public readonly attachThingPrincipal: (request: Iot.AttachThingPrincipalRequest) => Promise<void>
+    public readonly detachThingPrincipal: (request: Iot.DetachThingPrincipalRequest) => Promise<void>
+    public readonly listPolicies: (request: Iot.ListPoliciesRequest) => Promise<Iot.ListPoliciesResponse>
+    public readonly listPrincipalPolicies: (
+        request: Iot.ListPrincipalPoliciesRequest
+    ) => Promise<Iot.ListPoliciesResponse>
+    public readonly attachPolicy: (request: Iot.AttachPolicyRequest) => Promise<void>
+    public readonly detachPolicy: (request: Iot.DetachPolicyRequest) => Promise<void>
+    public readonly createPolicy: (request: Iot.CreatePolicyRequest) => Promise<void>
+    public readonly deletePolicy: (request: Iot.DeletePolicyRequest) => Promise<void>
+    public readonly listThingsForCert: (request: Iot.ListPrincipalThingsRequest) => Promise<string[]>
+    public readonly listThingPrincipals: (
+        request: Iot.ListThingPrincipalsRequest
+    ) => Promise<Iot.ListThingPrincipalsResponse>
+    public readonly getEndpoint: () => Promise<string>
+    public readonly listPolicyVersions: () => AsyncIterableIterator<Iot.PolicyVersion>
+    public readonly createPolicyVersion: (request: Iot.CreatePolicyVersionRequest) => Promise<void>
+    public readonly deletePolicyVersion: (request: Iot.DeletePolicyVersionRequest) => Promise<void>
+    public readonly setDefaultPolicyVersion: (request: Iot.SetDefaultPolicyVersionRequest) => Promise<void>
+    public readonly getPolicyVersion: (request: Iot.GetPolicyVersionRequest) => Promise<Iot.GetPolicyVersionResponse>
+    public readonly listPolicyTargets: (request: Iot.ListTargetsForPolicyRequest) => Promise<string[]>
+
+    public constructor({
+        regionCode = '',
+        listThings = async () => ({ things: [], nextToken: undefined }),
+        createThing = async (request: Iot.CreateThingRequest) => ({ thingName: '', thingArn: '' }),
+        deleteThing = async (request: Iot.DeleteThingRequest) => {},
+        listCertificates = async (request: Iot.ListCertificatesRequest) => ({
+            certificates: [],
+            nextMarker: undefined,
+        }),
+        listThingCertificates = async (request: Iot.ListThingPrincipalsRequest) => ({
+            certificates: [],
+            nextToken: undefined,
+        }),
+        createCertificateAndKeys = async (request: Iot.CreateKeysAndCertificateRequest) => ({
+            certificateId: '',
+            certificatePem: '',
+            keyPair: {
+                PrivateKey: '',
+                PublicKey: '',
+            },
+        }),
+        updateCertificate = async (request: Iot.UpdateCertificateRequest) => {},
+        deleteCertificate = async (request: Iot.DeleteCertificateRequest) => {},
+        attachThingPrincipal = async (request: Iot.AttachThingPrincipalRequest) => {},
+        detachThingPrincipal = async (request: Iot.DetachThingPrincipalRequest) => {},
+        listPolicies = async (request: Iot.ListPoliciesRequest) => ({ policies: [], nextMarker: undefined }),
+        listPrincipalPolicies = async (request: Iot.ListPrincipalPoliciesRequest) => ({
+            policies: [],
+            nextMarker: undefined,
+        }),
+        attachPolicy = async (request: Iot.AttachPolicyRequest) => {},
+        detachPolicy = async (request: Iot.DetachPolicyRequest) => {},
+        createPolicy = async (request: Iot.CreatePolicyRequest) => {},
+        deletePolicy = async (request: Iot.DeletePolicyRequest) => {},
+        listThingsForCert = async (request: Iot.ListPrincipalThingsRequest) => [],
+        listThingPrincipals = async (request: Iot.ListThingPrincipalsRequest) => ({
+            principals: [],
+            nextToken: undefined,
+        }),
+        getEndpoint = async () => '',
+        listPolicyVersions = () => asyncGenerator([]),
+        createPolicyVersion = async (request: Iot.CreatePolicyVersionRequest) => {},
+        deletePolicyVersion = async (request: Iot.DeletePolicyVersionRequest) => {},
+        setDefaultPolicyVersion = async (request: Iot.SetDefaultPolicyVersionRequest) => {},
+        getPolicyVersion = async (request: Iot.GetPolicyVersionRequest) => ({
+            policyDocument: '',
+        }),
+        listPolicyTargets = async (request: Iot.ListTargetsForPolicyRequest) => [],
+    }: {
+        regionCode?: string
+        listThings?(): Promise<Iot.ListThingsResponse>
+        createThing?(request: Iot.CreateThingRequest): Promise<Iot.CreateThingResponse>
+        deleteThing?(request: Iot.DeleteThingRequest): Promise<void>
+        listCertificates?(request: Iot.ListCertificatesRequest): Promise<Iot.ListCertificatesResponse>
+        listThingCertificates?(request: Iot.ListThingPrincipalsRequest): Promise<ListThingCertificatesResponse>
+        createCertificateAndKeys?(
+            request: Iot.CreateKeysAndCertificateRequest
+        ): Promise<Iot.CreateKeysAndCertificateResponse>
+        updateCertificate?(request: Iot.UpdateCertificateRequest): Promise<void>
+        deleteCertificate?(request: Iot.DeleteCertificateRequest): Promise<void>
+        attachThingPrincipal?(request: Iot.AttachThingPrincipalRequest): Promise<void>
+        detachThingPrincipal?(request: Iot.DetachThingPrincipalRequest): Promise<void>
+        listPolicies?(request: Iot.ListPoliciesRequest): Promise<Iot.ListPoliciesResponse>
+        listPrincipalPolicies?(request: Iot.ListPrincipalPoliciesRequest): Promise<Iot.ListPoliciesResponse>
+        attachPolicy?(request: Iot.AttachPolicyRequest): Promise<void>
+        detachPolicy?(request: Iot.DetachPolicyRequest): Promise<void>
+        createPolicy?(request: Iot.CreatePolicyRequest): Promise<void>
+        deletePolicy?(request: Iot.DeletePolicyRequest): Promise<void>
+        listThingsForCert?(request: Iot.ListPrincipalThingsRequest): Promise<string[]>
+        listThingPrincipals?(request: Iot.ListThingPrincipalsRequest): Promise<Iot.ListThingPrincipalsResponse>
+        getEndpoint?(): Promise<string>
+        listPolicyVersions?(): AsyncIterableIterator<Iot.PolicyVersion>
+        createPolicyVersion?(request: Iot.CreatePolicyVersionRequest): Promise<void>
+        deletePolicyVersion?(request: Iot.DeletePolicyVersionRequest): Promise<void>
+        setDefaultPolicyVersion?(request: Iot.SetDefaultPolicyVersionRequest): Promise<void>
+        getPolicyVersion?(request: Iot.GetPolicyVersionRequest): Promise<Iot.GetPolicyVersionResponse>
+        listPolicyTargets?(request: Iot.ListTargetsForPolicyRequest): Promise<string[]>
+    }) {
+        this.regionCode = regionCode
+        this.listThings = listThings
+        this.createThing = createThing
+        this.deleteThing = deleteThing
+        this.listCertificates = listCertificates
+        this.listThingCertificates = listThingCertificates
+        this.createCertificateAndKeys = createCertificateAndKeys
+        this.updateCertificate = updateCertificate
+        this.deleteCertificate = deleteCertificate
+        this.attachThingPrincipal = attachThingPrincipal
+        this.detachThingPrincipal = detachThingPrincipal
+        this.listPolicies = listPolicies
+        this.listPrincipalPolicies = listPrincipalPolicies
+        this.attachPolicy = attachPolicy
+        this.detachPolicy = detachPolicy
+        this.createPolicy = createPolicy
+        this.deletePolicy = deletePolicy
+        this.listThingsForCert = listThingsForCert
+        this.listThingPrincipals = listThingPrincipals
+        this.getEndpoint = getEndpoint
+        this.listPolicyVersions = listPolicyVersions
+        this.createPolicyVersion = createPolicyVersion
+        this.deletePolicyVersion = deletePolicyVersion
+        this.setDefaultPolicyVersion = setDefaultPolicyVersion
+        this.getPolicyVersion = getPolicyVersion
+        this.listPolicyTargets = listPolicyTargets
     }
 }
 

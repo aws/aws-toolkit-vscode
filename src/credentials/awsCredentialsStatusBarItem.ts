@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
+import globals from '../shared/extensionGlobals'
 
 const STATUSBAR_PRIORITY = 1
 const STATUSBAR_CONNECTED_MSG = localize('AWS.credentials.statusbar.connected', '(connected)')
@@ -41,7 +42,7 @@ export async function updateCredentialsStatusBarItem(
     credentialsId?: string,
     developerMode?: Set<string>
 ): Promise<void> {
-    clearTimeout(timeoutID)
+    globals.clock.clearTimeout(timeoutID)
     const connectedMsg = localize(
         'AWS.credentials.statusbar.connected',
         'Connected to {0} with "{1}" (click to change)',
@@ -73,7 +74,7 @@ export async function updateCredentialsStatusBarItem(
 
     return new Promise<void>(
         resolve =>
-            (timeoutID = setTimeout(() => {
+            (timeoutID = globals.clock.setTimeout(() => {
                 const company = getIdeProperties().company
                 ;(statusBarItem.text = credentialsId ? `${company}: ${credentialsId}` : company), resolve()
             }, delay))

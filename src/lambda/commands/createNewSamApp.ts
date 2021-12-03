@@ -20,7 +20,7 @@ import {
 } from '../../eventSchemas/templates/schemasAppTemplateUtils'
 import { ActivationReloadState, SamInitState } from '../../shared/activationReloadState'
 import { AwsContext } from '../../shared/awsContext'
-import { ext } from '../../shared/extensionGlobals'
+
 import { fileExists, isInDirectory, readFileAsString } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
@@ -28,7 +28,7 @@ import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
@@ -47,6 +47,7 @@ import { execSync } from 'child_process'
 import { writeFile } from 'fs-extra'
 import { checklogs } from '../../shared/localizedText'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
+import globals from '../../shared/extensionGlobals'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -58,7 +59,7 @@ export async function resumeCreateNewSamApp(
     extContext: ExtContext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
-    let createResult: Result = 'Succeeded'
+    let createResult: telemetry.Result = 'Succeeded'
     let reason: CreateReason = 'complete'
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
@@ -98,7 +99,7 @@ export async function resumeCreateNewSamApp(
         createResult = 'Failed'
         reason = 'error'
 
-        ext.outputChannel.show(true)
+        globals.outputChannel.show(true)
         getLogger('channel').error(
             localize('AWS.samcli.initWizard.resume.error', 'Error resuming SAM Application creation. {0}', checklogs())
         )
@@ -106,19 +107,20 @@ export async function resumeCreateNewSamApp(
         getLogger().error('Error resuming new SAM Application: %O', err as Error)
     } finally {
         activationReloadState.clearSamInitState()
-        recordSamInit({
+        telemetry.recordSamInit({
             lambdaPackageType: samInitState?.isImage ? 'Image' : 'Zip',
             result: createResult,
             reason: reason,
-            runtime: samInitState?.runtime as TelemetryRuntime,
+            runtime: samInitState?.runtime as telemetry.Runtime,
             version: samVersion,
+            architecture: samInitState?.architecture as telemetry.Architecture,
         })
     }
 }
 
 export interface CreateNewSamApplicationResults {
     runtime: string
-    result: Result
+    result: telemetry.Result
 }
 
 /**
@@ -131,7 +133,7 @@ export async function createNewSamApplication(
 ): Promise<void> {
     const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
-    let createResult: Result = 'Succeeded'
+    let createResult: telemetry.Result = 'Succeeded'
     let reason: CreateReason = 'unknown'
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
@@ -177,7 +179,7 @@ export async function createNewSamApplication(
         let schemaTemplateParameters: SchemaTemplateParameters
         let client: SchemaClient
         if (config.template === eventBridgeStarterAppTemplate) {
-            client = ext.toolkitClientBuilder.createSchemaClient(config.region!)
+            client = globals.toolkitClientBuilder.createSchemaClient(config.region!)
             schemaTemplateParameters = await buildSchemaTemplateParameters(
                 config.schemaName!,
                 config.registryName!,
@@ -231,7 +233,7 @@ export async function createNewSamApplication(
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
-            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, ext.outputChannel)
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, globals.outputChannel)
             getLogger('channel').info(
                 localize(
                     'AWS.message.info.schemas.downloadCodeBindings.start',
@@ -257,6 +259,7 @@ export async function createNewSamApplication(
             readme: readmeUri.fsPath,
             runtime: createRuntime,
             isImage: config.runtimeAndPackage.packageType === 'Image',
+            architecture: initArguments?.architecture,
         })
 
         await addFolderToWorkspace(
@@ -269,11 +272,14 @@ export async function createNewSamApplication(
 
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
-        const isTemplateRegistered = await waitUntil(async () => ext.templateRegistry.getRegisteredItem(templateUri), {
-            timeout: 5000,
-            interval: 500,
-            truthy: false,
-        })
+        const isTemplateRegistered = await waitUntil(
+            async () => globals.templateRegistry.getRegisteredItem(templateUri),
+            {
+                timeout: 5000,
+                interval: 500,
+                truthy: false,
+            }
+        )
 
         let tryOpenReadme: boolean = false
 
@@ -323,7 +329,7 @@ export async function createNewSamApplication(
         createResult = 'Failed'
         reason = 'error'
 
-        ext.outputChannel.show(true)
+        globals.outputChannel.show(true)
         getLogger('channel').error(
             localize('AWS.samcli.initWizard.general.error', 'Error creating new SAM Application. {0}', checklogs())
         )
@@ -333,11 +339,11 @@ export async function createNewSamApplication(
         // An error occured, so do not try to continue during the next extension activation
         activationReloadState.clearSamInitState()
     } finally {
-        recordSamInit({
+        telemetry.recordSamInit({
             lambdaPackageType: lambdaPackageType,
             result: createResult,
             reason: reason,
-            runtime: createRuntime as TelemetryRuntime,
+            runtime: createRuntime as telemetry.Runtime,
             version: samVersion,
             architecture: initArguments?.architecture,
         })
@@ -450,7 +456,7 @@ export async function writeToolkitReadme(
 ): Promise<boolean> {
     try {
         const configString: string = configurations.reduce((acc, cur) => `${acc}\n* ${cur.name}`, '')
-        const readme = (await getText(ext.context.asAbsolutePath(SAM_INIT_README_SOURCE)))
+        const readme = (await getText(globals.context.asAbsolutePath(SAM_INIT_README_SOURCE)))
             .replace(/\$\{PRODUCTNAME\}/g, `${getIdeProperties().company} Toolkit For ${getIdeProperties().longName}`)
             .replace(/\$\{IDE\}/g, getIdeProperties().shortName)
             .replace(/\$\{CODELENS\}/g, getIdeProperties().codelens)

@@ -9,7 +9,7 @@ import * as path from 'path'
 import { installCli } from '../../../shared/utilities/cliUtils'
 import { FakeWindow } from '../vscode/fakeWindow'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
-import { ext } from '../../../shared/extensionGlobals'
+import globals from '../../../shared/extensionGlobals'
 
 describe('cliUtils', async function () {
     const settingsConfig = new TestSettingsConfiguration()
@@ -25,7 +25,7 @@ describe('cliUtils', async function () {
     })
 
     afterEach(async function () {
-        fs.remove(path.join(ext.context.globalStoragePath, 'tools'))
+        fs.remove(path.join(globals.context.globalStoragePath, 'tools'))
     })
 
     describe('installCli', async function () {

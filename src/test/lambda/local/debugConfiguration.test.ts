@@ -17,8 +17,8 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import * as path from 'path'
 import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
 import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
-import { ext } from '../../../shared/extensionGlobals'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import globals from '../../../shared/extensionGlobals'
 
 describe('makeCoreCLRDebugConfiguration', function () {
     let tempFolder: string
@@ -131,7 +131,7 @@ describe('isImageLambdaConfig', function () {
             name: 'It was me, fakeWorkspaceFolder!',
             index: 0,
         }
-        registry = ext.templateRegistry
+        registry = globals.templateRegistry
         appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
     })
 

@@ -12,6 +12,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
+import globals from '../shared/extensionGlobals'
 
 const testTempDirs: string[] = []
 
@@ -115,7 +116,14 @@ export function createExecutableFile(filepath: string, contents: string): void {
 
 /**
  * Installs a fake clock, making sure to set a flag to clear real timers.
+ *
+ * Always uses the extension-scoped clock instead of the real one.
+ *
+ * **Implementations must use `globals.clock` to be correctly tested**
  */
 export function installFakeClock(): FakeTimers.InstalledClock {
-    return FakeTimers.install({ shouldClearNativeTimers: true })
+    return FakeTimers.withGlobal(globals.clock).install({
+        shouldClearNativeTimers: true,
+        shouldAdvanceTime: false,
+    })
 }

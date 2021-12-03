@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import { ClassToInterfaceType } from './utilities/tsUtils'
-import { ext } from './extensionGlobals'
 import { isReleaseVersion } from './vscode/env'
 import * as logger from './logger'
+import globals from './extensionGlobals'
 
 /**
  * Wraps the VSCode configuration API and provides Toolkit-related
@@ -223,8 +223,8 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         if (val === undefined) {
             return undefined
         }
-        if (ext.awsContext) {
-            ext.awsContext.setDeveloperMode(true, key)
+        if (globals.awsContext) {
+            globals.awsContext.setDeveloperMode(true, key)
         }
         return val
     }
