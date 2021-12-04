@@ -234,12 +234,13 @@ Host aws-mde-*
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
 export async function ensureSsmCli(): Promise<{ ok: boolean; result: string }> {
-    const ssmPath = await getOrInstallCli('session-manager-plugin', false)
-    if (!ssmPath) {
-        // Should never happen.
-        return { ok: false, result: 'failed to find ssm after install' }
-    }
-    return { ok: true, result: ssmPath }
+    return getOrInstallCli('session-manager-plugin', false)
+        .then(ssmPath => {
+            return { ok: true, result: ssmPath }
+        })
+        .catch(e => {
+            return { ok: false, result: e.message }
+        })
 }
 
 export const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
