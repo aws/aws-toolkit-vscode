@@ -1470,7 +1470,7 @@
                 {
                     "command": "aws.ecs.runCommandInContainer",
                     "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExecEnabled|awsEcsContainerNodeExecDisabled)$/"
                 },
                 {
                     "command": "aws.ecs.enableEcsExec",
@@ -2451,6 +2451,7 @@
                 "command": "aws.ecs.runCommandInContainer",
                 "title": "%AWS.ecs.runCommandInContainer%",
                 "category": "%AWS.title%",
+                "enablement": "viewItem == awsEcsContainerNodeExecEnabled",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
