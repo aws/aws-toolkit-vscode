@@ -21,8 +21,8 @@ export interface FileProvider {
 }
 
 /**
- * Bare-bones file system to support in-memory operations on documents
- * Does not support directories
+ * Bare-bones file system to support in-memory operations on single documents.
+ * Does not support directories.
  */
 export class MemoryFileSystem implements vscode.FileSystemProvider {
     private readonly _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
@@ -70,14 +70,14 @@ export class MemoryFileSystem implements vscode.FileSystemProvider {
      * @notimplemented
      */
     public readDirectory(uri: vscode.Uri): [string, vscode.FileType][] {
-        throw vscode.FileSystemError.NoPermissions()
+        throw new Error('Not implemented')
     }
 
     /**
      * @notimplemented
      */
     public createDirectory(uri: vscode.Uri): void | Thenable<void> {
-        throw vscode.FileSystemError.NoPermissions()
+        throw new Error('Not implemented')
     }
 
     public readFile(uri: vscode.Uri): Uint8Array | Promise<Uint8Array> {
@@ -96,14 +96,14 @@ export class MemoryFileSystem implements vscode.FileSystemProvider {
      * @notimplemented
      */
     public delete(uri: vscode.Uri, options: { recursive: boolean }): void | Thenable<void> {
-        throw vscode.FileSystemError.NoPermissions()
+        throw new Error('Not implemented')
     }
 
     /**
      * @notimplemented
      */
     public rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void | Thenable<void> {
-        throw vscode.FileSystemError.NoPermissions()
+        throw new Error('Not implemented')
     }
 
     /**

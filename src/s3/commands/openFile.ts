@@ -12,14 +12,14 @@ import { TimeoutError } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { S3FileViewerManager } from '../fileViewerManager'
+import { S3FileViewerManager, TabMode } from '../fileViewerManager'
 import { downloadFileAsCommand } from './downloadFileAs'
 
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
 
 export async function openFileReadModeCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
     if (await isFileSizeValid(node.file.sizeBytes, node)) {
-        return runWithTelemetry(() => manager.openInReadMode({ bucket: node.bucket, ...node.file }), 'read')
+        return runWithTelemetry(() => manager.openInReadMode({ bucket: node.bucket, ...node.file }), TabMode.Read)
     }
 }
 
@@ -34,15 +34,18 @@ export async function openFileEditModeCommand(
             return
         }
 
-        return runWithTelemetry(() => manager.openInEditMode({ bucket: uriOrNode.bucket, ...uriOrNode.file }), 'edit')
+        return runWithTelemetry(
+            () => manager.openInEditMode({ bucket: uriOrNode.bucket, ...uriOrNode.file }),
+            TabMode.Edit
+        )
     }
 
-    return runWithTelemetry(() => manager.openInEditMode(uriOrNode), 'edit')
+    return runWithTelemetry(() => manager.openInEditMode(uriOrNode), TabMode.Edit)
 }
 
-function runWithTelemetry(fn: () => Promise<void>, mode: 'read' | 'edit'): Promise<void> {
+function runWithTelemetry(fn: () => Promise<void>, mode: TabMode): Promise<void> {
     const recordMetric = (result: telemetry.Result) =>
-        mode === 'read' ? telemetry.recordS3OpenEditor({ result }) : telemetry.recordS3EditObject({ result })
+        mode === TabMode.Read ? telemetry.recordS3OpenEditor({ result }) : telemetry.recordS3EditObject({ result })
 
     return fn().catch(err => {
         if (TimeoutError.isCancelled(err)) {

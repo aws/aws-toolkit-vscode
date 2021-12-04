@@ -92,18 +92,18 @@ export async function downloadFile(file: S3File, options: FileOptions): Promise<
 export async function downloadFile(file: S3File, options?: BufferOptions): Promise<Buffer>
 export async function downloadFile(file: S3File, options?: FileOptions | BufferOptions): Promise<Buffer | void> {
     const client = options?.client ?? ext.toolkitClientBuilder.createS3Client(file.bucket.region)
-    const recordMetric = (result: telemetry.Result) => () => telemetry.recordS3DownloadObject({ result })
 
     return downloadS3File(client, file, options).catch(err => {
-        const result = TimeoutError.isCancelled(err) ? 'Cancelled' : 'Failed'
         const message = localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', file.name)
         const extraDetail = options?.saveLocation ? ` to ${options?.saveLocation.fsPath}` : ''
 
         throw new ToolkitError(message, {
             cause: err,
             detail: `Failed to download ${readablePath({ bucket: file.bucket, path: file.key })}${extraDetail}`,
-            metricName: 's3_downloadObject',
-            recordMetric: recordMetric(result),
+            metric: {
+                name: 's3_downloadObject',
+                result: TimeoutError.isCancelled(err) ? 'Cancelled' : 'Failed',
+            },
         })
     })
 }
