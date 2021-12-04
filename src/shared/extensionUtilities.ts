@@ -15,7 +15,7 @@ import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
-import { extensionVersion } from './vscode/env'
+import { extensionVersion, getMdeEnvArn } from './vscode/env'
 import globals from './extensionGlobals'
 
 const localize = nls.loadMessageBundle()
@@ -309,6 +309,10 @@ async function showOrPromptQuickstart(): Promise<void> {
  * @param context VS Code Extension Context
  */
 export function showWelcomeMessage(context: vscode.ExtensionContext): void {
+    if (getMdeEnvArn() !== undefined) {
+        // Do not show clippy in MDE environments.
+        return
+    }
     const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
     if (version === EXTENSION_ALPHA_VERSION) {
         vscode.window.showWarningMessage(

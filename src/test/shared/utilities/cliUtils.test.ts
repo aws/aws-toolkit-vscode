@@ -40,22 +40,22 @@ describe('cliUtils', async function () {
                 })
             })
         }
-
-        it('downloads and installs the SSM CLI automatically', async function () {
-            const ssmCli = await installCli('session-manager-plugin', false, new FakeWindow())
-            assert.ok(ssmCli)
-            assert.ok(await hasFunctionalCli(ssmCli))
-        })
-
-        it('downloads and installs the SSM CLI if prompted and accepted', async function () {
+        it('downloads and installs the SSM CLI', async function () {
             const ssmCli = await installCli('session-manager-plugin', true, acceptInstallWindow)
             assert.ok(ssmCli)
-            assert.ok(await hasFunctionalCli(ssmCli))
+            assert.ok(hasFunctionalCli(ssmCli))
         })
 
-        it('does not install a CLI if the user is prompted and opts out', async function () {
-            const ssmCli = await installCli('session-manager-plugin', true, new FakeWindow({}))
-            assert.strictEqual(ssmCli, undefined)
+        // TODO: Restore? Needs `sudo` on Linux
+        // it('downloads and installs the AWS CLI', async function () {
+        //     const awsCli = await installCli('aws', acceptInstallWindow)
+        //     assert.ok(awsCli)
+        //     assert.ok(hasFunctionalCli(awsCli))
+        // })
+
+        it('does not install if the user opts out', async function () {
+            const awsCli = installCli('session-manager-plugin', true, new FakeWindow({}))
+            await assert.rejects(awsCli)
         })
     })
 })

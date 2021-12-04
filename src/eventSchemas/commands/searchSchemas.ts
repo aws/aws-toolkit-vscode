@@ -25,6 +25,7 @@ import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaTemplates } from '../templates/searchSchemasTemplates'
 import globals from '../../shared/extensionGlobals'
+import { updateCspSource } from '../../webviews/main'
 
 export async function createSearchSchemasWebView(params: {
     node: RegistryItemNode | SchemasNode
@@ -59,7 +60,7 @@ export async function createSearchSchemasWebView(params: {
         const loadStylesheets = ExtensionUtilities.getCssForHtml(['searchSchemas.css'], view.webview)
 
         view.webview.html = baseTemplateFn({
-            cspSource: view.webview.cspSource,
+            cspSource: updateCspSource(view.webview.cspSource),
             content: searchTemplate({
                 Header: getPageHeader(registryNames),
                 SearchInputPlaceholder: localize(

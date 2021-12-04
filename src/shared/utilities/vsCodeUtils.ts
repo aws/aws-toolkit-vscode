@@ -6,8 +6,10 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import globals from '../extensionGlobals'
-
+import { getIdeProperties } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
+import { Window } from '../vscode/window'
+import { showViewLogsMessage } from './messages'
 import { waitUntil } from './timeoutUtils'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
@@ -76,7 +78,7 @@ export async function closeAllEditors() {
 }
 
 /**
- * Checks if the given extension is installed and active.
+ * Checks if an extension is installed and active.
  */
 export function isExtensionActive(extId: string): boolean {
     const extension = vscode.extensions.getExtension(extId)
@@ -84,8 +86,27 @@ export function isExtensionActive(extId: string): boolean {
 }
 
 /**
- * Activates the given extension and returns it, or does nothing
- * if the extension is not installed.
+ * Checks if an extension is installed, and shows a message if not.
+ */
+export function isExtensionInstalledMsg(extId: string, extName: string, feat?: string): boolean {
+    if (vscode.extensions.getExtension(extId)) {
+        return true
+    }
+    feat = feat ? feat : `${getIdeProperties().company} Toolkit`
+    const msg = localize(
+        'AWS.missingExtension',
+        '{0} requires the {1} extension ({2}) to be installed and enabled.',
+        feat,
+        extName,
+        extId
+    )
+    showViewLogsMessage(msg, Window.vscode())
+    return false
+}
+
+/**
+ * Activates an extension and returns it, or does nothing if the extension is
+ * not installed.
  *
  * @param extId Extension id
  * @param silent Return undefined on failure, instead of throwing

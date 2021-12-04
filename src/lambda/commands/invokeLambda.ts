@@ -15,6 +15,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { recordLambdaInvokeRemote, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
+import { updateCspSource } from '../../webviews/main'
 import { sampleRequestPath } from '../constants'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
@@ -68,7 +69,7 @@ export async function invokeLambda(params: {
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'], view.webview)
 
             view.webview.html = baseTemplateFn({
-                cspSource: view.webview.cspSource,
+                cspSource: updateCspSource(view.webview.cspSource),
                 content: invokeTemplateFn({
                     FunctionName: functionNode.configuration.FunctionName,
                     FunctionArn: functionNode.configuration.FunctionArn,
