@@ -2929,7 +2929,7 @@
         "adm-zip": "^0.5.9",
         "amazon-states-language-service": "^1.6.4",
         "async-lock": "^1.3.0",
-        "aws-sdk": "^2.998.0",
+        "aws-sdk": "^2.1043.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
         "cross-spawn": "^7.0.3",
