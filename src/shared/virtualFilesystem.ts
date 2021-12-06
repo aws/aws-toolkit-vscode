@@ -8,10 +8,10 @@ import * as vscode from 'vscode'
 type StatNoType = Omit<vscode.FileStat, 'type'>
 
 /**
- * Basic 'provider' for an in-memory file
+ * Basic 'provider' for a file.
  *
+ * Memory-managment is left up to the caller.
  * Contents for the file are read as-needed based on the `onDidChange` event.
- * It is up to callers to dispose of the registered provider to free-up memory.
  */
 export interface FileProvider {
     onDidChange: vscode.Event<void>
@@ -24,7 +24,7 @@ export interface FileProvider {
  * Bare-bones file system to support in-memory operations on single documents.
  * Does not support directories.
  */
-export class MemoryFileSystem implements vscode.FileSystemProvider {
+export class VirualFileSystem implements vscode.FileSystemProvider {
     private readonly _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
     public readonly onDidChangeFile = this._onDidChangeFile.event
     private readonly fileProviders: Record<string, FileProvider | undefined> = {}
@@ -70,14 +70,14 @@ export class MemoryFileSystem implements vscode.FileSystemProvider {
      * @notimplemented
      */
     public readDirectory(uri: vscode.Uri): [string, vscode.FileType][] {
-        throw new Error('Not implemented')
+        throw vscode.FileSystemError.NoPermissions('Reading virtual directories is not supported')
     }
 
     /**
      * @notimplemented
      */
     public createDirectory(uri: vscode.Uri): void | Thenable<void> {
-        throw new Error('Not implemented')
+        throw vscode.FileSystemError.NoPermissions('Creating virtual directories is not supported')
     }
 
     public readFile(uri: vscode.Uri): Uint8Array | Promise<Uint8Array> {
@@ -96,18 +96,18 @@ export class MemoryFileSystem implements vscode.FileSystemProvider {
      * @notimplemented
      */
     public delete(uri: vscode.Uri, options: { recursive: boolean }): void | Thenable<void> {
-        throw new Error('Not implemented')
+        throw vscode.FileSystemError.NoPermissions('Deleting virtual files is not supported')
     }
 
     /**
      * @notimplemented
      */
     public rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void | Thenable<void> {
-        throw new Error('Not implemented')
+        throw vscode.FileSystemError.NoPermissions('Renaming virtual files is not supported')
     }
 
     /**
-     * Converts a URI to something usable by the file system
+     * Removes parts of the URI not relevant to the filesystem, then converts the URI to a string.
      */
     public uriToKey(uri: vscode.Uri): string {
         return uri.with({ query: '', fragment: '' }).toString()

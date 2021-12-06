@@ -44,26 +44,29 @@ export async function openFileEditModeCommand(
 }
 
 function runWithTelemetry(fn: () => Promise<void>, mode: TabMode): Promise<void> {
+    // TODO: these metrics shouldn't be separate. A single one with a 'mode' field would work fine.
     const recordMetric = (result: telemetry.Result) =>
         mode === TabMode.Read ? telemetry.recordS3OpenEditor({ result }) : telemetry.recordS3EditObject({ result })
 
-    return fn().catch(err => {
-        if (TimeoutError.isCancelled(err)) {
-            return recordMetric('Cancelled')
-        }
-        if (!(err instanceof ToolkitError)) {
-            throw err
-        }
-
-        const result: telemetry.Result = err.cancelled ? 'Cancelled' : 'Failed'
-        if (result !== 'Cancelled') {
-            if (err.detail) {
-                getLogger().error(err.detail)
+    return fn()
+        .then(() => recordMetric('Succeeded'))
+        .catch(err => {
+            if (TimeoutError.isCancelled(err)) {
+                return recordMetric('Cancelled')
             }
-            showViewLogsMessage(err.message)
-        }
-        recordMetric(result)
-    })
+            if (!(err instanceof ToolkitError)) {
+                throw err // TODO: add util for 'fatal' errors unhandled by our own code
+            }
+
+            const result: telemetry.Result = err.cancelled ? 'Cancelled' : 'Failed'
+            if (result !== 'Cancelled') {
+                if (err.detail) {
+                    getLogger().error(err.detail)
+                }
+                showViewLogsMessage(err.message)
+            }
+            recordMetric(result)
+        })
 }
 
 async function isFileSizeValid(

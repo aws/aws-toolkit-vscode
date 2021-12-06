@@ -16,19 +16,18 @@ import { TimeoutError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../shared/settingsConfiguration'
 import { s3FileViewerHelpUrl } from '../shared/constants'
-import { FileProvider, MemoryFileSystem } from '../shared/memoryFilesystem'
-import { S3Client } from '../shared/clients/s3Client'
+import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { ToolkitError } from '../shared/toolkitError'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
-const SIZE_LIMIT = 4 * Math.pow(10, 6) // 4 MB
-const PROMPT_ON_EDIT_KEY = 'fileViewerEdit'
-
-export enum TabMode {
+export const enum TabMode {
     Read = 'read',
     Edit = 'edit',
 }
+
+const SIZE_LIMIT = 4 * Math.pow(10, 6) // 4 MB
+const PROMPT_ON_EDIT_KEY = 'fileViewerEdit'
 
 export interface S3Tab {
     dispose(): Promise<void> | void
@@ -37,7 +36,8 @@ export interface S3Tab {
     readonly editor: vscode.TextEditor | undefined
 }
 
-// Essentially combines the File and Bucket interface as they mostly belong together
+// TODO: just use this everywhere? A bucket-less S3 file doesn't make sense.
+// Combines the File and Bucket interface as they mostly belong together
 export interface S3File extends S3.File {
     readonly bucket: S3.Bucket
 }
@@ -49,7 +49,7 @@ export class S3FileProvider implements FileProvider {
     private readonly _file: { -readonly [P in keyof S3File]: S3File[P] }
     public readonly onDidChange = this._onDidChange.event
 
-    public constructor(private readonly client: S3Client, file: S3File) {
+    public constructor(private readonly client: S3.S3Client, file: S3File) {
         this._file = { ...file }
     }
 
@@ -75,10 +75,10 @@ export class S3FileProvider implements FileProvider {
             telemetry.recordS3DownloadObject({ result: 'Succeeded', component: 'viewer' })
         })
 
+        // There's no way to 'silently' fail here which is why we let the error bubble up by adding the callback separate
         result.catch(err => {
-            const result = err instanceof ToolkitError ? err?.metric?.result : undefined
-            telemetry.recordS3DownloadObject({ result: result ?? 'Failed', component: 'viewer' })
-            // There's no way to 'silently' fail here which is why we let the error bubble up
+            const result = (err instanceof ToolkitError ? err?.metric?.result : undefined) ?? 'Failed'
+            telemetry.recordS3DownloadObject({ result, component: 'viewer' })
         })
 
         return result
@@ -118,7 +118,7 @@ export class S3FileProvider implements FileProvider {
     }
 }
 
-type S3ClientFactory = (region: string) => S3Client
+type S3ClientFactory = (region: string) => S3.S3Client
 
 export class S3FileViewerManager {
     private readonly activeTabs: { [uri: string]: S3Tab | undefined } = {}
@@ -127,7 +127,7 @@ export class S3FileViewerManager {
 
     public constructor(
         private readonly clientFactory: S3ClientFactory,
-        private readonly fs: MemoryFileSystem,
+        private readonly fs: VirualFileSystem,
         private readonly window: typeof vscode.window = vscode.window,
         private readonly settings: SettingsConfiguration = new DefaultSettingsConfiguration(),
         private readonly commands: typeof vscode.commands = vscode.commands,
@@ -186,30 +186,32 @@ export class S3FileViewerManager {
         }
     }
 
-    private async tryFocusTab(uri: vscode.Uri): Promise<S3Tab | undefined> {
-        const activeTab = this.activeTabs[this.fs.uriToKey(uri)]
+    /**
+     * Tries to focus a tab from a list of URIs. First match is returned.
+     */
+    private async tryFocusTab(...uris: vscode.Uri[]): Promise<S3Tab | undefined> {
+        for (const uri of uris) {
+            const activeTab = this.activeTabs[this.fs.uriToKey(uri)]
 
-        if (activeTab) {
-            if (activeTab.editor) {
+            if (!activeTab) {
+                continue
+            } else if (activeTab.editor) {
                 getLogger().verbose(`S3FileViewer: Editor already opened, refocusing`)
                 await this.window.showTextDocument(activeTab.editor.document)
             } else {
                 getLogger().verbose(`S3FileViewer: Reopening non-text document`)
                 await this.commands.executeCommand('vscode.open', uri)
             }
-        }
 
-        return activeTab
+            return activeTab
+        }
     }
 
     /**
-     * Given an S3FileNode, this function:
-     * Checks and creates a cache to store downloads
-     * Retrieves previously cached files on cache and
-     * Downloads file from S3 ands stores in cache
-     * Opens the tab on read-only with the use of an S3Tab, or shifts focus to an edit tab if any.
+     * Given an {@link S3File}, this function opens the tab on read-only with the use of an S3Tab
+     * Focus is shifted to an edit tab if any.
      *
-     * @param fileNode
+     * @param file
      */
     public async openInReadMode(file: S3File): Promise<void> {
         const contentType = mime.contentType(path.extname(file.name))
@@ -221,53 +223,25 @@ export class S3FileViewerManager {
         }
 
         const uri = S3FileViewerManager.fileToUri(file, TabMode.Read)
-        if ((await this.tryFocusTab(uri)) || (await this.tryFocusTab(uri.with({ scheme: S3_EDIT_SCHEME })))) {
+        if (await this.tryFocusTab(uri, uri.with({ scheme: S3_EDIT_SCHEME }))) {
             return
         }
 
         await this.createTab(file, TabMode.Read)
     }
 
-    private async showEditNotification(): Promise<void> {
-        if (!(await this.settings.isPromptEnabled(PROMPT_ON_EDIT_KEY))) {
-            return
-        }
-
-        const message = localize(
-            'AWS.s3.fileViewer.warning.editStateWarning',
-            'You are now editing an S3 file. Saved changes will be uploaded to your S3 bucket.'
-        )
-
-        const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
-        const help = localize('AWS.generic.message.learnMore', 'Learn more')
-
-        await this.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {
-            if (selection === dontShow) {
-                return this.settings.disablePrompt(PROMPT_ON_EDIT_KEY)
-            }
-
-            if (selection === help) {
-                return vscode.env.openExternal(vscode.Uri.parse(s3FileViewerHelpUrl, true))
-            }
-        })
-    }
-
     /**
-     * Given an S3FileNode or an URI, this function:
-     * Checks and creates a cache to store downloads
-     * Retrieves previously cached files on cache and
-     * Downloads file from S3 ands stores in cache
-     * Opens the tab on read-only with the use of an S3Tab, or shifts focus to an edit tab if any.
+     * Opens the tab in edit mode with the use of an S3Tab, or shifts focus to an edit tab if any.
+     * Exiting read-only tabs are closed as they cannot be converted to edit tabs.
      *
      * @param uriOrFile to be opened
      */
     public async openInEditMode(uriOrFile: vscode.Uri | S3File): Promise<void> {
         const uri = uriOrFile instanceof vscode.Uri ? uriOrFile : S3FileViewerManager.fileToUri(uriOrFile, TabMode.Edit)
-        const activeTab =
-            (await this.tryFocusTab(uri)) ?? (await this.tryFocusTab(uri.with({ scheme: S3_READ_SCHEME })))
+        const activeTab = await this.tryFocusTab(uri, uri.with({ scheme: S3_READ_SCHEME }))
         const file = activeTab?.file ?? uriOrFile
 
-        if (activeTab?.mode === 'edit') {
+        if (activeTab?.mode === TabMode.Edit) {
             return
         }
 
@@ -293,7 +267,7 @@ export class S3FileViewerManager {
     /**
      * Creates a new tab based on the mode
      */
-    private async createTab(file: S3File, mode: S3Tab['mode']): Promise<void> {
+    private async createTab(file: S3File, mode: TabMode): Promise<void> {
         if (!(await this.canContinueDownload(file))) {
             throw new TimeoutError('cancelled')
         }
@@ -322,6 +296,7 @@ export class S3FileViewerManager {
 
     private async canContinueDownload(file: S3File): Promise<boolean> {
         const fileSize = file.sizeBytes
+        // JS needs a `when` syntax like Kotlin
         const warningMessage = (function () {
             if (fileSize === undefined) {
                 getLogger().debug(`FileViewer: File size couldn't be determined, prompting user file: ${file.name}`)
@@ -359,7 +334,32 @@ export class S3FileViewerManager {
         return true
     }
 
-    private static fileToUri(file: S3File, mode: S3Tab['mode']): vscode.Uri {
+    private async showEditNotification(): Promise<void> {
+        if (!(await this.settings.isPromptEnabled(PROMPT_ON_EDIT_KEY))) {
+            return
+        }
+
+        const message = localize(
+            'AWS.s3.fileViewer.warning.editStateWarning',
+            'You are now editing an S3 file. Saved changes will be uploaded to your S3 bucket.'
+        )
+
+        const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
+        const help = localize('AWS.generic.message.learnMore', 'Learn more')
+
+        // TODO: de-dupe and allow `showConfirmationMessage` to have a 'Don't show again' option
+        await this.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {
+            if (selection === dontShow) {
+                return this.settings.disablePrompt(PROMPT_ON_EDIT_KEY)
+            }
+
+            if (selection === help) {
+                return vscode.env.openExternal(vscode.Uri.parse(s3FileViewerHelpUrl, true))
+            }
+        })
+    }
+
+    private static fileToUri(file: S3File, mode: TabMode): vscode.Uri {
         const parts = parse(file.arn)
         const fileName = path.basename(parts.resource)
         const fsPath = path.join(file.bucket.region, path.dirname(parts.resource), `[S3] ${fileName}`)

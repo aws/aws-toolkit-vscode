@@ -15,7 +15,7 @@ import {
     UploadFileRequest,
 } from '../../../shared/clients/s3Client'
 import { ext } from '../../../shared/extensionGlobals'
-import { MemoryFileSystem } from '../../../shared/memoryFilesystem'
+import { VirualFileSystem } from '../../../shared/virtualFilesystem'
 import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { createTestWindow, TestWindow } from '../../shared/vscode/window'
 import { anything, instance, mock, when, resetCalls, verify } from '../../utilities/mockito'
@@ -132,8 +132,8 @@ describe('S3FileProvider', function () {
 
 describe('FileViewerManager', function () {
     let s3: S3Client
+    let fs: VirualFileSystem
     let fileViewerManager: S3FileViewerManager
-    let memFs: MemoryFileSystem
     let testWindow: TestWindow
     let workspace: typeof vscode.workspace
     let commands: typeof vscode.commands
@@ -141,7 +141,7 @@ describe('FileViewerManager', function () {
 
     beforeEach(function () {
         s3 = mock()
-        memFs = new MemoryFileSystem()
+        fs = new VirualFileSystem()
         workspace = mock()
         commands = mock()
         settings = new TestSettingsConfiguration()
@@ -149,7 +149,7 @@ describe('FileViewerManager', function () {
 
         fileViewerManager = new S3FileViewerManager(
             () => instance(s3),
-            memFs,
+            fs,
             window,
             settings,
             instance(commands),

@@ -23,21 +23,23 @@ interface ErrorMetadata {
      */
     readonly cancelled?: boolean
 
-    /**
-     * The telemetry metric ID associated with this error.
-     *
-     * For example, if S3's `downloadFile` fails then we should use `s3_downloadObject` here.
-     */
     readonly metricName?: string
 
     /**
      * Metric metadata associated with the error.
      */
-    // TODO: make this metadata instead, then use the metric name to get the correct type
-    //readonly recordMetric?: () => void
     readonly metric?: {
+        /**
+         * The telemetry metric ID associated with this error.
+         *
+         * For example, if S3's `downloadFile` fails then we should use `s3_downloadObject` here.
+         */
         readonly name: string
-        readonly result: telemetry.Result
+
+        /**
+         * This should be set to either 'Failed' or 'Cancelled' depending on the control flow.
+         */
+        readonly result: Exclude<telemetry.Result, 'Succeeded'>
     }
 }
 

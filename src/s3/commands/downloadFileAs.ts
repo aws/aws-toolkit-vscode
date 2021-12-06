@@ -141,6 +141,7 @@ export async function downloadFileAsCommand(
             {
                 window,
                 saveLocation,
+                client: node.s3,
                 progressLocation: vscode.ProgressLocation.Notification,
             }
         )
@@ -154,7 +155,7 @@ export async function downloadFileAsCommand(
                 if (e.detail) {
                     getLogger().error(e.detail)
                 }
-                showViewLogsMessage(e.message)
+                showViewLogsMessage(e.message, window)
             }
             telemetry.recordS3DownloadObject({ result })
         } else {
