@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ContextChangeEventsArgs } from '../shared/awsContext'
+import globals from '../shared/extensionGlobals'
 const localize = nls.loadMessageBundle()
-import { ext } from '../shared/extensionGlobals'
 
 const STATUS_PRIORITY = 1
 const STATUS_TOOLTIP = localize('AWS.caws.statusbar.tooltip', 'Click to connect to CODE.AWS or check its status.')
@@ -19,9 +19,9 @@ export async function initStatusbar(): Promise<void> {
     statusbarItem.show()
     setCawsStatusbar(statusbarItem)
 
-    ext.context.subscriptions.push(
+    globals.context.subscriptions.push(
         statusbarItem,
-        ext.awsContext.onDidChangeContext(async (ev: ContextChangeEventsArgs) => {
+        globals.awsContext.onDidChangeContext(async (ev: ContextChangeEventsArgs) => {
             setCawsStatusbar(statusbarItem, ev.cawsUsername)
         })
     )

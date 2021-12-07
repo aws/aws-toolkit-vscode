@@ -7,7 +7,6 @@ import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { isReleaseVersion, extensionVersion } from '../vscode/env'
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
 import { MetricDatum } from './clienttelemetry'
@@ -16,6 +15,7 @@ import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { DefaultSettingsConfiguration } from '../settingsConfiguration'
+import globals from '../extensionGlobals'
 
 export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
@@ -98,7 +98,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
         return new DefaultTelemetryClient(
             clientId,
-            (await ext.sdkClientBuilder.createAwsService(
+            (await globals.sdkClientBuilder.createAwsService(
                 Service,
                 {
                     // apiConfig is internal and not in the TS declaration file

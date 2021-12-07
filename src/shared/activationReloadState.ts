@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from './extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
+import globals from './extensionGlobals'
 
 export const ACTIVATION_TEMPLATE_PATH_KEY = 'ACTIVATION_TEMPLATE_PATH_KEY'
 export const ACTIVATION_LAUNCH_PATH_KEY = 'ACTIVATION_LAUNCH_PATH_KEY'
@@ -52,6 +52,6 @@ export class ActivationReloadState {
     }
 
     protected get extensionContext(): vscode.ExtensionContext {
-        return ext.context
+        return globals.context
     }
 }

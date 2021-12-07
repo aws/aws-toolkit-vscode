@@ -15,7 +15,7 @@ import { SchemaItemNode } from '../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
 import { listRegistryItems, searchSchemas } from '../../eventSchemas/utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasSearch, recordSchemasView, Result } from '../../shared/telemetry/telemetry'
@@ -24,6 +24,7 @@ import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaTemplates } from '../templates/searchSchemasTemplates'
+import globals from '../../shared/extensionGlobals'
 import { updateCspSource } from '../../webviews/main'
 
 export async function createSearchSchemasWebView(params: {
@@ -31,7 +32,7 @@ export async function createSearchSchemasWebView(params: {
     outputChannel: vscode.OutputChannel
 }): Promise<void> {
     const logger: Logger = getLogger()
-    const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
+    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
     const registryNames = await getRegistryNames(params.node, client)
     let webviewResult: Result = 'Succeeded'
 
@@ -49,7 +50,7 @@ export async function createSearchSchemasWebView(params: {
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.file(path.join(ext.context.extensionPath, 'media'))],
+                localResourceRoots: [vscode.Uri.file(path.join(globals.context.extensionPath, 'media'))],
             }
         )
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
@@ -85,12 +86,12 @@ export async function createSearchSchemasWebView(params: {
             createMessageReceivedFunc({
                 registryNames: registryNames,
                 schemaClient: client,
-                telemetryService: ext.telemetry,
+                telemetryService: globals.telemetry,
                 onPostMessage: message => view.webview.postMessage(message),
                 outputChannel: params.outputChannel,
             }),
             undefined,
-            ext.context.subscriptions
+            globals.context.subscriptions
         )
     } catch (err) {
         webviewResult = 'Failed'

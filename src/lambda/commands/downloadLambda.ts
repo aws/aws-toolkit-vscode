@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
-import { ext } from '../../shared/extensionGlobals'
+
 import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
@@ -25,6 +25,7 @@ import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
 import { Progress } from 'got/dist/source'
+import globals from '../../shared/extensionGlobals'
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runDownloadLambda(functionNode)
@@ -142,7 +143,7 @@ async function downloadAndUnzipLambda(
     functionNode: LambdaFunctionNode,
     extractLocation: string,
     window = Window.vscode(),
-    lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
+    lambda = globals.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
     let tempDir: string | undefined

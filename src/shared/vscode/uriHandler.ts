@@ -5,11 +5,11 @@
 
 import * as vscode from 'vscode'
 import * as querystring from 'querystring'
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../utilities/messages'
+import globals from '../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 /** Handles an external URI targeting the extension */
@@ -31,7 +31,9 @@ export class UriHandler implements vscode.UriHandler {
         const uriNoQuery = uri.with({ query: '' }).toString()
 
         if (!this.handlers.has(uri.path)) {
-            ext.window.showErrorMessage(localize('AWS.uriHandler.nohandler', 'No handler found for: {0}', uriNoQuery))
+            globals.window.showErrorMessage(
+                localize('AWS.uriHandler.nohandler', 'No handler found for: {0}', uriNoQuery)
+            )
             getLogger().verbose(`UriHandler: no valid handler found for "${uri.path}"`)
             return
         }

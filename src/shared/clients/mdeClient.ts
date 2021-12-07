@@ -7,13 +7,13 @@ import * as AWS from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as mde from '../../../types/clientmde'
 import apiConfig = require('../../../types/REMOVED.normal.json')
-import { ext } from '../../shared/extensionGlobals'
 import * as settings from '../../shared/settingsConfiguration'
 import * as logger from '../logger/logger'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { showMessageWithCancel, showViewLogsMessage } from '../utilities/messages'
 import * as nls from 'vscode-nls'
 import { Window } from '../vscode/window'
+import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -33,7 +33,7 @@ export interface MdeEnvironment extends mde.EnvironmentSummary {}
 export interface MdeSession extends mde.SessionSummary, Omit<mde.StartSessionResponse, 'id'> {}
 
 async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string = mdeEndpoint()): Promise<mde> {
-    const c = (await ext.sdkClientBuilder.createAwsService(AWS.Service, {
+    const c = (await globals.sdkClientBuilder.createAwsService(AWS.Service, {
         // apiConfig is internal and not in the TS declaration file
         apiConfig: apiConfig,
         region: regionCode,
@@ -67,7 +67,7 @@ export class MdeClient {
     }
 
     private static assertExtInitialized() {
-        if (!ext.sdkClientBuilder) {
+        if (!globals.sdkClientBuilder) {
             throw Error('ext.sdkClientBuilder must be initialized first')
         }
     }

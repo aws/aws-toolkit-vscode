@@ -10,6 +10,7 @@ import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './credentials'
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Credentials received from ECS containers.
@@ -31,7 +32,7 @@ export class EcsCredentialsProvider implements CredentialsProvider {
         this.available = false
         const env = process.env as EnvironmentVariables
         if (env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI || env.AWS_CONTAINER_CREDENTIALS_FULL_URI) {
-            const start = Date.now()
+            const start = globals.clock.Date.now()
             try {
                 this.credentials = await this.provider()
                 getLogger().verbose(`credentials: retrieved ECS container credentials`)
@@ -40,7 +41,7 @@ export class EcsCredentialsProvider implements CredentialsProvider {
             } catch (err) {
                 getLogger().warn(`credentials: no role (or invalid) attached to ECS container: ${err}`)
             } finally {
-                const elapsed = Date.now() - start
+                const elapsed = globals.clock.Date.now() - start
                 getLogger().verbose(`credentials: ECS metadata credentials call took ${elapsed}ms`)
             }
         }

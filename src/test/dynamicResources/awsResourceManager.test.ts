@@ -16,11 +16,12 @@ import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { anything, capture, deepEqual, instance, mock, verify, when } from '../utilities/mockito'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { ext } from '../../shared/extensionGlobals'
+
 import { SchemaService } from '../../shared/schemas'
 import { remove } from 'fs-extra'
 import { existsSync } from 'fs'
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
+import globals from '../../shared/extensionGlobals'
 
 describe('ResourceManager', function () {
     let sandbox: sinon.SinonSandbox
@@ -65,7 +66,7 @@ describe('ResourceManager', function () {
         const fakeContext = new FakeExtensionContext()
         fakeContext.globalStoragePath = tempFolder
         resourceManager = new AwsResourceManager(fakeContext)
-        ext.schemaService = instance(schemaService)
+        globals.schemaService = instance(schemaService)
     })
 
     afterEach(async function () {

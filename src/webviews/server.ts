@@ -40,7 +40,7 @@ export interface WebviewCompileOptions<
     D extends any[] = any[],
     S = any,
     O = any,
-    P extends any = any
+    P = any
 > {
     /**
      * Events emitters provided by the backend. Note that whatever is passed into this option is

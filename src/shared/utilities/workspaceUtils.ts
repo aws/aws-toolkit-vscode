@@ -8,7 +8,7 @@ import * as path from 'path'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
 import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if
@@ -98,7 +98,7 @@ export async function findParentProjectFile(
         return undefined
     }
 
-    const workspaceProjectFiles = ext.codelensRootRegistry.registeredItems
+    const workspaceProjectFiles = globals.codelensRootRegistry.registeredItems
         .filter(item => item.item.match(projectFile))
         .map(item => item.path)
 

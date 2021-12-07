@@ -4,6 +4,7 @@
  */
 
 import * as AWS from '@aws-sdk/types'
+import globals from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger/logger'
 import { asString, CredentialsProvider, CredentialsId } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -31,7 +32,7 @@ export class CredentialsStore {
     public isValid(key: string): boolean {
         if (this.credentialsCache[key]) {
             const expiration = this.credentialsCache[key].credentials.expiration
-            return expiration !== undefined ? expiration >= new Date() : true
+            return expiration !== undefined ? expiration >= new globals.clock.Date() : true
         }
 
         return false

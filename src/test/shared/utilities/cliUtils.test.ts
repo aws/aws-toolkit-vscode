@@ -6,18 +6,12 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { Logger } from '../../../shared/logger'
-import { makeLogger } from '../../../shared/logger/activation'
-import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { installCli } from '../../../shared/utilities/cliUtils'
 import { FakeWindow } from '../vscode/fakeWindow'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
+import globals from '../../../shared/extensionGlobals'
 
 describe('cliUtils', async function () {
-    let tempFolder: string
-    let testLogger: Logger | undefined
-
     const settingsConfig = new TestSettingsConfiguration()
     // confirms installation confirmation prompt
     const acceptInstallWindow = new FakeWindow({
@@ -26,19 +20,12 @@ describe('cliUtils', async function () {
         },
     })
 
-    before(async function () {
+    before(function () {
         settingsConfig.writeSetting('aws.dev.forceInstallTools', true)
-        tempFolder = await makeTemporaryToolkitFolder()
-        testLogger = makeLogger({ staticLogLevel: 'debug', logPaths: [path.join(tempFolder, 'log.txt')] })
     })
 
-    after(async function () {
-        if (testLogger && testLogger instanceof WinstonToolkitLogger) {
-            testLogger.dispose()
-        }
-
-        testLogger = undefined
-        await fs.remove(tempFolder)
+    afterEach(async function () {
+        fs.remove(path.join(globals.context.globalStoragePath, 'tools'))
     })
 
     describe('installCli', async function () {
@@ -47,28 +34,27 @@ describe('cliUtils', async function () {
                 fs.access(cliPath, fs.constants.X_OK, err => {
                     if (err) {
                         resolve(false)
+                    } else {
+                        resolve(true)
                     }
-                    resolve(true)
                 })
             })
         }
-
-        it('downloads and installs the SSM CLI', async function () {
-            const ssmCli = await installCli('ssm', true, acceptInstallWindow)
+        it('downloads and installs the SSM CLI automatically', async function () {
+            const ssmCli = await installCli('session-manager-plugin', false, new FakeWindow())
             assert.ok(ssmCli)
-            assert.ok(hasFunctionalCli(ssmCli))
+            assert.ok(await hasFunctionalCli(ssmCli))
         })
 
-        // TODO: Restore? Needs `sudo` on Linux
-        // it('downloads and installs the AWS CLI', async function () {
-        //     const awsCli = await installCli('aws', acceptInstallWindow)
-        //     assert.ok(awsCli)
-        //     assert.ok(hasFunctionalCli(awsCli))
-        // })
+        it('downloads and installs the SSM CLI if prompted and accepted', async function () {
+            const ssmCli = await installCli('session-manager-plugin', true, acceptInstallWindow)
+            assert.ok(ssmCli)
+            assert.ok(await hasFunctionalCli(ssmCli))
+        })
 
         it('does not install if the user opts out', async function () {
-            const awsCli = await installCli('aws', true, new FakeWindow({}))
-            assert.strictEqual(awsCli, undefined)
+            const awsCli = installCli('session-manager-plugin', true, new FakeWindow({}))
+            await assert.rejects(awsCli)
         })
     })
 })

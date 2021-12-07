@@ -17,8 +17,8 @@ import { ResourceFetcher } from '../shared/resourcefetcher/resourcefetcher'
 import { CompositeResourceFetcher } from '../shared/resourcefetcher/compositeResourceFetcher'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
-import { ext } from '../shared/extensionGlobals'
 import { sampleRequestManifestPath } from './constants'
+import globals from '../shared/extensionGlobals'
 
 export async function* listCloudFormationStacks(
     client: CloudFormationClient
@@ -55,9 +55,7 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaDetails(
-    configuration: Lambda.FunctionConfiguration
-): {
+export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
     fileName: string
     functionName: string
 } {
@@ -118,6 +116,6 @@ export async function getSampleLambdaPayloads(): Promise<SampleRequest[]> {
 function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
     return new CompositeResourceFetcher(
         new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
-        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
+        new FileResourceFetcher(globals.manifestPaths.lambdaSampleRequests)
     )
 }

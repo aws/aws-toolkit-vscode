@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as awsArn from '@aws-sdk/util-arn-parser'
 import * as mde from '../shared/clients/mdeClient'
 import * as nls from 'vscode-nls'
-import { ext } from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showConfirmationMessage, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
@@ -16,7 +15,7 @@ import { Window } from '../shared/vscode/window'
 import { MdeRootNode } from './mdeRootNode'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { Timeout, waitTimeout, waitUntil } from '../shared/utilities/timeoutUtils'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { ExtContext } from '../shared/extensions'
 import { DeleteEnvironmentResponse, TagMap } from '../../types/clientmde'
 import { SystemUtilities } from '../shared/systemUtilities'
 import * as mdeModel from './mdeModel'
@@ -24,6 +23,7 @@ import { localizedDelete } from '../shared/localizedText'
 import { MDE_RESTART_KEY } from './constants'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { parse } from '@aws-sdk/util-arn-parser'
+import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -149,28 +149,24 @@ export async function mdeConnectCommand(
     // temporary until we can dynamically find the directory
     const projectDir = '/projects'
 
-    const cmd = new ChildProcess(
-        true,
-        vsc,
-        {
+    const cmd = new ChildProcess(vsc, ['--folder-uri', `vscode-remote://ssh-remote+aws-mde-${args.id}${projectDir}`], {
+        spawnOptions: {
             env: getMdeSsmEnv(region, mde.mdeEndpoint(), ssmPath.result, session),
         },
-        '--folder-uri',
-        `vscode-remote://ssh-remote+aws-mde-${args.id}${projectDir}`
-    )
+    })
 
     const settings = new DefaultSettingsConfiguration()
     settings.ensureToolkitInVscodeRemoteSsh()
 
     // Note: `await` is intentionally not used.
-    cmd.run(
-        (stdout: string) => {
+    cmd.run({
+        onStdout(stdout) {
             getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
         },
-        (stderr: string) => {
+        onStderr(stderr) {
             getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
-        }
-    ).then(o => {
+        },
+    }).then(o => {
         if (o.exitCode !== 0) {
             getLogger().error('MDE connect: failed to start: %O', cmd)
         }
@@ -190,7 +186,7 @@ export async function mdeDeleteCommand(
         if (node) {
             node.startPolling()
         }
-        const r = await ext.mde.deleteEnvironment({ environmentId: env.id })
+        const r = await globals.mde.deleteEnvironment({ environmentId: env.id })
         getLogger().info('%O', r?.status)
         if (node) {
             node.refresh()
@@ -225,14 +221,14 @@ export async function cloneToMde(
     const process = await createMdeSshCommand(mdeEnv, commands, { useAgent: repo.uri.scheme === 'ssh' })
     // TODO: handle different ports with the URI
 
-    const result = await process.run(
-        (stdout: string) => {
+    const result = await process.run({
+        onStdout(stdout) {
             getLogger().verbose(`MDE clone: ${mdeEnv.id}: ${stdout}`)
         },
-        (stderr: string) => {
+        onStderr(stderr) {
             getLogger().verbose(`MDE clone: ${mdeEnv.id}: ${stderr}`)
-        }
-    )
+        },
+    })
 
     if (result.exitCode !== 0) {
         throw new Error('Failed to clone repository')
@@ -290,7 +286,7 @@ export async function createMdeSshCommand(
         commands.join(' && '),
     ].filter(c => !!c)
 
-    return new ChildProcess(true, sshPath, { env }, ...sshArgs)
+    return new ChildProcess(sshPath, sshArgs, { spawnOptions: { env } })
 }
 
 export async function resumeEnvironments(ctx: ExtContext) {
@@ -301,7 +297,7 @@ export async function resumeEnvironments(ctx: ExtContext) {
     // TODO: write some utility code for mementos
     const activeEnvironments: mde.MdeEnvironment[] = []
     const ids = new Set<string>()
-    for await (const env of ext.mde.listEnvironments({})) {
+    for await (const env of globals.mde.listEnvironments({})) {
         env && activeEnvironments.push(env) && ids.add(env.id)
     }
     Object.keys(pendingRestarts).forEach(k => {
@@ -326,23 +322,6 @@ export async function resumeEnvironments(ctx: ExtContext) {
     }
 }
 
-// this could potentially install the toolkit without needing to mess with user settings
-// but it's kind of awkward still since it needs to be ran after 'vscode-server' has been
-// installed on the remote
-export async function installToolkit(mde: Pick<mde.MdeEnvironment, 'id'>): Promise<void> {
-    // TODO: check if dev mode is enabled, then install the development toolkit into the MDE
-    await new ChildProcess(
-        true,
-        'ssh',
-        undefined,
-        mde.id,
-        `find ~ -path '*.vscode-server/bin/*/bin/code' -exec {} --install-extension ${VSCODE_EXTENSION_ID.awstoolkit} \\;`
-    ).run(
-        stdout => getLogger().verbose(`MDE install toolkit: ${mde.id}: ${stdout}`),
-        stderr => getLogger().verbose(`MDE install toolkit: ${mde.id}: ${stderr}`)
-    )
-}
-
 export async function tagMde(arn: string, tagMap: TagMap) {
-    await ext.mde.tagResource(arn, tagMap)
+    await globals.mde.tagResource(arn, tagMap)
 }

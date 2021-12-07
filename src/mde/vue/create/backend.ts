@@ -9,7 +9,6 @@ import { ExtContext } from '../../../shared/extensions'
 import { compileVueWebview } from '../../../webviews/main'
 import * as nls from 'vscode-nls'
 import * as mdeModel from '../../mdeModel'
-import { ext } from '../../../shared/extensionGlobals'
 import { EnvironmentSettingsWizard, getAllInstanceDescriptions, SettingsForm } from '../../wizards/environmentSettings'
 import { CreateEnvironmentRequest } from '../../../../types/clientmde'
 import { getDevFiles, getRegistryDevFiles, promptDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
@@ -20,6 +19,7 @@ import { VSCODE_MDE_TAGS } from '../../constants'
 import { productName } from '../../../shared/constants'
 import { cloneToMde } from '../../mdeCommands'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
+import globals from '../../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -128,7 +128,7 @@ async function submit(data: CreateEnvironmentRequest) {
 const MDE_SERVICE_PRINCIPAL = 'moontide'
 
 async function loadRoles(): Promise<IAM.Role[]> {
-    const client = ext.toolkitClientBuilder.createIamClient('us-east-1') // hard-coded region for now
+    const client = globals.toolkitClientBuilder.createIamClient('us-east-1') // hard-coded region for now
 
     // Not paginated
     try {
@@ -163,7 +163,7 @@ async function listBranches(url: string) {
  * But realistically it should belong somewhere else.
  */
 async function createMdeWithTags(request: CreateEnvironmentRequest): Promise<MdeEnvironment | undefined> {
-    const mdeClient = ext.mde
+    const mdeClient = globals.mde
 
     const repo = request?.sourceCode?.[0]
     // We will always perform the clone

@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import globals from '../shared/extensionGlobals'
 
-import { ext } from '../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 
 export class CawsView implements vscode.TreeDataProvider<vscode.TreeItem> {
@@ -27,7 +27,7 @@ export class CawsView implements vscode.TreeDataProvider<vscode.TreeItem> {
     }
 
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-        const isConnected = !!ext.awsContext.getCawsCredentials()
+        const isConnected = !!globals.awsContext.getCawsCredentials()
         if (!isConnected) {
             // Will show the "welcome view" (`viewsWelcome`).
             return Promise.resolve([])

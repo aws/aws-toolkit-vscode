@@ -9,8 +9,8 @@ import * as yaml from 'js-yaml'
 import * as pathutils from '../utilities/pathUtils'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
+import globals from '../extensionGlobals'
 
 export const DEVFILE_GLOB_PATTERN = '**/devfile.{yaml,yml}'
 
@@ -27,18 +27,18 @@ export class DevfileRegistry extends WatchedFiles<Devfile> {
             const devfile = yaml.load(templateAsYaml) as Devfile
             // legacy (1.x) Devfiles do not contain a schemaVersion
             if (devfile.schemaVersion) {
-                ext.schemaService.registerMapping({ path, type: 'yaml', schema: 'devfile' })
+                globals.schemaService.registerMapping({ path, type: 'yaml', schema: 'devfile' })
                 return devfile
             }
         } catch (e) {
             getLogger().warn(`could not load Devfile ${path}: ${e}`)
         }
-        ext.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
+        globals.schemaService.registerMapping({ path, type: 'yaml', schema: undefined })
         return undefined
     }
 
     public async remove(path: string | vscode.Uri): Promise<void> {
-        ext.schemaService.registerMapping({
+        globals.schemaService.registerMapping({
             path: typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
             type: 'yaml',
             schema: undefined,

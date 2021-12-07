@@ -10,10 +10,10 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as gql from 'graphql-request'
 import * as gqltypes from 'graphql-request/dist/types'
 import * as caws from '../../../types/clientcodeaws'
-import { ext } from '../../shared/extensionGlobals'
 import * as logger from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import apiConfig = require('../../../types/REMOVED.api.json')
+import globals from '../extensionGlobals'
 
 export const useGraphql = true
 
@@ -29,7 +29,7 @@ async function createCawsClient(
     regionCode: string = cawsRegion,
     endpoint: string = cawsEndpoint
 ): Promise<caws> {
-    const c = (await ext.sdkClientBuilder.createAwsService(AWS.Service, {
+    const c = (await globals.sdkClientBuilder.createAwsService(AWS.Service, {
         // apiConfig is internal and not in the TS declaration file
         apiConfig: apiConfig,
         region: regionCode,
@@ -135,7 +135,7 @@ export class CawsClient {
     }
 
     private static assertExtInitialized() {
-        if (!ext.sdkClientBuilder) {
+        if (!globals.sdkClientBuilder) {
             throw Error('ext.sdkClientBuilder must be initialized first')
         }
     }
@@ -295,7 +295,7 @@ export class CawsClient {
         if (!orgs || !orgs.items) {
             return
         }
-        for (const org of orgs?.items) {
+        for (const org of orgs.items) {
             if (org.name) {
                 yield {
                     id: '', // TODO: not provided by CAWS yet.

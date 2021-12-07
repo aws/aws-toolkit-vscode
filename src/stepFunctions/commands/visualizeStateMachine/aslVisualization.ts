@@ -8,13 +8,12 @@ const localize = nls.loadMessageBundle()
 import { debounce } from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../../shared/logger'
 import { isDocumentValid } from '../../utils'
-import { updateCspSource } from '../../../webviews/main'
 import * as yaml from 'yaml'
 
 import { YAML_FORMATS } from '../../constants/aslFormats'
+import globals from '../../../shared/extensionGlobals'
 
 const YAML_OPTIONS: yaml.Options = {
     merge: false,
@@ -114,11 +113,11 @@ export class AslVisualization {
 
         // Set the initial html for the webpage
         panel.webview.html = this.getWebviewContent(
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.webviewBodyScript),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryScript),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryCSS),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.stateMachineCustomThemeCSS),
-            updateCspSource(panel.webview.cspSource),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.webviewBodyScript),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.visualizationLibraryScript),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.visualizationLibraryCSS),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.stateMachineCustomThemeCSS),
+            panel.webview.cspSource,
             {
                 inSync: localize(
                     'AWS.stepFunctions.graph.status.inSync',
@@ -226,9 +225,9 @@ export class AslVisualization {
             {
                 enableScripts: true,
                 localResourceRoots: [
-                    ext.visualizationResourcePaths.localWebviewScriptsPath,
-                    ext.visualizationResourcePaths.visualizationLibraryCachePath,
-                    ext.visualizationResourcePaths.stateMachineCustomThemePath,
+                    globals.visualizationResourcePaths.localWebviewScriptsPath,
+                    globals.visualizationResourcePaths.visualizationLibraryCachePath,
+                    globals.visualizationResourcePaths.stateMachineCustomThemePath,
                 ],
                 retainContextWhenHidden: true,
             }

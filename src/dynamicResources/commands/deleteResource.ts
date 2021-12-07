@@ -10,6 +10,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { millisecondsSince, recordDynamicresourceMutateResource, Result } from '../../shared/telemetry/telemetry'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
+import globals from '../../shared/extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 export async function deleteResource(
@@ -39,7 +40,7 @@ export async function deleteResource(
         },
         async progress => {
             let result: Result = 'Succeeded'
-            const startTime = new Date()
+            const startTime = new globals.clock.Date()
 
             try {
                 progress.report({

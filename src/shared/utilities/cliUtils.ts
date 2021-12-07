@@ -7,7 +7,6 @@ import * as admZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
@@ -17,8 +16,11 @@ import { ChildProcess } from '../utilities/childProcess'
 import { Window } from '../vscode/window'
 
 import * as nls from 'vscode-nls'
-import { Timeout } from './timeoutUtils'
+import { Timeout, TimeoutError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
+import { extensionSettingsPrefix } from '../constants'
+import globals from '../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -41,27 +43,14 @@ interface Cli {
     name: string
 }
 
-type AwsClis = 'aws' | 'ssm'
+type AwsClis = Extract<telemetry.ToolId, 'session-manager-plugin'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
  * TODO: Add SAM? Other CLIs?
  */
 export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
-    aws: {
-        command: {
-            unix: path.join('AWSCLIV2', 'aws'),
-            windows: path.join('AWSCLIV2', 'aws.exe'),
-        },
-        source: {
-            macos: 'https://awscli.amazonaws.com/AWSCLIV2.pkg',
-            windows: 'https://awscli.amazonaws.com/AWSCLIV2.msi',
-            linux: 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip',
-        },
-        name: 'AWS',
-        manualInstallLink: 'https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html',
-    },
-    ssm: {
+    'session-manager-plugin': {
         command: {
             unix: path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin'),
             windows: path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe'),
@@ -69,9 +58,8 @@ export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
         source: {
             // use pkg: zip is unsigned
             macos: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/session-manager-plugin.pkg',
-            // TODO: REPLACE
             windows:
-                'https://REMOVED/plugin/1.2.269.0/windows/SessionManagerPlugin.zip',
+                'https://session-manager-downloads.s3.amazonaws.com/plugin/latest/windows/SessionManagerPlugin.zip',
             linux: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb',
         },
         name: 'Session Manager Plugin',
@@ -84,13 +72,17 @@ export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
  * Installs a selected CLI: wraps confirmation, cleanup, and telemetry logic.
  * @param cli CLI to install
  * @param confirmBefore Prompt before starting install?
- * @returns Dir containing CLI
+ * @returns CLI Path
  */
 export async function installCli(
     cli: AwsClis,
     confirm: boolean,
     window: Window = Window.vscode()
-): Promise<string | undefined> {
+): Promise<string | never> {
+    const cliToInstall = AWS_CLIS[cli]
+    if (!cliToInstall) {
+        throw new InstallerError(`Invalid not found for CLI: ${cli}`)
+    }
     let result: telemetry.Result = 'Succeeded'
 
     let tempDir: string | undefined
@@ -101,10 +93,10 @@ export async function installCli(
             ? install
             : await window.showInformationMessage(
                   localize(
-                      'AWS.mde.installCliPrompt',
+                      'AWS.cli.installCliPrompt',
                       '{0} could not find {1} CLI. Install a local copy?',
                       localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company),
-                      AWS_CLIS[cli].name
+                      cliToInstall.name
                   ),
                   install,
                   manualInstall
@@ -112,16 +104,15 @@ export async function installCli(
 
         if (selection !== install) {
             if (selection === manualInstall) {
-                vscode.env.openExternal(vscode.Uri.parse(AWS_CLIS[cli].manualInstallLink))
+                vscode.env.openExternal(vscode.Uri.parse(cliToInstall.manualInstallLink))
             }
             result = 'Cancelled'
-
-            return undefined
+            throw new TimeoutError('cancelled')
         }
 
         const timeout = new Timeout(600000)
         const progress = await showMessageWithCancel(
-            localize('AWS.cli.installProgress', 'Installing: {0} CLI', AWS_CLIS[cli].name),
+            localize('AWS.cli.installProgress', 'Installing: {0} CLI', cliToInstall.name),
             timeout
         )
 
@@ -129,33 +120,36 @@ export async function installCli(
         let cliPath: string
         try {
             switch (cli) {
-                case 'aws':
-                    cliPath = await installAwsCli(tempDir, progress)
-                    break
-                case 'ssm':
+                case 'session-manager-plugin':
                     cliPath = await installSsmCli(tempDir, progress)
                     break
+                default:
+                    throw new InstallerError(`Invalid not found for CLI: ${cli}`)
             }
         } finally {
             timeout.complete()
         }
         // validate
-        if (!(await hasCliCommand(AWS_CLIS[cli], false))) {
+        if (!(await hasCliCommand(cliToInstall, false))) {
             throw new InstallerError('Could not verify installed CLIs')
         }
 
         return cliPath
     } catch (err) {
+        if (TimeoutError.isCancelled(err)) {
+            throw err
+        }
+
         result = 'Failed'
 
         window
             .showErrorMessage(
-                localize('AWS.cli.failedInstall', 'Installation of the {0} CLI failed.', AWS_CLIS[cli].name),
+                localize('AWS.cli.failedInstall', 'Installation of the {0} CLI failed.', cliToInstall.name),
                 manualInstall
             )
             .then(button => {
                 if (button === manualInstall) {
-                    vscode.env.openExternal(vscode.Uri.parse(AWS_CLIS[cli].manualInstallLink))
+                    vscode.env.openExternal(vscode.Uri.parse(cliToInstall.manualInstallLink))
                 }
             })
 
@@ -173,9 +167,9 @@ export async function installCli(
             })
         }
 
-        telemetry.recordAwsInstallCli({
+        telemetry.recordAwsToolInstallation({
             result,
-            cli,
+            toolId: cli,
         })
     }
 }
@@ -191,29 +185,13 @@ export async function getCliCommand(cli: Cli): Promise<string | undefined> {
     return globalCommand ?? (await hasCliCommand(cli, false))
 }
 
-// export async function hardLinkToCliDir(dir: string, command: Cli): Promise<void> {
-//     const existingPath = path.join(dir, getOsCommand(command))
-//     const newPath = getCliPath(command)
-//     return new Promise((resolve, reject) => {
-//         getLogger().debug(`Attempting to hard link ${existingPath} to ${newPath}...`)
-//         fs.link(existingPath, newPath, err => {
-//             if (err) {
-//                 const message = `Toolkit could not create a hard link for ${existingPath} to ${newPath}`
-//                 getLogger().error(`${message}: %O`, err)
-//                 reject(new InstallerError(message))
-//             }
-//             resolve()
-//         })
-//     })
-// }
-
 /**
  * Returns whether or not a command is accessible on the user's $PATH
  * @param command CLI Command name
  */
 async function hasCliCommand(cli: Cli, global: boolean): Promise<string | undefined> {
     const command = global ? path.parse(getOsCommand(cli)).base : path.join(getToolkitLocalCliPath(), getOsCommand(cli))
-    const result = await new ChildProcess(true, command, undefined, '--version').run()
+    const result = await new ChildProcess(command, ['--version']).run()
 
     return result.exitCode === 0 ? command : undefined
 }
@@ -245,70 +223,8 @@ async function downloadCliSource(cli: Cli, tempDir: string): Promise<string> {
     return destinationFile
 }
 
-async function installToolkitLocalMsi(msiPath: string): Promise<string> {
-    if (process.platform !== 'win32') {
-        throw new InvalidPlatformError(`Cannot install MSI files on operating system: ${process.platform}`)
-    }
-    const result = await new ChildProcess(
-        true,
-        'msiexec',
-        undefined,
-        '/a',
-        msiPath,
-        '/quiet',
-        // use base dir: installer installs to ./Amazon/AWSCLIV2
-        `TARGETDIR=${vscode.Uri.file(getToolkitCliDir()).fsPath}`
-    ).run()
-    if (result.exitCode !== 0) {
-        throw new InstallerError(`Installation of MSI file ${msiPath} failed: Error Code ${result.exitCode}`)
-    }
-
-    return path.join(getToolkitCliDir(), getOsCommand(AWS_CLIS.aws))
-}
-
-async function installToolkitLocalPkg(pkgPath: string, ...args: string[]): Promise<string> {
-    if (process.platform !== 'darwin') {
-        throw new InvalidPlatformError(`Cannot install pkg files on operating system: ${process.platform}`)
-    }
-    const result = await new ChildProcess(true, 'installer', undefined, '--pkg', pkgPath, ...args).run()
-    if (result.exitCode !== 0) {
-        throw new InstallerError(`Installation of PKG file ${pkgPath} failed: Error Code ${result.exitCode}`)
-    }
-
-    return path.join(getToolkitCliDir(), getOsCommand(AWS_CLIS.aws))
-}
-
-/**
- * TODO: THIS REQUIRES SUDO!!! Potentially drop support or look into adding; unsure how we would handle having to input a password.
- */
-async function installToolkitLocalLinuxAwsCli(archivePath: string): Promise<string> {
-    if (process.platform !== 'linux') {
-        throw new InvalidPlatformError(`Cannot use Linux installer on operating system: ${process.platform}`)
-    }
-    const dirname = path.join(path.parse(archivePath).dir, path.parse(archivePath).name)
-    const installDir = path.join(getToolkitCliDir(), 'Amazon', 'AWSCLIV2')
-    new admZip(archivePath).extractAllTo(dirname, true)
-    const result = await new ChildProcess(
-        true,
-        'sh',
-        undefined,
-        path.join(dirname, 'aws', 'install'),
-        '-i',
-        installDir,
-        '-b',
-        installDir
-    ).run()
-    if (result.exitCode !== 0) {
-        throw new InstallerError(
-            `Installation of Linux CLI archive ${archivePath} failed: Error Code ${result.exitCode}`
-        )
-    }
-
-    return path.join(getToolkitCliDir(), getOsCommand(AWS_CLIS.aws))
-}
-
 function getToolkitCliDir(): string {
-    return path.join(ext.context.globalStoragePath, 'tools')
+    return path.join(globals.context.globalStoragePath, 'tools')
 }
 
 /**
@@ -319,68 +235,14 @@ function getToolkitLocalCliPath(): string {
     return path.join(getToolkitCliDir(), 'Amazon')
 }
 
-/**
- * TODO: AWS CLI install on Linux requires sudo!!!
- */
-async function installAwsCli(
-    tempDir: string,
-    progress: vscode.Progress<{ message?: string; increment?: number }>
-): Promise<string> {
-    progress.report({ message: msgDownloading })
-    const awsInstaller = await downloadCliSource(AWS_CLIS.aws, tempDir)
-    fs.chmodSync(awsInstaller, 0o700)
-
-    getLogger('channel').info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
-    progress.report({ message: msgInstallingLocal })
-    switch (process.platform) {
-        case 'win32': {
-            return await installToolkitLocalMsi(awsInstaller)
-        }
-        case 'darwin': {
-            // edit config file: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html#cliv2-mac-install-cmd-current-user
-            const xmlPath = path.join(tempDir, 'choices.xml')
-            fs.writeFileSync(
-                xmlPath,
-                `<?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-            <plist version="1.0">
-                <array>
-                <dict>
-                    <key>choiceAttribute</key>
-                    <string>customLocation</string>
-                    <key>attributeSetting</key>
-                    <string>${getToolkitLocalCliPath()}</string>
-                    <key>choiceIdentifier</key>
-                    <string>default</string>
-                </dict>
-                </array>
-            </plist>`
-            )
-            // install
-            return await installToolkitLocalPkg(
-                awsInstaller,
-                '--target',
-                'CurrentUserHomeDirectory',
-                '--applyChoiceChangesXML',
-                xmlPath
-            )
-        }
-        case 'linux': {
-            return await installToolkitLocalLinuxAwsCli(awsInstaller)
-        }
-        default: {
-            throw new InvalidPlatformError(`Unsupported platform for CLI installation: ${process.platform}`)
-        }
-    }
-}
-
 async function installSsmCli(
     tempDir: string,
     progress: vscode.Progress<{ message?: string; increment?: number }>
 ): Promise<string> {
     progress.report({ message: msgDownloading })
-    const ssmInstaller = await downloadCliSource(AWS_CLIS.ssm, tempDir)
+    const ssmInstaller = await downloadCliSource(AWS_CLIS['session-manager-plugin']!, tempDir)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
+    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(AWS_CLIS['session-manager-plugin']!))
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })
@@ -389,21 +251,16 @@ async function installSsmCli(
             return new Promise<string>(async (resolve, reject) => {
                 try {
                     const tempPath = path.join(tempDir, 'tmp')
-                    await new ChildProcess(
-                        true,
-                        'pkgutil',
-                        { cwd: tempDir },
-                        '--expand',
-                        'session-manager-plugin.pkg',
-                        tempPath
-                    ).run()
-                    await new ChildProcess(true, 'tar', { cwd: tempPath }, '-xzf', path.join(tempPath, 'Payload')).run()
+                    const pkgArgs = ['--expand', 'session-manager-plugin.pkg', tempPath]
+                    const tarArgs = ['-xzf', path.join(tempPath, 'Payload')]
+                    await new ChildProcess('pkgutil', pkgArgs, { spawnOptions: { cwd: tempDir } }).run()
+                    await new ChildProcess('tar', tarArgs, { spawnOptions: { cwd: tempPath } }).run()
 
                     fs.copySync(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
                         recursive: true,
                     })
 
-                    resolve(path.join(outDir, 'bin'))
+                    resolve(finalPath)
                 } catch (err) {
                     reject(new InstallerError((err as Error).message))
                 }
@@ -411,42 +268,34 @@ async function installSsmCli(
         }
         case 'win32': {
             return new Promise<string>(async (resolve, reject) => {
-                const secondZip = path.join(tempDir, 'package.zip')
-                // first zip
-                await new Promise<void>(resolve2 => {
-                    try {
-                        new admZip(ssmInstaller).extractAllTo(tempDir, true)
-                        new admZip(secondZip).extractAllTo(outDir, true)
+                try {
+                    new admZip(ssmInstaller).extractAllTo(tempDir, true)
+                    const secondZip = path.join(tempDir, 'package.zip')
+                    new admZip(secondZip).extractAllTo(outDir, true)
 
-                        resolve(path.join(outDir, 'bin'))
-                    } catch (err) {
-                        if (err) {
-                            reject(new InstallerError((err as Error).message))
-                        }
-                        resolve2()
+                    resolve(finalPath)
+                } catch (err) {
+                    if (err) {
+                        reject(new InstallerError((err as Error).message))
                     }
-                })
+                }
             })
         }
         case 'linux': {
             return new Promise<string>(async (resolve, reject) => {
                 // extract deb file (using ar) to ssmInstaller dir
-                await new ChildProcess(true, 'ar', { cwd: path.dirname(ssmInstaller) }, '-x', ssmInstaller).run()
+                await new ChildProcess('ar', ['-x', ssmInstaller], {
+                    spawnOptions: { cwd: path.dirname(ssmInstaller) },
+                }).run()
                 // extract data.tar.gz to CLI dir
-                await new ChildProcess(
-                    true,
-                    'tar',
-                    { cwd: path.dirname(ssmInstaller) },
-                    '-xzf',
-                    path.join(path.dirname(ssmInstaller), 'data.tar.gz')
-                ).run()
-
-                fs.mkdirSync(outDir, { recursive: true })
+                const tarArgs = ['-xzf', path.join(path.dirname(ssmInstaller), 'data.tar.gz')]
+                await new ChildProcess('tar', tarArgs, { spawnOptions: { cwd: path.dirname(ssmInstaller) } }).run(),
+                    fs.mkdirSync(outDir, { recursive: true })
                 fs.copySync(path.join(path.dirname(ssmInstaller), 'usr', 'local', 'sessionmanagerplugin'), outDir, {
                     recursive: true,
                 })
 
-                resolve(path.join(outDir, 'bin'))
+                resolve(finalPath)
             })
         }
         default: {
@@ -454,3 +303,153 @@ async function installSsmCli(
         }
     }
 }
+
+export async function getOrInstallCli(
+    cli: AwsClis,
+    confirm: boolean,
+    window: Window = Window.vscode(),
+    settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+): Promise<string | never> {
+    const forceInstall = settings.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)
+
+    if (forceInstall) {
+        return installCli(cli, confirm, window)
+    } else {
+        return (await getCliCommand(AWS_CLIS[cli])) ?? installCli(cli, confirm, window)
+    }
+}
+
+// TODO: uncomment for AWS CLI installation
+
+/**
+ * TODO: AWS CLI install on Linux requires sudo!!!
+ */
+// async function installAwsCli(
+//     tempDir: string,
+//     progress: vscode.Progress<{ message?: string; increment?: number }>
+// ): Promise<string> {
+//     progress.report({ message: msgDownloading })
+//     const awsInstaller = await downloadCliSource(AWS_CLIS.aws, tempDir)
+//     fs.chmodSync(awsInstaller, 0o700)
+
+//     getLogger('channel').info(`Installing AWS CLI from ${awsInstaller} to ${getToolkitCliDir()}...`)
+//     progress.report({ message: msgInstallingLocal })
+//     switch (process.platform) {
+//         case 'win32': {
+//             return await installToolkitLocalMsi(awsInstaller)
+//         }
+//         case 'darwin': {
+//             // edit config file: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html#cliv2-mac-install-cmd-current-user
+//             const xmlPath = path.join(tempDir, 'choices.xml')
+//             fs.writeFileSync(
+//                 xmlPath,
+//                 `<?xml version="1.0" encoding="UTF-8"?>
+//             <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+//             <plist version="1.0">
+//                 <array>
+//                 <dict>
+//                     <key>choiceAttribute</key>
+//                     <string>customLocation</string>
+//                     <key>attributeSetting</key>
+//                     <string>${getToolkitLocalCliPath()}</string>
+//                     <key>choiceIdentifier</key>
+//                     <string>default</string>
+//                 </dict>
+//                 </array>
+//             </plist>`
+//             )
+//             // install
+//             return await installToolkitLocalPkg(
+//                 awsInstaller,
+//                 '--target',
+//                 'CurrentUserHomeDirectory',
+//                 '--applyChoiceChangesXML',
+//                 xmlPath
+//             )
+//         }
+//         case 'linux': {
+//             return await installToolkitLocalLinuxAwsCli(awsInstaller)
+//         }
+//         default: {
+//             throw new InvalidPlatformError(`Unsupported platform for CLI installation: ${process.platform}`)
+//         }
+//     }
+// }
+
+// async function installToolkitLocalMsi(msiPath: string): Promise<string> {
+//     if (process.platform !== 'win32') {
+//         throw new InvalidPlatformError(`Cannot install MSI files on operating system: ${process.platform}`)
+//     }
+//     const result = await new ChildProcess(
+//         true,
+//         'msiexec',
+//         undefined,
+//         '/a',
+//         msiPath,
+//         '/quiet',
+//         // use base dir: installer installs to ./Amazon/AWSCLIV2
+//         `TARGETDIR=${vscode.Uri.file(getToolkitCliDir()).fsPath}`
+//     ).run()
+//     if (result.exitCode !== 0) {
+//         throw new InstallerError(`Installation of MSI file ${msiPath} failed: Error Code ${result.exitCode}`)
+//     }
+
+//     return path.join(getToolkitCliDir(), getOsCommand(AWS_CLIS.aws))
+// }
+
+// async function installToolkitLocalPkg(pkgPath: string, ...args: string[]): Promise<string> {
+//     if (process.platform !== 'darwin') {
+//         throw new InvalidPlatformError(`Cannot install pkg files on operating system: ${process.platform}`)
+//     }
+//     const result = await new ChildProcess(true, 'installer', undefined, '--pkg', pkgPath, ...args).run()
+//     if (result.exitCode !== 0) {
+//         throw new InstallerError(`Installation of PKG file ${pkgPath} failed: Error Code ${result.exitCode}`)
+//     }
+
+//     return path.join(getToolkitCliDir(), getOsCommand(AWS_CLIS.aws))
+// }
+
+/**
+ * TODO: THIS REQUIRES SUDO!!! Potentially drop support or look into adding; unsure how we would handle having to input a password.
+ */
+// async function installToolkitLocalLinuxAwsCli(archivePath: string): Promise<string> {
+//     if (process.platform !== 'linux') {
+//         throw new InvalidPlatformError(`Cannot use Linux installer on operating system: ${process.platform}`)
+//     }
+//     const dirname = path.join(path.parse(archivePath).dir, path.parse(archivePath).name)
+//     const installDir = path.join(getToolkitCliDir(), 'Amazon', 'AWSCLIV2')
+//     new admZip(archivePath).extractAllTo(dirname, true)
+//     const result = await new ChildProcess(
+//         true,
+//         'sh',
+//         undefined,
+//         path.join(dirname, 'aws', 'install'),
+//         '-i',
+//         installDir,
+//         '-b',
+//         installDir
+//     ).run()
+//     if (result.exitCode !== 0) {
+//         throw new InstallerError(
+//             `Installation of Linux CLI archive ${archivePath} failed: Error Code ${result.exitCode}`
+//         )
+//     }
+
+//     return path.join(getToolkitCliDir(), getOsCommand(AWS_CLIS.aws))
+// }
+
+// export async function hardLinkToCliDir(dir: string, command: Cli): Promise<void> {
+//     const existingPath = path.join(dir, getOsCommand(command))
+//     const newPath = getCliPath(command)
+//     return new Promise((resolve, reject) => {
+//         getLogger().debug(`Attempting to hard link ${existingPath} to ${newPath}...`)
+//         fs.link(existingPath, newPath, err => {
+//             if (err) {
+//                 const message = `Toolkit could not create a hard link for ${existingPath} to ${newPath}`
+//                 getLogger().error(`${message}: %O`, err)
+//                 reject(new InstallerError(message))
+//             }
+//             resolve()
+//         })
+//     })
+// }

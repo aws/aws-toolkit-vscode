@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { ExtContext } from '../../../shared/extensions'
 import { compileVueWebview } from '../../../webviews/main'
 import * as nls from 'vscode-nls'
-import { ext } from '../../../shared/extensionGlobals'
 import { EnvironmentSettingsWizard, getAllInstanceDescriptions, SettingsForm } from '../../wizards/environmentSettings'
 import { CreateEnvironmentRequest, GetEnvironmentMetadataResponse } from '../../../../types/clientmde'
 import { getRegistryDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
@@ -18,6 +17,7 @@ import { compare } from 'fast-json-patch'
 import { mdeConnectCommand, mdeDeleteCommand } from '../../mdeCommands'
 import { getLogger } from '../../../shared/logger/logger'
 import { parse } from '@aws-sdk/util-arn-parser'
+import globals from '../../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 export interface DefinitionTemplate {
@@ -55,7 +55,7 @@ const VueWebview = compileVueWebview({
         },
         async restartEnvironment(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'arn'>) {
             return tryRestart(mde.arn, async () => {
-                await ext.mde.stopEnvironment({ environmentId: mde.id })
+                await globals.mde.stopEnvironment({ environmentId: mde.id })
             })
         },
         async startDevfile(location: string) {
@@ -141,7 +141,7 @@ function parseIdFromArn(arn: string) {
 
 async function getEnvironmentSummary(id: string): Promise<GetEnvironmentMetadataResponse & { connected: boolean }> {
     const envClient = new DefaultMdeEnvironmentClient()
-    const summary = await ext.mde.getEnvironmentMetadata({ environmentId: id })
+    const summary = await globals.mde.getEnvironmentMetadata({ environmentId: id })
     if (!summary) {
         throw new Error('No env found')
     }
@@ -182,9 +182,9 @@ async function toggleMdeState(mde: Pick<GetEnvironmentMetadataResponse, 'id' | '
             vscode.window.showErrorMessage('Cannot stop current environment with unsaved changes')
             throw new Error('Cannot stop environment with unsaved changes')
         }
-        return ext.mde.stopEnvironment({ environmentId: mde.id })
+        return globals.mde.stopEnvironment({ environmentId: mde.id })
     } else if (mde.status === 'STOPPED') {
-        return ext.mde.startEnvironment({ environmentId: mde.id })
+        return globals.mde.startEnvironment({ environmentId: mde.id })
     } else {
         throw new Error('Environment is still in a pending state')
     }
@@ -209,7 +209,7 @@ async function pollStatus<T, K extends keyof T>(prop: K, target: T[K], provider:
 
 async function pollDelete(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'status'>) {
     const provider = () =>
-        ext.mde
+        globals.mde
             .getEnvironmentMetadata({ environmentId: mde.id })
             .then(resp => {
                 if (!resp) {
@@ -234,7 +234,7 @@ async function computeTagDiff(arn: string, tags: Record<string, string>): Promis
         throw new Error('Could not parse environment id from arn')
     }
 
-    const env = await ext.mde.getEnvironmentMetadata({ environmentId })
+    const env = await globals.mde.getEnvironmentMetadata({ environmentId })
     if (!env) {
         throw new Error('Could not retrieve environment tags')
     }
@@ -275,8 +275,8 @@ async function updateTags(arn: string, tags: Record<string, string | undefined>)
         })
 
     await Promise.all([
-        deletedTags.length > 0 ? ext.mde.untagResource(arn, deletedTags) : Promise.resolve(),
-        Object.keys(filteredTags).length > 0 ? ext.mde.tagResource(arn, filteredTags) : Promise.resolve(),
+        deletedTags.length > 0 ? globals.mde.untagResource(arn, deletedTags) : Promise.resolve(),
+        Object.keys(filteredTags).length > 0 ? globals.mde.tagResource(arn, filteredTags) : Promise.resolve(),
     ])
 }
 

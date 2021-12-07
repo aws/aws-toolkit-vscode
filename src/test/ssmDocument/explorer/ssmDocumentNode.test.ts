@@ -9,10 +9,10 @@ import * as sinon from 'sinon'
 import { SsmDocumentNode } from '../../../ssmDocument/explorer/ssmDocumentNode'
 import { DocumentTypeNode } from '../../../ssmDocument/explorer/documentTypeNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { DEFAULT_TEST_ACCOUNT_ID, DEFAULT_TEST_REGION_CODE } from '../../utilities/fakeAwsContext'
+import globals from '../../../shared/extensionGlobals'
 
 describe('SsmDocumentNode', function () {
     let sandbox: sinon.SinonSandbox
@@ -85,6 +85,6 @@ describe('SsmDocumentNode', function () {
             createSsmClient: sandbox.stub().returns(ssmDocumentClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

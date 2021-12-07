@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as caws from '../shared/clients/cawsClient'
-import { ext } from '../shared/extensionGlobals'
+import globals, { checkCaws } from '../shared/extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { createHelpButton } from '../shared/ui/buttons'
 import * as pickerLib from '../shared/ui/picker'
@@ -28,10 +28,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
         showCollapseAll: true,
     })
 
-    ext.context.subscriptions.push(
+    globals.context.subscriptions.push(
         // vscode.window.registerTreeDataProvider(viewProvider.viewId, viewProvider),
         view,
-        ext.awsContext.onDidChangeContext(async e => {
+        globals.awsContext.onDidChangeContext(async e => {
             onCredentialsChanged(ctx.extensionContext, viewProvider, view, e)
         })
     )
@@ -55,7 +55,7 @@ async function onCredentialsChanged(
     e: ContextChangeEventsArgs
 ) {
     view.title = e.cawsUsername ? `CODE.AWS (${e.cawsUsername})` : 'CODE.AWS'
-    await ext.caws.onCredentialsChanged(e.cawsUsername ?? '', e.cawsSecret ?? '')
+    await globals.caws.onCredentialsChanged(e.cawsUsername ?? '', e.cawsSecret ?? '')
 
     // vscode secrets API is only available in newer versions.
     if (e.cawsUsername && e.cawsSecret && (ctx as any).secrets) {
@@ -84,7 +84,7 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
 async function selectCawsResource(
     kind: 'org' | 'project' | 'repo'
 ): Promise<caws.CawsOrg | caws.CawsProject | caws.CawsRepo | undefined> {
-    if (!ext.checkCaws()) {
+    if (!checkCaws()) {
         return
     }
     const helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
@@ -107,7 +107,7 @@ async function selectCawsResource(
         picker.placeholder = 'Choose a repository'
     }
 
-    const c = ext.caws
+    const c = globals.caws
     const populator = new IteratorTransformer<vscode.QuickPickItem, vscode.QuickPickItem>(
         () => c.cawsItemsToQuickpickIter(kind),
         o => (!o ? [] : [o])
@@ -147,10 +147,10 @@ async function selectCawsResource(
  * - "Open CODE.AWS Repository"
  */
 async function openCawsResource(kind: 'org' | 'project' | 'repo'): Promise<void> {
-    if (!ext.checkCaws()) {
+    if (!checkCaws()) {
         return
     }
-    const c = ext.caws
+    const c = globals.caws
     const o = await selectCawsResource(kind)
     if (!o) {
         return
@@ -175,7 +175,7 @@ async function cawsConnect(): Promise<void> {
         return
     }
 
-    const c = ext.caws
+    const c = globals.caws
     await c.onCredentialsChanged(undefined, userSecret)
 
     const sess = await c.verifySession()
@@ -184,24 +184,24 @@ async function cawsConnect(): Promise<void> {
         return
     }
 
-    ext.awsContext.setCawsCredentials(c.user(), userSecret)
+    globals.awsContext.setCawsCredentials(c.user(), userSecret)
 }
 
 /** "Sign out of CODE.AWS" command. */
 async function cawsLogout(): Promise<void> {
-    if (!ext.awsContext.getCawsCredentials()) {
+    if (!globals.awsContext.getCawsCredentials()) {
         return
     }
-    await ext.caws.onCredentialsChanged(undefined, undefined)
-    ext.awsContext.setCawsCredentials('', '')
+    await globals.caws.onCredentialsChanged(undefined, undefined)
+    globals.awsContext.setCawsCredentials('', '')
 }
 
 /** "Clone CODE.AWS Repository" command. */
 async function cloneCawsRepo(): Promise<void> {
-    if (!ext.checkCaws()) {
+    if (!checkCaws()) {
         return
     }
-    const c = ext.caws
+    const c = globals.caws
     const r = (await selectCawsResource('repo')) as caws.CawsRepo
     if (!r) {
         return

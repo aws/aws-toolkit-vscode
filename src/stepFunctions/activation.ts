@@ -6,7 +6,6 @@
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { ext } from '../shared/extensionGlobals'
 import * as telemetry from '../shared/telemetry/telemetry'
 import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
@@ -16,6 +15,7 @@ import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVis
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
 
 import * as nls from 'vscode-nls'
+import globals from '../shared/extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -26,7 +26,9 @@ export async function activate(
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    await activateASL(extensionContext)
+    globals.visualizationResourcePaths = initalizeWebviewPaths(extensionContext)
+
+    setImmediate(() => activateASL(extensionContext))
     await registerStepFunctionCommands(extensionContext, awsContext, outputChannel)
     initializeCodeLens(extensionContext)
 }
@@ -36,7 +38,6 @@ async function registerStepFunctionCommands(
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    initalizeWebviewPaths(extensionContext)
     const visualizationManager = new AslVisualizationManager(extensionContext)
 
     extensionContext.subscriptions.push(
@@ -71,38 +72,25 @@ async function registerStepFunctionCommands(
     )
 }
 
-export function initalizeWebviewPaths(context: vscode.ExtensionContext) {
+export function initalizeWebviewPaths(context: vscode.ExtensionContext): typeof globals['visualizationResourcePaths'] {
     // Location for script in body of webview that handles input from user
     // and calls the code to render state machine graph
-    ext.visualizationResourcePaths.localWebviewScriptsPath = vscode.Uri.file(
-        context.asAbsolutePath(join('media', 'js'))
-    )
-
-    ext.visualizationResourcePaths.webviewBodyScript = vscode.Uri.file(
-        context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js'))
-    )
 
     // Locations for script and css that render the state machine
     const visualizationLibraryCache = join(context.globalStoragePath, 'visualization')
 
-    ext.visualizationResourcePaths.visualizationLibraryCachePath = vscode.Uri.file(visualizationLibraryCache)
-
-    ext.visualizationResourcePaths.visualizationLibraryScript = vscode.Uri.file(
-        join(visualizationLibraryCache, 'graph.js')
-    )
-
-    ext.visualizationResourcePaths.visualizationLibraryCSS = vscode.Uri.file(
-        join(visualizationLibraryCache, 'graph.css')
-    )
-
-    // Locations for an additional stylesheet to add Light/Dark/High-Contrast theme support
-    ext.visualizationResourcePaths.stateMachineCustomThemePath = vscode.Uri.file(
-        context.asAbsolutePath(join('media', 'css'))
-    )
-
-    ext.visualizationResourcePaths.stateMachineCustomThemeCSS = vscode.Uri.file(
-        context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css'))
-    )
+    return {
+        localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('media', 'js'))),
+        webviewBodyScript: vscode.Uri.file(context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js'))),
+        visualizationLibraryCachePath: vscode.Uri.file(visualizationLibraryCache),
+        visualizationLibraryScript: vscode.Uri.file(join(visualizationLibraryCache, 'graph.js')),
+        visualizationLibraryCSS: vscode.Uri.file(join(visualizationLibraryCache, 'graph.css')),
+        // Locations for an additional stylesheet to add Light/Dark/High-Contrast theme support
+        stateMachineCustomThemePath: vscode.Uri.file(context.asAbsolutePath(join('media', 'css'))),
+        stateMachineCustomThemeCSS: vscode.Uri.file(
+            context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css'))
+        ),
+    }
 }
 
 function initializeCodeLens(context: vscode.ExtensionContext) {
