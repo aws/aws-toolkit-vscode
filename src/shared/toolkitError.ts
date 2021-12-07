@@ -23,8 +23,6 @@ interface ErrorMetadata {
      */
     readonly cancelled?: boolean
 
-    readonly metricName?: string
-
     /**
      * Metric metadata associated with the error.
      */
