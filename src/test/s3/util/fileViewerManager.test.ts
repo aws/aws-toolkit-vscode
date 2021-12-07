@@ -14,7 +14,7 @@ import {
     S3Client,
     UploadFileRequest,
 } from '../../../shared/clients/s3Client'
-import { ext } from '../../../shared/extensionGlobals'
+import globals from '../../../shared/extensionGlobals'
 import { VirualFileSystem } from '../../../shared/virtualFilesystem'
 import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { createTestWindow, TestWindow } from '../../shared/vscode/window'
@@ -63,7 +63,7 @@ describe('S3FileProvider', function () {
 
     before(function () {
         // TODO: fix this dependency
-        ext.outputChannel ??= new MockOutputChannel()
+        globals.outputChannel ??= new MockOutputChannel()
     })
 
     beforeEach(function () {
