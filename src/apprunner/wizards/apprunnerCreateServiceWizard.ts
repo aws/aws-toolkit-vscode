@@ -6,7 +6,7 @@
 import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, QuickInputToggleButton } from '../../shared/ui/buttons'
-import { ext } from '../../shared/extensionGlobals'
+
 import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
 import { Prompter } from '../../shared/ui/prompter'
@@ -17,6 +17,7 @@ import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
 import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -106,9 +107,9 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             exitPrompterProvider: new BasicExitPrompterProvider(),
         })
 
-        const ecrClient = ext.toolkitClientBuilder.createEcrClient(region)
-        const iamClient = ext.toolkitClientBuilder.createIamClient(region)
-        const apprunnerClient = ext.toolkitClientBuilder.createAppRunnerClient(region)
+        const ecrClient = globals.toolkitClientBuilder.createEcrClient(region)
+        const iamClient = globals.toolkitClientBuilder.createIamClient(region)
+        const apprunnerClient = globals.toolkitClientBuilder.createAppRunnerClient(region)
         const autoDeployButton = makeDeploymentButton()
         const gitExtension = GitExtension.instance
         const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(apprunnerClient, gitExtension, autoDeployButton)

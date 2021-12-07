@@ -49,6 +49,7 @@ async function setupVSCode(): Promise<string> {
         console.log(`Finished running Main test suite with result code: ${result}`)
         process.exit(result)
     } catch (err) {
+        console.error(err)
         console.error('Failed to run tests')
         process.exit(1)
     }

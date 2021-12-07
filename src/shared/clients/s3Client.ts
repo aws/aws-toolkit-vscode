@@ -9,11 +9,11 @@ import * as mime from 'mime-types'
 import * as path from 'path'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import { Readable } from 'stream'
+import globals from '../extensionGlobals'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -754,7 +754,7 @@ function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucke
 async function createSdkClient(regionCode: string): Promise<S3> {
     clearInternalBucketCache()
 
-    return await ext.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
+    return await globals.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
 }
 
 /**

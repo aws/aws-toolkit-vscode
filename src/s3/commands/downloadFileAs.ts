@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { downloadsDir } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
@@ -20,6 +20,7 @@ import { Timeout, TimeoutError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/toolkitError'
 import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtilities'
 import { S3File } from '../fileViewerManager'
+import globals from '../../shared/extensionGlobals'
 
 interface DownloadFileOptions {
     /**
@@ -91,7 +92,7 @@ async function downloadS3File(
 export async function downloadFile(file: S3File, options: FileOptions): Promise<void>
 export async function downloadFile(file: S3File, options?: BufferOptions): Promise<Buffer>
 export async function downloadFile(file: S3File, options?: FileOptions | BufferOptions): Promise<Buffer | void> {
-    const client = options?.client ?? ext.toolkitClientBuilder.createS3Client(file.bucket.region)
+    const client = options?.client ?? globals.toolkitClientBuilder.createS3Client(file.bucket.region)
 
     return downloadS3File(client, file, options).catch(err => {
         const message = localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', file.name)
@@ -119,7 +120,7 @@ export async function downloadFile(file: S3File, options?: FileOptions | BufferO
 export async function downloadFileAsCommand(
     node: S3FileNode,
     window = Window.vscode(),
-    outputChannel = ext.outputChannel
+    outputChannel = globals.outputChannel
 ): Promise<void> {
     const { bucket, file } = node
 

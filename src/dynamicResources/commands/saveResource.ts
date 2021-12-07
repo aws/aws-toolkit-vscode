@@ -15,6 +15,7 @@ import { ResourceTypeNode } from '../explorer/nodes/resourceTypeNode'
 import { AwsResourceManager } from '../awsResourceManager'
 import { CloudControlClient } from '../../shared/clients/cloudControlClient'
 import { CloudControl } from 'aws-sdk'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -78,7 +79,7 @@ export async function createResource(
             cancellable: false,
         },
         async progress => {
-            const startTime = new Date()
+            const startTime = new globals.clock.Date()
             let result: Result = 'Succeeded'
 
             try {
@@ -145,7 +146,7 @@ export async function updateResource(
             cancellable: false,
         },
         async progress => {
-            const startTime = new Date()
+            const startTime = new globals.clock.Date()
             let result: Result = 'Succeeded'
             try {
                 progress.report({

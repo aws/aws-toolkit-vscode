@@ -12,6 +12,7 @@ import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import globals from '../../../shared/extensionGlobals'
 
 describe('deleteCertCommand', function () {
     const certificateId = 'test-cert'
@@ -24,7 +25,7 @@ describe('deleteCertCommand', function () {
         iot = mock()
         parentNode = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)))
         node = new IotCertWithPoliciesNode(
-            { id: certificateId, arn: 'arn', activeStatus: status, creationDate: new Date() },
+            { id: certificateId, arn: 'arn', activeStatus: status, creationDate: new globals.clock.Date() },
             parentNode,
             instance(iot)
         )
@@ -68,7 +69,7 @@ describe('deleteCertCommand', function () {
 
     it('does nothing if certificate is active', async function () {
         node = new IotCertWithPoliciesNode(
-            { id: certificateId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new Date() },
+            { id: certificateId, arn: 'arn', activeStatus: 'ACTIVE', creationDate: new globals.clock.Date() },
             parentNode,
             instance(iot)
         )

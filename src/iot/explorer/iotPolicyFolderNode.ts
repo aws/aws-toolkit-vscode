@@ -20,6 +20,12 @@ import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { IotNode } from './iotNodes'
 import { Commands } from '../../shared/vscode/commands'
 
+//Length of certificate ID. The certificate ID is the last segment of the ARN.
+const CERT_ID_LENGTH = 64
+
+//Number of digits of the certificate ID to show
+const CERT_PREVIEW_LENGTH = 8
+
 /**
  * Represents the group of all IoT Policies.
  */
@@ -67,18 +73,23 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
             response.policies
                 ?.filter(policy => policy.policyArn && policy.policyName)
                 .map(
-                    policy =>
+                    async policy =>
                         new IotPolicyWithVersionsNode(
                             { arn: policy.policyArn!, name: policy.policyName! },
                             this,
-                            this.iot
+                            this.iot,
+                            (await this.iot.listPolicyTargets({ policyName: policy.policyName! })).map(certId =>
+                                certId.substr(certId.length - CERT_ID_LENGTH, CERT_PREVIEW_LENGTH)
+                            )
                         )
                 ) ?? []
+
+        const resolvedPolicies = await Promise.all(newPolicies)
 
         getLogger().debug(`Loaded policies: %O`, newPolicies)
         return {
             newContinuationToken: response.nextMarker ?? undefined,
-            newChildren: [...newPolicies],
+            newChildren: [...resolvedPolicies],
         }
     }
 

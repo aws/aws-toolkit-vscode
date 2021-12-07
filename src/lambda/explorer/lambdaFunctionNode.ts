@@ -6,7 +6,8 @@
 import { Lambda } from 'aws-sdk'
 import * as os from 'os'
 import { Uri } from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
@@ -19,8 +20,8 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
         super('')
         this.update(configuration)
         this.iconPath = {
-            dark: Uri.file(ext.iconPaths.dark.lambda),
-            light: Uri.file(ext.iconPaths.light.lambda),
+            dark: Uri.file(globals.iconPaths.dark.lambda),
+            light: Uri.file(globals.iconPaths.light.lambda),
         }
     }
 

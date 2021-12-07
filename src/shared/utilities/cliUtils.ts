@@ -7,7 +7,6 @@ import * as admZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
@@ -21,6 +20,7 @@ import { Timeout } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { extensionSettingsPrefix } from '../constants'
+import globals from '../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -221,7 +221,7 @@ async function downloadCliSource(cli: Cli, tempDir: string): Promise<string> {
 }
 
 function getToolkitCliDir(): string {
-    return path.join(ext.context.globalStoragePath, 'tools')
+    return path.join(globals.context.globalStoragePath, 'tools')
 }
 
 /**

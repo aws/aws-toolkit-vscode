@@ -12,6 +12,7 @@ import { IotClient } from '../../../shared/clients/iotClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
+import globals from '../../../shared/extensionGlobals'
 
 describe('detachThingCertCommand', function () {
     const certificateId = 'test-certificate'
@@ -25,7 +26,7 @@ describe('detachThingCertCommand', function () {
         iot = mock()
         parentNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
         node = new IotThingCertNode(
-            { id: certificateId, arn: principal, activeStatus: 'ACTIVE', creationDate: new Date() },
+            { id: certificateId, arn: principal, activeStatus: 'ACTIVE', creationDate: new globals.clock.Date() },
             parentNode,
             instance(iot)
         )

@@ -13,6 +13,7 @@ import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { inspect } from 'util'
 import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Moment format for rendering readable dates for S3.
@@ -33,7 +34,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
         public readonly file: File,
         public readonly parent: S3BucketNode | S3FolderNode,
         public readonly s3: S3Client,
-        now: Date = new Date()
+        now: Date = new globals.clock.Date()
     ) {
         super(file.name)
         if (file.sizeBytes !== undefined && file.lastModified) {

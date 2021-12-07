@@ -14,7 +14,7 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { EcsClusterNode } from './ecsClusterNode'
 import { EcsContainerNode } from './ecsContainerNode'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
 
 const CONTEXT_EXEC_ENABLED = 'awsEcsServiceNode.ENABLED'
 const CONTEXT_EXEC_DISABLED = 'awsEcsServiceNode.DISABLED'
@@ -30,8 +30,8 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
         this.contextValue = this.service.enableExecuteCommand ? CONTEXT_EXEC_ENABLED : CONTEXT_EXEC_DISABLED
 
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.service),
-            light: vscode.Uri.file(ext.iconPaths.light.service),
+            dark: vscode.Uri.file(globals.iconPaths.dark.service),
+            light: vscode.Uri.file(globals.iconPaths.light.service),
         }
     }
 

@@ -35,6 +35,7 @@ import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuild
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { S3Client } from '../../../shared/clients/s3Client'
+import globals from '../../../shared/extensionGlobals'
 
 interface Clients {
     apiGatewayClient: ApiGatewayClient
@@ -468,7 +469,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             name: '',
             definition: '',
             type: '',
-            creationDate: new Date(),
+            creationDate: new globals.clock.Date(),
         }),
 
         public readonly executeStateMachine: (
@@ -476,7 +477,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             input: string
         ) => Promise<StepFunctions.StartExecutionOutput> = async (arn: string, input: string) => ({
             executionArn: '',
-            startDate: new Date(),
+            startDate: new globals.clock.Date(),
         }),
 
         public readonly createStateMachine: (
@@ -485,7 +486,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             params: StepFunctions.CreateStateMachineInput
         ) => ({
             stateMachineArn: '',
-            creationDate: new Date(),
+            creationDate: new globals.clock.Date(),
         }),
 
         public readonly updateStateMachine: (
@@ -493,7 +494,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
         ) => Promise<StepFunctions.UpdateStateMachineOutput> = async (
             params: StepFunctions.UpdateStateMachineInput
         ) => ({
-            updateDate: new Date(),
+            updateDate: new globals.clock.Date(),
         })
     ) {}
 }

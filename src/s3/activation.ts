@@ -18,10 +18,10 @@ import { S3BucketNode } from './explorer/s3BucketNode'
 import { S3FolderNode } from './explorer/s3FolderNode'
 import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
-import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { S3FileViewerManager, S3_EDIT_SCHEME, S3_READ_SCHEME } from './fileViewerManager'
 import { VirualFileSystem } from '../shared/virtualFilesystem'
+import globals from '../shared/extensionGlobals'
 
 /**
  * Activates S3 components.
@@ -29,7 +29,7 @@ import { VirualFileSystem } from '../shared/virtualFilesystem'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const fs = new VirualFileSystem()
-    const manager = new S3FileViewerManager(region => ext.toolkitClientBuilder.createS3Client(region), fs)
+    const manager = new S3FileViewerManager(region => globals.toolkitClientBuilder.createS3Client(region), fs)
 
     ctx.extensionContext.subscriptions.push(manager)
     ctx.extensionContext.subscriptions.push(
@@ -54,7 +54,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             if (!node) {
                 const awsContext = ctx.awsContext
                 const regionCode = awsContext.getCredentialDefaultRegion()
-                const s3Client = ext.toolkitClientBuilder.createS3Client(regionCode)
+                const s3Client = globals.toolkitClientBuilder.createS3Client(regionCode)
                 const document = vscode.window.activeTextEditor?.document.uri
                 await uploadFileCommand(s3Client, document)
             } else {

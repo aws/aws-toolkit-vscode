@@ -14,7 +14,7 @@ import {
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { ext } from '../../../shared/extensionGlobals'
+import globals from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
@@ -42,7 +42,7 @@ describe('CloudFormationStackNode', function () {
     before(async function () {
         setupTestIconPaths()
         fakeStackSummary = {
-            CreationTime: new Date(),
+            CreationTime: new globals.clock.Date(),
             StackId: '1',
             StackName: 'myStack',
             StackStatus: 'UPDATE_COMPLETE',
@@ -76,8 +76,8 @@ describe('CloudFormationStackNode', function () {
     it('initializes icon', async function () {
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.cloudFormation, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.cloudFormation, 'Unexpected light icon path')
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -157,7 +157,7 @@ describe('CloudFormationStackNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const childNodes = await testNode.getChildren()
         assertNodeListOnlyContainsErrorNode(childNodes)
@@ -200,7 +200,7 @@ describe('CloudFormationStackNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
 
@@ -223,7 +223,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -244,7 +244,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -262,7 +262,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -289,7 +289,7 @@ describe('CloudFormationNode', function () {
                         return {
                             StackId: name,
                             StackName: name,
-                            CreationTime: new Date(),
+                            CreationTime: new globals.clock.Date(),
                             StackStatus: 'CREATE_COMPLETE',
                         }
                     })

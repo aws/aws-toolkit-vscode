@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
-import { ext } from '../../shared/extensionGlobals'
+
 import { ExtContext } from '../../shared/extensions'
 import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
@@ -34,6 +34,7 @@ import { getSampleLambdaPayloads } from '../utils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import { samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -163,7 +164,7 @@ async function getSamplePayload(): Promise<string | undefined> {
 async function getTemplate() {
     const items: (vscode.QuickPickItem & { templatePath: string })[] = []
     const NO_TEMPLATE = 'NOTEMPLATEFOUND'
-    for (const template of ext.templateRegistry.registeredItems) {
+    for (const template of globals.templateRegistry.registeredItems) {
         const resources = template.item.Resources
         if (resources) {
             for (const resource of Object.keys(resources)) {

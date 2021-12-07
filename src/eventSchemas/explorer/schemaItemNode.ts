@@ -6,9 +6,10 @@
 import { Schemas } from 'aws-sdk'
 
 import * as os from 'os'
+import globals from '../../shared/extensionGlobals'
 import { Uri } from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 
@@ -22,8 +23,8 @@ export class SchemaItemNode extends AWSTreeNodeBase {
         this.update(schemaItem)
         this.contextValue = 'awsSchemaItemNode'
         this.iconPath = {
-            dark: Uri.file(ext.iconPaths.dark.schema),
-            light: Uri.file(ext.iconPaths.light.schema),
+            dark: Uri.file(globals.iconPaths.dark.schema),
+            light: Uri.file(globals.iconPaths.light.schema),
         }
     }
 

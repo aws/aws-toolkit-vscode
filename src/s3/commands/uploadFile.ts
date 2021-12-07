@@ -7,7 +7,7 @@ import { S3 } from 'aws-sdk'
 import * as path from 'path'
 import { statSync } from 'fs'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger } from '../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { Commands } from '../../shared/vscode/commands'
@@ -25,6 +25,7 @@ import { S3FolderNode } from '../explorer/s3FolderNode'
 import * as localizedText from '../../shared/localizedText'
 import { TimeoutError } from '../../shared/utilities/timeoutUtils'
 import { progressReporter } from '../progressReporter'
+import globals from '../../shared/extensionGlobals'
 
 export interface FileSizeBytes {
     /**
@@ -57,7 +58,7 @@ export async function uploadFileCommand(
     getBucket = promptUserForBucket,
     getFile = getFilesToUpload,
     window = Window.vscode(),
-    outputChannel = ext.outputChannel,
+    outputChannel = globals.outputChannel,
     commands = Commands.vscode()
 ): Promise<void> {
     let node: S3BucketNode | S3FolderNode | undefined
@@ -188,7 +189,7 @@ function statFile(file: vscode.Uri) {
 async function runBatchUploads(
     uploadRequests: UploadRequest[],
     window = Window.vscode(),
-    outputChannel = ext.outputChannel
+    outputChannel = globals.outputChannel
 ): Promise<void> {
     let failedRequests = await uploadBatchOfFiles(uploadRequests, window, outputChannel)
 
@@ -255,7 +256,7 @@ async function runBatchUploads(
 async function uploadBatchOfFiles(
     uploadRequests: UploadRequest[],
     window = Window.vscode(),
-    outputChannel = ext.outputChannel
+    outputChannel = globals.outputChannel
 ): Promise<UploadRequest[]> {
     const totalBytes = uploadRequests.map(r => r.fileSizeBytes).reduce((a, b) => a + b, 0)
     const response = await window.withProgress(
