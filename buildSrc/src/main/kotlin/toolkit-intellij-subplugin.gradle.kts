@@ -1,6 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import org.eclipse.jgit.api.Git
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension.Output
 import org.jetbrains.intellij.tasks.DownloadRobotServerPluginTask
 import org.jetbrains.intellij.tasks.RunIdeForUiTestTask
@@ -10,6 +11,7 @@ import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
 import software.aws.toolkits.gradle.isCi
+import java.io.IOException
 
 val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit")
 
@@ -82,6 +84,35 @@ tasks.jar {
 tasks.patchPluginXml {
     sinceBuild.set(toolkitIntelliJ.ideProfile().map { it.sinceVersion })
     untilBuild.set(toolkitIntelliJ.ideProfile().map { it.untilVersion })
+}
+
+// attach the current commit hash on local builds
+if (!project.isCi()){
+    val buildMetadata = try {
+        val git = Git.open(project.rootDir)
+        val currentShortHash = git.repository.findRef("HEAD").objectId.abbreviate(7).name()
+        val isDirty = git.status().call().hasUncommittedChanges()
+
+        buildString {
+            append(currentShortHash)
+
+            if (isDirty) {
+                append(".modified")
+            }
+        }
+    } catch(e: IOException) {
+        logger.warn("Could not determine current commit", e)
+
+        "unknownCommit"
+    }
+
+    tasks.patchPluginXml {
+        version.set("${version.get()}+$buildMetadata")
+    }
+
+    tasks.buildPlugin {
+        archiveClassifier.set(buildMetadata)
+    }
 }
 
 // Disable building the settings search cache since it 1. fails the build, 2. gets run on the final packaged plugin
