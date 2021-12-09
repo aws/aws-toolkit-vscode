@@ -85,8 +85,9 @@ export interface SignedUrlRequest {
 export interface UploadFileRequest {
     readonly bucketName: string
     readonly key: string
-    readonly progressListener?: (loadedBytes: number) => void
     readonly content: vscode.Uri | Uint8Array
+    readonly contentType?: string
+    readonly progressListener?: (loadedBytes: number) => void
 }
 
 export interface HeadObjectRequest {
@@ -341,9 +342,10 @@ export class DefaultS3Client {
                 : bufferToStream(request.content)
 
         const contentType =
-            request.content instanceof vscode.Uri
+            request.contentType ??
+            (request.content instanceof vscode.Uri
                 ? mime.lookup(path.basename(request.content.fsPath)) || DEFAULT_CONTENT_TYPE
-                : DEFAULT_CONTENT_TYPE
+                : DEFAULT_CONTENT_TYPE)
 
         const managedUploaded = s3.upload({
             Bucket: request.bucketName,

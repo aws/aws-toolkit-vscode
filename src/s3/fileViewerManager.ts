@@ -100,8 +100,9 @@ export class S3FileProvider implements FileProvider {
         const result = await this.client
             .uploadFile({
                 content,
-                bucketName: this._file.bucket.name,
                 key: this._file.key,
+                bucketName: this._file.bucket.name,
+                contentType: mime.contentType(path.extname(this._file.name)) || undefined,
             })
             .then(u => u.promise())
 
@@ -168,6 +169,8 @@ export class S3FileViewerManager {
         // Defer to `vscode.open` for non-text files
         const contentType = mime.contentType(path.extname(fsPath))
         if (contentType && mime.charset(contentType) != 'UTF-8') {
+            // TODO: prompt with a "Don't show again" here
+            // Otherwise users will get dropped into edit mode right away.
             await this.commands.executeCommand('vscode.open', fileUri)
             return this.window.visibleTextEditors.find(
                 e => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri)
