@@ -31,6 +31,7 @@ class FunctionOptions {
     @get:OptionTag("logicalFunctionName")
     var logicalId: String? = null
     var runtime: String? = null
+    var architecture: String? = null
     var handler: String? = null
     var timeout: Int = DEFAULT_TIMEOUT
     var memorySize: Int = DEFAULT_MEMORY_SIZE

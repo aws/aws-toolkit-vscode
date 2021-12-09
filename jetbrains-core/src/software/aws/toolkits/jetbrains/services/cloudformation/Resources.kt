@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.cloudformation
 
 import software.amazon.awssdk.services.lambda.model.PackageType
+import software.aws.toolkits.jetbrains.services.cloudformation.yaml.YamlCloudFormationTemplate.Companion.getTextValues
 import software.aws.toolkits.resources.message
 
 interface Function : Resource {
@@ -17,6 +18,7 @@ interface Function : Resource {
 
     fun runtime(): String = getScalarProperty("Runtime")
     fun handler(): String = getScalarProperty("Handler")
+    fun architectures(): List<String>? = getOptionalSequenceProperty("Architectures")?.getTextValues()
     fun timeout(): Int? = getOptionalScalarProperty("Timeout")?.toInt()
     fun memorySize(): Int? = getOptionalScalarProperty("MemorySize")?.toInt()
 }

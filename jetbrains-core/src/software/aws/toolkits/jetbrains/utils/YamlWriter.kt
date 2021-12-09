@@ -20,6 +20,10 @@ class YamlWriter internal constructor() {
         appendIndent().append("$key: $value\n")
     }
 
+    fun listValue(value: String) {
+        appendIndent().append("- $value\n")
+    }
+
     private fun appendIndent() = stringBuilder.append("  ".repeat(indentLevel))
 
     override fun toString() = stringBuilder.toString().trimEnd()

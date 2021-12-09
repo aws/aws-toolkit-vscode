@@ -9,6 +9,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.YAMLFileType
 import org.jetbrains.yaml.YAMLLanguage
+import org.jetbrains.yaml.psi.YAMLSequence
 import software.aws.toolkits.jetbrains.services.cloudformation.yaml.YamlCloudFormationTemplate
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -51,6 +52,8 @@ interface NamedMap {
     fun getScalarProperty(key: String): String
     fun getOptionalScalarProperty(key: String): String?
     fun setScalarProperty(key: String, value: String)
+    fun getSequenceProperty(key: String): YAMLSequence
+    fun getOptionalSequenceProperty(key: String): YAMLSequence?
 }
 
 interface Resource : NamedMap {
@@ -93,6 +96,14 @@ class MutableParameter(private val copyFrom: Parameter) : Parameter {
     }
 
     override fun setScalarProperty(key: String, value: String) {
+        throw NotImplementedError()
+    }
+
+    override fun getSequenceProperty(key: String): YAMLSequence {
+        throw NotImplementedError()
+    }
+
+    override fun getOptionalSequenceProperty(key: String): YAMLSequence? {
         throw NotImplementedError()
     }
 

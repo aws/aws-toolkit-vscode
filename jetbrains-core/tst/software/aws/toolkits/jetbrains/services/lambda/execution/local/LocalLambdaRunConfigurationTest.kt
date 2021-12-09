@@ -403,6 +403,40 @@ class LocalLambdaRunConfigurationTest {
     }
 
     @Test
+    fun unsupportedArchitecture() {
+        runInEdtAndWait {
+            val template = tempDir.newFile("template.yaml").also {
+                it.writeText(
+                    """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Handler: com.example.LambdaHandler::handleRequest
+                      CodeUri: /some/dummy/code/location
+                      Runtime: java8
+                      Architectures:
+                        - FAKE
+                      Timeout: 900
+                    """.trimIndent()
+                )
+            }.canonicalPath
+            val logicalName = "SomeFunction"
+
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                templateFile = template,
+                logicalId = logicalName,
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessage(message("lambda.run_configuration.unsupported_architecture", "FAKE"))
+        }
+    }
+
+    @Test
     fun handlerNotSetInTemplate() {
         runInEdtAndWait {
             val template = tempDir.newFile("template.yaml").also {

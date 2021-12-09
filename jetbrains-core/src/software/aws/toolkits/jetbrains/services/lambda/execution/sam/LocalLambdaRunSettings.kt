@@ -5,8 +5,9 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.PathMappingSettings.PathMapping
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.lambda.LambdaArchitecture
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
@@ -17,7 +18,8 @@ interface TemplateSettings {
 }
 
 interface ZipSettings {
-    val runtime: Runtime
+    val runtime: LambdaRuntime
+    val architecture: LambdaArchitecture
     val handler: String
 }
 
@@ -37,7 +39,8 @@ sealed class LocalLambdaRunSettings(
 
 class TemplateRunSettings(
     override val templateFile: VirtualFile,
-    override val runtime: Runtime,
+    override val runtime: LambdaRuntime,
+    override val architecture: LambdaArchitecture,
     override val handler: String,
     override val logicalId: String,
     environmentVariables: Map<String, String>,
@@ -50,7 +53,8 @@ class TemplateRunSettings(
 }
 
 class HandlerRunSettings(
-    override val runtime: Runtime,
+    override val runtime: LambdaRuntime,
+    override val architecture: LambdaArchitecture,
     override val handler: String,
     val timeout: Int,
     val memorySize: Int,

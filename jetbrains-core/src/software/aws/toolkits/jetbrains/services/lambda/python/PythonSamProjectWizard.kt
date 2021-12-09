@@ -9,6 +9,7 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.PlatformUtils
 import software.amazon.awssdk.services.lambda.model.PackageType
+import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.wizard.IntelliJSdkSelectionPanel
@@ -81,7 +82,12 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
         addSourceRoots(rootModel.project, rootModel, contentRoot)
     }
 
-    override fun templateParameters(projectName: String, runtime: LambdaRuntime, packagingType: PackageType): TemplateParameters = LocationBasedTemplate(
+    override fun templateParameters(
+        projectName: String,
+        runtime: LambdaRuntime,
+        architecture: LambdaArchitecture,
+        packagingType: PackageType
+    ): TemplateParameters = LocationBasedTemplate(
         "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python"
     )
 }

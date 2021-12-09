@@ -38,7 +38,8 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
                 view.templateSettings.pathMappingsTable.setMappingSettings(PathMappingSettings(configuration.pathMappings))
             }
         } else {
-            view.rawSettings.runtimeModel.selectedItem = configuration.runtime()?.toSdkRuntime()
+            view.rawSettings.runtimeModel.selectedItem = configuration.runtime()
+            view.rawSettings.architectureModel.selectedItem = configuration.architecture()
             view.rawSettings.handlerPanel.handler.text = configuration.handler() ?: ""
             view.rawSettings.timeoutSlider.value = configuration.timeout()
             view.rawSettings.memorySlider.value = configuration.memorySize()
@@ -62,7 +63,8 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
                 configuration.pathMappings = view.templateSettings.pathMappingsTable.mappingSettings.pathMappings
             }
         } else {
-            configuration.useHandler(view.rawSettings.runtime.selected(), view.rawSettings.handlerPanel.handler.text)
+            configuration.useHandler(view.rawSettings.runtime.selected()?.toSdkRuntime(), view.rawSettings.handlerPanel.handler.text)
+            configuration.architecture(view.rawSettings.architecture.selected())
             configuration.timeout(view.rawSettings.timeoutSlider.value)
             configuration.memorySize(view.rawSettings.memorySlider.value)
             configuration.environmentVariables(view.rawSettings.environmentVariables.envVars)

@@ -11,7 +11,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.text.SemVer
 import com.intellij.util.text.nullize
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaArchitecture
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
@@ -40,7 +41,12 @@ fun registerConfigValidationListeners(messageBus: MessageBus, parentDisposable: 
     )
 }
 
-fun resolveLambdaFromTemplate(project: Project, templatePath: String?, functionName: String?): Pair<String, Runtime> {
+fun resolveLambdaFromHandler(handler: String?, runtime: String?, architecture: String?): ResolvedFunction {
+    handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
+    return ResolvedFunction(handler, runtime.validateSupportedRuntime(), architecture.validateSupportedArchitecture())
+}
+
+fun resolveLambdaFromTemplate(project: Project, templatePath: String?, functionName: String?): ResolvedFunction {
     val (templateFile, logicalName) = validateSamTemplateDetails(templatePath, functionName)
 
     val function = SamTemplateUtils.findFunctionsFromTemplate(project, templateFile)
@@ -63,8 +69,9 @@ fun resolveLambdaFromTemplate(project: Project, templatePath: String?, functionN
     }
 
     val runtime = runtimeString.validateSupportedRuntime()
+    val architecture = function.architectures().validateSupportedArchitectures()
 
-    return Pair(handler, runtime)
+    return ResolvedFunction(handler, runtime, architecture)
 }
 
 fun validateSamTemplateDetails(templatePath: String?, functionName: String?): Pair<VirtualFile, String> {
@@ -79,12 +86,26 @@ fun validateSamTemplateDetails(templatePath: String?, functionName: String?): Pa
     return templateFile to functionName
 }
 
-fun String?.validateSupportedRuntime(): Runtime {
+fun String?.validateSupportedRuntime(): LambdaRuntime {
     val runtimeString = this.nullize() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
-    val runtime = Runtime.fromValue(runtimeString)
-    if (runtime.runtimeGroup == null) {
+    val runtime = LambdaRuntime.fromValue(runtimeString)
+    if (runtime?.runtimeGroup == null) {
         throw RuntimeConfigurationError(message("lambda.run_configuration.unsupported_runtime", runtimeString))
     }
 
     return runtime
 }
+
+fun List<String>?.validateSupportedArchitectures(): LambdaArchitecture = this?.firstOrNull()?.validateSupportedArchitecture() ?: LambdaArchitecture.DEFAULT
+
+fun String?.validateSupportedArchitecture(): LambdaArchitecture {
+    val architectureString = this.nullize() ?: return LambdaArchitecture.DEFAULT
+    return LambdaArchitecture.fromValue(architectureString)
+        ?: throw RuntimeConfigurationError(message("lambda.run_configuration.unsupported_architecture", architectureString))
+}
+
+data class ResolvedFunction(
+    var handler: String,
+    var runtime: LambdaRuntime,
+    var architecture: LambdaArchitecture
+)

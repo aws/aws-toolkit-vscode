@@ -223,6 +223,16 @@ Resources:
     }
 
     @Test
+    fun canParseSequenceProperties() {
+        val template = yamlTemplate()
+        runInEdtAndWait {
+            val resource = template.getResourceByName("MyDynamoTable")
+            val attributeDefinitions = resource!!.getSequenceProperty("AttributeDefinitions")
+            assertThat(attributeDefinitions.items).hasSize(2)
+        }
+    }
+
+    @Test
     fun canSaveToFile() {
         val template = yamlTemplate()
         val tempFile = File.createTempFile("tempTemplate", ".yaml")

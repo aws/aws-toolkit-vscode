@@ -93,7 +93,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         try {
             SamInitRunner.execute(
                 outputDir,
-                settings.template.templateParameters(name, settings.runtime, settings.packagingType),
+                settings.template.templateParameters(name, settings.runtime, settings.architecture, settings.packagingType),
                 schemaParameters?.takeIf { settings.template.supportsDynamicSchemas() }
             )
         } catch (e: Throwable) {

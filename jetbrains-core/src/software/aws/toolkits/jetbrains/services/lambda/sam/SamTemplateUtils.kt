@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.LightVirtualFile
+import software.amazon.awssdk.services.lambda.model.Architecture
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
@@ -173,6 +174,7 @@ object SamTemplateUtils {
         tempFile: Path,
         logicalId: String,
         runtime: Runtime,
+        architecture: Architecture? = Architecture.X86_64,
         codeUri: String,
         handler: String,
         timeout: Int = LambdaLimits.DEFAULT_TIMEOUT,
@@ -189,6 +191,9 @@ object SamTemplateUtils {
                 keyValue("Handler", handler)
                 keyValue("CodeUri", codeUri)
                 keyValue("Runtime", runtime.toString())
+                mapping("Architectures") {
+                    listValue(architecture.toString())
+                }
             }
         )
     }

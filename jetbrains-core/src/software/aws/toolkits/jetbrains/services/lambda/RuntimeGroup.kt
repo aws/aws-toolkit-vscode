@@ -55,8 +55,8 @@ abstract class RuntimeGroup {
     open fun getIdeSdkType(): SdkType? = null
 
     // This only works with Zip and is only called on that path since image is based on what debugger EPs we have
-    fun validateSamVersionForZipDebugging(runtime: Runtime, samVersion: SemVer) {
-        val minVersion = supportedRuntimes.first { it.toSdkRuntime() == runtime }.minSamDebuggingVersion()
+    fun validateSamVersionForZipDebugging(runtime: LambdaRuntime, samVersion: SemVer) {
+        val minVersion = supportedRuntimes.first { it == runtime }.minSamDebuggingVersion()
         if (samVersion < minVersion) {
             throw RuntimeException(message("sam.executable.minimum_too_low_runtime", runtime, minVersion))
         }

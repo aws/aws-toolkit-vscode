@@ -8,6 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.PathMappingSettings.PathMapping
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -29,6 +30,7 @@ fun createTemplateRunConfiguration(
     templateFile: String? = null,
     isImage: Boolean = false,
     runtime: LambdaRuntime? = null,
+    architecture: LambdaArchitecture? = null,
     pathMappings: List<PathMapping> = listOf(),
     logicalId: String? = null,
     inputIsFile: Boolean = false,
@@ -40,6 +42,7 @@ fun createTemplateRunConfiguration(
     runConfiguration.useTemplate(templateFile, logicalId)
     runConfiguration.isImage = isImage
     runConfiguration.runtime(runtime)
+    runConfiguration.architecture(architecture)
     runConfiguration.pathMappings = pathMappings
 
     createBaseRunConfiguration(
@@ -50,7 +53,6 @@ fun createTemplateRunConfiguration(
         input,
         samOptions
     )
-
     return runConfiguration
 }
 

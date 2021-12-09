@@ -13,6 +13,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.PackageType
+import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
@@ -40,6 +41,7 @@ interface SamProjectWizard {
 data class SamNewProjectSettings(
     val template: SamProjectTemplate,
     val runtime: LambdaRuntime,
+    val architecture: LambdaArchitecture,
     val packagingType: PackageType
 )
 
@@ -58,7 +60,12 @@ abstract class SamProjectTemplate {
     // All SAM templates should support schema selection, but for launch include only EventBridge for most optimal customer experience
     open fun supportsDynamicSchemas(): Boolean = false
 
-    abstract fun templateParameters(projectName: String, runtime: LambdaRuntime, packagingType: PackageType): TemplateParameters
+    abstract fun templateParameters(
+        projectName: String,
+        runtime: LambdaRuntime,
+        architecture: LambdaArchitecture,
+        packagingType: PackageType
+    ): TemplateParameters
 
     open fun postCreationAction(
         settings: SamNewProjectSettings,
@@ -125,16 +132,23 @@ abstract class SamAppTemplateBased : SamProjectTemplate() {
     abstract val appTemplateName: String
     open val appTemplateNameImage: String = "hello-world-lambda-image"
 
-    override fun templateParameters(projectName: String, runtime: LambdaRuntime, packagingType: PackageType): TemplateParameters = when (packagingType) {
+    override fun templateParameters(
+        projectName: String,
+        runtime: LambdaRuntime,
+        architecture: LambdaArchitecture,
+        packagingType: PackageType
+    ): TemplateParameters = when (packagingType) {
         PackageType.IMAGE -> AppBasedImageTemplate(
             name = projectName,
             baseImage = "amazon/$runtime-base",
+            architecture = architecture,
             dependencyManager = dependencyManager,
             appTemplate = appTemplateNameImage
         )
         PackageType.ZIP -> AppBasedZipTemplate(
             name = projectName,
             runtime = runtime,
+            architecture = architecture,
             dependencyManager = dependencyManager,
             appTemplate = appTemplateName
         )

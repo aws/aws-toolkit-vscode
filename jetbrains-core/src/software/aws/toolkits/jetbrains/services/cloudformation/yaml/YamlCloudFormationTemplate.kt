@@ -15,6 +15,8 @@ import org.jetbrains.yaml.YAMLLanguage
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
+import org.jetbrains.yaml.psi.YAMLScalar
+import org.jetbrains.yaml.psi.YAMLSequence
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationParameter
@@ -77,6 +79,12 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
         override fun setScalarProperty(key: String, value: String) {
             throw NotImplementedError()
         }
+
+        override fun getSequenceProperty(key: String): YAMLSequence = getOptionalSequenceProperty(key)
+            ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
+
+        override fun getOptionalSequenceProperty(key: String): YAMLSequence? = delegate.getKeyValueByKey(key)
+            ?.children?.filterIsInstance<YAMLSequence>()?.firstOrNull()
     }
 
     private class YamlResource(
@@ -102,6 +110,12 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
             properties().putKeyValue(newKeyValue)
         }
 
+        override fun getSequenceProperty(key: String): YAMLSequence = getOptionalSequenceProperty(key)
+            ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
+
+        override fun getOptionalSequenceProperty(key: String): YAMLSequence? =
+            properties().getKeyValueByKey(key)?.children?.filterIsInstance<YAMLSequence>()?.firstOrNull()
+
         override fun getScalarMetadata(key: String): String = getOptionalScalarMetadata(key)
             ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
 
@@ -124,6 +138,11 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
         override fun setScalarProperty(key: String, value: String) {
             throw NotImplementedError()
         }
+
+        override fun getSequenceProperty(key: String): YAMLSequence = getOptionalSequenceProperty(key)
+            ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
+        override fun getOptionalSequenceProperty(key: String): YAMLSequence? = delegate.getKeyValueByKey(key)
+            ?.children?.filterIsInstance<YAMLSequence>()?.firstOrNull()
     }
 
     companion object {
@@ -143,6 +162,8 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
             val yamlKeyValue = psiElement as? YAMLKeyValue ?: return null
             return yamlKeyValue.asResource(YamlCloudFormationTemplate(yamlKeyValue.containingFile as YAMLFile))
         }
+
+        fun YAMLSequence.getTextValues(): List<String> = this.items.map { it.value }.filterIsInstance<YAMLScalar>().map { it.textValue }
 
         private fun YAMLKeyValue.asResource(cloudFormationTemplate: CloudFormationTemplate): Resource? {
             if (PsiTreeUtil.getParentOfType(this, YAMLKeyValue::class.java)?.keyText == "Resources") {

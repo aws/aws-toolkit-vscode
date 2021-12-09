@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
@@ -416,6 +417,7 @@ class SamExecutableTest {
             parameters = AppBasedZipTemplate(
                 name = "Hello",
                 runtime = LambdaRuntime.JAVA11,
+                architecture = LambdaArchitecture.X86_64,
                 appTemplate = "HelloWorldTemplate",
                 dependencyManager = "maven"
             ),
@@ -442,6 +444,42 @@ class SamExecutableTest {
     }
 
     @Test
+    fun `sam init with zip app template arm architecture is correct`() {
+        val outputDir = tempFolder.newFolder()
+        val cmd = GeneralCommandLine("sam").samInitCommand(
+            outputDir = outputDir.toPath(),
+            parameters = AppBasedZipTemplate(
+                name = "Hello",
+                runtime = LambdaRuntime.JAVA11,
+                architecture = LambdaArchitecture.ARM64,
+                appTemplate = "HelloWorldTemplate",
+                dependencyManager = "maven"
+            ),
+            extraContext = emptyMap()
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "init",
+                "--no-input",
+                "--output-dir",
+                "$outputDir",
+                "--name",
+                "Hello",
+                "--runtime",
+                "java11",
+                "--architecture",
+                "arm64",
+                "--dependency-manager",
+                "maven",
+                "--app-template",
+                "HelloWorldTemplate"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
     fun `sam init with image app template is correct`() {
         val outputDir = tempFolder.newFolder()
         val cmd = GeneralCommandLine("sam").samInitCommand(
@@ -449,6 +487,7 @@ class SamExecutableTest {
             parameters = AppBasedImageTemplate(
                 name = "Hello",
                 baseImage = "amazon/runtime-base",
+                architecture = LambdaArchitecture.X86_64,
                 appTemplate = "HelloWorld",
                 dependencyManager = "maven",
             ),
@@ -468,6 +507,44 @@ class SamExecutableTest {
                 "Hello",
                 "--base-image",
                 "amazon/runtime-base",
+                "--dependency-manager",
+                "maven",
+                "--app-template",
+                "HelloWorld"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam init with image app arm architecture correct`() {
+        val outputDir = tempFolder.newFolder()
+        val cmd = GeneralCommandLine("sam").samInitCommand(
+            outputDir = outputDir.toPath(),
+            parameters = AppBasedImageTemplate(
+                name = "Hello",
+                baseImage = "amazon/runtime-base",
+                architecture = LambdaArchitecture.ARM64,
+                appTemplate = "HelloWorld",
+                dependencyManager = "maven",
+            ),
+            extraContext = emptyMap()
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "init",
+                "--no-input",
+                "--output-dir",
+                "$outputDir",
+                "--package-type",
+                "Image",
+                "--name",
+                "Hello",
+                "--base-image",
+                "amazon/runtime-base",
+                "--architecture",
+                "arm64",
                 "--dependency-manager",
                 "maven",
                 "--app-template",
@@ -508,6 +585,7 @@ class SamExecutableTest {
             parameters = AppBasedZipTemplate(
                 name = "Hello",
                 runtime = LambdaRuntime.JAVA11,
+                architecture = LambdaArchitecture.X86_64,
                 appTemplate = "HelloWorldTemplate",
                 dependencyManager = "maven"
             ),

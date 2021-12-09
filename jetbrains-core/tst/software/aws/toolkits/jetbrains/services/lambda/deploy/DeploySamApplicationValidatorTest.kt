@@ -13,6 +13,7 @@ import com.intellij.testFramework.TemporaryDirectory
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.io.writeChild
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.yaml.psi.YAMLSequence
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -408,6 +409,14 @@ class DeploySamApplicationValidatorTest {
         }
 
         override fun setScalarProperty(key: String, value: String) {
+            throw NotImplementedError()
+        }
+
+        override fun getSequenceProperty(key: String): YAMLSequence {
+            throw NotImplementedError()
+        }
+
+        override fun getOptionalSequenceProperty(key: String): YAMLSequence? {
             throw NotImplementedError()
         }
 

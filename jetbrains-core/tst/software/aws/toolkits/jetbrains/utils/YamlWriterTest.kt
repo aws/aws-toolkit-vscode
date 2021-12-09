@@ -19,6 +19,10 @@ class YamlWriterTest {
                     mapping("EvenSome") {
                         keyValue("More2", "Keys2")
                     }
+                    mapping("SomeList") {
+                        listValue("Foo")
+                        listValue("Bar")
+                    }
                 }
             }
         }
@@ -31,6 +35,9 @@ class YamlWriterTest {
                   More: Keys
                 EvenSome:
                   More2: Keys2
+                SomeList:
+                  - Foo
+                  - Bar
             """.trimIndent()
         )
     }

@@ -47,7 +47,8 @@ abstract class LambdaBuilder {
         SamTemplateUtils.writeDummySamTemplate(
             tempFile = dummyTemplate,
             logicalId = dummyLogicalId,
-            runtime = runtime,
+            runtime = runtime.toSdkRuntime() ?: throw IllegalStateException("Cannot map runtime $runtime to SDK runtime."),
+            architecture = settings.architecture.toSdkArchitecture(),
             handler = handlerForDummyTemplate(settings, element),
             timeout = settings.timeout,
             memorySize = settings.memorySize,

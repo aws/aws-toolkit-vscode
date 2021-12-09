@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.text.SemVer
+import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.jetbrains.core.executables.AutoResolvable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableCommon
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
@@ -220,6 +221,10 @@ fun GeneralCommandLine.samInitCommand(
             addParameter(parameters.name)
             addParameter("--runtime")
             addParameter(parameters.runtime.toString())
+            if (parameters.architecture != LambdaArchitecture.DEFAULT) {
+                addParameter("--architecture")
+                addParameter(parameters.architecture.toString())
+            }
             addParameter("--dependency-manager")
             addParameter(parameters.dependencyManager)
             addParameter("--app-template")
@@ -232,6 +237,10 @@ fun GeneralCommandLine.samInitCommand(
             addParameter(parameters.name)
             addParameter("--base-image")
             addParameter(parameters.baseImage)
+            if (parameters.architecture != LambdaArchitecture.DEFAULT) {
+                addParameter("--architecture")
+                addParameter(parameters.architecture.toString())
+            }
             addParameter("--dependency-manager")
             addParameter(parameters.dependencyManager)
             addParameter("--app-template")

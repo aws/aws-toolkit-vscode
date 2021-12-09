@@ -25,6 +25,7 @@ import org.jetbrains.concurrency.isPending
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.ConnectionSettings
+import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.lambda.validOrNull
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
@@ -35,6 +36,8 @@ import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsFor
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
+import software.aws.toolkits.jetbrains.services.lambda.execution.ResolvedFunction
+import software.aws.toolkits.jetbrains.services.lambda.execution.resolveLambdaFromHandler
 import software.aws.toolkits.jetbrains.services.lambda.execution.resolveLambdaFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.HandlerRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
@@ -45,7 +48,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamSettingsRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.TemplateRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.validateSamTemplateDetails
-import software.aws.toolkits.jetbrains.services.lambda.execution.validateSupportedRuntime
+import software.aws.toolkits.jetbrains.services.lambda.minSamVersion
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
@@ -88,11 +91,12 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             checkImageSamVersion()
             checkImageDebugger()
         } else {
-            val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
-            checkSamVersion(runtime)
+            val function = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
+            checkRuntimeSamVersion(function.runtime)
+            checkArchitectureSamVersion(function.architecture)
             // If we aren't using a template we need to be able to find the handler. If it's a template, we don't care.
             if (!serializableOptions.functionOptions.useTemplate) {
-                checkLambdaHandler(handler, runtime)
+                checkLambdaHandler(function.handler, function.runtime)
             }
         }
     }
@@ -111,7 +115,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         imageDebugger() ?: throw RuntimeConfigurationError(message("lambda.image.missing_debugger", rawImageDebugger().toString()))
     }
 
-    private fun checkSamVersion(runtime: Runtime) {
+    private fun checkRuntimeSamVersion(runtime: LambdaRuntime) {
         val executable = getSam()
 
         runtime.runtimeGroup?.let { runtimeGroup ->
@@ -126,6 +130,17 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         }
     }
 
+    private fun checkArchitectureSamVersion(architecture: LambdaArchitecture) {
+        val executable = getSam()
+
+        SemVer.parseFromText(executable.version)?.let { semVer ->
+            val architectureMinSam = architecture.minSamVersion()
+            if (semVer < architectureMinSam) {
+                throw RuntimeConfigurationError(message("sam.executable.minimum_too_low_architecture", architecture, architectureMinSam))
+            }
+        }
+    }
+
     private fun getSam() = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().let {
         when (it) {
             is ExecutableInstance.Executable -> it
@@ -135,9 +150,10 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         }
     }
 
-    private fun checkLambdaHandler(handler: String, runtime: Runtime): Runtime {
+    private fun checkLambdaHandler(handler: String, runtime: LambdaRuntime): LambdaRuntime {
         val handlerValidator = project.service<LambdaHandlerValidator>()
-        val promise = handlerValidator.evaluate(LambdaHandlerValidator.LambdaEntry(project, runtime, handler))
+        val sdkRuntime = runtime.toSdkRuntime() ?: throw IllegalStateException("Cannot map runtime $runtime to SDK runtime.")
+        val promise = handlerValidator.evaluate(LambdaHandlerValidator.LambdaEntry(project, sdkRuntime, handler))
 
         if (promise.isPending) {
             promise.then { isValid ->
@@ -184,11 +200,12 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                     )
                 } else {
                     val (templateFile, logicalId) = validateSamTemplateDetails(templateFile(), logicalId())
-                    val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
+                    val resolvedFunction = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
                     TemplateRunSettings(
                         templateFile,
-                        runtime,
-                        handler,
+                        resolvedFunction.runtime,
+                        resolvedFunction.architecture,
+                        resolvedFunction.handler,
                         logicalId,
                         environmentVariables(),
                         ConnectionSettings(resolveCredentials(), resolveRegion()),
@@ -198,10 +215,11 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                     )
                 }
             } else {
-                val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
+                val resolvedFunction = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
                 HandlerRunSettings(
-                    runtime,
-                    handler,
+                    resolvedFunction.runtime,
+                    resolvedFunction.architecture,
+                    resolvedFunction.handler,
                     timeout(),
                     memorySize(),
                     environmentVariables(),
@@ -286,6 +304,12 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
     fun runtime(runtime: LambdaRuntime?) {
         serializableOptions.functionOptions.runtime = runtime?.toString()
+    }
+
+    fun architecture() = serializableOptions.functionOptions.architecture
+
+    fun architecture(architecture: LambdaArchitecture?) {
+        serializableOptions.functionOptions.architecture = architecture?.toString()
     }
 
     fun imageDebugger(): ImageDebugSupport? = serializableOptions.functionOptions.runtime?.let {
@@ -384,13 +408,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             ?.handlerDisplayName(handler) ?: handler
     }
 
-    private fun resolveLambdaFromHandler(handler: String?, runtime: String?): Pair<String, Runtime> {
-        handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
-
-        return Pair(handler, runtime.validateSupportedRuntime())
-    }
-
-    private fun resolveLambdaInfo(project: Project, functionOptions: FunctionOptions): Pair<String, Runtime> =
+    private fun resolveLambdaInfo(project: Project, functionOptions: FunctionOptions): ResolvedFunction =
         if (functionOptions.useTemplate) {
             resolveLambdaFromTemplate(
                 project = project,
@@ -400,11 +418,12 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         } else {
             resolveLambdaFromHandler(
                 handler = functionOptions.handler,
-                runtime = functionOptions.runtime
+                runtime = functionOptions.runtime,
+                architecture = functionOptions.architecture
             )
         }
 
-    private fun handlerPsiElement(handler: String? = handler(), runtime: Runtime? = runtime()?.toSdkRuntime().validOrNull) = try {
+    private fun handlerPsiElement(handler: String? = handler(), runtime: Runtime? = runtime()?.toSdkRuntime()) = try {
         runtime?.let {
             handler?.let {
                 findPsiElementsForHandler(project, runtime, handler).firstOrNull()

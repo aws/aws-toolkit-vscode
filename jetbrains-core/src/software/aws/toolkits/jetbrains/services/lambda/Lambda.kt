@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.iam.IamRole
@@ -31,6 +32,10 @@ import software.aws.toolkits.jetbrains.ui.SliderPanel
 
 object Lambda {
     private val LOG = getLogger<Lambda>()
+
+    fun findPsiElementsForHandler(project: Project, runtime: LambdaRuntime, handler: String): Array<NavigatablePsiElement> {
+        runtime.toSdkRuntime()?.let { return findPsiElementsForHandler(project, it, handler) } ?: return emptyArray()
+    }
 
     fun findPsiElementsForHandler(project: Project, runtime: Runtime, handler: String): Array<NavigatablePsiElement> {
         val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) } ?: return emptyArray()

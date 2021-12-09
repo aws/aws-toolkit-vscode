@@ -13,11 +13,13 @@ import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.layout.panel
 import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.PackageType
+import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.BadExecutable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType.Companion.getExecutable
 import software.aws.toolkits.jetbrains.services.lambda.minSamInitVersion
+import software.aws.toolkits.jetbrains.services.lambda.minSamVersion
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
@@ -39,6 +41,7 @@ class SamInitSelectionPanel(
     lateinit var mainPanel: JPanel
 
     private lateinit var runtimeComboBox: ComboBox<LambdaRuntime>
+    private lateinit var architectureComboBox: ComboBox<LambdaArchitecture>
     private lateinit var samExecutableField: JTextField
     private lateinit var editSamExecutableButton: JButton
     private lateinit var samLabel: JBLabel
@@ -48,6 +51,7 @@ class SamInitSelectionPanel(
 
     private val wizardFragments: Map<WizardFragment, JComponent>
     private val runtimes = CollectionComboBoxModel(supportedRuntimes())
+    private val architectures = CollectionComboBoxModel(supportedArchitectures())
 
     init {
         setupSamSelectionElements(samExecutableField, editSamExecutableButton, samLabel)
@@ -55,8 +59,11 @@ class SamInitSelectionPanel(
         runtimeComboBox.model = runtimes
         runtimeComboBox.addActionListener {
             runtimeUpdate()
+            architectureUpdate()
             wizardUpdate()
         }
+
+        architectureComboBox.model = architectures
 
         templateComboBox.addActionListener { wizardUpdate() }
         templateComboBox.renderer = SimpleListCellRenderer.create { label, value, _ ->
@@ -91,6 +98,7 @@ class SamInitSelectionPanel(
         // this will also fire wizardUpdate since templateComboBox will change
         // otherwise we make 2 of them
         runtimeUpdate()
+        architectureUpdate()
     }
 
     // Source all templates, find all the runtimes they support, then filter those by what the IDE supports
@@ -105,6 +113,9 @@ class SamInitSelectionPanel(
         .distinct()
         .sorted()
         .toMutableList()
+
+    private fun supportedArchitectures(): MutableList<LambdaArchitecture> = runtimes.selected?.architectures?.toMutableList()
+        ?: mutableListOf(LambdaArchitecture.X86_64)
 
     private fun packageType() = when {
         packageZip.isSelected -> PackageType.ZIP
@@ -141,6 +152,18 @@ class SamInitSelectionPanel(
         }
     }
 
+    private fun architectureUpdate() {
+        val selectedArchitecture = architectureComboBox.selectedItem as? LambdaArchitecture
+
+        architectures.removeAll()
+        architectures.add(supportedArchitectures())
+        architectureComboBox.isEnabled = architectures.size > 1
+
+        if (selectedArchitecture != null) {
+            templateComboBox.selectedItem = selectedArchitecture
+        }
+    }
+
     /**
      * Updates UI fragments in the wizard after a combobox update
      */
@@ -172,9 +195,15 @@ class SamInitSelectionPanel(
 
         val selectedRuntime = runtimes.selected ?: return templateComboBox.validationInfo(message("sam.init.error.no.runtime.selected"))
 
-        val minSamVersion = selectedRuntime.minSamInitVersion()
-        if (samVersion < minSamVersion) {
-            return ValidationInfo(message("sam.executable.minimum_too_low_runtime", selectedRuntime, minSamVersion), runtimeComboBox)
+        val minRuntimeSamVersion = selectedRuntime.minSamInitVersion()
+        if (samVersion < minRuntimeSamVersion) {
+            return ValidationInfo(message("sam.executable.minimum_too_low_runtime", selectedRuntime, minRuntimeSamVersion), runtimeComboBox)
+        }
+
+        val selectedArchitecture = architectures.selected ?: return templateComboBox.validationInfo(message("sam.init.error.no.architecture.selected"))
+        val minArchitectureSamVersion = selectedArchitecture.minSamVersion()
+        if (samVersion < minArchitectureSamVersion) {
+            return ValidationInfo(message("sam.executable.minimum_too_low_architecture", selectedArchitecture, minArchitectureSamVersion), runtimeComboBox)
         }
 
         val samProjectTemplate = templateComboBox.selectedItem as? SamProjectTemplate
@@ -189,9 +218,11 @@ class SamInitSelectionPanel(
     fun getNewProjectSettings(): SamNewProjectSettings {
         val lambdaRuntime = runtimes.selected
             ?: throw RuntimeException("No Runtime is supported in this Platform.")
+        val lambdaArchitecture = architectures.selected
+            ?: throw RuntimeException("No architecture is supported for this runtime: $lambdaRuntime")
         val samProjectTemplate = templateComboBox.selectedItem as? SamProjectTemplate
             ?: throw RuntimeException("No SAM template is supported for this runtime: $lambdaRuntime")
 
-        return SamNewProjectSettings(template = samProjectTemplate, runtime = lambdaRuntime, packagingType = packageType())
+        return SamNewProjectSettings(template = samProjectTemplate, runtime = lambdaRuntime, architecture = lambdaArchitecture, packagingType = packageType())
     }
 }
