@@ -36,7 +36,17 @@ phases:
 
       - chmod +x gradlew
       - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME integrationTest coverageReport --info --console plain
-      - if [ $(docker ps -q | wc -l) -gt 0 ]; then echo 'Docker containers were not completely cleaned up!'; docker ps; exit 1; fi
+      - |
+        if [ $(docker ps -q | wc -l) -gt 0 ]; then
+            echo 'Docker containers were not completely cleaned up!';
+            docker ps;
+            for container in $(docker ps -q); do
+                echo $container;
+                docker exec -i $container sh -c 'tail -n +1 /tmp/logs/*';
+            done;
+            
+            exit 1;
+        fi
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"

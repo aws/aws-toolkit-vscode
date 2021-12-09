@@ -20,6 +20,7 @@ import com.jetbrains.rd.util.lifetime.onTermination
 import com.jetbrains.rd.util.put
 import com.jetbrains.rd.util.reactive.adviseUntil
 import com.jetbrains.rdclient.protocol.RdDispatcher
+import com.jetbrains.rider.debugger.DebuggerWorkerProcessHandler
 import com.jetbrains.rider.debugger.RiderDebuggerWorkerModelManager
 import com.jetbrains.rider.model.debuggerWorker.DotNetDebuggerSessionModel
 import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
@@ -127,7 +128,13 @@ object DotnetDebugUtils {
                                     executionConsole = console,
                                     env = environment,
                                     sessionLifetime = debuggerLifetime,
-                                    processHandler = riderDebuggerProcessHandler,
+                                    processHandler = DebuggerWorkerProcessHandler(
+                                        riderDebuggerProcessHandler,
+                                        workerModel,
+                                        true,
+                                        riderDebuggerProcessHandler.commandLine,
+                                        debuggerLifetime
+                                    ),
                                     protocol = protocol,
                                     sessionModel = sessionModel,
                                     outputEventsListener = object : IDebuggerOutputListener {}

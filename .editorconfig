@@ -64,3 +64,6 @@ ij_properties_spaces_around_key_value_delimiter = false
 
 [{*.yml,*.yaml}]
 indent_size = 2
+
+[*.gold]
+insert_final_newline = false

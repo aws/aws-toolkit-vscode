@@ -7,6 +7,7 @@ import base.AwsReuseSolutionTestBase
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.ide.util.PropertiesComponent
 import com.jetbrains.rider.projectView.solutionDirectory
+import com.jetbrains.rider.test.scriptingApi.removeAllBreakpoints
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
@@ -18,7 +19,6 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
-import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWaitRider
 import software.aws.toolkits.jetbrains.utils.jsonToMap
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
@@ -72,11 +72,8 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
             handler = handler
         )
 
-        val debuggerIsHit = checkBreakPointHit(project)
-
         val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
         assertThat(executeLambda.exitCode).isEqualTo(0)
-        assertThat(debuggerIsHit.get()).isTrue
     }
 
     @Test
@@ -151,9 +148,10 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     fun tearDown() {
         PropertiesComponent.getInstance().setValue("debugger.immediate.window.in.watches", initialImmediateWindow)
+        removeAllBreakpoints(project)
     }
 
     override fun getSolutionDirectoryName(): String = solutionName
@@ -199,10 +197,7 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
             isImage = true
         )
 
-        val debuggerIsHit = checkBreakPointHit(project)
-
         val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
         assertThat(executeLambda.exitCode).isEqualTo(0)
-        assertThat(debuggerIsHit.get()).isTrue
     }
 }
