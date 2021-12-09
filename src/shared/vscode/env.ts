@@ -53,8 +53,8 @@ try {
  * Returns true if the current build is a production build (as opposed to a
  * prerelease/test/nightly build)
  */
-export function isReleaseVersion(): boolean {
-    return !semver.prerelease(extensionVersion) && extensionVersion !== TEST_VERSION
+export function isReleaseVersion(prereleaseOk: boolean = false): boolean {
+    return (prereleaseOk || !semver.prerelease(extensionVersion)) && extensionVersion !== TEST_VERSION
 }
 
 export { extensionVersion }
