@@ -75,7 +75,7 @@ export class S3FileProvider implements FileProvider {
             telemetry.recordS3DownloadObject({ result: 'Succeeded', component: 'viewer' })
         })
 
-        // There's no way to 'silently' fail here which is why we let the error bubble up by adding the callback separate
+        // There's no way to 'silently' fail here which is why we let the error bubble up
         result.catch(err => {
             const result = (err instanceof ToolkitError ? err?.metric?.result : undefined) ?? 'Failed'
             telemetry.recordS3DownloadObject({ result, component: 'viewer' })
@@ -134,7 +134,6 @@ export class S3FileViewerManager {
         private readonly workspace: typeof vscode.workspace = vscode.workspace
     ) {
         this.disposables.push(this.registerTabCleanup())
-        // TODO: re-populate or close editors from a previous session
     }
 
     /**
@@ -246,7 +245,7 @@ export class S3FileViewerManager {
         }
 
         if (file instanceof vscode.Uri) {
-            throw new Error('Cannot open from URI without an active tab')
+            throw new Error('Unable to open file in edit mode without a valid editor.')
         }
 
         await activeTab?.dispose()
@@ -277,7 +276,7 @@ export class S3FileViewerManager {
         const provider = (this.providers[key] ??= this.registerProvider(file, uri))
         const editor = await this.openEditor(uri, { preview: mode === TabMode.Read })
 
-        this.activeTabs[this.fs.uriToKey(uri)] = {
+        this.activeTabs[key] = {
             file,
             mode,
             editor,

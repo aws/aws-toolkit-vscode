@@ -23,6 +23,7 @@ import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
+import { join } from 'path'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -76,6 +77,7 @@ describe('S3FileProvider', function () {
         provider = new S3FileProvider(instance(s3), { ...textFile, bucket })
 
         when(s3.downloadFileStream(bucket.name, textFile.key)).thenCall(async () => bufferToStream(textFileContent))
+
         when(s3.uploadFile(anything())).thenCall(async (request: UploadFileRequest) => {
             // assumed that key + bucket is the same for all calls
             if (request.content instanceof vscode.Uri) {
@@ -87,11 +89,13 @@ describe('S3FileProvider', function () {
 
             return instance(mockedUpload)
         })
+
         when(s3.headObject(anything())).thenCall(async () => ({
             ETag: computeTag(textFileContent),
             ContentLength: textFile.sizeBytes,
             LastModified: lastModified,
         }))
+
         when(mockedUpload.promise()).thenCall(async () => ({
             ETag: computeTag(textFileContent),
             Key: textFile.key,
@@ -179,9 +183,10 @@ describe('FileViewerManager', function () {
         const textFile2 = makeFile('test2.txt', textFile2Contents)
 
         function mockOpen(file: ReturnType<typeof makeFile>, scheme: string = S3_READ_SCHEME) {
+            const expectedPath = join('/', bucket.region, bucket.name, `[S3] ${file.name}`)
             when(workspace.openTextDocument(anything())).thenCall(async (uri: vscode.Uri) => {
                 assert.strictEqual(uri.scheme, scheme)
-                assert.strictEqual(uri.fsPath, `/${bucket.region}/${bucket.name}/[S3] ${file.name}`)
+                assert.strictEqual(uri.fsPath, expectedPath)
                 // Currently easier to open a new document, though this isn't _exactly_ what the user would see
                 return vscode.workspace.openTextDocument({ content: file.content.toString() })
             })

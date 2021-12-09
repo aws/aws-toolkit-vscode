@@ -29,6 +29,8 @@ export class VirualFileSystem implements vscode.FileSystemProvider {
     public readonly onDidChangeFile = this._onDidChangeFile.event
     private readonly fileProviders: Record<string, FileProvider | undefined> = {}
 
+    public constructor(private readonly errorMessage?: string) {}
+
     public watch(uri: vscode.Uri, options: { recursive: boolean; excludes: string[] }): vscode.Disposable {
         // By ignoring the arguments we essentially are watching all file changes, which is ok for our use-case
         return { dispose: () => {} }
@@ -56,7 +58,7 @@ export class VirualFileSystem implements vscode.FileSystemProvider {
     private getProvider(uri: vscode.Uri): FileProvider {
         const provider = this.fileProviders[this.uriToKey(uri)]
         if (!provider) {
-            throw vscode.FileSystemError.FileNotFound()
+            throw new Error(this.errorMessage)
         }
         return provider
     }
@@ -70,17 +72,17 @@ export class VirualFileSystem implements vscode.FileSystemProvider {
      * @notimplemented
      */
     public readDirectory(uri: vscode.Uri): [string, vscode.FileType][] {
-        throw vscode.FileSystemError.NoPermissions('Reading virtual directories is not supported')
+        throw new Error(this.errorMessage)
     }
 
     /**
      * @notimplemented
      */
     public createDirectory(uri: vscode.Uri): void | Thenable<void> {
-        throw vscode.FileSystemError.NoPermissions('Creating virtual directories is not supported')
+        throw new Error(this.errorMessage)
     }
 
-    public readFile(uri: vscode.Uri): Uint8Array | Promise<Uint8Array> {
+    public async readFile(uri: vscode.Uri): Promise<Uint8Array> {
         return this.getProvider(uri).read()
     }
 
@@ -96,14 +98,14 @@ export class VirualFileSystem implements vscode.FileSystemProvider {
      * @notimplemented
      */
     public delete(uri: vscode.Uri, options: { recursive: boolean }): void | Thenable<void> {
-        throw vscode.FileSystemError.NoPermissions('Deleting virtual files is not supported')
+        throw new Error(this.errorMessage)
     }
 
     /**
      * @notimplemented
      */
     public rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void | Thenable<void> {
-        throw vscode.FileSystemError.NoPermissions('Renaming virtual files is not supported')
+        throw new Error(this.errorMessage)
     }
 
     /**
