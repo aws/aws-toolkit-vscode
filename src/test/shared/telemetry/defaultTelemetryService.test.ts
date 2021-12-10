@@ -56,12 +56,6 @@ describe('DefaultTelemetryService', function () {
         sandbox.stub(globals, 'telemetry').value(service)
     }
 
-    async function tickFlush() {
-        const flushed = new Promise<void>(r => service.onFlush(r))
-        await clock.tickAsync(testFlushPeriod + 1)
-        await flushed
-    }
-
     before(function () {
         sandbox = sinon.createSandbox()
     })
@@ -126,16 +120,11 @@ describe('DefaultTelemetryService', function () {
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
-        await tickFlush()
-        assert.strictEqual(mockPublisher.flushCount, 1)
-        assert.strictEqual(mockPublisher.queue.length, 2)
-
-        service.record(fakeMetric())
+        clock.tick(testFlushPeriod)
         await service.shutdown()
 
-        await tickFlush()
-        assert.strictEqual(mockPublisher.flushCount, 2)
-        assert.strictEqual(mockPublisher.queue.length, 4)
+        assert.strictEqual(mockPublisher.flushCount, 1)
+        assert.strictEqual(mockPublisher.queue.length, 2)
     })
 
     it('events automatically inject the active account id into the metadata', async function () {

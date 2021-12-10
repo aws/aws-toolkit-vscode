@@ -22,8 +22,6 @@ import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telem
 import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 
-type FlushListener = () => void
-
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
     public static readonly TELEMETRY_CLIENT_ID_KEY = 'telemetryClientId'
@@ -36,7 +34,6 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private _flushPeriod: number
     private _timer?: NodeJS.Timer
-    private _listeners: FlushListener[] = []
     private publisher?: TelemetryPublisher
     private readonly _eventQueue: MetricDatum[]
     private readonly _telemetryLogger = new TelemetryLogger()
@@ -100,11 +97,6 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
-    /** Very basic event register method without a means to dispose of the subscription */
-    public onFlush(listener: FlushListener): void {
-        this._listeners.push(listener)
-    }
-
     public get telemetryEnabled(): boolean {
         return this._telemetryEnabled
     }
@@ -166,7 +158,6 @@ export class DefaultTelemetryService implements TelemetryService {
                 this.publisher.enqueue(...this._eventQueue)
                 await this.publisher.flush()
                 this.clearRecords()
-                this._listeners.forEach(l => l())
             }
         }
     }
