@@ -14,6 +14,7 @@ import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import * as constants from '../constants'
 import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 import globals from '../extensionGlobals'
 
@@ -40,7 +41,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
             }
 
             if (
-                isReleaseVersion() ||
+                isReleaseVersion(constants.forceTelemetry) ||
                 this.settings.readDevSetting<boolean>('aws.dev.forceTelemetry', 'boolean', true)
             ) {
                 await this.client
