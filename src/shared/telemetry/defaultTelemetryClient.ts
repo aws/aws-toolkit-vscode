@@ -18,13 +18,22 @@ import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 import globals from '../extensionGlobals'
 
 export class DefaultTelemetryClient implements TelemetryClient {
-    public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
-    public static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
-
+    private static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
+    private static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
+    private static endpoint: string
+    public static identityPool: string
+
+    static {
+        const settings = new DefaultSettingsConfiguration()
+        const userPool = settings.readDevSetting<string>('aws.dev.telemetryUserPool', 'string', true)
+        const endpoint = settings.readDevSetting<string>('aws.dev.telemetryEndpoint', 'string', true)
+        this.identityPool = userPool ?? this.DEFAULT_IDENTITY_POOL
+        this.endpoint = endpoint ?? this.DEFAULT_TELEMETRY_ENDPOINT
+    }
 
     private readonly logger = getLogger()
-    private readonly settings = new DefaultSettingsConfiguration('aws')
+    private readonly settings = new DefaultSettingsConfiguration()
 
     private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
@@ -106,7 +115,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     region: region,
                     credentials: credentials,
                     correctClockSkew: true,
-                    endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT,
+                    endpoint: DefaultTelemetryClient.endpoint,
                 } as ServiceConfigurationOptions,
                 undefined,
                 false

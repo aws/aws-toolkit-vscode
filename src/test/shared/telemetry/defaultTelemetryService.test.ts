@@ -7,12 +7,10 @@ import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as fs from 'fs-extra'
-import { AwsContext } from '../../../shared/awsContext'
 import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import {
     DEFAULT_TEST_ACCOUNT_ID,
     FakeAwsContext,
@@ -21,35 +19,18 @@ import {
 import { FakeTelemetryPublisher } from '../../fake/fakeTelemetryService'
 import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
 import { installFakeClock } from '../../testUtil'
+import { TelemetryLogger } from '../../../shared/telemetry/telemetryLogger'
 import globals from '../../../shared/extensionGlobals'
 
-const originalTelemetryClient: TelemetryService = globals.telemetry
-let mockContext: FakeExtensionContext
-let mockAws: FakeAwsContext
-let mockPublisher: FakeTelemetryPublisher
-let service: DefaultTelemetryService
+type Metric = { [P in keyof ClientTelemetry.MetricDatum as Uncapitalize<P>]: ClientTelemetry.MetricDatum[P] }
 
-beforeEach(function () {
-    mockContext = new FakeExtensionContext()
-    mockAws = new FakeAwsContext()
-    mockPublisher = new FakeTelemetryPublisher()
-    service = new DefaultTelemetryService(mockContext, mockAws, undefined, mockPublisher)
-    globals.telemetry = service
-})
-
-afterEach(async function () {
-    // Remove the persist file as it is saved
-    await fs.remove(globals.telemetry.persistFilePath)
-    globals.telemetry = originalTelemetryClient
-})
-
-function fakeMetric(value: number, passive: boolean) {
+export function fakeMetric(metric: Partial<Metric> = {}): ClientTelemetry.MetricDatum {
     return {
-        Passive: passive,
-        MetricName: `metric${value}`,
-        Value: value,
-        Unit: 'None',
-        EpochTimestamp: new globals.clock.Date().getTime(),
+        Passive: metric.passive ?? true,
+        MetricName: metric.metricName ?? `metric${metric.value ?? ''}`,
+        Value: metric.value ?? 1,
+        Unit: metric.unit ?? 'None',
+        EpochTimestamp: metric.epochTimestamp ?? new globals.clock.Date().getTime(),
     }
 }
 
@@ -57,15 +38,50 @@ describe('DefaultTelemetryService', function () {
     const testFlushPeriod = 10
     let clock: FakeTimers.InstalledClock
     let sandbox: sinon.SinonSandbox
+    let mockContext: FakeExtensionContext
+    let mockPublisher: FakeTelemetryPublisher
+    let service: DefaultTelemetryService
+    let logger: TelemetryLogger
+
+    function initService(awsContext = new FakeAwsContext()): DefaultTelemetryService {
+        const newService = new DefaultTelemetryService(mockContext, awsContext, undefined, mockPublisher)
+        newService.flushPeriod = testFlushPeriod
+        newService.telemetryEnabled = true
+
+        return newService
+    }
+
+    function stubGlobal() {
+        // TODO: don't record session stop/start using the global object so we don't have to do this
+        sandbox.stub(globals, 'telemetry').value(service)
+    }
+
+    async function tickFlush() {
+        const flushed = new Promise<void>(r => service.onFlush(r))
+        await clock.tickAsync(testFlushPeriod + 1)
+        await flushed
+    }
 
     before(function () {
         sandbox = sinon.createSandbox()
+    })
+
+    beforeEach(function () {
+        mockContext = new FakeExtensionContext()
+        mockPublisher = new FakeTelemetryPublisher()
+        service = initService()
+        logger = service.logger
         clock = installFakeClock()
+    })
+
+    afterEach(async function () {
+        await fs.remove(service.persistFilePath)
+        sandbox.restore()
+        clock.uninstall()
     })
 
     after(function () {
         clock.uninstall()
-        sandbox.restore()
     })
 
     it('posts feedback', async function () {
@@ -77,26 +93,22 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('assertPassiveTelemetry() throws if active, non-cached metric is emitted during startup', async function () {
-        service.clearRecords()
-        service.telemetryEnabled = true
-        service.flushPeriod = testFlushPeriod
-
         // Simulate cached telemetry by prepopulating records before start().
         // (Normally readEventsFromCache() does this.)
-        service.record(fakeMetric(1, true))
-        service.record(fakeMetric(2, true))
+        service.record(fakeMetric({ value: 1, passive: true }))
+        service.record(fakeMetric({ value: 2, passive: true }))
         // Active *cached* metric.
-        service.record(fakeMetric(4, false))
+        service.record(fakeMetric({ value: 4, passive: false }))
         await service.start()
 
         // Passive *non-cached* metric.
-        service.record(fakeMetric(5, true))
+        service.record(fakeMetric({ value: 5, passive: true }))
 
         // Must *not* throw.
         service.assertPassiveTelemetry(false)
 
         // Active *non-cached* metric.
-        service.record(fakeMetric(6, false))
+        service.record(fakeMetric({ value: 6, passive: false }))
 
         // Must throw.
         assert.throws(() => {
@@ -107,151 +119,97 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('publishes periodically if user has said ok', async function () {
-        service.clearRecords()
-        service.telemetryEnabled = true
-        service.flushPeriod = testFlushPeriod
-        service.record({
-            MetricName: 'namespace',
-            Value: 1,
-            Unit: 'None',
-            EpochTimestamp: new globals.clock.Date().getTime(),
-        })
+        stubGlobal()
+
+        service.record(fakeMetric())
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
 
-        clock.tick(testFlushPeriod + 1)
+        await tickFlush()
+        assert.strictEqual(mockPublisher.flushCount, 1)
+        assert.strictEqual(mockPublisher.queue.length, 2)
+
+        service.record(fakeMetric())
         await service.shutdown()
 
-        assert.notStrictEqual(mockPublisher.flushCount, 0)
-        assert.notStrictEqual(mockPublisher.queue.length, 0)
-        assert.strictEqual(mockPublisher.enqueueCount, mockPublisher.flushCount)
+        await tickFlush()
+        assert.strictEqual(mockPublisher.flushCount, 2)
+        assert.strictEqual(mockPublisher.queue.length, 4)
     })
 
     it('events automatically inject the active account id into the metadata', async function () {
-        const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
-        service = new DefaultTelemetryService(mockContext, mockAwsWithIds, undefined, mockPublisher)
-        globals.telemetry = service
-        service.clearRecords()
-        service.telemetryEnabled = true
-        service.flushPeriod = testFlushPeriod
-        service.record({
-            MetricName: 'name',
-            Value: 1,
-            Unit: 'None',
-            EpochTimestamp: new globals.clock.Date().getTime(),
-        })
+        service = initService(makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials))
+        logger = service.logger
+        service.record(fakeMetric({ metricName: 'name' }))
 
-        assert.strictEqual(service.records.length, 1)
+        assert.strictEqual(logger.metricCount, 1)
 
-        const metricDatum = service.records[0]
-        assert.strictEqual(metricDatum.MetricName, 'name')
-        assertMetadataContainsTestAccount(metricDatum, DEFAULT_TEST_ACCOUNT_ID)
+        const metrics = logger.query({ metricName: 'name', returnMetric: true })
+        assertMetadataContainsTestAccount(metrics[0], DEFAULT_TEST_ACCOUNT_ID)
     })
 
     it('events with `session` namespace do not have an account tied to them', async function () {
-        service.clearRecords()
-        service.telemetryEnabled = true
-        service.flushPeriod = testFlushPeriod
+        stubGlobal()
 
         await service.start()
-        assert.notStrictEqual(service.timer, undefined)
-
         await service.shutdown()
 
-        assert.strictEqual(service.records.length, 2)
-        // events are, in order, the start event, and the shutdown event
-        const startEvent = service.records[0]
-        assert.strictEqual(startEvent.MetricName, 'session_start')
-        assertMetadataContainsTestAccount(startEvent, AccountStatus.NotApplicable)
+        assert.strictEqual(logger.metricCount, 2)
+        const startEvents = logger.query({ metricName: 'session_start', returnMetric: true })
+        assertMetadataContainsTestAccount(startEvents[0], AccountStatus.NotApplicable)
 
-        const shutdownEvent = service.records[1]
-        assert.strictEqual(shutdownEvent.MetricName, 'session_end')
-        assertMetadataContainsTestAccount(shutdownEvent, AccountStatus.NotApplicable)
+        const shutdownEvents = logger.query({ metricName: 'session_start', returnMetric: true })
+        assertMetadataContainsTestAccount(shutdownEvents[0], AccountStatus.NotApplicable)
     })
 
     it('events created with a bad active account produce metadata mentioning the bad account', async function () {
-        const mockAwsBad = {
-            getCredentialAccountId: () => 'this is bad!',
-        } as any as AwsContext
-        service = new DefaultTelemetryService(mockContext, mockAwsBad, undefined, mockPublisher)
-        globals.telemetry = service
-        service.clearRecords()
-        service.telemetryEnabled = true
-        service.flushPeriod = testFlushPeriod
-        service.record({
-            MetricName: 'name',
-            Value: 1,
-            Unit: 'None',
-            EpochTimestamp: new globals.clock.Date().getTime(),
-        })
+        service = initService({ getCredentialAccountId: () => 'this is bad!' } as unknown as FakeAwsContext)
+        logger = service.logger
 
-        await service.start()
-        assert.notStrictEqual(service.timer, undefined)
+        service.record(fakeMetric({ metricName: 'name' }))
+        assert.strictEqual(logger.metricCount, 1)
 
-        await service.shutdown()
-
-        assert.strictEqual(service.records.length, 3)
-        // events are, in order, the dummy test event, the start event, and the shutdown event
-        // test event is first since we record it before starting the service
-        const metricDatum = service.records[0]
-        assert.strictEqual(metricDatum.MetricName, 'name')
-        assertMetadataContainsTestAccount(metricDatum, AccountStatus.Invalid)
+        const metricDatum = logger.query({ metricName: 'name', returnMetric: true })
+        assertMetadataContainsTestAccount(metricDatum[0], AccountStatus.Invalid)
     })
 
     it('events created prior to signing in do not have an account attached', async function () {
-        service.clearRecords()
-        service.telemetryEnabled = true
-        service.flushPeriod = testFlushPeriod
-        service.record({
-            MetricName: 'name',
-            Value: 1,
-            Unit: 'None',
-            EpochTimestamp: new globals.clock.Date().getTime(),
-        })
+        service.record(fakeMetric({ metricName: 'name' }))
+        assert.strictEqual(logger.metricCount, 1)
 
-        await service.start()
-        assert.notStrictEqual(service.timer, undefined)
-
-        await service.shutdown()
-
-        assert.strictEqual(service.records.length, 3)
-        // events are, in order, the dummy test event, the start event, and the shutdown event
-        // test event is first since we record it before starting the service
-        const metricDatum = service.records[0]
-        assert.strictEqual(metricDatum.MetricName, 'name')
-        assertMetadataContainsTestAccount(metricDatum, AccountStatus.NotSet)
+        const metricData = logger.query({ metricName: 'name', returnMetric: true })
+        assertMetadataContainsTestAccount(metricData[0], AccountStatus.NotSet)
     })
 
     it('events are never recorded if telemetry has been disabled', async function () {
-        service.clearRecords()
+        stubGlobal()
+
         service.telemetryEnabled = false
-        service.flushPeriod = testFlushPeriod
         await service.start()
-        assert.notStrictEqual(service.timer, undefined)
 
         // telemetry off: events are never recorded
-        service.record({
-            MetricName: 'name',
-            Value: 1,
-            Unit: 'None',
-            EpochTimestamp: new globals.clock.Date().getTime(),
-        })
-
-        clock.tick(testFlushPeriod + 1)
+        service.record(fakeMetric({ metricName: 'name' }))
         await service.shutdown()
+        await clock.tickAsync(testFlushPeriod * 2)
 
         // events are never flushed
         assert.strictEqual(mockPublisher.flushCount, 0)
         assert.strictEqual(mockPublisher.enqueueCount, 0)
         assert.strictEqual(mockPublisher.queue.length, 0)
         // and events are not kept in memory
-        assert.strictEqual(service.records.length, 0)
+        assert.strictEqual(logger.metricCount, 0)
     })
 
-    function assertMetadataContainsTestAccount(metricDatum: ClientTelemetry.MetricDatum, expectedAccountId: string) {
+    function assertMetadataContainsTestAccount(
+        metricDatum: ClientTelemetry.MetricDatum | undefined,
+        expectedAccountId: string
+    ) {
+        assert.ok(metricDatum, 'Metric datum was undefined')
+        const metadata = metricDatum.Metadata
+        assert.ok(metadata, 'Metric metadata was undefined')
         assert.ok(
-            metricDatum.Metadata!.some(item => item.Key === 'awsAccount' && item.Value === expectedAccountId),
+            metadata.some(item => item.Key === 'awsAccount' && item.Value === expectedAccountId),
             'Expected metadata to contain the test account'
         )
     }

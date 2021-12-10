@@ -13,6 +13,7 @@ import { AwsContext } from '../../../shared/awsContext'
 import * as accountId from '../../../shared/credentials/accountId'
 import { CredentialsStore } from '../../../credentials/credentialsStore'
 import { recordAwsValidateCredentials } from '../../../shared/telemetry/telemetry.gen'
+import globals from '../../../shared/extensionGlobals'
 
 describe('LoginManager', async function () {
     let sandbox: sinon.SinonSandbox
@@ -37,13 +38,11 @@ describe('LoginManager', async function () {
     let credentialsProvider: CredentialsProvider
     let getAccountIdStub: sinon.SinonStub<[AWS.Credentials, string], Promise<string | undefined>>
     let getCredentialsProviderStub: sinon.SinonStub<[CredentialsId], Promise<CredentialsProvider | undefined>>
-    let recordAwsValidateCredentialsSpy: sinon.SinonSpy<Parameters<typeof recordAwsValidateCredentials>, any>
 
     beforeEach(async function () {
         sandbox = sinon.createSandbox()
-        recordAwsValidateCredentialsSpy = sandbox.spy(recordAwsValidateCredentials)
 
-        loginManager = new LoginManager(awsContext, credentialsStore, recordAwsValidateCredentialsSpy)
+        loginManager = new LoginManager(awsContext, credentialsStore)
         credentialsProvider = {
             getCredentials: sandbox.stub().resolves(sampleCredentials),
             getProviderType: sandbox.stub().returns('profile'),
@@ -66,7 +65,18 @@ describe('LoginManager', async function () {
     })
 
     function assertTelemetry(expected: Parameters<typeof recordAwsValidateCredentials>[0]): void {
-        assert.deepStrictEqual(recordAwsValidateCredentialsSpy.args[0][0], expected)
+        const passive = expected.passive
+        const query = { metricName: 'aws_validateCredentials', filters: ['awsAccount'] }
+        delete expected['passive']
+
+        const metadata = globals.telemetry.logger.query(query)
+        assert.strictEqual(metadata.length, 1)
+        assert.deepStrictEqual(metadata[0], expected)
+
+        if (passive !== undefined) {
+            const metric = globals.telemetry.logger.query({ ...query, returnMetric: true })
+            assert.strictEqual(metric[0].Passive, passive)
+        }
     }
 
     it('passive login sends telemetry with passive=true', async function () {
@@ -117,7 +127,7 @@ describe('LoginManager', async function () {
 
         await loginManager.login({ passive, providerId: sampleCredentialsId })
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
-        assertTelemetry({ result: 'Failed', passive, credentialType: undefined, credentialSourceId: undefined })
+        assertTelemetry({ result: 'Failed', passive })
     })
 
     it('logs out if an account Id could not be determined', async function () {

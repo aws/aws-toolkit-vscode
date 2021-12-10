@@ -19,7 +19,10 @@ import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
 import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telemetryTypes'
+import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
+
+type FlushListener = () => void
 
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
@@ -33,8 +36,10 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private _flushPeriod: number
     private _timer?: NodeJS.Timer
+    private _listeners: FlushListener[] = []
     private publisher?: TelemetryPublisher
     private readonly _eventQueue: MetricDatum[]
+    private readonly _telemetryLogger = new TelemetryLogger()
     /**
      * Last metric (if any) loaded from cached telemetry from a previous
      * session.
@@ -67,11 +72,16 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
+    public get logger(): TelemetryLogger {
+        return this._telemetryLogger
+    }
+
     public async start(): Promise<void> {
+        // TODO: `readEventsFromCache` should be async
         this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
         this._endOfCache = this._eventQueue[this._eventQueue.length - 1]
         recordSessionStart()
-        await this.startTimer()
+        this.startTimer()
     }
 
     public async shutdown(): Promise<void> {
@@ -88,6 +98,11 @@ export class DefaultTelemetryService implements TelemetryService {
                 await writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
             } catch {}
         }
+    }
+
+    /** Very basic event register method without a means to dispose of the subscription */
+    public onFlush(listener: FlushListener): void {
+        this._listeners.push(listener)
     }
 
     public get telemetryEnabled(): boolean {
@@ -131,11 +146,11 @@ export class DefaultTelemetryService implements TelemetryService {
             const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
             this._eventQueue.push(eventWithCommonMetadata)
             getLogger().debug(`telemetry: passive=${event.Passive ? 1 : 0} ${event.MetricName}`)
-        }
-    }
 
-    public get records(): ReadonlyArray<MetricDatum> {
-        return this._eventQueue
+            if (!isReleaseVersion()) {
+                this._telemetryLogger.log(eventWithCommonMetadata)
+            }
+        }
     }
 
     public clearRecords(): void {
@@ -151,20 +166,17 @@ export class DefaultTelemetryService implements TelemetryService {
                 this.publisher.enqueue(...this._eventQueue)
                 await this.publisher.flush()
                 this.clearRecords()
+                this._listeners.forEach(l => l())
             }
         }
     }
 
-    // TODO: replace this with `setInterval`
-    private async startTimer(): Promise<void> {
-        this._timer = globals.clock.setTimeout(
-            // this is async so that we don't have pseudo-concurrent invocations of the callback
-            async () => {
-                await this.flushRecords()
-                this._timer?.refresh()
-            },
-            this._flushPeriod
-        )
+    private startTimer(): void {
+        // The timer is not reset until after the flush as completed
+        this._timer = globals.clock.setTimeout(async () => {
+            await this.flushRecords()
+            this._timer?.refresh()
+        }, this._flushPeriod)
     }
 
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
@@ -177,7 +189,7 @@ export class DefaultTelemetryService implements TelemetryService {
             }
 
             // grab our Cognito identityId
-            const poolId = DefaultTelemetryClient.DEFAULT_IDENTITY_POOL
+            const poolId = DefaultTelemetryClient.identityPool
             const identityMapJson = this.context.globalState.get<string>(
                 DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY,
                 '[]'

@@ -80,7 +80,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
     }
 
     public static async fromDefaultIdentityPool(clientId: string): Promise<IdentityPublisherTuple> {
-        return this.fromIdentityPool(clientId, DefaultTelemetryClient.DEFAULT_IDENTITY_POOL)
+        return this.fromIdentityPool(clientId, DefaultTelemetryClient.identityPool)
     }
 
     /**
