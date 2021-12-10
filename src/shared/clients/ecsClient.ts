@@ -14,7 +14,7 @@ export type EcsResourceAndToken = {
     nextToken?: string
 }
 
-const MAX_RESULTS_PER_RESPONSE = 100
+const MAX_RESULTS_PER_RESPONSE = 10
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 
