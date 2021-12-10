@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { ExtContext } from '../../../shared/extensions'
 import { compileVueWebview } from '../../../webviews/main'
 import * as nls from 'vscode-nls'
@@ -161,13 +162,25 @@ async function editSettings(data: SettingsForm, type?: 'create' | 'configure') {
 
 async function openDevfile(uri: string | vscode.Uri) {
     uri = typeof uri === 'string' ? vscode.Uri.parse(uri, true) : uri
+
     if (uri.scheme === 'http' || uri.scheme === 'https') {
         const fetcher = new HttpResourceFetcher(uri.toString(), { showUrl: true })
-        fetcher.get().then(content => {
-            vscode.workspace.openTextDocument({ language: 'yaml', content })
+        await fetcher.get().then(content => {
+            return vscode.workspace.openTextDocument({ language: 'yaml', content })
         })
     } else if (uri.scheme === 'file') {
-        vscode.window.showTextDocument(uri)
+        if (uri.authority !== '') {
+            const basePath = vscode.workspace.workspaceFolders?.[0].uri.path ?? ''
+            const relative = uri
+                .toString()
+                .replace('file://', '')
+                .split('/')
+                .filter(p => p)
+            const absolute = vscode.Uri.file(path.resolve(basePath, ...relative))
+            await vscode.window.showTextDocument(absolute)
+        } else {
+            await vscode.window.showTextDocument(uri)
+        }
     }
 }
 
