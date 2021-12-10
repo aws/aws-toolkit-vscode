@@ -29,14 +29,20 @@ function parseArgs() {
     //   2: foo
 
     const args = {
+        /** Produce an unoptimized VSIX. Include git SHA in version string. */
         debug: false,
     }
+    const givenArgs = process.argv.slice(2)
 
-    if (process.argv[2] === '--debug') {
-        args.debug = true
-    } else if (process.argv[2]) {
-        throw Error(`invalid argument: ${process.argv[2]}`)
+    const validOptions = ['--debug']
+
+    for (const a of givenArgs) {
+        if (!validOptions.includes(a)) {
+            throw Error(`invalid argument: ${a}`)
+        }
     }
+
+    args.debug = givenArgs.includes('--debug')
 
     return args
 }
@@ -46,7 +52,7 @@ function parseArgs() {
  * a prerelease/nightly/edge/preview build.
  */
 function isRelease(): boolean {
-    return (child_process.execSync('git tag -l --contains HEAD').toString() !== '')
+    return child_process.execSync('git tag -l --contains HEAD').toString() !== ''
 }
 
 /**
