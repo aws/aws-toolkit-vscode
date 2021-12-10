@@ -17,20 +17,28 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 import globals from '../extensionGlobals'
 
+interface TelemetryConfiguration {
+    readonly endpoint: string
+    readonly identityPool: string
+}
+
 export class DefaultTelemetryClient implements TelemetryClient {
     private static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
     private static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
-    private static endpoint: string
-    public static identityPool: string
 
-    static {
+    private static initializeConfig(): TelemetryConfiguration {
         const settings = new DefaultSettingsConfiguration()
-        const userPool = settings.readDevSetting<string>('aws.dev.telemetryUserPool', 'string', true)
+        const identityPool = settings.readDevSetting<string>('aws.dev.telemetryUserPool', 'string', true)
         const endpoint = settings.readDevSetting<string>('aws.dev.telemetryEndpoint', 'string', true)
-        this.identityPool = userPool ?? this.DEFAULT_IDENTITY_POOL
-        this.endpoint = endpoint ?? this.DEFAULT_TELEMETRY_ENDPOINT
+
+        return {
+            endpoint: endpoint ?? this.DEFAULT_TELEMETRY_ENDPOINT,
+            identityPool: identityPool ?? this.DEFAULT_IDENTITY_POOL,
+        }
     }
+
+    public static config = DefaultTelemetryClient.initializeConfig()
 
     private readonly logger = getLogger()
     private readonly settings = new DefaultSettingsConfiguration()
@@ -115,7 +123,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     region: region,
                     credentials: credentials,
                     correctClockSkew: true,
-                    endpoint: DefaultTelemetryClient.endpoint,
+                    endpoint: DefaultTelemetryClient.config.endpoint,
                 } as ServiceConfigurationOptions,
                 undefined,
                 false

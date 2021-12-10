@@ -189,7 +189,7 @@ export class DefaultTelemetryService implements TelemetryService {
             }
 
             // grab our Cognito identityId
-            const poolId = DefaultTelemetryClient.identityPool
+            const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = this.context.globalState.get<string>(
                 DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY,
                 '[]'
