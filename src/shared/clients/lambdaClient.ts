@@ -87,6 +87,8 @@ export class DefaultLambdaClient {
                 })
                 .promise()
             getLogger().debug('updateFunctionCode returned response: %O', response)
+            await client.waitFor('functionUpdated', { FunctionName: name }).promise()
+
             return response
         } catch (e) {
             getLogger().error('Failed to run updateFunctionCode: %O', e)
