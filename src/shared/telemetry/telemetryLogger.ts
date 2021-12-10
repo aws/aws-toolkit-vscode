@@ -19,7 +19,7 @@ interface MetricQuery extends MetadataQuery {
 }
 
 interface Metadata {
-    [key: string]: string | boolean | undefined
+    [key: string]: string | undefined
 }
 
 export type Query = MetricQuery | MetadataQuery
