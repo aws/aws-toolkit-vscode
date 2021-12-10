@@ -42,10 +42,11 @@ function validateCommand(command: string): string | undefined {
 }
 
 function createRepoPrompter(git: GitExtension): QuickPickPrompter<Remote> {
-    const remotes = git.getRemotes()
+    const mapRemote = (remote: Remote) => ({ label: remote.name, detail: remote.fetchUrl, data: remote })
+    const remotes = git.getRemotes().then(r => r.map(mapRemote))
     const userInputString = localize('AWS.apprunner.createService.customRepo', 'Enter GitHub URL')
-    const items = remotes.map(remote => ({ label: remote.name, detail: remote.fetchUrl, data: remote }))
-    return createQuickPick(items, {
+
+    return createQuickPick(remotes, {
         title: localize('AWS.apprunner.createService.selectRepository.title', 'Select a remote GitHub repository'),
         placeholder: localize(
             'AWS.apprunner.createService.selectRepository.placeholder',

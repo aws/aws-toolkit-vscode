@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as bytes from 'bytes'
 import * as vscode from 'vscode'
 import * as GitTypes from '../../../../types/git'
-import { GitExtension, ExtendedRepository } from '../../../shared/extensions/git'
+import { GitExtension, Repository } from '../../../shared/extensions/git'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { realpath } from 'fs-extra'
 import { execFileSync } from 'child_process'
@@ -101,7 +101,7 @@ describe('GitExtension', function () {
 
     it('can detect opening a repository', async function () {
         const newRepoUri = vscode.Uri.file(await realpath(await makeTemporaryToolkitFolder()))
-        const onOpen = new Promise<ExtendedRepository>((resolve, reject) => {
+        const onOpen = new Promise<Repository>((resolve, reject) => {
             git.onDidOpenRepository(repo => {
                 if (repo.rootUri.fsPath === newRepoUri.fsPath) {
                     resolve(repo)
@@ -115,7 +115,7 @@ describe('GitExtension', function () {
     })
 
     it('can detect changed branch', async function () {
-        const wrapped = git.repositories.find(r => r.rootUri.fsPath === testRepo.rootUri.fsPath)
+        const wrapped = (await git.getRepositories()).find(r => r.rootUri.fsPath === testRepo.rootUri.fsPath)
         if (!wrapped) {
             throw new Error('Failed to find repository')
         }
@@ -136,7 +136,7 @@ describe('GitExtension', function () {
 
     it('can list remotes and branches', async function () {
         const TARGET_BRANCH = `${TEST_REMOTE_NAME}/${TEST_REMOTE_BRANCH}`
-        const remote = git.getRemotes().find(r => r.name === TEST_REMOTE_NAME)
+        const remote = (await git.getRemotes()).find(r => r.name === TEST_REMOTE_NAME)
         assert.ok(remote, `Did not find "${TEST_REMOTE_NAME}" in list of remotes`)
         await testRepo.fetch({ remote: TEST_REMOTE_NAME, ref: TEST_REMOTE_BRANCH }).catch(parseGitError)
         const branch = (await git.getBranchesForRemote(remote)).find(branch => branch.name === TARGET_BRANCH)
