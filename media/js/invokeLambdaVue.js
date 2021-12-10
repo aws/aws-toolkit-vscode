@@ -11,6 +11,7 @@ console.log('Loaded!')
             logs: '',
             showResponse: false,
             isLoading: false,
+            selectedFile: '',
         }),
         mounted() {
             this.$nextTick(function () {
@@ -24,21 +25,10 @@ console.log('Loaded!')
                     value: this.selectedSampleRequest,
                 })
             },
-            processFile: function ($event) {
-                console.log($event)
-                console.log($event.target)
-                const inputFile = $event.target
-                const self = this
-                if ('files' in inputFile && inputFile.files.length > 0) {
-                    const reader = new FileReader()
-                    reader.onload = event => {
-                        console.log(event.target.result)
-                        self.sampleText = ''
-                        self.sampleText = event.target.result
-                    } // desired file content
-                    reader.onerror = error => reject(error)
-                    reader.readAsText(inputFile.files[0])
-                }
+            promptForFileLocation: function () {
+                vscode.postMessage({
+                    command: 'promptForFile',
+                })
             },
             handleMessageReceived: function (e) {
                 const message = event.data
@@ -47,6 +37,7 @@ console.log('Loaded!')
                 switch (message.command) {
                     case 'loadedSample':
                         this.loadSampleText(message.sample)
+                        this.selectedFile = message.selectedFile
                         break
                     case 'invokedLambda':
                         this.showResponse = true

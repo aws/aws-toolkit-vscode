@@ -5,7 +5,7 @@
 
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { SchemaTemplateExtraContext } from '../../../eventSchemas/templates/schemasAppTemplateUtils'
-import { DependencyManager } from '../../../lambda/models/samLambdaRuntime'
+import { Architecture, DependencyManager } from '../../../lambda/models/samLambdaRuntime'
 import { getSamCliTemplateParameter, SamTemplate } from '../../../lambda/models/samTemplates'
 import { SamCliContext } from './samCliContext'
 import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
@@ -20,6 +20,7 @@ export interface SamCliInitArgs {
     runtime?: Runtime
     // image-based lambdas; mutually exclusive with runtime
     baseImage?: string
+    architecture?: Architecture
 }
 
 export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamCliContext): Promise<void> {
@@ -40,14 +41,16 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
         args.push('--app-template', getSamCliTemplateParameter(initArguments.template))
     }
 
+    if (initArguments.architecture) {
+        args.push('--architecture', initArguments.architecture)
+    }
+
     if (initArguments.baseImage) {
         // specifying baseImage implies a packageType of image
         args.push('--package-type', 'Image')
         args.push('--base-image', initArguments.baseImage)
         // TODO: Allow users to select app template for base image
-        if (!initArguments.baseImage.includes('nodejs10.x')) {
-            args.push('--app-template', 'hello-world-lambda-image')
-        }
+        args.push('--app-template', 'hello-world-lambda-image')
     }
 
     if (initArguments.extraContent!) {

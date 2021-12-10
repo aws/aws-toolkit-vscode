@@ -7,12 +7,8 @@ import * as assert from 'assert'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import * as vscode from 'vscode'
 
-const SECOND = 1000
-export const TIMEOUT = 30 * SECOND
-
-export async function sleep(miliseconds: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, miliseconds))
-}
+// java8.al2 image does a while to pull
+const LAMBDA_SESSION_TIMEOUT = 60000
 
 // Retrieves CodeLenses from VS Code
 export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
@@ -32,8 +28,8 @@ export function getTestWorkspaceFolder(): string {
 
 export async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
-    // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.lambda.timeout', 90000, false)
+    // This changes how long the toolkit will wait for SAM CLI output before ending a session
+    await configAws.update('samcli.lambda.timeout', LAMBDA_SESSION_TIMEOUT, false)
 }
 
 export async function configurePythonExtension(): Promise<void> {
@@ -41,7 +37,6 @@ export async function configurePythonExtension(): Promise<void> {
     // Disable linting to silence some of the Python extension's log spam
     await configPy.update('linting.pylintEnabled', false, false)
     await configPy.update('linting.enabled', false, false)
-    await configPy.update('analysis.logLevel', 'Error')
 }
 
 // Installs tools that the Go extension wants (it complains a lot if we don't)

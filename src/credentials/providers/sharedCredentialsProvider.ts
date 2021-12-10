@@ -24,7 +24,7 @@ import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -104,7 +104,11 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     public canAutoConnect(): boolean {
-        return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) && !this.isSsoProfile()
+        // check if SSO token is still valid
+        if (this.isSsoProfile()) {
+            return !!new DiskCache().loadAccessToken(this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]!)
+        }
+        return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL)
     }
 
     public async isAvailable(): Promise<boolean> {
@@ -152,7 +156,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     /**
      * Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases.
-     * 
+     *
      * XXX: Returns undefined if no `source_profile` property exists. Else we would prevent the SDK from re-reading
      * the shared credential files if they were to change. #1953
      *
@@ -303,7 +307,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
         const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
             const region = this.getDefaultRegion() ?? 'us-east-1'
-            const stsClient = ext.toolkitClientBuilder.createStsClient(region, { credentials })
+            const stsClient = globals.toolkitClientBuilder.createStsClient(region, { credentials })
             const response = await stsClient.assumeRole(params)
             return {
                 accessKeyId: response.Credentials!.AccessKeyId!,

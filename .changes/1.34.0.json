@@ -1,0 +1,30 @@
+{
+	"date": "2021-11-22",
+	"version": "1.34.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Improve auto-connect reliability"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Toolkit appeared stuck at \"Connecting...\""
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CDK: fixed performance issue with project detection. Detection is no longer limited to a depth of two directories."
+		},
+		{
+			"type": "Feature",
+			"description": "S3: Upload now supports multiple files"
+		},
+		{
+			"type": "Feature",
+			"description": "Add AWS IoT Explorer"
+		},
+		{
+			"type": "Feature",
+			"description": "AWS Explorer shows ECS resources and supports \"Run command in container\""
+		}
+	]
+}

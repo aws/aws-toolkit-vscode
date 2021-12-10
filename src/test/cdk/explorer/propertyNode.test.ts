@@ -4,9 +4,9 @@
  */
 
 import * as assert from 'assert'
+import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
-import { ext } from '../../../shared/extensionGlobals'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 describe('PropertyNode', function () {
@@ -30,8 +30,8 @@ describe('PropertyNode', function () {
 
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.settings, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.settings, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.settings, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.settings, 'Unexpected light icon path')
     })
 
     it('returns no children when property does not have nested values', async function () {

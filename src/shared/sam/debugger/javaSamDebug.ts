@@ -6,8 +6,9 @@
 import { getCodeRoot, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../../extensions'
+import { sleep } from '../../utilities/promiseUtilities'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { makeInputTemplate, runLambdaFunction, waitForPort } from '../localLambdaRunner'
+import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 export async function makeJavaConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
@@ -21,7 +22,6 @@ export async function makeJavaConfig(config: SamLaunchRequestArgs): Promise<SamL
     }
 
     config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
-    config.templatePath = await makeInputTemplate(config)
 
     config.type = 'java'
     config.runtimeFamily = RuntimeFamily.Java
@@ -47,10 +47,8 @@ export async function invokeJavaLambda(ctx: ExtContext, config: SamLaunchRequest
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.JAVA])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = async (port, timeout) => {
-        await new Promise<void>(async resolve => {
-            await waitForPort(port, timeout, true)
-            setTimeout(resolve, 1000)
-        })
+        await waitForPort(port, timeout, true)
+        await sleep(1000)
     }
     return await runLambdaFunction(ctx, config, async () => {})
 }

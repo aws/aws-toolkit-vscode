@@ -11,16 +11,19 @@ import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNod
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
+import { IotNode } from '../iot/explorer/iotNodes'
+import { EcsNode } from '../ecs/explorer/ecsNode'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { ext } from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
+import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
+import globals from '../shared/extensionGlobals'
 
 /**
  * An AWS Explorer node representing a region.
@@ -55,27 +58,40 @@ export class RegionNode extends AWSTreeNodeBase {
             {
                 serviceId: 'apprunner',
                 createFn: () =>
-                    new AppRunnerNode(this.regionCode, ext.toolkitClientBuilder.createAppRunnerClient(this.regionCode)),
+                    new AppRunnerNode(
+                        this.regionCode,
+                        globals.toolkitClientBuilder.createAppRunnerClient(this.regionCode)
+                    ),
             },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
-            {
-                serviceId: 'ecr',
-                createFn: () => new EcrNode(ext.toolkitClientBuilder.createEcrClient(this.regionCode)),
-            },
-            { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
+                serviceId: 'ecr',
+                createFn: () => new EcrNode(globals.toolkitClientBuilder.createEcrClient(this.regionCode)),
+            },
+            {
+                serviceId: 'ecs',
+                createFn: () => new EcsNode(globals.toolkitClientBuilder.createEcsClient(this.regionCode)),
+            },
+            {
+                serviceId: 'iot',
+                createFn: () => new IotNode(globals.toolkitClientBuilder.createIotClient(this.regionCode)),
+            },
+            { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
+            {
                 serviceId: 's3',
-                createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
+                createFn: () => new S3Node(globals.toolkitClientBuilder.createS3Client(this.regionCode)),
             },
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
-            ...(isCloud9() ? [] : [{ serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }]),
-            ...(isCloud9() ? [] : [{ serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) }]),
+            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
+            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
         ]
 
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
+
+        this.childNodes.push(new ResourcesNode(this.regionCode))
     }
 
     private tryClearChildren(): void {

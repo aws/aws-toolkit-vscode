@@ -7,14 +7,14 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import { updateCredentialsStatusBarItem } from '../../credentials/awsCredentialsStatusBarItem'
-import { tickPromise } from '../testUtil'
+import { installFakeClock, tickPromise } from '../testUtil'
 
 describe('updateCredentialsStatusBarItem', async function () {
     let statusBarItem: vscode.StatusBarItem
     let clock: FakeTimers.InstalledClock
 
     before(function () {
-        clock = FakeTimers.install()
+        clock = installFakeClock()
     })
 
     after(function () {
@@ -22,9 +22,9 @@ describe('updateCredentialsStatusBarItem', async function () {
     })
 
     beforeEach(async function () {
-        statusBarItem = ({
+        statusBarItem = {
             text: '',
-        } as any) as vscode.StatusBarItem
+        } as any as vscode.StatusBarItem
     })
 
     it('updates text with credentials id', async function () {
@@ -39,10 +39,8 @@ describe('updateCredentialsStatusBarItem', async function () {
 
     it('updates text with placeholder when there is no credentials id', async function () {
         await tickPromise(updateCredentialsStatusBarItem(statusBarItem, undefined), clock, 2000)
-        assert.ok(
-            statusBarItem.text.includes('(not connected)'),
-            'expected statusbar item text to indicate that no credentials are in use'
-        )
+        assert(statusBarItem.tooltip)
+        assert.deepStrictEqual(statusBarItem.tooltip, 'Click to connect to AWS')
     })
 
     it('shows (connected) after a successful login', async function () {

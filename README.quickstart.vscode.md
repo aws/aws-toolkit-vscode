@@ -9,10 +9,12 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 
 -   [AWS Explorer](#ui-components-aws-expl)
     -   API Gateway
+    -   [App Runner](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/using-apprunner.html)
     -   CloudFormation stacks
     -   CloudWatch Logs
     -   ECR
     -   EventBridge schemas
+    -   [IoT explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/iot-start.html)
     -   Lambda functions
     -   S3 explorer
     -   Step Functions
@@ -24,6 +26,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 -   [AWS Step Functions](#sfn-files)
 -   [AWS Systems Manager](#ssm-files)
 -   [`AWS:` Commands](#aws-commands)
+-   [Experimental Features](#experimental-features)
 
 ---
 
@@ -96,8 +99,8 @@ The Toolkit _local SAM debugging_ feature supports these Lambda runtimes:
 -   C# (.NET Core 2.1, 3.1; .NET 5.0)
 -   Go (1.x)
 -   Java (8, 8.al2, 11)
--   JavaScript/TypeScript (Node.js 10.x, 12.x, 14.x)
--   Python (2.7, 3.6, 3.7, 3.8, 3.9)
+-   JavaScript/TypeScript (Node.js 12.x, 14.x)
+-   Python (3.6, 3.7, 3.8, 3.9)
 
 For more information see [Working with AWS Serverless Applications](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html) in the user guide. To get setup for local debugging, see [Configuring your toolchain](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-toolchain.html).
 
@@ -236,6 +239,20 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | `AWS: View Toolkit Documentation`                    | Opens the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for the Toolkit.                                                                                                                                                                                                        |
 | `AWS: View Source on GitHub`                         | Opens the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit.                                                                                                                                                                                                                      |
 | `AWS: Focus on CDK (Preview) View`                   | Opens the **AWS** panel and focuses the **CDK** view.                                                                                                                                                                                                                                                          |
+
+{ [Return to Top](#top) }
+
+---
+
+# <a id="experimental-features"></a>Experimental Features
+
+Sometimes we'll introduce experimental features that we're trying out. These may have bugs, usability problems or may not be fully functional, and because these
+aren't ready for prime-time we'll hide them behind an experimental feature flag.
+
+Experimental features can be enabled in the extension preferences
+(`Preferences -> Settings -> Extensions -> AWS Configuration -> Experiments`).
+
+Please note that experimental features may be disabled or removed at any time.
 
 { [Return to Top](#top) }
 

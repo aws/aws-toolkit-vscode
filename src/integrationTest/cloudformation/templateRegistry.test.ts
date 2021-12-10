@@ -9,6 +9,7 @@ import * as fs from 'fs-extra'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
+import { sleep } from '../../shared/utilities/promiseUtilities'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
@@ -100,7 +101,7 @@ describe('CloudFormation Template Registry', async function () {
 
 async function registryHasTargetNumberOfFiles(registry: CloudFormationTemplateRegistry, target: number) {
     while (registry.registeredItems.length !== target) {
-        await new Promise(resolve => setTimeout(resolve, 20))
+        await sleep(20)
     }
 }
 
@@ -111,7 +112,7 @@ async function queryRegistryForFileWithGlobalsKeyStatus(
 ) {
     let foundMatch = false
     while (!foundMatch) {
-        await new Promise(resolve => setTimeout(resolve, 20))
+        await sleep(20)
         const obj = registry.getRegisteredItem(filepath)
         if (obj) {
             foundMatch = Object.keys(obj.item).includes('Globals') === hasGlobals

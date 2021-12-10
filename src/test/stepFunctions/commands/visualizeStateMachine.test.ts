@@ -10,10 +10,10 @@ import { Disposable } from 'vscode-languageclient'
 import { AslVisualization } from '../../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { AslVisualizationManager } from '../../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualizationManager'
 
-import { ext } from '../../../shared/extensionGlobals'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 
 import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'
+import globals from '../../../shared/extensionGlobals'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
@@ -218,25 +218,25 @@ const mockExtensionContext: vscode.ExtensionContext = {
 describe('StepFunctions VisualizeStateMachine', async function () {
     let mockVsCode: MockVSCode
 
-    const oldWebviewScriptsPath = ext.visualizationResourcePaths.localWebviewScriptsPath
-    const oldWebviewBodyPath = ext.visualizationResourcePaths.webviewBodyScript
-    const oldCachePath = ext.visualizationResourcePaths.visualizationLibraryCachePath
-    const oldScriptPath = ext.visualizationResourcePaths.visualizationLibraryScript
-    const oldCssPath = ext.visualizationResourcePaths.visualizationLibraryCSS
-    const oldThemePath = ext.visualizationResourcePaths.stateMachineCustomThemePath
-    const oldThemeCssPath = ext.visualizationResourcePaths.stateMachineCustomThemeCSS
+    const oldWebviewScriptsPath = globals.visualizationResourcePaths.localWebviewScriptsPath
+    const oldWebviewBodyPath = globals.visualizationResourcePaths.webviewBodyScript
+    const oldCachePath = globals.visualizationResourcePaths.visualizationLibraryCachePath
+    const oldScriptPath = globals.visualizationResourcePaths.visualizationLibraryScript
+    const oldCssPath = globals.visualizationResourcePaths.visualizationLibraryCSS
+    const oldThemePath = globals.visualizationResourcePaths.stateMachineCustomThemePath
+    const oldThemeCssPath = globals.visualizationResourcePaths.stateMachineCustomThemeCSS
 
     // Before all
     before(function () {
         mockVsCode = new MockVSCode()
 
-        ext.visualizationResourcePaths.localWebviewScriptsPath = mockUriOne
-        ext.visualizationResourcePaths.visualizationLibraryCachePath = mockUriOne
-        ext.visualizationResourcePaths.stateMachineCustomThemePath = mockUriOne
-        ext.visualizationResourcePaths.webviewBodyScript = mockUriOne
-        ext.visualizationResourcePaths.visualizationLibraryScript = mockUriOne
-        ext.visualizationResourcePaths.visualizationLibraryCSS = mockUriOne
-        ext.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUriOne
+        globals.visualizationResourcePaths.localWebviewScriptsPath = mockUriOne
+        globals.visualizationResourcePaths.visualizationLibraryCachePath = mockUriOne
+        globals.visualizationResourcePaths.stateMachineCustomThemePath = mockUriOne
+        globals.visualizationResourcePaths.webviewBodyScript = mockUriOne
+        globals.visualizationResourcePaths.visualizationLibraryScript = mockUriOne
+        globals.visualizationResourcePaths.visualizationLibraryCSS = mockUriOne
+        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUriOne
 
         sandbox = sinon.createSandbox()
         sandbox.stub(StateMachineGraphCache.prototype, 'updateCachedFile').callsFake(async options => {
@@ -257,13 +257,13 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     // After all
     after(function () {
         sandbox.restore()
-        ext.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
-        ext.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
-        ext.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
-        ext.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
-        ext.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
-        ext.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
-        ext.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
+        globals.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
+        globals.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
+        globals.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
+        globals.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
+        globals.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
+        globals.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
+        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
     })
 
     // Tests
@@ -312,7 +312,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
+        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set does not add second Vis on duplicate preview', async function () {
@@ -328,7 +328,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
+        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set adds second Vis on different preview', async function () {
@@ -345,8 +345,8 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
-        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
+        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
+        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set does not add duplicate renders when multiple Vis active', async function () {
@@ -373,8 +373,8 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
-        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
+        assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.fsPath))
+        assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.fsPath))
     })
 
     it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async function () {
@@ -424,7 +424,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const postMessage = sinon.spy()
         class MockAslVisualizationYaml extends AslVisualization {
             public getWebview(): vscode.Webview | undefined {
-                return ({ postMessage } as unknown) as vscode.Webview
+                return { postMessage } as unknown as vscode.Webview
             }
         }
 
@@ -447,7 +447,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const postMessage = sinon.spy()
         class MockAslVisualizationJson extends AslVisualization {
             public getWebview(): vscode.Webview | undefined {
-                return ({ postMessage } as unknown) as vscode.Webview
+                return { postMessage } as unknown as vscode.Webview
             }
         }
 
@@ -522,7 +522,7 @@ class MockVSCode {
 
     private getDocument(documentToFind: vscode.TextDocument): vscode.TextDocument | undefined {
         for (const doc of this.documents) {
-            if (doc.uri.path === documentToFind.uri.path) {
+            if (doc.uri.fsPath === documentToFind.uri.fsPath) {
                 return doc
             }
         }

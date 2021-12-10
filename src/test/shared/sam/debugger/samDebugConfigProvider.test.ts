@@ -44,9 +44,9 @@ import { CredentialsProviderManager } from '../../../../credentials/providers/cr
 import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
 import { mkdir, remove } from 'fs-extra'
-import { ext } from '../../../../shared/extensionGlobals'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CredentialsProvider } from '../../../../credentials/providers/credentials'
+import globals from '../../../../shared/extensionGlobals'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -157,7 +157,7 @@ describe('SamDebugConfigurationProvider', async function () {
         if (tempFolderSimilarName) {
             await remove(tempFolderSimilarName)
         }
-        ext.templateRegistry.reset()
+        globals.templateRegistry.reset()
         sandbox.restore()
     })
 
@@ -170,7 +170,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             // Malformed template.yaml:
             testutil.toFile('bogus', tempFile.fsPath)
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
@@ -178,14 +178,14 @@ describe('SamDebugConfigurationProvider', async function () {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true)}\nTestResource2:\n .   Type: AWS::Serverless::Api`
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
 
         it('returns one item if a template with one resource is in the workspace', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             assert.strictEqual(provided!.length, 1)
@@ -201,7 +201,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 resourceName: resources[0],
             })}\n${makeSampleYamlResource({ resourceName: resources[1] })}`
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             if (provided) {
@@ -227,9 +227,9 @@ describe('SamDebugConfigurationProvider', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
             testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: badResourceName }), similarNameYaml.fsPath)
 
-            await ext.templateRegistry.addItemToRegistry(tempFile)
-            await ext.templateRegistry.addItemToRegistry(nestedYaml)
-            await ext.templateRegistry.addItemToRegistry(similarNameYaml)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(nestedYaml)
+            await globals.templateRegistry.addItemToRegistry(similarNameYaml)
 
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
@@ -251,7 +251,7 @@ describe('SamDebugConfigurationProvider', async function () {
                         Method: get`
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 2)
             assert.strictEqual(provided![1].invokeTarget.target, API_TARGET_TYPE)
@@ -266,17 +266,40 @@ describe('SamDebugConfigurationProvider', async function () {
                     Type: HttpApi`
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
     })
 
     describe('makeConfig', async function () {
+        describe('buildDir', function () {
+            it('uses `buildDir` as `baseBuildDir` when provided', async function () {
+                const buildDir = path.resolve('/my', 'build', 'dir')
+                const folder = testutil.getWorkspaceFolder(testutil.getProjectDir())
+                const launchConfig = await getConfig(
+                    debugConfigProvider,
+                    globals.templateRegistry,
+                    'testFixtures/workspaceFolder/js-plain-sam-app/'
+                )
+                const config = launchConfig.config as AwsSamDebuggerConfiguration & {
+                    invokeTarget: { target: 'template' }
+                }
+                config.sam = Object.assign(launchConfig.config.sam ?? {}, { buildDir })
+                config.invokeTarget.templatePath = config.invokeTarget.templatePath.replace(
+                    '${workspaceFolder}',
+                    launchConfig.folder.uri.fsPath
+                )
+
+                const actual = await debugConfigProvider.makeConfig(folder, config)
+                assert.strictEqual(actual?.baseBuildDir, buildDir)
+            })
+        })
+
         it('failure modes', async function () {
             const config = await getConfig(
                 debugConfigProvider,
-                ext.templateRegistry,
+                globals.templateRegistry,
                 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/'
             )
 
@@ -362,8 +385,6 @@ describe('SamDebugConfigurationProvider', async function () {
       CodeUri: >-
         ${config.codeRoot}
       Runtime: go1.x
-      Environment:
-        Variables: {}
 `
             )
         })
@@ -403,7 +424,7 @@ describe('SamDebugConfigurationProvider', async function () {
         })
 
         it("returns undefined when resolving template debug configurations with a template that doesn't have the set resource", async () => {
-            await createAndRegisterYaml({}, tempFile, ext.templateRegistry)
+            await createAndRegisterYaml({}, tempFile, globals.templateRegistry)
             const resolved = await debugConfigProvider.makeConfig(
                 undefined,
                 createFakeConfig({ templatePath: tempFile.fsPath })
@@ -415,7 +436,7 @@ describe('SamDebugConfigurationProvider', async function () {
             await createAndRegisterYaml(
                 { resourceName, runtime: 'moreLikeRanOutOfTime' },
                 tempFile,
-                ext.templateRegistry
+                globals.templateRegistry
             )
             const resolved = await debugConfigProvider.makeConfig(
                 undefined,
@@ -432,7 +453,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: 'moreLikeRanOutOfTime' }),
                 tempFile.fsPath
             )
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
@@ -459,7 +480,7 @@ describe('SamDebugConfigurationProvider', async function () {
         it('supports workspace-relative template path ("./foo.yaml")', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs12.x' }), tempFile.fsPath)
             // Register with *full* path.
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             // Simulates launch.json:
             //     "invokeTarget": {
             //         "target": "./test.yaml",
@@ -541,8 +562,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Node-related fields
@@ -691,8 +713,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Node-related fields
@@ -815,14 +838,14 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs10.x',
+                runtime: 'nodejs14.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {
@@ -844,10 +867,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Node-related fields
@@ -869,17 +891,6 @@ describe('SamDebugConfigurationProvider', async function () {
             assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
-            )
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-  SourceCodeTwoFoldersDeep:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: .
-      Handler: src/subfolder/app.handlerTwoFoldersDeep
-      Runtime: nodejs10.x
-`
             )
 
             //
@@ -953,7 +964,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
@@ -989,9 +1000,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                architecture: undefined,
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
                 // Node-related fields
@@ -1010,34 +1020,6 @@ describe('SamDebugConfigurationProvider', async function () {
             assertFileText(
                 expected.containerEnvFile!,
                 `{"NODE_OPTIONS":"--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
-            )
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  js-image-sam-app
-  Sample SAM Template for js-image-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-    Metadata:
-      DockerTag: nodejs12.x-v1
-      DockerContext: ./hello-world
-      Dockerfile: Dockerfile
-`
             )
 
             //
@@ -1072,6 +1054,7 @@ Resources:
                 containerEnvFile: `${actualWithPathMapping.baseBuildDir}/container-env-vars.json`,
                 envFile: undefined,
                 eventPayloadFile: undefined,
+                architecture: undefined,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
@@ -1119,14 +1102,14 @@ Resources:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs10.x',
+                runtime: 'nodejs14.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {
@@ -1151,9 +1134,8 @@ Resources:
                 },
                 localRoot: appDir,
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                architecture: undefined,
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
                 // Node-related fields
@@ -1176,17 +1158,6 @@ Resources:
             assertFileText(
                 expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
-            )
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-  SourceCodeTwoFoldersDeep:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: .
-      Handler: src/subfolder/app.handlerTwoFoldersDeep
-      Runtime: nodejs10.x
-`
             )
 
             // Test noDebug=true.
@@ -1242,10 +1213,9 @@ Resources:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
             }
 
             const expectedDebug = {
@@ -1267,10 +1237,8 @@ Resources:
     Properties:
       Handler: ${handler}
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
+        ${input.invokeTarget.projectRoot}
       Runtime: java11
-      Environment:
-        Variables: {}
 `
             )
 
@@ -1347,10 +1315,9 @@ Resources:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
             }
 
             const expectedDebug = {
@@ -1372,10 +1339,8 @@ Resources:
     Properties:
       Handler: ${handler}
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
+        ${input.invokeTarget.projectRoot}
       Runtime: java11
-      Environment:
-        Variables: {}
 `
             )
 
@@ -1432,7 +1397,7 @@ Resources:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1460,10 +1425,9 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
             }
 
             const expectedDebug = {
@@ -1478,32 +1442,6 @@ Resources:
             assertEqualLaunchConfigs(actual, expectedDebug)
             assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
             assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
-
-            assertFileText(
-                expectedDebug.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  Test SAM Template
-Globals:
-  Function:
-    Timeout: 20
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: HelloWorldFunction
-      Handler: ${handler}
-      Runtime: java11
-      MemorySize: 512
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-`
-            )
 
             //
             // Test noDebug=true.
@@ -1558,7 +1496,7 @@ Resources:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1590,10 +1528,9 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
             }
 
             const expectedDebug = {
@@ -1613,33 +1550,6 @@ Resources:
                 `{"_JAVA_OPTIONS":"${expectedDebug.containerEnvVars!._JAVA_OPTIONS}"}`
             )
 
-            assertFileText(
-                expectedDebug.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  java11-image-gradle-sam-app
-  Sample SAM Template for java11-image-gradle-sam-app
-Globals:
-  Function:
-    Timeout: 20
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-    Metadata:
-      DockerTag: java11-gradle-v1
-      DockerContext: ./HelloWorldFunction
-      Dockerfile: Dockerfile
-`
-            )
             //
             // Test noDebug=true.
             //
@@ -1679,16 +1589,16 @@ Resources:
                     projectRoot: 'src/HelloWorld',
                 },
                 lambda: {
-                    runtime: 'dotnetcore2.1',
+                    runtime: 'dotnetcore3.1',
                 },
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const codeRoot = `${appDir}${input.invokeTarget.projectRoot}`
+            const codeRoot = input.invokeTarget.projectRoot
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1713,8 +1623,9 @@ Resources:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'HelloWorld', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Csharp-related fields
@@ -1753,10 +1664,8 @@ Resources:
     Properties:
       Handler: HelloWorld::HelloWorld.Function::FunctionHandler
       CodeUri: >-
-        ${appDir}${input.invokeTarget.projectRoot}
-      Runtime: dotnetcore2.1
-      Environment:
-        Variables: {}
+        ${input.invokeTarget.projectRoot}
+      Runtime: dotnetcore3.1
 `
             )
 
@@ -1848,14 +1757,14 @@ Resources:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1877,9 +1786,8 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                architecture: undefined,
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
                 // Csharp-related fields
@@ -1912,31 +1820,6 @@ Resources:
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
             assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  Test SAM Template
-Globals:
-  Function:
-    Timeout: 10
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./src/HelloWorld/
-      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
-      Runtime: dotnetcore2.1
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-`
-            )
 
             //
             // Test pathMapping
@@ -2013,7 +1896,7 @@ Resources:
                     logicalId: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'dotnetcore2.1',
+                    runtime: 'dotnetcore3.1',
                     environmentVariables: {
                         'test-envvar-1': 'test value 1',
                     },
@@ -2027,14 +1910,14 @@ Resources:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -2060,10 +1943,9 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Csharp-related fields
@@ -2107,33 +1989,6 @@ Resources:
                 const sourceFileMap = actual.sourceFileMap!['/build']
                 assert.ok(/^[A-Z]:/.test(sourceFileMap.substring(0, 2)), 'sourceFileMap driveletter must be uppercase')
             }
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  Sample SAM Template for csharp2.1-image-sam-app
-Globals:
-  Function:
-    Timeout: 10
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-    Metadata:
-      DockerTag: dotnetcore2.1-v1
-      DockerContext: ./src/HelloWorld
-      Dockerfile: Dockerfile
-`
-            )
 
             //
             // Test pathMapping
@@ -2254,10 +2109,11 @@ Resources:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Python-related fields
@@ -2293,8 +2149,6 @@ Resources:
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: python3.7
-      Environment:
-        Variables: {}
 `
             )
 
@@ -2365,7 +2219,7 @@ Resources:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2400,12 +2254,11 @@ Resources:
                     timeoutSec: 3,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Python-related fields
@@ -2430,72 +2283,6 @@ Resources:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  python3.7-plain-sam-app
-  Sample SAM Template for python3.7-plain-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-  Function2NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_2
-      Runtime: python3.7
-  Function3NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_3
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /apipath1
-            Method: get
-  ServerlessApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: ResourceName
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
-`
-            )
 
             //
             // Test pathMapping
@@ -2558,7 +2345,7 @@ Outputs:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2596,11 +2383,10 @@ Outputs:
                     timeoutSec: 3,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
+                architecture: undefined,
 
                 //
                 // Python-related fields
@@ -2627,72 +2413,6 @@ Outputs:
 
             assertEqualLaunchConfigs(actual, expected)
 
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  python3.7-plain-sam-app
-  Sample SAM Template for python3.7-plain-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-  Function2NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_2
-      Runtime: python3.7
-  Function3NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_3
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /apipath1
-            Method: get
-  ServerlessApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: ResourceName
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
-`
-            )
-
             // Test noDebug=true.
             expected.handlerName = 'app.lambda_handler'
             await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
@@ -2717,7 +2437,7 @@ Outputs:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2753,11 +2473,10 @@ Outputs:
                     runtime: 'python3.7',
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
+                architecture: undefined,
 
                 //
                 // Python-related fields
@@ -2783,34 +2502,6 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  python3.7-image-sam-app
-  Sample SAM Template for python3.7-image-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-    Metadata:
-      DockerTag: python3.7-v1
-      DockerContext: ./hello_world
-      Dockerfile: Dockerfile
-`
-            )
 
             //
             // Test pathMapping
@@ -2885,7 +2576,6 @@ Resources:
                     },
                 },
             }
-
             // Debug option should not appear now
             getLogger().setLogLevel('verbose')
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2959,8 +2649,9 @@ Resources:
                     containerBuild: true,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Python-ikpdb fields
@@ -2986,8 +2677,6 @@ Resources:
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: python3.7
-      Environment:
-        Variables: {}
 `
             )
 
@@ -3027,7 +2716,7 @@ Resources:
                 useIkpdb: true,
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await ext.templateRegistry.addItemToRegistry(templatePath)
+            await globals.templateRegistry.addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -3065,10 +2754,9 @@ Resources:
                     containerBuild: true,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
-                ),
+                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Python-ikpdb fields
@@ -3080,72 +2768,6 @@ Resources:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-
-            assertFileText(
-                expected.templatePath,
-                `AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: |
-  python3.7-plain-sam-app
-  Sample SAM Template for python3.7-plain-sam-app
-Globals:
-  Function:
-    Timeout: 3
-Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-  Function2NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_2
-      Runtime: python3.7
-  Function3NotInLaunchJson:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler_3
-      Runtime: python3.7
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /apipath1
-            Method: get
-  ServerlessApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: ResourceName
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
-`
-            )
 
             //
             // Test noDebug=true.
@@ -3164,116 +2786,6 @@ Outputs:
                 eventPayloadFile: undefined,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
-        })
-
-        it('debugconfig with extraneous env vars', async function () {
-            const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
-            )
-            const folder = testutil.getWorkspaceFolder(appDir)
-            const input = {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'test-extraneous-env',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: TEMPLATE_TARGET_TYPE,
-                    templatePath: tempFile.fsPath,
-                    logicalId: resourceName,
-                },
-                lambda: {
-                    // These are written to env-vars.json, but ignored by SAM.
-                    environmentVariables: {
-                        var1: '2',
-                        var2: '1',
-                    },
-                },
-            }
-            testutil.toFile(
-                makeSampleSamTemplateYaml(true, {
-                    resourceName: resourceName,
-                    runtime: 'nodejs12.x',
-                    handler: 'my.test.handler',
-                    codeUri: 'codeuri',
-                }),
-                tempFile.fsPath
-            )
-            await ext.templateRegistry.addItemToRegistry(tempFile)
-            const actual = (await debugConfigProvider.makeConfig(folder, input))!
-            const tempDir = path.dirname(actual.codeRoot)
-
-            const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
-                type: AWS_SAM_DEBUG_TYPE,
-                useIkpdb: false,
-                workspaceFolder: {
-                    index: 0,
-                    name: 'test-workspace-folder',
-                    uri: vscode.Uri.file(appDir),
-                },
-                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: `${actual.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: undefined,
-                codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
-                apiPort: undefined,
-                debugPort: actual.debugPort,
-                documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'my.test.handler',
-                invokeTarget: {
-                    target: 'template',
-                    templatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
-                    logicalId: 'myResource',
-                },
-                lambda: {
-                    environmentVariables: {
-                        var1: '2',
-                        var2: '1',
-                    },
-                    memoryMb: undefined,
-                    timeoutSec: 12345, // From template.yaml.
-                },
-                localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
-                name: input.name,
-                templatePath: pathutil.normalize(
-                    path.join(path.dirname(tempFile.fsPath), 'app___vsctk___template.yaml')
-                ),
-                parameterOverrides: undefined,
-
-                //
-                // Node-related fields
-                //
-                address: 'localhost',
-                port: actual.debugPort,
-                preLaunchTask: undefined,
-                protocol: 'inspector',
-                remoteRoot: '/var/task',
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
-                runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
-                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-                stopOnEntry: false,
-            }
-
-            assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile!, '{"myResource":{"var1":"2","var2":"1"}}')
-
-            assertFileText(
-                expected.templatePath,
-                `Globals:
-  Function:
-    Timeout: 5
-Resources:
-  myResource:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: my.test.handler
-      CodeUri: codeuri
-      Runtime: nodejs12.x
-      Timeout: 12345
-      Environment:
-        Variables:
-          ENVVAR: envvar
-`
-            )
         })
 
         it('debugconfig with aws section', async function () {
@@ -3344,7 +2856,7 @@ Resources:
                 }),
                 tempFile.fsPath
             )
-            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await globals.templateRegistry.addItemToRegistry(tempFile)
             const actual = (await debugConfigProviderMockCredentials.makeConfig(folder, input))!
             const tempDir = path.dirname(actual.codeRoot)
 
@@ -3381,8 +2893,9 @@ Resources:
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: 'x86_64',
 
                 //
                 // Node-related fields
@@ -3459,8 +2972,9 @@ Resources:
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(appDir, 'hello-world', 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
+                architecture: undefined,
 
                 //
                 // Go-related fields
@@ -3753,7 +3267,7 @@ describe('debugConfiguration', function () {
 
     afterEach(async function () {
         await remove(tempFolder)
-        ext.templateRegistry.reset()
+        globals.templateRegistry.reset()
     })
 
     it('getCodeRoot(), getHandlerName() with invokeTarget=code', async function () {
@@ -3814,13 +3328,13 @@ describe('debugConfiguration', function () {
 
         // Template with relative path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }), tempFile.fsPath)
-        await ext.templateRegistry.addItemToRegistry(tempFile)
+        await globals.templateRegistry.addItemToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'handler')
 
         // Template with absolute path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
-        await ext.templateRegistry.addItemToRegistry(tempFile)
+        await globals.templateRegistry.addItemToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
 
         // Template with refs that don't override:
@@ -3842,7 +3356,7 @@ describe('debugConfiguration', function () {
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: 'handler' }, paramStr),
             tempFileRefs.fsPath
         )
-        await ext.templateRegistry.addItemToRegistry(tempFileRefs)
+        await globals.templateRegistry.addItemToRegistry(tempFileRefs)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
 
@@ -3869,7 +3383,7 @@ describe('debugConfiguration', function () {
             ),
             tempFileDefaultRefs.fsPath
         )
-        await ext.templateRegistry.addItemToRegistry(tempFileDefaultRefs)
+        await globals.templateRegistry.addItemToRegistry(tempFileDefaultRefs)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
 
@@ -3891,7 +3405,7 @@ describe('debugConfiguration', function () {
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: '!Ref override' }, paramStrNoDefaultOverride),
             tempFileOverrideRef.fsPath
         )
-        await ext.templateRegistry.addItemToRegistry(tempFileOverrideRef)
+        await globals.templateRegistry.addItemToRegistry(tempFileOverrideRef)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
     })

@@ -4,8 +4,7 @@
  */
 
 import { CloudFormation } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
-import '../utilities/asyncIteratorShim'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type CloudFormationClient = ClassToInterfaceType<DefaultCloudFormationClient>
@@ -18,6 +17,17 @@ export class DefaultCloudFormationClient {
         await client
             .deleteStack({
                 StackName: name,
+            })
+            .promise()
+    }
+
+    public async describeType(typeName: string): Promise<CloudFormation.DescribeTypeOutput> {
+        const client = await this.createSdkClient()
+
+        return await client
+            .describeType({
+                Type: 'RESOURCE',
+                TypeName: typeName,
             })
             .promise()
     }
@@ -42,6 +52,26 @@ export class DefaultCloudFormationClient {
         } while (request.NextToken)
     }
 
+    public async *listTypes(): AsyncIterableIterator<CloudFormation.TypeSummary> {
+        const client = await this.createSdkClient()
+
+        const request: CloudFormation.ListTypesInput = {
+            DeprecatedStatus: 'LIVE',
+            Type: 'RESOURCE',
+            Visibility: 'PUBLIC',
+        }
+
+        do {
+            const response: CloudFormation.ListTypesOutput = await client.listTypes(request).promise()
+
+            if (response.TypeSummaries) {
+                yield* response.TypeSummaries
+            }
+
+            request.NextToken = response.NextToken
+        } while (request.NextToken)
+    }
+
     public async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
         const client = await this.createSdkClient()
 
@@ -53,6 +83,6 @@ export class DefaultCloudFormationClient {
     }
 
     private async createSdkClient(): Promise<CloudFormation> {
-        return await ext.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
     }
 }

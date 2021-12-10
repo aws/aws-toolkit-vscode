@@ -3,20 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
-import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
+import * as telemetry from '../telemetry/telemetry'
 import * as nls from 'vscode-nls'
-import { getTemplate, getTemplateResource, isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
+import * as pathutil from '../utilities/pathUtils'
+import got, { OptionsOfTextResponseBody, RequestError } from 'got'
+import { copyFile, readFile, remove, writeFile } from 'fs-extra'
+import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { getLogger } from '../logger'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
-import * as telemetry from '../telemetry/telemetry'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
-import * as pathutil from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
@@ -27,7 +27,6 @@ import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
-import { ext } from '../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerContext'
 import { DefaultSamCliConfiguration } from './cli/samCliConfiguration'
 import { extensionSettingsPrefix } from '../constants'
@@ -35,6 +34,8 @@ import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
+import { sleep } from '../utilities/promiseUtilities'
+import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -86,43 +87,24 @@ const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 let samStartApi: Promise<boolean>
 let samStartApiProc: ChildProcess | undefined
 
-export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<string> {
+export async function makeInputTemplate(
+    config: SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+): Promise<string> {
     let newTemplate: SamTemplateGenerator
-    let inputTemplatePath: string
+    const inputTemplatePath: string = path.join(config.baseBuildDir!, 'app___vsctk___template.yaml')
     const resourceName = makeResourceName(config)
 
-    // use existing template to create a temporary template
-    if (['api', 'template'].includes(config.invokeTarget.target)) {
-        const template = getTemplate(config.workspaceFolder, config)
-        const templateResource = getTemplateResource(config.workspaceFolder, config)
+    // code type - generate ephemeral SAM template
+    newTemplate = new SamTemplateGenerator()
+        .withFunctionHandler(config.invokeTarget.lambdaHandler)
+        .withResourceName(resourceName)
+        .withRuntime(config.lambda!.runtime!)
+        .withCodeUri(pathutil.normalize(config.invokeTarget.projectRoot))
 
-        if (!template || !templateResource) {
-            throw new Error('Resource not found in base template')
-        }
-
-        // We make a copy as to not mutate the template registry version
-        // TODO remove the template registry? make it return non-mutatable things?
-        const templateClone = { ...template }
-
-        // TODO fix this API, withTemplateResources is required (with a runtime error), but if we pass in a template why do we need it?
-        newTemplate = new SamTemplateGenerator(templateClone).withTemplateResources(templateClone.Resources!)
-
-        // template type uses the template dir and a throwaway template name so we can use existing relative paths
-        // clean this one up manually; we don't want to accidentally delete the workspace dir
-        inputTemplatePath = path.join(path.dirname(config.templatePath), 'app___vsctk___template.yaml')
-    } else {
-        // code type - generate ephemeral SAM template
-        newTemplate = new SamTemplateGenerator()
-            .withFunctionHandler(config.handlerName)
-            .withResourceName(resourceName)
-            .withRuntime(config.runtime)
-            .withCodeUri(config.codeRoot)
-        if (config.lambda?.environmentVariables) {
-            newTemplate = newTemplate.withEnvironment({
-                Variables: config.lambda?.environmentVariables,
-            })
-        }
-        inputTemplatePath = path.join(config.codeRoot, 'app___vsctk___template.yaml')
+    if (config.lambda?.environmentVariables) {
+        newTemplate = newTemplate.withEnvironment({
+            Variables: config.lambda?.environmentVariables,
+        })
     }
 
     // additional overrides
@@ -131,6 +113,9 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
     }
     if (config.lambda?.timeoutSec) {
         newTemplate = newTemplate.withTimeout(config.lambda?.timeoutSec)
+    }
+    if (config.invokeTarget.architecture) {
+        newTemplate = newTemplate.withArchitectures([config.invokeTarget.architecture])
     }
 
     await newTemplate.generate(inputTemplatePath)
@@ -179,14 +164,13 @@ async function buildLambdaHandler(
 
     try {
         const samBuild = new SamCliBuildInvocation(samCliArgs)
-        await samBuild.execute()
+        await samBuild.execute(timer)
         if (samBuild.failure()) {
             getLogger('debugConsole').error(samBuild.failure()!)
             throw new Error(samBuild.failure())
         }
         // build successful: use output template path for invocation
-        // XXX: reassignment
-        await remove(config.templatePath)
+        // TODO: refactor `buildLambdaHandler` to not mutate the config
         config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
         getLogger('channel').info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
         return true
@@ -229,7 +213,7 @@ async function invokeLambdaHandler(
             debugPort: debugPort,
             debuggerPath: config.debuggerPath,
             debugArgs: config.debugArgs,
-            skipPullImage: true, // We already built the image, but `sam local start-api` will try to build it again
+            skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
@@ -242,6 +226,7 @@ async function invokeLambdaHandler(
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 httpMethod: config.api?.httpMethod,
+                architecture: config.architecture,
             })
         }
 
@@ -298,7 +283,7 @@ async function invokeLambdaHandler(
             debugArgs: config.debugArgs,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
-            skipPullImage: true, // We already built the image, but `sam local invoke` will try to build it again
+            skipPullImage: config.sam?.skipNewImageCheck ?? (isImageLambdaConfig(config) || config.sam?.containerBuild),
             parameterOverrides: config.parameterOverrides,
             name: config.name,
         }
@@ -323,13 +308,16 @@ async function invokeLambdaHandler(
 
             return false
         } finally {
-            await remove(config.templatePath)
+            if (config.sam?.buildDir === undefined) {
+                await remove(config.templatePath)
+            }
             telemetry.recordLambdaInvokeLocal({
                 lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
                 result: invokeResult,
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 version: samVersion,
+                architecture: config.architecture,
             })
         }
 
@@ -350,7 +338,7 @@ export async function runLambdaFunction(
     onAfterBuild: () => Promise<void>
 ): Promise<SamLaunchRequestArgs> {
     // Verify if Docker is running
-    const dockerResponse = await new ChildProcess(false, 'docker', undefined, 'ps').run()
+    const dockerResponse = await new ChildProcess('docker', ['ps'], { logging: false }).run()
     if (dockerResponse.exitCode !== 0 || dockerResponse.stdout.includes('error during connect')) {
         throw new Error('Running AWS SAM projects locally requires Docker. Is it installed and running?')
     }
@@ -389,7 +377,7 @@ export async function runLambdaFunction(
         if (config.invokeTarget.target === 'api') {
             const payload =
                 config.eventPayloadFile === undefined
-                    ? {}
+                    ? undefined
                     : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
             // Send the request to the local API server.
             await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
@@ -421,6 +409,7 @@ export async function runLambdaFunction(
                     result: attachResult ? 'Succeeded' : 'Failed',
                     attempts: attempts,
                     duration: timer.elapsedTime,
+                    architecture: config.architecture,
                 })
             },
         })
@@ -431,7 +420,7 @@ export async function runLambdaFunction(
             })
             .catch(e => {
                 getLogger().error(`Failed to debug: ${e}`)
-                ext.outputChannel.appendLine(`Failed to debug: ${e}`)
+                globals.outputChannel.appendLine(`Failed to debug: ${e}`)
             })
     }
 
@@ -465,65 +454,60 @@ vscode.debug.onDidTerminateDebugSession(session => {
  * Sends an HTTP request to the local API webserver, which invokes the backing
  * Lambda, which will then enter debugging.
  */
-function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: number, payload: any): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const reqMethod = api?.httpMethod?.toUpperCase() ?? 'GET'
-        const qs = (api?.querystring?.startsWith('?') ? '' : '?') + (api?.querystring ?? '')
-        const reqOpts = {
-            // Sets body to JSON value and adds Content-type: application/json header.
-            json: true,
-            uri: `http://127.0.0.1:${apiPort}${api?.path}${qs}`,
-            method: reqMethod,
-            timeout: 4000,
-            headers: api?.headers,
-            body: payload,
-            // TODO: api?.stageVariables,
-        }
-        getLogger('channel').info(
-            localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', reqOpts.uri)
-        )
+async function requestLocalApi(
+    ctx: ExtContext,
+    api: APIGatewayProperties,
+    apiPort: number,
+    payload: any
+): Promise<void> {
+    const RETRY_LIMIT = 30
+    const RETRY_DELAY = 200
+    const reqMethod = api?.httpMethod || 'GET'
+    const qs = (api?.querystring?.startsWith('?') ? '' : '?') + (api?.querystring ?? '')
+    const uri = `http://127.0.0.1:${apiPort}${api?.path}${qs}`
+    const reqOpts: OptionsOfTextResponseBody = {
+        json: payload,
+        timeout: { socket: 1000 },
+        headers: api?.headers,
+        method: reqMethod,
+        retry: {
+            // note: `calculateDelay` overrides the default function, so any functionality normally specified in the
+            // retry options needs to be implemented yourself
+            calculateDelay: obj => {
+                if (obj.error.response !== undefined) {
+                    getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
+                }
+                if (
+                    obj.error.code === 'ETIMEDOUT' ||
+                    obj.attemptCount > RETRY_LIMIT ||
+                    obj.error.response?.statusCode === 403
+                ) {
+                    return 0
+                }
+                getLogger().debug(
+                    `Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error.message}`
+                )
+                return RETRY_DELAY
+            },
+        },
+        // TODO: api?.stageVariables,
+    }
 
-        const retryRequest = async (retries: number, retriesRemaining: number) => {
-            if (retriesRemaining !== retries) {
-                await new Promise<void>(r => setTimeout(r, 200))
-            }
-            request(reqOpts)
-                .on('response', resp => {
-                    getLogger().debug('Local API response: %s : %O', reqOpts.uri, JSON.stringify(resp))
-                    if (resp.statusCode === 403) {
-                        const msg = `Local API failed to respond to path: ${api?.path}`
-                        getLogger().error(msg)
-                        reject(msg)
-                    } else {
-                        resolve()
-                    }
-                })
-                .on('complete', () => {
-                    resolve()
-                })
-                .on('error', e => {
-                    const code = (e as any).code
-                    if (code === 'ESOCKETTIMEDOUT') {
-                        // HACK: request timeout (as opposed to ECONNREFUSED)
-                        // is a hint that debugger is attached, so we can stop requesting now.
-                        getLogger().info('Local API is alive (code: %s): %s', code, reqOpts.uri)
-                        resolve()
-                        return
-                    }
-                    getLogger().debug(
-                        `Local API: retry (${retries - retriesRemaining} of ${retries}): ${reqOpts.uri}: ${e.name}`
-                    )
-                    if (retriesRemaining > 0) {
-                        retryRequest(retries, retriesRemaining - 1)
-                    } else {
-                        // Timeout: local APIGW took too long to respond.
-                        const msg = `Local API failed to respond (${code}) after ${retries} retries, path: ${api?.path}`
-                        getLogger().error(msg)
-                        reject(msg)
-                    }
-                })
+    getLogger('channel').info(localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', uri))
+
+    await got(uri, reqOpts).catch((err: RequestError) => {
+        if (err.code === 'ETIMEDOUT') {
+            // HACK: request timeout (as opposed to ECONNREFUSED)
+            // is a hint that debugger is attached, so we can stop requesting now.
+            getLogger().info('Local API is alive: %s', uri)
+            return
         }
-        retryRequest(30, 30)
+        const msg =
+            err.response?.statusCode === 403
+                ? `Local API failed to respond to path: ${api?.path}`
+                : `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err.message}`
+        getLogger('channel').error(msg)
+        throw new Error(msg)
     })
 }
 
@@ -540,9 +524,7 @@ export async function attachDebugger({
     onStartDebugging = vscode.debug.startDebugging,
     onWillRetry = async (): Promise<void> => {
         getLogger().debug('attachDebugger: retrying...')
-        await new Promise<void>(resolve => {
-            setTimeout(resolve, retryDelayMillis)
-        })
+        await sleep(retryDelayMillis)
     },
     ...params
 }: AttachDebuggerContext): Promise<{ success: boolean }> {

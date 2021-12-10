@@ -9,7 +9,8 @@ import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
+
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { checklogs } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
@@ -255,7 +256,7 @@ async function deployOperation(params: {
         getLogger().error(error)
 
         const errorMessage = enhanceAwsCloudFormationInstructions(String(err), params.deployParameters)
-        ext.outputChannel.appendLine(errorMessage)
+        globals.outputChannel.appendLine(errorMessage)
 
         throw new Error('Deploy failed')
     }
@@ -266,7 +267,7 @@ async function deploy(params: {
     invoker: SamCliProcessInvoker
     window: WindowFunctions
 }): Promise<void> {
-    ext.outputChannel.show(true)
+    globals.outputChannel.show(true)
     getLogger('channel').info(localize('AWS.samcli.deploy.workflow.start', 'Starting SAM Application deployment...'))
 
     const buildSuccessful = await buildOperation(params)
@@ -307,7 +308,7 @@ function enhanceAwsCloudFormationInstructions(
 function outputDeployError(error: Error) {
     getLogger('channel').error(error)
 
-    ext.outputChannel.show(true)
+    globals.outputChannel.show(true)
     getLogger('channel').error('AWS.samcli.deploy.general.error', 'Error deploying a SAM Application. {0}', checklogs())
 }
 

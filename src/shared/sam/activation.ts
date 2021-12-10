@@ -20,11 +20,10 @@ import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
-import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
-import { SettingsConfiguration } from '../settingsConfiguration'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { NoopWatcher } from '../watchedFiles'
@@ -35,9 +34,9 @@ import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
+import { extensionSettingsPrefix } from '../constants'
+import globals from '../extensionGlobals'
 const localize = nls.loadMessageBundle()
-
-const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 
 /**
  * Activate SAM-related functionality.
@@ -45,7 +44,7 @@ const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 export async function activate(ctx: ExtContext): Promise<void> {
     initializeSamCliContext({ settingsConfiguration: ctx.settings })
 
-    createYamlExtensionPrompt()
+    await createYamlExtensionPrompt()
 
     ctx.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
@@ -78,7 +77,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
-    if (ext.didReload()) {
+    if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
 }
@@ -124,6 +123,32 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
     )
 }
 
+async function activateCodeLensRegistry(context: ExtContext) {
+    try {
+        const registry = new CodelensRootRegistry()
+        globals.codelensRootRegistry = registry
+        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
+        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
+        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
+        await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
+        await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
+    } catch (e) {
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.codelens.failToInitializeCode',
+                'Failed to activate Lambda handler {0}',
+                getIdeProperties().codelenses
+            )
+        )
+        getLogger().error('Failed to activate codelens registry', e)
+        // This prevents us from breaking for any reason later if it fails to load. Since
+        // Noop watcher is always empty, we will get back empty arrays with no issues.
+        globals.codelensRootRegistry = new NoopWatcher() as unknown as CodelensRootRegistry
+    }
+    context.extensionContext.subscriptions.push(globals.codelensRootRegistry)
+}
+
 async function activateCodeLensProviders(
     context: ExtContext,
     configuration: SettingsConfiguration,
@@ -136,6 +161,10 @@ async function activateCodeLensProviders(
     const javaCodeLensProvider = await codelensUtils.makeJavaCodeLensProvider(configuration)
     const csCodeLensProvider = await codelensUtils.makeCSharpCodeLensProvider(configuration)
     const goCodeLensProvider = await codelensUtils.makeGoCodeLensProvider(configuration)
+
+    // Ideally we should not need to `await` this Promise, but CodeLens providers are currently not implementing
+    // the event to notify on when their results change.
+    await activateCodeLensRegistry(context)
 
     const supportedLanguages: {
         [language: string]: codelensUtils.OverridableCodeLensProvider
@@ -214,32 +243,6 @@ async function activateCodeLensProviders(
         })
     )
 
-    try {
-        const registry = new CodelensRootRegistry()
-
-        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
-        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
-        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
-        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
-        await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
-
-        ext.codelensRootRegistry = registry
-    } catch (e) {
-        vscode.window.showErrorMessage(
-            localize(
-                'AWS.codelens.failToInitializeCode',
-                'Failed to activate Lambda handler {0}',
-                getIdeProperties().codelenses
-            )
-        )
-        getLogger().error('Failed to activate codelens registry', e)
-        // This prevents us from breaking for any reason later if it fails to load. Since
-        // Noop watcher is always empty, we will get back empty arrays with no issues.
-        ext.codelensRootRegistry = new NoopWatcher() as unknown as CodelensRootRegistry
-    }
-    context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
-
     return disposables
 }
 
@@ -249,12 +252,16 @@ async function activateCodeLensProviders(
  * Will show once per extension activation at most (all prompting triggers are disposed of on first trigger)
  * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
  */
-function createYamlExtensionPrompt(): void {
-    const neverPromptAgain = ext.context.globalState.get<boolean>(STATE_NAME_SUPPRESS_YAML_PROMPT)
+async function createYamlExtensionPrompt(): Promise<void> {
+    const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
-    if (!neverPromptAgain && getIdeType() === IDE.vscode && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
+    if (
+        (await settingsConfig.isPromptEnabled('yamlExtPrompt')) &&
+        getIdeType() === IDE.vscode &&
+        !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
+    ) {
         // Disposed immediately after showing one, so the user isn't prompted
         // more than once per session.
         const yamlPromptDisposables: vscode.Disposable[] = []
@@ -310,6 +317,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         for (const prompt of disposables) {
             prompt.dispose()
         }
+        const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
         const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
         const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
@@ -343,7 +351,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
                 }
                 break
             case permanentlySuppress:
-                ext.context.globalState.update(STATE_NAME_SUPPRESS_YAML_PROMPT, true)
+                settingsConfig.disablePrompt('yamlExtPrompt')
         }
     }
 }

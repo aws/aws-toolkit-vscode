@@ -9,6 +9,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
 import { IteratorTransformer } from '../../../shared/utilities/collectionUtils'
+import { installFakeClock } from '../../testUtil'
 
 export class TestQuickPick<T extends vscode.QuickPickItem> implements vscode.QuickPick<T> {
     public _value: string = ''
@@ -404,7 +405,7 @@ describe('IteratingQuickPickController', async function () {
     let clock: FakeTimers.InstalledClock
 
     before(function () {
-        clock = FakeTimers.install()
+        clock = installFakeClock()
     })
 
     after(function () {
@@ -545,7 +546,7 @@ describe('IteratingQuickPickController', async function () {
         // pause almost immediately. This should cause this to output a single item.
         controller.startRequests()
         new Promise<void>(resolve => {
-            setTimeout(() => {
+            clock.setTimeout(() => {
                 controller.pauseRequests()
                 resolve()
             }, interval - 15)
@@ -553,7 +554,7 @@ describe('IteratingQuickPickController', async function () {
         await clock.nextAsync()
         await clock.nextAsync()
         new Promise<void>(resolve => {
-            setTimeout(() => {
+            clock.setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, [{ label: 'A' }], `items at pause are: ${quickPick.items}`)
                 resolve()
             }, interval - 15)
@@ -565,7 +566,7 @@ describe('IteratingQuickPickController', async function () {
         await clock.nextAsync()
         await clock.nextAsync()
         new Promise<void>(resolve => {
-            setTimeout(() => {
+            clock.setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, result, `items at end are: ${quickPick.items}`)
                 resolve()
             }, interval - 15)
@@ -583,7 +584,7 @@ describe('IteratingQuickPickController', async function () {
         await clock.nextAsync()
         await clock.nextAsync()
         new Promise<void>(resolve => {
-            setTimeout(() => {
+            clock.setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, [
                     {
                         ...picker.IteratingQuickPickController.ERROR_ITEM,
@@ -605,7 +606,7 @@ describe('IteratingQuickPickController', async function () {
         controller.startRequests()
         await clock.nextAsync()
         new Promise<void>(resolve => {
-            setTimeout(() => {
+            clock.setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, [picker.IteratingQuickPickController.NO_ITEMS_ITEM])
                 resolve()
             }, interval - 15)
@@ -650,7 +651,7 @@ describe('IteratingQuickPickController', async function () {
         await clock.nextAsync()
 
         new Promise<void>(resolve => {
-            setTimeout(() => {
+            clock.setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, result)
                 resolve()
             }, interval - 15)

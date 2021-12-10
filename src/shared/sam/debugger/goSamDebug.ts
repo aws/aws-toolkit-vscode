@@ -12,7 +12,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
+import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import * as fs from 'fs-extra'
@@ -20,9 +20,10 @@ import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execFileSync, SpawnOptions } from 'child_process'
-import { ext } from '../../../shared/extensionGlobals'
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
+import { sleep } from '../../utilities/promiseUtilities'
+import globals from '../../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -76,7 +77,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
  * @param timeout Cancellation token to prevent stalling
  */
 async function waitForDelve(debugPort: number, timeout: Timeout) {
-    await new Promise<void>(resolve => setTimeout(resolve, 1000))
+    await sleep(1000)
 }
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -112,10 +113,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
     // We want to persist the binary we build since it takes a non-trivial amount of time to build
-    config.debuggerPath = path.join(ext.context.globalStoragePath, 'debuggers', 'delve')
-
-    // Always generate a temporary template.yaml, don't use workspace one directly.
-    config.templatePath = await makeInputTemplate(config)
+    config.debuggerPath = path.join(globals.context.globalStoragePath, 'debuggers', 'delve')
 
     const isImageLambda = isImageLambdaConfig(config)
 
@@ -249,25 +247,20 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
             return true
         }
 
-        const childProcess = new ChildProcess(true, installScript.path, installScript.options)
-
-        await new Promise<void>((resolve, reject) => {
-            childProcess.start({
-                onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
-                onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
-                onExit: (code: number | null) => {
-                    if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
-                        reject(`Install script did not generate the Delve binary: exit code ${code}`)
-                    } else if (code) {
-                        getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
-                        resolve()
-                    } else {
-                        getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
-                        resolve()
-                    }
-                },
-            })
+        const childProcess = new ChildProcess(installScript.path, [], { spawnOptions: installScript.options })
+        const install = await childProcess.run({
+            onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
+            onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
         })
+
+        const code = install.exitCode
+        if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
+            throw new Error(`Install script did not generate the Delve binary: exit code ${code}`)
+        } else if (code) {
+            getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
+        } else {
+            getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
+        }
     } catch (e) {
         if (installScript && (await SystemUtilities.fileExists(installScript.path))) {
             fs.unlinkSync(installScript.path) // Removes the install script since it failed

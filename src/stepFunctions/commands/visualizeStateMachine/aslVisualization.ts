@@ -8,12 +8,12 @@ const localize = nls.loadMessageBundle()
 import { debounce } from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../../shared/logger'
 import { isDocumentValid } from '../../utils'
 import * as yaml from 'yaml'
 
-import { YAML_ASL } from '../../constants/aslFormats'
+import { YAML_FORMATS } from '../../constants/aslFormats'
+import globals from '../../../shared/extensionGlobals'
 
 const YAML_OPTIONS: yaml.Options = {
     merge: false,
@@ -64,8 +64,8 @@ export class AslVisualization {
 
     public async sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const logger: Logger = getLogger()
-        const isYaml = updatedTextDocument.languageId === YAML_ASL
-        const text = updatedTextDocument.getText()
+        const isYaml = YAML_FORMATS.includes(updatedTextDocument.languageId)
+        const text = this.getText(updatedTextDocument)
         let stateMachineData = text
         let yamlErrors: string[] = []
 
@@ -77,7 +77,7 @@ export class AslVisualization {
             try {
                 json = parsed.toJSON()
             } catch (e) {
-                yamlErrors.push(e.message)
+                yamlErrors.push((e as Error).message)
             }
 
             stateMachineData = JSON.stringify(json)
@@ -100,6 +100,10 @@ export class AslVisualization {
         })
     }
 
+    protected getText(textDocument: vscode.TextDocument): string {
+        return textDocument.getText()
+    }
+
     private setupWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
         const documentUri = textDocument.uri
         const logger: Logger = getLogger()
@@ -109,10 +113,10 @@ export class AslVisualization {
 
         // Set the initial html for the webpage
         panel.webview.html = this.getWebviewContent(
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.webviewBodyScript),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryScript),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryCSS),
-            panel.webview.asWebviewUri(ext.visualizationResourcePaths.stateMachineCustomThemeCSS),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.webviewBodyScript),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.visualizationLibraryScript),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.visualizationLibraryCSS),
+            panel.webview.asWebviewUri(globals.visualizationResourcePaths.stateMachineCustomThemeCSS),
             panel.webview.cspSource,
             {
                 inSync: localize(
@@ -213,7 +217,7 @@ export class AslVisualization {
     private createVisualizationWebviewPanel(documentUri: vscode.Uri): vscode.WebviewPanel {
         return vscode.window.createWebviewPanel(
             'stateMachineVisualization',
-            this.makeWebviewTitle(documentUri),
+            localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(documentUri.fsPath)),
             {
                 preserveFocus: true,
                 viewColumn: vscode.ViewColumn.Beside,
@@ -221,17 +225,13 @@ export class AslVisualization {
             {
                 enableScripts: true,
                 localResourceRoots: [
-                    ext.visualizationResourcePaths.localWebviewScriptsPath,
-                    ext.visualizationResourcePaths.visualizationLibraryCachePath,
-                    ext.visualizationResourcePaths.stateMachineCustomThemePath,
+                    globals.visualizationResourcePaths.localWebviewScriptsPath,
+                    globals.visualizationResourcePaths.visualizationLibraryCachePath,
+                    globals.visualizationResourcePaths.stateMachineCustomThemePath,
                 ],
                 retainContextWhenHidden: true,
             }
         )
-    }
-
-    private makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
-        return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(sourceDocumentUri.fsPath))
     }
 
     private getWebviewContent(

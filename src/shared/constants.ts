@@ -11,7 +11,8 @@ export const profileSettingKey: string = 'profile'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
-export const aboutCredentialsFileUrl: string = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html'
+export const aboutCredentialsFileUrl: string =
+    'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html'
 export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam/'
 export const vscodeMarketplaceUrl: string =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
@@ -23,17 +24,19 @@ export const documentationUrl: string = isCloud9()
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 
+export const supportedLambdaRuntimesUrl: string =
+    'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'
 // URLs for samInitWizard
 export const samInitDocUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/latest/user-guide/create-sam.html'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/create-sam.html'
+    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-create'
+    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-create'
 export const launchConfigDocUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/run-debug-sam-app.html'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/run-debug-sam-app.html'
+    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/sam-debug-config-ref.html'
+    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps-run-debug-config-ref.html'
 // URLs for samDeployWizard
 export const samDeployDocUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/deploy-serverless-app.html'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/deploy-serverless-app.html'
+    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#deploy-serverless-app'
+    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-deploy'
 
 // URLs for CDK
 export const cdkProvideFeedbackUrl: string = `${githubUrl}/issues/new/choose`
@@ -46,6 +49,8 @@ export const eventBridgeSchemasDocUrl: string =
 // URLs for Step Functions
 export const sfnCreateIamRoleUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/dg/procedure-create-iam-role.html'
+export const sfnCreateStateMachineUrl: string =
+    'https://docs.aws.amazon.com/step-functions/latest/apireference/API_CreateStateMachine.html'
 export const sfnCreateStateMachineNameParamUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/apireference/API_CreateStateMachine.html#StepFunctions-CreateStateMachine-request-name'
 export const sfnDeveloperGuideUrl: string = 'https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html'
@@ -62,6 +67,8 @@ export const ssmYaml: string = 'ssm-yaml'
 export const debugNewSamAppUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-run-debug'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-debug'
+
+export const ecsDocumentationUrl: string = 'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html'
 
 /**
  * Moment format for rendering readable dates.
@@ -87,8 +94,11 @@ export const COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS = 5000
 export const LAMBDA_PACKAGE_TYPE_IMAGE = 'Image'
 
 // URLs for App Runner
-export const APPRUNNER_CONNECTION_HELP_URL =
+export const apprunnerConnectionHelpUrl =
     'https://docs.aws.amazon.com/apprunner/latest/dg/manage-create.html#manage-create.create.github'
-export const APPRUNNER_CONFIGURATION_HELP_URL = 'https://docs.aws.amazon.com/apprunner/latest/dg/manage-configure.html'
-export const APPRUNNER_RUNTIME_HELP_URL = 'https://docs.aws.amazon.com/apprunner/latest/dg/service-source-code.html'
-export const APPRUNNER_PRICING_URL = 'https://aws.amazon.com/apprunner/pricing/'
+export const apprunnerConfigHelpUrl = 'https://docs.aws.amazon.com/apprunner/latest/dg/manage-configure.html'
+export const apprunnerRuntimeHelpUrl = 'https://docs.aws.amazon.com/apprunner/latest/dg/service-source-code.html'
+export const apprunnerPricingUrl = 'https://aws.amazon.com/apprunner/pricing/'
+export const apprunnerCreateServiceDocsUrl: string = isCloud9()
+    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/creating-service-apprunner.html'
+    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/creating-service-apprunner.html'

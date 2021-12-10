@@ -15,9 +15,11 @@ import {
 import * as pathutil from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
-import { RuntimeFamily } from '../models/samLambdaRuntime'
+import { Architecture, RuntimeFamily } from '../models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
-import { ext } from '../../shared/extensionGlobals'
+
+import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Magic path on the Docker image.
@@ -191,7 +193,7 @@ export function getTemplate(
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
-    const cfnTemplate = ext.templateRegistry.getRegisteredItem(fullPath)?.item
+    const cfnTemplate = globals.templateRegistry.getRegisteredItem(fullPath)?.item
     return cfnTemplate
 }
 
@@ -233,4 +235,42 @@ export function isImageLambdaConfig(config: SamLaunchRequestArgs): boolean {
     const templateResource = getTemplateResource(config.workspaceFolder, config)
 
     return CloudFormation.isImageLambdaResource(templateResource?.Properties)
+}
+
+export function getArchitecture(
+    template: CloudFormation.Template | undefined,
+    resource: CloudFormation.Resource | undefined,
+    invokeTarget: AwsSamDebuggerConfiguration['invokeTarget']
+): Architecture | undefined {
+    let arch: string | undefined
+    let architectureLocation: string
+    if (template) {
+        arch = (CloudFormation.getArrayForProperty(resource?.Properties, 'Architectures', template) ?? [])[0]
+        architectureLocation = localize('AWS.generic.template', 'template file')
+    } else {
+        arch = (invokeTarget as CodeTargetProperties)?.architecture
+        architectureLocation = localize('AWS.generic.launchConfig', 'launch configuration')
+    }
+
+    if (arch) {
+        const isArch = isArchitecture(arch)
+
+        if (!isArch) {
+            getLogger('channel').warn('SAM Invoke: Invalid architecture. Defaulting to x86_64.')
+            vscode.window.showWarningMessage(
+                localize(
+                    'AWS.output.sam.invalidArchitecture',
+                    'Invalid architecture specified in {0}. Defaulting to x86_64 architecture for invocation.',
+                    architectureLocation
+                )
+            )
+            arch = 'x86_64'
+        }
+
+        return arch as Architecture
+    }
+}
+
+function isArchitecture(a: any): a is Architecture {
+    return ['x86_64', 'arm64'].includes(a)
 }

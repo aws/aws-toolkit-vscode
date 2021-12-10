@@ -5,24 +5,21 @@
 
 import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
-import { createBackButton, createExitButton, createHelpButton, QuickInputToggleButton } from '../../shared/ui/buttons'
-import { ext } from '../../shared/extensionGlobals'
+import { createCommonButtons, QuickInputToggleButton } from '../../shared/ui/buttons'
+
 import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
 import { Prompter } from '../../shared/ui/prompter'
 import { Wizard, WizardState } from '../../shared/wizards/wizard'
 import { AppRunnerImageRepositoryWizard } from './imageRepositoryWizard'
 import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
-import * as vscode from 'vscode'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
+import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
-
-function makeButtons(helpUri?: string | vscode.Uri) {
-    return [createHelpButton(helpUri), createBackButton(), createExitButton()]
-}
 
 // I'm sure this code could be reused in many places
 const validateName = (name: string) => {
@@ -70,7 +67,7 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
 
     return picker.createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectInstanceConfig.title', 'Select instance configuration'),
-        buttons: makeButtons(),
+        buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
     })
 }
 
@@ -94,7 +91,7 @@ function createSourcePrompter(
 
     return picker.createQuickPick([ecrPath, repositoryPath], {
         title: localize('AWS.apprunner.createService.sourceType.title', 'Select a source code location type'),
-        buttons: [autoDeployButton, ...makeButtons()],
+        buttons: [autoDeployButton, ...createCommonButtons(apprunnerCreateServiceDocsUrl)],
     })
 }
 
@@ -110,11 +107,11 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             exitPrompterProvider: new BasicExitPrompterProvider(),
         })
 
-        const ecrClient = ext.toolkitClientBuilder.createEcrClient(region)
-        const iamClient = ext.toolkitClientBuilder.createIamClient(region)
-        const apprunnerClient = ext.toolkitClientBuilder.createAppRunnerClient(region)
+        const ecrClient = globals.toolkitClientBuilder.createEcrClient(region)
+        const iamClient = globals.toolkitClientBuilder.createIamClient(region)
+        const apprunnerClient = globals.toolkitClientBuilder.createAppRunnerClient(region)
         const autoDeployButton = makeDeploymentButton()
-        const gitExtension = new GitExtension()
+        const gitExtension = GitExtension.instance
         const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(apprunnerClient, gitExtension, autoDeployButton)
         const imageRepositoryWizard = new AppRunnerImageRepositoryWizard(ecrClient, iamClient, autoDeployButton)
 
@@ -133,7 +130,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             input.createInputBox({
                 title: localize('AWS.apprunner.createService.name.title', 'Name your service'),
                 validateInput: validateName, // TODO: we can check if names match any already made services
-                buttons: makeButtons(),
+                buttons: createCommonButtons(apprunnerCreateServiceDocsUrl),
             })
         )
 

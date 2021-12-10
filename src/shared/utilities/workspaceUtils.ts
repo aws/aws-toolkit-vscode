@@ -8,7 +8,7 @@ import * as path from 'path'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
 import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if
@@ -98,7 +98,7 @@ export async function findParentProjectFile(
         return undefined
     }
 
-    const workspaceProjectFiles = ext.codelensRootRegistry.registeredItems
+    const workspaceProjectFiles = globals.codelensRootRegistry.registeredItems
         .filter(item => item.item.match(projectFile))
         .map(item => item.path)
 
@@ -148,7 +148,7 @@ export async function openTextDocument(filenameGlob: vscode.GlobPattern): Promis
 export function getWorkspaceRelativePath(
     childPath: string,
     override: {
-        workspaceFolders: vscode.WorkspaceFolder[] | undefined
+        workspaceFolders?: readonly vscode.WorkspaceFolder[]
     } = {
         workspaceFolders: vscode.workspace.workspaceFolders,
     }

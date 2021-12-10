@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { RestApiNode } from '../explorer/apiNodes'
 import { getLogger, Logger } from '../../shared/logger'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
-import { ext } from '../../shared/extensionGlobals'
+
 import { template } from 'lodash'
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
@@ -16,6 +16,7 @@ import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { APIG_REMOTE_INVOKE_TEMPLATE } from '../templates/apigTemplates'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { recordApigatewayInvokeRemote, Result } from '../../shared/telemetry/telemetry'
+import globals from '../../shared/extensionGlobals'
 
 // All the commands that we receive
 interface Command {
@@ -64,7 +65,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
 
         const invokeTemplateFn = template(APIG_REMOTE_INVOKE_TEMPLATE)
 
-        const client = ext.toolkitClientBuilder.createApiGatewayClient(params.apiNode.regionCode)
+        const client = globals.toolkitClientBuilder.createApiGatewayClient(params.apiNode.regionCode)
         logger.info(`Loading API Resources for API ${apiNode.name} (id: ${apiNode.id})`)
 
         const resources: Map<string, Resource> = toMap(
@@ -109,7 +110,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
                 postMessage: message => view.webview.postMessage(message),
             }),
             undefined,
-            ext.context.subscriptions
+            globals.context.subscriptions
         )
     } catch (err) {
         logger.error(err as Error)

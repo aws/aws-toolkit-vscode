@@ -5,6 +5,7 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import {
@@ -15,8 +16,10 @@ import {
     PythonDebugConfiguration,
     GoDebugConfiguration,
     getTemplate,
+    getArchitecture,
 } from '../../../lambda/local/debugConfiguration'
 import {
+    Architecture,
     getDefaultRuntime,
     getFamily,
     getRuntimeFamily,
@@ -46,7 +49,7 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
-import { makeJsonFiles } from '../localLambdaRunner'
+import { makeInputTemplate, makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
 import { fromString } from '../../../credentials/providers/credentials'
@@ -54,13 +57,13 @@ import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUt
 import { Credentials } from '@aws-sdk/types'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliVersion } from '../cli/samCliContext'
-import { ext } from '../../extensionGlobals'
-import * as pathutils from '../../utilities/pathUtils'
 import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
 } from '../cli/samCliValidator'
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
+import { resolve } from 'path'
+import globals from '../../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -164,6 +167,11 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     //
     samLocalInvokeCommand?: SamLocalInvokeCommand
     onWillAttachDebugger?(debugPort: number, timeout: Timeout): Promise<void>
+
+    /**
+     * Specifies container architecture. Necessary for C#, to either swap debugger download or to force into no-debug mode
+     */
+    architecture?: Architecture
 }
 
 /**
@@ -197,7 +205,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = ext.templateRegistry.registeredItems
+            const templates = globals.templateRegistry.registeredItems
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {
@@ -380,15 +388,27 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const template = getTemplate(folder, config)
         const templateResource = getTemplateResource(folder, config)
         const codeRoot = getCodeRoot(folder, config)
+        const architecture = getArchitecture(template, templateResource, config.invokeTarget)
         // Handler is the only field that we need to parse refs for.
         // This is necessary for Python debugging since we have to create the temporary entry file
         // Other refs can fail; SAM will handle them.
         const handlerName = getHandlerName(folder, config)
 
+        config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
+        fs.ensureDir(config.baseBuildDir)
+
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.
             // TODO: If path is relative, it is relative to launch.json (i.e. .vscode directory).
             templateInvoke.templatePath = pathutil.normalize(tryGetAbsolutePath(folder, templateInvoke.templatePath))
+        } else if (config.invokeTarget.target === 'code') {
+            const codeConfig = config as SamLaunchRequestArgs & { invokeTarget: { target: 'code' } }
+            // 'projectRoot' may be a relative path
+            // Older code left this property as relative, but there's no benefit in doing that since it's relative to the workspace
+            codeConfig.invokeTarget.projectRoot = pathutil.normalize(
+                resolve(folder.uri.fsPath, config.invokeTarget.projectRoot)
+            )
+            templateInvoke.templatePath = await makeInputTemplate(codeConfig)
         }
 
         const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
@@ -459,20 +479,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         let awsCredentials: Credentials | undefined
 
-        // TODO: Remove this when min sam version is >= 1.4.0
-        if (runtime === 'dotnetcore3.1' && !config.noDebug) {
-            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
-            if (semver.lt(samCliVersion, '1.4.0')) {
-                vscode.window.showWarningMessage(
-                    localize(
-                        'AWS.output.sam.local.no.net.3.1.debug',
-                        'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
-                    )
-                )
-                config.noDebug = true
-            }
-        }
-
         if (config.aws?.credentials) {
             const credentials = fromString(config.aws.credentials)
             try {
@@ -527,6 +533,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
             useIkpdb: isCloud9() || !!(config as any).useIkpdb,
+            architecture: architecture,
         }
 
         //
@@ -536,8 +543,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // 2. do `sam build`
         // 3. do `sam local invoke`
         //
-        // TODO is this normalize actually needed for any platform?
-        launchConfig.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
         switch (launchConfig.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 // Make a NodeJS launch-config from the generic config.

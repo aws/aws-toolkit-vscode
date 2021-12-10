@@ -13,13 +13,14 @@ import * as vscode from 'vscode'
 import { listSchemaItems } from '../utils'
 
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { SchemaItemNode } from './schemaItemNode'
+import globals from '../../shared/extensionGlobals'
 
 export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly schemaNodes: Map<string, SchemaItemNode>
@@ -31,8 +32,8 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         this.contextValue = 'awsRegistryItemNode'
         this.schemaNodes = new Map<string, SchemaItemNode>()
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.registry),
-            light: vscode.Uri.file(ext.iconPaths.light.registry),
+            dark: vscode.Uri.file(globals.iconPaths.dark.registry),
+            light: vscode.Uri.file(globals.iconPaths.light.registry),
         }
     }
 
@@ -50,11 +51,10 @@ export class RegistryItemNode extends AWSTreeNodeBase {
 
                 return [...this.schemaNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.registry.noSchemas', '[No Registry Schemas]')),
-            sort: (nodeA: SchemaItemNode, nodeB: SchemaItemNode) => nodeA.schemaName.localeCompare(nodeB.schemaName),
+            sort: (nodeA, nodeB) => nodeA.schemaName.localeCompare(nodeB.schemaName),
         })
     }
 
@@ -69,7 +69,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(this.regionCode)
+        const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(this.regionCode)
         const schemas = await toMapAsync(listSchemaItems(client, this.registryName), schema => schema.SchemaName)
 
         updateInPlace(

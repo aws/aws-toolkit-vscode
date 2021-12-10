@@ -9,7 +9,6 @@ import { IAM, StepFunctions } from 'aws-sdk'
 import { mkdir, writeFile } from 'fs-extra'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
-import { ext } from '../shared/extensionGlobals'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
 import {
@@ -19,6 +18,7 @@ import {
     TextDocument as ASLTextDocument,
 } from 'amazon-states-language-service'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
+import globals from '../shared/extensionGlobals'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -66,9 +66,9 @@ export class StateMachineGraphCache {
         this.writeFile = writeFileCustom ?? writeFile
         this.logger = getLogger()
         this.getFileData = getFileData ?? httpsGetRequestWrapper
-        this.cssFilePath = options.cssFilePath ?? ext.visualizationResourcePaths.visualizationLibraryCSS.fsPath
-        this.jsFilePath = options.jsFilePath ?? ext.visualizationResourcePaths.visualizationLibraryScript.fsPath
-        this.dirPath = options.dirPath ?? ext.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
+        this.cssFilePath = options.cssFilePath ?? globals.visualizationResourcePaths.visualizationLibraryCSS.fsPath
+        this.jsFilePath = options.jsFilePath ?? globals.visualizationResourcePaths.visualizationLibraryScript.fsPath
+        this.dirPath = options.dirPath ?? globals.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
         this.fileExists = fileExistsCustom ?? fileExists
     }
 
@@ -123,10 +123,11 @@ export class StateMachineGraphCache {
             this.logger.debug('stepFunctions: creating directory: %O', storageFolder)
             await this.makeDir(storageFolder)
         } catch (err) {
-            this.logger.verbose(err as Error)
+            const error = err as Error & { code?: string }
+            this.logger.verbose(error)
             // EEXIST failure is non-fatal. This function is called as part of
             // a Promise.all() group of tasks wanting to create the same directory.
-            if (err.code && err.code !== 'EEXIST') {
+            if (error.code && error.code !== 'EEXIST') {
                 throw err
             }
         }

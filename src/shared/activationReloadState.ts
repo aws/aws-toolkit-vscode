@@ -4,18 +4,20 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from './extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
+import globals from './extensionGlobals'
 
 export const ACTIVATION_TEMPLATE_PATH_KEY = 'ACTIVATION_TEMPLATE_PATH_KEY'
 export const ACTIVATION_LAUNCH_PATH_KEY = 'ACTIVATION_LAUNCH_PATH_KEY'
 export const SAM_INIT_RUNTIME_KEY = 'SAM_INIT_RUNTIME_KEY'
 export const SAM_INIT_IMAGE_BOOLEAN_KEY = 'SAM_INIT_IMAGE_BOOLEAN_KEY'
+export const SAM_INIT_ARCH_KEY = 'SAM_INIT_ARCH_KEY'
 
 export interface SamInitState {
     template: string | undefined
     readme: string | undefined
     runtime: Runtime | undefined
+    architecture: string | undefined
     isImage: boolean | undefined
 }
 
@@ -28,6 +30,7 @@ export class ActivationReloadState {
             template: this.extensionContext.globalState.get<string>(ACTIVATION_TEMPLATE_PATH_KEY),
             readme: this.extensionContext.globalState.get<string>(ACTIVATION_LAUNCH_PATH_KEY),
             runtime: this.extensionContext.globalState.get<string>(SAM_INIT_RUNTIME_KEY),
+            architecture: this.extensionContext.globalState.get<string>(SAM_INIT_ARCH_KEY),
             isImage: this.extensionContext.globalState.get<boolean>(SAM_INIT_IMAGE_BOOLEAN_KEY),
         }
     }
@@ -36,6 +39,7 @@ export class ActivationReloadState {
         this.extensionContext.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, state.template)
         this.extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, state.readme)
         this.extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, state.runtime)
+        this.extensionContext.globalState.update(SAM_INIT_ARCH_KEY, state.architecture)
         this.extensionContext.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, state.isImage)
     }
 
@@ -43,10 +47,11 @@ export class ActivationReloadState {
         this.extensionContext.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, undefined)
         this.extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
         this.extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
+        this.extensionContext.globalState.update(SAM_INIT_ARCH_KEY, undefined)
         this.extensionContext.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, undefined)
     }
 
     protected get extensionContext(): vscode.ExtensionContext {
-        return ext.context
+        return globals.context
     }
 }

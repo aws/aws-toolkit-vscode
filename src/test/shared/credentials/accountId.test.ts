@@ -5,15 +5,15 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
+import globals from '../../../shared/extensionGlobals'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { getAccountId } from '../../../shared/credentials/accountId'
-import { ext } from '../../../shared/extensionGlobals'
 
 describe('getAccountId', function () {
     let sandbox: sinon.SinonSandbox
 
-    const credentials: AWS.Credentials = ({} as any) as AWS.Credentials
+    const credentials: AWS.Credentials = {} as any as AWS.Credentials
 
     const stsClient: StsClient = {
         regionCode: 'abc',
@@ -37,7 +37,7 @@ describe('getAccountId', function () {
 
         createStsClientStub = sandbox.stub(clientBuilder, 'createStsClient').returns(stsClient)
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
 
     afterEach(async function () {

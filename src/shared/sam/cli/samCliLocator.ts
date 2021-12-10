@@ -43,6 +43,7 @@ abstract class BaseSamCliLocator {
         this.verifyOs()
     }
 
+    // TODO: this method is being called multiple times on my Windows machine and is really slow
     public async getLocation(): Promise<string | undefined> {
         let location: string | undefined = await this.findFileInFolders(
             this.getExecutableFilenames(),

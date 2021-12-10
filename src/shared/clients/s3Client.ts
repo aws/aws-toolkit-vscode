@@ -9,10 +9,10 @@ import * as mime from 'mime-types'
 import * as path from 'path'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
-import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { DefaultFileStreams, FileStreams, pipe, promisifyReadStream } from '../utilities/streamUtilities'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
+import globals from '../extensionGlobals'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -301,9 +301,10 @@ export class DefaultS3Client {
      * Assigns the target content type based on the mime type of the file.
      * If content type cannot be determined, defaults to {@link DEFAULT_CONTENT_TYPE}.
      *
+     * @returns The S3.ManagedUpload stream
      * @throws Error if there is an error calling S3 or piping between streams.
      */
-    public async uploadFile(request: UploadFileRequest): Promise<void> {
+    public async uploadFile(request: UploadFileRequest): Promise<S3.ManagedUpload> {
         getLogger().debug(
             'UploadFile called for bucketName: %s, key: %s, fileLocation: %s',
             request.bucketName,
@@ -330,13 +331,17 @@ export class DefaultS3Client {
             })
         }
 
-        try {
-            await Promise.all([promisifyReadStream(readStream), managedUploaded.promise()])
-        } catch (e) {
-            getLogger().error('Failed to upload %s to bucket %s: %O', request.key, request.bucketName, e)
-            throw e
-        }
-        getLogger().debug('UploadFile succeeded')
+        Promise.all([promisifyReadStream(readStream), managedUploaded.promise()]).then(
+            () => {
+                getLogger().debug('UploadFile succeeded')
+            },
+            err => {
+                getLogger().error('Failed to upload %s to bucket %s: %O', request.key, request.bucketName, err)
+                throw err
+            }
+        )
+
+        return managedUploaded
     }
 
     /**
@@ -724,7 +729,7 @@ function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucke
 async function createSdkClient(regionCode: string): Promise<S3> {
     clearInternalBucketCache()
 
-    return await ext.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
+    return await globals.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
 }
 
 /**

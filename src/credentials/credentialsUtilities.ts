@@ -14,6 +14,7 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import { CredentialsId, asString } from './providers/credentials'
 import { waitTimeout, Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
+import globals from '../shared/extensionGlobals'
 
 const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
 const CREDENTIALS_PROGRESS_DELAY = 1000
@@ -78,7 +79,7 @@ export async function resolveProviderWithCancel(
         timeout = new Timeout(timeout)
     }
 
-    setTimeout(() => {
+    globals.clock.setTimeout(() => {
         timeout = timeout as Timeout // Typescript lost scope of the correct type here
         if (timeout.completed !== true) {
             showMessageWithCancel(
@@ -88,13 +89,13 @@ export async function resolveProviderWithCancel(
         }
     }, CREDENTIALS_PROGRESS_DELAY)
 
-    return (await waitTimeout(provider, timeout, {
+    return await waitTimeout(provider, timeout, {
+        allowUndefined: false,
         onCancel: () => {
             throw new Error(`Request to get credentials for "${profile}" cancelled`)
         },
         onExpire: () => {
             throw new Error(`Request to get credentials for "${profile}" expired`)
         },
-        allowUndefined: false,
-    })) as Credentials
+    })
 }

@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
@@ -16,6 +16,7 @@ import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RestApiNode } from './apiNodes'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * An AWS Explorer node representing the API Gateway (v1) service.
@@ -35,19 +36,18 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
                 return [...this.apiNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => 
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
                     localize('AWS.explorerNode.apigateway.noApis', '[No API Gateway REST APIs found]')
                 ),
-            sort: (nodeA: RestApiNode, nodeB: RestApiNode) => nodeA.label!.localeCompare(nodeB.label!),
+            sort: (nodeA, nodeB) => nodeA.label!.localeCompare(nodeB.label!),
         })
     }
 
     public async updateChildren(): Promise<void> {
-        const client: ApiGatewayClient = ext.toolkitClientBuilder.createApiGatewayClient(this.regionCode)
+        const client: ApiGatewayClient = globals.toolkitClientBuilder.createApiGatewayClient(this.regionCode)
         const apis: Map<string, RestApi> = toMap(
             await toArrayAsync(client.listApis()),
             configuration => `${configuration.name} (${configuration.id})`

@@ -9,6 +9,7 @@ import * as Mocha from 'mocha'
 import * as glob from 'glob'
 import * as fs from 'fs'
 import * as os from 'os'
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const istanbul = require('istanbul')
 // eslint-disable-next-line @typescript-eslint/no-var-requires

@@ -3,23 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../../shared/logger'
-import { StateMachineGraphCache } from '../../utils'
-import { AslVisualization } from './aslVisualization'
 
-export class AslVisualizationManager {
-    protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
-    private readonly extensionContext: vscode.ExtensionContext
+import { AbstractAslVisualizationManager } from './abstractAslVisualizationManager'
+import { AslVisualization } from './aslVisualization'
+import { getLogger, Logger } from '../../../shared/logger'
+
+export class AslVisualizationManager extends AbstractAslVisualizationManager {
+    protected readonly name: string = 'AslVisualizationManager'
+    private readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
 
     public constructor(extensionContext: vscode.ExtensionContext) {
-        this.extensionContext = extensionContext
-    }
-
-    public getManagedVisualizations(): Map<string, AslVisualization> {
-        return this.managedVisualizations
+        super(extensionContext)
     }
 
     public async visualizeStateMachine(
@@ -27,7 +22,6 @@ export class AslVisualizationManager {
         activeTextEditor: vscode.TextEditor | undefined
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
-        const cache = new StateMachineGraphCache()
 
         /* TODO: Determine behaviour when command is run against bad input, or
          * non-json files. Determine if we want to limit the command to only a
@@ -45,7 +39,7 @@ export class AslVisualizationManager {
         const textDocument: vscode.TextDocument = activeTextEditor.document
 
         // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(textDocument.uri)
+        const existingVisualization = this.getExistingVisualization(textDocument.uri.fsPath)
         if (existingVisualization) {
             existingVisualization.showPanel()
 
@@ -54,41 +48,37 @@ export class AslVisualizationManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            await cache.updateCache(globalStorage)
+            await this.cache.updateCache(globalStorage)
 
             const newVisualization = new AslVisualization(textDocument)
             this.handleNewVisualization(newVisualization)
 
             return newVisualization.getPanel()
         } catch (err) {
-            vscode.window.showInformationMessage(
-                localize(
-                    'AWS.stepfunctions.visualisation.errors.rendering',
-                    'There was an error rendering State Machine Graph, check logs for details.'
-                )
-            )
-
-            logger.debug('Unable to setup webview panel.')
-            logger.error(err as Error)
+            this.handleErr(err as Error, logger)
         }
 
         return
     }
 
-    private deleteVisualization(visualizationToDelete: AslVisualization): void {
-        this.managedVisualizations.delete(visualizationToDelete.documentUri.path)
-    }
-
     private handleNewVisualization(newVisualization: AslVisualization): void {
-        this.managedVisualizations.set(newVisualization.documentUri.path, newVisualization)
+        this.managedVisualizations.set(newVisualization.documentUri.fsPath, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
-            this.deleteVisualization(newVisualization)
+            this.deleteVisualization(newVisualization.documentUri.fsPath)
         })
-        this.extensionContext.subscriptions.push(visualizationDisposable)
+        this.pushToExtensionContextSubscriptions(visualizationDisposable)
     }
 
-    private getExistingVisualization(uriToFind: vscode.Uri): AslVisualization | undefined {
-        return this.managedVisualizations.get(uriToFind.path)
+    public getManagedVisualizations(): Map<string, AslVisualization> {
+        return this.managedVisualizations
+    }
+
+    private deleteVisualization(visualizationToDelete: string): void {
+        this.managedVisualizations.delete(visualizationToDelete)
+    }
+
+    private getExistingVisualization(visualization: string): AslVisualization | undefined {
+        return this.managedVisualizations.get(visualization)
     }
 }

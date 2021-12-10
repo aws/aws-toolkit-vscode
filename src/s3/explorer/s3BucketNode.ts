@@ -12,7 +12,7 @@ import {
     S3Client,
     UploadFileRequest,
 } from '../../shared/clients/s3Client'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
@@ -27,12 +27,13 @@ import { S3FolderNode } from './s3FolderNode'
 import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { S3Node } from './s3Nodes'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Represents an S3 bucket that may contain folders and/or objects.
  */
 export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-    private readonly childLoader: ChildNodeLoader
+    private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
 
     public constructor(
         public readonly bucket: Bucket,
@@ -43,11 +44,10 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         super(bucket.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = bucket.name
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.s3),
-            light: vscode.Uri.file(ext.iconPaths.light.s3),
+            dark: vscode.Uri.file(globals.iconPaths.dark.s3),
+            light: vscode.Uri.file(globals.iconPaths.light.s3),
         }
         this.contextValue = 'awsS3BucketNode'
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -71,7 +71,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         this.childLoader.clearChildren()
     }
 
-    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
+    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<S3FolderNode | S3FileNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
         const response = await this.s3.listFiles({
             bucketName: this.bucket.name,
@@ -100,7 +100,8 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
      * See {@link S3Client.uploadFile}.
      */
     public async uploadFile(request: UploadFileRequest): Promise<void> {
-        return this.s3.uploadFile(request)
+        const managedUpload = await this.s3.uploadFile(request)
+        await managedUpload.promise()
     }
 
     /**

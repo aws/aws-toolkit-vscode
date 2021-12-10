@@ -7,29 +7,40 @@ import { S3 } from 'aws-sdk'
 import * as path from 'path'
 import { statSync } from 'fs'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
+
 import { getLogger } from '../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { readablePath } from '../util'
-import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/messages'
+import { showOutputMessage } from '../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { S3Client } from '../../shared/clients/s3Client'
 import { createBucketCommand } from './createBucket'
-import { recordAwsRefreshExplorer } from '../../shared/telemetry/telemetry'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
+import * as localizedText from '../../shared/localizedText'
+import bytes = require('bytes')
+import globals from '../../shared/extensionGlobals'
 
 export interface FileSizeBytes {
     /**
      * Returns the file size in bytes.
      */
     (file: vscode.Uri): number
+}
+
+interface UploadRequest {
+    bucketName: string
+    key: string
+    fileLocation: vscode.Uri
+    fileSizeBytes: number
+    s3Client: S3Client
+    window: Window
+    ongoingUpload?: S3.ManagedUpload
 }
 
 /**
@@ -44,16 +55,14 @@ export async function uploadFileCommand(
     nodeOrDocument: S3BucketNode | S3FolderNode | vscode.Uri | undefined,
     fileSizeBytes: FileSizeBytes = statFile,
     getBucket = promptUserForBucket,
-    getFile = getFileToUpload,
+    getFile = getFilesToUpload,
     window = Window.vscode(),
-    outputChannel = ext.outputChannel,
+    outputChannel = globals.outputChannel,
     commands = Commands.vscode()
 ): Promise<void> {
-    let key: string
-    let bucket: S3.Bucket
-    let file: vscode.Uri | undefined
     let node: S3BucketNode | S3FolderNode | undefined
     let document: vscode.Uri | undefined
+    const uploadRequests: UploadRequest[] = []
 
     if (nodeOrDocument) {
         if (nodeOrDocument instanceof S3BucketNode || nodeOrDocument instanceof S3FolderNode) {
@@ -68,9 +77,19 @@ export async function uploadFileCommand(
         document = undefined
     }
 
+    const fileToUploadRequest = (bucketName: string, key: string, file: vscode.Uri) => ({
+        bucketName,
+        key: key,
+        fileLocation: file,
+        fileSizeBytes: fileSizeBytes(file),
+        s3Client,
+        window,
+    })
+
     if (node) {
-        file = await getFile(undefined, window)
-        if (!file) {
+        const filesToUpload = await getFile(undefined, window)
+
+        if (!filesToUpload) {
             showOutputMessage(
                 localize('AWS.message.error.uploadFileCommand.noFileSelected', 'No file selected, cancelling upload'),
                 outputChannel
@@ -79,44 +98,18 @@ export async function uploadFileCommand(
             telemetry.recordS3UploadObject({ result: 'Cancelled' })
             return
         }
-        key = node.path + path.basename(file.fsPath)
-        bucket = { Name: node.bucket.name }
+
+        uploadRequests.push(
+            ...filesToUpload.map(file => {
+                const key = node!.path + path.basename(file.fsPath)
+                return fileToUploadRequest(node!.bucket.name, key, file)
+            })
+        )
     } else {
         while (true) {
-            file = await getFile(document, window)
-            if (file) {
-                let bucketResponse: S3.Bucket | string
-                try {
-                    bucketResponse = await getBucket(s3Client)
-                } catch (e) {
-                    telemetry.recordS3UploadObject({ result: 'Failed' })
-                    getLogger().error('getBucket failed', e)
-                    return
-                }
+            const filesToUpload = await getFile(document, window)
 
-                if (bucketResponse === 'back') {
-                    continue
-                }
-                if (bucketResponse == 'cancel') {
-                    showOutputMessage(
-                        localize(
-                            'AWS.message.error.uploadFileCommand.noBucketSelected',
-                            'No bucket selected, cancelling upload'
-                        ),
-                        outputChannel
-                    )
-                    getLogger().info('No bucket selected, cancelling upload')
-                    telemetry.recordS3UploadObject({ result: 'Cancelled' })
-                    return
-                }
-
-                if (!(bucketResponse as any).Name) {
-                    throw Error(`bucketResponse is not a S3.Bucket`)
-                }
-                bucket = bucketResponse as S3.Bucket
-                key = path.basename(file.fsPath)
-                break
-            } else {
+            if (!filesToUpload || filesToUpload.length === 0) {
                 //if file is undefined, means the back button was pressed(there is no step before) or no file was selected
                 //thus break the loop of the 'wizard'
                 showOutputMessage(
@@ -130,89 +123,270 @@ export async function uploadFileCommand(
                 telemetry.recordS3UploadObject({ result: 'Cancelled' })
                 return
             }
+
+            const bucketResponse = await getBucket(s3Client).catch(e => {})
+
+            if (!bucketResponse) {
+                telemetry.recordS3UploadObject({ result: 'Failed' })
+                return
+            }
+
+            if (typeof bucketResponse === 'string') {
+                if (bucketResponse === 'back') {
+                    continue
+                }
+
+                showOutputMessage(
+                    localize(
+                        'AWS.message.error.uploadFileCommand.noBucketSelected',
+                        'No bucket selected, cancelling upload'
+                    ),
+                    outputChannel
+                )
+                getLogger().info('No bucket selected, cancelling upload')
+                telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                return
+            }
+
+            const bucketName = bucketResponse.Name
+            if (!bucketName) {
+                throw Error(`bucketResponse is not a S3.Bucket`)
+            }
+
+            uploadRequests.push(
+                ...filesToUpload.map(file => {
+                    const key = path.basename(file.fsPath)
+                    return fileToUploadRequest(bucketName, key, file)
+                })
+            )
+
+            break
         }
     }
-    const fileName = path.basename(file.fsPath)
-    const destinationPath = readablePath({ bucket: { name: bucket.Name! }, path: key })
 
-    try {
-        showOutputMessage(
-            localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
-            outputChannel
-        )
+    await runBatchUploads(uploadRequests, window, outputChannel)
 
-        const request = {
-            bucketName: bucket.Name!,
-            key: key,
-            fileLocation: file,
-            fileSizeBytes: fileSizeBytes(file),
-            s3Client,
-            window: window,
-        }
-
-        await uploadWithProgress(request)
-
-        showOutputMessage(
-            localize('AWS.s3.uploadFile.success', 'Successfully uploaded file {0} to {1}', fileName, bucket.Name),
-            outputChannel
-        )
-        telemetry.recordS3UploadObject({ result: 'Succeeded' })
-        recordAwsRefreshExplorer()
-        commands.execute('aws.refreshAwsExplorer')
-        return
-    } catch (e) {
-        getLogger().error(`Failed to upload file from ${file} to ${destinationPath}: %O`, e)
-        showViewLogsMessage(localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}', fileName), window)
-        telemetry.recordS3UploadObject({ result: 'Failed' })
-        return
-    }
+    commands.execute('aws.refreshAwsExplorer', true)
 }
 
-async function promptForFileLocation(window: Window): Promise<vscode.Uri | undefined> {
+async function promptForFileLocation(window: Window): Promise<vscode.Uri[] | undefined> {
     const fileLocations = await window.showOpenDialog({
+        canSelectMany: true,
         openLabel: localize('AWS.s3.uploadFile.openButton', 'Upload'),
     })
 
-    if (!fileLocations || fileLocations.length == 0) {
-        return undefined
-    }
-
-    return fileLocations[0]
+    return fileLocations
 }
 
 function statFile(file: vscode.Uri) {
     return statSync(file.fsPath).size
 }
 
-async function uploadWithProgress({
-    bucketName,
-    key,
-    fileLocation,
-    fileSizeBytes,
-    s3Client,
-    window,
-}: {
-    bucketName: string
-    key: string
-    fileLocation: vscode.Uri
-    fileSizeBytes: number
-    s3Client: S3Client
-    window: Window
-}): Promise<void> {
-    return window.withProgress(
+/**
+ * Continously attempts to upload the files until all succeed or the user cancels.
+ */
+async function runBatchUploads(
+    uploadRequests: UploadRequest[],
+    window = Window.vscode(),
+    outputChannel = globals.outputChannel
+): Promise<void> {
+    let failedRequests = await uploadBatchOfFiles(uploadRequests, window, outputChannel)
+
+    showOutputMessage(
+        localize(
+            'AWS.s3.uploadFile.complete',
+            'Uploaded {0}/{1} file(s)',
+            uploadRequests.length - failedRequests.length,
+            uploadRequests.length
+        ),
+        outputChannel
+    )
+
+    while (failedRequests.length > 0) {
+        const failedKeys = failedRequests.map(request => request.key)
+        getLogger().error(`List of requests failed to upload:\n${failedRequests.toString().split(',').join('\n')}`)
+
+        if (failedRequests.length > 5) {
+            showOutputMessage(
+                localize(
+                    'AWS.s3.uploadFile.failedMany',
+                    'Failed uploads:\n{0}\nSee logs for full list of failed items',
+                    failedKeys.toString().split(',').slice(0, 5).join('\n')
+                ),
+                outputChannel
+            )
+        } else {
+            showOutputMessage(
+                localize(
+                    'AWS.s3.uploadFile.failed',
+                    'Failed uploads:\n{0}',
+                    failedKeys.toString().split(',').join('\n')
+                ),
+                outputChannel
+            )
+        }
+        //at least one request failed
+        const response = await window.showErrorMessage(
+            localize(
+                'AWS.s3.uploadFile.retryPrompt',
+                'S3 Upload: {0}/{1} failed.',
+                failedRequests.length,
+                uploadRequests.length
+            ),
+            localizedText.retry,
+            localizedText.skip
+        )
+
+        if (response === localizedText.retry) {
+            // No tail call optimization in node :(
+            failedRequests = await uploadBatchOfFiles(failedRequests, window, outputChannel)
+        } else {
+            break
+        }
+    }
+}
+
+/**
+ * Uploads an array of requests to their specified s3 location.
+ *
+ * @returns array of unsuccessful requests
+ */
+
+async function uploadBatchOfFiles(
+    uploadRequests: UploadRequest[],
+    window = Window.vscode(),
+    outputChannel = globals.outputChannel
+): Promise<UploadRequest[]> {
+    const response = await window.withProgress(
         {
+            cancellable: true,
             location: vscode.ProgressLocation.Notification,
-            title: localize('AWS.s3.uploadFile.progressTitle', 'Uploading {0}...', path.basename(fileLocation.fsPath)),
+            title: localize(
+                'AWS.s3.uploadFile.progressTitle.batch',
+                'Uploading {0} file(s) to {1}',
+                uploadRequests.length,
+                uploadRequests[0].bucketName
+            ),
         },
-        progress => {
-            return s3Client.uploadFile({
-                bucketName: bucketName,
-                key: key,
-                fileLocation,
-                progressListener: progressReporter({ progress, totalBytes: fileSizeBytes }),
+        async (progress, token) => {
+            let requestIdx: number = 0
+            const failedRequests: UploadRequest[] = []
+
+            token.onCancellationRequested(e => {
+                if (uploadRequests[requestIdx].ongoingUpload) {
+                    uploadRequests[requestIdx].ongoingUpload?.abort()
+                }
+                return failedRequests
             })
+
+            while (!token.isCancellationRequested && requestIdx < uploadRequests.length) {
+                const request = uploadRequests[requestIdx]
+                const fileName = path.basename(request.key)
+                const destinationPath = readablePath({ bucket: { name: request.bucketName }, path: request.key })
+                showOutputMessage(
+                    localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
+                    outputChannel
+                )
+
+                // TODO: don't use `withProgress`, it makes it hard to have control over the individual outputs
+                // For now we will hide the noisy info to the channel.
+                const progressWithCount: typeof progress = {
+                    report(value) {
+                        progress.report({ message: `${fileName} (${value.message})` })
+                    },
+                }
+
+                const uploadResult = await uploadWithProgress(request, progressWithCount, token).catch(err => {
+                    showOutputMessage(
+                        localize(
+                            'AWS.s3.uploadFile.error.general',
+                            'Failed to upload file {0}: {1}',
+                            fileName,
+                            err.message
+                        ),
+                        outputChannel
+                    )
+
+                    return request
+                })
+
+                if (uploadResult) {
+                    //this request failed to upload
+                    failedRequests.push(uploadResult)
+                }
+
+                requestIdx += 1
+                progress.report({ increment: 100.0 / uploadRequests.length })
+            }
+
+            return failedRequests.concat(uploadRequests.slice(requestIdx))
         }
     )
+
+    telemetry.recordS3UploadObject({
+        result: response.length > 0 ? 'Failed' : 'Succeeded',
+        value: uploadRequests.length,
+        failedCount: response.length,
+        successCount: uploadRequests.length - response.length,
+    })
+
+    return response
+}
+
+/**
+ * Uploads a single request to s3 with a progress window
+ *
+ * @param request File to be uploaded
+ * @param progress Progress to report to
+ * @param token Cancellation token
+ * @returns The same request if failed, undefined otherwise
+ */
+async function uploadWithProgress(
+    request: UploadRequest,
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    token: vscode.CancellationToken
+): Promise<UploadRequest | undefined> {
+    const fileName = request.key
+    const totalBytes = request.fileSizeBytes
+
+    // TODO: share this code better. We have a `ProgressReporter` class but all it does is output the increment?
+    let lastBytes = 0
+    const increment = (newBytes: number) => {
+        if (request.fileSizeBytes === 0) {
+            return 0
+        }
+        const percentage = (newBytes - lastBytes) / request.fileSizeBytes
+        lastBytes = newBytes
+        return percentage
+    }
+    const format = (newBytes: number) => bytes(newBytes, { unitSeparator: ' ', decimalPlaces: 0 })
+    const report = (newBytes: number) => {
+        progress.report({
+            message: totalBytes ? `${format(newBytes)} / ${format(totalBytes)}` : '',
+            increment: totalBytes ? increment(newBytes) : 100,
+        })
+    }
+
+    // Let the progress callback know we're starting
+    report(0)
+
+    const currentStream = await request.s3Client.uploadFile({
+        bucketName: request.bucketName,
+        key: request.key,
+        fileLocation: request.fileLocation,
+        progressListener: report,
+    })
+
+    request.ongoingUpload = currentStream
+
+    token.onCancellationRequested(e => {
+        currentStream.abort()
+        throw new Error(`User cancelled upload for ${fileName}`)
+    })
+
+    await currentStream.promise()
+
+    return (request.ongoingUpload = undefined)
 }
 
 interface BucketQuickPickItem extends vscode.QuickPickItem {
@@ -233,7 +407,7 @@ export async function promptUserForBucket(
     window = Window.vscode(),
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
-): Promise<S3.Bucket | string> {
+): Promise<S3.Bucket | 'cancel' | 'back'> {
     let allBuckets: S3.Bucket[]
     try {
         allBuckets = await s3client.listAllBuckets()
@@ -242,7 +416,6 @@ export async function promptUserForBucket(
         window.showErrorMessage(
             localize('AWS.message.error.promptUserForBucket.listBuckets', 'Failed to list buckets from client')
         )
-        telemetry.recordS3UploadObject({ result: 'Failed' })
         throw new Error('Failed to list buckets from client')
     }
 
@@ -315,18 +488,18 @@ export async function promptUserForBucket(
  *
  * @returns file selected by the user
  */
-export async function getFileToUpload(
+export async function getFilesToUpload(
     document?: vscode.Uri,
     window = Window.vscode(),
     promptUserFunction = promptUser
-): Promise<vscode.Uri | undefined> {
-    let fileLocation: vscode.Uri | undefined
+): Promise<vscode.Uri[] | undefined> {
+    let fileLocations: vscode.Uri[] | undefined
 
     if (!document) {
-        fileLocation = await promptForFileLocation(window)
+        fileLocations = await promptForFileLocation(window)
     } else {
-        fileLocation = document
-        const fileNameToDisplay = path.basename(fileLocation.fsPath)
+        fileLocations = [document]
+        const fileNameToDisplay = path.basename(fileLocations[0].fsPath)
 
         const fileOption: vscode.QuickPickItem = {
             label: addCodiconToString('file', fileNameToDisplay),
@@ -363,9 +536,9 @@ export async function getFileToUpload(
         }
 
         if (response.label === selectMore.label) {
-            return promptForFileLocation(window)
+            fileLocations = await promptForFileLocation(window)
         }
     }
 
-    return fileLocation
+    return fileLocations
 }

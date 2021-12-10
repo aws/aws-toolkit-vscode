@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { TimeoutError } from '../shared/utilities/timeoutUtils'
 import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
@@ -67,17 +68,14 @@ export class LoginManager {
             telemetryResult = 'Succeeded'
             return true
         } catch (err) {
-            // TODO: don't hardcode logic using error message, have a 'type' field instead
-            if (!(err as Error).message.includes('cancel')) {
-                notifyUserInvalidCredentials(args.providerId)
-                getLogger().error(
-                    `Error trying to connect to AWS with Credentials Provider ${asString(
-                        args.providerId
-                    )}. Toolkit will now disconnect from AWS. %O`,
-                    err as Error
-                )
+            if (!TimeoutError.isCancelled(err)) {
+                const msg = `login: failed to connect with "${asString(args.providerId)}": ${(err as Error).message}`
+                if (!args.passive) {
+                    notifyUserInvalidCredentials(args.providerId)
+                    getLogger().error(msg)
+                }
             } else {
-                getLogger().info(`Cancelled getting credentials from provider: ${asString(args.providerId)}`)
+                getLogger().info(`login: cancelled credentials request from "${asString(args.providerId)}"`)
             }
 
             await this.logout()
@@ -98,7 +96,7 @@ export class LoginManager {
     /**
      * Removes Credentials from the Toolkit. Essentially the Toolkit becomes "logged out".
      */
-    public async logout(): Promise<void> {
-        await this.awsContext.setCredentials(undefined)
+    public async logout(force?: boolean): Promise<void> {
+        await this.awsContext.setCredentials(undefined, force)
     }
 }

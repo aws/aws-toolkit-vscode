@@ -14,16 +14,17 @@ import {
     PythonPathMapping,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { ext } from '../../extensionGlobals'
+import globals from '../../extensionGlobals'
 import { ExtContext } from '../../extensions'
 import { fileExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
+import { sleep } from '../../utilities/promiseUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { makeInputTemplate, runLambdaFunction } from '../localLambdaRunner'
+import { runLambdaFunction } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 /** SAM will mount the --debugger-path to /tmp/lambci_debug_files */
@@ -98,7 +99,7 @@ export async function makePythonDebugConfig(
 
         if (!config.useIkpdb) {
             // Mounted in the Docker container as: /tmp/lambci_debug_files
-            config.debuggerPath = ext.context.asAbsolutePath(path.join('resources', 'debugger'))
+            config.debuggerPath = globals.context.asAbsolutePath(path.join('resources', 'debugger'))
             // NOTE: SAM CLI splits on each *single* space in `--debug-args`!
             //       Extra spaces will be passed as spurious "empty" arguments :(
             const debugArgs = `${DEBUGPY_WRAPPER_PATH} --listen 0.0.0.0:${config.debugPort} --wait-for-client --log-to-stderr`
@@ -149,8 +150,6 @@ export async function makePythonDebugConfig(
             useIkpdb: !!config.useIkpdb,
         })
     }
-
-    config.templatePath = await makeInputTemplate(config)
 
     let pathMappings: PythonPathMapping[]
     if (config.lambda?.pathMappings !== undefined) {
@@ -239,17 +238,13 @@ async function waitForIkpdb(debugPort: number, timeout: Timeout) {
     // - We cannot consumed the first message on the socket.
     // - We must wait for the debugger to be ready, else cloud9 startDebugging() waits forever.
     getLogger().info('waitForIkpdb: wait 2 seconds')
-    await new Promise<void>(resolve => {
-        setTimeout(resolve, 2000)
-    })
+    await sleep(2000)
 }
 
 function getPythonExeAndBootstrap(runtime: Runtime) {
     // unfortunately new 'Image'-base images did not standardize the paths
     // https://github.com/aws/aws-sam-cli/blob/7d5101a8edeb575b6925f9adecf28f47793c403c/samcli/local/docker/lambda_debug_settings.py
     switch (runtime) {
-        case 'python2.7':
-            return { python: '/usr/bin/python2.7', boostrap: '/var/runtime/awslambda/bootstrap.py' }
         case 'python3.6':
             return { python: '/var/lang/bin/python3.6', boostrap: '/var/runtime/awslambda/bootstrap.py' }
         case 'python3.7':

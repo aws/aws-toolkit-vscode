@@ -7,6 +7,7 @@ import * as crypto from 'crypto'
 import * as fs from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
+import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessToken, SsoCache } from './sso'
 import { SsoClientRegistration } from './ssoClientRegistration'
@@ -27,7 +28,7 @@ export class DiskCache implements SsoCache {
                 return registration
             }
         } catch (error) {
-            getLogger().error(error)
+            getLogger().error(error as Error)
         }
 
         return undefined
@@ -56,7 +57,7 @@ export class DiskCache implements SsoCache {
                 return accessToken
             }
         } catch (error) {
-            getLogger().error(error)
+            getLogger().error(error as Error)
         }
         return undefined
     }
@@ -96,7 +97,7 @@ export class DiskCache implements SsoCache {
     }
 
     private isNotExpired(token: any): boolean {
-        return Date.parse(token.expiresAt) - this.TOKEN_EXPIRATION_BUFFER_MS > Date.now()
+        return Date.parse(token.expiresAt) - this.TOKEN_EXPIRATION_BUFFER_MS > globals.clock.Date.now()
     }
 
     private registrationCache(ssoRegion: string): string {
