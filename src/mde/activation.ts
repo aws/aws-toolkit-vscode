@@ -36,7 +36,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const arn = getMdeEnvArn()
     if (arn) {
         const git = GitExtension.instance
-        const repos = git.repositories
+        const repos = await git.getRepositories()
         // assume that only 1 repository is open for now
         if (repos.length > 0) {
             // need to pull from the repo (and ignore branch) in order to get a remote url
