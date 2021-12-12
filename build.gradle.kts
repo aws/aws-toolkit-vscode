@@ -30,6 +30,15 @@ allprojects {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    // TODO: remove after https://github.com/JetBrains/intellij-ui-test-robot/pull/136
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.apache.logging.log4j") {
+                useVersion("2.15.0")
+            }
+        }
+    }
 }
 
 tasks.register<GenerateGithubChangeLog>("generateChangeLog") {
