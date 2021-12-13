@@ -5,7 +5,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
 import * as moment from 'moment'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger'
