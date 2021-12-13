@@ -20,7 +20,6 @@ export type AwsDevSetting =
     | 'aws.forceCloud9'
     | 'aws.dev.forceTelemetry'
     | 'aws.dev.forceInstallTools'
-    | 'aws.dev.foo'
     | 'aws.dev.telemetryEndpoint'
     | 'aws.dev.telemetryUserPool'
 
