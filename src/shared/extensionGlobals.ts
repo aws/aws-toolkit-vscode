@@ -13,6 +13,7 @@ import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistr
 import { RegionProvider } from './regions/regionProvider'
 import { CodelensRootRegistry } from './sam/codelensRootRegistry'
 import { SchemaService } from './schemas'
+import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
 
@@ -68,7 +69,7 @@ interface ToolkitGlobals {
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
     toolkitClientBuilder: ToolkitClientBuilder
-    telemetry: TelemetryService
+    telemetry: TelemetryService & { logger: TelemetryLogger }
     templateRegistry: CloudFormationTemplateRegistry
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry

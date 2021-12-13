@@ -242,6 +242,10 @@ describe('DefaultSettingsConfiguration', function () {
         })
 
         it('throws if not production if key does not exist (silent=false)', function () {
+            // Skip for devs who have this flag set as we cannot write to the settings
+            if (sut.readDevSetting<boolean>(TEST_SETTING, 'boolean', true) !== undefined) {
+                this.skip()
+            }
             Object.defineProperty(env, 'isReleaseVersion', { value: () => false })
             assert.throws(() => sut.readDevSetting(TEST_SETTING, 'boolean', false))
         })

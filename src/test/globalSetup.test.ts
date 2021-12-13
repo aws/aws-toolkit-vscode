@@ -43,10 +43,6 @@ before(async function () {
     fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
     initialize(fakeContext, extWindow.Window.vscode())
     initializeIconPaths(fakeContext)
-    const fakeAws = new FakeAwsContext()
-    const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
-    const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
-    globals.telemetry = service
     await initializeComputeRegion()
 })
 
@@ -60,6 +56,7 @@ beforeEach(function () {
     globals.templateRegistry = new CloudFormationTemplateRegistry()
     globals.codelensRootRegistry = new CodelensRootRegistry()
     globals.schemaService = new SchemaService(globals.context)
+    globals.telemetry = initTelemetry()
 })
 
 afterEach(function () {
@@ -123,4 +120,14 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
             ),
         `Expected to find "${text}" in the logs as type "${severity}"`
     )
+}
+
+// This reset the global since extension activation will replace our test version at test time.
+function initTelemetry(): DefaultTelemetryService {
+    const fakeAws = new FakeAwsContext()
+    const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
+    const service = new DefaultTelemetryService(globals.context, fakeAws, undefined, fakeTelemetryPublisher)
+    service.telemetryEnabled = true
+
+    return service
 }
