@@ -137,11 +137,7 @@ export class DefaultTelemetryService implements TelemetryService {
             const actualAwsContext = awsContext || this.awsContext
             const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
             this._eventQueue.push(eventWithCommonMetadata)
-            getLogger().debug(`telemetry: passive=${event.Passive ? 1 : 0} ${event.MetricName}`)
-
-            if (!isReleaseVersion()) {
-                this._telemetryLogger.log(eventWithCommonMetadata)
-            }
+            this._telemetryLogger.log(eventWithCommonMetadata)
         }
     }
 

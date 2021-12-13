@@ -12,8 +12,7 @@ import { CredentialsProviderManager } from '../../../credentials/providers/crede
 import { AwsContext } from '../../../shared/awsContext'
 import * as accountId from '../../../shared/credentials/accountId'
 import { CredentialsStore } from '../../../credentials/credentialsStore'
-import { recordAwsValidateCredentials } from '../../../shared/telemetry/telemetry.gen'
-import globals from '../../../shared/extensionGlobals'
+import { assertTelemetryCurried } from '../../testUtil'
 
 describe('LoginManager', async function () {
     let sandbox: sinon.SinonSandbox
@@ -64,20 +63,7 @@ describe('LoginManager', async function () {
         sandbox.restore()
     })
 
-    function assertTelemetry(expected: Parameters<typeof recordAwsValidateCredentials>[0]): void {
-        const passive = expected.passive
-        const query = { metricName: 'aws_validateCredentials', filters: ['awsAccount'] }
-        delete expected['passive']
-
-        const metadata = globals.telemetry.logger.query(query)
-        assert.strictEqual(metadata.length, 1)
-        assert.deepStrictEqual(metadata[0], expected)
-
-        if (passive !== undefined) {
-            const metric = globals.telemetry.logger.query({ ...query, returnMetric: true })
-            assert.strictEqual(metric[0].Passive, passive)
-        }
-    }
+    const assertTelemetry = assertTelemetryCurried('aws_validateCredentials')
 
     it('passive login sends telemetry with passive=true', async function () {
         const passive = true

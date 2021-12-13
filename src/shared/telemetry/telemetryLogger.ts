@@ -3,26 +3,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getLogger } from '../logger'
+import { isReleaseVersion } from '../vscode/env'
 import { MetricDatum, MetadataEntry } from './clienttelemetry'
 
-interface MetadataQuery {
+export interface MetricQuery {
     /** Metric name to look up in the log */
     readonly metricName: string
-    /** Returns the metric containing the metadata instead of just the metadata (default: false) */
-    readonly returnMetric?: boolean
     /** Attributes to filter out of the metadata */
     readonly filters?: string[]
-}
-
-interface MetricQuery extends MetadataQuery {
-    readonly returnMetric: true
 }
 
 interface Metadata {
     [key: string]: string | undefined
 }
 
-export type Query = MetricQuery | MetadataQuery
+function isValidEntry(datum: MetadataEntry): datum is Required<MetadataEntry> {
+    return datum.Key !== undefined && datum.Value !== undefined
+}
+
+/**
+ * Telemetry currently sends metadata as an array of key/value pairs, but this is unintuitive for JS
+ */
+const mapMetadata = (filters: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
+    const result: Metadata = {}
+    return metadata
+        .filter(isValidEntry)
+        .filter(a => !filters.includes(a.Key))
+        .reduce((a, b) => ((a[b.Key] = b.Value), a), result)
+}
 
 /**
  * Simple class to log queryable metrics.
@@ -36,45 +45,33 @@ export class TelemetryLogger {
         return this._metrics.length
     }
 
-    public log(...metrics: MetricDatum[]): void {
-        this._metrics.push(...metrics)
+    public log(metric: MetricDatum): void {
+        const msg = `telemetry: emitted metric "${metric.MetricName}"`
+        if (!isReleaseVersion()) {
+            this._metrics.push(metric)
+            const stringified = JSON.stringify(metric)
+            getLogger().debug(`${msg} -> ${stringified}`)
+        } else {
+            getLogger().debug(msg)
+        }
     }
 
     /**
      * Queries against the log, returning matched entries.
-     * By default this returns just the metadata, though it can return the entire metric by
-     * setting `selectMetadata` to false.
+     * Only returns the metadata. See {@link queryFull} for getting the entire metric.
      *
      * **All metadata values are casted to strings by the telemetry client**
      */
-    public query(query: MetricQuery): MetricDatum[]
-    public query(query: MetadataQuery): Metadata[]
-    public query(query: Query): Metadata[] | MetricDatum[] {
-        const metrics = this._metrics.filter(m => m.MetricName === query.metricName)
-
-        if (!query.returnMetric) {
-            return metrics.map(m => m.Metadata ?? []).map(m => this.mapMetadata(m, query.filters ?? []))
-        }
-
-        return metrics
-    }
-
-    public reset(): void {
-        this._metrics.length = 0
-    }
-
-    private isValidEntry(datum: MetadataEntry): datum is Required<MetadataEntry> {
-        return datum.Key !== undefined && datum.Value !== undefined
+    public query(query: MetricQuery): Metadata[] {
+        return this.queryFull(query)
+            .map(m => m.Metadata ?? [])
+            .map(mapMetadata(query.filters ?? []))
     }
 
     /**
-     * Telemetry currently sends metadata as an array of key/value pairs, but this is unintuitive for JS
+     * Queries telemetry for metrics, returning the entire structure.
      */
-    private mapMetadata(metadata: Required<MetricDatum>['Metadata'], filters: string[]): Metadata {
-        const result: Metadata = {}
-        return metadata
-            .filter(this.isValidEntry.bind(this))
-            .filter(a => !filters.includes(a.Key))
-            .reduce((a, b) => ((a[b.Key] = b.Value), a), result)
+    public queryFull(query: MetricQuery): MetricDatum[] {
+        return this._metrics.filter(m => m.MetricName === query.metricName)
     }
 }

@@ -134,7 +134,7 @@ describe('DefaultTelemetryService', function () {
 
         assert.strictEqual(logger.metricCount, 1)
 
-        const metrics = logger.query({ metricName: 'name', returnMetric: true })
+        const metrics = logger.queryFull({ metricName: 'name' })
         assertMetadataContainsTestAccount(metrics[0], DEFAULT_TEST_ACCOUNT_ID)
     })
 
@@ -145,10 +145,10 @@ describe('DefaultTelemetryService', function () {
         await service.shutdown()
 
         assert.strictEqual(logger.metricCount, 2)
-        const startEvents = logger.query({ metricName: 'session_start', returnMetric: true })
+        const startEvents = logger.queryFull({ metricName: 'session_start' })
         assertMetadataContainsTestAccount(startEvents[0], AccountStatus.NotApplicable)
 
-        const shutdownEvents = logger.query({ metricName: 'session_start', returnMetric: true })
+        const shutdownEvents = logger.queryFull({ metricName: 'session_start' })
         assertMetadataContainsTestAccount(shutdownEvents[0], AccountStatus.NotApplicable)
     })
 
@@ -159,7 +159,7 @@ describe('DefaultTelemetryService', function () {
         service.record(fakeMetric({ metricName: 'name' }))
         assert.strictEqual(logger.metricCount, 1)
 
-        const metricDatum = logger.query({ metricName: 'name', returnMetric: true })
+        const metricDatum = logger.queryFull({ metricName: 'name' })
         assertMetadataContainsTestAccount(metricDatum[0], AccountStatus.Invalid)
     })
 
@@ -167,7 +167,7 @@ describe('DefaultTelemetryService', function () {
         service.record(fakeMetric({ metricName: 'name' }))
         assert.strictEqual(logger.metricCount, 1)
 
-        const metricData = logger.query({ metricName: 'name', returnMetric: true })
+        const metricData = logger.queryFull({ metricName: 'name' })
         assertMetadataContainsTestAccount(metricData[0], AccountStatus.NotSet)
     })
 
