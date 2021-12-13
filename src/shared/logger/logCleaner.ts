@@ -7,14 +7,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getLogger } from '.'
 
-interface CleanerParameters {
-    readonly maxLogs: number
-    readonly maxFileSize: number
-    readonly maxKeptLogs: number
-    readonly minKeptLogs: number
-}
-
-export const DEFAULT_CLEANUP_PARAMS: CleanerParameters = {
+export const DEFAULT_CLEANUP_PARAMS = {
     maxLogs: 100,
     maxFileSize: 100000000, // 100 MB
     maxKeptLogs: 20,
@@ -24,7 +17,7 @@ export const DEFAULT_CLEANUP_PARAMS: CleanerParameters = {
 /**
  * Deletes the older logs when there are too many or are using too much space.
  */
-export async function cleanLogFiles(logDir: string, params: CleanerParameters = DEFAULT_CLEANUP_PARAMS): Promise<void> {
+export async function cleanLogFiles(logDir: string, params = DEFAULT_CLEANUP_PARAMS): Promise<void> {
     let files = await fs.readdir(logDir)
 
     if (files.length > params.maxLogs) {
