@@ -97,7 +97,7 @@ class SamRunConfigTest {
                         find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations...")
                     }
                     addRunConfig()
-                    find<ComboBoxFixture>(byXpath("//div[@text='Runtime:']/following-sibling::div[@class='ComboBox']")).selectItem("java11")
+                    find<ComboBoxFixture>(byXpath("(//div[@text='Runtime:']/following-sibling::div[@class='ComboBox'])[1]")).selectItem("java11")
                     findAndClick("//div[@class='HandlerPanel']")
                     keyboard { enterText("helloworld.App::handleRequest") }
                     findAndClick("//div[@class='MyEditorTextField']")

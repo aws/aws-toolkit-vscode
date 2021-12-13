@@ -32,7 +32,7 @@ open class PreferencesDialog(
     remoteComponent: RemoteComponent
 ) : DialogFixture(remoteRobot, remoteComponent) {
     fun search(query: String) = step("Search $query") {
-        textField(byXpath("//div[@class='TextFieldWithProcessing']")).text = query
+        textField(byXpath("//div[@class='SettingsSearch']//div[@class='TextFieldWithProcessing']")).text = query
     }
 
     fun selectPreferencePage(vararg crumbs: String) {
