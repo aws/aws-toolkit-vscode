@@ -114,8 +114,10 @@ export default defineComponent({
         client.onEnvironmentUpdate(env => this.updateEnvironment(env))
         client.onDevfileUpdate(event => (this.devfileStatus = event.status ?? 'STABLE'))
         client.init().then(env => {
-            this.updateEnvironment(env)
-            this.definitionFile.url = env.actions?.devfile?.location ?? ''
+            if (env) {
+                this.updateEnvironment(env)
+                this.definitionFile.url = env.actions?.devfile?.location ?? ''
+            }
         })
     },
     watch: {
@@ -135,6 +137,7 @@ export default defineComponent({
                 tags.push({ key: k, value: (env.tags ?? {})[k], generated: !!k.match(/^(aws|mde):/) })
             })
             this.tags.tags = tags.sort((a, b) => a.key.localeCompare(b.key))
+            this.restarting = this.restarting && env.status !== 'STOPPED'
         },
         editCompute(current: SettingsForm) {
             client.editSettings(current, 'configure').then(settings => {
