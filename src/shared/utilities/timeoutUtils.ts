@@ -128,20 +128,25 @@ export class Timeout {
     }
 }
 
+interface WaitUntilOptions {
+    /** Timeout in ms (default: 5000) */
+    readonly timeout?: number
+    /** Interval in ms between fn() checks (default: 500) */
+    readonly interval?: number
+    /** Wait for "truthy" result, else wait for any defined result including `false` (default: true) */
+    readonly truthy?: boolean
+}
+
 /**
  * Invokes `fn()` until it returns a non-undefined value.
  *
  * @param fn  Function whose result is checked
- * @param opt.timeout  Timeout in ms (default: 5000)
- * @param opt.interval  Interval in ms between fn() checks (default: 500)
- * @param opt.truthy  Wait for "truthy" result, else wait for any defined result including `false` (default: true)
+ * @param options  See {@link WaitUntilOptions}
  *
  * @returns Result of `fn()`, or `undefined` if timeout was reached.
  */
-export async function waitUntil<T>(
-    fn: () => Promise<T>,
-    opt: { timeout: number; interval: number; truthy: boolean } = { timeout: 5000, interval: 500, truthy: true }
-): Promise<T | undefined> {
+export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptions): Promise<T | undefined> {
+    const opt = { timeout: 5000, interval: 500, truthy: true, ...options }
     for (let i = 0; true; i++) {
         const start: number = globals.clock.Date.now()
         let result: T
