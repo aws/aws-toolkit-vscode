@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.ecs
 
 import software.aws.toolkits.jetbrains.core.experiments.ToolkitExperiment
 import software.aws.toolkits.resources.message
-import java.util.Date
 
 object EcsExecExperiment : ToolkitExperiment(
     "ecsExec",
@@ -18,5 +17,5 @@ object EcsExecExperiment : ToolkitExperiment(
 object EcsCloudDebugExperiment : ToolkitExperiment(
     "ecsCloudDebug",
     { message("cloud_debug.experiment.title") },
-    { message("cloud_debug.experiment.description", Date()) }
+    { message("cloud_debug.experiment.description") }
 )
