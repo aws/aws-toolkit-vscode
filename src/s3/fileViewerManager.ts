@@ -6,7 +6,6 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as mime from 'mime-types'
-import * as telemetry from '../shared/telemetry/telemetry'
 import * as S3 from '../shared/clients/s3Client'
 import { getLogger } from '../shared/logger'
 import { showConfirmationMessage } from '../shared/utilities/messages'
@@ -18,6 +17,7 @@ import { DefaultSettingsConfiguration, SettingsConfiguration } from '../shared/s
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { ToolkitError } from '../shared/toolkitError'
+import { Result, recordS3DownloadObject, recordS3UploadObject } from '../shared/telemetry/telemetry'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
@@ -42,8 +42,6 @@ export interface S3File extends S3.File {
     readonly bucket: S3.Bucket
 }
 
-// TODO: implement a full-feature VFS for S3 instead of a partial one
-// Much of the logic for the S3 explorer can be removed afterwards
 export class S3FileProvider implements FileProvider {
     private readonly _onDidChange = new vscode.EventEmitter<void>()
     private readonly _file: { -readonly [P in keyof S3File]: S3File[P] }
@@ -71,14 +69,12 @@ export class S3FileProvider implements FileProvider {
                     : vscode.ProgressLocation.Notification,
         })
 
-        result.then(() => {
-            telemetry.recordS3DownloadObject({ result: 'Succeeded', component: 'viewer' })
-        })
+        result.then(() => recordS3DownloadObject({ result: 'Succeeded', component: 'viewer' }))
 
         // There's no way to 'silently' fail here which is why we let the error bubble up
         result.catch(err => {
             const result = (err instanceof ToolkitError ? err?.metric?.result : undefined) ?? 'Failed'
-            telemetry.recordS3DownloadObject({ result, component: 'viewer' })
+            recordS3DownloadObject({ result, component: 'viewer' })
         })
 
         return result
@@ -97,6 +93,7 @@ export class S3FileProvider implements FileProvider {
     }
 
     public async write(content: Uint8Array): Promise<void> {
+        const record = (result: Result) => recordS3UploadObject({ result, component: 'viewer' })
         const result = await this.client
             .uploadFile({
                 content,
@@ -105,7 +102,12 @@ export class S3FileProvider implements FileProvider {
                 contentType: mime.contentType(path.extname(this._file.name)) || undefined,
             })
             .then(u => u.promise())
+            .catch(err => {
+                record('Failed')
+                throw err
+            })
 
+        record('Succeeded')
         this.updateETag(result.ETag)
         this._file.lastModified = new Date()
         this._file.sizeBytes = content.byteLength
@@ -219,14 +221,14 @@ export class S3FileViewerManager {
         const contentType = mime.contentType(path.extname(file.name))
         const isTextDocument = contentType && mime.charset(contentType) == 'UTF-8'
 
-        if (!isTextDocument) {
-            getLogger().warn(`Unable to determine if ${file.name} is a text document, opening in edit-mode`)
-            return this.openInEditMode(file)
-        }
-
         const uri = S3FileViewerManager.fileToUri(file, TabMode.Read)
         if (await this.tryFocusTab(uri, uri.with({ scheme: S3_EDIT_SCHEME }))) {
             return
+        }
+
+        if (!isTextDocument) {
+            getLogger().warn(`Unable to determine if ${file.name} is a text document, opening in edit-mode`)
+            return this.openInEditMode(file)
         }
 
         await this.createTab(file, TabMode.Read)
@@ -349,7 +351,6 @@ export class S3FileViewerManager {
         const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
         const help = localize('AWS.generic.message.learnMore', 'Learn more')
 
-        // TODO: de-dupe and allow `showConfirmationMessage` to have a 'Don't show again' option
         await this.window.showWarningMessage(message, dontShow, help).then<unknown>(selection => {
             if (selection === dontShow) {
                 return this.settings.disablePrompt(PROMPT_ON_EDIT_KEY)

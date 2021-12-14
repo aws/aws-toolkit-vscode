@@ -32,7 +32,7 @@ const localize = nls.loadMessageBundle()
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const fs = new VirualFileSystem(
-        localize('AWS.s3.fileViewer.genericError', 'Unable to open S3 file, try reopening from the explorer.')
+        localize('AWS.s3.fileViewer.genericError', 'Unable to open S3 file, try reopening from the explorer')
     )
     const manager = new S3FileViewerManager(region => globals.toolkitClientBuilder.createS3Client(region), fs)
 

@@ -67,7 +67,7 @@ class BufferWriter {
  * memory if one wanted a bit of extra performance.
  */
 export function streamToBuffer(stream: Readable, size?: number): Promise<Buffer> {
-    const writer = new BufferWriter(size ? Buffer.allocUnsafe(size) : [], size)
+    const writer = new BufferWriter(size ? Buffer.alloc(size) : [], size)
 
     return new Promise<Buffer>((resolve, reject) => {
         stream.on('error', reject)
