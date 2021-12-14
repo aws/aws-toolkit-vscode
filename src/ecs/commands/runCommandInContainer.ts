@@ -56,7 +56,9 @@ export async function runCommandInContainer(
         )
         const args = [JSON.stringify(execCommand.session), node.ecs.regionCode, 'StartSession']
         showOutputMessage(
-            `${moment().format(LOCALIZED_DATE_FORMAT)}  Running command: ${response.command}`,
+            `${moment().format(LOCALIZED_DATE_FORMAT)}  Container: "${node.containerName}" Task ID: "${
+                response.task
+            }"  Running command: "${response.command}"`,
             outputChannel
         )
 
