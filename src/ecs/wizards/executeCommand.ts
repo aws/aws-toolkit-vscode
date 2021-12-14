@@ -38,7 +38,10 @@ function createTaskPrompter(node: EcsContainerNode) {
     return createQuickPick(taskItems, {
         title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
         buttons: createCommonButtons(),
-        noItemsFoundItem: { label: 'No Running Tasks for this service', data: WIZARD_BACK },
+        noItemsFoundItem: {
+            label: localize('AWS.command.ecs.runCommandInContainer.noTasks', 'No running tasks for this container.'),
+            data: WIZARD_BACK,
+        },
     })
 }
 

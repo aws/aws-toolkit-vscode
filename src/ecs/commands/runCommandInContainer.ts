@@ -59,6 +59,13 @@ export async function runCommandInContainer(
             `${moment().format(LOCALIZED_DATE_FORMAT)}  Running command: ${response.command}`,
             outputChannel
         )
+
+        window.showInformationMessage(
+            localize(
+                'AWS.command.ecs.runCommandInContainer.runningCommandMessage',
+                'Running command. This may take several minutes.'
+            )
+        )
         const cp = await new ChildProcess(ssmPlugin, args).run()
         if (cp.exitCode !== 0) {
             result = 'Failed'
