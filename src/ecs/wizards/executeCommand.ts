@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ecsExecToolkitGuideUrl } from '../../shared/constants'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
@@ -37,7 +38,7 @@ function createTaskPrompter(node: EcsContainerNode) {
     })()
     return createQuickPick(taskItems, {
         title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(ecsExecToolkitGuideUrl),
         noItemsFoundItem: {
             label: localize('AWS.command.ecs.runCommandInContainer.noTasks', 'No running tasks for this container.'),
             data: WIZARD_BACK,
@@ -53,7 +54,7 @@ function createCommandPrompter(node: EcsContainerNode) {
             node.containerName
         ),
         placeholder: localize('AWS.command.ecs.runCommandInContainer.placeHolder', 'Command to run'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(ecsExecToolkitGuideUrl),
     })
 }
 
@@ -76,7 +77,7 @@ function createConfirmationPrompter(node: EcsContainerNode, task: string, comman
             'Command may modify the running container {0}. Are you sure?',
             node.containerName
         ),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(ecsExecToolkitGuideUrl),
     })
 }
 
