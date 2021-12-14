@@ -29,7 +29,8 @@ class DefaultCommands implements Commands {
 }
 
 type Callback = (...args: any[]) => unknown
-type CommandBind<F extends Callback> = Omit<vscode.Command, 'command' | 'arguments'> & { arguments: Parameters<F> }
+type CommandParameters = Omit<vscode.Command, 'command' | 'arguments'>
+type CommandBind<F extends Callback> = CommandParameters & { arguments: Parameters<F> }
 type BoundCommand<C extends Command> = CommandBind<CommandCallback<C>> & { command: C['id'] }
 type CommandCallback<T> = T extends Command<any, infer C> ? C : never
 type CommandFactory<F extends Callback, D extends any[]> = (...parameters: D) => F
@@ -91,21 +92,22 @@ type BoundCodeLens<C extends DeclaredCommand | RegisteredCommand> = Omit<vscode.
     readonly isResolved: true
 }
 
+type ReduceTuple<T> = T extends [infer _, ...infer R] ? R : T
 export const codeLensFactory =
-    <C extends DeclaredCommand | RegisteredCommand>(command: C) =>
-    (range: vscode.Range, ...args: Parameters<C['build']>) => {
-        return new vscode.CodeLens(range, command.build(args[0], ...args.slice(1))) as BoundCodeLens<C>
+    <C extends DeclaredCommand | RegisteredCommand>(command: C, params: CommandParameters) =>
+    (range: vscode.Range, ...args: ReduceTuple<Parameters<C['build']>>) => {
+        return new vscode.CodeLens(range, command.build({ ...params, arguments: args })) as BoundCodeLens<C>
     }
 
 const range = new vscode.Range(0, 0, 0, 0)
 const cmd = registerCommand('foo', (bar: number) => bar + 1)
-const factory = codeLensFactory(cmd)
+const factory = codeLensFactory(cmd, { title: 'My Lens' })
 
 vscode.languages.registerCodeLensProvider(
     {},
     {
         provideCodeLenses() {
-            return [factory(range, 'a lens', 100)]
+            return [factory(range, 1000)]
         },
     }
 )
