@@ -28,7 +28,7 @@ describe('CreateServiceWizard', function () {
         tester.confirmation.assertShowThird()
     })
 
-    it('should not ask for confirmation if supressed', function () {
+    it('should not ask for confirmation if suppressed', function () {
         tester.confirmation.assertDoesNotShow()
     })
 })

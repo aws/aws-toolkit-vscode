@@ -14,7 +14,7 @@ import { EcsContainerNode } from '../explorer/ecsContainerNode'
 export interface CommandWizardState {
     task: string
     command: string
-    confirmation?: 'yes' | 'supress'
+    confirmation?: 'yes' | 'suppress'
 }
 
 function createTaskPrompter(node: EcsContainerNode) {
@@ -59,15 +59,15 @@ function createCommandPrompter(node: EcsContainerNode) {
 }
 
 function createConfirmationPrompter(node: EcsContainerNode, task: string, command: string) {
-    const choices: DataQuickPickItem<'yes' | 'supress'>[] = [
+    const choices: DataQuickPickItem<'yes' | 'suppress'>[] = [
         {
             label: localize('AWS.generic.response.yes', 'Yes'),
-            data: 'yes' as 'yes' | 'supress',
+            data: 'yes' as 'yes' | 'suppress',
             detail: `Task: ${task}  Command: ${command}`,
         },
         {
             label: localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again"),
-            data: 'supress' as 'yes' | 'supress',
+            data: 'suppress' as 'yes' | 'suppress',
         },
         { label: localize('AWS.generic.response.no', 'No'), data: WIZARD_EXIT },
     ]

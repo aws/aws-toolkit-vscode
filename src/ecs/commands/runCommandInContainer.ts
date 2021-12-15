@@ -37,7 +37,7 @@ export async function runCommandInContainer(
             return
         }
 
-        if (response.confirmation === 'supress') {
+        if (response.confirmation === 'suppress') {
             settings.disablePrompt('ecsRunCommand')
         }
 
