@@ -31,11 +31,11 @@ allprojects {
         gradlePluginPortal()
     }
 
-    // TODO: remove after https://github.com/JetBrains/intellij-ui-test-robot/pull/136
+    // TODO: remove when 0.11.10 is available: https://github.com/JetBrains/intellij-ui-test-robot/releases/
     configurations.all {
         resolutionStrategy.eachDependency {
             if (requested.group == "org.apache.logging.log4j") {
-                useVersion("2.15.0")
+                useVersion("2.16.0")
             }
         }
     }
