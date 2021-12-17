@@ -217,20 +217,19 @@ async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
     }
 
     let checking = false
-    const watcher = fs.watch(logPath, eventType => {
-        if (eventType === 'rename' && !checking) {
-            checking = true
-            fs.pathExists(logPath)
-                .then(exists => {
-                    if (!exists) {
-                        vscode.window.showWarningMessage(
-                            localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
-                        )
-                        watcher?.close()
-                    }
-                })
-                .finally(() => (checking = false))
+    const watcher = fs.watch(logPath, async eventType => {
+        if (checking || eventType !== 'rename') {
+            return
         }
+        checking = true
+        const exists = await fs.pathExists(logPath).catch(() => false)
+        if (!exists) {
+            vscode.window.showWarningMessage(
+                localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
+            )
+            watcher?.close()
+        }
+        checking = false
     })
 
     return { dispose: () => watcher?.close() }
