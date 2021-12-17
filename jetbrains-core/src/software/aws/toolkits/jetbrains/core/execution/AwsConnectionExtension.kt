@@ -16,6 +16,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.execution.AwsCredentialInjectionOptions.Companion.DEFAULT_OPTIONS
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
@@ -24,26 +25,11 @@ import software.aws.toolkits.telemetry.Result.Succeeded
 
 class AwsConnectionRunConfigurationExtension<T : RunConfigurationBase<*>> {
     fun addEnvironmentVariables(configuration: T, environment: MutableMap<String, String>, runtimeString: () -> String? = { null }) {
-        val regionProvider = AwsRegionProvider.getInstance()
-        val credentialManager = CredentialManager.getInstance()
-        val credentialConfiguration = configuration.getCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY) ?: return
-
         try {
-            val connection = if (credentialConfiguration.useCurrentConnection) {
-                AwsConnectionManager.getInstance(configuration.project).connectionSettings() ?: throw RuntimeException(message("configure.toolkit"))
-            } else {
-                val region = credentialConfiguration.region?.let {
-                    regionProvider.allRegions()[it]
-                } ?: throw IllegalStateException(message("configure.validate.no_region_specified"))
+            val credentialConfiguration = credentialConfiguration(configuration) ?: return
+            if (credentialConfiguration == DEFAULT_OPTIONS) return
 
-                val credentialProviderId = credentialConfiguration.credential ?: throw IllegalStateException(message("aws.notification.credentials_missing"))
-
-                val credentialProvider = credentialManager.getCredentialIdentifierById(credentialProviderId)?.let {
-                    credentialManager.getAwsCredentialProvider(it, region)
-                } ?: throw RuntimeException(message("aws.notification.credentials_missing"))
-
-                ConnectionSettings(credentialProvider, region)
-            }
+            val connection = getConnection(configuration, credentialConfiguration)
             connection.region.mergeWithExistingEnvironmentVariables(environment)
             connection.credentials.resolveCredentials().mergeWithExistingEnvironmentVariables(environment)
             AwsTelemetry.injectCredentials(configuration.project, result = Succeeded, runtimeString = tryOrNull { runtimeString() })
@@ -51,6 +37,13 @@ class AwsConnectionRunConfigurationExtension<T : RunConfigurationBase<*>> {
             AwsTelemetry.injectCredentials(configuration.project, result = Failed, runtimeString = tryOrNull { runtimeString() })
             LOG.error(e) { message("run_configuration_extension.inject_aws_connection_exception") }
         }
+    }
+
+    fun validateConfiguration(runConfiguration: T, isExecution: Boolean) {
+        val credentialConfiguration = runConfiguration.getCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY) ?: return
+        if (credentialConfiguration == DEFAULT_OPTIONS) return
+
+        getConnection(runConfiguration, credentialConfiguration)
     }
 
     fun readExternal(runConfiguration: T, element: Element) {
@@ -66,6 +59,29 @@ class AwsConnectionRunConfigurationExtension<T : RunConfigurationBase<*>> {
     fun writeExternal(runConfiguration: T, element: Element) {
         runConfiguration.getCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY)?.let {
             XmlSerializer.serializeInto(it, element)
+        }
+    }
+
+    private fun credentialConfiguration(configuration: T) = configuration.getCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY)
+
+    private fun getConnection(configuration: T, credentialConfiguration: AwsCredentialInjectionOptions): ConnectionSettings {
+        val regionProvider = AwsRegionProvider.getInstance()
+        val credentialManager = CredentialManager.getInstance()
+
+        return if (credentialConfiguration.useCurrentConnection) {
+            AwsConnectionManager.getInstance(configuration.project).connectionSettings() ?: throw RuntimeException(message("configure.toolkit"))
+        } else {
+            val region = credentialConfiguration.region?.let {
+                regionProvider.allRegions()[it]
+            } ?: throw IllegalStateException(message("configure.validate.no_region_specified"))
+
+            val credentialProviderId = credentialConfiguration.credential ?: throw IllegalStateException(message("aws.notification.credentials_missing"))
+
+            val credentialProvider = credentialManager.getCredentialIdentifierById(credentialProviderId)?.let {
+                credentialManager.getAwsCredentialProvider(it, region)
+            } ?: throw RuntimeException(message("aws.notification.credentials_missing"))
+
+            ConnectionSettings(credentialProvider, region)
         }
     }
 
@@ -88,12 +104,13 @@ val AWS_CONNECTION_RUN_CONFIGURATION_KEY =
         "aws.toolkit.runConfigurationConnection"
     )
 
-class AwsCredentialInjectionOptions {
-    var useCurrentConnection: Boolean = false
-    var region: String? = null
+data class AwsCredentialInjectionOptions(
+    var useCurrentConnection: Boolean = false,
+    var region: String? = null,
     var credential: String? = null
-
+) {
     companion object {
         operator fun invoke(block: AwsCredentialInjectionOptions.() -> Unit) = AwsCredentialInjectionOptions().apply(block)
+        val DEFAULT_OPTIONS by lazy { AwsCredentialInjectionOptions() }
     }
 }

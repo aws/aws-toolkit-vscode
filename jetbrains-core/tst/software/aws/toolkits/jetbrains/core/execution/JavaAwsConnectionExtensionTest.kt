@@ -92,6 +92,16 @@ class JavaAwsConnectionExtensionTest {
     }
 
     @Test
+    fun `Does not throw on default options`() {
+        val runManager = RunManager.getInstance(projectRule.project)
+        val configuration = runManager.createConfiguration("test", ApplicationConfigurationType::class.java).configuration as ApplicationConfiguration
+        configuration.putCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY, AwsCredentialInjectionOptions.DEFAULT_OPTIONS)
+        val extension = JavaAwsConnectionExtension()
+        val map = mutableMapOf<String, String>()
+        extension.updateJavaParameters(configuration, mock { on { env } doAnswer { map } }, null)
+    }
+
+    @Test
     fun `Inject injects environment variables`() {
         val runManager = RunManager.getInstance(projectRule.project)
         val configuration = runManager.createConfiguration("test", ApplicationConfigurationType::class.java).configuration as ApplicationConfiguration
