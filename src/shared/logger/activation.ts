@@ -216,14 +216,24 @@ async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
         return { dispose: () => {} }
     }
 
-    const watcher = fs.watch(logPath, eventType => {
-        if (eventType === 'rename') {
+    let checking = false
+    // TODO: fs.watch() has many problems, consider instead:
+    //   - https://github.com/paulmillr/chokidar
+    //   - https://www.npmjs.com/package/fb-watchman
+    const watcher = fs.watch(logPath, async eventType => {
+        if (checking || eventType !== 'rename') {
+            return
+        }
+        checking = true
+        const exists = await fs.pathExists(logPath).catch(() => true)
+        if (!exists) {
             vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
             )
-            watcher?.close()
+            watcher.close()
         }
+        checking = false
     })
 
-    return { dispose: () => watcher?.close() }
+    return { dispose: () => watcher.close() }
 }
