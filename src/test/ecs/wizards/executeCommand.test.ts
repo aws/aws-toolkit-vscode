@@ -7,12 +7,14 @@ import * as _ from 'lodash'
 import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
 import { instance, mock } from '../../utilities/mockito'
 import { CommandWizard, CommandWizardState } from '../../../ecs/wizards/executeCommand'
+import { EcsContainerNode } from '../../../ecs/explorer/ecsContainerNode'
 
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<CommandWizardState>
-    const node = mock()
+    let node: EcsContainerNode
 
     beforeEach(function () {
+        node = mock()
         tester = createWizardTester(new CommandWizard(instance(node), false))
     })
 
