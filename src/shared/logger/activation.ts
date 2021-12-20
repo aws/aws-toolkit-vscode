@@ -217,6 +217,9 @@ async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
     }
 
     let checking = false
+    // TODO: fs.watch() has many problems, consider instead:
+    //   - https://github.com/paulmillr/chokidar
+    //   - https://www.npmjs.com/package/fb-watchman
     const watcher = fs.watch(logPath, async eventType => {
         if (checking || eventType !== 'rename') {
             return
