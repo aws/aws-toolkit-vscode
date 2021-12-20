@@ -222,7 +222,7 @@ async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
             return
         }
         checking = true
-        const exists = await fs.pathExists(logPath).catch(() => false)
+        const exists = await fs.pathExists(logPath).catch(() => true)
         if (!exists) {
             vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
