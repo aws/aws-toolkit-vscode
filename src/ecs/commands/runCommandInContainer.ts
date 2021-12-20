@@ -27,6 +27,7 @@ export async function runCommandInContainer(
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
     let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
+    const viewOutput = localize('AWS.command.ecs.runCommandInContainer.viewOutput', 'View Output')
 
     try {
         const wizard = new CommandWizard(node, await settings.isPromptEnabled('ecsRunCommand'))
@@ -62,20 +63,33 @@ export async function runCommandInContainer(
             outputChannel
         )
 
-        window.showInformationMessage(
-            localize(
-                'AWS.command.ecs.runCommandInContainer.runningCommandMessage',
-                'Running command. This may take several minutes.'
+        window
+            .showInformationMessage(
+                localize(
+                    'AWS.command.ecs.runCommandInContainer.runningCommandMessage',
+                    'Running command. This may take several minutes.'
+                ),
+                viewOutput
             )
-        )
-        const cp = await new ChildProcess(ssmPlugin, args).run()
+            .then(button => {
+                if (button === viewOutput) {
+                    outputChannel.show(false)
+                }
+            })
+        const cp = await new ChildProcess(ssmPlugin, args).run({
+            onStdout: text => {
+                showOutputMessage(removeAnsi(text), outputChannel)
+            },
+            onStderr: text => {
+                showOutputMessage(removeAnsi(text), outputChannel)
+            },
+        })
+
         if (cp.exitCode !== 0) {
             result = 'Failed'
-            showOutputMessage(removeAnsi(cp.stderr), outputChannel)
             throw cp.error
         } else {
             result = 'Succeeded'
-            showOutputMessage(removeAnsi(cp.stdout), outputChannel)
         }
     } catch (error) {
         getLogger().error('Failed to execute command in container, %O', error)

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ECS } from 'aws-sdk'
 import { ecsExecToolkitGuideUrl } from '../../shared/constants'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createInputBox } from '../../shared/ui/inputPrompter'
@@ -17,22 +18,24 @@ export interface CommandWizardState {
     confirmation?: 'yes' | 'suppress'
 }
 
+function assertValidRunningTask(t: any): t is ECS.Task & { taskArn: string } {
+    return t.taskArn !== undefined && t.lastStatus === 'RUNNING' && t.desiredStatus === 'RUNNING'
+}
+
 function createTaskPrompter(node: EcsContainerNode) {
-    const taskItems = (async function () {
+    const taskItems = (async () => {
         const taskArns = await node.listTasks()
         if (taskArns.length === 0) {
             return []
         }
         // Filter for only 'Running' tasks
-        const runningTasks = (await node.describeTasks(taskArns)).filter(t => {
-            return t.lastStatus === 'RUNNING' && t.desiredStatus === 'RUNNING'
-        })
-        return runningTasks.map(task => {
+        return (await node.describeTasks(taskArns)).filter(assertValidRunningTask).map(task => {
             // The last 32 digits of the task arn is the task identifier
+            const taskId = task.taskArn.substring(task.taskArn.length - 32)
             return {
-                label: task.taskArn!.substr(-32),
+                label: taskId,
                 detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
-                data: task.taskArn!.substr(-32),
+                data: taskId,
             }
         })
     })()
