@@ -12,11 +12,12 @@ import * as pickerLib from '../shared/ui/picker'
 import { IteratorTransformer } from '../shared/utilities/collectionUtils'
 import { activateExtension, localize } from '../shared/utilities/vsCodeUtils'
 import * as cawsView from './cawsView'
-import * as msg from '../shared/utilities/messages'
-import { ContextChangeEventsArgs } from '../shared/awsContext'
 import { GitExtension } from '../../types/git'
 import { initCurrentRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { getLogger } from '../shared/logger/logger'
+import { login } from './commands/login'
+import { logout } from './commands/logout'
+import { onCredentialsChanged } from './utils'
 
 /**
  * Activate CAWS functionality.
@@ -48,28 +49,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
     await registerCommands(ctx)
 }
 
-async function onCredentialsChanged(
-    ctx: vscode.ExtensionContext,
-    viewProvider: cawsView.CawsView,
-    view: vscode.TreeView<unknown>,
-    e: ContextChangeEventsArgs
-) {
-    view.title = e.cawsUsername ? `CODE.AWS (${e.cawsUsername})` : 'CODE.AWS'
-    await globals.caws.onCredentialsChanged(e.cawsUsername ?? '', e.cawsSecret ?? '')
-
-    // vscode secrets API is only available in newer versions.
-    if (e.cawsUsername && e.cawsSecret && (ctx as any).secrets) {
-        // This sets the OS keychain item "vscodeamazonwebservices.aws:caws/$user".
-        ;(ctx as any).secrets.store(`caws/${e.cawsUsername}`, e.cawsSecret)
-    }
-
-    viewProvider.refresh()
-}
-
 async function registerCommands(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.caws.connect', async () => await cawsConnect()),
-        vscode.commands.registerCommand('aws.caws.logout', async () => await cawsLogout()),
+        vscode.commands.registerCommand('aws.caws.connect', () => login(ctx, globals.caws)),
+        vscode.commands.registerCommand('aws.caws.logout', () => logout(ctx, globals.caws)),
         vscode.commands.registerCommand('aws.caws.openOrg', async () => await openCawsResource('org')),
         vscode.commands.registerCommand('aws.caws.openProject', async () => await openCawsResource('project')),
         vscode.commands.registerCommand('aws.caws.openRepo', async () => await openCawsResource('repo')),
@@ -161,39 +144,6 @@ async function openCawsResource(kind: 'org' | 'project' | 'repo'): Promise<void>
 /** "List CODE.AWS Commands" command. */
 async function listCommands(): Promise<void> {
     vscode.commands.executeCommand('workbench.action.quickOpen', '> CODE.AWS')
-}
-
-/** "Connect to CODE.AWS" command. */
-async function cawsConnect(): Promise<void> {
-    const userSecret = await vscode.window.showInputBox({
-        ignoreFocusOut: true,
-        placeHolder: 'cookie: code-aws-cognito-session=...',
-        prompt: 'Input credentials',
-        password: false, // TODO
-    })
-    if (!userSecret) {
-        return
-    }
-
-    const c = globals.caws
-    await c.onCredentialsChanged(undefined, userSecret)
-
-    const sess = await c.verifySession()
-    if (!sess?.identity) {
-        msg.showViewLogsMessage('CODE.AWS: failed to connect')
-        return
-    }
-
-    globals.awsContext.setCawsCredentials(c.user(), userSecret)
-}
-
-/** "Sign out of CODE.AWS" command. */
-async function cawsLogout(): Promise<void> {
-    if (!globals.awsContext.getCawsCredentials()) {
-        return
-    }
-    await globals.caws.onCredentialsChanged(undefined, undefined)
-    globals.awsContext.setCawsCredentials('', '')
 }
 
 /** "Clone CODE.AWS Repository" command. */

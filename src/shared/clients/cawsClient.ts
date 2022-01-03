@@ -18,8 +18,8 @@ import globals from '../extensionGlobals'
 export const useGraphql = true
 
 export const cawsRegion = 'us-east-1'
-export const cawsEndpoint = 'public.api.REMOVED.codes'
-export const cawsEndpointGql = 'https://public.api.REMOVED.codes/graphql'
+export const cawsEndpoint = 'public.api-gamma.REMOVED.codes'
+export const cawsEndpointGql = 'https://public.api-gamma.REMOVED.codes/graphql'
 export const cawsHostname = 'REMOVED.codes' // 'REMOVED.execute-api.us-east-1.amazonaws.cominteg.codedemo.REMOVED'
 export const cawsGitHostname = `git.service.${cawsHostname}`
 export const cawsHelpUrl = `https://${cawsHostname}/help`
@@ -41,15 +41,11 @@ async function createCawsClient(
     return c
 }
 
-function fixcookie(s: string): string {
-    s = s.trim()
-    s = s.replace(/cookie: /, '')
-    s = s.replace(/code-aws-cognito-session: ?/, 'code-aws-cognito-session=')
-    return s
-}
-
-function createGqlClient(apiKey: string, authCookie?: string, endpoint: string = cawsEndpointGql): gql.GraphQLClient {
-    authCookie = fixcookie(authCookie ?? '')
+function createGqlClient(
+    apiKey: string,
+    authCookie: string = '',
+    endpoint: string = cawsEndpointGql
+): gql.GraphQLClient {
     const client = new gql.GraphQLClient(endpoint, {
         headers: {
             'x-api-key': apiKey,
