@@ -4,7 +4,7 @@
  */
 
 import { CloudWatchLogs } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type CloudWatchLogsClient = ClassToInterfaceType<DefaultCloudWatchLogsClient>
@@ -48,6 +48,6 @@ export class DefaultCloudWatchLogsClient {
     }
 
     protected async createSdkClient(): Promise<CloudWatchLogs> {
-        return await ext.sdkClientBuilder.createAwsService(CloudWatchLogs, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(CloudWatchLogs, undefined, this.regionCode)
     }
 }

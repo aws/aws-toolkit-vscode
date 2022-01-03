@@ -10,14 +10,13 @@ import * as vscode from 'vscode'
 
 import { listRegistryItems } from '../../eventSchemas/utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-
-import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RegistryItemNode } from './registryItemNode'
+import globals from '../../shared/extensionGlobals'
 
 export class SchemasNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
@@ -35,17 +34,15 @@ export class SchemasNode extends AWSTreeNodeBase {
 
                 return [...this.registryNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.schemas.noRegistry', '[No Schema Registries]')),
-            sort: (nodeA: RegistryItemNode, nodeB: RegistryItemNode) =>
-                nodeA.registryName.localeCompare(nodeB.registryName),
+            sort: (nodeA, nodeB) => nodeA.registryName.localeCompare(nodeB.registryName),
         })
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(this.regionCode)
+        const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(this.regionCode)
         const registries = await toMapAsync(listRegistryItems(client), registry => registry.RegistryName)
 
         updateInPlace(

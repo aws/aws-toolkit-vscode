@@ -24,6 +24,7 @@ import { CredentialsProfileMru } from './credentialsProfileMru'
 import { getIdeProperties } from '../extensionUtilities'
 import { credentialHelpUrl } from '../constants'
 import { createHelpButton } from '../ui/buttons'
+import { recentlyUsed } from '../localizedText'
 
 interface ProfileEntry {
     profileName: string
@@ -170,7 +171,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             const selectionItem: QuickPickItem = { label: profile.profileName }
 
             if (profile.isRecentlyUsed) {
-                selectionItem.description = localize('AWS.profile.recentlyUsed', 'recently used')
+                selectionItem.description = recentlyUsed
             }
 
             selectionList.push(selectionItem)

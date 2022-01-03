@@ -13,6 +13,7 @@ import { AppRunnerServiceNode } from '../../../apprunner/explorer/apprunnerServi
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { installFakeClock } from '../../testUtil'
 
 describe('AppRunnerNode', function () {
     let mockApprunnerClient: AppRunnerClient
@@ -29,7 +30,7 @@ describe('AppRunnerNode', function () {
     ]
 
     before(function () {
-        clock = FakeTimers.install()
+        clock = installFakeClock()
         refreshStub = sinon.stub(AWSTreeNodeBase.prototype, 'refresh')
     })
 

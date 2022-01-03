@@ -14,7 +14,7 @@ Resources:
         Properties:
             CodeUri: ./src/HelloWorld/
             Handler: HelloWorld::HelloWorld.Function::FunctionHandler
-            Runtime: dotnetcore2.1
+            Runtime: dotnetcore3.1
             Events:
                 HelloWorld:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import '../../../shared/utilities/asyncIteratorShim'
-
 import * as assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'

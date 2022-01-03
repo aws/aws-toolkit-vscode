@@ -6,8 +6,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { pluginVersion } from '../extensionUtilities'
-import { ext } from '../extensionGlobals'
+import { isReleaseVersion, extensionVersion } from '../vscode/env'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
 import { MetricDatum } from './clienttelemetry'
@@ -15,14 +14,35 @@ import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import * as constants from '../constants'
+import { DefaultSettingsConfiguration } from '../settingsConfiguration'
+import globals from '../extensionGlobals'
+
+interface TelemetryConfiguration {
+    readonly endpoint: string
+    readonly identityPool: string
+}
 
 export class DefaultTelemetryClient implements TelemetryClient {
-    public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
-    public static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
-
+    private static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
+    private static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
+    private static initializeConfig(): TelemetryConfiguration {
+        const settings = new DefaultSettingsConfiguration()
+        const identityPool = settings.readDevSetting<string>('aws.dev.telemetryUserPool', 'string', true)
+        const endpoint = settings.readDevSetting<string>('aws.dev.telemetryEndpoint', 'string', true)
+
+        return {
+            endpoint: endpoint ?? this.DEFAULT_TELEMETRY_ENDPOINT,
+            identityPool: identityPool ?? this.DEFAULT_IDENTITY_POOL,
+        }
+    }
+
+    public static config = DefaultTelemetryClient.initializeConfig()
+
     private readonly logger = getLogger()
+    private readonly settings = new DefaultSettingsConfiguration()
 
     private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
@@ -37,19 +57,26 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 return undefined
             }
 
-            await this.client
-                .postMetrics({
-                    AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                    AWSProductVersion: pluginVersion,
-                    ClientID: this.clientId,
-                    OS: os.platform(),
-                    OSVersion: os.release(),
-                    ParentProduct: vscode.env.appName,
-                    ParentProductVersion: vscode.version,
-                    MetricData: batch,
-                })
-                .promise()
-            this.logger.info(`Successfully sent a telemetry batch of ${batch.length}`)
+            if (
+                isReleaseVersion(constants.forceTelemetry) ||
+                this.settings.readDevSetting<boolean>('aws.dev.forceTelemetry', 'boolean', true)
+            ) {
+                await this.client
+                    .postMetrics({
+                        AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                        AWSProductVersion: extensionVersion,
+                        ClientID: this.clientId,
+                        OS: os.platform(),
+                        OSVersion: os.release(),
+                        ParentProduct: vscode.env.appName,
+                        ParentProductVersion: vscode.version,
+                        MetricData: batch,
+                    })
+                    .promise()
+                this.logger.info(`telemetry: sent batch (size=${batch.length})`)
+            } else {
+                this.logger.info(`telemetry: (test mode) dropped batch (size=${batch.length})`)
+            }
 
             return undefined
         } catch (err) {
@@ -64,7 +91,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
             await this.client
                 .postFeedback({
                     AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                    AWSProductVersion: pluginVersion,
+                    AWSProductVersion: extensionVersion,
                     OS: os.platform(),
                     OSVersion: os.release(),
                     ParentProduct: vscode.env.appName,
@@ -89,7 +116,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
         return new DefaultTelemetryClient(
             clientId,
-            (await ext.sdkClientBuilder.createAwsService(
+            (await globals.sdkClientBuilder.createAwsService(
                 Service,
                 {
                     // apiConfig is internal and not in the TS declaration file
@@ -97,7 +124,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     region: region,
                     credentials: credentials,
                     correctClockSkew: true,
-                    endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT,
+                    endpoint: DefaultTelemetryClient.config.endpoint,
                 } as ServiceConfigurationOptions,
                 undefined,
                 false

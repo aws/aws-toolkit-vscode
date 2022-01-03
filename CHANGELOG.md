@@ -1,3 +1,53 @@
+## 1.34.0 2021-11-22
+
+- **Bug Fix** Improve auto-connect reliability
+- **Bug Fix** Toolkit appeared stuck at "Connecting..."
+- **Bug Fix** CDK: fixed performance issue with project detection. Detection is no longer limited to a depth of two directories.
+- **Feature** S3: Upload now supports multiple files
+- **Feature** Add AWS IoT Explorer
+- **Feature** AWS Explorer shows ECS resources and supports "Run command in container"
+
+## 1.33.0 2021-11-04
+
+- **Breaking Change** Bumping VS Code minimum version: 1.42.0 => 1.44.2
+- **Bug Fix** Credentials: Handle case when running in an ECS container but no credentials are available.
+- **Bug Fix** Resources: Avoid redundant close of active editor when resource documents are explicitly closed
+
+## 1.32.0 2021-10-21
+
+- **Breaking Change** DEPRECATION: SAM actions using `dotnetcore2.1` runtime (Phase 2 Lambda deprecation)
+- **Bug Fix** Resources: Better handling of unsupported resource actions
+- **Bug Fix** Resources: Filter S3 bucket resources by region in list view
+- **Bug Fix** Resources: Exclude resource types that do not support LIST in Cloud9
+- **Bug Fix** Resources: Handle undefined type schema properties
+
+## 1.31.0 2021-10-14
+
+- **Bug Fix** StepFunctions: "Publish" command now asks for target region
+- **Feature** SAM "Edit Debug Configuration" UI is no longer "Beta"
+- **Feature** Surface read-only support for hundreds of resources under the Resources node in the AWS Explorer
+- **Feature** Create new Step Functions state machine template from AWS Explorer
+
+## 1.30.0 2021-10-04
+
+- **Breaking Change** DEPRECATION:  SAM actions using `python2.7` and `nodejs10.x` runtimes (Phase 2 Lambda deprecation)
+- **Breaking Change** SAM run/debug: The launch configuration options 'timeoutSec' and 'memoryMb' no longer apply to template or API targets
+- **Bug Fix** SAM/nodejs: do not check for "tsc" (typescript compiler) for plain javascript projects
+- **Bug Fix** SAM Debug Configuration Editor: All fields will persist after Save or Invoke action.
+- **Bug Fix** SAM: refresh timeout timer during build step
+- **Bug Fix** SAM/typescript: fix run/debug for target=code if source dir name has special chars
+- **Bug Fix** App Runner: fix issue with create wizard failing at the end after backing out of the select file dialog
+- **Feature** SAM: `arm64` support (through SAM CLI's Architectures property) on select runtimes
+- **Feature** Step Functions: Adds ability to render state machine graph from AWS Explorer.
+- **Feature** Credentials: SSO profiles will reconnect on startup if the token is still valid
+- **Feature** SAM run/debug: You can now change where SAM CLI builds your lambda by adding a 'buildDir' field to your launch configuration's "sam" section
+- **Feature** UI: Toolkit statusbar now shows on the left and takes less space
+- **Feature** Step Functions: enable visualizing ASL files in YAML (not asl-yaml) mode.
+- **Feature** SAM/CFN schema support: avoid changes to user settings, improve reliability.
+- **Feature** Adds Command Palette and CDK Explorer tree visualization capability for Step Functions state machines defined using the AWS CDK
+- **Feature** SAM/typescript: search node_modules in the workspace for "tsc" typescript compiler
+- **Feature** SAM Debug Configuration Editor: The UI has been updated to more closely match VS Code's style
+
 ## 1.29.0 2021-08-19
 
 - **Bug Fix** SAM: the Toolkit now correctly skips sending '--env-vars' when no environment variables are present in the launch config

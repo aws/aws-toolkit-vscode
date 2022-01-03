@@ -11,7 +11,7 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
@@ -20,6 +20,7 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
+import globals from '../../shared/extensionGlobals'
 
 export const CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION = 'awsCloudFormationFunctionNode'
 
@@ -39,17 +40,15 @@ export class CloudFormationNode extends AWSTreeNodeBase {
 
                 return [...this.stackNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.cloudformation.noStacks', '[No Stacks found]')),
-            sort: (nodeA: CloudFormationStackNode, nodeB: CloudFormationStackNode) =>
-                nodeA.stackName.localeCompare(nodeB.stackName),
+            sort: (nodeA, nodeB) => nodeA.stackName.localeCompare(nodeB.stackName),
         })
     }
 
     public async updateChildren(): Promise<void> {
-        const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
+        const client: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
         const stacks = await toMapAsync(listCloudFormationStacks(client), stack => stack.StackId)
 
         updateInPlace(
@@ -75,8 +74,8 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, LambdaFunctionNode>()
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.cloudFormation),
-            light: vscode.Uri.file(ext.iconPaths.light.cloudFormation),
+            dark: vscode.Uri.file(globals.iconPaths.dark.cloudFormation),
+            light: vscode.Uri.file(globals.iconPaths.light.cloudFormation),
         }
     }
 
@@ -107,15 +106,13 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 
                 return [...this.functionNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
                     localize('AWS.explorerNode.cloudFormation.noFunctions', '[Stack has no Lambda Functions]')
                 ),
-            sort: (nodeA: LambdaFunctionNode, nodeB: LambdaFunctionNode) =>
-                nodeA.functionName.localeCompare(nodeB.functionName),
+            sort: (nodeA, nodeB) => nodeA.functionName.localeCompare(nodeB.functionName),
         })
     }
 
@@ -127,7 +124,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 
     private async updateChildren(): Promise<void> {
         const resources: string[] = await this.resolveLambdaResources()
-        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
+        const client: LambdaClient = globals.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(client)),
             functionInfo => functionInfo.FunctionName
@@ -142,7 +139,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
     }
 
     private async resolveLambdaResources(): Promise<string[]> {
-        const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
+        const client: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(this.regionCode)
         const response = await client.describeStackResources(this.stackSummary.StackName)
 
         if (response.StackResources) {

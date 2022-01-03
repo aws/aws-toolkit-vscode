@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, readdir, stat } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
@@ -30,58 +29,20 @@ async function detectCdkProjectsFromWorkspaceFolder(
     workspaceFolder: vscode.WorkspaceFolder
 ): Promise<CdkAppLocation[]> {
     const result = []
+    const pattern = new vscode.RelativePattern(workspaceFolder, '**/cdk.json')
+    const cdkJsonFiles = await vscode.workspace.findFiles(pattern, '**/node_modules/**')
 
-    for await (const cdkJson of detectLocalCdkProjects({ workspaceUris: [workspaceFolder.uri] })) {
-        const treeJsonPath = path.join(path.dirname(cdkJson.fsPath), 'cdk.out', 'tree.json')
-        const project = { workspaceFolder: workspaceFolder, cdkJsonPath: cdkJson.fsPath, treePath: treeJsonPath }
-        result.push(project)
+    for await (const cdkJson of cdkJsonFiles) {
+        try {
+            const cdkJsonDoc = await vscode.workspace.openTextDocument(cdkJson)
+            const { output = 'cdk.out' } = JSON.parse(cdkJsonDoc.getText())
+            const treeJsonPath = path.resolve(path.dirname(cdkJson.fsPath), path.join(output, 'tree.json'))
+            const project = { workspaceFolder: workspaceFolder, cdkJsonPath: cdkJson.fsPath, treePath: treeJsonPath }
+            result.push(project)
+        } catch (err) {
+            getLogger().error(`Failed to parse cdk.json from %s: %O`, cdkJson.fsPath, err)
+        }
     }
 
     return result
-}
-
-export async function* detectLocalCdkProjects({
-    workspaceUris,
-}: {
-    workspaceUris: vscode.Uri[]
-}): AsyncIterableIterator<vscode.Uri> {
-    for (const workspaceFolder of workspaceUris) {
-        for await (const folder of getFolderCandidates(workspaceFolder, 2, 0)) {
-            yield* detectCdkProjectsInFolder(folder)
-        }
-    }
-}
-
-/**
- * Generates names of directory `uri` and its descendant directories up to `maxLevels` levels.
- */
-async function* getFolderCandidates(uri: vscode.Uri, maxLevels: number, level: number): AsyncIterableIterator<string> {
-    if (!(await stat(uri.fsPath)).isDirectory()) {
-        throw Error(`not a directory: "${uri.fsPath}"`)
-    }
-    yield uri.fsPath
-
-    const entries = await readdir(uri.fsPath)
-    for (const entry of entries.map(p => path.join(uri.fsPath, p))) {
-        const stats = await stat(entry)
-        if (stats.isDirectory()) {
-            if (level <= maxLevels) {
-                const dirUri = vscode.Uri.file(entry)
-                yield* getFolderCandidates(dirUri, maxLevels, level + 1)
-            }
-        }
-    }
-}
-
-async function* detectCdkProjectsInFolder(folder: string): AsyncIterableIterator<vscode.Uri> {
-    const cdkJsonPath = path.join(folder, 'cdk.json')
-    try {
-        await access(cdkJsonPath)
-        yield vscode.Uri.file(cdkJsonPath)
-    } catch (err) {
-        if ((err as { code: string }).code !== 'ENOENT') {
-            // Permissions issue?
-            getLogger().debug(`Error detecting CDK apps in ${folder}: %O`, err as Error)
-        }
-    }
 }

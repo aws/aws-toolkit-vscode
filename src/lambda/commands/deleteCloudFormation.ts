@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordCloudformationDelete, Result } from '../../shared/telemetry/telemetry'
@@ -16,6 +16,7 @@ import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import globals from '../../shared/extensionGlobals'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()
@@ -48,7 +49,9 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
         )
 
         if (userResponse) {
-            const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(node.regionCode)
+            const client: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(
+                node.regionCode
+            )
 
             await client.deleteStack(stackName)
 

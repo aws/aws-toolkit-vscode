@@ -8,6 +8,7 @@ import AWS = require('aws-sdk')
 import { DefaultTelemetryPublisher } from '../../../shared/telemetry/defaultTelemetryPublisher'
 import { TelemetryClient } from '../../../shared/telemetry/telemetryClient'
 import { TelemetryFeedback } from '../../../shared/telemetry/telemetryFeedback'
+import { fakeMetric } from './defaultTelemetryService.test'
 
 class MockTelemetryClient implements TelemetryClient {
     public feedback?: TelemetryFeedback
@@ -39,15 +40,15 @@ describe('DefaultTelemetryPublisher', function () {
 
     it('enqueues events', function () {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
-        publisher.enqueue(...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }])
+        publisher.enqueue(fakeMetric({ metricName: 'name' }))
         assert.strictEqual(publisher.queue.length, 1)
-        publisher.enqueue(...[{ MetricName: 'name3', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }])
+        publisher.enqueue(fakeMetric({ metricName: 'name2' }))
         assert.strictEqual(publisher.queue.length, 2)
     })
 
     it('can flush single event', async function () {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
-        publisher.enqueue(...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }])
+        publisher.enqueue(fakeMetric({ metricName: 'name' }))
 
         assert.strictEqual(publisher.queue.length, 1)
 
@@ -56,7 +57,7 @@ describe('DefaultTelemetryPublisher', function () {
     })
 
     it('retains queue on flush failure', async function () {
-        const batch = [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }]
+        const batch = [fakeMetric({ metricName: 'name' })]
         const publisher = new DefaultTelemetryPublisher(
             '',
             '',

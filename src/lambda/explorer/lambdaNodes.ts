@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { ext } from '../../shared/extensionGlobals'
+
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -18,6 +18,7 @@ import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/colle
 import { listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
+import globals from '../../shared/extensionGlobals'
 
 export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
 export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
@@ -45,13 +46,12 @@ export class LambdaNode extends AWSTreeNodeBase {
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.lambda.noFunctions', '[No Functions found]')),
-            sort: (nodeA: LambdaFunctionNode, nodeB: LambdaFunctionNode) =>
-                nodeA.functionName.localeCompare(nodeB.functionName),
+            sort: (nodeA, nodeB) => nodeA.functionName.localeCompare(nodeB.functionName),
         })
     }
 
     public async updateChildren(): Promise<void> {
-        const client: LambdaClient = ext.toolkitClientBuilder.createLambdaClient(this.regionCode)
+        const client: LambdaClient = globals.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(client)),
             configuration => configuration.FunctionName

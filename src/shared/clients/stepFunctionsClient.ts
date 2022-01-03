@@ -4,8 +4,7 @@
  */
 
 import { StepFunctions } from 'aws-sdk'
-import { ext } from '../extensionGlobals'
-import '../utilities/asyncIteratorShim'
+import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type StepFunctionsClient = ClassToInterfaceType<DefaultStepFunctionsClient>
@@ -69,6 +68,6 @@ export class DefaultStepFunctionsClient {
     }
 
     private async createSdkClient(): Promise<StepFunctions> {
-        return await ext.sdkClientBuilder.createAwsService(StepFunctions, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(StepFunctions, undefined, this.regionCode)
     }
 }

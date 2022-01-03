@@ -5,6 +5,13 @@ Toolkit for VSCode. It provides answers to common questions, decisions, UX and
 project consistency, questions of style and code structure, and anything else
 that cannot be enforced by a `lint` build-task.
 
+## UI
+
+-   Where possible, follow the conventions of the [VSCode User Interface](https://code.visualstudio.com/docs/getstarted/userinterface)
+    instead of inventing new conventions.
+-   Convention: provide global editor commands as an alternative to browsing items in the Explorer.
+    -   Instead of needing to visit service _Foo_ in the Explorer to _View_ its items, consider also providing a `AWS: Foo: View Item` command.
+
 ## Naming
 
 Naming is one of the central opportunities for you as a human to add value to
@@ -93,6 +100,9 @@ that is a net cost.
     able to react to them in some way. This could be showing an error message,
     attaching metadata to the error, or retrying the failed action. Do not just
     log and rethrow the error without additional context as to where the error occured.
+-   Do not log a stack trace unless it's truly a fatal exception. Stack traces are
+    noisy and mostly useless in production because the extension is 'bundled', removing
+    anything useful from the trace.
 -   Refactoring tools allow us to avoid "premature abstraction". Avoid wrappers
     until the need is clear and obvious.
 
@@ -107,6 +117,31 @@ that is a net cost.
         real values.
     -   Both examples result in faster, more-readable, more-useful tests, and more
         test-coverage of real codepaths.
+-   Use `createQuickPickTester` to test quick picks via `QuickPickPrompter` implementations.
+
+    -   Tests are constructed as a series of 'actions' to simulate user interaction
+        with the UI element. Presentation as well as behavior may be tested this way.
+    -   Example of a test set-up:
+
+        ```ts
+        const prompter = createRegionPrompter(regions, {
+            title: 'Select region',
+            buttons: createCommonButtons('https://aws.amazon.com/'),
+            defaultRegion: 'foo-bar-1',
+        })
+        const tester = createQuickPickTester(prompter)
+        ```
+
+    -   Example of a basic unit test:
+
+        ```ts
+        it('prompts for region', async function () {
+            tester.acceptItem('foo-bar-1')
+            await tester.result(regions[2])
+        })
+        ```
+
+    -   [Testing Refresh Button](https://github.com/aws/aws-toolkit-vscode/blob/b34c8f7650c862c388992781844695b014b5d974/src/test/shared/ui/prompters/rolePrompter.test.ts#L58-L65)
 
 ## Code guidelines
 

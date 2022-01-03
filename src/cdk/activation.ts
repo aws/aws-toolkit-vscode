@@ -11,9 +11,10 @@ import { AppNode } from './explorer/nodes/appNode'
 import { ConstructNode } from './explorer/nodes/constructNode'
 import { cdk } from './globals'
 import { cdkDocumentationUrl } from '../shared/constants'
-import { initalizeWebviewPaths } from '../stepFunctions/activation'
 import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
 import { renderStateMachineGraphCommand } from '../stepFunctions/commands/visualizeStateMachine/renderStateMachineGraphCDK'
+import globals from '../shared/extensionGlobals'
+import { initalizeWebviewPaths } from '../stepFunctions/activation'
 
 /**
  * Activate AWS CDK related functionality for the extension.
@@ -22,7 +23,7 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     const explorer = new AwsCdkExplorer()
 
     initializeIconPaths(activateArguments.extensionContext)
-    initalizeWebviewPaths(activateArguments.extensionContext)
+    globals.visualizationResourcePaths = initalizeWebviewPaths(activateArguments.extensionContext)
 
     await registerCdkCommands(activateArguments.extensionContext, explorer)
     const view = vscode.window.createTreeView(explorer.viewProviderId, {

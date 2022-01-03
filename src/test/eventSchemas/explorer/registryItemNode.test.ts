@@ -10,7 +10,6 @@ import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNod
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
-import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
@@ -18,6 +17,7 @@ import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explo
 import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
+import globals from '../../../shared/extensionGlobals'
 
 describe('RegistryItemNode', function () {
     const fakeRegion = 'testRegion'
@@ -54,20 +54,20 @@ describe('RegistryItemNode', function () {
 
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.registry, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.registry, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.registry, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.registry, 'Unexpected light icon path')
     })
 
     it('returns placeholder node if no children are present', async function () {
-        const schemaClient = ({
+        const schemaClient = {
             regionCode: 'code',
 
             async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
                 yield* []
             },
-        } as any) as SchemaClient
+        } as any as SchemaClient
 
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        globals.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
         const testNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
@@ -113,7 +113,7 @@ describe('RegistryItemNode', function () {
         const schemaItems: Schemas.SchemaSummary[] = [schema1Item, schema2Item, schema3Item]
 
         const schemaClient = new TestMockSchemaClient(schemaItems)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        globals.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
         const testNode: RegistryItemNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
@@ -163,7 +163,7 @@ describe('DefaultRegistryNode', function () {
     it('Sorts Registries', async function () {
         const inputRegistryNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const schemaClient = new RegistryNamesMockSchemaClient(inputRegistryNames)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        globals.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
 
         const schemasNode = new SchemasNode(fakeRegion)
         const children = await schemasNode.getChildren()
@@ -195,7 +195,7 @@ describe('DefaultRegistryNode', function () {
     it('returns placeholder node if no children are present', async function () {
         const inputRegistryNames: string[] = []
         const schemaClient = new RegistryNamesMockSchemaClient(inputRegistryNames)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        globals.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
 
         const schemasNode = new SchemasNode(fakeRegion)
         const childNodes = await schemasNode.getChildren()

@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as Transport from 'winston-transport'
+import globals from '../extensionGlobals'
 
 export const MESSAGE = Symbol.for('message')
 
@@ -24,7 +25,7 @@ export class DebugConsoleTransport extends Transport {
     }
 
     public log(info: LogEntry, next: () => void): void {
-        setImmediate(() => {
+        globals.clock.setImmediate(() => {
             vscode.debug.activeDebugConsole.append(info[MESSAGE])
             this.emit('logged', info)
         })

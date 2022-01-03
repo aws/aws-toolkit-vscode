@@ -29,7 +29,7 @@ import {
 } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../config/parameterUtils'
-import { ext } from '../../shared/extensionGlobals'
+
 import { EcrRepository } from '../../shared/clients/ecrClient'
 import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import * as semver from 'semver'
@@ -39,6 +39,8 @@ import { validateBucketName } from '../../s3/util'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { recentlyUsed } from '../../shared/localizedText'
+import globals from '../../shared/extensionGlobals'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -251,7 +253,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean> {
-        const template = ext.templateRegistry.getRegisteredItem(templatePath.fsPath)
+        const template = globals.templateRegistry.getRegisteredItem(templatePath.fsPath)
         const resources = template?.item?.Resources
         if (resources === undefined) {
             return false
@@ -417,10 +419,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 // this is the only way to get this to show on going back
                 // this will make it so it always shows even when searching for something else
                 alwaysShow: region.id === initialRegionCode,
-                description:
-                    region.id === initialRegionCode
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : '',
+                description: region.id === initialRegionCode ? localizedText.recentlyUsed : '',
             })),
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
@@ -465,15 +464,15 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     ): Promise<string | undefined> {
         const createBucket = {
             iconPath: {
-                light: vscode.Uri.file(ext.iconPaths.light.plus),
-                dark: vscode.Uri.file(ext.iconPaths.dark.plus),
+                light: vscode.Uri.file(globals.iconPaths.light.plus),
+                dark: vscode.Uri.file(globals.iconPaths.dark.plus),
             },
             tooltip: CREATE_NEW_BUCKET,
         }
         const enterBucket = {
             iconPath: {
-                light: vscode.Uri.file(ext.iconPaths.light.edit),
-                dark: vscode.Uri.file(ext.iconPaths.dark.edit),
+                light: vscode.Uri.file(globals.iconPaths.light.edit),
+                dark: vscode.Uri.file(globals.iconPaths.dark.edit),
             },
             tooltip: ENTER_BUCKET,
         }
@@ -596,7 +595,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
 
         const populator = new IteratorTransformer<EcrRepository, vscode.QuickPickItem>(
-            () => ext.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
+            () => globals.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
             response => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
         )
         const controller = new picker.IteratingQuickPickController(quickPick, populator)
@@ -848,7 +847,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
 
             try {
-                const s3Client = ext.toolkitClientBuilder.createS3Client(this.response.region!)
+                const s3Client = globals.toolkitClientBuilder.createS3Client(this.response.region!)
                 const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
@@ -986,7 +985,7 @@ function validateStackName(value: string): string | undefined {
 }
 
 async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
-    const templateUris = ext.templateRegistry.registeredItems.map(o => vscode.Uri.file(o.path))
+    const templateUris = globals.templateRegistry.registeredItems.map(o => vscode.Uri.file(o.path))
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
@@ -1032,7 +1031,7 @@ async function populateS3QuickPick(
                 recent = existingBuckets[profile][selectedRegion]
                 baseItems.push({
                     label: recent,
-                    description: localize('AWS.profile.recentlyUsed', 'recently used'),
+                    description: recentlyUsed,
                 })
             }
         } catch (e) {
@@ -1051,7 +1050,7 @@ async function populateS3QuickPick(
         }
 
         try {
-            const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
+            const s3Client = globals.toolkitClientBuilder.createS3Client(selectedRegion)
 
             quickPick.items = [...baseItems]
 

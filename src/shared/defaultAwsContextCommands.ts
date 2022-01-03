@@ -22,7 +22,6 @@ import {
     promptToDefineCredentialsProfile,
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
-import { ext } from './extensionGlobals'
 import * as localizedText from './localizedText'
 import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'
@@ -32,6 +31,7 @@ import { SharedCredentialsProvider } from '../credentials/providers/sharedCreden
 import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
 import { showViewLogsMessage } from './utilities/messages'
+import globals from './extensionGlobals'
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
@@ -128,7 +128,7 @@ export class DefaultAWSContextCommands {
      */
     private async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
         while (true) {
-            const dataProvider = new DefaultCredentialSelectionDataProvider([], ext.context)
+            const dataProvider = new DefaultCredentialSelectionDataProvider([], globals.context)
             const state: CredentialSelectionState = await promptToDefineCredentialsProfile(dataProvider)
 
             if (!state.profileName || !state.accesskey || !state.secretKey) {
@@ -169,7 +169,7 @@ export class DefaultAWSContextCommands {
                     '{0} credentials appear invalid. Try again?',
                     getIdeProperties().company
                 ),
-                ext.window,
+                globals.window,
                 'warn',
                 [localizedText.yes, localizedText.no]
             )
@@ -194,7 +194,7 @@ export class DefaultAWSContextCommands {
         const profileNames = Object.keys(providerMap)
         if (profileNames.length > 0) {
             // There are credentials for the user to choose from
-            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
+            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, globals.context)
             const state = await credentialProfileSelector(dataProvider)
             if (state && state.credentialProfile) {
                 return state.credentialProfile.label

@@ -14,19 +14,21 @@ import {
     sfnDeveloperGuideUrl,
     sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
-import { ext } from '../../shared/extensionGlobals'
+import globals from '../../shared/extensionGlobals'
+
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import { recentlyUsed } from '../../shared/localizedText'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
-    WIZARD_GOBACK,
-    WIZARD_TERMINATE,
     WizardContext,
     wizardContinue,
     WizardStep,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
 } from '../../shared/wizards/multiStepWizard'
 import { isStepFunctionsRole } from '../utils'
 const localize = nls.loadMessageBundle()
@@ -75,6 +77,7 @@ interface PublishActionQuickPickItem {
     detail: string
     action: PublishStateMachineAction
 }
+
 export class DefaultPublishStateMachineWizardContext extends WizardContext implements PublishStateMachineWizardContext {
     private readonly helpButton = createHelpButton()
     private iamRoles: IAM.roleListType | undefined
@@ -87,8 +90,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
 
     public constructor(private readonly defaultRegion: string) {
         super()
-        this.stepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
-        this.iamClient = ext.toolkitClientBuilder.createIamClient(this.defaultRegion)
+        this.stepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
+        this.iamClient = globals.toolkitClientBuilder.createIamClient(this.defaultRegion)
     }
 
     public async promptUserForPublishAction(
@@ -114,7 +117,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
             },
         ].map((item: PublishActionQuickPickItem) => {
             if (item.action === currPublishAction) {
-                item.description = localize('AWS.wizard.selectedPreviously', 'Selected Previously')
+                item.description = recentlyUsed
             }
 
             return item
@@ -186,7 +189,12 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
 
     public async loadIamRoles() {
         if (!this.iamRoles) {
-            this.iamRoles = (await this.iamClient.listRoles()).Roles.filter(isStepFunctionsRole)
+            this.iamRoles = []
+            for await (const role of this.iamClient.getRoles()) {
+                if (isStepFunctionsRole(role)) {
+                    this.iamRoles.push(role)
+                }
+            }
         }
     }
 
@@ -210,10 +218,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 label: iamRole.RoleName,
                 alwaysShow: iamRole.Arn === currRoleArn,
                 arn: iamRole.Arn,
-                description:
-                    iamRole.Arn === currRoleArn
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : iamRole.Arn,
+                description: iamRole.Arn === currRoleArn ? recentlyUsed : iamRole.Arn,
             }))
         }
 

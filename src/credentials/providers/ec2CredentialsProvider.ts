@@ -11,6 +11,7 @@ import { getLogger } from '../../shared/logger'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './credentials'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Credentials received from EC2 metadata service.
@@ -30,28 +31,29 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
             return Promise.resolve(this.available)
         }
 
-        const start = Date.now()
+        this.available = false
+        const start = globals.clock.Date.now()
         try {
             const iamInfo = await this.metadata.getIamInfo()
             if (!iamInfo || iamInfo.Code !== 'Success') {
                 getLogger().warn(
                     `credentials: no role (or invalid) attached to EC2 instance. metadata service /iam/info response: ${iamInfo.Code}`
                 )
-                return false
+            } else {
+                const identity = await this.metadata.getInstanceIdentity()
+                if (identity && identity.region) {
+                    this.region = identity.region
+                    getLogger().verbose(`credentials: EC2 metadata region: ${this.region}`)
+                }
+                this.available = true
             }
-            const identity = await this.metadata.getInstanceIdentity()
-            if (identity && identity.region) {
-                this.region = identity.region
-                getLogger().verbose(`credentials: EC2 metadata region: ${this.region}`)
-            }
-            return true
         } catch (err) {
             getLogger().verbose(`credentials: EC2 metadata service unavailable: ${err}`)
-            return false
         } finally {
-            const elapsed = Date.now() - start
+            const elapsed = globals.clock.Date.now() - start
             getLogger().verbose(`credentials: EC2 metadata service call took ${elapsed}ms`)
         }
+        return this.available
     }
 
     public getCredentialsId(): CredentialsId {

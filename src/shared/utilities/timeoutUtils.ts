@@ -3,11 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../extensionGlobals'
 import { sleep } from './promiseUtilities'
 
 export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
 export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
 export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
+
+export class TimeoutError extends Error {
+    public constructor(public readonly type: 'expired' | 'cancelled') {
+        super(type === 'cancelled' ? TIMEOUT_CANCELLED_MESSAGE : TIMEOUT_EXPIRED_MESSAGE)
+    }
+
+    public static isCancelled(err: any): err is TimeoutError & { type: 'cancelled' } {
+        return err instanceof TimeoutError && err.type === 'cancelled'
+    }
+}
 
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations. Timeouts
@@ -16,7 +27,6 @@ export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected o
  * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
-    private originalStartTime: number
     private startTime: number
     private endTime: number
     private readonly timeoutLength: number
@@ -27,8 +37,7 @@ export class Timeout {
     private _completed: boolean = false
 
     public constructor(timeoutLength: number) {
-        this.startTime = Date.now()
-        this.originalStartTime = this.startTime
+        this.startTime = globals.clock.Date.now()
         this.endTime = this.startTime + timeoutLength
         this.timeoutLength = timeoutLength
 
@@ -37,8 +46,8 @@ export class Timeout {
             this.timerResolve = resolve
         })
 
-        this.timerTimeout = setTimeout(() => {
-            this.timerReject(new Error(TIMEOUT_EXPIRED_MESSAGE))
+        this.timerTimeout = globals.clock.setTimeout(() => {
+            this.timerReject(new TimeoutError('expired'))
             this._completed = true
         }, timeoutLength)
     }
@@ -49,7 +58,7 @@ export class Timeout {
      * Minimum is 0.
      */
     public get remainingTime(): number {
-        const remainingTime = this.endTime - Date.now()
+        const remainingTime = this.endTime - globals.clock.Date.now()
 
         return remainingTime > 0 ? remainingTime : 0
     }
@@ -72,9 +81,8 @@ export class Timeout {
         // These will not align, but we don't have visibility into a NodeJS.Timeout
         // so remainingtime will be approximate. Timers are approximate anyway and are
         // not highly accurate in when they fire.
-        this.startTime = Date.now()
-        this.endTime = this.startTime + this.timeoutLength
-        this.timerTimeout.refresh()
+        this.endTime = globals.clock.Date.now() + this.timeoutLength
+        this.timerTimeout = this.timerTimeout.refresh()
     }
 
     /**
@@ -90,11 +98,14 @@ export class Timeout {
      * Returns the elapsed time from the initial Timeout object creation
      */
     public get elapsedTime(): number {
-        return (this._completed ? this.endTime : Date.now()) - this.originalStartTime
+        return (this._completed ? this.endTime : globals.clock.Date.now()) - this.startTime
     }
 
     /**
      * Marks the Timeout token as being completed, preventing further use and locking in the elapsed time.
+     *
+     * Note that completing the token but not rejecting it is equivalent to 'freeing' any resources associated
+     * with the timer, given that they do not wait for the timer Promise to resolve.
      *
      * @param reject Rejects the token with a cancelled error message
      */
@@ -104,11 +115,11 @@ export class Timeout {
             return
         }
 
-        this.endTime = Date.now()
-        clearTimeout(this.timerTimeout!)
+        this.endTime = globals.clock.Date.now()
+        globals.clock.clearTimeout(this.timerTimeout)
 
         if (reject) {
-            this.timerReject(new Error(TIMEOUT_CANCELLED_MESSAGE))
+            this.timerReject(new TimeoutError('cancelled'))
         } else {
             this.timerResolve()
         }
@@ -117,33 +128,38 @@ export class Timeout {
     }
 }
 
+interface WaitUntilOptions {
+    /** Timeout in ms (default: 5000) */
+    readonly timeout?: number
+    /** Interval in ms between fn() checks (default: 500) */
+    readonly interval?: number
+    /** Wait for "truthy" result, else wait for any defined result including `false` (default: true) */
+    readonly truthy?: boolean
+}
+
 /**
  * Invokes `fn()` until it returns a non-undefined value.
  *
  * @param fn  Function whose result is checked
- * @param opt.timeout  Timeout in ms (default: 5000)
- * @param opt.interval  Interval in ms between fn() checks (default: 500)
- * @param opt.truthy  Wait for "truthy" result, else wait for any defined result including `false` (default: true)
+ * @param options  See {@link WaitUntilOptions}
  *
  * @returns Result of `fn()`, or `undefined` if timeout was reached.
  */
-export async function waitUntil<T>(
-    fn: () => Promise<T>,
-    opt: { timeout: number; interval: number; truthy: boolean } = { timeout: 5000, interval: 500, truthy: true }
-): Promise<T | undefined> {
+export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptions): Promise<T | undefined> {
+    const opt = { timeout: 5000, interval: 500, truthy: true, ...options }
     for (let i = 0; true; i++) {
-        const start: number = Date.now()
+        const start: number = globals.clock.Date.now()
         let result: T
 
         // Needed in case a caller uses a 0 timeout (function is only called once)
         if (opt.timeout > 0) {
-            result = await Promise.race([fn(), new Promise<T>(r => setTimeout(r, opt.timeout))])
+            result = await Promise.race([fn(), new Promise<T>(r => globals.clock.setTimeout(r, opt.timeout))])
         } else {
             result = await fn()
         }
 
         // Ensures that we never overrun the timeout
-        opt.timeout -= Date.now() - start
+        opt.timeout -= globals.clock.Date.now() - start
 
         if ((opt.truthy && result) || (!opt.truthy && result !== undefined)) {
             return result

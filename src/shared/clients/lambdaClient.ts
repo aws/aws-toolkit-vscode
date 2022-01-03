@@ -5,8 +5,7 @@
 
 import { Lambda } from 'aws-sdk'
 import { _Blob } from 'aws-sdk/clients/lambda'
-import { ext } from '../extensionGlobals'
-import '../utilities/asyncIteratorShim'
+import globals from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -88,6 +87,8 @@ export class DefaultLambdaClient {
                 })
                 .promise()
             getLogger().debug('updateFunctionCode returned response: %O', response)
+            await client.waitFor('functionUpdated', { FunctionName: name }).promise()
+
             return response
         } catch (e) {
             getLogger().error('Failed to run updateFunctionCode: %O', e)
@@ -96,6 +97,6 @@ export class DefaultLambdaClient {
     }
 
     private async createSdkClient(): Promise<Lambda> {
-        return await ext.sdkClientBuilder.createAwsService(Lambda, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(Lambda, undefined, this.regionCode)
     }
 }

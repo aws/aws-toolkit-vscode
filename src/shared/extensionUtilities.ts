@@ -6,10 +6,8 @@
 import * as _ from 'lodash'
 import * as os from 'os'
 import * as path from 'path'
-import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ext } from '../shared/extensionGlobals'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
@@ -17,24 +15,17 @@ import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
+import { extensionVersion } from './vscode/env'
+import globals from './extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
 const VSCODE_APPNAME = 'Visual Studio Code'
 const CLOUD9_APPNAME = 'AWS Cloud9'
 const CLOUD9_CN_APPNAME = 'Amazon Cloud9'
-const TEST_VERSION = 'testPluginVersion'
 const NOT_INITIALIZED = 'notInitialized'
 
-export const mostRecentVersionKey: string = 'awsToolkitMostRecentVersion'
-// This is a hack to get around webpack messing everything up in unit test mode, it's also a very obvious
-// bad version if something goes wrong while building it
-let pluginVersion = TEST_VERSION
-try {
-    pluginVersion = PLUGINVERSION
-} catch (e) {}
-
-export { pluginVersion }
+export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
 
 export enum IDE {
     vscode,
@@ -120,19 +111,19 @@ export function isCn(): boolean {
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(ext.context.extensionPath, 'media', 'libs')
+        const basePath = path.join(globals.context.extensionPath, 'media', 'libs')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }
 
     public static getScriptsForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(ext.context.extensionPath, 'media', 'js')
+        const basePath = path.join(globals.context.extensionPath, 'media', 'js')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }
 
     public static getCssForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(ext.context.extensionPath, 'media', 'css')
+        const basePath = path.join(globals.context.extensionPath, 'media', 'css')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }
@@ -264,7 +255,7 @@ function convertExtensionRootTokensToPath(text: string, basePath: string, webvie
  * @param context VS Code Extension Context
  * @param currVersion Current version to compare stored most recent version against (useful for tests)
  */
-export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = pluginVersion): boolean {
+export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = extensionVersion): boolean {
     const mostRecentVersion = context.globalState.get<string>(mostRecentVersionKey)
     if (mostRecentVersion && mostRecentVersion === currVersion) {
         return false
@@ -280,15 +271,7 @@ export function isDifferentVersion(context: vscode.ExtensionContext, currVersion
  * @param context VS Code Extension Context
  */
 export function setMostRecentVersion(context: vscode.ExtensionContext): void {
-    context.globalState.update(mostRecentVersionKey, pluginVersion)
-}
-
-/**
- * Returns true if the current build is a production build (as opposed to a
- * prerelease/test/nightly build)
- */
-export function isReleaseVersion(): boolean {
-    return !semver.prerelease(pluginVersion) && pluginVersion !== TEST_VERSION
+    context.globalState.update(mostRecentVersionKey, extensionVersion)
 }
 
 /**
@@ -305,7 +288,7 @@ async function showOrPromptQuickstart(): Promise<void> {
                 'AWS.message.prompt.quickStart.toastMessage',
                 'You are now using {0} Toolkit version {1}',
                 getIdeProperties().company,
-                pluginVersion
+                extensionVersion
             ),
             view
         )
@@ -383,7 +366,7 @@ export function getToolkitEnvironmentDetails(): string {
         getIdeProperties().longName,
         vsCodeVersion,
         getIdeProperties().company,
-        pluginVersion
+        extensionVersion
     )
 
     return envDetails

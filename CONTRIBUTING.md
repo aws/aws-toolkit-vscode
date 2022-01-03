@@ -1,7 +1,7 @@
-# Contributing Guidelines
+# Contributing to AWS Toolkit for VS Code
 
-Thank you for your interest in contributing to our project. We greatly value
-feedback and contributions from our community!
+Thanks for taking the time to help us. We greatly value feedback and
+contributions from our community!
 
 Reviewing this document will maximize your success in working with the
 codebase and sending pull requests.
@@ -74,15 +74,21 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
 ## Develop
 
-### Code guidelines
+### Guidelines
 
-See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
+-   Project patterns and practices: [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md)
+-   [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+-   [VS Code API Documentation](https://code.visualstudio.com/api/references/vscode-api)
+-   [VS Code Extension Capabilities](https://code.visualstudio.com/api/extension-capabilities/common-capabilities)
 
 ### Technical notes
 
 -   VSCode extensions have a [100MB](https://github.com/Microsoft/vscode-vsce/issues/179) file size limit.
 -   `src/testFixtures/` is excluded in `.vscode/settings.json`, to prevent VSCode
     from treating its files as project files.
+-   The codebase provides [globals](https://github.com/aws/aws-toolkit-vscode/blob/c6ad8ecd602fab64b563519dc2a455ee0b252dde/src/shared/extensionGlobals.ts#L55),
+    which must be used instead of some common javascript globals. In particular, clock-related things like `Date` and `setTimeout`
+    must not be used directly, instead use `globals.clock.Date` and `globals.clock.setTimeout`. [#2343](https://github.com/aws/aws-toolkit-vscode/pull/2343)
 -   VSCode extension examples: <https://github.com/microsoft/vscode-extension-samples>
 -   Tests
     -   Use `function ()` and `async function ()` syntax for `describe()` and `it()` callbacks [instead of arrow functions.](https://mochajs.org/#arrow-functions)
@@ -153,7 +159,7 @@ To run a single test in VSCode, do any one of:
 
 #### Coverage report
 
-You can find the coverage report at `./coverage/index.html` after running the tests.
+You can find the coverage report at `./.coverage/index.html` after running the tests.
 
 ## Pull Requests
 
@@ -226,6 +232,20 @@ Besides the typical develop/test/run cycle describe above, there are
 some tools for special cases such as build tasks, generating telemetry,
 generating SDKs, etc.
 
+### Toolkit developer settings (`aws.dev.*`)
+
+The [AwsDevSetting](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/shared/settingsConfiguration.ts#L19)
+type defines various developer-only settings that change the behavior of the
+Toolkit for testing and development purposes. To use a setting just add it to
+your `settings.json`. At runtime if the Toolkit reads any of these settings,
+the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/credentials/awsCredentialsStatusBarItem.ts#L58).
+
+### Telemetry in prerelease builds
+
+Normally, a non-release VSIX of AWS Toolkit will not send telemetry. Sometimes
+you might want to override this, when sharing a build with a beta-tester
+audience. To enable telemetry to in a non-release build, set [forceTelemetry = true]().
+
 ### AWS SDK generator
 
 When the AWS SDK does not (yet) support a service but you have an API
@@ -260,7 +280,7 @@ requests just from the model/types.
     src/shared/foo.d.ts
     ```
 4. To make requests with the SDK, pass the `*.api.json` service model to
-   `ext.sdkClientBuilder.createAndConfigureServiceClient` as a generic
+   `globals.sdkClientBuilder.createAndConfigureServiceClient` as a generic
    `Service` with `apiConfig=require('foo.api.json')`.
 
     ```ts
@@ -271,7 +291,7 @@ requests just from the model/types.
 
     ...
 
-    const c = await ext.sdkClientBuilder.createAwsService(
+    const c = await globals.sdkClientBuilder.createAwsService(
         opts => new Service(opts),
         {
             apiConfig: apiConfig,

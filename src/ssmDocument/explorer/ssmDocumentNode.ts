@@ -31,15 +31,13 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
 
                 return [...this.documentTypeNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
                     localize('AWS.explorerNode.registry.noSsmDocument', `[No documentType found]`)
                 ),
-            sort: (nodeA: DocumentTypeNode, nodeB: DocumentTypeNode) =>
-                nodeA.documentType.localeCompare(nodeB.documentType),
+            sort: (nodeA, nodeB) => nodeA.documentType.localeCompare(nodeB.documentType),
         })
     }
 
