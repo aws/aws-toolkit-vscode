@@ -99,8 +99,8 @@ function parseIni(iniData: string): ParsedIniData {
         } else if (currentSection) {
             const item = line.match(/^\s*(.+?)\s*=\s*(.+?)\s*$/)
             if (item) {
-                map[currentSection] = map[currentSection] || {}
-                map[currentSection][item[1]] = item[2]
+                const profile = (map[currentSection] ??= {})
+                profile[item[1].toLowerCase()] = item[2]
             }
         }
     }
