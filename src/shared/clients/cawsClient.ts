@@ -15,7 +15,7 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import apiConfig = require('../../../types/REMOVED.api.json')
 import globals from '../extensionGlobals'
 
-export const useGraphql = true
+export const useGraphql = false
 
 export const cawsRegion = 'us-east-1'
 export const cawsEndpoint = 'public.api-gamma.REMOVED.codes'
@@ -25,6 +25,7 @@ export const cawsGitHostname = `git.service.${cawsHostname}`
 export const cawsHelpUrl = `https://${cawsHostname}/help`
 
 async function createCawsClient(
+    authCookie: string | undefined,
     apiKey: string,
     regionCode: string = cawsRegion,
     endpoint: string = cawsEndpoint
@@ -37,6 +38,15 @@ async function createCawsClient(
         correctClockSkew: true,
         endpoint: endpoint,
     } as ServiceConfigurationOptions)) as caws
+    c.setupRequestListeners = r => {
+        r.httpRequest.headers['x-api-key'] = apiKey
+        // r.httpRequest.headers['cookie'] = authCookie
+        if (authCookie) {
+            // TODO: remove this after CAWS backend implements full authentication story.
+            authCookie = fixcookie(authCookie)
+            r.httpRequest.headers['cookie'] = authCookie
+        }
+    }
     // c.setupRequestListeners()
     return c
 }
@@ -124,7 +134,7 @@ export class CawsClient {
         authCookie?: string
     ): Promise<CawsClient> {
         CawsClient.assertExtInitialized()
-        const sdkClient = await createCawsClient(regionCode, endpoint)
+        const sdkClient = await createCawsClient(authCookie, 'xxx', regionCode, endpoint)
         const gqlClient = createGqlClient('xxx', authCookie)
         const c = new CawsClient(settings, regionCode, endpoint, sdkClient, gqlClient, authCookie)
         return c
@@ -148,7 +158,7 @@ export class CawsClient {
         CawsClient.assertExtInitialized()
         this.authCookie = authCookie
         this.username = username
-        this.sdkClient = await createCawsClient(this.regionCode, this.endpoint)
+        this.sdkClient = await createCawsClient(authCookie, this.apiKey, this.regionCode, this.endpoint)
         this.gqlClient = createGqlClient(this.apiKey, this.authCookie)
     }
 
@@ -165,10 +175,11 @@ export class CawsClient {
 
     public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean = false, defaultVal?: T): Promise<T> {
         const log = this.log
-        const apiKey = this.apiKey
-        req.on('build', function () {
-            req.httpRequest.headers['x-api-key'] = apiKey
-        })
+        // const apiKey = this.apiKey
+        // req.on('build', function () {
+        //     req.httpRequest.headers['x-api-key'] = apiKey
+        //     req.httpRequest.headers['cookie'] = authCookie
+        // })
         return new Promise<T>((resolve, reject) => {
             req.send(function (err, data) {
                 if (err) {
@@ -221,6 +232,17 @@ export class CawsClient {
      * stores the username for use in later calls.
      */
     public async verifySession(): Promise<caws.VerifySessionResponse | undefined> {
+        if (!useGraphql) {
+            const c = this.sdkClient
+            const o = await this.call(c.verifySession())
+            if (o?.self && (o.self as any).userName) {
+                this.username = (o?.self as any).userName
+            } else {
+                this.username = o?.self
+            }
+            return o
+        }
+
         const o = await gqlRequest<caws.VerifySessionResponse>(
             this.gqlClient,
             gql.gql`{ verifySession { identity, self { userName }} }`,
