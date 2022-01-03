@@ -42,6 +42,9 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storagePath: string | undefined
     public logPath: string = ''
 
+    // XXX: temporary just to get things to build
+    public secrets: vscode.SecretStorage = {} as any
+
     private _extensionPath: string = ''
     private _globalStoragePath: string = '.'
 
