@@ -149,7 +149,7 @@ describe('UserCredentialsUtils', function () {
         profileNames.forEach(profileName => {
             fileContents += `[${profileName}]
 aws_access_key_id = FAKEKEY
-aws_secret_access_key = FAKESECRET
+aws_SecRet_aCCess_key = FAKESECRET
 REGION = us-weast-3
 `
         })
