@@ -112,7 +112,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             ? Promise.resolve()
             : new Promise<void>(resolve => {
                   this.disposed = true
-                  this.logger.on('finish', resolve)
+                  this.logger.once('finish', resolve)
                   this.logger.end()
               })
     }

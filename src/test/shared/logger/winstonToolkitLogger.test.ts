@@ -12,8 +12,6 @@ import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogge
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
-const TIMEOUT_TIME = 5000
-
 /**
  * Disposes the logger then waits for the write streams to flush. The `expected` and `unexpected` arrays just look
  * for any occurence within the file, passing if all expected strings were found or failing if any unexpected strings
@@ -50,7 +48,7 @@ async function checkFile(
             }
         }
 
-        setTimeout(() => reject(new Error('Timed out waiting for log message')), TIMEOUT_TIME)
+        setTimeout(() => reject(new Error('Timed out waiting for log message')), 10000)
     })
 
     return logger.dispose().then(() => check)
