@@ -39,18 +39,18 @@ async function checkFile(
                 .reduce((a, b) => a + `Unexpected message in log: ${b}\n`, '')
 
             if (errorMsg) {
-                reject(new Error(errorMsg))
                 watcher.close()
+                return reject(new Error(errorMsg))
             }
 
             expected = expected.filter(t => !contents.includes(t))
             if (expected.length === 0) {
-                resolve()
                 watcher.close()
+                resolve()
             }
         }
 
-        setTimeout(() => reject(new Error('Timed out')), TIMEOUT_TIME)
+        setTimeout(() => reject(new Error('Timed out waiting for log message')), TIMEOUT_TIME)
     })
 
     return logger.dispose().then(() => check)

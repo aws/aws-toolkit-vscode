@@ -108,12 +108,13 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     public dispose(): Promise<void> {
-        const flushed = new Promise<void>(resolve => this.logger.on('finish', resolve))
-        if (!this.disposed) {
-            this.logger.end()
-            this.disposed = true
-        }
-        return flushed
+        return this.disposed
+            ? Promise.resolve()
+            : new Promise<void>(resolve => {
+                  this.disposed = true
+                  this.logger.on('finish', resolve)
+                  this.logger.end()
+              })
     }
 
     private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): number {
