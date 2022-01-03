@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { join } from 'path'
 import { loadSharedConfigFiles, Profile, SharedConfigFiles } from '../shared/credentials/credentialsFile'
 import { EnvironmentVariables } from '../shared/environmentVariables'
@@ -23,7 +24,11 @@ export function getConfigFilename(): string {
 
 export async function loadSharedCredentialsProfiles(): Promise<Map<string, Profile>> {
     const profiles = new Map<string, Profile>()
-    const profileData = await loadSharedConfigFiles()
+    // These should eventually be changed to use `parse` to allow for credentials from other file systems
+    const profileData = await loadSharedConfigFiles({
+        config: vscode.Uri.file(getConfigFilename()),
+        credentials: vscode.Uri.file(getCredentialsFilename()),
+    })
 
     const profileNames = getAllProfileNames(profileData)
 

@@ -3,32 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// ***************************************************************************
-// Note: Supplied by the AWS Javascript SDK team, from their upcoming v3 SDK.
-// Once that release is GA and we switch over, we can remove this copy and use
-// their version.
-// ***************************************************************************
+import * as vscode from 'vscode'
 
-import { copy, writeFile } from 'fs-extra'
-import { homedir } from 'os'
-import { join, sep } from 'path'
-import { EnvironmentVariables } from '../environmentVariables'
-import { fileExists, readFileAsString } from '../filesystemUtilities'
-
-export interface SharedConfigInit {
+export interface SharedConfigPaths {
     /**
-     * The path at which to locate the ini credentials file. Defaults to the
-     * value of the `AWS_SHARED_CREDENTIALS_FILE` environment variable (if
-     * defined) or `~/.aws/credentials` otherwise.
+     * The path at which to locate the ini credentials file. No data will be read if not provided.
      */
-    filepath?: string
+    credentials?: vscode.Uri
 
     /**
-     * The path at which to locate the ini config file. Defaults to the value of
-     * the `AWS_CONFIG_FILE` environment variable (if defined) or
-     * `~/.aws/config` otherwise.
+     * The path at which to locate the ini config file. No data will be read if not provided.
      */
-    configFilepath?: string
+    config?: vscode.Uri
 }
 
 export interface Profile {
@@ -36,7 +22,7 @@ export interface Profile {
 }
 
 export interface ParsedIniData {
-    [key: string]: Profile
+    [key: string]: Profile | undefined
 }
 
 export interface SharedConfigFiles {
@@ -44,12 +30,10 @@ export interface SharedConfigFiles {
     configFile: ParsedIniData
 }
 
-export async function loadSharedConfigFiles(init: SharedConfigInit = {}): Promise<SharedConfigFiles> {
+export async function loadSharedConfigFiles(init: SharedConfigPaths = {}): Promise<SharedConfigFiles> {
     const [configFile, credentialsFile] = await Promise.all([
-        /* tslint:disable await-promise */
-        loadConfigFile(init.configFilepath),
-        loadCredentialsFile(init.filepath),
-        /* tslint:enable await-promise */
+        loadConfigFile(init.config),
+        loadCredentialsFile(init.credentials),
     ])
 
     return {
@@ -58,49 +42,30 @@ export async function loadSharedConfigFiles(init: SharedConfigInit = {}): Promis
     }
 }
 
-async function loadConfigFile(configFilePath?: string): Promise<ParsedIniData> {
-    const env = process.env as EnvironmentVariables
-    if (!configFilePath) {
-        configFilePath = env.AWS_CONFIG_FILE || join(getHomeDir(), '.aws', 'config')
-    }
+const fileNotFound = vscode.FileSystemError.FileNotFound().code
+async function fileExists(uri: vscode.Uri): Promise<boolean> {
+    return vscode.workspace.fs.stat(uri).then(
+        () => true,
+        err => !(err instanceof vscode.FileSystemError && err.code === fileNotFound)
+    )
+}
 
-    if (!(await fileExists(configFilePath))) {
+async function loadConfigFile(configUri?: vscode.Uri): Promise<ParsedIniData> {
+    if (!configUri || !(await fileExists(configUri))) {
         return {}
     }
 
-    return normalizeConfigFile(parseIni(await readFileAsString(configFilePath)))
+    const text = new TextDecoder().decode(await vscode.workspace.fs.readFile(configUri))
+    return normalizeConfigFile(parseIni(text))
 }
 
-async function loadCredentialsFile(credentialsFilePath?: string): Promise<ParsedIniData> {
-    const env = process.env as EnvironmentVariables
-    if (!credentialsFilePath) {
-        credentialsFilePath = env.AWS_SHARED_CREDENTIALS_FILE || join(getHomeDir(), '.aws', 'credentials')
-    }
-
-    if (!(await fileExists(credentialsFilePath))) {
+async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ParsedIniData> {
+    if (!credentialsUri || !(await fileExists(credentialsUri))) {
         return {}
     }
 
-    return parseIni(await readFileAsString(credentialsFilePath))
-}
-
-// TODO: FOR POC-DEMOS ONLY, NOT FOR PRODUCTION USE!
-// REMOVE_BEFORE_RELEASE
-// This is nowhere near resilient enough :-)
-export async function saveProfile(name: string, accessKey: string, secretKey: string): Promise<void> {
-    const env = process.env as EnvironmentVariables
-    const filepath = env.AWS_SHARED_CREDENTIALS_FILE || join(getHomeDir(), '.aws', 'credentials')
-
-    // even though poc concept code, let's preserve the user's file!
-    await copy(filepath, `${filepath}.bak_vscode`, { overwrite: true })
-
-    const data = `${await readFileAsString(filepath)}
-[${name}]
-aws_access_key_id=${accessKey}
-aws_secret_access_key=${secretKey}
-`
-
-    await writeFile(filepath, data, 'utf8')
+    const text = new TextDecoder().decode(await vscode.workspace.fs.readFile(credentialsUri))
+    return parseIni(text)
 }
 
 const profileKeyRegex = /^profile\s(["'])?([^\1]+)\1$/
@@ -112,8 +77,7 @@ function normalizeConfigFile(data: ParsedIniData): ParsedIniData {
         } else {
             const matches = profileKeyRegex.exec(key)
             if (matches) {
-                // @ts-ignore
-                const [_1, _2, normalizedKey] = matches
+                const normalizedKey = matches[2]
                 if (normalizedKey) {
                     map[normalizedKey] = data[key]
                 }
@@ -135,28 +99,11 @@ function parseIni(iniData: string): ParsedIniData {
         } else if (currentSection) {
             const item = line.match(/^\s*(.+?)\s*=\s*(.+?)\s*$/)
             if (item) {
-                map[currentSection] = map[currentSection] || {}
-                map[currentSection][item[1]] = item[2]
+                const profile = (map[currentSection] ??= {})
+                profile[item[1].toLowerCase()] = item[2]
             }
         }
     }
 
     return map
-}
-
-function getHomeDir(): string {
-    const env = process.env as EnvironmentVariables
-    const { HOME, USERPROFILE, HOMEPATH, HOMEDRIVE = `C:${sep}` } = env
-
-    if (HOME) {
-        return HOME
-    }
-    if (USERPROFILE) {
-        return USERPROFILE
-    }
-    if (HOMEPATH) {
-        return `${HOMEDRIVE}${HOMEPATH}`
-    }
-
-    return homedir()
 }
