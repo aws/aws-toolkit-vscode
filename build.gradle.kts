@@ -30,15 +30,6 @@ allprojects {
         mavenCentral()
         gradlePluginPortal()
     }
-
-    // TODO: remove when 0.11.10 is available: https://github.com/JetBrains/intellij-ui-test-robot/releases/
-    configurations.all {
-        resolutionStrategy.eachDependency {
-            if (requested.group == "org.apache.logging.log4j") {
-                useVersion("2.16.0")
-            }
-        }
-    }
 }
 
 tasks.register<GenerateGithubChangeLog>("generateChangeLog") {
