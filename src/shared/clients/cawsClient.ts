@@ -43,7 +43,6 @@ async function createCawsClient(
         // r.httpRequest.headers['cookie'] = authCookie
         if (authCookie) {
             // TODO: remove this after CAWS backend implements full authentication story.
-            authCookie = fixcookie(authCookie)
             r.httpRequest.headers['cookie'] = authCookie
         }
     }
