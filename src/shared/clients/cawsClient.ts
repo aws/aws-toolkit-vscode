@@ -18,8 +18,8 @@ import globals from '../extensionGlobals'
 export const useGraphql = false
 
 export const cawsRegion = 'us-east-1'
-export const cawsEndpoint = 'https://public.api-gamma.REMOVED.codes'
-export const cawsEndpointGql = 'https://public.api-gamma.REMOVED.codes/graphql'
+export const cawsEndpoint = 'https://public.api.REMOVED.codes'
+export const cawsEndpointGql = 'https://public.api.REMOVED.codes/graphql'
 export const cawsHostname = 'REMOVED.codes' // 'REMOVED.execute-api.us-east-1.amazonaws.cominteg.codedemo.REMOVED'
 export const cawsGitHostname = `git.service.${cawsHostname}`
 export const cawsHelpUrl = `https://${cawsHostname}/help`
