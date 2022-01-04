@@ -234,10 +234,9 @@ export class CawsClient {
         if (!useGraphql) {
             const c = this.sdkClient
             const o = await this.call(c.verifySession())
-            if (o?.self && (o.self as any).userName) {
-                this.username = (o?.self as any).userName
-            } else {
-                this.username = o?.self
+            if (o?.identity) {
+                const person = await this.call(c.getPerson({ id: o.identity }))
+                this.username = person.userName
             }
             return o
         }
