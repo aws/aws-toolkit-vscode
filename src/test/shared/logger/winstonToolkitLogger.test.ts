@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as fs from 'fs-extra'
 import * as assert from 'assert'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
@@ -10,6 +11,48 @@ import * as vscode from 'vscode'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+
+/**
+ * Disposes the logger then waits for the write streams to flush. The `expected` and `unexpected` arrays just look
+ * for any occurence within the file, passing if all expected strings were found or failing if any unexpected strings
+ * were found.
+ */
+async function checkFile(
+    logger: WinstonToolkitLogger,
+    logPath: string,
+    expected: string[],
+    unexpected: string[] = []
+): Promise<void> {
+    const check = new Promise<void>((resolve, reject) => {
+        const watcher = fs.watch(path.dirname(logPath), {}, (_, name) => {
+            if (name === path.basename(logPath)) {
+                checkText()
+            }
+        })
+
+        function checkText() {
+            const contents = fs.readFileSync(logPath)
+            const errorMsg = unexpected
+                .filter(t => contents.includes(t))
+                .reduce((a, b) => a + `Unexpected message in log: ${b}\n`, '')
+
+            if (errorMsg) {
+                watcher.close()
+                return reject(new Error(errorMsg))
+            }
+
+            expected = expected.filter(t => !contents.includes(t))
+            if (expected.length === 0) {
+                watcher.close()
+                resolve()
+            }
+        }
+
+        setTimeout(() => reject(new Error('Timed out waiting for log message')), 10000)
+    })
+
+    return logger.dispose().then(() => check)
+}
 
 describe('WinstonToolkitLogger', function () {
     let tempFolder: string
@@ -101,13 +144,6 @@ describe('WinstonToolkitLogger', function () {
             tempLogPath = path.join(tempFolder, `temp-${++tempFileCounter}.log`)
         })
 
-        afterEach(async function () {
-            if (testLogger) {
-                testLogger.dispose()
-                testLogger = undefined
-            }
-        })
-
         it('does not log a lower level', async function () {
             const debugMessage = 'debug message'
             const errorMessage = 'error message'
@@ -118,12 +154,7 @@ describe('WinstonToolkitLogger', function () {
             testLogger.debug(debugMessage)
             testLogger.error(errorMessage)
 
-            assert.ok(await isTextInLogFile(tempLogPath, errorMessage), 'Expected error message to be logged')
-            assert.strictEqual(
-                await isTextInLogFile(tempLogPath, debugMessage),
-                false,
-                'Unexpected debug message was logged'
-            )
+            await checkFile(testLogger, tempLogPath, [errorMessage], [debugMessage])
         })
 
         it('supports updating the log type', async function () {
@@ -137,8 +168,7 @@ describe('WinstonToolkitLogger', function () {
             testLogger.setLogLevel('verbose')
             testLogger.verbose(loggedVerboseEntry)
 
-            assert.ok(!(await isTextInLogFile(tempLogPath, nonLoggedVerboseEntry)), 'unexpected message in log')
-            assert.ok(await isTextInLogFile(tempLogPath, loggedVerboseEntry), 'Expected error message to be logged')
+            await checkFile(testLogger, tempLogPath, [loggedVerboseEntry], [nonLoggedVerboseEntry])
         })
 
         happyLogScenarios.forEach(scenario => {
@@ -149,38 +179,9 @@ describe('WinstonToolkitLogger', function () {
 
                 scenario.logMessage(testLogger, message)
 
-                assert.ok(await isTextInLogFile(tempLogPath, message), 'Expected log message was missing')
+                await checkFile(testLogger, tempLogPath, [message])
             })
         })
-
-        async function isTextInLogFile(logPath: string, text: string): Promise<boolean> {
-            await waitForLogFile(logPath)
-            const logText = await filesystemUtilities.readFileAsString(logPath)
-            return !!(await waitUntil(async () => logText.includes(text), {
-                timeout: 5000,
-                interval: 100,
-                truthy: false,
-            }))
-        }
-
-        async function waitForLogFile(logPath: string): Promise<void> {
-            const timeoutPromise = new Promise<void>((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    clearTimeout(timeout)
-                    reject('Log file not found in 1500 ms')
-                }, 1500)
-            })
-
-            const fileExistsPromise = new Promise<void>(async (resolve, reject) => {
-                while (true) {
-                    if (await filesystemUtilities.fileExists(logPath)) {
-                        resolve()
-                    }
-                }
-            })
-
-            return Promise.race([timeoutPromise, fileExistsPromise])
-        }
     })
 
     describe('logs to an OutputChannel', async function () {
@@ -282,116 +283,84 @@ describe('WinstonToolkitLogger', function () {
     describe('log tracking', function () {
         let tempLogPath: string
         let tempFileCounter: number = 0
-        let testLogger: WinstonToolkitLogger | undefined
+        let testLogger: WinstonToolkitLogger
 
         beforeEach(async function () {
             testLogger = new WinstonToolkitLogger('info')
             tempLogPath = path.join(tempFolder, `temp-tracker-${tempFileCounter++}.log`)
             testLogger.logToFile(tempLogPath)
-            testLogger.error(new Error('Test start'))
-            const logExists: boolean | undefined = await waitUntil(() => filesystemUtilities.fileExists(tempLogPath), {
-                timeout: 2000,
-                interval: 100,
-                truthy: true,
-            })
-
-            if (!logExists) {
-                throw new Error("Log file wasn't created during test")
-            }
         })
 
         afterEach(function () {
-            if (testLogger) {
-                testLogger.dispose()
-                testLogger = undefined
-            }
+            testLogger.dispose()
         })
 
         it('get info log message', async function () {
-            const logID: number = testLogger!.info('test')
-            const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logID, vscode.Uri.file(tempLogPath)),
-                { timeout: 2000, interval: 10, truthy: false }
-            )
-            assert.notStrictEqual(msg, undefined)
+            const logID: number = testLogger.info('test')
+            await checkFile(testLogger, tempLogPath, ['test'])
+            assert.notStrictEqual(testLogger.getLogById(logID, vscode.Uri.file(tempLogPath)), undefined)
         })
 
         it('debug log message is undefined', async function () {
-            const logID: number = testLogger!.debug('debug test')
-            const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logID, vscode.Uri.file(tempLogPath)),
-                { timeout: 50, interval: 5, truthy: false }
-            )
-            assert.strictEqual(msg, undefined)
+            const logID: number = testLogger.debug('debug test')
+            await checkFile(testLogger, tempLogPath, [], ['debug test'])
+            assert.strictEqual(testLogger.getLogById(logID, vscode.Uri.file(tempLogPath)), undefined)
         })
 
         it('retrieve multiple unique logs with other logs', async function () {
-            const set: Set<string> = new Set<string>()
+            const idMap = new Map<number, string>()
+            const expected: string[] = []
+            const unexpected: string[] = []
 
             for (let i = 0; i < 5; i++) {
-                const logID: number = testLogger!.info(`log ${i}`)
-                testLogger!.error('error log')
-                testLogger!.debug('debug log')
-
-                const msg: string | undefined = await waitUntil(
-                    async () => testLogger!.getLogById(logID, vscode.Uri.file(tempLogPath)),
-                    { timeout: 400, interval: 10, truthy: false }
-                )
-                assert.notStrictEqual(msg, undefined)
-                assert.strictEqual(set.has(msg!), false)
-                set.add(msg!)
-            }
-        })
-
-        it('can find log within file', async function () {
-            // Fill the file with messsages, then try to find the middle log
-            const logIDs: number[] = []
-
-            for (let i = 0; i < 10; i++) {
-                logIDs.push(testLogger!.error(`error message ${i}`))
-                testLogger!.warn('warning message')
+                const logInfo = `log ${i}`
+                const logError = `error log ${i}`
+                const logDebug = `debug log ${i}`
+                expected.push(logInfo, logError)
+                unexpected.push(logDebug)
+                testLogger.error(logError)
+                testLogger.debug(logDebug)
+                idMap.set(testLogger.info(logInfo), logInfo)
             }
 
-            const middleMsg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], vscode.Uri.file(tempLogPath)),
-                { timeout: 2000, interval: 10, truthy: false }
+            await checkFile(testLogger, tempLogPath, expected, unexpected)
+            idMap.forEach((msg, id) =>
+                assert.ok(testLogger.getLogById(id, vscode.Uri.file(tempLogPath))?.includes(msg))
             )
-
-            assert.notStrictEqual(middleMsg, undefined)
         })
 
         it('can find log from multiple files', async function () {
             const logIDs: number[] = []
             const filePaths: string[] = []
+            const expected: string[] = []
 
             // Make a bunch of files
             for (let i = 0; i < 4; i++) {
                 tempLogPath = path.join(tempFolder, `temp-tracker-${tempFileCounter++}.log`)
-                testLogger!.logToFile(tempLogPath)
+                testLogger.logToFile(tempLogPath)
                 filePaths.push(tempLogPath)
             }
 
             for (let i = 0; i < 10; i++) {
-                logIDs.push(testLogger!.error(`error message ${i}`))
-                testLogger!.warn('warning message')
+                const errorLog = `error message ${i}`
+                logIDs.push(testLogger.error(errorLog))
+                expected.push(errorLog)
             }
 
-            const middleFile: string = filePaths[Math.floor(filePaths.length / 2)]
-            const middleMsg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], vscode.Uri.file(middleFile)),
-                { timeout: 2000, interval: 5, truthy: false }
-            )
+            await Promise.all(filePaths.map(log => checkFile(testLogger, log, expected)))
 
+            const middleFile: string = filePaths[Math.floor(filePaths.length / 2)]
+            const middleMsg = testLogger.getLogById(logIDs[Math.floor(logIDs.length / 2)], vscode.Uri.file(middleFile))
             assert.notStrictEqual(middleMsg, undefined)
         })
 
         it('can find log from channel', async function () {
             const outputChannel: MockOutputChannel = new MockOutputChannel()
-            testLogger!.logToOutputChannel(outputChannel, true)
-            const logID: number = testLogger!.error('Test error')
+            testLogger.logToOutputChannel(outputChannel, true)
+            const logID: number = testLogger.error('Test error')
 
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logID, vscode.Uri.parse(`channel://${outputChannel.name}`)),
+                async () => testLogger.getLogById(logID, vscode.Uri.parse(`channel://${outputChannel.name}`)),
                 { timeout: 2000, interval: 5, truthy: false }
             )
 
@@ -400,17 +369,17 @@ describe('WinstonToolkitLogger', function () {
 
         it('invalid log id raises exception', async function () {
             // Log ID counter will be at 3 after these
-            testLogger!.error('error log')
-            testLogger!.debug('debug log')
+            testLogger.error('error log')
+            testLogger.debug('debug log')
 
             assert.throws(
-                () => testLogger!.getLogById(-1, vscode.Uri.file('')),
+                () => testLogger.getLogById(-1, vscode.Uri.file('')),
                 Error,
                 'Invalid log state, logID=-1 must be in the range [0, 3)!'
             )
 
             assert.throws(
-                () => testLogger!.getLogById(3, vscode.Uri.file('')),
+                () => testLogger.getLogById(3, vscode.Uri.file('')),
                 Error,
                 'Invalid log state, logID=3 must be in the range [0, 3)!'
             )
