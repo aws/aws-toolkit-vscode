@@ -112,6 +112,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             ? Promise.resolve()
             : new Promise<void>(resolve => {
                   this.disposed = true
+                  // The 'finish' event is emitted after all underlying transports have emitted a 'finish' event: https://github.com/winstonjs/winston/blob/36586d3d30dfe32f9dd4fbabbd585e82d47d460d/lib/winston/logger.js#L316-L332
                   this.logger.once('finish', resolve)
                   this.logger.end()
               })
