@@ -43,7 +43,6 @@ async function createCawsClient(
         // r.httpRequest.headers['cookie'] = authCookie
         if (authCookie) {
             // TODO: remove this after CAWS backend implements full authentication story.
-            authCookie = fixcookie(authCookie)
             r.httpRequest.headers['cookie'] = authCookie
         }
     }
@@ -51,15 +50,11 @@ async function createCawsClient(
     return c
 }
 
-function fixcookie(s: string): string {
-    s = s.trim()
-    s = s.replace(/cookie: /, '')
-    s = s.replace(/code-aws-cognito-session: ?/, 'code-aws-cognito-session=')
-    return s
-}
-
-function createGqlClient(apiKey: string, authCookie?: string, endpoint: string = cawsEndpointGql): gql.GraphQLClient {
-    authCookie = fixcookie(authCookie ?? '')
+function createGqlClient(
+    apiKey: string,
+    authCookie: string = '',
+    endpoint: string = cawsEndpointGql
+): gql.GraphQLClient {
     const client = new gql.GraphQLClient(endpoint, {
         headers: {
             'x-api-key': apiKey,
@@ -239,10 +234,9 @@ export class CawsClient {
         if (!useGraphql) {
             const c = this.sdkClient
             const o = await this.call(c.verifySession())
-            if (o?.self && (o.self as any).userName) {
-                this.username = (o?.self as any).userName
-            } else {
-                this.username = o?.self
+            if (o?.identity) {
+                const person = await this.call(c.getPerson({ id: o.identity }))
+                this.username = person.userName
             }
             return o
         }

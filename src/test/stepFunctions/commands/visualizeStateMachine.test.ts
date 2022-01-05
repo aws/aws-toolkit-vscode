@@ -213,6 +213,7 @@ const mockExtensionContext: vscode.ExtensionContext = {
     subscriptions: [],
     workspaceState: mockGlobalStorage,
     asAbsolutePath: sinon.spy(),
+    secrets: {} as vscode.SecretStorage,
 }
 
 describe('StepFunctions VisualizeStateMachine', async function () {
