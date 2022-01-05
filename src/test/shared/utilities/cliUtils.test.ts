@@ -40,7 +40,6 @@ describe('cliUtils', async function () {
                 })
             })
         }
-
         it('downloads and installs the SSM CLI automatically', async function () {
             const ssmCli = await installCli('session-manager-plugin', false, new FakeWindow())
             assert.ok(ssmCli)
@@ -53,9 +52,9 @@ describe('cliUtils', async function () {
             assert.ok(await hasFunctionalCli(ssmCli))
         })
 
-        it('does not install a CLI if the user is prompted and opts out', async function () {
-            const ssmCli = await installCli('session-manager-plugin', true, new FakeWindow({}))
-            assert.strictEqual(ssmCli, undefined)
+        it('does not install if the user opts out', async function () {
+            const awsCli = installCli('session-manager-plugin', true, new FakeWindow({}))
+            await assert.rejects(awsCli)
         })
     })
 })

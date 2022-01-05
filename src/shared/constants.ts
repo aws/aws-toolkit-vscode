@@ -10,6 +10,7 @@ export const extensionSettingsPrefix: string = 'aws'
 export const forceTelemetry: boolean = false
 export const regionSettingKey: string = 'region'
 export const profileSettingKey: string = 'profile'
+export const productName: string = 'aws-toolkit-vscode'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'

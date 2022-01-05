@@ -120,12 +120,10 @@ export async function runCommandInContainer(
             return
         }
 
-        const ssmPlugin = await getOrInstallCli('session-manager-plugin', true, window, settings)
-
-        if (!ssmPlugin) {
+        const ssmPlugin = await getOrInstallCli('session-manager-plugin', true, window, settings).catch(e => {
             result = 'Failed'
             throw Error('SSM Plugin not installed and cannot auto install')
-        }
+        })
 
         const execCommand = await node.ecs.executeCommand(node.clusterArn, node.containerName, task, command)
         const args = [JSON.stringify(execCommand.session), node.ecs.regionCode, 'StartSession']

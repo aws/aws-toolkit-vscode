@@ -22,6 +22,7 @@ import {
 } from '../shared/sam/cli/samCliValidator'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
+import { UriHandler } from '../shared/vscode/uriHandler'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -40,6 +41,9 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public globalState: vscode.Memento = new FakeMemento()
     public storagePath: string | undefined
     public logPath: string = ''
+
+    // XXX: temporary just to get things to build
+    public secrets: vscode.SecretStorage = {} as any
 
     private _extensionPath: string = ''
     private _globalStoragePath: string = '.'
@@ -107,6 +111,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             outputChannel: outputChannel,
             telemetryService: telemetryService,
             credentialsStore: new CredentialsStore(),
+            uriHandler: new UriHandler(),
         }
     }
 }

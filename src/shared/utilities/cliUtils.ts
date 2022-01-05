@@ -16,7 +16,7 @@ import { ChildProcess } from '../utilities/childProcess'
 import { Window } from '../vscode/window'
 
 import * as nls from 'vscode-nls'
-import { Timeout } from './timeoutUtils'
+import { Timeout, TimeoutError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { extensionSettingsPrefix } from '../constants'
@@ -78,7 +78,7 @@ export async function installCli(
     cli: AwsClis,
     confirm: boolean,
     window: Window = Window.vscode()
-): Promise<string | undefined> {
+): Promise<string | never> {
     const cliToInstall = AWS_CLIS[cli]
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
@@ -107,8 +107,7 @@ export async function installCli(
                 vscode.env.openExternal(vscode.Uri.parse(cliToInstall.manualInstallLink))
             }
             result = 'Cancelled'
-
-            return undefined
+            throw new TimeoutError('cancelled')
         }
 
         const timeout = new Timeout(600000)
@@ -137,6 +136,10 @@ export async function installCli(
 
         return cliPath
     } catch (err) {
+        if (TimeoutError.isCancelled(err)) {
+            throw err
+        }
+
         result = 'Failed'
 
         window
@@ -306,16 +309,14 @@ export async function getOrInstallCli(
     confirm: boolean,
     window: Window = Window.vscode(),
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-): Promise<string | undefined> {
-    let cliCommand: string | undefined
-    if (!settings.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)) {
-        cliCommand = await getCliCommand(AWS_CLIS[cli])
-    }
+): Promise<string | never> {
+    const forceInstall = settings.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)
 
-    if (!cliCommand) {
-        cliCommand = await installCli(cli, confirm, window)
+    if (forceInstall) {
+        return installCli(cli, confirm, window)
+    } else {
+        return (await getCliCommand(AWS_CLIS[cli])) ?? installCli(cli, confirm, window)
     }
-    return cliCommand
 }
 
 // TODO: uncomment for AWS CLI installation

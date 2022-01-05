@@ -5,6 +5,7 @@
 
 import * as crypto from 'crypto'
 import * as fs from 'fs'
+import * as moment from 'moment'
 import { default as stripAnsi } from 'strip-ansi'
 import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
@@ -81,4 +82,13 @@ export async function insertTextIntoFile(text: string, filePath: string, line: n
             throw err
         }
     })
+}
+
+export function capitalize<S extends string>(s: S): Capitalize<S> {
+    return `${s[0].toUpperCase()}${s.slice(1)}` as any
+}
+
+export function getRelativeDate(from: Date, now: Date = new Date()): string {
+    // Prevent clock skew showing future date
+    return moment(from).subtract(5, 'second').from(now)
 }

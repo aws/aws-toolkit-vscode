@@ -11,6 +11,7 @@ import globals from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { updateCspSource } from '../../webviews/main'
 import { FeedbackTemplates } from '../templates/feedbackTemplates'
 import { submitFeedbackListener } from './submitFeedbackListener'
 
@@ -38,7 +39,7 @@ export function submitFeedback(listener?: (message: any) => Promise<void>): vsco
     const loadStylesheets = ExtensionUtilities.getCssForHtml(['submitFeedback.css'], panel.webview)
 
     panel.webview.html = baseTemplateFn({
-        cspSource: panel.webview.cspSource,
+        cspSource: updateCspSource(panel.webview.cspSource),
         content: feedbackTemplateFn({
             Scripts: loadScripts,
             Libraries: loadLibs,

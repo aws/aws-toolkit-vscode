@@ -5,17 +5,20 @@
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
+import { MdeClient } from './clients/mdeClient'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
+import { CawsClient } from './clients/cawsClient'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
-import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { RegionProvider } from './regions/regionProvider'
-import { CodelensRootRegistry } from './sam/codelensRootRegistry'
+import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
+import { CodelensRootRegistry } from './fs/codelensRootRegistry'
 import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
+import { UriHandler } from './vscode/uriHandler'
 
 type Clock = Pick<
     typeof globalThis,
@@ -53,6 +56,16 @@ export function initialize(context: ExtensionContext, window: Window): ToolkitGl
     return globals
 }
 
+/**
+ * Shows a message if client credentials are invalid/expired/logged out.
+ */
+export function checkCaws(): boolean {
+    if (!globals.caws.connected()) {
+        globals.window.showErrorMessage('AWS: Not connected to CODE.AWS')
+    }
+    return globals.caws.connected()
+}
+
 export default globals
 
 /**
@@ -74,6 +87,9 @@ interface ToolkitGlobals {
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
+    mde: MdeClient
+    caws: CawsClient
+    uriHandler: UriHandler
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.

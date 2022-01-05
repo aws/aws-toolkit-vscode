@@ -9,8 +9,6 @@
 import * as assert from 'assert'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
-import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
-import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import * as extWindow from '../shared/vscode/window'
@@ -24,6 +22,8 @@ import { SchemaService } from '../shared/schemas'
 import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
 import globals, { initialize } from '../shared/extensionGlobals'
 import { initializeIconPaths } from '../shared/icons'
+import { CodelensRootRegistry } from '../shared/fs/codelensRootRegistry'
+import { CloudFormationTemplateRegistry } from '../shared/fs/templateRegistry'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')

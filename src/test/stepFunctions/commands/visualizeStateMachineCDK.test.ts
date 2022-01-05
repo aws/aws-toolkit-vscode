@@ -73,6 +73,7 @@ const mockExtensionContext: vscode.ExtensionContext = {
     subscriptions: [],
     workspaceState: mockGlobalStorage,
     asAbsolutePath: sinon.spy(),
+    secrets: {} as vscode.SecretStorage,
 }
 
 const mockNonSMConstructTreeEntity: ConstructTreeEntity = {
