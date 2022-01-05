@@ -18,14 +18,31 @@ import * as constants from '../constants'
 import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 import globals from '../extensionGlobals'
 
-export class DefaultTelemetryClient implements TelemetryClient {
-    public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
-    public static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
+interface TelemetryConfiguration {
+    readonly endpoint: string
+    readonly identityPool: string
+}
 
+export class DefaultTelemetryClient implements TelemetryClient {
+    private static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
+    private static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
+    private static initializeConfig(): TelemetryConfiguration {
+        const settings = new DefaultSettingsConfiguration()
+        const identityPool = settings.readDevSetting<string>('aws.dev.telemetryUserPool', 'string', true)
+        const endpoint = settings.readDevSetting<string>('aws.dev.telemetryEndpoint', 'string', true)
+
+        return {
+            endpoint: endpoint ?? this.DEFAULT_TELEMETRY_ENDPOINT,
+            identityPool: identityPool ?? this.DEFAULT_IDENTITY_POOL,
+        }
+    }
+
+    public static config = DefaultTelemetryClient.initializeConfig()
+
     private readonly logger = getLogger()
-    private readonly settings = new DefaultSettingsConfiguration('aws')
+    private readonly settings = new DefaultSettingsConfiguration()
 
     private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
@@ -107,7 +124,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     region: region,
                     credentials: credentials,
                     correctClockSkew: true,
-                    endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT,
+                    endpoint: DefaultTelemetryClient.config.endpoint,
                 } as ServiceConfigurationOptions,
                 undefined,
                 false

@@ -7,7 +7,8 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
-import { loadSharedConfigFiles, SharedConfigFiles } from '../../../shared/credentials/credentialsFile'
+import { Uri } from 'vscode'
+import { loadSharedConfigFiles } from '../../../shared/credentials/credentialsFile'
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -108,23 +109,37 @@ describe('UserCredentialsUtils', function () {
             }
             await UserCredentialsUtils.generateCredentialsFile(creds)
 
-            const sharedConfigFiles: SharedConfigFiles = await loadSharedConfigFiles()
+            const sharedConfigFiles = await loadSharedConfigFiles({ credentials: Uri.file(credentialsFilename) })
             assert(typeof sharedConfigFiles === 'object', 'sharedConfigFiles should be an object')
             const profiles = sharedConfigFiles.credentialsFile
             assert(typeof profiles === 'object', 'profiles should be an object')
-            assert(profiles[profileName], 'profiles should be truthy')
+            const profile = profiles[profileName]
+            assert.ok(profile)
             assert.strictEqual(
-                profiles[profileName].aws_access_key_id,
+                profile.aws_access_key_id,
                 creds.accessKey,
-                `creds.accessKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.accessKey}"`
+                `creds.accessKey: "${profile.aws_access_key_id}" !== "${creds.accessKey}"`
             )
             assert.strictEqual(
-                profiles[profileName].aws_secret_access_key,
+                profile.aws_secret_access_key,
                 creds.secretKey,
-                `creds.secretKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.secretKey}"`
+                `creds.secretKey: "${profile.aws_access_key_id}" !== "${creds.secretKey}"`
             )
             await fs.access(credentialsFilename, fs.constants.R_OK).catch(_err => assert(false, 'Should be readable'))
             await fs.access(credentialsFilename, fs.constants.W_OK).catch(_err => assert(false, 'Should be writeable'))
+        })
+    })
+
+    describe('loadSharedConfigFiles', function () {
+        it('normalizes fields by making them lowercase', async function () {
+            const credentialsFilename = path.join(tempFolder, 'credentials-generation-test')
+            const profileName = 'someRandomProfileName'
+
+            createCredentialsFile(credentialsFilename, [profileName])
+
+            const sharedConfigFiles = await loadSharedConfigFiles({ credentials: Uri.file(credentialsFilename) })
+            const profiles = sharedConfigFiles.credentialsFile
+            assert.strictEqual(profiles[profileName]?.region, 'us-weast-3')
         })
     })
 
@@ -134,7 +149,8 @@ describe('UserCredentialsUtils', function () {
         profileNames.forEach(profileName => {
             fileContents += `[${profileName}]
 aws_access_key_id = FAKEKEY
-aws_secret_access_key = FAKESECRET
+aws_SecRet_aCCess_key = FAKESECRET
+REGION = us-weast-3
 `
         })
 

@@ -107,12 +107,15 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         return this.writeToLogs('error', message, ...meta)
     }
 
-    public dispose() {
-        if (!this.disposed) {
-            this.logger.close()
-            this.logger.clear()
-            this.disposed = true
-        }
+    public dispose(): Promise<void> {
+        return this.disposed
+            ? Promise.resolve()
+            : new Promise<void>(resolve => {
+                  this.disposed = true
+                  // The 'finish' event is emitted after all underlying transports have emitted a 'finish' event: https://github.com/winstonjs/winston/blob/36586d3d30dfe32f9dd4fbabbd585e82d47d460d/lib/winston/logger.js#L316-L332
+                  this.logger.once('finish', resolve)
+                  this.logger.end()
+              })
     }
 
     private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): number {
@@ -166,11 +169,11 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
      * @param obj  Object passed from the event
      */
     private parseLogObject(file: vscode.Uri, obj: any): void {
-        const logID: number | NamedNodeMap = parseInt(obj.logID) % LOGMAP_SIZE
+        const logID: number = parseInt(obj.logID) % LOGMAP_SIZE
         const symbols: symbol[] = Object.getOwnPropertySymbols(obj)
         const messageSymbol: symbol | undefined = symbols.find((s: symbol) => s.toString() === 'Symbol(message)')
 
-        if (logID && messageSymbol) {
+        if (this.logMap[logID] !== undefined && messageSymbol) {
             this.logMap[logID][file.toString(true)] = obj[messageSymbol]
         }
     }
