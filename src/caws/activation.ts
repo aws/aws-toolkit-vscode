@@ -13,6 +13,7 @@ import { initCurrentRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { getLogger } from '../shared/logger/logger'
 import { onCredentialsChanged } from './utils'
 import { cloneCawsRepo, listCommands, login, logout, openCawsResource } from './commands'
+import { registerCloneHandler } from './cloneHandler'
 
 /**
  * Activate CAWS functionality.
@@ -46,12 +47,15 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
 async function registerCommands(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.caws.connect', () => login(ctx, globals.caws)),
+        vscode.commands.registerCommand('aws.caws.connect', () =>
+            login(ctx.extensionContext, ctx.awsContext, globals.caws)
+        ),
         vscode.commands.registerCommand('aws.caws.logout', () => logout(ctx, globals.caws)),
         vscode.commands.registerCommand('aws.caws.openOrg', () => openCawsResource('org')),
         vscode.commands.registerCommand('aws.caws.openProject', () => openCawsResource('project')),
         vscode.commands.registerCommand('aws.caws.openRepo', () => openCawsResource('repo')),
         vscode.commands.registerCommand('aws.caws.cloneRepo', () => cloneCawsRepo()),
-        vscode.commands.registerCommand('aws.caws.listCommands', () => listCommands())
+        vscode.commands.registerCommand('aws.caws.listCommands', () => listCommands()),
+        registerCloneHandler(ctx.uriHandler)
     )
 }

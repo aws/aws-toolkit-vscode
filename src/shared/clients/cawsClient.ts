@@ -475,12 +475,12 @@ export class CawsClient {
      * Creates a link for `git clone` usage
      * @param r CAWS repo
      */
-    public async toCawsGitUri(r: CawsRepo): Promise<string> {
+    public async toCawsGitUri(org: string, project: string, repo: string): Promise<string> {
         const pat = await this.createAccessToken({ name: this.user(), expires: undefined })
         if (!pat?.secret) {
             throw Error('CODE.AWS: Failed to create personal access token (PAT)')
         }
 
-        return `https://${this.user()}:${pat.secret}@${cawsGitHostname}/v1/${r.org.name}/${r.project.name}/${r.name}`
+        return `https://${this.user()}:${pat.secret}@${cawsGitHostname}/v1/${org}/${project}/${repo}`
     }
 }

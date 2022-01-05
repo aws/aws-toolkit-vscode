@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { AwsContext } from '../shared/awsContext'
 import { CawsRepo } from '../shared/clients/cawsClient'
 import { CawsClient } from '../shared/clients/cawsClient'
 import globals, { checkCaws } from '../shared/extensionGlobals'
@@ -12,13 +13,16 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 import { LoginWizard } from './wizards/login'
 import { selectCawsResource } from './wizards/selectResource'
 
-export async function login(context: ExtContext, client: CawsClient): Promise<void> {
-    const ctx = context.extensionContext
-    const wizard = new LoginWizard(ctx)
+export async function login(
+    context: vscode.ExtensionContext,
+    awsContext: AwsContext,
+    client: CawsClient
+): Promise<boolean> {
+    const wizard = new LoginWizard(context)
     const response = await wizard.run()
 
     if (!response) {
-        return // cancelled
+        return false
     }
 
     await client.onCredentialsChanged(undefined, response.user.cookie)
@@ -26,14 +30,15 @@ export async function login(context: ExtContext, client: CawsClient): Promise<vo
 
     if (!sess?.identity) {
         showViewLogsMessage('CODE.AWS: failed to connect')
-        return
+        return false
     }
 
     if (response?.user.newUser) {
-        ctx.secrets.store(`caws/${client.user()}`, response.user.cookie)
+        context.secrets.store(`caws/${client.user()}`, response.user.cookie)
     }
 
-    context.awsContext.setCawsCredentials(client.user(), response.user.cookie)
+    awsContext.setCawsCredentials(client.user(), response.user.cookie)
+    return true
 }
 
 export async function logout(context: ExtContext, client: CawsClient): Promise<void> {
@@ -50,17 +55,33 @@ export async function listCommands(): Promise<void> {
 }
 
 /** "Clone CODE.AWS Repository" command. */
-export async function cloneCawsRepo(): Promise<void> {
-    if (!checkCaws()) {
+export async function cloneCawsRepo(url?: vscode.Uri): Promise<void> {
+    // We need better encapsulation of a CAWS session to propagate through commands
+    // The session should live at the top and injected as context
+    if (!globals.caws.connected() && !(await login(globals.context, globals.awsContext, globals.caws))) {
         return
     }
     const c = globals.caws
-    const r = (await selectCawsResource('repo')) as CawsRepo
-    if (!r) {
-        return
+
+    if (!url) {
+        const r = (await selectCawsResource('repo')) as CawsRepo
+        if (!r) {
+            return
+        }
+        // TODO: move this logic up into the model
+        if (!r.org.name || !r.project.name || !r.name) {
+            throw new Error(`Invalid CAWS repo: ${JSON.stringify(r, undefined, 4)}`)
+        }
+        const cloneLink = await c.toCawsGitUri(r.org.name, r.project.name, r.name)
+        vscode.commands.executeCommand('git.clone', cloneLink)
+    } else {
+        const [_, org, repo, project] = url.path.slice(1).split('/')
+        if (!project) {
+            throw new Error(`CAWS URL is invalid, project was undefined: ${url.path}`)
+        }
+
+        vscode.commands.executeCommand('git.clone', await c.toCawsGitUri(org, repo, project))
     }
-    const cloneLink = await c.toCawsGitUri(r)
-    vscode.commands.executeCommand('git.clone', cloneLink)
 }
 
 /**

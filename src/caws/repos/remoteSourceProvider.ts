@@ -36,7 +36,7 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
             const repositoryIter = globals.caws.listRepos(globals.caws.user())
 
             for await (const repo of repositoryIter) {
-                const cloneUrl = await globals.caws.toCawsGitUri(repo)
+                const cloneUrl = await globals.caws.toCawsGitUri(repo.org.name!, repo.project.name!, repo.name!)
                 const url = globals.caws.toCawsUrl(repo)
                 repos.push({
                     name: globals.caws.createRepoLabel(repo),
