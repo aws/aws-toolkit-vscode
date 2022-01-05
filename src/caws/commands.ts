@@ -13,12 +13,8 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 import { LoginWizard } from './wizards/login'
 import { selectCawsResource } from './wizards/selectResource'
 
-export async function login(
-    context: vscode.ExtensionContext,
-    awsContext: AwsContext,
-    client: CawsClient
-): Promise<boolean> {
-    const wizard = new LoginWizard(context)
+export async function login(ctx: vscode.ExtensionContext, awsCtx: AwsContext, client: CawsClient): Promise<boolean> {
+    const wizard = new LoginWizard(ctx)
     const response = await wizard.run()
 
     if (!response) {
@@ -34,19 +30,19 @@ export async function login(
     }
 
     if (response?.user.newUser) {
-        context.secrets.store(`caws/${client.user()}`, response.user.cookie)
+        ctx.secrets.store(`caws/${client.user()}`, response.user.cookie)
     }
 
-    awsContext.setCawsCredentials(client.user(), response.user.cookie)
+    awsCtx.setCawsCredentials(client.user(), response.user.cookie)
     return true
 }
 
-export async function logout(context: ExtContext, client: CawsClient): Promise<void> {
-    if (!context.awsContext.getCawsCredentials()) {
+export async function logout(ctx: ExtContext, client: CawsClient): Promise<void> {
+    if (!ctx.awsContext.getCawsCredentials()) {
         return
     }
     await client.onCredentialsChanged(undefined, undefined)
-    context.awsContext.setCawsCredentials('', '')
+    ctx.awsContext.setCawsCredentials('', '')
 }
 
 /** "List CODE.AWS Commands" command. */
