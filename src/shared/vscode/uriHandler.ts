@@ -4,18 +4,19 @@
  */
 
 import * as vscode from 'vscode'
-import * as querystring from 'querystring'
 import { getLogger } from '../logger/logger'
 
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../utilities/messages'
 import globals from '../extensionGlobals'
+import { URL, URLSearchParams } from 'url'
+
 const localize = nls.loadMessageBundle()
 
 /** Handles an external URI targeting the extension */
 export type PathHandler<T> = (query: T) => Promise<void> | void
 /** Parses the 'query' or arguments from a URI */
-export type QueryParser<T> = (query: querystring.ParsedUrlQuery) => Promise<T> | T | never
+export type QueryParser<T> = (params: URLSearchParams) => Promise<T> | T | never
 
 interface HandlerWithParser<T> {
     handler: PathHandler<T>
@@ -41,11 +42,10 @@ export class UriHandler implements vscode.UriHandler {
         const { handler, parser } = this.handlers.get(uri.path)!
         let parsedQuery: Parameters<typeof handler>[0]
 
-        // Not sure if this can even throw
-        const query = querystring.parse(uri.query)
+        const url = new URL(uri.toString(true))
 
         try {
-            parsedQuery = parser ? await parser(query) : query
+            parsedQuery = parser ? await parser(url.searchParams) : url.searchParams
         } catch (err) {
             showViewLogsMessage(localize('AWS.uriHandler.parser.failed', 'Failed to parse URI query: {0}', uriNoQuery))
             getLogger().error(`UriHandler: query parsing failed for path "${uri.path}": %O`, err)
@@ -71,9 +71,9 @@ export class UriHandler implements vscode.UriHandler {
      * @returns A disposable to remove the handler
      * @throws When a handler has already been registered
      */
-    public registerHandler<T = querystring.ParsedUrlQuery>(
+    public registerHandler<U extends T, T = URLSearchParams>(
         path: string,
-        handler: PathHandler<T>,
+        handler: PathHandler<U>,
         parser?: QueryParser<T>
     ): vscode.Disposable {
         if (this.handlers.has(path)) {
