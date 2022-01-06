@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { sleep } from '../../../shared/utilities/promiseUtilities'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
@@ -22,7 +22,7 @@ describe('ChildProcess', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await tryRemoveFolder(tempFolder)
     })
 
     describe('run', async function () {
