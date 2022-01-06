@@ -1,3 +1,8 @@
+# _1.37_ (2022-01-06)
+- **(Feature)** Add SAM Lambda ARM support
+- **(Bug Fix)** Fix plugin deprecation warning in DynamoDB viewer ([#2987](https://github.com/aws/aws-toolkit-jetbrains/issues/2987))
+- **(Deprecation)** An upcoming release will remove support for IDEs based on the 2020.3 platform
+
 # _1.36_ (2021-11-23)
 
 # _1.35_ (2021-11-18)

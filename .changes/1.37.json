@@ -1,0 +1,14 @@
+{
+  "date" : "2022-01-06",
+  "version" : "1.37",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add SAM Lambda ARM support"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix plugin deprecation warning in DynamoDB viewer (#2987)"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for IDEs based on the 2020.3 platform"
+  } ]
+}

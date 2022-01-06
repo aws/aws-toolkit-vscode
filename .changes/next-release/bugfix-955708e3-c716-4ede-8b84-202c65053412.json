@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix plugin deprecation warning in DynamoDB viewer (#2987)"
-}
