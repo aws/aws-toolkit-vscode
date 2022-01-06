@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { AsyncCollection, toCollection } from './asyncCollection'
+import { SharedProp, AccumulatableKeys, NeverCoalesce } from './tsUtils'
+
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
 
@@ -274,4 +277,42 @@ export function stripUndefined(obj: any): void {
 
 export function isAsyncIterable(obj: any): obj is AsyncIterable<unknown> {
     return obj && typeof obj === 'object' && typeof obj[Symbol.asyncIterator] === 'function'
+}
+
+/**
+ * Converts a 'paged' API request to a collection of sequential API requests
+ * based off a 'mark' (the paginated token field) and a `prop` which is an
+ * accumulatable property on the response interface.
+ *
+ * @param requester Asynchronous function to make the API requests with
+ * @param request Initial request to apply to the API calls
+ * @param mark A property name of the paginated token field shared by the input/output shapes
+ * @param prop A property name of an 'accumulatable' field in the output shape
+ * @returns An {@link AsyncCollection} resolving to the type described by the `prop` field
+ */
+export function pageableToCollection<
+    TRequest,
+    TResponse,
+    TTokenProp extends SharedProp<TRequest, TResponse>,
+    TTokenType extends TRequest[TTokenProp] & TResponse[TTokenProp],
+    TResult extends AccumulatableKeys<TResponse> = never
+>(
+    requester: (request: TRequest) => Promise<TResponse>,
+    request: TRequest,
+    mark: TTokenProp,
+    prop?: TResult
+): AsyncCollection<NeverCoalesce<TResponse[TResult], TResponse>> {
+    async function* gen() {
+        do {
+            const response: TResponse = await requester(request)
+            const result = (prop ? response[prop] : response) as NeverCoalesce<TResponse[TResult], TResponse>
+            if (!response[mark]) {
+                return result
+            }
+            yield result
+            request[mark] = response[mark] as TTokenType
+        } while (request[mark])
+    }
+
+    return toCollection(gen)
 }

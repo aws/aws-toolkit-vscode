@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
+import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import {
     complement,
     difference,
@@ -24,6 +25,7 @@ import {
     getPaginatedAwsCallIterParams,
     IteratorTransformer,
     stripUndefined,
+    pageableToCollection,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -468,6 +470,71 @@ describe('CollectionUtils', async function () {
                     prop4: false,
                     prop6: { prop7: '' },
                 },
+            })
+        })
+    })
+
+    describe('pageableToCollection', function () {
+        const pages: { [page: string]: { data: number[]; next?: string } } = {
+            page1: {
+                data: [0, 1, 2],
+                next: 'page2',
+            },
+            page2: {
+                data: [3, 4],
+                next: 'page3',
+            },
+            page3: {
+                data: [5],
+                next: 'page4',
+            },
+            page4: {
+                data: [],
+            },
+            secretPage: {
+                data: [-1],
+            },
+            falsePage: {
+                data: [],
+                next: '', // some APIs will return empty strings rather than undefined
+            },
+        }
+
+        const requester = async (request: { next?: string }) => pages[request.next ?? 'page1']
+
+        it('creates a new AsyncCollection', async function () {
+            const collection = pageableToCollection(requester, {}, 'next', 'data')
+            assert.deepStrictEqual(await collection.promise(), [[0, 1, 2], [3, 4], [5], []])
+        })
+
+        it('uses initial request', async function () {
+            const collection = pageableToCollection(requester, { next: 'secretPage' }, 'next', 'data')
+            assert.deepStrictEqual(await collection.promise(), [[-1]])
+        })
+
+        it('terminates when `next` is an empty string', async function () {
+            const collection = pageableToCollection(requester, { next: 'falsePage' }, 'next', 'data')
+            assert.deepStrictEqual(await collection.promise(), [[]])
+        })
+
+        async function last<T>(iterable: AsyncCollection<T>): Promise<T | undefined> {
+            const iterator = iterable.iterator()
+            while (true) {
+                const { value, done } = await iterator.next()
+                if (done) {
+                    if (value === undefined) {
+                        break
+                    }
+                    return value
+                }
+            }
+        }
+
+        describe('last', function () {
+            it('it persists last element when mapped', async function () {
+                const collection = pageableToCollection(requester, {}, 'next', 'data')
+                const mapped = collection.map(i => i[0] ?? -1)
+                assert.strictEqual(await last(mapped), -1)
             })
         })
     })
