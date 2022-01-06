@@ -304,6 +304,7 @@ describe('ChildProcess', async function () {
             it('can report errors', async function () {
                 const result = childProcess.run({
                     rejectOnError: true,
+                    useForceStop: true,
                     onStdout: (text, context) => {
                         if (text.includes('2')) {
                             context.reportError('Got 2')
