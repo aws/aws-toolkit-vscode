@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { NeverCoalesce } from './tsUtils'
+import { Coalesce } from './tsUtils'
 
 /**
  * High-level abstraction over async generator functions of the form `async function*` {@link AsyncGenerator}
@@ -22,7 +22,7 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     /** Converts the collection to a Map, using either a property of the item or a function to select keys. */
     toMap<K extends StringProperty<T>, U extends string = never>(
         selector: KeySelector<T, U> | K
-    ): Promise<Map<NeverCoalesce<U, T[K]>, T>>
+    ): Promise<Map<Coalesce<U, T[K]>, T>>
     iterator(): AsyncIterator<T, T | void>
 }
 
@@ -179,8 +179,8 @@ type StringProperty<T> = { [P in keyof T]: T[P] extends string ? P : never }[key
 async function asyncIterableToMap<T, K extends StringProperty<T>, U extends string = never>(
     iterable: AsyncIterable<T>,
     selector: KeySelector<T, U> | K
-): Promise<Map<NeverCoalesce<U, T[K]>, T>> {
-    const result = new Map<NeverCoalesce<U, T[K] & string>, T>()
+): Promise<Map<Coalesce<U, T[K]>, T>> {
+    const result = new Map<Coalesce<U, T[K] & string>, T>()
 
     for await (const item of iterable) {
         addToMap(result, selector, item)

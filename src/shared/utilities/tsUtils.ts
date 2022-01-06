@@ -51,4 +51,4 @@ export type AccumulableKeys<T> = NonNullable<
 >
 
 /** Similar to the nullish coalescing operator, but for types that can never occur */
-export type NeverCoalesce<T, U> = [T] extends [never] ? U : T
+export type Coalesce<T, U> = [T] extends [never] ? U : T

@@ -4,7 +4,7 @@
  */
 
 import { AsyncCollection, toCollection } from './asyncCollection'
-import { SharedProp, AccumulableKeys, NeverCoalesce } from './tsUtils'
+import { SharedProp, AccumulableKeys, Coalesce } from './tsUtils'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
@@ -301,11 +301,11 @@ export function pageableToCollection<
     request: TRequest,
     mark: TTokenProp,
     prop?: TResult
-): AsyncCollection<NeverCoalesce<TResponse[TResult], TResponse>> {
+): AsyncCollection<Coalesce<TResponse[TResult], TResponse>> {
     async function* gen() {
         do {
             const response: TResponse = await requester(request)
-            const result = (prop ? response[prop] : response) as NeverCoalesce<TResponse[TResult], TResponse>
+            const result = (prop ? response[prop] : response) as Coalesce<TResponse[TResult], TResponse>
             if (!response[mark]) {
                 return result
             }
