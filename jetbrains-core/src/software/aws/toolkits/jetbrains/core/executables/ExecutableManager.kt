@@ -92,7 +92,9 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
                 LOG.warn(it) { "Error thrown while updating executable cache" }
                 null
             }
-            return ExecutableInstance.UnresolvedExecutable(message("executableCommon.missing_executable", type.displayName))
+            return ExecutableInstance.UnresolvedExecutable(
+                message("executableCommon.missing_executable", type.displayName, message("executableCommon.not_installed"))
+            )
         }
 
         // Check if the set executable was modified. If it was, start an update in the background. Overlapping
@@ -177,7 +179,9 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
 
     private fun resolve(type: ExecutableType<*>): ExecutableInstance = try {
         (type as? AutoResolvable)?.resolve()?.let { validateAndSave(type, it, autoResolved = true) }
-            ?: ExecutableInstance.UnresolvedExecutable(message("executableCommon.missing_executable", type.displayName))
+            ?: ExecutableInstance.UnresolvedExecutable(
+                message("executableCommon.missing_executable", type.displayName, message("executableCommon.not_installed"))
+            )
     } catch (e: Exception) {
         ExecutableInstance.UnresolvedExecutable(message("aws.settings.executables.resolution_exception", type.displayName, e.asString))
     }
