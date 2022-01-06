@@ -263,6 +263,12 @@ with what features/services are supported.
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.dynamodb.editor.DynamoDbTableEditorProvider"/>
         <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.services.dynamodb.editor.DynamoDbFileIconProvider"/>
 
+        <!-- Open in Console -->
+        <referenceProviderType key="commentsReferenceProvider"
+                               implementationClass="software.aws.toolkits.jetbrains.services.federation.psireferences.ArnPsiReferenceProvider"/>
+        <psi.referenceContributor id="arnContributor" implementation="software.aws.toolkits.jetbrains.services.federation.psireferences.ArnPsiReferenceContributor"/>
+        <documentationProvider implementation="software.aws.toolkits.jetbrains.services.federation.psireferences.ArnReferenceDocumentationProvider"/>
+
         <registryKey key="aws.telemetry.endpoint" description="Endpoint to use for publishing AWS client-side telemetry" defaultValue="https://client-telemetry.us-east-1.amazonaws.com" restartRequired="true"/>
         <registryKey key="aws.telemetry.identityPool" description="Cognito identity pool to use for publishing AWS client-side telemetry" defaultValue="us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842" restartRequired="true"/>
         <registryKey key="aws.telemetry.region" description="Region to use for publishing AWS client-side telemetry" defaultValue="us-east-1" restartRequired="true"/>

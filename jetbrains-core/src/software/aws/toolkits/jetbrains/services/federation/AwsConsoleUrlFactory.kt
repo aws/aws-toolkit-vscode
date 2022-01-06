@@ -105,6 +105,9 @@ class AwsConsoleUrlFactory(
                 c.execute(
                     request
                 ).use { resp ->
+                    if (resp.statusLine.statusCode !in 200..399) {
+                        throw RuntimeException("getSigninToken request to AWS Signin endpoint failed: ${resp.statusLine}")
+                    }
                     resp.entity.content.readAllBytes().decodeToString()
                 }
             }
