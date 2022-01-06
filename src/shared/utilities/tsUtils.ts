@@ -44,7 +44,7 @@ export type SharedTypes<T1, T2> = {
 export type SharedProp<T1, T2> = string & keyof SharedTypes<T1, T2>
 
 /* Any key that can be accumulated (i.e. an array) */
-export type AccumulatableKeys<T> = NonNullable<
+export type AccumulableKeys<T> = NonNullable<
     {
         [P in keyof T]: NonNullable<T[P]> extends any[] ? P : never
     }[keyof T]

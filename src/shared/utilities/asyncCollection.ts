@@ -27,7 +27,7 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
 }
 
 /**
- * Converts an AsyncIterable to an {@link AsyncCollection}
+ * Converts an async generator function to an {@link AsyncCollection}
  *
  * Uses closures to capture generator functions after each transformation. Generator functions are not called
  * until a 'final' operation is taken by either:
