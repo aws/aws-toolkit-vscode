@@ -23,14 +23,14 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     toMap<K extends StringProperty<T>, U extends string = never>(
         selector: KeySelector<T, U> | K
     ): Promise<Map<Coalesce<U, T[K]>, T>>
+    /** Returns an iterator directly from the underlying generator, preserving values returned. */
     iterator(): AsyncIterator<T, T | void>
 }
 
 /**
  * Converts an async generator function to an {@link AsyncCollection}
  *
- * Uses closures to capture generator functions after each transformation. Generator functions are not called
- * until a 'final' operation is taken by either:
+ * Generation is "lazy", i.e. the generator is not called until a resolving operation:
  *  * Iterating over them using `for await (...)`
  *  * Iterating over them using `.next()`
  *  * Calling one of the conversion functions `toMap` or `promise`
