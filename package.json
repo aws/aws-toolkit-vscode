@@ -1470,7 +1470,7 @@
                 {
                     "command": "aws.ecs.runCommandInContainer",
                     "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
                 },
                 {
                     "command": "aws.ecs.enableEcsExec",
@@ -2451,6 +2451,7 @@
                 "command": "aws.ecs.runCommandInContainer",
                 "title": "%AWS.ecs.runCommandInContainer%",
                 "category": "%AWS.title%",
+                "enablement": "viewItem == awsEcsContainerNodeExecEnabled",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2881,7 +2882,7 @@
         "@types/vscode": "1.44.0",
         "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
-        "@typescript-eslint/eslint-plugin": "^5.4.0",
+        "@typescript-eslint/eslint-plugin": "^5.9.0",
         "@typescript-eslint/parser": "^5.4.0",
         "@vue/compiler-sfc": "^3.2.6",
         "circular-dependency-plugin": "^5.2.2",
