@@ -30,7 +30,7 @@ function copyClock(): Clock {
     return { ...globalThis, Date, Promise } as Clock
 }
 
-const globals = {} as ToolkitGlobals
+const globals = { clock: copyClock() } as ToolkitGlobals
 
 export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
