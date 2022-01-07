@@ -37,9 +37,6 @@ export function checkDidReload(context: ExtensionContext): boolean {
 }
 
 export function initialize(context: ExtensionContext, window: Window): ToolkitGlobals {
-    // TODO: we should throw here if already assigned. A few tests actually depend on the combined state
-    // of the extension activating plus test setup, so for now we have to do it like this :(
-
     Object.assign(globals, {
         context,
         window,
