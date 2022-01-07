@@ -2882,7 +2882,7 @@
         "@types/vscode": "1.44.0",
         "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
-        "@typescript-eslint/eslint-plugin": "^5.4.0",
+        "@typescript-eslint/eslint-plugin": "^5.9.0",
         "@typescript-eslint/parser": "^5.4.0",
         "@vue/compiler-sfc": "^3.2.6",
         "circular-dependency-plugin": "^5.2.2",
