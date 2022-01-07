@@ -4,8 +4,6 @@
 import de.undercouch.gradle.tasks.download.Download
 import software.aws.toolkits.gradle.resources.ValidateMessages
 
-val junitVersion: String by project
-
 plugins {
     id("toolkit-kotlin-conventions")
     id("toolkit-testing")

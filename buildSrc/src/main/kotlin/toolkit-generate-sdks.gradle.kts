@@ -4,8 +4,6 @@
 import software.aws.toolkits.gradle.sdk.GenerateSdk
 import software.aws.toolkits.gradle.sdk.GenerateSdkExtension
 
-val awsSdkVersion: String by project
-
 val sdkGenerator = project.extensions.create<GenerateSdkExtension>("sdkGenerator")
 
 plugins {

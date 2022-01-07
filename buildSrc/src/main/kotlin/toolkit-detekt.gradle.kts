@@ -1,8 +1,6 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-val detektVersion: String by project
-
 plugins {
     id("io.gitlab.arturbosch.detekt")
     id("toolkit-testing")

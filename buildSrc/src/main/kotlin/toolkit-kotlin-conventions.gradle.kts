@@ -5,9 +5,6 @@ import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlinVersion: String by project
-val coroutinesVersion: String by project
-
 plugins {
     id("java")
     kotlin("jvm")

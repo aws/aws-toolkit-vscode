@@ -3,10 +3,6 @@
 
 import software.aws.toolkits.gradle.ciOnly
 
-val mockitoVersion: String by project
-val mockitoKotlinVersion: String by project
-val assertjVersion: String by project
-
 plugins {
     id("java") // Needed for referencing "implementation" configuration
     id("jacoco")
