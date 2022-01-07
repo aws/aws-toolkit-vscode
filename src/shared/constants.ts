@@ -72,6 +72,8 @@ export const debugNewSamAppUrl: string = isCloud9()
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-debug'
 
 export const ecsDocumentationUrl: string = 'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html'
+export const ecsExecToolkitGuideUrl: string =
+    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html'
 
 /**
  * Moment format for rendering readable dates.
