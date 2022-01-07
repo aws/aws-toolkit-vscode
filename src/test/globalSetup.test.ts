@@ -13,17 +13,16 @@ import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
-import * as extWindow from '../shared/vscode/window'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
-import { FakeExtensionContext } from './fakeExtensionContext'
 import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
-import { initializeComputeRegion } from '../shared/extensionUtilities'
-import { SchemaService } from '../shared/schemas'
 import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
-import globals, { initialize } from '../shared/extensionGlobals'
+import globals from '../shared/extensionGlobals'
+import { activateExtension } from '../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { initializeIconPaths } from '../shared/icons'
+import { FakeExtensionContext } from './fakeExtensionContext'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -37,13 +36,15 @@ before(async function () {
         await remove(testLogOutput)
     } catch (e) {}
     mkdirpSync(testReportDir)
-    // Set up global telemetry client
+
+    // Extension activation has many side-effects such as changing globals
+    // For stability in tests we will wait until the extension has activated prior to injecting mocks
+    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+
     const fakeContext = new FakeExtensionContext()
-    // set global storage path
     fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
-    initialize(fakeContext, extWindow.Window.vscode())
     initializeIconPaths(fakeContext)
-    await initializeComputeRegion()
+    Object.assign(globals, { context: fakeContext })
 })
 
 after(async function () {
@@ -55,7 +56,6 @@ beforeEach(function () {
     testLogger = setupTestLogger()
     globals.templateRegistry = new CloudFormationTemplateRegistry()
     globals.codelensRootRegistry = new CodelensRootRegistry()
-    globals.schemaService = new SchemaService(globals.context)
     globals.telemetry = initTelemetry()
 })
 
