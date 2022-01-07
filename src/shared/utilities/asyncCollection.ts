@@ -14,7 +14,7 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     /** Applies a mapping transform to the output generator */
     map<U>(fn: (obj: T) => U): AsyncCollection<U>
     /** Filters out results which will _not_ be passed on to further transformations. */
-    filter<U extends T>(predicate: AsyncPredicate<T, U>): AsyncCollection<U>
+    filter<U extends T>(predicate: Predicate<T, U>): AsyncCollection<U>
     /** Uses only the first 'count' number of values returned by the generator. */
     take(count: number): AsyncCollection<T>
     /** Converts the collection to a Promise, resolving to an array of all values returned by the generator. */
@@ -53,7 +53,7 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
 
     return Object.assign(iterable, {
         flatten: () => toCollection<SafeUnboxIterable<T>>(() => delegateGenerator(generator(), flatten)),
-        filter: <U extends T>(predicate: AsyncPredicate<T, U>) =>
+        filter: <U extends T>(predicate: Predicate<T, U>) =>
             toCollection<U>(() => filterGenerator<T, U>(generator(), predicate)),
         map: <U>(fn: (item: T) => U) => toCollection<U>(() => mapGenerator(generator(), fn)),
         take: (count: number) => toCollection(() => delegateGenerator(generator(), takeFrom(count))),
@@ -81,7 +81,7 @@ async function* mapGenerator<T, U, R = T>(
 
 async function* filterGenerator<T, U extends T, R = T>(
     generator: AsyncGenerator<T, R | undefined | void>,
-    predicate: AsyncPredicate<T | R, U>
+    predicate: Predicate<T | R, U>
 ): AsyncGenerator<U, U | undefined> {
     while (true) {
         const { value, done } = await generator.next()
@@ -158,7 +158,7 @@ async function promise<T>(iterable: AsyncIterable<T>): Promise<T[]> {
     return result
 }
 
-type AsyncPredicate<T, U extends T> = ((item: T) => item is U) | ((item: T) => Promise<boolean> | boolean)
+type Predicate<T, U extends T> = ((item: T) => item is U) | ((item: T) => boolean)
 
 function addToMap<T, U extends string>(map: Map<string, T>, selector: KeySelector<T, U> | StringProperty<T>, item: T) {
     const key = typeof selector === 'function' ? selector(item) : item[selector]
