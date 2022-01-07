@@ -79,8 +79,8 @@ export class ChildProcess {
     private makeResult(code: number, signal?: string): ChildProcessResult {
         return {
             exitCode: code,
-            stdout: this.stdoutChunks.join().trim(),
-            stderr: this.stderrChunks.join().trim(),
+            stdout: this.stdoutChunks.join('').trim(),
+            stderr: this.stderrChunks.join('').trim(),
             error: this.processErrors[0], // Only use the first since that one usually cascades.
             signal,
         }
