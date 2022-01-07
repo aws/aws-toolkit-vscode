@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
-import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { sleep } from '../../../shared/utilities/promiseUtilities'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
@@ -22,7 +22,7 @@ describe('ChildProcess', async function () {
     })
 
     afterEach(async function () {
-        await tryRemoveFolder(tempFolder)
+        await fs.remove(tempFolder)
     })
 
     describe('run', async function () {
@@ -304,7 +304,6 @@ describe('ChildProcess', async function () {
             it('can report errors', async function () {
                 const result = childProcess.run({
                     rejectOnError: true,
-                    useForceStop: true,
                     onStdout: (text, context) => {
                         if (text.includes('2')) {
                             context.reportError('Got 2')
