@@ -12,6 +12,11 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { EcsServiceNode } from '../explorer/ecsServiceNode'
 
+export enum EcsRunCommandPrompt {
+    Enable = 'ecsRunCommandEnable',
+    Disable = 'ecsRunCommandDisable',
+}
+
 export async function updateEnableExecuteCommandFlag(
     node: EcsServiceNode,
     enable: boolean,
@@ -23,7 +28,7 @@ export async function updateEnableExecuteCommandFlag(
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
 
-    const prompt = enable ? 'ecsRunCommandEnable' : 'ecsRunCommandDisable'
+    const prompt = enable ? EcsRunCommandPrompt.Enable : EcsRunCommandPrompt.Disable
     const hasExecEnabled = node.service.enableExecuteCommand
 
     const warningMessage = enable

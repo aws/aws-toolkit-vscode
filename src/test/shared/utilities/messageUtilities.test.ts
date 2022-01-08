@@ -7,29 +7,35 @@ import * as assert from 'assert'
 import { showConfirmationMessage, showViewLogsMessage, showOutputMessage } from '../../../shared/utilities/messages'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
+import { createTestWindow } from '../vscode/window'
 
 describe('messages', function () {
+    const window = createTestWindow()
+
     describe('showConfirmationMessage', function () {
         const prompt = 'prompt'
         const confirm = 'confirm'
         const cancel = 'cancel'
 
         it('confirms warning message when the user clicks confirm', async function () {
-            const window = new FakeWindow({ message: { warningSelection: confirm } })
+            const isConfirmed = showConfirmationMessage({ prompt, confirm, cancel }, window)
+            await window.waitForMessage(prompt).then(message => message.selectItem(confirm))
 
-            const isConfirmed = await showConfirmationMessage({ prompt, confirm, cancel }, window)
-
-            assert.strictEqual(window.message.warning, prompt)
-            assert.strictEqual(isConfirmed, true)
+            assert.strictEqual(await isConfirmed, true)
         })
 
         it('cancels warning message when the user clicks cancel', async function () {
-            const window = new FakeWindow({ message: { warningSelection: cancel } })
+            const isConfirmed = showConfirmationMessage({ prompt, confirm, cancel }, window)
+            await window.waitForMessage(prompt).then(message => message.selectItem(cancel))
 
-            const isConfirmed = await showConfirmationMessage({ prompt, confirm, cancel }, window)
+            assert.strictEqual(await isConfirmed, false)
+        })
 
-            assert.strictEqual(window.message.warning, prompt)
-            assert.strictEqual(isConfirmed, false)
+        it('cancels warning message on close', async function () {
+            const isConfirmed = showConfirmationMessage({ prompt, confirm, cancel }, window)
+            await window.waitForMessage(prompt).then(message => message.close())
+
+            assert.strictEqual(await isConfirmed, false)
         })
     })
 

@@ -4,14 +4,21 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../shared/logger'
 import { inspect } from 'util'
 import { throttle } from 'lodash'
+import { getLogger } from '../shared/logger/logger'
+import * as bytes from 'bytes'
 
 const DEFAULT_REPORTING_INTERVAL_MILLIS = 500
 
+interface ProgressReporterOptions {
+    readonly totalBytes?: number
+    readonly reportMessage?: boolean
+    readonly minIntervalMillis?: number
+}
+
 /**
- * Returns a function that pipes cumulative byte progress to VSCode's incremental percentage Progress.
+ * Returns a function that pipes incremental byte progress to VSCode's incremental percentage Progress.
  *
  * @param progress the VSCode progress to update.
  * @param totalBytes the total bytes.
@@ -19,54 +26,36 @@ const DEFAULT_REPORTING_INTERVAL_MILLIS = 500
  * @param minIntervalMillis the minimum delay between progress updates.
  * Used to throttle updates. Updates that occur between intervals are dropped.
  */
-export function progressReporter({
-    progress,
-    totalBytes,
-    minIntervalMillis = DEFAULT_REPORTING_INTERVAL_MILLIS,
-}: {
-    progress: vscode.Progress<{ message?: string; increment?: number }>
-    totalBytes?: number
-    minIntervalMillis?: number
-}): (loadedBytes: number) => void {
-    const reportProgressThrottled = throttle(reportProgressImmediately, minIntervalMillis, {
-        leading: true,
-        trailing: false,
-    })
+export function progressReporter(
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    options: ProgressReporterOptions = {}
+): (loadedBytes: number) => void {
+    const { totalBytes, reportMessage, minIntervalMillis } = options
+    const reporter = new ProgressReporter(progress, { totalBytes, reportMessage })
+    const reportProgressThrottled = throttle(
+        () => reporter.report(),
+        minIntervalMillis ?? DEFAULT_REPORTING_INTERVAL_MILLIS,
+        { leading: true, trailing: false }
+    )
 
-    const report = new ProgressReport(totalBytes)
-    return loadedBytes => {
-        const isDone = loadedBytes === totalBytes
-        if (isDone) {
-            reportProgressImmediately(progress, report, loadedBytes)
+    return newBytes => {
+        reporter.update(newBytes)
+
+        if (reporter.done) {
+            reporter.report()
         } else {
-            reportProgressThrottled(progress, report, loadedBytes)
+            reportProgressThrottled()
         }
     }
 }
 
 /**
- * Throttles the given function unless the given condition is met by the arguments.
- *
- * Like _.throttle except specific calls can bypass the throttling.
- */
-function reportProgressImmediately(
-    progress: vscode.Progress<{ message?: string; increment?: number }>,
-    report: ProgressReport,
-    loadedBytes: number
-): void {
-    report.updateLoadedBytes(loadedBytes)
-    if (report.incrementalPercentage) {
-        progress.report({ increment: report.incrementalPercentage })
-    }
-    getLogger().verbose('%O', report)
-}
-
-/**
  * Tracks incremental and total progress in terms of bytes and percentages.
  */
-class ProgressReport {
-    private _incrementalBytes = 0
+class ProgressReporter {
+    private _incrementalProgress = 0
     private _loadedBytes = 0
+    private _totalBytes: number | undefined
 
     /**
      * Creates a ProgressReport.
@@ -78,40 +67,47 @@ class ProgressReport {
      *
      * @throw Error if _totalBytes is not an integer or is negative.
      */
-    public constructor(private readonly _totalBytes?: number) {
-        if (_totalBytes !== undefined) {
-            if (!Number.isInteger(_totalBytes)) {
-                throw new Error(`totalBytes: ${_totalBytes} must be an integer`)
+    public constructor(
+        private readonly progress: vscode.Progress<{ message?: string; increment?: number }>,
+        private readonly options?: Omit<ProgressReporterOptions, 'minIntervalMillis'>
+    ) {
+        this._totalBytes = options?.totalBytes
+        if (this._totalBytes !== undefined) {
+            if (!Number.isInteger(this._totalBytes)) {
+                throw new Error(`totalBytes: ${this._totalBytes} must be an integer`)
             }
-            if (_totalBytes < 0) {
-                throw new Error(`totalBytes ${_totalBytes} cannot be negative`)
+            if (this._totalBytes < 0) {
+                throw new Error(`totalBytes ${this._totalBytes} cannot be negative`)
             }
         }
     }
 
-    public get loadedBytes(): number {
-        return this._loadedBytes
+    public get done(): boolean {
+        return this._loadedBytes === this._totalBytes
     }
 
-    public get totalBytes(): number | undefined {
-        return this._totalBytes
+    private formatMessage(): string {
+        const format = (b: number) => bytes(b, { unitSeparator: ' ', decimalPlaces: 0 })
+        return this._totalBytes ? `${format(this._loadedBytes)} / ${format(this._totalBytes)}` : ''
+    }
+
+    /**
+     * Reports the new progress (if any) and flushes the internal counter.
+     */
+    public report(): void {
+        const message = this.options?.reportMessage ? this.formatMessage() : undefined
+        this.progress.report({ message, increment: this._incrementalProgress })
+        this._incrementalProgress = 0
+        getLogger().verbose('%O', this)
     }
 
     /**
      * Returns the last incremental progress made in terms of percentage as an integer (rounded up).
      *
-     * If the total bytes is unknown, always returns undefined.
-     * If the total bytes is 0, always returns 100%.
+     * If the total bytes is undefined or 0, always returns 100%.
      */
-    public get incrementalPercentage(): number | undefined {
-        switch (this._totalBytes) {
-            case undefined:
-                return undefined
-            case 0:
-                return 100
-            default:
-                return Math.ceil((this._incrementalBytes / this._totalBytes) * 100)
-        }
+    private incrementalPercentage(newBytes: number): number {
+        return this._totalBytes ? Math.ceil((newBytes / this._totalBytes) * 100) : 100
     }
 
     /**
@@ -137,29 +133,27 @@ class ProgressReport {
      * @param newLoadedBytes the the new cumulative total bytes loaded.
      * This value must be greater than or equal to the previous cumulative bytes (progress cannot go backwards).
      *
-     * @throws Error if newLoadedBytes is not an integer, exceeds the total bytes, causes a decrease in progress, or is negative.
+     * @throws Error if newLoadedBytes is not an integer, exceeds the total bytes, or is negative.
      */
-    public updateLoadedBytes(newLoadedBytes: number): void {
-        if (!Number.isInteger(newLoadedBytes)) {
-            throw new Error(`newLoadedBytes: ${newLoadedBytes} must be an integer`)
-        } else if (newLoadedBytes < 0) {
-            throw new Error(`newLoadedBytes: ${newLoadedBytes} cannot be negative`)
-        } else if (this.totalBytes !== undefined && newLoadedBytes > this.totalBytes) {
-            throw new Error(`newLoadedBytes: ${newLoadedBytes} cannot be greater than totalBytes`)
-        } else if (newLoadedBytes < this._loadedBytes) {
-            throw new Error(`newLoadedBytes: ${newLoadedBytes} cannot be less than loadedBytes: ${this._loadedBytes}`)
+    public update(newBytes: number): void {
+        if (!Number.isInteger(newBytes)) {
+            throw new Error(`newBytes: ${newBytes} must be an integer`)
+        } else if (newBytes < 0) {
+            throw new Error(`newBytes: ${newBytes} cannot be negative`)
+        } else if (this._totalBytes !== undefined && newBytes > this._totalBytes) {
+            throw new Error(`newBytes: ${newBytes} cannot be greater than totalBytes`)
         }
 
-        this._incrementalBytes = newLoadedBytes - this._loadedBytes
-        this._loadedBytes = newLoadedBytes
+        this._incrementalProgress += this.incrementalPercentage(newBytes)
+        this._loadedBytes += newBytes
     }
 
     public [inspect.custom](): string {
-        switch (this.totalBytes) {
+        switch (this._totalBytes) {
             case undefined:
-                return `ProgressReport: ${this.loadedBytes} bytes loaded)`
+                return `ProgressReport: ${this._loadedBytes} bytes loaded)`
             default:
-                return `ProgressReport: ${this.loadedBytes} / ${this.totalBytes} bytes loaded (${this.loadedPercentage}%)`
+                return `ProgressReport: ${this._loadedBytes} / ${this._totalBytes} bytes loaded (${this.loadedPercentage}%)`
         }
     }
 }

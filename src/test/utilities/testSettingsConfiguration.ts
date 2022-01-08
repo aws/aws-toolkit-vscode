@@ -18,7 +18,7 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
 
     public async isPromptEnabled(promptName: string): Promise<boolean> {
         const p = `aws.suppressPrompt.${promptName}`
-        return this._data[p] === true
+        return (this._data[p] ?? true) === true
     }
 
     public async getSuppressPromptSetting(promptName: string): Promise<{ [prompt: string]: boolean } | undefined> {
