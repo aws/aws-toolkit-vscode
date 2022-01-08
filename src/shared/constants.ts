@@ -106,3 +106,7 @@ export const apprunnerPricingUrl = 'https://aws.amazon.com/apprunner/pricing/'
 export const apprunnerCreateServiceDocsUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/creating-service-apprunner.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/creating-service-apprunner.html'
+
+// URLs for S3
+// TODO: update docs to add the file viewer feature
+export const s3FileViewerHelpUrl = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/s3.html'
