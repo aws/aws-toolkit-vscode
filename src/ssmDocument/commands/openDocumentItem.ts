@@ -13,7 +13,7 @@ import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
-import { showViewLogsMessage } from 'src/shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()

@@ -23,7 +23,7 @@ import {
     WizardStep,
 } from '../../shared/wizards/multiStepWizard'
 import { validateDocumentName } from '../util/validateDocumentName'
-import { showViewLogsMessage } from 'src/shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 const localize = nls.loadMessageBundle()
 
 export interface PublishSSMDocumentWizardResponse {

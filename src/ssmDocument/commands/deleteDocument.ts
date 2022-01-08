@@ -15,7 +15,7 @@ import * as localizedText from '../../shared/localizedText'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
-import { showViewLogsMessage } from 'src/shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 export async function deleteDocument(
     node: DocumentItemNodeWriteable,
