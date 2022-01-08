@@ -71,7 +71,7 @@ async function* mapGenerator<T, U, R = T>(
     while (true) {
         const { value, done } = await generator.next()
         if (done) {
-            return value !== undefined ? fn(value) : undefined
+            return value !== undefined ? (fn(value) as Awaited<U>) : undefined
         }
         if (value !== undefined) {
             yield fn(value)
@@ -92,7 +92,7 @@ async function* filterGenerator<T, U extends T, R = T>(
             continue
         }
         if (done) {
-            return value
+            return value as Awaited<U | undefined>
         }
         yield value
     }
@@ -119,7 +119,7 @@ async function* delegateGenerator<T, U, R = T>(
             }
         }
         if (done) {
-            return last
+            return last as Awaited<U | undefined>
         }
     }
 }
