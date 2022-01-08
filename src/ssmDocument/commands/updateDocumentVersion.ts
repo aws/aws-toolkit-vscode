@@ -13,6 +13,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
+import { showViewLogsMessage } from 'src/shared/utilities/messages'
 
 export async function updateDocumentVersion(node: DocumentItemNodeWriteable, awsContext: AwsContext) {
     const logger: Logger = getLogger()
@@ -61,12 +62,13 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
     } catch (err) {
         result = 'Failed'
         const error = err as Error
-        vscode.window.showErrorMessage(
+        showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.updateDocumentVersion.could_not_update_version',
-                'Could not update document {0} default version. Please check logs for more details.',
+                'Could not update default version for: {0}',
                 node.documentName
-            )
+            ),
+            vscode.window
         )
         logger.error('Error on updating document version: %0', error)
     } finally {

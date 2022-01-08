@@ -13,6 +13,7 @@ import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
+import { showViewLogsMessage } from 'src/shared/utilities/messages'
 
 export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()
@@ -43,12 +44,13 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
         result = 'Failed'
         const error = err as Error
         logger.error('Error on opening document: %0', error)
-        vscode.window.showErrorMessage(
+        showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.openDocument.could_not_open',
-                'Could not fetch and display document {0} contents. Please check logs for more details.',
+                'Could not fetch document: {0}',
                 node.documentName
-            )
+            ),
+            vscode.window
         )
     } finally {
         telemetry.recordSsmOpenDocument({ result: result })
