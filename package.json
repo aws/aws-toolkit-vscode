@@ -82,7 +82,9 @@
         "onCommand:aws.addSamDebugConfig",
         "onCommand:aws.s3.uploadFile",
         "onCommand:aws.cloudFormation.newTemplate",
-        "onCommand:aws.sam.newTemplate"
+        "onCommand:aws.sam.newTemplate",
+        "onFileSystem:s3",
+        "onFileSystem:s3-readonly"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -204,7 +206,8 @@
                         "ecsRunCommand": false,
                         "ecsRunCommandDisable": false,
                         "ecsRunCommandEnable": false,
-                        "yamlExtPrompt": false
+                        "yamlExtPrompt": false,
+                        "fileViewerEdit": false
                     },
                     "properties": {
                         "apprunnerNotifyPricing": {
@@ -224,6 +227,10 @@
                             "default": false
                         },
                         "yamlExtPrompt": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "fileViewerEdit": {
                             "type": "boolean",
                             "default": false
                         }
@@ -785,6 +792,10 @@
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "resourceScheme == s3-readonly"
+                },
+                {
                     "command": "aws.cloudWatchLogs.viewLogStream",
                     "when": "false"
                 },
@@ -901,6 +912,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.s3.openFile",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "false"
+                },
+                {
                     "command": "aws.s3.uploadFileToParent",
                     "when": "false"
                 },
@@ -1002,6 +1021,11 @@
                 {
                     "command": "aws.saveCurrentLogStreamContent",
                     "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "resourceScheme == s3-readonly",
                     "group": "navigation"
                 },
                 {
@@ -1153,9 +1177,14 @@
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.s3.downloadFileAs",
+                    "command": "aws.s3.openFileEditMode",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.s3.downloadFileAs",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "inline@2"
                 },
                 {
                     "command": "aws.s3.createBucket",
@@ -1326,6 +1355,16 @@
                     "command": "aws.s3.downloadFileAs",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.s3.openFile",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "0@2"
                 },
                 {
                     "command": "aws.s3.uploadFile",
@@ -1976,6 +2015,18 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.s3.openFile",
+                "title": "%AWS.command.s3.openFile%",
+                "category": "%AWS.title%",
+                "icon": "$(open-preview)"
+            },
+            {
+                "command": "aws.s3.openFileEditMode",
+                "title": "%AWS.command.s3.openFileEditMode%",
+                "category": "%AWS.title%",
+                "icon": "$(edit)"
             },
             {
                 "command": "aws.s3.uploadFile",

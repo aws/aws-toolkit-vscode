@@ -9,7 +9,10 @@ import { EcsServiceNode } from '../../../ecs/explorer/ecsServiceNode'
 import { EcsClient, DefaultEcsClient } from '../../../shared/clients/ecsClient'
 import { ECS } from 'aws-sdk'
 import { EcsClusterNode } from '../../../ecs/explorer/ecsClusterNode'
-import { updateEnableExecuteCommandFlag } from '../../../ecs/commands/updateEnableExecuteCommandFlag'
+import {
+    EcsRunCommandPrompt,
+    updateEnableExecuteCommandFlag,
+} from '../../../ecs/commands/updateEnableExecuteCommandFlag'
 import { Commands } from '../../../shared/vscode/commands'
 import { Window } from '../../../shared/vscode/window'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
@@ -23,9 +26,12 @@ describe('updateEnableExecuteCommandFlag', async function () {
     const parent = { clearChildren: () => {} } as EcsClusterNode
     const ecs: EcsClient = new DefaultEcsClient('fakeRegion')
     const commands = Commands.vscode()
+    const settings = new TestSettingsConfiguration()
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        settings.disablePrompt(EcsRunCommandPrompt.Enable)
+        settings.disablePrompt(EcsRunCommandPrompt.Disable)
     })
 
     afterEach(function () {
@@ -38,13 +44,7 @@ describe('updateEnableExecuteCommandFlag', async function () {
         const parentStub = sandbox.stub(parent, 'clearChildren').resolves()
         sandbox.stub(commands, 'execute').resolves()
 
-        await updateEnableExecuteCommandFlag(
-            node,
-            true,
-            Window.vscode(),
-            Commands.vscode(),
-            new TestSettingsConfiguration()
-        )
+        await updateEnableExecuteCommandFlag(node, true, Window.vscode(), Commands.vscode(), settings)
 
         assert.strictEqual(
             updateStub.calledOnceWith('clusterArn', serviceName, true),
@@ -60,13 +60,7 @@ describe('updateEnableExecuteCommandFlag', async function () {
         const parentStub = sandbox.stub(parent, 'clearChildren').resolves()
         sandbox.stub(commands, 'execute').resolves()
 
-        await updateEnableExecuteCommandFlag(
-            node,
-            false,
-            Window.vscode(),
-            Commands.vscode(),
-            new TestSettingsConfiguration()
-        )
+        await updateEnableExecuteCommandFlag(node, false, Window.vscode(), Commands.vscode(), settings)
 
         assert.strictEqual(
             updateStub.calledOnceWith('clusterArn', serviceName, false),
@@ -81,13 +75,7 @@ describe('updateEnableExecuteCommandFlag', async function () {
         const updateStub = sandbox.stub(ecs, 'updateService').resolves()
         const parentStub = sandbox.stub(parent, 'clearChildren').resolves()
 
-        await updateEnableExecuteCommandFlag(
-            node,
-            true,
-            Window.vscode(),
-            Commands.vscode(),
-            new TestSettingsConfiguration()
-        )
+        await updateEnableExecuteCommandFlag(node, true, Window.vscode(), Commands.vscode(), settings)
 
         assert.strictEqual(updateStub.callCount, 0, 'Expected to return without updating service')
         assert.strictEqual(parentStub.callCount, 0)
@@ -98,13 +86,7 @@ describe('updateEnableExecuteCommandFlag', async function () {
         const updateStub = sandbox.stub(ecs, 'updateService').resolves()
         const parentStub = sandbox.stub(parent, 'clearChildren').resolves()
 
-        await updateEnableExecuteCommandFlag(
-            node,
-            false,
-            Window.vscode(),
-            Commands.vscode(),
-            new TestSettingsConfiguration()
-        )
+        await updateEnableExecuteCommandFlag(node, false, Window.vscode(), Commands.vscode(), settings)
 
         assert.strictEqual(updateStub.callCount, 0, 'Expected to return without updating service')
         assert.strictEqual(parentStub.callCount, 0)
