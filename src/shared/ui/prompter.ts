@@ -88,9 +88,9 @@ type Cacheable = (...args: (string | number | boolean | undefined)[]) => NonNull
  * Pending promises are returned as-is, while resolved promises are 'unboxed' into their promised type.
  */
 export interface CachedFunction<F extends (...args: any) => any> {
-    (...args: Parameters<F>): ReturnType<F> extends Promise<infer Inner> ? ReturnType<F> | Inner : ReturnType<F>
+    (...args: Parameters<F>): Awaited<ReturnType<F>> | ReturnType<F>
     clearCache(): void
-    supplantLast(result: ReturnType<F> extends Promise<infer Inner> ? Inner : ReturnType<F>): void
+    supplantLast(result: Awaited<ReturnType<F>>): void
 }
 
 // TODO: this currently just caches primitive arguments which is not very flexible
