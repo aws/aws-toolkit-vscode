@@ -19,6 +19,7 @@ import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
 import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telemetryTypes'
+import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 
 export class DefaultTelemetryService implements TelemetryService {
@@ -35,6 +36,7 @@ export class DefaultTelemetryService implements TelemetryService {
     private _timer?: NodeJS.Timer
     private publisher?: TelemetryPublisher
     private readonly _eventQueue: MetricDatum[]
+    private readonly _telemetryLogger = new TelemetryLogger()
     /**
      * Last metric (if any) loaded from cached telemetry from a previous
      * session.
@@ -67,11 +69,16 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
+    public get logger(): TelemetryLogger {
+        return this._telemetryLogger
+    }
+
     public async start(): Promise<void> {
+        // TODO: `readEventsFromCache` should be async
         this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
         this._endOfCache = this._eventQueue[this._eventQueue.length - 1]
         recordSessionStart()
-        await this.startTimer()
+        this.startTimer()
     }
 
     public async shutdown(): Promise<void> {
@@ -130,12 +137,8 @@ export class DefaultTelemetryService implements TelemetryService {
             const actualAwsContext = awsContext || this.awsContext
             const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
             this._eventQueue.push(eventWithCommonMetadata)
-            getLogger().debug(`telemetry: passive=${event.Passive ? 1 : 0} ${event.MetricName}`)
+            this._telemetryLogger.log(eventWithCommonMetadata)
         }
-    }
-
-    public get records(): ReadonlyArray<MetricDatum> {
-        return this._eventQueue
     }
 
     public clearRecords(): void {
@@ -155,16 +158,12 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
-    // TODO: replace this with `setInterval`
-    private async startTimer(): Promise<void> {
-        this._timer = globals.clock.setTimeout(
-            // this is async so that we don't have pseudo-concurrent invocations of the callback
-            async () => {
-                await this.flushRecords()
-                this._timer?.refresh()
-            },
-            this._flushPeriod
-        )
+    private startTimer(): void {
+        // The timer is not reset until after the flush as completed
+        this._timer = globals.clock.setTimeout(async () => {
+            await this.flushRecords()
+            this._timer?.refresh()
+        }, this._flushPeriod)
     }
 
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
@@ -177,7 +176,7 @@ export class DefaultTelemetryService implements TelemetryService {
             }
 
             // grab our Cognito identityId
-            const poolId = DefaultTelemetryClient.DEFAULT_IDENTITY_POOL
+            const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = this.context.globalState.get<string>(
                 DefaultTelemetryService.TELEMETRY_COGNITO_ID_KEY,
                 '[]'

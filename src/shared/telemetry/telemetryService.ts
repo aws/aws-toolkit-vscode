@@ -10,7 +10,6 @@ import { TelemetryFeedback } from './telemetryFeedback'
 export interface TelemetryService {
     telemetryEnabled: boolean
     persistFilePath: string
-    records: ReadonlyArray<MetricDatum>
 
     start(): Promise<void>
     shutdown(): Promise<void>

@@ -99,16 +99,16 @@ describe('timeoutUtils', async function () {
 
         it('Correctly reports elapsed time with refresh', async function () {
             // TODO: fake timers `refresh` is not implemented correctly for the non-global case
-            // same for 'does not reject if refreshed'
-            clock.uninstall()
+            this.skip()
 
             const longTimer = (this.timer = new timeoutUtils.Timeout(10))
-            await sleep(5)
+            clock.tick(5)
             longTimer.refresh()
             assert.strictEqual(longTimer.remainingTime, 10)
-            await sleep(10)
-            //assert.strictEqual(longTimer.elapsedTime, 10)
-            //assert.strictEqual(longTimer.remainingTime, 5)
+
+            clock.tick(10)
+            assert.strictEqual(longTimer.elapsedTime, 15)
+            assert.strictEqual(longTimer.remainingTime, 5)
 
             clock = installFakeClock()
         })
@@ -121,8 +121,7 @@ describe('timeoutUtils', async function () {
         })
 
         it('does not reject if refreshed', async function () {
-            // TODO: remove when fake timers is fixed
-            clock.uninstall()
+            this.skip()
 
             const longTimer = (this.timer = new timeoutUtils.Timeout(10))
             clock.tick(5)
@@ -131,8 +130,6 @@ describe('timeoutUtils', async function () {
             longTimer.complete()
             clock.tick(10)
             await longTimer.timer
-
-            clock = installFakeClock()
         })
     })
 

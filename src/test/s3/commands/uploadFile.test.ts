@@ -91,7 +91,7 @@ describe('uploadFileCommand', function () {
 
             assert.strictEqual(uploadFileRequest.bucketName, bucketName)
             assert.strictEqual(uploadFileRequest.key, key)
-            assert.strictEqual(uploadFileRequest.fileLocation, fileLocation)
+            assert.strictEqual(uploadFileRequest.content, fileLocation)
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',

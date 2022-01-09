@@ -12,6 +12,11 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { EcsServiceNode } from '../explorer/ecsServiceNode'
 
+export enum EcsRunCommandPrompt {
+    Enable = 'ecsRunCommandEnable',
+    Disable = 'ecsRunCommandDisable',
+}
+
 export async function updateEnableExecuteCommandFlag(
     node: EcsServiceNode,
     enable: boolean,
@@ -23,7 +28,7 @@ export async function updateEnableExecuteCommandFlag(
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
 
-    const prompt = enable ? 'ecsRunCommandEnable' : 'ecsRunCommandDisable'
+    const prompt = enable ? EcsRunCommandPrompt.Enable : EcsRunCommandPrompt.Disable
     const hasExecEnabled = node.service.enableExecuteCommand
 
     const warningMessage = enable
@@ -38,6 +43,9 @@ export async function updateEnableExecuteCommandFlag(
     const redundantActionMessage = enable
         ? localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
         : localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
+    const updatingServiceMessage = enable
+        ? localize('AWS.ecs.updateService.enable', 'Enabling ECS Exec for service: {0}', node.service.serviceName)
+        : localize('AWS.ecs.updateService.disable', 'Disabling ECS Exec for service: {0}', node.service.serviceName)
 
     let result: 'Succeeded' | 'Failed' | 'Cancelled'
     if (enable === hasExecEnabled) {
@@ -58,7 +66,8 @@ export async function updateEnableExecuteCommandFlag(
         await node.ecs.updateService(node.service.clusterArn!, node.name, enable)
         result = 'Succeeded'
         node.parent.clearChildren()
-        commands.execute('aws.refreshAwsExplorerNode', node.parent)
+        node.parent.refresh()
+        window.showInformationMessage(updatingServiceMessage)
     } catch (e) {
         result = 'Failed'
         window.showErrorMessage((e as Error).message)

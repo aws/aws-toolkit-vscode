@@ -16,18 +16,31 @@ describe('progressReporter', function () {
     })
 
     it('reports incremental percentage when total is provided', function () {
-        const reporter = progressReporter({ progress: instance(progress), totalBytes: 16, minIntervalMillis: 0 })
+        const reporter = progressReporter(instance(progress), { totalBytes: 16, minIntervalMillis: 0 })
 
         reporter(4)
-        verify(progress.report(deepEqual({ increment: 25 }))).once()
+        verify(progress.report(deepEqual({ message: undefined, increment: 25 }))).once()
 
-        reporter(12)
-        verify(progress.report(deepEqual({ increment: 50 }))).once()
+        reporter(8)
+        verify(progress.report(deepEqual({ message: undefined, increment: 50 }))).once()
+    })
+
+    it('reports a formatted message if `reportMessage` is set', function () {
+        const reporter = progressReporter(instance(progress), {
+            totalBytes: 16,
+            minIntervalMillis: 0,
+            reportMessage: true,
+        })
+
+        reporter(4)
+        verify(progress.report(deepEqual({ message: `4 B / 16 B`, increment: 25 }))).once()
+
+        reporter(8)
+        verify(progress.report(deepEqual({ message: `12 B / 16 B`, increment: 50 }))).once()
     })
 
     it('throttles progress updates when update frequency exceeds throttle interval', function () {
-        const reporter = progressReporter({
-            progress: instance(progress),
+        const reporter = progressReporter(instance(progress), {
             totalBytes: 16,
             minIntervalMillis: 99999,
         })
@@ -36,19 +49,19 @@ describe('progressReporter', function () {
         verify(
             progress.report(
                 deepEqual({
+                    message: undefined,
                     increment: 25,
                 })
             )
         ).once()
 
-        reporter(5) // shouldn't fire
-        reporter(12) // shouldn't fire
-        reporter(14) // shouldn't fire
-        reporter(16) // should fire, since this puts progress at 100% (16/16 - 4/16 = 12/16 = +75%)
+        reporter(4) // shouldn't fire
+        reporter(8) // should fire, since this puts progress at 100%
 
         verify(
             progress.report(
                 deepEqual({
+                    message: undefined,
                     increment: 75,
                 })
             )
@@ -56,7 +69,7 @@ describe('progressReporter', function () {
     })
 
     it('reports no incremental percentage when total is not provided', function () {
-        const reporter = progressReporter({ progress: instance(progress), minIntervalMillis: 0 })
+        const reporter = progressReporter(instance(progress), { minIntervalMillis: 0 })
 
         reporter(4)
         reporter(8)
@@ -65,40 +78,32 @@ describe('progressReporter', function () {
 
     it('throws an error if total bytes is not an integer', function () {
         assert.throws(
-            () => progressReporter({ progress: instance(progress), totalBytes: 1.5, minIntervalMillis: 0 }),
+            () => progressReporter(instance(progress), { totalBytes: 1.5, minIntervalMillis: 0 }),
             /must be an integer/
         )
     })
 
     it('throws an error if total bytes is negative', function () {
         assert.throws(
-            () => progressReporter({ progress: instance(progress), totalBytes: -5, minIntervalMillis: 0 }),
+            () => progressReporter(instance(progress), { totalBytes: -5, minIntervalMillis: 0 }),
             /cannot be negative/
         )
     })
 
-    it('throws an error if updated with bytes less than loaded bytes', function () {
-        const reporter = progressReporter({ progress: instance(progress), totalBytes: 16, minIntervalMillis: 0 })
-
-        reporter(4)
-
-        assert.throws(() => reporter(2), /cannot be less than loadedBytes/)
-    })
-
     it('throws an error if updated with non integer bytes', function () {
-        const reporter = progressReporter({ progress: instance(progress), totalBytes: 5, minIntervalMillis: 0 })
+        const reporter = progressReporter(instance(progress), { totalBytes: 5, minIntervalMillis: 0 })
 
         assert.throws(() => reporter(1.5), /must be an integer/)
     })
 
     it('throws an error if updated with negative bytes', function () {
-        const reporter = progressReporter({ progress: instance(progress), totalBytes: 5, minIntervalMillis: 0 })
+        const reporter = progressReporter(instance(progress), { totalBytes: 5, minIntervalMillis: 0 })
 
         assert.throws(() => reporter(-5), /cannot be negative/)
     })
 
     it('throws an error if updated with bytes greater than total bytes', function () {
-        const reporter = progressReporter({ progress: instance(progress), totalBytes: 2, minIntervalMillis: 0 })
+        const reporter = progressReporter(instance(progress), { totalBytes: 2, minIntervalMillis: 0 })
 
         assert.throws(() => reporter(5), /cannot be greater than totalBytes/)
     })

@@ -5,14 +5,17 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { downloadFileAsCommand } from '../../../s3/commands/downloadFileAs'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { Bucket, S3Client } from '../../../shared/clients/s3Client'
+import { bufferToStream } from '../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
-import { anything, mock, instance, when, capture, verify } from '../../utilities/mockito'
+import { anything, mock, instance, when, verify } from '../../utilities/mockito'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 describe('downloadFileAsCommand', function () {
     const bucketName = 'bucket-name'
@@ -20,11 +23,18 @@ describe('downloadFileAsCommand', function () {
     const fileName = 'file.jpg'
     const lastModified = new Date(2020, 5, 4)
     const sizeBytes = 16
-    const saveLocation = vscode.Uri.file('/file.jpg')
 
     let s3: S3Client
+    let temp: string
+    let saveLocation: vscode.Uri
     let bucketNode: S3BucketNode
     let node: S3FileNode
+
+    before(async function () {
+        // TODO: write separate test code for the progress report behavior
+        temp = await makeTemporaryToolkitFolder()
+        saveLocation = vscode.Uri.file(path.join(temp, 'file.jpg'))
+    })
 
     beforeEach(function () {
         s3 = mock()
@@ -40,28 +50,16 @@ describe('downloadFileAsCommand', function () {
     })
 
     it('prompts for save location, downloads file with progress, and shows output channel', async function () {
-        when(s3.downloadFile(anything())).thenResolve()
-
         const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
         const outputChannel = new MockOutputChannel()
-        await downloadFileAsCommand(node, window, outputChannel)
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [downloadFileRequest] = capture(s3.downloadFile).last()
+        when(s3.downloadFileStream(anything(), anything())).thenResolve(bufferToStream(Buffer.alloc(16)))
+
+        await downloadFileAsCommand(node, window, outputChannel)
 
         assert.ok(window.dialog.saveOptions?.defaultUri?.path?.endsWith(fileName))
         assert.strictEqual(window.dialog.saveOptions?.saveLabel, 'Download')
         assert.deepStrictEqual(window.dialog.saveOptions?.filters, { 'All Files': ['*'], '*.jpg': ['jpg'] })
-
-        assert.strictEqual(downloadFileRequest.bucketName, bucketName)
-        assert.strictEqual(downloadFileRequest.key, key)
-        assert.strictEqual(downloadFileRequest.saveLocation, saveLocation)
-
-        downloadFileRequest.progressListener!(4) // +25% (+4/16)
-
-        assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
-        assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
-        assert.strictEqual(window.progress.options?.title, 'Downloading file.jpg...')
 
         assert.deepStrictEqual(outputChannel.lines, [
             `Downloading file from s3://bucket-name/path/to/file.jpg to ${saveLocation}`,
@@ -74,15 +72,15 @@ describe('downloadFileAsCommand', function () {
     it('does nothing when prompt is cancelled', async function () {
         await downloadFileAsCommand(node, new FakeWindow())
 
-        verify(s3.downloadFile(anything())).never()
+        verify(s3.downloadFileStream(anything(), anything())).never()
     })
 
     it('shows an error message when download fails', async function () {
-        when(s3.downloadFile(anything())).thenReject(new Error('Expected failure'))
+        when(s3.downloadFileStream(anything(), anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
-        await downloadFileAsCommand(node, window)
+        await downloadFileAsCommand(node, window, new MockOutputChannel())
 
-        assert.ok(window.message.error?.includes('Failed to download file'))
+        assert.ok(window.message.error?.includes('Failed to download'))
     })
 })

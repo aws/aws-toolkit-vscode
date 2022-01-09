@@ -22,7 +22,7 @@ interface GitFile {
     read: () => Promise<string>
 }
 
-export interface ExtendedRepository extends GitTypes.Repository {
+export interface Repository extends GitTypes.Repository {
     /**
      * Fires whenever the repository's head changes.
      */
@@ -64,15 +64,16 @@ function formatBranch(branch?: GitTypes.Branch): string {
  * check the `enabled` field to decisively determine if the extension is active.
  */
 export class GitExtension {
-    private onDidOpenRepositoryEmitter = new vscode.EventEmitter<ExtendedRepository>()
-    private api?: GitTypes.API
-    private wrappedRepositories = new Map<string, ExtendedRepository>()
+    private _api?: GitTypes.API
+    private _repositories = new Map<string, Repository>()
+    private _onDidOpenRepository = new vscode.EventEmitter<Repository>()
+    private _activationPromise?: Thenable<void>
     private static _instance?: GitExtension
 
-    public readonly onDidOpenRepository = this.onDidOpenRepositoryEmitter.event
+    public readonly onDidOpenRepository = this._onDidOpenRepository.event
 
     public get enabled(): boolean {
-        return this.api !== undefined
+        return this._api !== undefined
     }
 
     // TODO: implement more functionality exposed by git extension
@@ -86,10 +87,10 @@ export class GitExtension {
      * @throws If the git extension is disabled or not installed
      */
     public get $api(): GitTypes.API {
-        if (this.api === undefined) {
+        if (this._api === undefined) {
             throw new Error('Git extension is not installed or enabled.')
         }
-        return this.api
+        return this._api
     }
 
     public static get instance(): GitExtension {
@@ -97,15 +98,7 @@ export class GitExtension {
     }
 
     public get gitPath(): string | undefined {
-        return this.api?.git.path
-    }
-
-    public get repositories(): ExtendedRepository[] {
-        if (this.api === undefined) {
-            getLogger().verbose('git: api is disabled, returning empty array of repositories')
-            return []
-        }
-        return this.api.repositories.map(repo => this.extendRepository(repo))
+        return this._api?.git.path
     }
 
     private constructor() {
@@ -120,14 +113,14 @@ export class GitExtension {
 
         const setApi = (enabled: boolean) => {
             if (enabled) {
-                this.api = ext.exports.getAPI(1)
-                this.registerOpenRepositoryListener(this.api)
+                this._api = ext.exports.getAPI(1)
+                this.registerOpenRepositoryListener(this._api)
             } else {
-                delete this.api
+                delete this._api
             }
         }
 
-        ext.activate().then(() => {
+        this._activationPromise = ext.activate().then(() => {
             setApi(ext.exports.enabled)
             ext.exports.onDidChangeEnablement(setApi)
         })
@@ -138,6 +131,22 @@ export class GitExtension {
     // TODO: use `ChildProcess` to execute git
     public executeCommand(): void {}
 
+    private async validateApi(message: string): Promise<GitTypes.API | undefined>
+    private async validateApi(message: Error): Promise<GitTypes.API | never>
+    private async validateApi(message: string | Error): Promise<GitTypes.API | undefined | never> {
+        await this._activationPromise
+
+        if (!this._api) {
+            if (message instanceof Error) {
+                throw message
+            }
+            getLogger().verbose(message)
+            return
+        }
+
+        return this._api
+    }
+
     /**
      * Wrapper for the git extension's `onDidOpenRepository` event.
      *
@@ -145,7 +154,7 @@ export class GitExtension {
      */
     private registerOpenRepositoryListener(api: GitTypes.API): vscode.Disposable {
         return api.onDidOpenRepository(repo => {
-            this.onDidOpenRepositoryEmitter.fire(this.extendRepository(repo))
+            this._onDidOpenRepository.fire(this.extendRepository(repo))
         })
     }
 
@@ -154,11 +163,11 @@ export class GitExtension {
      *
      * @param repo Repository from the git extension API
      */
-    private extendRepository(repo: GitTypes.Repository): ExtendedRepository {
+    private extendRepository(repo: GitTypes.Repository): Repository {
         const repoPath = repo.rootUri.fsPath.toString()
 
-        if (this.wrappedRepositories.has(repoPath)) {
-            return this.wrappedRepositories.get(repoPath)!
+        if (this._repositories.has(repoPath)) {
+            return this._repositories.get(repoPath)!
         }
 
         const onDidChangeBranchEmitter = new vscode.EventEmitter<GitTypes.Branch | undefined>()
@@ -181,7 +190,7 @@ export class GitExtension {
         const wrapped = Object.assign(Object.create(repo) as GitTypes.Repository, {
             onDidChangeBranch: onDidChangeBranchEmitter.event,
         })
-        this.wrappedRepositories.set(repoPath, wrapped)
+        this._repositories.set(repoPath, wrapped)
 
         return wrapped
     }
@@ -191,15 +200,17 @@ export class GitExtension {
      *
      * If Git is disabled, this returns an empty array.
      */
-    public getRemotes(): GitTypes.Remote[] {
-        if (this.api === undefined) {
-            getLogger().verbose('git: api is disabled, returning empty array of remotes')
-            return []
-        }
-
+    public async getRemotes(): Promise<GitTypes.Remote[]> {
+        const api = await this.validateApi('git: api is disabled, returning empty array of remotes')
         const remotes: GitTypes.Remote[] = []
-        this.api.repositories.forEach(repo => remotes.push(...repo.state.remotes))
+        api?.repositories.forEach(repo => remotes.push(...repo.state.remotes))
+
         return remotes
+    }
+
+    public async getRepositories(): Promise<Repository[]> {
+        const api = await this.validateApi('git: api is disabled, returning empty array of repositories')
+        return api?.repositories.map(repo => this.extendRepository(repo)) ?? []
     }
 
     /**
@@ -209,17 +220,18 @@ export class GitExtension {
      * using the `fetchUrl` property of the remote. Returns an empty array if Git is disabled.
      */
     public async getBranchesForRemote(remote: GitTypes.Remote): Promise<GitTypes.Branch[]> {
-        if (this.api === undefined) {
-            getLogger().verbose('git: api is disabled, returning empty array of branches')
-            return []
+        const api = await this.validateApi('git: api is disabled, returning empty array of branches')
+        const branches: GitTypes.Branch[] = []
+
+        if (!api) {
+            return branches
         }
 
-        const branches: GitTypes.Branch[] = []
-        const remotes = this.api.repositories
+        const remotes = api?.repositories
             .map(repo => repo.state.remotes.filter(other => other.fetchUrl === remote.fetchUrl))
             .reduce((a, b) => a.concat(b), [])
 
-        this.api.repositories.forEach(repo =>
+        api.repositories.forEach(repo =>
             branches.push(
                 ...repo.state.refs.filter(
                     (ref: GitTypes.Ref) =>
@@ -240,11 +252,7 @@ export class GitExtension {
         // TODO: make a promise 'pipe' function
         if (branches.length === 0) {
             try {
-                const { stdout } = await execFileAsync(this.api.git.path, [
-                    'ls-remote',
-                    '--heads',
-                    remote.fetchUrl ?? '',
-                ])
+                const { stdout } = await execFileAsync(api.git.path, ['ls-remote', '--heads', remote.fetchUrl ?? ''])
                 return stdout
                     .toString()
                     .split(/\r?\n/)
@@ -264,17 +272,15 @@ export class GitExtension {
     }
 
     public async getConfig(repository?: GitTypes.Repository): Promise<GitConfig> {
-        if (this.api === undefined) {
-            getLogger().verbose(`git: api is disabled, no config found`)
-            return {}
-        }
-
+        const api = await this.validateApi('git: api is disabled, no config found')
         const config: GitConfig = {}
 
-        if (repository) {
+        if (!api) {
+            return config
+        } else if (repository) {
             ;(await repository.getConfigs()).forEach(({ key, value }) => (config[key] = value))
         } else {
-            const { stdout } = await execFileAsync(this.api.git.path, ['config', '--list', `--global`]).catch(err => {
+            const { stdout } = await execFileAsync(api.git.path, ['config', '--list', `--global`]).catch(err => {
                 getLogger().verbose(`git: failed to read config: %O`, err)
                 return { stdout: '' }
             })
@@ -290,13 +296,13 @@ export class GitExtension {
     }
 
     public async getVersion(): Promise<SemVer | undefined> {
-        if (this.api === undefined) {
-            getLogger().verbose('git: extension disabled, unable to retrieve git version')
+        const api = await this.validateApi('git: extension disabled, unable to retrieve git version')
+        if (!api) {
             return
         }
 
         try {
-            const { stdout } = await execFileAsync(this.api.git.path, ['--version'])
+            const { stdout } = await execFileAsync(api.git.path, ['--version'])
             const match = stdout.trim().match(/[0-9]+.[0-9]+.[0-9]+/g)
             if (!match) {
                 throw new Error(`Unable to parse git output for version: ${stdout}`)
@@ -319,11 +325,9 @@ export class GitExtension {
     public async listAllRemoteFiles(
         remote: Required<Pick<GitTypes.Remote, 'fetchUrl'>> & { branch?: string }
     ): Promise<{ files: GitFile[]; dispose(): Promise<boolean>; stats: { downloadSize?: string } }> {
+        const api = await this.validateApi(new Error('Cannot list files when the git extension is disabled'))
         const version = await this.getVersion()
 
-        if (this.api === undefined) {
-            throw new Error('Cannot list files when the git extension is disabled')
-        }
         if (version === undefined || version.compare(MIN_GIT_FILTER_VERSION) === -1) {
             throw new Error(
                 `Git version is too low or could not be determined (min=${MIN_GIT_FILTER_VERSION}): ${
@@ -337,12 +341,12 @@ export class GitExtension {
         pushIf(args, remote.branch !== undefined, '--branch', remote.branch).push(remote.fetchUrl, tmpDir)
 
         try {
-            const { stderr } = await execFileAsync(this.api.git.path, args)
+            const { stderr } = await execFileAsync(api.git.path, args)
 
             // try to parse some stats from the clone
             const downloadSize = (stderr.match(/Receiving objects: 100% \([0-9]+\/[0-9]+\), (.*)\|/) ?? [])[1]
 
-            const { stdout } = await execFileAsync(this.api.git.path, ['ls-tree', '-r', '-z', 'HEAD'], {
+            const { stdout } = await execFileAsync(api.git.path, ['ls-tree', '-r', '-z', 'HEAD'], {
                 cwd: tmpDir,
             })
 
@@ -354,13 +358,11 @@ export class GitExtension {
                 .map(([mode, type, hash, name]) => ({
                     name,
                     read: async () => {
-                        if (this.api === undefined) {
-                            throw new Error(
-                                `git: api was disabled while reading file "${name}" from "${remote.fetchUrl}"`
-                            )
-                        }
+                        const api = await this.validateApi(
+                            new Error(`git: api was disabled while reading file "${name}" from "${remote.fetchUrl}"`)
+                        )
 
-                        return execFileAsync(this.api.git.path, ['cat-file', type, hash], {
+                        return execFileAsync(api.git.path, ['cat-file', type, hash], {
                             cwd: tmpDir,
                         }).then(({ stdout }) => stdout)
                     },
