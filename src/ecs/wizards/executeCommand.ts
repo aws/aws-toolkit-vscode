@@ -28,7 +28,6 @@ function assertValidRunningTask(containerName: string) {
                         for (const ma of c.managedAgents) {
                             if (ma.name === 'ExecuteCommandAgent') {
                                 managed = true
-                                break
                             }
                         }
                     }
