@@ -53,7 +53,11 @@ export async function presignedURLCommand(
 export async function promptTime(fileName: string, window = Window.vscode()): Promise<number> {
     const timeStr = await window.showInputBox({
         value: '15',
-        prompt: localize('AWS.s3.promptTime.prompt', 'Please enter the valid time (in minutes) for {0} URL', fileName),
+        prompt: localize(
+            'AWS.s3.promptTime.prompt',
+            'Specify the time (minutes) until URL will expire for path: {0}',
+            fileName
+        ),
         placeHolder: localize('AWS.s3.promptTime.placeHolder', 'Defaults to 15 minutes'),
         validateInput: validateTime,
     })
