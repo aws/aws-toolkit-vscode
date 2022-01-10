@@ -10,8 +10,9 @@ import * as path from 'path'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger'
-import { DefaultFileStreams, FileStreams, pipe, promisifyReadStream } from '../utilities/streamUtilities'
+import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
+import { Readable } from 'stream'
 import globals from '../extensionGlobals'
 
 export const DEFAULT_MAX_KEYS = 300
@@ -84,8 +85,19 @@ export interface SignedUrlRequest {
 export interface UploadFileRequest {
     readonly bucketName: string
     readonly key: string
+    readonly content: vscode.Uri | Uint8Array
+    readonly contentType?: string
     readonly progressListener?: (loadedBytes: number) => void
-    readonly fileLocation: vscode.Uri
+}
+
+export interface HeadObjectRequest {
+    readonly bucketName: string
+    readonly key: string
+}
+
+export interface CharsetRequest {
+    readonly key: string
+    readonly bucketName: string
 }
 
 export interface ListObjectVersionsRequest {
@@ -261,6 +273,7 @@ export class DefaultS3Client {
 
         // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/requests-using-stream-objects.html
         const readStream = s3.getObject({ Bucket: request.bucketName, Key: request.key }).createReadStream()
+
         const writeStream = this.fileStreams.createWriteStream(request.saveLocation)
 
         try {
@@ -270,6 +283,20 @@ export class DefaultS3Client {
             throw e
         }
         getLogger().debug('DownloadFile succeeded')
+    }
+
+    /**
+     * Lighter version of {@link downloadFile} that just returns the stream.
+     */
+    public async downloadFileStream(bucketName: string, key: string): Promise<Readable> {
+        const s3 = await this.createS3()
+        return s3.getObject({ Bucket: bucketName, Key: key }).createReadStream()
+    }
+
+    public async headObject(request: HeadObjectRequest): Promise<S3.HeadObjectOutput> {
+        const s3 = await this.createS3()
+        getLogger().debug('HeadObject called with request: %O', request)
+        return s3.headObject({ Bucket: request.bucketName, Key: request.key }).promise()
     }
 
     /**
@@ -305,17 +332,20 @@ export class DefaultS3Client {
      * @throws Error if there is an error calling S3 or piping between streams.
      */
     public async uploadFile(request: UploadFileRequest): Promise<S3.ManagedUpload> {
-        getLogger().debug(
-            'UploadFile called for bucketName: %s, key: %s, fileLocation: %s',
-            request.bucketName,
-            request.key,
-            request.fileLocation
-        )
+        getLogger().debug('UploadFile called for bucketName: %s, key: %s', request.bucketName, request.key)
         const s3 = await this.createS3()
 
         // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-example-creating-buckets.html#s3-example-creating-buckets-upload-file
-        const readStream = this.fileStreams.createReadStream(request.fileLocation)
-        const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
+        const readStream =
+            request.content instanceof vscode.Uri
+                ? this.fileStreams.createReadStream(request.content)
+                : bufferToStream(request.content)
+
+        const contentType =
+            request.contentType ??
+            (request.content instanceof vscode.Uri
+                ? mime.lookup(path.basename(request.content.fsPath)) || DEFAULT_CONTENT_TYPE
+                : DEFAULT_CONTENT_TYPE)
 
         const managedUploaded = s3.upload({
             Bucket: request.bucketName,
@@ -326,20 +356,12 @@ export class DefaultS3Client {
 
         const progressListener = request.progressListener
         if (progressListener) {
+            let lastLoaded = 0
             managedUploaded.on('httpUploadProgress', progress => {
-                progressListener(progress.loaded)
+                progressListener(progress.loaded - lastLoaded)
+                lastLoaded = progress.loaded
             })
         }
-
-        Promise.all([promisifyReadStream(readStream), managedUploaded.promise()]).then(
-            () => {
-                getLogger().debug('UploadFile succeeded')
-            },
-            err => {
-                getLogger().error('Failed to upload %s to bucket %s: %O', request.key, request.bucketName, err)
-                throw err
-            }
-        )
 
         return managedUploaded
     }
@@ -460,6 +482,7 @@ export class DefaultS3Client {
                         bucketName: request.bucketName,
                         lastModified: file.LastModified,
                         sizeBytes: file.Size,
+                        eTag: file.ETag,
                     })
             )
             .value()
@@ -692,6 +715,7 @@ export class DefaultFile {
     public readonly arn: string
     public readonly lastModified?: Date
     public readonly sizeBytes?: number
+    public readonly eTag?: string
 
     public constructor({
         partitionId,
@@ -699,18 +723,21 @@ export class DefaultFile {
         key,
         lastModified,
         sizeBytes,
+        eTag,
     }: {
         partitionId: string
         bucketName: string
         key: string
         lastModified?: Date
         sizeBytes?: number
+        eTag?: string
     }) {
         this.name = _(key).split(DEFAULT_DELIMITER).last()!
         this.key = key
         this.arn = buildArn({ partitionId, bucketName, key })
         this.lastModified = lastModified
         this.sizeBytes = sizeBytes
+        this.eTag = eTag
     }
 
     public [inspect.custom](): string {
