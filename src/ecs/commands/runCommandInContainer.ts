@@ -12,7 +12,7 @@ import { ChildProcess } from '../../shared/utilities/childProcess'
 import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
-import { extensionSettingsPrefix, LOCALIZED_DATE_FORMAT } from '../../shared/constants'
+import { extensionSettingsPrefix } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
@@ -58,7 +58,7 @@ export async function runCommandInContainer(
         )
         const args = [JSON.stringify(execCommand.session), node.ecs.regionCode, 'StartSession']
         showOutputMessage(
-            `${moment().format(LOCALIZED_DATE_FORMAT)}  Container: "${node.containerName}" Task ID: "${
+            `${moment().format('YYYY-MM-DD HH:mm:ss:')}  Container: "${node.containerName}" Task ID: "${
                 response.task
             }"  Running command: "${response.command}"`,
             outputChannel
