@@ -12,7 +12,7 @@ import * as gqltypes from 'graphql-request/dist/types'
 import * as caws from '../../../types/clientcodeaws'
 import * as logger from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import apiConfig = require('../../../types/REMOVED.api.json')
+import apiConfig = require('../../../types/REMOVED.json')
 import globals from '../extensionGlobals'
 
 export const useGraphql = false
@@ -23,6 +23,25 @@ export const cawsEndpointGql = 'https://public.api.REMOVED.codes/graphql'
 export const cawsHostname = 'REMOVED.codes' // 'REMOVED.execute-api.us-east-1.amazonaws.cominteg.codedemo.REMOVED'
 export const cawsGitHostname = `git.service.${cawsHostname}`
 export const cawsHelpUrl = `https://${cawsHostname}/help`
+
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+/** CAWS-MDE developer environment. */
+export interface CawsDevEnv extends caws.DevelopmentWorkspaceSummary {}
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+/** CAWS-MDE developer environment session. */
+export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspaceOutput {}
+
+export interface CawsOrg extends caws.OrganizationSummary {
+    readonly id: string // TODO: why doesn't OrganizationSummary have this already?
+}
+export interface CawsProject extends caws.ProjectSummary {
+    readonly org: CawsOrg
+    readonly id: string // TODO: why doesn't ProjectSummary have this already?
+}
+export interface CawsRepo extends caws.SourceRepositorySummary {
+    readonly org: CawsOrg
+    readonly project: CawsProject
+}
 
 async function createCawsClient(
     authCookie: string | undefined,
@@ -92,18 +111,6 @@ async function gqlRequest<T>(
         }
         logger.getLogger().error('graphql request failed:\n  x-request-id: %s\n  %O', reqId, err.response)
     }
-}
-
-export interface CawsOrg extends caws.OrganizationSummary {
-    readonly id: string // TODO: why doesn't OrganizationSummary have this already?
-}
-export interface CawsProject extends caws.ProjectSummary {
-    readonly org: CawsOrg
-    readonly id: string // TODO: why doesn't ProjectSummary have this already?
-}
-export interface CawsRepo extends caws.SourceRepositorySummary {
-    readonly org: CawsOrg
-    readonly project: CawsProject
 }
 
 export class CawsClient {
@@ -416,6 +423,59 @@ export class CawsClient {
         }
 
         // TODO: Add telemetry
+    }
+
+    /** CAWS-MDE */
+    public async createDevEnv(args: caws.CreateDevelopmentWorkspaceInput): Promise<CawsDevEnv | undefined> {
+        if (!args.ideRuntimes || args.ideRuntimes.length === 0) {
+            throw Error('missing ideRuntimes')
+        }
+        const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args))
+        return {
+            ...r,
+            creatorId: '',
+            ide: args.ideRuntimes[0],
+            lastUpdatedTime: new Date(),
+            repositories: args.repositories,
+            // status?: String // TODO: get status
+        }
+    }
+
+    /** CAWS-MDE */
+    public async startDevEnv(
+        args: caws.StartDevelopmentWorkspaceInput
+    ): Promise<caws.StartDevelopmentWorkspaceOutput | undefined> {
+        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args))
+        return r
+    }
+
+    /** CAWS-MDE: does not have this operation (yet?) */
+    public async stopDevEnv(): Promise<void> {
+        throw Error('CAWS-MDE does not have stopEnvironment currently')
+    }
+
+    /** CAWS-MDE */
+    public async getDevEnv(
+        args: caws.GetDevelopmentWorkspaceInput
+    ): Promise<caws.GetDevelopmentWorkspaceOutput | undefined> {
+        const r = await this.call(this.sdkClient.getDevelopmentWorkspace(args))
+        return r
+    }
+
+    /** CAWS-MDE */
+    public async deleteDevEnv(
+        args: caws.DeleteDevelopmentWorkspaceInput
+    ): Promise<caws.DeleteDevelopmentWorkspaceOutput | undefined> {
+        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args))
+        return r
+    }
+
+    /** CAWS-MDE */
+    public async *listDevEnvs(args: caws.ListDevelopmentWorkspaceInput): AsyncIterableIterator<CawsDevEnv | undefined> {
+        const r = await this.call(this.sdkClient.listDevelopmentWorkspace(args))
+        for (const i of r.items ?? []) {
+            yield i
+        }
     }
 
     /**
