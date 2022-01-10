@@ -41,7 +41,7 @@ export class SystemUtilities {
     }
 
     public static async readFile(file: string | vscode.Uri): Promise<string> {
-        const uri = typeof file === 'string' ? vscode.Uri.parse(file) : file
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
         const decoder = new TextDecoder()
 
         if (isCloud9()) {
@@ -52,7 +52,7 @@ export class SystemUtilities {
     }
 
     public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
-        const uri = typeof file === 'string' ? vscode.Uri.parse(file) : file
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
 
         if (isCloud9()) {
             return new Promise<boolean>(resolve => fs.access(uri.fsPath, err => resolve(!err)))
