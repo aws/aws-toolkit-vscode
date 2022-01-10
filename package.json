@@ -3006,7 +3006,7 @@
         "vscode-nls": "^5.0.0",
         "vue": "^3.2.6",
         "winston": "^3.2.1",
-        "winston-transport": "^4.3.0",
+        "winston-transport": "^4.4.2",
         "xml2js": "^0.4.19",
         "yaml": "^1.9.2",
         "yaml-cfn": "^0.3.1"
