@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as os from 'os'
 import * as path from 'path'
@@ -12,6 +12,7 @@ import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
 import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { GitExtension } from './extensions/git'
+import { isCloud9 } from './extensionUtilities'
 
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
@@ -19,6 +20,7 @@ export class SystemUtilities {
     private static sshPath: string
     private static gitPath: string
     private static bashPath: string
+    private static fileNotFound = vscode.FileSystemError.FileNotFound().code
 
     public static getHomeDirectory(): string {
         const env = process.env as EnvironmentVariables
@@ -38,16 +40,28 @@ export class SystemUtilities {
         return os.homedir()
     }
 
-    public static async fileExists(file: string): Promise<boolean> {
-        return new Promise<boolean>((resolve, reject) => {
-            fs.access(file, err => {
-                if (err) {
-                    resolve(false)
-                }
+    public static async readFile(file: string | vscode.Uri): Promise<string> {
+        const uri = typeof file === 'string' ? vscode.Uri.parse(file) : file
+        const decoder = new TextDecoder()
 
-                resolve(true)
-            })
-        })
+        if (isCloud9()) {
+            return decoder.decode(await fs.readFile(uri.fsPath))
+        }
+
+        return decoder.decode(await vscode.workspace.fs.readFile(uri))
+    }
+
+    public static async fileExists(file: string | vscode.Uri): Promise<boolean> {
+        const uri = typeof file === 'string' ? vscode.Uri.parse(file) : file
+
+        if (isCloud9()) {
+            return new Promise<boolean>(resolve => fs.access(uri.fsPath, err => resolve(!err)))
+        }
+
+        return vscode.workspace.fs.stat(uri).then(
+            () => true,
+            err => !(err instanceof vscode.FileSystemError && err.code === this.fileNotFound)
+        )
     }
 
     /**
