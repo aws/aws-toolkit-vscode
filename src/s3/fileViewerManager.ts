@@ -257,11 +257,14 @@ export class S3FileViewerManager {
 
     private registerProvider(file: S3File, uri: vscode.Uri): vscode.Disposable {
         const provider = new S3FileProvider(this.clientFactory(file.bucket.region), file)
-        provider.onDidChange(() => {
-            // TODO: find the correct node instead of refreshing it all
-            this.commands.executeCommand('aws.refreshAwsExplorer', true)
-        })
-        return this.fs.registerProvider(uri, provider)
+
+        return vscode.Disposable.from(
+            this.fs.registerProvider(uri, provider),
+            provider.onDidChange(() => {
+                // TODO: find the correct node instead of refreshing it all
+                this.commands.executeCommand('aws.refreshAwsExplorer', true)
+            })
+        )
     }
 
     /**
