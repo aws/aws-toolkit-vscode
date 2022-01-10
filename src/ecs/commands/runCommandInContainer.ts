@@ -64,19 +64,6 @@ export async function runCommandInContainer(
             outputChannel
         )
 
-        window
-            .showInformationMessage(
-                localize(
-                    'AWS.command.ecs.runCommandInContainer.runningCommandMessage',
-                    'Running command. This may take several minutes.'
-                ),
-                viewOutput
-            )
-            .then(button => {
-                if (button === viewOutput) {
-                    outputChannel.show(false)
-                }
-            })
         const cp = await new ChildProcess(ssmPlugin, args).run({
             onStdout: text => {
                 showOutputMessage(removeAnsi(text), outputChannel)
