@@ -15,6 +15,7 @@ import * as localizedText from '../../shared/localizedText'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 export async function deleteDocument(
     node: DocumentItemNodeWriteable,
@@ -68,12 +69,13 @@ export async function deleteDocument(
         result = 'Failed'
         const error = err as Error
         logger.error('Error on deleting document: %0', error)
-        vscode.window.showErrorMessage(
+        showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.deleteDocument.could_not_delete',
-                'Could not delete document {0}. Please check logs for more details.',
+                'Could not delete document {0}.',
                 error.message
-            )
+            ),
+            vscode.window
         )
     } finally {
         telemetry.recordSsmDeleteDocument({ result: result })
