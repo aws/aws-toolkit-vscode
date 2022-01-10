@@ -196,7 +196,7 @@ async function runBatchUploads(
     showOutputMessage(
         localize(
             'AWS.s3.uploadFile.complete',
-            'Uploaded {0}/{1} file(s)',
+            'Uploaded {0}/{1} files',
             uploadRequests.length - failedRequests.length,
             uploadRequests.length
         ),
@@ -265,7 +265,7 @@ async function uploadBatchOfFiles(
             location: vscode.ProgressLocation.Notification,
             title: localize(
                 'AWS.s3.uploadFile.progressTitle.batch',
-                'Uploading {0} file(s) to {1}',
+                'Uploading {0} files to {1}',
                 uploadRequests.length,
                 uploadRequests[0].bucketName
             ),

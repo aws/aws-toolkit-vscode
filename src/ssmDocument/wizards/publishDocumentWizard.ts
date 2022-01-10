@@ -23,6 +23,7 @@ import {
     WizardStep,
 } from '../../shared/wizards/multiStepWizard'
 import { validateDocumentName } from '../util/validateDocumentName'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 const localize = nls.loadMessageBundle()
 
 export interface PublishSSMDocumentWizardResponse {
@@ -297,11 +298,12 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
     public async promptUserForDocumentToUpdate(region: string): Promise<string | undefined> {
         let documentItems: UpdateDocumentQuickPickItem[]
         if (!this.documents || !this.documents.length) {
-            vscode.window.showErrorMessage(
+            showViewLogsMessage(
                 localize(
                     'AWS.ssmDocument.publishWizard.ssmDocumentToUpdate.noDocument',
-                    'No self-owned documents could be found. Please create and upload a Systems Manager Document before updating.'
-                )
+                    'No self-owned documents could be found. Create and upload a Systems Manager Document before updating.'
+                ),
+                vscode.window
             )
             return undefined
         } else {
