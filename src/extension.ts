@@ -220,7 +220,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await activateAwsExplorer({
-            awsContext,
+            context: extContext,
             awsContextTrees,
             regionProvider,
             toolkitOutputChannel,

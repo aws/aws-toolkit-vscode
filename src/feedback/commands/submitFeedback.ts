@@ -3,64 +3,79 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { _Blob } from 'aws-sdk/clients/lambda'
-import _ = require('lodash')
-import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
+import { ExtContext } from '../../shared/extensions'
 
-import { ExtensionUtilities } from '../../shared/extensionUtilities'
-import { BaseTemplates } from '../../shared/templates/baseTemplates'
+import { getLogger } from '../../shared/logger'
+import * as telemetry from '../../shared/telemetry/telemetry'
+import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { FeedbackTemplates } from '../templates/feedbackTemplates'
-import { submitFeedbackListener } from './submitFeedbackListener'
+import { Window as VsCodeWindow } from '../../shared/vscode/window'
+import { compileVueWebview } from '../../webviews/main'
+import { WebviewServer } from '../../webviews/server'
 
-export function submitFeedback(listener?: (message: any) => Promise<void>): vscode.WebviewPanel {
-    const panel = vscode.window.createWebviewPanel(
-        'html',
-        localize('AWS.submitFeedback.title', 'Send Feedback'),
-        vscode.ViewColumn.One,
-        {
-            retainContextWhenHidden: true,
-            enableScripts: true,
-        }
-    )
-    const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
-
-    panel.webview.html = baseTemplateFn({
-        cspSource: panel.webview.cspSource,
-        content: '<h1>Loading...</h1>',
-    })
-
-    const feedbackTemplateFn = _.template(FeedbackTemplates.SUBMIT_TEMPLATE)
-
-    const loadScripts = ExtensionUtilities.getScriptsForHtml(['submitFeedbackVue.js'], panel.webview)
-    const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'], panel.webview)
-    const loadStylesheets = ExtensionUtilities.getCssForHtml(['submitFeedback.css'], panel.webview)
-
-    panel.webview.html = baseTemplateFn({
-        cspSource: panel.webview.cspSource,
-        content: feedbackTemplateFn({
-            Scripts: loadScripts,
-            Libraries: loadLibs,
-            Stylesheets: loadStylesheets,
-        }),
-    })
-
-    const feedbackListener = listener === undefined ? createListener(panel) : listener
-    panel.webview.onDidReceiveMessage(feedbackListener, undefined, globals.context.subscriptions)
-
-    return panel
+export async function submitFeedback(context: ExtContext) {
+    const wv = new FeedbackWebview(context)
+    await wv.start()
 }
 
-function createListener(panel: vscode.WebviewPanel) {
-    const feedbackPanel = {
-        postMessage: (message: any) => panel.webview.postMessage(message),
-        dispose: () => panel.dispose(),
+export interface FeedbackMessage {
+    comment: string
+    sentiment: string
+}
+
+const VueWebview = compileVueWebview({
+    id: 'submitFeedback',
+    title: localize('AWS.submitFeedback.title', 'Send Feedback'),
+    webviewJs: 'feedbackVue.js',
+    commands: {
+        feedback: function (message: FeedbackMessage) {
+            feedback(this, message)
+        },
+    },
+    cssFiles: ['submitFeedback.css'],
+    start: () => {},
+})
+export class FeedbackWebview extends VueWebview {}
+
+async function feedback(
+    server: WebviewServer,
+    message: FeedbackMessage,
+    constructs: {
+        window: VsCodeWindow
+        telemetryService: TelemetryService
+    } = {
+        window: VsCodeWindow.vscode(),
+        telemetryService: globals.telemetry,
+    }
+) {
+    const logger = getLogger()
+    logger.info(`Submitting ${message.sentiment} feedback`)
+
+    try {
+        await constructs.telemetryService.postFeedback({
+            comment: message.comment,
+            sentiment: message.sentiment,
+        })
+    } catch (err) {
+        const errorMessage = (err as Error).message || 'Failed to submit feedback'
+        logger.error(`Failed to submit ${message.sentiment} feedback: ${errorMessage}`)
+        server.postMessage({ statusCode: 'Failure', error: errorMessage })
+
+        telemetry.recordFeedbackResult({ result: 'Failed' })
+
+        return
     }
 
-    const window = {
-        showInformationMessage: (message: string) => vscode.window.showInformationMessage(message),
-    }
+    logger.info(`Successfully submitted ${message.sentiment} feedback`)
 
-    return submitFeedbackListener(feedbackPanel, window, globals.telemetry)
+    telemetry.recordFeedbackResult({ result: 'Succeeded' })
+
+    server.dispose()
+
+    constructs.window.showInformationMessage(
+        localize('AWS.message.info.submitFeedback.success', 'Thanks for the feedback!')
+    )
+
+    return
 }
