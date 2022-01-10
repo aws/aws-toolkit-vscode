@@ -29,9 +29,7 @@ export async function runCommandInContainer(
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
     let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
-    const status = vscode.window.setStatusBarMessage(
-        localize('AWS.command.ecs.statusBar.executing', 'ECS: Executing command...')
-    )
+    let status: vscode.Disposable | undefined
 
     try {
         const wizard = new CommandWizard(node, await settings.isPromptEnabled('ecsRunCommand'))
@@ -52,6 +50,10 @@ export async function runCommandInContainer(
             result = 'Failed'
             throw Error('SSM Plugin not installed and cannot auto install')
         }
+
+        status = vscode.window.setStatusBarMessage(
+            localize('AWS.command.ecs.statusBar.executing', 'ECS: Executing command...')
+        )
 
         const execCommand = await node.ecs.executeCommand(
             node.clusterArn,
@@ -87,8 +89,6 @@ export async function runCommandInContainer(
         showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
     } finally {
         recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })
-        if (status) {
-            status.dispose()
-        }
+        status?.dispose()
     }
 }
