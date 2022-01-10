@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { SystemUtilities } from '../systemUtilities'
 
 export interface SharedConfigPaths {
     /**
@@ -42,30 +43,20 @@ export async function loadSharedConfigFiles(init: SharedConfigPaths = {}): Promi
     }
 }
 
-const fileNotFound = vscode.FileSystemError.FileNotFound().code
-async function fileExists(uri: vscode.Uri): Promise<boolean> {
-    return vscode.workspace.fs.stat(uri).then(
-        () => true,
-        err => !(err instanceof vscode.FileSystemError && err.code === fileNotFound)
-    )
-}
-
 async function loadConfigFile(configUri?: vscode.Uri): Promise<ParsedIniData> {
-    if (!configUri || !(await fileExists(configUri))) {
+    if (!configUri || !(await SystemUtilities.fileExists(configUri))) {
         return {}
     }
 
-    const text = new TextDecoder().decode(await vscode.workspace.fs.readFile(configUri))
-    return normalizeConfigFile(parseIni(text))
+    return normalizeConfigFile(parseIni(await SystemUtilities.readFile(configUri)))
 }
 
 async function loadCredentialsFile(credentialsUri?: vscode.Uri): Promise<ParsedIniData> {
-    if (!credentialsUri || !(await fileExists(credentialsUri))) {
+    if (!credentialsUri || !(await SystemUtilities.fileExists(credentialsUri))) {
         return {}
     }
 
-    const text = new TextDecoder().decode(await vscode.workspace.fs.readFile(credentialsUri))
-    return parseIni(text)
+    return parseIni(await SystemUtilities.readFile(credentialsUri))
 }
 
 const profileKeyRegex = /^profile\s(["'])?([^\1]+)\1$/

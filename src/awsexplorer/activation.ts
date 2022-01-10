@@ -86,7 +86,7 @@ async function tryAutoConnect(awsContext: AwsContext) {
             await loginWithMostRecentCredentials(toolkitSettings, loginManager)
         }
     } catch (err) {
-        getLogger().error('credentials: failed to auto-connect: %O', (err as Error).message)
+        getLogger().error('credentials: failed to auto-connect: %O', err)
         showViewLogsMessage(localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting'))
     }
 }
