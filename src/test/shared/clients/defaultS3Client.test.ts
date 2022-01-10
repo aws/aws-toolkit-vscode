@@ -302,7 +302,7 @@ describe('DefaultS3Client', function () {
             await createClient({ fileStreams }).uploadFile({
                 bucketName,
                 key: fileKey,
-                fileLocation: fileLocation,
+                content: fileLocation,
                 progressListener: progressCaptor.listener(),
             })
 
@@ -318,7 +318,7 @@ describe('DefaultS3Client', function () {
             const [, listener] = capture(mockManagedUpload.on).last()
             listener({ loaded: 1, total: 100 })
             listener({ loaded: 2, total: 100 })
-            assert.strictEqual(progressCaptor.progress, 3)
+            assert.strictEqual(progressCaptor.progress, 2)
         })
 
         it('throws an Error on failure', async function () {
@@ -331,7 +331,7 @@ describe('DefaultS3Client', function () {
             const managedUpload = await createClient().uploadFile({
                 bucketName,
                 key: fileKey,
-                fileLocation: fileLocation,
+                content: fileLocation,
             })
             try {
                 await managedUpload.promise()

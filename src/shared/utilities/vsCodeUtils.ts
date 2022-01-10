@@ -10,7 +10,7 @@ import { getIdeProperties } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
 import { Window } from '../vscode/window'
 import { showViewLogsMessage } from './messages'
-import { waitUntil } from './timeoutUtils'
+import { Timeout, waitTimeout, waitUntil } from './timeoutUtils'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -140,9 +140,15 @@ export async function activateExtension<T>(
     }
 
     if (!extension.isActive) {
+        log('Activating extension: %s', extId)
         try {
-            await extension.activate()
-            log('Extension activated: %s', extId)
+            const activate = (async () => {
+                await extension.activate()
+                log('Extension activated: %s', extId)
+                return vscode.extensions.getExtension<T>(extId)
+            })()
+
+            return await waitTimeout(activate, new Timeout(60000))
         } catch (err) {
             log('Extension failed to activate: %s: %O', extId, err as Error)
             if (!silent) {
@@ -151,6 +157,7 @@ export async function activateExtension<T>(
             return undefined
         }
     }
+
     return extension
 }
 
