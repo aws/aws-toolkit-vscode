@@ -15,6 +15,16 @@ describe('progressReporter', function () {
         progress = mock()
     })
 
+    it('does not round', function () {
+        const reporter = progressReporter(instance(progress), { totalBytes: 3, minIntervalMillis: 0 })
+
+        reporter(1)
+        verify(progress.report(deepEqual({ message: undefined, increment: (1 / 3) * 100 }))).once()
+
+        reporter(2)
+        verify(progress.report(deepEqual({ message: undefined, increment: (2 / 3) * 100 }))).once()
+    })
+
     it('reports incremental percentage when total is provided', function () {
         const reporter = progressReporter(instance(progress), { totalBytes: 16, minIntervalMillis: 0 })
 

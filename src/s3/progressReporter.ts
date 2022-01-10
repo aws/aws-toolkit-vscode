@@ -107,7 +107,7 @@ class ProgressReporter {
      * If the total bytes is undefined or 0, always returns 100%.
      */
     private incrementalPercentage(newBytes: number): number {
-        return this._totalBytes ? Math.ceil((newBytes / this._totalBytes) * 100) : 100
+        return this._totalBytes ? (newBytes / this._totalBytes) * 100 : 100
     }
 
     /**
