@@ -6,6 +6,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as moment from 'moment'
+import * as vscode from 'vscode'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger'
 import { ChildProcess } from '../../shared/utilities/childProcess'
@@ -28,7 +29,9 @@ export async function runCommandInContainer(
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
     let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
-    const viewOutput = localize('AWS.command.ecs.runCommandInContainer.viewOutput', 'View Output')
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.command.ecs.statusBar.executing', 'ECS: Executing command...')
+    )
 
     try {
         const wizard = new CommandWizard(node, await settings.isPromptEnabled('ecsRunCommand'))
@@ -84,5 +87,8 @@ export async function runCommandInContainer(
         showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
     } finally {
         recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })
+        if (status) {
+            status.dispose()
+        }
     }
 }

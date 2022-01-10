@@ -196,6 +196,7 @@
     "AWS.command.ecs.enableEcsExec.alreadyEnabled": "ECS Exec is already enabled for this service",
     "AWS.command.ecs.disableEcsExec.alreadyDisabled": "ECS Exec is already disabled for this service",
     "AWS.command.ecs.runCommandInContainer.chooseTask": "Choose a task",
+    "AWS.command.ecs.statusBar.executing": "ECS: Executing command...",
     "AWS.command.samcli.detect": "Detect SAM CLI",
     "AWS.command.deleteCloudFormation": "Delete CloudFormation Stack",
     "AWS.command.viewSchemaItem": "View Schema",
