@@ -9,7 +9,7 @@ import { throttle } from 'lodash'
 import { getLogger } from '../shared/logger/logger'
 import * as bytes from 'bytes'
 
-const DEFAULT_REPORTING_INTERVAL_MILLIS = 500
+const DEFAULT_REPORTING_INTERVAL_MILLIS = 250
 
 interface ProgressReporterOptions {
     readonly totalBytes?: number
