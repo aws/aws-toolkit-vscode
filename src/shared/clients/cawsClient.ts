@@ -193,9 +193,15 @@ export class CawsClient {
         //     req.httpRequest.headers['cookie'] = authCookie
         // })
         return new Promise<T>((resolve, reject) => {
-            req.send(function (err, data) {
-                if (err) {
-                    log.error('API request failed: %O', err)
+            req.send(function (e, data) {
+                if (e) {
+                    const err = e as any
+                    const reqId = err?.response?.headers?.get ? err.response.headers.get('x-request-id') : undefined
+                    if (reqId || err.response) {
+                        log.error('API request failed:\n  x-request-id: %s\n  %O', reqId, err.response)
+                    } else {
+                        log.error('API request failed:\n  x-request-id: (none)\n  %O', err)
+                    }
                     if (silent && defaultVal) {
                         resolve(defaultVal)
                     } else if (silent) {
@@ -203,6 +209,7 @@ export class CawsClient {
                     } else {
                         reject(err)
                     }
+                    return
                 }
                 log.verbose('API response: %O', data)
                 resolve(data)
