@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.federation.psireferences
 
 import com.intellij.patterns.PsiElementPattern
-import com.intellij.psi.ElementManipulators
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceContributor
 import com.intellij.psi.PsiReferenceRegistrar
@@ -18,10 +17,8 @@ class ArnPsiReferenceContributor : PsiReferenceContributor() {
             ) {
                 override fun accepts(o: Any?, context: ProcessingContext): Boolean {
                     if (o == null || o !is PsiElement) return false
-                    val manipulator = ElementManipulators.getManipulator(o)
-                    if (manipulator == null) return false
 
-                    if (manipulator.getRangeInElement(o).substring(o.text).contains("arn:")) {
+                    if (o.text.contains("arn:")) {
                         return true
                     }
 
