@@ -18,22 +18,11 @@ export interface CommandWizardState {
     confirmation?: 'yes' | 'suppress'
 }
 
-function assertValidRunningTask(containerName: string) {
+function createValidTaskFilter(containerName: string) {
     return function (t: ECS.Task): t is ECS.Task & { taskArn: string } {
-        let managed = false
-        if (t.containers && t.containers.length > 0) {
-            for (const c of t.containers) {
-                if (c.name === containerName) {
-                    if (c.managedAgents && c.managedAgents.length > 0) {
-                        for (const ma of c.managedAgents) {
-                            if (ma.name === 'ExecuteCommandAgent') {
-                                managed = true
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        const managed = !!t.containers?.find(
+            c => c?.name === containerName && c.managedAgents?.find(a => a.name === 'ExecuteCommandAgent')
+        )
 
         return t.taskArn !== undefined && t.lastStatus === 'RUNNING' && managed
     }
@@ -46,7 +35,7 @@ function createTaskPrompter(node: EcsContainerNode) {
             return []
         }
         // Filter for only 'Running' tasks
-        return (await node.describeTasks(taskArns)).filter(assertValidRunningTask(node.containerName)).map(task => {
+        return (await node.describeTasks(taskArns)).filter(createValidTaskFilter(node.containerName)).map(task => {
             // The last 32 digits of the task arn is the task identifier
             const taskId = task.taskArn.substring(task.taskArn.length - 32)
             return {
