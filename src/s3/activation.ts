@@ -11,7 +11,7 @@ import { deleteBucketCommand } from './commands/deleteBucket'
 import { deleteFileCommand } from './commands/deleteFile'
 import { downloadFileAsCommand } from './commands/downloadFileAs'
 import { presignedURLCommand } from './commands/presignedURL'
-import { openFileEditModeCommand, openFileReadModeCommand } from './commands/openFile'
+import { editFileCommand, openFileReadModeCommand } from './commands/openFile'
 import { uploadFileCommand } from './commands/uploadFile'
 import { uploadFileToParentCommand } from './commands/uploadFileToParent'
 import { S3BucketNode } from './explorer/s3BucketNode'
@@ -52,8 +52,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.s3.openFile', async (node: S3FileNode) => {
             await openFileReadModeCommand(node, manager)
         }),
-        vscode.commands.registerCommand('aws.s3.openFileEditMode', async (uriOrNode: vscode.Uri | S3FileNode) => {
-            await openFileEditModeCommand(uriOrNode, manager)
+        vscode.commands.registerCommand('aws.s3.editFile', async (uriOrNode: vscode.Uri | S3FileNode) => {
+            await editFileCommand(uriOrNode, manager)
         }),
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node?: S3BucketNode | S3FolderNode) => {
             if (!node) {

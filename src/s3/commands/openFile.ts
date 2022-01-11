@@ -23,10 +23,7 @@ export async function openFileReadModeCommand(node: S3FileNode, manager: S3FileV
     }
 }
 
-export async function openFileEditModeCommand(
-    uriOrNode: vscode.Uri | S3FileNode,
-    manager: S3FileViewerManager
-): Promise<void> {
+export async function editFileCommand(uriOrNode: vscode.Uri | S3FileNode, manager: S3FileViewerManager): Promise<void> {
     if (uriOrNode instanceof S3FileNode) {
         const size = uriOrNode.file.sizeBytes
 
