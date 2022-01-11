@@ -4,13 +4,16 @@
  */
 
 import * as vscode from 'vscode'
-import { CawsRepo } from '../shared/clients/cawsClient'
+import { CawsProject, CawsRepo } from '../shared/clients/cawsClient'
 import { CawsClient } from '../shared/clients/cawsClient'
 import globals, { checkCaws } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { LoginWizard } from './wizards/login'
 import { selectCawsResource } from './wizards/selectResource'
+import * as nls from 'vscode-nls'
+
+const localize = nls.loadMessageBundle()
 
 export async function login(context: ExtContext, client: CawsClient): Promise<void> {
     const ctx = context.extensionContext
@@ -61,6 +64,53 @@ export async function cloneCawsRepo(): Promise<void> {
     }
     const cloneLink = await c.toCawsGitUri(r)
     vscode.commands.executeCommand('git.clone', cloneLink)
+}
+
+/** "Create CODE.AWS Development Environment" (MDE) command. */
+export async function createDevEnv(): Promise<void> {
+    if (!checkCaws()) {
+        return
+    }
+    const c = globals.caws
+    const p = (await selectCawsResource('project')) as CawsProject
+    if (!p) {
+        return
+    }
+    const args = {
+        organizationName: p.org.name ?? '?',
+        projectName: p.name ?? '?',
+        ideRuntimes: ['VSCode'],
+        repositories: [],
+    }
+    const env = await c.createDevEnv(args)
+    try {
+        const runningEnv = await c.startEnvironmentWithProgress(
+            {
+                developmentWorkspaceId: env.developmentWorkspaceId,
+                ...args,
+            },
+            ''
+        )
+        if (!runningEnv) {
+            throw new Error('Environment should not be undefined')
+        }
+        // if (request.devfile) {
+        //     await c.waitForDevfile(runningEnv)
+        //     // XXX: most devfiles specify mounting the 'project' directory, not 'projects'
+        //     await cloneToMde(runningEnv, { ...repo, uri: repoUri }, '/project')
+        // } else {
+        //     await cloneToMde(runningEnv, { ...repo, uri: repoUri })
+        // }
+    } catch (err) {
+        showViewLogsMessage(
+            localize(
+                'AWS.command.caws.createDevEnv.failed',
+                'Failed to create CODE.AWS development environment in "{0}": {1}',
+                p.name,
+                (err as Error).message
+            )
+        )
+    }
 }
 
 /**

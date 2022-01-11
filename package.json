@@ -68,6 +68,7 @@
         "onCommand:aws.caws.openProject",
         "onCommand:aws.caws.openRepo",
         "onCommand:aws.caws.cloneRepo",
+        "onCommand:aws.caws.createDevEnv",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -703,7 +704,7 @@
         "viewsWelcome": [
             {
                 "view": "aws.caws",
-                "contents": "[Connect to CODE.AWS](command:aws.caws.connect)\n[Clone Repository](command:aws.caws.cloneRepo)\n[CODE.AWS Commands](command:aws.caws.listCommands)\n",
+                "contents": "[Connect to CODE.AWS](command:aws.caws.connect)\n[Clone Repository](command:aws.caws.cloneRepo)\n[Create Development Environment](command:aws.caws.createDevEnv)\n[CODE.AWS Commands](command:aws.caws.listCommands)\n",
                 "when": "true"
             }
         ],
@@ -1163,6 +1164,11 @@
                 },
                 {
                     "command": "aws.caws.cloneRepo",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.createDevEnv",
                     "when": "view == aws.caws",
                     "group": "1_caws@1"
                 },
@@ -1788,6 +1794,11 @@
             {
                 "command": "aws.caws.cloneRepo",
                 "title": "%AWS.command.caws.cloneRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.createDevEnv",
+                "title": "%AWS.command.caws.createDevEnv%",
                 "category": "AWS"
             },
             {

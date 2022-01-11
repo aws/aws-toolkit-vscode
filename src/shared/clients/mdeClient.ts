@@ -17,6 +17,8 @@ import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
+export const MDE_START_TIMEOUT = 120000
+
 export const MDE_REGION = 'us-west-2'
 export function mdeEndpoint(): string {
     const s = new settings.DefaultSettingsConfiguration()
@@ -44,8 +46,6 @@ async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string
     // c.setupRequestListeners()
     return c
 }
-
-const DEFAULT_START_TIMEOUT_LENGTH = 120000
 
 export class MdeClient {
     private readonly log: logger.Logger
@@ -181,7 +181,7 @@ export class MdeClient {
      */
     public async startEnvironmentWithProgress(
         args: Pick<MdeEnvironment, 'id' | 'status'>,
-        timeout: Timeout = new Timeout(DEFAULT_START_TIMEOUT_LENGTH)
+        timeout: Timeout = new Timeout(MDE_START_TIMEOUT)
     ): Promise<MdeEnvironment | undefined> {
         // 'debounce' in case caller did not check if the environment was already running
         if (args.status === 'RUNNING') {
