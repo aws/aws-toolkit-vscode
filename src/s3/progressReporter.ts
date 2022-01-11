@@ -9,7 +9,7 @@ import { throttle } from 'lodash'
 import { getLogger } from '../shared/logger/logger'
 import * as bytes from 'bytes'
 
-const DEFAULT_REPORTING_INTERVAL_MILLIS = 500
+const DEFAULT_REPORTING_INTERVAL_MILLIS = 250
 
 interface ProgressReporterOptions {
     readonly totalBytes?: number
@@ -107,7 +107,7 @@ class ProgressReporter {
      * If the total bytes is undefined or 0, always returns 100%.
      */
     private incrementalPercentage(newBytes: number): number {
-        return this._totalBytes ? Math.ceil((newBytes / this._totalBytes) * 100) : 100
+        return this._totalBytes ? (newBytes / this._totalBytes) * 100 : 100
     }
 
     /**
