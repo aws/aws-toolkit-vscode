@@ -201,6 +201,9 @@ describe('FileViewerManager', function () {
         }
 
         beforeEach(function () {
+            if (vscode.version.startsWith('1.44')) {
+                this.skip()
+            }
             resetCalls(workspace)
         })
 
