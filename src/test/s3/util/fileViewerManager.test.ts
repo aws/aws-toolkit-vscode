@@ -24,6 +24,7 @@ import { SeverityLevel } from '../../shared/vscode/message'
 import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 import { join } from 'path'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -165,6 +166,13 @@ describe('FileViewerManager', function () {
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 
+    async function getActiveEditor(): Promise<vscode.TextEditor | never> {
+        const editor = await waitUntil(async () => vscode.window.activeTextEditor, { interval: 5 })
+        assert.ok(editor, 'No active text editor found')
+
+        return editor
+    }
+
     it('prompts if file size is greater than 4MB', async function () {
         fileViewerManager.openInReadMode({ ...bigImage, bucket })
         await testWindow.waitForMessage(/File size is more than 4MB/).then(message => message.selectItem(/Continue/))
@@ -193,14 +201,16 @@ describe('FileViewerManager', function () {
         }
 
         beforeEach(function () {
+            if (vscode.version.startsWith('1.44')) {
+                this.skip()
+            }
             resetCalls(workspace)
         })
 
         it('opens a new editor if no document exists', async function () {
             mockOpen(textFile1)
             await fileViewerManager.openInReadMode({ ...textFile1, bucket })
-            const editor = vscode.window.activeTextEditor
-            assert.strictEqual(editor?.document.getText(), textFile1.content.toString())
+            assert.strictEqual((await getActiveEditor()).document.getText(), textFile1.content.toString())
             await closeEditor()
         })
 
@@ -227,7 +237,7 @@ describe('FileViewerManager', function () {
             mockOpen(textFile1, S3_EDIT_SCHEME)
             await fileViewerManager.openInEditMode({ ...textFile1, bucket })
 
-            assert.strictEqual(vscode.window.activeTextEditor?.document.getText(), textFile1.content.toString())
+            assert.strictEqual((await getActiveEditor()).document.getText(), textFile1.content.toString())
             await closeEditor()
             await shownMessage
         })
@@ -238,13 +248,13 @@ describe('FileViewerManager', function () {
             mockOpen(textFile2)
             await fileViewerManager.openInReadMode({ ...textFile2, bucket })
 
-            assert.strictEqual(vscode.window.activeTextEditor?.document.getText(), textFile2.content.toString())
+            assert.strictEqual((await getActiveEditor()).document.getText(), textFile2.content.toString())
 
             mockOpen(textFile1)
             await fileViewerManager.openInReadMode({ ...textFile1, bucket })
 
             verify(workspace.openTextDocument(anything())).twice()
-            assert.strictEqual(vscode.window.activeTextEditor?.document.getText(), textFile1.content.toString())
+            assert.strictEqual((await getActiveEditor()).document.getText(), textFile1.content.toString())
         })
     })
 

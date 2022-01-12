@@ -80,8 +80,6 @@ export class S3FileProvider implements FileProvider {
         return result
     }
 
-    // TODO: defer API call until we see an on save event fired from the workspace
-    // this would reduce the # of API calls but we don't get auto-refreshes anymore
     public async stat(): Promise<{ ctime: number; mtime: number; size: number }> {
         await this.refresh()
 
@@ -171,8 +169,6 @@ export class S3FileViewerManager {
         // Defer to `vscode.open` for non-text files
         const contentType = mime.contentType(path.extname(fsPath))
         if (contentType && mime.charset(contentType) != 'UTF-8') {
-            // TODO: prompt with a "Don't show again" here
-            // Otherwise users will get dropped into edit mode right away.
             await this.commands.executeCommand('vscode.open', fileUri)
             return this.window.visibleTextEditors.find(
                 e => this.fs.uriToKey(e.document.uri) === this.fs.uriToKey(fileUri)
@@ -261,11 +257,14 @@ export class S3FileViewerManager {
 
     private registerProvider(file: S3File, uri: vscode.Uri): vscode.Disposable {
         const provider = new S3FileProvider(this.clientFactory(file.bucket.region), file)
-        provider.onDidChange(() => {
-            // TODO: find the correct node instead of refreshing it all
-            this.commands.executeCommand('aws.refreshAwsExplorer', true)
-        })
-        return this.fs.registerProvider(uri, provider)
+
+        return vscode.Disposable.from(
+            this.fs.registerProvider(uri, provider),
+            provider.onDidChange(() => {
+                // TODO: find the correct node instead of refreshing it all
+                this.commands.executeCommand('aws.refreshAwsExplorer', true)
+            })
+        )
     }
 
     /**
