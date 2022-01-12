@@ -208,7 +208,7 @@ ${fileContents}
 ;(async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
-            serviceJsonPath: 'types/REMOVED.api.json',
+            serviceJsonPath: 'types/REMOVED.json',
             serviceName: 'ClientCodeAws',
         },
         {

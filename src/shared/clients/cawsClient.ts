@@ -12,17 +12,42 @@ import * as gqltypes from 'graphql-request/dist/types'
 import * as caws from '../../../types/clientcodeaws'
 import * as logger from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import apiConfig = require('../../../types/REMOVED.api.json')
+import apiConfig = require('../../../types/REMOVED.json')
 import globals from '../extensionGlobals'
+import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
+import { MDE_START_TIMEOUT } from './mdeClient'
+import * as nls from 'vscode-nls'
+import { showMessageWithCancel } from '../utilities/messages'
+
+const localize = nls.loadMessageBundle()
 
 export const useGraphql = false
 
-export const cawsRegion = 'us-east-1'
-export const cawsEndpoint = 'https://public.api.REMOVED.codes'
-export const cawsEndpointGql = 'https://public.api.REMOVED.codes/graphql'
+export const cawsRegion = 'us-east-1' // Try "us-west-2" for beta/integ/gamma.
+export const cawsEndpoint = 'https://public.api-gamma.REMOVED.codes' // gamma web: https://integ.stage.REMOVED.codes/
+export const cawsEndpointGql = 'https://public.api-gamma.REMOVED.codes/graphql'
 export const cawsHostname = 'REMOVED.codes' // 'REMOVED.execute-api.us-east-1.amazonaws.cominteg.codedemo.REMOVED'
 export const cawsGitHostname = `git.service.${cawsHostname}`
 export const cawsHelpUrl = `https://${cawsHostname}/help`
+
+/** CAWS-MDE developer environment. */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface CawsDevEnv extends caws.DevelopmentWorkspaceSummary {}
+/** CAWS-MDE developer environment session. */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspaceOutput {}
+
+export interface CawsOrg extends caws.OrganizationSummary {
+    readonly id: string // TODO: why doesn't OrganizationSummary have this already?
+}
+export interface CawsProject extends caws.ProjectSummary {
+    readonly org: CawsOrg
+    readonly id: string // TODO: why doesn't ProjectSummary have this already?
+}
+export interface CawsRepo extends caws.SourceRepositorySummary {
+    readonly org: CawsOrg
+    readonly project: CawsProject
+}
 
 async function createCawsClient(
     authCookie: string | undefined,
@@ -92,18 +117,6 @@ async function gqlRequest<T>(
         }
         logger.getLogger().error('graphql request failed:\n  x-request-id: %s\n  %O', reqId, err.response)
     }
-}
-
-export interface CawsOrg extends caws.OrganizationSummary {
-    readonly id: string // TODO: why doesn't OrganizationSummary have this already?
-}
-export interface CawsProject extends caws.ProjectSummary {
-    readonly org: CawsOrg
-    readonly id: string // TODO: why doesn't ProjectSummary have this already?
-}
-export interface CawsRepo extends caws.SourceRepositorySummary {
-    readonly org: CawsOrg
-    readonly project: CawsProject
 }
 
 export class CawsClient {
@@ -180,9 +193,15 @@ export class CawsClient {
         //     req.httpRequest.headers['cookie'] = authCookie
         // })
         return new Promise<T>((resolve, reject) => {
-            req.send(function (err, data) {
-                if (err) {
-                    log.error('API request failed: %O', err)
+            req.send(function (e, data) {
+                if (e) {
+                    const err = e as any
+                    const reqId = err?.response?.headers?.get ? err.response.headers.get('x-request-id') : undefined
+                    if (reqId || err.response) {
+                        log.error('API request failed:\n  x-request-id: %s\n  %O', reqId, err.response)
+                    } else {
+                        log.error('API request failed:\n  x-request-id: (none)\n  %O', err)
+                    }
                     if (silent && defaultVal) {
                         resolve(defaultVal)
                     } else if (silent) {
@@ -190,6 +209,7 @@ export class CawsClient {
                     } else {
                         reject(err)
                     }
+                    return
                 }
                 log.verbose('API response: %O', data)
                 resolve(data)
@@ -416,6 +436,128 @@ export class CawsClient {
         }
 
         // TODO: Add telemetry
+    }
+
+    /** CAWS-MDE */
+    public async createDevEnv(args: caws.CreateDevelopmentWorkspaceInput): Promise<CawsDevEnv> {
+        if (!args.ideRuntimes || args.ideRuntimes.length === 0) {
+            throw Error('missing ideRuntimes')
+        }
+        const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args))
+        return {
+            ...r,
+            creatorId: '',
+            ide: args.ideRuntimes[0],
+            lastUpdatedTime: new Date(),
+            repositories: args.repositories,
+            // status?: String // TODO: get status
+        }
+    }
+
+    /** CAWS-MDE */
+    public async startDevEnv(
+        args: caws.StartDevelopmentWorkspaceInput
+    ): Promise<caws.StartDevelopmentWorkspaceOutput | undefined> {
+        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args))
+        return r
+    }
+
+    /** CAWS-MDE: does not have this operation (yet?) */
+    public async stopDevEnv(): Promise<void> {
+        throw Error('CAWS-MDE does not have stopEnvironment currently')
+    }
+
+    /** CAWS-MDE */
+    public async getDevEnv(args: caws.GetDevelopmentWorkspaceInput): Promise<CawsDevEnv | undefined> {
+        const r = await this.call(this.sdkClient.getDevelopmentWorkspace(args))
+        return {
+            developmentWorkspaceId: args.developmentWorkspaceId,
+            ...r,
+        }
+    }
+
+    /** CAWS-MDE */
+    public async deleteDevEnv(
+        args: caws.DeleteDevelopmentWorkspaceInput
+    ): Promise<caws.DeleteDevelopmentWorkspaceOutput | undefined> {
+        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args))
+        return r
+    }
+
+    /** CAWS-MDE */
+    public async *listDevEnvs(args: caws.ListDevelopmentWorkspaceInput): AsyncIterableIterator<CawsDevEnv | undefined> {
+        const r = await this.call(this.sdkClient.listDevelopmentWorkspace(args))
+        for (const i of r.items ?? []) {
+            yield i
+        }
+    }
+
+    /**
+     * Best-effort attempt to start an MDE given an ID, showing a progress notifcation with a cancel button
+     * TODO: may combine this progress stuff into some larger construct
+     *
+     * The cancel button does not abort the start, but rather alerts any callers that any operations that rely
+     * on the MDE starting should not progress.
+     *
+     * @returns the environment on success, undefined otherwise
+     */
+    public async startEnvironmentWithProgress(
+        args: caws.StartDevelopmentWorkspaceInput,
+        status: string,
+        timeout: Timeout = new Timeout(MDE_START_TIMEOUT)
+    ): Promise<CawsDevEnv | undefined> {
+        // 'debounce' in case caller did not check if the environment was already running
+        if (status === 'RUNNING') {
+            const resp = await this.getDevEnv(args)
+            if (resp && resp.status === 'RUNNING') {
+                return resp
+            }
+        }
+
+        const progress = await showMessageWithCancel(localize('AWS.caws.startMde.message', 'CODE.AWS'), timeout)
+        progress.report({ message: localize('AWS.caws.startMde.checking', 'checking status...') })
+
+        const pollMde = waitUntil(
+            async () => {
+                // technically this will continue to be called until it reaches its own timeout, need a better way to 'cancel' a `waitUntil`
+                if (timeout.completed) {
+                    return
+                }
+
+                const resp = await this.getDevEnv(args)
+
+                if (resp?.status === 'STOPPED') {
+                    progress.report({ message: localize('AWS.caws.startMde.stopStart', 'resuming environment...') })
+                    await this.startDevEnv(args)
+                } else if (resp?.status === 'STOPPING') {
+                    progress.report({
+                        message: localize('AWS.caws.startMde.resuming', 'waiting for environment to stop...'),
+                    })
+                } else {
+                    progress.report({
+                        message: localize('AWS.caws.startMde.starting', 'waiting for environment...'),
+                    })
+                }
+
+                return resp?.status === 'RUNNING' ? resp : undefined
+            },
+            // note: the `waitUntil` will resolve prior to the real timeout if it is refreshed
+            { interval: 5000, timeout: timeout.remainingTime, truthy: true }
+        )
+
+        return waitTimeout(pollMde, timeout, {
+            onExpire: () => (
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.caws.startFailed',
+                        'Timeout waiting for MDE environment: {0}',
+                        args.developmentWorkspaceId
+                    )
+                ),
+                undefined
+            ),
+            onCancel: () => undefined,
+        })
     }
 
     /**
