@@ -5,6 +5,7 @@
 
 import { ECS } from 'aws-sdk'
 import { ecsExecToolkitGuideUrl } from '../../shared/constants'
+import { isCloud9 } from '../../shared/extensionUtilities'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
@@ -24,7 +25,7 @@ function createValidTaskFilter(containerName: string) {
             c => c?.name === containerName && c.managedAgents?.find(a => a.name === 'ExecuteCommandAgent')
         )
 
-        return t.taskArn !== undefined && t.lastStatus === 'RUNNING' && managed
+        return t.taskArn !== undefined && managed
     }
 }
 
@@ -38,10 +39,17 @@ function createTaskPrompter(node: EcsContainerNode) {
         return (await node.describeTasks(taskArns)).filter(createValidTaskFilter(node.containerName)).map(task => {
             // The last 32 digits of the task arn is the task identifier
             const taskId = task.taskArn.substring(task.taskArn.length - 32)
+            const invalidSelection = task.lastStatus !== 'RUNNING'
+
             return {
-                label: taskId,
+                label: `${invalidSelection && !isCloud9() ? '$(error) ' : ''}${taskId}`,
                 detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
+                description:
+                    invalidSelection && task.desiredStatus === 'RUNNING'
+                        ? 'Task starting, try again later.'
+                        : undefined,
                 data: taskId,
+                invalidSelection,
             }
         })
     })()
@@ -49,9 +57,14 @@ function createTaskPrompter(node: EcsContainerNode) {
         title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
         buttons: createCommonButtons(ecsExecToolkitGuideUrl),
         noItemsFoundItem: {
-            label: localize('AWS.command.ecs.runCommandInContainer.noTasks', 'No running tasks for this container.'),
+            label: localize('AWS.command.ecs.runCommandInContainer.noTasks', 'No valid tasks for this container'),
+            detail: localize(
+                'AWS.command.ecs.runCommandInContainer.noTasks.description',
+                'If command execution was recently enabled, try again in a few minutes.'
+            ),
             data: WIZARD_BACK,
         },
+        compare: (a, b) => (a.invalidSelection ? 1 : b.invalidSelection ? -1 : 0),
     })
 }
 
