@@ -57,7 +57,7 @@ function createTaskPrompter(node: EcsContainerNode) {
         title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
         buttons: createCommonButtons(ecsExecToolkitGuideUrl),
         noItemsFoundItem: {
-            label: localize('AWS.command.ecs.runCommandInContainer.noTasks', 'No valid tasks for this container.'),
+            label: localize('AWS.command.ecs.runCommandInContainer.noTasks', 'No valid tasks for this container'),
             detail: localize(
                 'AWS.command.ecs.runCommandInContainer.noTasks.description',
                 'If command execution was recently enabled, try again in a few minutes.'
