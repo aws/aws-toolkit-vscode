@@ -14,10 +14,9 @@ import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { extensionSettingsPrefix, LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
-import globals from '../../shared/extensionGlobals'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
+import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
 
 export async function runCommandInContainer(
