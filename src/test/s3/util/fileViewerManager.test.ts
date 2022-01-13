@@ -166,11 +166,27 @@ describe('FileViewerManager', function () {
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 
-    async function getActiveEditor(): Promise<vscode.TextEditor | never> {
-        const editor = await waitUntil(async () => vscode.window.activeTextEditor, { interval: 5 })
-        assert.ok(editor, 'No active text editor found')
+    /**
+     * Waits for _any_ active text editor to appear and have the desired contents.
+     * This is important since their may be delays between showing a new document and
+     * updates to the `activeTextEditor` field.
+     */
+    async function assertTextEditorContains(contents: string): Promise<void | never> {
+        const editor = await waitUntil(
+            async () => {
+                if (vscode.window.activeTextEditor?.document.getText() === contents) {
+                    return vscode.window.activeTextEditor
+                }
+            },
+            { interval: 5 }
+        )
 
-        return editor
+        if (!vscode.window.activeTextEditor) {
+            throw new Error('No active text editor found')
+        }
+        if (!editor) {
+            assert.strictEqual(vscode.window.activeTextEditor.document.getText(), contents)
+        }
     }
 
     it('prompts if file size is greater than 4MB', async function () {
@@ -201,16 +217,13 @@ describe('FileViewerManager', function () {
         }
 
         beforeEach(function () {
-            if (vscode.version.startsWith('1.44')) {
-                this.skip()
-            }
             resetCalls(workspace)
         })
 
         it('opens a new editor if no document exists', async function () {
             mockOpen(textFile1)
             await fileViewerManager.openInReadMode({ ...textFile1, bucket })
-            assert.strictEqual((await getActiveEditor()).document.getText(), textFile1.content.toString())
+            await assertTextEditorContains(textFile1.content.toString())
             await closeEditor()
         })
 
@@ -237,7 +250,7 @@ describe('FileViewerManager', function () {
             mockOpen(textFile1, S3_EDIT_SCHEME)
             await fileViewerManager.openInEditMode({ ...textFile1, bucket })
 
-            assert.strictEqual((await getActiveEditor()).document.getText(), textFile1.content.toString())
+            await assertTextEditorContains(textFile1.content.toString())
             await closeEditor()
             await shownMessage
         })
@@ -248,13 +261,13 @@ describe('FileViewerManager', function () {
             mockOpen(textFile2)
             await fileViewerManager.openInReadMode({ ...textFile2, bucket })
 
-            assert.strictEqual((await getActiveEditor()).document.getText(), textFile2.content.toString())
+            await assertTextEditorContains(textFile2.content.toString())
 
             mockOpen(textFile1)
             await fileViewerManager.openInReadMode({ ...textFile1, bucket })
 
             verify(workspace.openTextDocument(anything())).twice()
-            assert.strictEqual((await getActiveEditor()).document.getText(), textFile1.content.toString())
+            await assertTextEditorContains(textFile1.content.toString())
         })
     })
 
