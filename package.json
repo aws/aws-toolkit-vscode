@@ -2961,7 +2961,7 @@
         "ts-mockito": "^2.5.0",
         "ts-node": "^10.4.0",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^1.99.0",
+        "vsce": "^2.6.3",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.5.2",
         "vue-loader": "^16.8.1",
