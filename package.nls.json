@@ -185,6 +185,7 @@
     "AWS.ecs.disableEcsExec": "Disable Command Execution",
     "AWS.ecs.runCommandInContainer": "Run command in container",
     "AWS.ecs.runCommandInContainer.error": "Failed to execute command in container.",
+    "AWS.ecs.containerNode.noTasks": "no running tasks",
     "AWS.command.ecs.runCommandInContainer.warnBeforeExecute": "Command may modify the running container {0}. Are you sure?",
     "AWS.command.ecs.runCommandInContainer.viewOutput": "View Output",
     "AWS.command.ecs.runCommandInContainer.noPluginFound": "This feature requires the SSM Session Manager plugin (session-manager-plugin) to be installed and available on your $PATH",
