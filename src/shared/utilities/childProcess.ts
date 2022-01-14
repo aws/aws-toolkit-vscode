@@ -302,6 +302,6 @@ export class ChildProcess {
      */
     public toString(noparams = false): string {
         const pid = this.pid() > 0 ? `PID ${this.pid()}:` : '(not started)'
-        return `${pid} [${this.command} ${noparams ? '' : this.args.join(' ')}]`
+        return `${pid} [${this.command} ${noparams ? '...' : this.args.join(' ')}]`
     }
 }
