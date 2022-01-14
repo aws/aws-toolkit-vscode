@@ -13,6 +13,8 @@ import * as telemetry from '../shared/telemetry/telemetry'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
+import { waitUntil } from '../shared/utilities/timeoutUtils'
+import { isMinimumVersion, isReleaseVersion } from '../shared/vscode/env'
 
 const testTempDirs: string[] = []
 
@@ -207,3 +209,71 @@ export const assertTelemetryCurried =
     <K extends MetricName>(name: K) =>
     (expected: TelemetryMetric<K>) =>
         assertTelemetry(name, expected)
+
+/**
+ * Waits for _any_ active text editor to appear and have the desired contents.
+ * This is important since there may be delays between showing a new document and
+ * updates to the `activeTextEditor` field.
+ *
+ * Assumes that only a single document will be edited while polling. The contents of
+ * the document must match exactly to the text editor at some point, otherwise this
+ * function will timeout.
+ */
+export async function assertTextEditorContains(contents: string): Promise<void | never> {
+    const editor = await waitUntil(
+        async () => {
+            if (vscode.window.activeTextEditor?.document.getText() === contents) {
+                return vscode.window.activeTextEditor
+            }
+        },
+        { interval: 5 }
+    )
+
+    if (!vscode.window.activeTextEditor) {
+        throw new Error('No active text editor found')
+    }
+    if (!editor) {
+        assert.strictEqual(vscode.window.activeTextEditor.document.getText(), contents)
+    }
+}
+
+/**
+ * Executes the close all editors command and waits for all visible editors to disappear
+ */
+export async function closeAllEditors(): Promise<unknown> {
+    if ((await vscode.commands.getCommands()).includes('openEditors.closeAll')) {
+        if (isMinimumVersion() && !isReleaseVersion()) {
+            throw Error('openEditors.closeAll is available in min version, remove me!')
+        }
+        // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
+        // `workbench.action.closeAllEditors` is unreliable and should not be used if possible
+        return await vscode.commands.executeCommand('openEditors.closeAll')
+    }
+
+    // Remove the below code (all of it) when `openEditors.closeAll` is available in all versions
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+
+    // The output channel counts as an editor, but you can't really close that...
+    const noVisibleEditor: boolean | undefined = await waitUntil(
+        async () => {
+            const visibleEditors = vscode.window.visibleTextEditors.filter(
+                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
+            )
+
+            return visibleEditors.length === 0
+        },
+        {
+            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
+            interval: 250,
+            truthy: true,
+        }
+    )
+
+    if (!noVisibleEditor) {
+        throw new Error(
+            `Editor "${
+                vscode.window.activeTextEditor!.document.fileName
+            }" was still open after executing "closeAllEditors"`
+        )
+    }
+}

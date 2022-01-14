@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 import globals from '../extensionGlobals'
 
 import { getLogger } from '../logger/logger'
-import { Timeout, waitTimeout, waitUntil } from './timeoutUtils'
+import { Timeout, waitTimeout } from './timeoutUtils'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -41,37 +41,6 @@ export function folderIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: 
         }
     } else {
         return vscode.ThemeIcon.Folder
-    }
-}
-
-/**
- * Executes the close all editors command and waits for all visible editors to disappear
- */
-export async function closeAllEditors() {
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-
-    // The output channel counts as an editor, but you can't really close that...
-    const noVisibleEditor: boolean | undefined = await waitUntil(
-        async () => {
-            const visibleEditors = vscode.window.visibleTextEditors.filter(
-                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
-            )
-
-            return visibleEditors.length === 0
-        },
-        {
-            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
-            interval: 250,
-            truthy: true,
-        }
-    )
-
-    if (!noVisibleEditor) {
-        throw new Error(
-            `Editor "${
-                vscode.window.activeTextEditor!.document.fileName
-            }" was still open after executing "closeAllEditors"`
-        )
     }
 }
 
