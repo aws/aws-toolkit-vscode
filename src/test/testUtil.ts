@@ -246,11 +246,11 @@ export async function closeAllEditors(): Promise<unknown> {
             throw Error('openEditors.closeAll is available in min version, remove me!')
         }
         // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
-        // Tests will pass without it but good to clean state regardless
+        // `workbench.action.closeAllEditors` is unreliable and should not be used if possible
         return await vscode.commands.executeCommand('openEditors.closeAll')
     }
 
-    // Remove the below code when `openEditors.closeAll` is available in all versions
+    // Remove the below code (all of it) when `openEditors.closeAll` is available in all versions
     await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
     // The output channel counts as an editor, but you can't really close that...
