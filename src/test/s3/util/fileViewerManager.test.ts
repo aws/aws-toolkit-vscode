@@ -144,6 +144,12 @@ describe('FileViewerManager', function () {
     let commands: typeof vscode.commands
     let settings: SettingsConfiguration
 
+    async function closeAllEditors() {
+        // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
+        // Tests will pass without it but good to clean state regardless
+        await vscode.commands.executeCommand('openEditors.closeAll')
+    }
+
     beforeEach(function () {
         s3 = mock()
         fs = new VirualFileSystem()
@@ -162,9 +168,9 @@ describe('FileViewerManager', function () {
         )
     })
 
-    async function closeEditor() {
-        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-    }
+    afterEach(async function () {
+        await closeAllEditors()
+    })
 
     it('prompts if file size is greater than 4MB', async function () {
         fileViewerManager.openInReadMode({ ...bigImage, bucket })
@@ -201,7 +207,6 @@ describe('FileViewerManager', function () {
             mockOpen(textFile1)
             await fileViewerManager.openInReadMode({ ...textFile1, bucket })
             await assertTextEditorContains(textFile1.content.toString())
-            await closeEditor()
         })
 
         it('closes the read-only tab when opening in edit mode', async function () {
@@ -214,7 +219,6 @@ describe('FileViewerManager', function () {
             await fileViewerManager.openInEditMode({ ...textFile1, bucket })
 
             verify(commands.executeCommand('workbench.action.closeActiveEditor')).once()
-            await closeEditor()
         })
 
         it('can open in edit mode, showing a warning with two options', async function () {
@@ -228,7 +232,6 @@ describe('FileViewerManager', function () {
             await fileViewerManager.openInEditMode({ ...textFile1, bucket })
 
             await assertTextEditorContains(textFile1.content.toString())
-            await closeEditor()
             await shownMessage
         })
 
