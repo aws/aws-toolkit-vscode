@@ -66,7 +66,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
         const samCommand = sam.path ? sam.path : 'sam'
         this.childProcess = new ChildProcess(samCommand, invokeOptions.arguments, {
-            logging: options?.logging,
+            logging: options?.logging ? 'yes' : 'no',
             spawnOptions: invokeOptions.spawnOptions,
         })
 
