@@ -14,7 +14,7 @@ import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
-import { isReleaseVersion } from '../shared/vscode/env'
+import { isMinVer, isReleaseVersion } from '../shared/vscode/env'
 
 const testTempDirs: string[] = []
 
@@ -242,7 +242,7 @@ export async function assertTextEditorContains(contents: string): Promise<void |
  */
 export async function closeAllEditors(): Promise<unknown> {
     if ((await vscode.commands.getCommands()).includes('openEditors.closeAll')) {
-        if (vscode.version.startsWith('1.44') && !isReleaseVersion()) {
+        if (isMinVer() && !isReleaseVersion()) {
             throw Error('openEditors.closeAll is available in min version, remove me!')
         }
         // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`

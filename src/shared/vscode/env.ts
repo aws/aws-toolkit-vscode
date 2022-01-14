@@ -5,6 +5,7 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
+import * as packageJson from '../../../package.json'
 
 /**
  * Components associated with {@link module:vscode.env}.
@@ -58,3 +59,11 @@ export function isReleaseVersion(prereleaseOk: boolean = false): boolean {
 }
 
 export { extensionVersion }
+
+/**
+ * Returns true if the extension is being ran on the minimum version of VS Code as defined
+ * by the `engine` field in `package.json`
+ */
+export function isMinVer(): boolean {
+    return vscode.version.startsWith(packageJson.engines.vscode.replace(/\^\~/, ''))
+}
