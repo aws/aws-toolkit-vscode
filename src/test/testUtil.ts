@@ -14,6 +14,7 @@ import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
+import { isReleaseVersion } from '../shared/vscode/env'
 
 const testTempDirs: string[] = []
 
@@ -233,5 +234,46 @@ export async function assertTextEditorContains(contents: string): Promise<void |
     }
     if (!editor) {
         assert.strictEqual(vscode.window.activeTextEditor.document.getText(), contents)
+    }
+}
+
+/**
+ * Executes the close all editors command and waits for all visible editors to disappear
+ */
+export async function closeAllEditors(): Promise<unknown> {
+    if ((await vscode.commands.getCommands()).includes('openEditors.closeAll')) {
+        if (vscode.version.startsWith('1.44') && !isReleaseVersion()) {
+            throw Error('openEditors.closeAll is available in min version, remove me!')
+        }
+        // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
+        // Tests will pass without it but good to clean state regardless
+        return await vscode.commands.executeCommand('openEditors.closeAll')
+    }
+
+    // Remove the below code when `openEditors.closeAll` is available in all versions
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+
+    // The output channel counts as an editor, but you can't really close that...
+    const noVisibleEditor: boolean | undefined = await waitUntil(
+        async () => {
+            const visibleEditors = vscode.window.visibleTextEditors.filter(
+                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
+            )
+
+            return visibleEditors.length === 0
+        },
+        {
+            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
+            interval: 250,
+            truthy: true,
+        }
+    )
+
+    if (!noVisibleEditor) {
+        throw new Error(
+            `Editor "${
+                vscode.window.activeTextEditor!.document.fileName
+            }" was still open after executing "closeAllEditors"`
+        )
     }
 }

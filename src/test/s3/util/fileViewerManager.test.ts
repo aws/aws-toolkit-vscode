@@ -24,7 +24,7 @@ import { SeverityLevel } from '../../shared/vscode/message'
 import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 import { join } from 'path'
-import { assertTextEditorContains } from '../../testUtil'
+import { assertTextEditorContains, closeAllEditors } from '../../testUtil'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -143,12 +143,6 @@ describe('FileViewerManager', function () {
     let workspace: typeof vscode.workspace
     let commands: typeof vscode.commands
     let settings: SettingsConfiguration
-
-    async function closeAllEditors() {
-        // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
-        // Tests will pass without it but good to clean state regardless
-        await vscode.commands.executeCommand('openEditors.closeAll')
-    }
 
     beforeEach(function () {
         s3 = mock()
