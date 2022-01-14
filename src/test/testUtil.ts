@@ -13,6 +13,7 @@ import * as telemetry from '../shared/telemetry/telemetry'
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../shared/filesystemUtilities'
 import globals from '../shared/extensionGlobals'
+import { waitUntil } from '../shared/utilities/timeoutUtils'
 
 const testTempDirs: string[] = []
 
@@ -207,3 +208,30 @@ export const assertTelemetryCurried =
     <K extends MetricName>(name: K) =>
     (expected: TelemetryMetric<K>) =>
         assertTelemetry(name, expected)
+
+/**
+ * Waits for _any_ active text editor to appear and have the desired contents.
+ * This is important since their may be delays between showing a new document and
+ * updates to the `activeTextEditor` field.
+ *
+ * Assumes that only a single document will be edited while polling. The contents of
+ * the document must match exactly to the text editor at some point, otherwise this
+ * function will timeout.
+ */
+export async function assertTextEditorContains(contents: string): Promise<void | never> {
+    const editor = await waitUntil(
+        async () => {
+            if (vscode.window.activeTextEditor?.document.getText() === contents) {
+                return vscode.window.activeTextEditor
+            }
+        },
+        { interval: 5 }
+    )
+
+    if (!vscode.window.activeTextEditor) {
+        throw new Error('No active text editor found')
+    }
+    if (!editor) {
+        assert.strictEqual(vscode.window.activeTextEditor.document.getText(), contents)
+    }
+}

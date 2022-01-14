@@ -24,7 +24,7 @@ import { SeverityLevel } from '../../shared/vscode/message'
 import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 import { join } from 'path'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { assertTextEditorContains } from '../../testUtil'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -164,29 +164,6 @@ describe('FileViewerManager', function () {
 
     async function closeEditor() {
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-    }
-
-    /**
-     * Waits for _any_ active text editor to appear and have the desired contents.
-     * This is important since their may be delays between showing a new document and
-     * updates to the `activeTextEditor` field.
-     */
-    async function assertTextEditorContains(contents: string): Promise<void | never> {
-        const editor = await waitUntil(
-            async () => {
-                if (vscode.window.activeTextEditor?.document.getText() === contents) {
-                    return vscode.window.activeTextEditor
-                }
-            },
-            { interval: 5 }
-        )
-
-        if (!vscode.window.activeTextEditor) {
-            throw new Error('No active text editor found')
-        }
-        if (!editor) {
-            assert.strictEqual(vscode.window.activeTextEditor.document.getText(), contents)
-        }
     }
 
     it('prompts if file size is greater than 4MB', async function () {
