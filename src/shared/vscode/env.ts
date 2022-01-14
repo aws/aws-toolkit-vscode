@@ -64,6 +64,6 @@ export { extensionVersion }
  * Returns true if the extension is being ran on the minimum version of VS Code as defined
  * by the `engines` field in `package.json`
  */
-export function isMinVer(): boolean {
+export function isMinimumVersion(): boolean {
     return vscode.version.startsWith(packageJson.engines.vscode.replace(/\^\~/, ''))
 }
