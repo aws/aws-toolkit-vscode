@@ -211,7 +211,7 @@ export const assertTelemetryCurried =
 
 /**
  * Waits for _any_ active text editor to appear and have the desired contents.
- * This is important since their may be delays between showing a new document and
+ * This is important since there may be delays between showing a new document and
  * updates to the `activeTextEditor` field.
  *
  * Assumes that only a single document will be edited while polling. The contents of
