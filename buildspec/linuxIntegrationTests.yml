@@ -10,7 +10,6 @@ phases:
     install:
         runtime-versions:
             nodejs: 12
-            docker: 19
             dotnet: 3.1
 
         commands:
