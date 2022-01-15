@@ -10,11 +10,11 @@ import { EcsClient } from '../../shared/clients/ecsClient'
 import globals from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { EcsServiceNode } from './ecsServiceNode'
-import { Commands } from '../../shared/vscode/commands'
 
 const CONTEXT_EXEC_ENABLED = 'awsEcsContainerNodeExecEnabled'
 const CONTEXT_EXEC_DISABLED = 'awsEcsContainerNodeExecDisabled'
 const TASK_STATUS_RUNNING = 'RUNNING'
+const MAX_RESULTS = 1
 
 export class EcsContainerNode extends AWSTreeNodeBase {
     public constructor(
@@ -43,13 +43,8 @@ export class EcsContainerNode extends AWSTreeNodeBase {
     }
 
     private async hasRunningTasks(): Promise<boolean> {
-        const tasks = await this.ecs.listTasks(this.clusterArn, this.serviceName, TASK_STATUS_RUNNING)
+        const tasks = await this.ecs.listTasks(this.clusterArn, this.serviceName, TASK_STATUS_RUNNING, MAX_RESULTS)
         return tasks.length > 0
-    }
-
-    public async refresh(commands: Commands = Commands.vscode()): Promise<void> {
-        await this.updateRunningTasks()
-        return commands.execute('aws.refreshAwsExplorerNode', this)
     }
 
     public async updateRunningTasks(): Promise<void> {

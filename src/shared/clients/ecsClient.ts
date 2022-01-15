@@ -59,10 +59,20 @@ export class DefaultEcsClient {
         return containerNames ?? []
     }
 
-    public async listTasks(cluster: string, serviceName: string, taskStatus?: string): Promise<string[]> {
+    public async listTasks(
+        cluster: string,
+        serviceName: string,
+        taskStatus?: string,
+        maxResults?: number
+    ): Promise<string[]> {
         const sdkClient = await this.createSdkClient()
 
-        const params: ECS.ListTasksRequest = { cluster: cluster, serviceName: serviceName, desiredStatus: taskStatus }
+        const params: ECS.ListTasksRequest = {
+            cluster: cluster,
+            serviceName: serviceName,
+            desiredStatus: taskStatus,
+            maxResults: maxResults,
+        }
         const listTasksResponse = await sdkClient.listTasks(params).promise()
         return listTasksResponse.taskArns ?? []
     }
