@@ -10,9 +10,11 @@ import { EcsClient } from '../../shared/clients/ecsClient'
 import globals from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { EcsServiceNode } from './ecsServiceNode'
+import { Commands } from '../../shared/vscode/commands'
 
 const CONTEXT_EXEC_ENABLED = 'awsEcsContainerNodeExecEnabled'
 const CONTEXT_EXEC_DISABLED = 'awsEcsContainerNodeExecDisabled'
+const TASK_STATUS_RUNNING = 'RUNNING'
 
 export class EcsContainerNode extends AWSTreeNodeBase {
     public constructor(
@@ -20,15 +22,11 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         public readonly serviceName: string,
         public readonly clusterArn: string,
         public readonly ecs: EcsClient,
-        public readonly parent: EcsServiceNode,
-        private readonly hasRunningTasks: boolean
+        public readonly parent: EcsServiceNode
     ) {
         super(containerName)
         this.tooltip = containerName
         this.contextValue = this.parent.service.enableExecuteCommand ? CONTEXT_EXEC_ENABLED : CONTEXT_EXEC_DISABLED
-        this.description = !this.hasRunningTasks
-            ? `[${localize('AWS.ecs.containerNode.noTasks', 'no running tasks')}]`
-            : false
 
         this.iconPath = {
             dark: vscode.Uri.file(globals.iconPaths.dark.container),
@@ -42,5 +40,19 @@ export class EcsContainerNode extends AWSTreeNodeBase {
 
     public describeTasks(tasks: string[]) {
         return this.ecs.describeTasks(this.clusterArn, tasks)
+    }
+
+    private async hasRunningTasks(): Promise<boolean> {
+        const tasks = await this.ecs.listTasks(this.clusterArn, this.serviceName, TASK_STATUS_RUNNING)
+        return tasks.length > 0
+    }
+
+    public async refresh(commands: Commands = Commands.vscode()): Promise<void> {
+        await this.updateRunningTasks()
+        return commands.execute('aws.refreshAwsExplorerNode', this)
+    }
+
+    public async updateRunningTasks(): Promise<void> {
+        this.description = (await this.hasRunningTasks()) ? false : `[no running tasks]`
     }
 }

@@ -18,7 +18,6 @@ import globals from '../../shared/extensionGlobals'
 
 const CONTEXT_EXEC_ENABLED = 'awsEcsServiceNode.ENABLED'
 const CONTEXT_EXEC_DISABLED = 'awsEcsServiceNode.DISABLED'
-const TASK_STATUS_RUNNING = 'RUNNING'
 
 export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
@@ -40,16 +39,14 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 const containerNames = await this.ecs.getContainerNames(this.service.taskDefinition!)
-                return await Promise.all(
-                    containerNames.map(async name => {
-                        const tasks = await this.ecs.listTasks(
-                            this.service.clusterArn!,
-                            this.service.serviceName!,
-                            TASK_STATUS_RUNNING
-                        )
-                        return new EcsContainerNode(name, this.name, this.parent.arn, this.ecs, this, tasks.length > 0)
-                    })
-                )
+                const childNodes = containerNames.map(name => {
+                    return new EcsContainerNode(name, this.name, this.parent.arn, this.ecs, this)
+                })
+                for (const node of childNodes) {
+                    await node.updateRunningTasks()
+                }
+
+                return childNodes
             },
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
