@@ -29,13 +29,13 @@ export async function selectCawsResource(
     picker.matchOnDescription = true
 
     if (kind === 'org') {
-        picker.title = 'Open CODE.AWS Organization'
+        picker.title = 'Select a CODE.AWS Organization'
         picker.placeholder = 'Choose an organization'
     } else if (kind === 'project') {
-        picker.title = 'Open CODE.AWS Project'
+        picker.title = 'Select a CODE.AWS Project'
         picker.placeholder = 'Choose a project'
     } else {
-        picker.title = 'Open CODE.AWS repository'
+        picker.title = 'Select a CODE.AWS Repository'
         picker.placeholder = 'Choose a repository'
     }
 

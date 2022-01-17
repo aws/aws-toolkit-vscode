@@ -185,33 +185,79 @@ export class CawsClient {
         return this.username
     }
 
+    // 2022-01-14 11:10:40 [ERROR]: API request failed: createDevelopmentWorkspace
+    // response: Response {
+    //   error: [CodeAws.InternalException: An internal error has occurred while processing your request
+    //     code: 'CodeAws.InternalException',
+    //   },
+    //   retryCount: 3,
+    //   redirectCount: 0,
+    //   httpResponse: HttpResponse {
+    //     statusCode: 500,
+    //     headers: { … },
+    //     statusMessage: 'Internal Server Error'
+    //   },
+    // }
+
     public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean = false, defaultVal?: T): Promise<T> {
         const log = this.log
-        // const apiKey = this.apiKey
-        // req.on('build', function () {
-        //     req.httpRequest.headers['x-api-key'] = apiKey
-        //     req.httpRequest.headers['cookie'] = authCookie
-        // })
         return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
+                const r = req as any
                 if (e) {
-                    const err = e as any
-                    const reqId = err?.response?.headers?.get ? err.response.headers.get('x-request-id') : undefined
-                    if (reqId || err.response) {
-                        log.error('API request failed:\n  x-request-id: %s\n  %O', reqId, err.response)
+                    const allHeaders = r?.response?.httpResponse?.headers
+                    const logHeaders = {}
+                    // Selected headers which are useful for logging.
+                    const logHeaderNames = [
+                        // 'access-control-expose-headers',
+                        // 'cache-control',
+                        // 'strict-transport-security',
+                        'x-amz-apigw-id',
+                        'x-amz-cf-id',
+                        'x-amz-cf-pop',
+                        'x-amzn-remapped-content-length',
+                        'x-amzn-remapped-x-amzn-requestid',
+                        'x-amzn-requestid',
+                        'x-amzn-served-from',
+                        'x-amzn-trace-id',
+                        'x-cache',
+                        'x-request-id', // <- Request id for caws/fusi!
+                    ]
+                    if (allHeaders && Object.keys(allHeaders).length > 0) {
+                        for (const k of logHeaderNames) {
+                            ;(logHeaders as any)[k] = (k in allHeaders ? allHeaders : logHeaderNames)[k]
+                        }
+                    }
+
+                    // Stack is noisy and useless in production.
+                    const errNoStack = { ...e }
+                    delete errNoStack.stack
+                    // Remove confusing "requestId" field (= "x-amzn-requestid" header)
+                    // because for caws/fusi, "x-request-id" is more relevant.
+                    // All of the various request-ids can be found in the logged headers.
+                    delete errNoStack.requestId
+
+                    if (r.operation || r.params) {
+                        log.error(
+                            'API request failed: %s\nparams: %O\nerror: %O\nheaders: %O',
+                            r.operation,
+                            r.params,
+                            errNoStack,
+                            logHeaders
+                        )
                     } else {
-                        log.error('API request failed:\n  x-request-id: (none)\n  %O', err)
+                        log.error('API request failed:%O\nheaders: %O', req, logHeaders)
                     }
                     if (silent && defaultVal) {
                         resolve(defaultVal)
                     } else if (silent) {
                         resolve({ length: 0, items: undefined } as unknown as T)
                     } else {
-                        reject(err)
+                        reject(e)
                     }
                     return
                 }
-                log.verbose('API response: %O', data)
+                log.verbose('API response (%s): %O', r.operation ?? '?', data)
                 resolve(data)
             })
         })
