@@ -2,9 +2,6 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import * as vscode from 'vscode'
 import { EcsClient } from '../../shared/clients/ecsClient'
 import globals from '../../shared/extensionGlobals'
@@ -14,7 +11,6 @@ import { EcsServiceNode } from './ecsServiceNode'
 const CONTEXT_EXEC_ENABLED = 'awsEcsContainerNodeExecEnabled'
 const CONTEXT_EXEC_DISABLED = 'awsEcsContainerNodeExecDisabled'
 const TASK_STATUS_RUNNING = 'RUNNING'
-const MAX_RESULTS = 1
 
 export class EcsContainerNode extends AWSTreeNodeBase {
     public constructor(
@@ -35,7 +31,7 @@ export class EcsContainerNode extends AWSTreeNodeBase {
     }
 
     public listTasks() {
-        return this.ecs.listTasks(this.clusterArn, this.serviceName)
+        return this.ecs.listTasks({ cluster: this.clusterArn, serviceName: this.serviceName })
     }
 
     public describeTasks(tasks: string[]) {
@@ -43,8 +39,16 @@ export class EcsContainerNode extends AWSTreeNodeBase {
     }
 
     private async hasRunningTasks(): Promise<boolean> {
-        const tasks = await this.ecs.listTasks(this.clusterArn, this.serviceName, TASK_STATUS_RUNNING, MAX_RESULTS)
-        return tasks.length > 0
+        return (
+            (
+                await this.ecs.listTasks({
+                    cluster: this.clusterArn,
+                    serviceName: this.serviceName,
+                    desiredStatus: TASK_STATUS_RUNNING,
+                    maxResults: 1,
+                })
+            ).length > 0
+        )
     }
 
     public async updateRunningTasks(): Promise<void> {
