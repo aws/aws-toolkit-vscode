@@ -44,7 +44,7 @@ export async function makeCodeLenses({
     const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
 
     if (!workspaceFolder) {
-        getLogger().error(`Source file ${document.uri} is external to the current workspace.`)
+        getLogger().error(`makeCodeLenses: source file is external to workspace: ${document.uri}`)
 
         return []
     }
