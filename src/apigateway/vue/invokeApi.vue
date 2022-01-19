@@ -8,13 +8,6 @@
         <h3>Select a resource:</h3>
         <select v-model="selectedApiResource" v-on:change="setApiResource">
             <option disabled value="">Select a resource</option>
-            <!-- <% Resources.forEach(function(resource, key, map) { %>
-            <% if (resource.resourceMethods === undefined) { %>
-                <option disabled value="<%= resource.id %>"><%= resource.path %> -- No methods</option>
-            <% } else {%>
-                <option value="<%= resource.id %>"><%= resource.path %></option>
-            <% }%>
-            <% }); %> -->
             <option
                 v-for="resource in Object.keys(initialData.Resources)"
                 :key="initialData.Resources[resource].id"
@@ -31,9 +24,6 @@
         <h3>Select a method:</h3>
         <select v-if="selectedApiResource" v-model="selectedMethod">
             <option disabled value="">Select a method</option>
-            <!-- <option v-for="method in methods" v-bind:value="method">
-                {{ method }}
-            </option> -->
             <option v-for="method in methods" :key="method" :value="method">
                 {{ method }}
             </option>
@@ -80,6 +70,7 @@ const defaultInitialData: InvokeRemoteRestApiInitialData = {
 }
 
 export default defineComponent({
+    mixins: [saveData],
     data: () => ({
         initialData: defaultInitialData,
         selectedApiResource: '',
@@ -91,9 +82,7 @@ export default defineComponent({
         isLoading: false,
     }),
     async created() {
-        this.initialData = (await client.init()) ?? defaultInitialData
-        console.log('hi')
-        console.log(this.initialData)
+        this.initialData = (await client.init()) ?? this.initialData
     },
     mounted() {
         this.$nextTick(function () {
@@ -103,7 +92,6 @@ export default defineComponent({
     methods: {
         handleMessageReceived: function (event: any) {
             const message = event.data
-            console.log(message.command)
             switch (message.command) {
                 case 'setMethods':
                     this.methods = message.methods
@@ -138,7 +126,6 @@ export default defineComponent({
                 return
             }
 
-            console.log(this.jsonInput)
             client.handler({
                 command: 'invokeApi',
                 body: this.jsonInput,
@@ -150,6 +137,5 @@ export default defineComponent({
             })
         },
     },
-    mixins: [saveData],
 })
 </script>

@@ -16,9 +16,6 @@
         <h3>Or, use a sample request payload from a template:</h3>
         <select v-model="selectedSampleRequest" v-on:change="newSelection">
             <option disabled value="">Select an example input</option>
-            <!-- <% InputSamples.forEach(function(el) { %>
-                <option value="<%= el.filename %>"><%= el.name %></option>
-            <% }); %> -->
             <option v-for="item in initialData.InputSamples" :key="item" :value="item.filename">
                 {{ item.name }}
             </option>
@@ -39,23 +36,21 @@ import saveData from '../../../webviews/mixins/saveData'
 import { RemoteInvokeData, RemoteInvokeWebview } from '../../commands/invokeLambda'
 
 const client = WebviewClientFactory.create<RemoteInvokeWebview>()
+const defaultInitialData = {
+    FunctionName: '',
+    FunctionArn: '',
+    FunctionRegion: '',
+    InputSamples: [],
+}
 
 export default defineComponent({
-    setup() {
-        console.log('Loaded!')
-    },
     async created() {
-        this.initialData = (await client.init()) ?? {
-            FunctionName: '',
-            FunctionArn: '',
-            FunctionRegion: '',
-            InputSamples: [],
-        }
+        this.initialData = (await client.init()) ?? this.initialData
     },
-    data() {
+    data(): RemoteInvokeData {
         return {
-            initialData: {},
-            selectedSampleRequest: {},
+            initialData: { ...defaultInitialData },
+            selectedSampleRequest: '',
             sampleText: '',
             error: undefined,
             payload: {},
@@ -64,7 +59,7 @@ export default defineComponent({
             showResponse: false,
             isLoading: false,
             selectedFile: '',
-        } as RemoteInvokeData
+        }
     },
     mounted() {
         this.$nextTick(function () {
@@ -75,7 +70,7 @@ export default defineComponent({
         newSelection: function () {
             client.handler({
                 command: 'sampleRequestSelected',
-                value: this.selectedSampleRequest,
+                requestName: this.selectedSampleRequest,
             })
         },
         promptForFileLocation: function () {
@@ -85,8 +80,6 @@ export default defineComponent({
         },
         handleMessageReceived: function (event: any) {
             const message = event.data
-            console.log(message.command)
-            console.log(message.sample)
             switch (message.command) {
                 case 'loadedSample':
                     this.loadSampleText(message.sample)
@@ -119,11 +112,13 @@ export default defineComponent({
             this.sampleText = txt
         },
         sendInput: function () {
-            console.log(this.sampleText)
             this.isLoading = true
             client.handler({
                 command: 'invokeLambda',
-                value: this.sampleText,
+                region: this.initialData.FunctionRegion,
+                functionArn: this.initialData.FunctionArn,
+                functionName: this.initialData.FunctionName,
+                json: this.sampleText,
             })
         },
     },
