@@ -151,6 +151,7 @@ export async function activate(context: vscode.ExtensionContext) {
             regionProvider: regionProvider,
             settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
+            invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
             credentialsStore,
         }

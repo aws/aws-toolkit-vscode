@@ -14,11 +14,6 @@ import { Window as VsCodeWindow } from '../../shared/vscode/window'
 import { compileVueWebview } from '../../webviews/main'
 import { WebviewServer } from '../../webviews/server'
 
-export async function submitFeedback(context: ExtContext) {
-    const wv = new FeedbackWebview(context)
-    await wv.start()
-}
-
 export interface FeedbackMessage {
     comment: string
     sentiment: string
@@ -37,6 +32,11 @@ const VueWebview = compileVueWebview({
     start: () => {},
 })
 export class FeedbackWebview extends VueWebview {}
+
+export async function submitFeedback(context: ExtContext) {
+    const wv = new FeedbackWebview(context)
+    await wv.start()
+}
 
 async function feedback(
     server: WebviewServer,

@@ -1,3 +1,5 @@
+/*! * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
+
 <template>
     <div :id="id">
         <h1>Feedback for AWS Toolkit</h1>
@@ -52,6 +54,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
+import saveData from '../../webviews/mixins/saveData'
 import { FeedbackWebview } from '../commands/submitFeedback'
 
 const client = WebviewClientFactory.create<FeedbackWebview>()
@@ -94,5 +97,6 @@ export default defineComponent({
             })
         },
     },
+    mixins: [saveData],
 })
 </script>

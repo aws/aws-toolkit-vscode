@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import { deleteLambda } from './commands/deleteLambda'
-import { invokeLambda } from './commands/invokeLambda'
+import { invokeRemoteLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
-import { registerSamInvokeVueCommand } from './vue/samInvokeBackend'
+import { registerSamInvokeVueCommand } from './configEditor/vue/samInvokeBackend'
 import { ExtContext } from '../shared/extensions'
 import globals from '../shared/extensionGlobals'
 
@@ -35,10 +35,11 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.commands.registerCommand(
             'aws.invokeLambda',
             async (node: LambdaFunctionNode) =>
-                await invokeLambda({
-                    functionNode: node,
-                    outputChannel,
-                })
+                // await invokeLambda({
+                //     functionNode: node,
+                //     outputChannel,
+                // })
+                await invokeRemoteLambda(context, { outputChannel, functionNode: node })
         ),
         // Capture debug finished events, and delete the temporary directory if it exists
         vscode.debug.onDidTerminateDebugSession(async session => {
