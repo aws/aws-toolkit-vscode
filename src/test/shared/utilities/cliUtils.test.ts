@@ -10,6 +10,8 @@ import { installCli } from '../../../shared/utilities/cliUtils'
 import { FakeWindow } from '../vscode/fakeWindow'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 import globals from '../../../shared/extensionGlobals'
+import { assertTelemetry } from '../../testUtil'
+import { ChildProcess } from '../../../shared/utilities/childProcess'
 
 describe('cliUtils', async function () {
     const settingsConfig = new TestSettingsConfiguration()
@@ -30,32 +32,36 @@ describe('cliUtils', async function () {
 
     describe('installCli', async function () {
         async function hasFunctionalCli(cliPath: string): Promise<boolean> {
-            return new Promise(resolve => {
-                fs.access(cliPath, fs.constants.X_OK, err => {
-                    if (err) {
-                        resolve(false)
-                    } else {
-                        resolve(true)
-                    }
-                })
-            })
+            const { exitCode } = await new ChildProcess(cliPath).run()
+
+            return exitCode === 0
         }
 
         it('downloads and installs the SSM CLI automatically', async function () {
             const ssmCli = await installCli('session-manager-plugin', false, new FakeWindow())
-            assert.ok(ssmCli)
             assert.ok(await hasFunctionalCli(ssmCli))
+            assertTelemetry('aws_toolInstallation', {
+                result: 'Succeeded',
+                toolId: 'session-manager-plugin',
+            })
         })
 
         it('downloads and installs the SSM CLI if prompted and accepted', async function () {
             const ssmCli = await installCli('session-manager-plugin', true, acceptInstallWindow)
-            assert.ok(ssmCli)
             assert.ok(await hasFunctionalCli(ssmCli))
+            assertTelemetry('aws_toolInstallation', {
+                result: 'Succeeded',
+                toolId: 'session-manager-plugin',
+            })
         })
 
         it('does not install a CLI if the user is prompted and opts out', async function () {
-            const ssmCli = await installCli('session-manager-plugin', true, new FakeWindow({}))
-            assert.strictEqual(ssmCli, undefined)
+            const ssmCli = installCli('session-manager-plugin', true, new FakeWindow({}))
+            await assert.rejects(ssmCli, /cancelled/)
+            assertTelemetry('aws_toolInstallation', {
+                result: 'Cancelled',
+                toolId: 'session-manager-plugin',
+            })
         })
     })
 })

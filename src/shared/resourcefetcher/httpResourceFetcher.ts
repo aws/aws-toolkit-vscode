@@ -15,7 +15,7 @@ import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
-import { Timeout } from '../utilities/timeoutUtils'
+import { Timeout, TimeoutError } from '../utilities/timeoutUtils'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -31,14 +31,12 @@ const patchedGot = got.extend({
 // VSC 1.44.2 seems to work, but on C9 it does not?
 const MIN_VERSION_FOR_GOT = '1.47.0'
 
-// Minimal interface for hooking into download + file write streams
-interface FetcherStreams {
+/** Promise that resolves/rejects when all streams close. Can also access streams directly. */
+type FetcherResult = Promise<void> & {
     /** Download stream piped to `fsStream`. */
     requestStream: Request // `got` doesn't add the correct types to 'on' for some reason
     /** Stream writing to the file system. */
     fsStream: fs.WriteStream
-    /** Promise that fulfills when all streams have closed or when an error event occurs. */
-    done: Promise<void>
 }
 
 export class HttpResourceFetcher implements ResourceFetcher {
@@ -69,16 +67,17 @@ export class HttpResourceFetcher implements ResourceFetcher {
      * @param pipeLocation Optionally pipe the download to a file system location
      */
     public get(): Promise<string | undefined>
-    public get(pipeLocation: string): FetcherStreams
-    public get(pipeLocation?: string): Promise<string | undefined> | FetcherStreams {
+    public get(pipeLocation: string): FetcherResult
+    public get(pipeLocation?: string): Promise<string | undefined> | FetcherResult {
         this.logger.verbose(`Downloading ${this.logText()}`)
 
         if (pipeLocation) {
-            const streams = this.pipeGetRequest(pipeLocation, this.params.timeout)
-            streams.done.then(() => {
+            const result = this.pipeGetRequest(pipeLocation, this.params.timeout)
+            result.fsStream.on('exit', () => {
                 this.logger.verbose(`Finished downloading ${this.logText()}`)
             })
-            return streams
+
+            return result
         }
 
         return this.downloadRequest()
@@ -107,7 +106,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
     }
 
     // TODO: make pipeLocation a vscode.Uri
-    private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherStreams {
+    private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherResult {
         const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
         const requestStream = requester.stream(this.url, { headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit } })
         const fsStream = fs.createWriteStream(pipeLocation)
@@ -120,10 +119,13 @@ export class HttpResourceFetcher implements ResourceFetcher {
                 err ? reject(err) : resolve()
             })
 
-            timeout?.timer.catch(err => (pipe.end(), reject(err)))
+            timeout?.token.onCancellationRequested(({ type }) => {
+                getLogger().debug(`Download for "${this.logText()}" ${type === 'cancelled' ? type : 'timed out'}`)
+                pipe.destroy(new TimeoutError(type))
+            })
         })
 
-        return { requestStream, fsStream, done }
+        return Object.assign(done, { requestStream, fsStream })
     }
 
     private async getResponseFromGetRequest(timeout?: Timeout): Promise<Response<string>> {
@@ -131,7 +133,11 @@ export class HttpResourceFetcher implements ResourceFetcher {
         const promise = requester(this.url, {
             headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
         })
-        timeout?.timer.catch(err => promise.cancel(err.message))
+
+        timeout?.token.onCancellationRequested(({ type }) => {
+            getLogger().debug(`Download for "${this.logText()}" ${type === 'cancelled' ? type : 'timed out'}`)
+            promise.cancel(new TimeoutError(type).message)
+        })
 
         return promise.catch((err: RequestError | CancelError) => {
             // Cancel error has no sensitive info

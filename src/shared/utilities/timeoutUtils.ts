@@ -4,6 +4,7 @@
  */
 
 import globals from '../extensionGlobals'
+import { CancellationToken, EventEmitter, Event } from 'vscode'
 import { sleep } from './promiseUtilities'
 
 export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
@@ -18,6 +19,19 @@ export class TimeoutError extends Error {
     public static isCancelled(err: any): err is TimeoutError & { type: 'cancelled' } {
         return err instanceof TimeoutError && err.type === 'cancelled'
     }
+
+    public static isExpired(err: any): err is TimeoutError & { type: 'expired' } {
+        return err instanceof TimeoutError && err.type === 'expired'
+    }
+}
+
+interface CancelEvent {
+    readonly type: 'expired' | 'cancelled'
+}
+
+/** A {@link CancellationToken} that provides a reasoning for the cancellation event. */
+interface TypedCancellationToken extends CancellationToken {
+    readonly onCancellationRequested: Event<CancelEvent>
 }
 
 /**
@@ -27,29 +41,31 @@ export class TimeoutError extends Error {
  * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
-    private startTime: number
-    private endTime: number
-    private readonly timeoutLength: number
-    private readonly timerPromise: Promise<undefined>
-    private timerTimeout: NodeJS.Timeout
-    private timerResolve!: (value?: Promise<undefined> | undefined) => void
-    private timerReject!: (value?: Error | Promise<Error> | undefined) => void
-    private _completed: boolean = false
+    private _startTime: number
+    private _endTime: number
+    private readonly _timeoutLength: number
+    private _timerTimeout: NodeJS.Timeout
+    private _completionReason?: CancelEvent['type'] | 'completed'
+    private readonly _token: TypedCancellationToken
+    private readonly _onCancellationRequestedEmitter = new EventEmitter<CancelEvent>()
+    private readonly _onCompletionEmitter = new EventEmitter<void>()
+    public readonly onCompletion = this._onCompletionEmitter.event
 
     public constructor(timeoutLength: number) {
-        this.startTime = globals.clock.Date.now()
-        this.endTime = this.startTime + timeoutLength
-        this.timeoutLength = timeoutLength
+        this._startTime = globals.clock.Date.now()
+        this._endTime = this._startTime + timeoutLength
+        this._timeoutLength = timeoutLength
 
-        this.timerPromise = new Promise<undefined>((resolve, reject) => {
-            this.timerReject = reject
-            this.timerResolve = resolve
+        this._token = {
+            isCancellationRequested: false,
+            onCancellationRequested: this._onCancellationRequestedEmitter.event,
+        }
+
+        Object.defineProperty(this._token, 'isCancellationRequested', {
+            get: () => this._completionReason === 'cancelled' || this._completionReason === 'expired',
         })
 
-        this.timerTimeout = globals.clock.setTimeout(() => {
-            this.timerReject(new TimeoutError('expired'))
-            this._completed = true
-        }, timeoutLength)
+        this._timerTimeout = globals.clock.setTimeout(() => this.final('expired'), timeoutLength)
     }
 
     /**
@@ -58,7 +74,7 @@ export class Timeout {
      * Minimum is 0.
      */
     public get remainingTime(): number {
-        const remainingTime = this.endTime - globals.clock.Date.now()
+        const remainingTime = this._endTime - globals.clock.Date.now()
 
         return remainingTime > 0 ? remainingTime : 0
     }
@@ -67,64 +83,86 @@ export class Timeout {
      * True when the Timeout has completed
      */
     public get completed(): boolean {
-        return this._completed
+        return !!this._completionReason
     }
 
     /**
      * Updates the timer to timeout in timeout length from now
      */
     public refresh() {
-        if (this._completed === true) {
+        if (this.completed) {
             return
         }
 
         // These will not align, but we don't have visibility into a NodeJS.Timeout
         // so remainingtime will be approximate. Timers are approximate anyway and are
         // not highly accurate in when they fire.
-        this.endTime = globals.clock.Date.now() + this.timeoutLength
-        this.timerTimeout = this.timerTimeout.refresh()
+        this._endTime = globals.clock.Date.now() + this._timeoutLength
+        this._timerTimeout = this._timerTimeout.refresh()
     }
 
     /**
-     * Returns a promise that times out after timeoutLength ms have passed since Timeout object initialization
-     * Use this in Promise.race() calls in order to time out awaited functions
-     * Once this timer has finished, cannot be restarted
+     * Returns a token suitable for use in-place of VS Code's {@link CancellationToken}
      */
-    public get timer(): Promise<undefined> {
-        return this.timerPromise
+    public get token(): TypedCancellationToken {
+        return this._token
     }
 
     /**
      * Returns the elapsed time from the initial Timeout object creation
      */
     public get elapsedTime(): number {
-        return (this._completed ? this.endTime : globals.clock.Date.now()) - this.startTime
+        return (this.completed ? this._endTime : globals.clock.Date.now()) - this._startTime
+    }
+
+    private final(type: CancelEvent['type'] | 'completed'): void {
+        if (this.completed) {
+            return
+        }
+
+        this._completionReason = type
+        this._endTime = globals.clock.Date.now()
+        globals.clock.clearTimeout(this._timerTimeout)
+
+        if (type !== 'completed') {
+            this._onCancellationRequestedEmitter.fire({ type })
+        }
+
+        this._onCancellationRequestedEmitter.dispose()
+        this._onCompletionEmitter.fire()
+        this._onCompletionEmitter.dispose()
+    }
+
+    /** Cancels the timer, notifying any subscribing of the cancellation and locking in the time. */
+    public cancel(): void {
+        this.final('cancelled')
     }
 
     /**
      * Marks the Timeout token as being completed, preventing further use and locking in the elapsed time.
      *
-     * Note that completing the token but not rejecting it is equivalent to 'freeing' any resources associated
-     * with the timer, given that they do not wait for the timer Promise to resolve.
-     *
-     * @param reject Rejects the token with a cancelled error message
+     * Any listeners still using this token will receive a 'cancelled' event.
      */
-    public complete(reject?: boolean): void {
-        // Caller tried to call complete after the token expired
-        if (this._completed === true) {
-            return
+    public complete(): void {
+        this.final('completed')
+    }
+
+    /**
+     * Turns the `Timeout` object into a Promise that resolves on completion or rejects on cancellation/expiration.
+     *
+     * Prefer using {@link token} when possible as using Promises is not as robust.
+     */
+    public promisify(): Promise<void | never> {
+        if (this._completionReason === 'completed') {
+            return Promise.resolve()
+        } else if (this._completionReason) {
+            return Promise.reject(new TimeoutError(this._completionReason))
         }
 
-        this.endTime = globals.clock.Date.now()
-        globals.clock.clearTimeout(this.timerTimeout)
-
-        if (reject) {
-            this.timerReject(new TimeoutError('cancelled'))
-        } else {
-            this.timerResolve()
-        }
-
-        this._completed = true
+        return new Promise((resolve, reject) => {
+            this._onCompletionEmitter.event(resolve)
+            this._onCancellationRequestedEmitter.event(({ type }) => reject(new TimeoutError(type)))
+        })
     }
 }
 
@@ -186,9 +224,9 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
  *
  * @returns A Promise that returns if successful, or rejects when the Timeout was cancelled or expired.
  */
-export function waitTimeout<T, R = void, B extends boolean = true>(
+export async function waitTimeout<T, R = void, B extends boolean = true>(
     promise: Promise<T> | (() => Promise<T>),
-    timeout: Timeout, // TODO: potentially type 'completed' timers differently from active ones
+    timeout: Timeout,
     opt: {
         allowUndefined?: B
         onExpire?: () => R
@@ -200,28 +238,30 @@ export function waitTimeout<T, R = void, B extends boolean = true>(
         promise = promise()
     }
 
-    return Promise.race([promise, timeout.timer])
-        .then(obj => {
-            if (obj !== undefined) {
-                return obj
-            }
-            if ((opt.allowUndefined ?? true) !== true) {
-                throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
-            }
-            return undefined as any
-        })
-        .catch(err => {
-            if (opt.onExpire && (err as Error).message === TIMEOUT_EXPIRED_MESSAGE) {
-                return opt.onExpire()
-            }
-            if (opt.onCancel && (err as Error).message === TIMEOUT_CANCELLED_MESSAGE) {
-                return opt.onCancel()
-            }
-            throw err
-        })
+    const result = await Promise.race([promise, timeout.promisify()])
+        .catch(e => (e instanceof Error ? e : new Error(`unknown error: ${e}`)))
         .finally(() => {
             if ((opt.completeTimeout ?? true) === true) {
                 timeout.complete()
             }
         })
+
+    if (result instanceof Error) {
+        if (opt.onExpire && TimeoutError.isExpired(result)) {
+            return opt.onExpire()
+        }
+        if (opt.onCancel && TimeoutError.isCancelled(result)) {
+            return opt.onCancel()
+        }
+        throw result
+    }
+
+    if (result !== undefined) {
+        return result
+    }
+    if ((opt.allowUndefined ?? true) !== true) {
+        throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
+    }
+
+    return undefined as any
 }

@@ -6,7 +6,7 @@
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
-import { Timeout, waitUntil } from './timeoutUtils'
+import { Timeout, TimeoutError, waitUntil } from './timeoutUtils'
 
 interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -64,12 +64,11 @@ export interface ChildProcessResult {
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
+    private static runningProcesses: Record<string, ChildProcess> = {}
     private childProcess: child_process.ChildProcess | undefined
     private processErrors: Error[] = []
     private processResult: ChildProcessResult | undefined
     private log: logger.Logger
-
-    // TODO: we probably should keep track of all spawned processes in the prototype to make sure they are cleaned up
 
     /** Collects stdout data if the process was started with `collect=true`. */
     private stdoutChunks: string[] = []
@@ -95,8 +94,15 @@ export class ChildProcess {
         this.log = options.logging ?? true ? logger.getLogger() : logger.getNullLogger()
     }
 
-    // TODO: add a way to create 'base' child process instances without necessarily needing to construct a new one each time
-    // this way modules can define default parameters (e.g. `Timeout`) and have all downstream functions use it
+    // Inspired by 'got'
+    public static extend(options: ChildProcessOptions) {
+        return class extends this {
+            public constructor(command: string, args: string[] = []) {
+                super(command, args, options)
+            }
+        }
+    }
+
     /**
      * Runs the child process. Options passed here are merged with the options passed in during construction.
      * Priority is given to `run` options, overriding the previous value.
@@ -106,10 +112,12 @@ export class ChildProcess {
             throw new Error('process already started')
         }
 
-        this.log.info(`Running: ${this.toString()}`)
+        const debugDetail = this.log.logLevelEnabled('debug')
+            ? ` (running processes: ${Object.keys(ChildProcess.runningProcesses).length})`
+            : ''
+        this.log.info(`Running: ${this.toString()}${debugDetail}`)
 
         const cleanup = () => {
-            this.childProcess?.removeAllListeners()
             this.childProcess?.stdout?.removeAllListeners()
             this.childProcess?.stderr?.removeAllListeners()
         }
@@ -148,12 +156,8 @@ export class ChildProcess {
                 reportError: err => errorHandler(err instanceof Error ? err : new Error(err)),
             }
 
-            if (timeout) {
-                if (timeout?.completed) {
-                    throw new Error('Timeout token was already completed.')
-                }
-
-                timeout.timer.catch(err => errorHandler(err, true))
+            if (timeout && timeout?.completed) {
+                throw new Error('Timeout token was already completed.')
             }
 
             // Async.
@@ -163,6 +167,7 @@ export class ChildProcess {
             // [2] https://nodejs.org/api/child_process.html
             try {
                 this.childProcess = crossSpawn.spawn(this.command, args, mergedOptions.spawnOptions)
+                this.registerLifecycleListeners(this.childProcess, errorHandler, timeout)
             } catch (err) {
                 return errorHandler(err as Error)
             }
@@ -276,6 +281,29 @@ export class ChildProcess {
         } else {
             throw new Error('Attempting to kill a process that has already been killed')
         }
+    }
+
+    private registerLifecycleListeners(
+        process: child_process.ChildProcess,
+        errorHandler: (error: Error, forceStop?: boolean) => void,
+        timeout?: Timeout
+    ): void {
+        const pid = process.pid
+        ChildProcess.runningProcesses[pid] = this
+
+        const timeoutListener = timeout?.token.onCancellationRequested(({ type }) => {
+            const message = type == 'cancelled' ? 'Cancelled: ' : 'Timed out: '
+            this.log.verbose(`${message}${this}`)
+            errorHandler(new TimeoutError(type), true)
+        })
+
+        const dispose = () => {
+            timeoutListener?.dispose()
+            delete ChildProcess.runningProcesses[pid]
+        }
+
+        process.on('exit', dispose)
+        process.on('error', dispose)
     }
 
     /**
