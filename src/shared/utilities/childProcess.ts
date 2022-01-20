@@ -20,8 +20,8 @@ interface RunParameterContext {
 }
 
 export interface ChildProcessOptions {
-    /** Sets the logging behavior. False disables all logging. (default: true) */
-    logging?: boolean
+    /** Sets the logging behavior. (default: 'yes') */
+    logging?: 'yes' | 'no' | 'noparams'
     /** Controls whether stdout/stderr is collected and returned in the `ChildProcessResult`. (default: true) */
     collect?: boolean
     /** Wait until streams close to resolve the process result. (default: true) */
@@ -91,7 +91,7 @@ export class ChildProcess {
         private readonly options: ChildProcessOptions = {}
     ) {
         // TODO: allow caller to use the various loggers instead of just the single one
-        this.log = options.logging ?? true ? logger.getLogger() : logger.getNullLogger()
+        this.log = options.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
     }
 
     // Inspired by 'got'
@@ -115,7 +115,7 @@ export class ChildProcess {
         const debugDetail = this.log.logLevelEnabled('debug')
             ? ` (running processes: ${Object.keys(ChildProcess.runningProcesses).length})`
             : ''
-        this.log.info(`Running: ${this.toString()}${debugDetail}`)
+        this.log.info(`Running: ${this.toString(this.options.logging === 'noparams')}${debugDetail}`)
 
         const cleanup = () => {
             this.childProcess?.stdout?.removeAllListeners()
@@ -323,8 +323,13 @@ export class ChildProcess {
         return !!this.processResult
     }
 
-    public toString(): string {
+    /**
+     * Gets a string representation of the process invocation.
+     *
+     * @param noparams Omit parameters in the result (to protect sensitive info).
+     */
+    public toString(noparams = false): string {
         const pid = this.pid() > 0 ? `PID ${this.pid()}:` : '(not started)'
-        return `${pid} [${this.command} ${this.args.join(' ')}]`
+        return `${pid} [${this.command} ${noparams ? '...' : this.args.join(' ')}]`
     }
 }

@@ -23,10 +23,11 @@ import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
-import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 import { sleep } from '../shared/utilities/promiseUtilities'
 import globals from '../shared/extensionGlobals'
+import { closeAllEditors } from '../test/testUtil'
+
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */

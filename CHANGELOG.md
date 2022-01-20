@@ -1,3 +1,13 @@
+## 1.35.0 2022-01-13
+
+- **Bug Fix** Schemas: handle errors for invalid settings configurations on activation
+- **Bug Fix** Logging: Toolkit logs are now cleaned up automatically by the extension to prevent excessive storage consumption
+- **Bug Fix** fix newline in 'About Toolkit' command
+- **Bug Fix** S3: fix 'Upload to Parent...' command
+- **Bug Fix** Credentials: profile field names no longer need to be all lowercase
+- **Feature** ECS Exec: only show tasks that have the ECS Exec agent. #2416
+- **Feature** IoT: add attached policies in Things subtree
+
 ## 1.34.0 2021-11-22
 
 - **Bug Fix** Improve auto-connect reliability

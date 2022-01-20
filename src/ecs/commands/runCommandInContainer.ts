@@ -63,7 +63,7 @@ export async function runCommandInContainer(
             outputChannel
         )
 
-        await new ChildProcess(ssmPlugin, args).run({
+        await new ChildProcess(ssmPlugin, args, { logging: 'noparams' }).run({
             rejectOnExit: true,
             onStdout: text => {
                 showOutputMessage(removeAnsi(text), outputChannel)
