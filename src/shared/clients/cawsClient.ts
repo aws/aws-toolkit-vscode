@@ -32,17 +32,24 @@ export const cawsHelpUrl = `https://${cawsHostname}/help`
 
 /** CAWS-MDE developer environment. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface CawsDevEnv extends caws.DevelopmentWorkspaceSummary {}
+export interface CawsDevEnv extends caws.DevelopmentWorkspaceSummary {
+    readonly id: string // Alias of developmentWorkspaceId.
+    readonly description?: string
+    readonly org: CawsOrg
+    readonly project: CawsProject
+}
 /** CAWS-MDE developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspaceOutput {}
 
 export interface CawsOrg extends caws.OrganizationSummary {
     readonly id: string // TODO: why doesn't OrganizationSummary have this already?
+    readonly name: string
 }
 export interface CawsProject extends caws.ProjectSummary {
     readonly org: CawsOrg
     readonly id: string // TODO: why doesn't ProjectSummary have this already?
+    readonly name: string
 }
 export interface CawsRepo extends caws.SourceRepositorySummary {
     readonly org: CawsOrg
@@ -185,20 +192,6 @@ export class CawsClient {
         return this.username
     }
 
-    // 2022-01-14 11:10:40 [ERROR]: API request failed: createDevelopmentWorkspace
-    // response: Response {
-    //   error: [CodeAws.InternalException: An internal error has occurred while processing your request
-    //     code: 'CodeAws.InternalException',
-    //   },
-    //   retryCount: 3,
-    //   redirectCount: 0,
-    //   httpResponse: HttpResponse {
-    //     statusCode: 500,
-    //     headers: { … },
-    //     statusMessage: 'Internal Server Error'
-    //   },
-    // }
-
     public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean = false, defaultVal?: T): Promise<T> {
         const log = this.log
         return new Promise<T>((resolve, reject) => {
@@ -257,7 +250,7 @@ export class CawsClient {
                     }
                     return
                 }
-                log.verbose('API response (%s): %O', r.operation ?? '?', data)
+                log.verbose('API request (%s):\nparams: %O\nresponse: %O', r.operation ?? '?', r.params ?? '?', data)
                 resolve(data)
             })
         })
@@ -338,12 +331,14 @@ export class CawsClient {
     }
 
     public async *cawsItemsToQuickpickIter(
-        kind: 'org' | 'project' | 'repo'
+        kind: 'org' | 'project' | 'repo' | 'env'
     ): AsyncIterableIterator<vscode.QuickPickItem> {
         if (kind === 'org') {
             yield* this.mapToQuickpick(this.listOrgs())
         } else if (kind === 'project') {
             yield* this.mapToQuickpick(this.listProjects(this.user()))
+        } else if (kind === 'env') {
+            yield* this.mapToQuickpick(this.listDevEnvs(this.user()))
         } else {
             yield* this.mapToQuickpick(this.listRepos(this.user()))
         }
@@ -380,8 +375,9 @@ export class CawsClient {
         for (const org of orgs.items) {
             if (org.name) {
                 yield {
-                    id: '', // TODO: not provided by CAWS yet.
                     ...org,
+                    id: '', // TODO: not provided by CAWS yet.
+                    name: org.name,
                 }
             }
         }
@@ -425,6 +421,7 @@ export class CawsClient {
                         id: '', // TODO: not provided by CAWS yet.
                         org: org,
                         ...p,
+                        name: p.name,
                     }
                 }
             }
@@ -480,8 +477,6 @@ export class CawsClient {
                 }
             }
         }
-
-        // TODO: Add telemetry
     }
 
     /** CAWS-MDE */
@@ -490,8 +485,18 @@ export class CawsClient {
             throw Error('missing ideRuntimes')
         }
         const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args))
+        const env = await this.getDevEnv({
+            developmentWorkspaceId: r.developmentWorkspaceId,
+            organizationName: args.organizationName,
+            projectName: args.projectName,
+        })
+        if (!env) {
+            throw Error('created environment but failed to get it')
+        }
+
         return {
-            ...r,
+            ...env,
+            id: r.developmentWorkspaceId,
             creatorId: '',
             ide: args.ideRuntimes[0],
             lastUpdatedTime: new Date(),
@@ -508,6 +513,14 @@ export class CawsClient {
         return r
     }
 
+    /** CAWS-MDE */
+    public async startDevEnvSession(
+        args: caws.StartSessionDevelopmentWorkspaceInput
+    ): Promise<caws.StartSessionDevelopmentWorkspaceOutput | undefined> {
+        const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args))
+        return r
+    }
+
     /** CAWS-MDE: does not have this operation (yet?) */
     public async stopDevEnv(): Promise<void> {
         throw Error('CAWS-MDE does not have stopEnvironment currently')
@@ -515,10 +528,50 @@ export class CawsClient {
 
     /** CAWS-MDE */
     public async getDevEnv(args: caws.GetDevelopmentWorkspaceInput): Promise<CawsDevEnv | undefined> {
-        const r = await this.call(this.sdkClient.getDevelopmentWorkspace(args))
+        const a = { ...args }
+        delete (a as any).ideRuntimes
+        delete (a as any).repositories
+        const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a))
+        const desc = r.labels?.join(', ')
+
+        const p = await this.call(
+            this.sdkClient.getProject({
+                name: args.projectName,
+                organizationName: args.organizationName,
+            })
+        )
+        const o = await this.call(
+            this.sdkClient.getOrganization({
+                name: args.organizationName,
+            })
+        )
+        if (!o.name) {
+            this.log.error('getDevEnv: missing fields on org: %O', o)
+            throw Error('org response is missing fields')
+        }
+        if (!p.name) {
+            this.log.error('getDevEnv: missing fields on project: %O', p)
+            throw Error('project response is missing fields')
+        }
+        const org = {
+            id: o.id ?? '',
+            ...o,
+            name: o.name,
+        }
+        const proj = {
+            id: p.id ?? '',
+            ...p,
+            name: p.name,
+            org: org,
+        }
+
         return {
-            developmentWorkspaceId: args.developmentWorkspaceId,
+            id: a.developmentWorkspaceId,
+            developmentWorkspaceId: a.developmentWorkspaceId,
+            description: desc,
             ...r,
+            org: org,
+            project: proj,
         }
     }
 
@@ -530,11 +583,35 @@ export class CawsClient {
         return r
     }
 
-    /** CAWS-MDE */
-    public async *listDevEnvs(args: caws.ListDevelopmentWorkspaceInput): AsyncIterableIterator<CawsDevEnv | undefined> {
-        const r = await this.call(this.sdkClient.listDevelopmentWorkspace(args))
-        for (const i of r.items ?? []) {
-            yield i
+    /**
+     * CAWS-MDE
+     * Gets a flat list of all workspaces for the given CAWS user.
+     */
+    public async *listDevEnvs(userid: string): AsyncIterableIterator<CawsDevEnv> {
+        const c = this.sdkClient
+        const projs = this.listProjects(userid)
+        for await (const p of projs) {
+            if (!p.org.name || !p.name) {
+                continue
+            }
+            const args: caws.ListDevelopmentWorkspaceInput = {
+                organizationName: p.org.name,
+                projectName: p.name,
+            }
+            const envs = await this.call(c.listDevelopmentWorkspace(args), true)
+
+            for (const r of envs?.items ?? []) {
+                if (r.developmentWorkspaceId) {
+                    const desc = r.labels?.join(', ')
+                    yield {
+                        id: r.developmentWorkspaceId,
+                        description: desc,
+                        org: p.org,
+                        project: p,
+                        ...r,
+                    }
+                }
+            }
         }
     }
 
@@ -610,7 +687,11 @@ export class CawsClient {
      * Maps CawsFoo objects to `vscode.QuickPickItem` objects.
      */
     public async *mapToQuickpick(
-        items: AsyncIterableIterator<CawsRepo> | AsyncIterableIterator<CawsProject> | AsyncIterableIterator<CawsOrg>
+        items:
+            | AsyncIterableIterator<CawsRepo>
+            | AsyncIterableIterator<CawsProject>
+            | AsyncIterableIterator<CawsOrg>
+            | AsyncIterableIterator<CawsDevEnv>
     ): AsyncIterableIterator<vscode.QuickPickItem> {
         for await (const o of items) {
             let label: string
@@ -618,6 +699,8 @@ export class CawsClient {
                 label = this.createRepoLabel(o as CawsRepo)
             } else if ((o as CawsProject).org) {
                 label = `${(o as CawsProject).org.name} / ${(o as CawsProject).name}`
+            } else if ((o as CawsDevEnv).developmentWorkspaceId) {
+                label = `TODO: <org> / <project>`
             } else {
                 label = `${(o as CawsOrg).name}`
             }

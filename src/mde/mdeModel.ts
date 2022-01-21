@@ -16,13 +16,16 @@ import { getStringHash } from '../shared/utilities/textUtilities'
 import { readFileAsString } from '../shared/filesystemUtilities'
 import { VSCODE_MDE_TAGS } from './constants'
 import { SystemUtilities } from '../shared/systemUtilities'
-import { ChildProcess } from '../shared/utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../shared/utilities/childProcess'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { showConfirmationMessage, showViewLogsMessage } from '../shared/utilities/messages'
 import { getLogger } from '../shared/logger/logger'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { execFileSync } from 'child_process'
 import globals from '../shared/extensionGlobals'
+import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
+import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
+import { Window } from '../shared/vscode/window'
 
 const localize = nls.loadMessageBundle()
 
@@ -243,6 +246,19 @@ export async function ensureSsmCli(): Promise<{ ok: boolean; result: string }> {
         })
 }
 
+export function getMdeSsmEnv(region: string, ssmPath: string, session: mde.MdeSession): NodeJS.ProcessEnv {
+    return Object.assign(
+        {
+            AWS_REGION: region,
+            AWS_SSM_CLI: ssmPath,
+            AWS_MDE_SESSION: session.id,
+            AWS_MDE_STREAMURL: session.accessDetails.streamUrl,
+            AWS_MDE_TOKEN: session.accessDetails.tokenValue,
+        },
+        process.env
+    )
+}
+
 export const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
 
 /**
@@ -289,4 +305,78 @@ exit $?
     } catch (err) {
         getLogger().error('mde: failed to start SSH agent, clones may not work as expected: %O', err)
     }
+}
+
+/**
+ * Starts an MDE session and connects a new vscode-remote instance to it.
+ */
+export async function connectToMde(
+    args: Pick<mde.MdeEnvironment, 'id'>,
+    region: string,
+    startFn: () => Promise<mde.MdeSession | undefined>,
+    window = Window.vscode()
+): Promise<ChildProcessResult | undefined> {
+    if (!isExtensionInstalledMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to environment')) {
+        return
+    }
+
+    function showMissingToolMsg(s: string) {
+        const m = localize(
+            'AWS.mde.missingRequiredTool',
+            'Failed to connect to environment, missing required tool: {0}',
+            s
+        )
+        showViewLogsMessage(m, window)
+    }
+
+    const vsc = await SystemUtilities.getVscodeCliPath()
+    if (!vsc) {
+        showMissingToolMsg('code')
+        return
+    }
+
+    const hasSshConfig = await ensureMdeSshConfig()
+    if (!hasSshConfig.ok) {
+        showMissingToolMsg('ssh')
+        return
+    }
+
+    const session = await startFn()
+    if (!session) {
+        return
+    }
+
+    const ssmPath = await ensureSsmCli()
+    if (!ssmPath.ok) {
+        return
+    }
+
+    // temporary until we can dynamically find the directory
+    const projectDir = '/projects'
+
+    const cmd = new ChildProcess(vsc, ['--folder-uri', `vscode-remote://ssh-remote+aws-mde-${args.id}${projectDir}`], {
+        spawnOptions: {
+            env: getMdeSsmEnv(region, ssmPath.result, session),
+        },
+    })
+
+    const settings = new DefaultSettingsConfiguration()
+    settings.ensureToolkitInVscodeRemoteSsh()
+
+    // Note: `await` is intentionally not used.
+    return cmd
+        .run({
+            onStdout(stdout) {
+                getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
+            },
+            onStderr(stderr) {
+                getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
+            },
+        })
+        .then(o => {
+            if (o.exitCode !== 0) {
+                getLogger().error('MDE connect: failed to start: %O', cmd)
+            }
+            return o
+        })
 }

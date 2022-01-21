@@ -166,6 +166,7 @@
     "AWS.command.caws.openOrg": "Open CODE.AWS Organization",
     "AWS.command.caws.openProject": "Open CODE.AWS Project",
     "AWS.command.caws.openRepo": "Open CODE.AWS Repository",
+    "AWS.command.caws.openDevEnv": "Open CODE.AWS Developer Environment",
     "AWS.command.caws.cloneRepo": "Clone CODE.AWS Repository",
     "AWS.command.caws.createDevEnv": "Create CODE.AWS Development Environment",
     "AWS.command.caws.listCommands": "List CODE.AWS Commands",

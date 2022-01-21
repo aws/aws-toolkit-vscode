@@ -67,6 +67,7 @@
         "onCommand:aws.caws.openOrg",
         "onCommand:aws.caws.openProject",
         "onCommand:aws.caws.openRepo",
+        "onCommand:aws.caws.openDevEnv",
         "onCommand:aws.caws.cloneRepo",
         "onCommand:aws.caws.createDevEnv",
         "onLanguage:asl",
@@ -1769,6 +1770,11 @@
             {
                 "command": "aws.caws.openRepo",
                 "title": "%AWS.command.caws.openRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openDevEnv",
+                "title": "%AWS.command.caws.openDevEnv%",
                 "category": "AWS"
             },
             {

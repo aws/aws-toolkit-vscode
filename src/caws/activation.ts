@@ -51,6 +51,7 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.caws.openOrg', () => openCawsResource('org')),
         vscode.commands.registerCommand('aws.caws.openProject', () => openCawsResource('project')),
         vscode.commands.registerCommand('aws.caws.openRepo', () => openCawsResource('repo')),
+        vscode.commands.registerCommand('aws.caws.openDevEnv', () => openCawsResource('env')),
         vscode.commands.registerCommand('aws.caws.cloneRepo', () => cloneCawsRepo()),
         vscode.commands.registerCommand('aws.caws.listCommands', () => listCommands()),
         vscode.commands.registerCommand('aws.caws.createDevEnv', () => createDevEnv())
