@@ -79,4 +79,5 @@ class OpenAwsLocalTerminal : DumbAwareAction(
     }
 }
 
-object AwsLocalTerminalExperiment : ToolkitExperiment("connectedLocalTerminal", { message("aws.terminal.action") }, { message("aws.terminal.action.tooltip") })
+object AwsLocalTerminalExperiment :
+    ToolkitExperiment("connectedLocalTerminal", { message("aws.terminal.action") }, { message("aws.terminal.action.tooltip") }, default = true)

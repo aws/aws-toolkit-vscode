@@ -51,5 +51,6 @@ class PythonAwsConnectionExtension : PythonRunConfigurationExtension() {
 object PythonAwsConnectionExperiment : ToolkitExperiment(
     "pythonRunConfigurationExtension",
     { message("run_configuration_extension.feature.python.title") },
-    { message("run_configuration_extension.feature.python.description") }
+    { message("run_configuration_extension.feature.python.description") },
+    default = true
 )

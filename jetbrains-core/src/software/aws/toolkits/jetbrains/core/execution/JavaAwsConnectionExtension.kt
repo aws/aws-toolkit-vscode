@@ -61,5 +61,6 @@ class JavaAwsConnectionExtension : RunConfigurationExtension() {
 object JavaAwsConnectionExperiment : ToolkitExperiment(
     "javaRunConfigurationExtension",
     { message("run_configuration_extension.feature.java.title") },
-    { message("run_configuration_extension.feature.java.description") }
+    { message("run_configuration_extension.feature.java.description") },
+    default = true
 )
