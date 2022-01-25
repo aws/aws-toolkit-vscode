@@ -10,16 +10,14 @@ import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
-import { registerSamInvokeVueCommand } from './configEditor/vue/samInvokeBackend'
 import { ExtContext } from '../shared/extensions'
 import globals from '../shared/extensionGlobals'
+import { registerSamInvokeVueCommand } from './configEditor/vue/samInvokeBackend'
 
 /**
  * Activates Lambda components.
  */
 export async function activate(context: ExtContext): Promise<void> {
-    const outputChannel = vscode.window.createOutputChannel('AWS Lambda')
-
     context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.deleteLambda',
@@ -27,7 +25,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 await deleteLambda({
                     deleteParams: { functionName: node.configuration.FunctionName || '' },
                     lambdaClient: globals.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                    outputChannel,
+                    outputChannel: context.outputChannel,
                     onRefresh: async () =>
                         await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent),
                 })
@@ -35,11 +33,7 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.commands.registerCommand(
             'aws.invokeLambda',
             async (node: LambdaFunctionNode) =>
-                // await invokeLambda({
-                //     functionNode: node,
-                //     outputChannel,
-                // })
-                await invokeRemoteLambda(context, { outputChannel, functionNode: node })
+                await invokeRemoteLambda(context, { outputChannel: context.outputChannel, functionNode: node })
         ),
         // Capture debug finished events, and delete the temporary directory if it exists
         vscode.debug.onDidTerminateDebugSession(async session => {

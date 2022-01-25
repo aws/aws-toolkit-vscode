@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { RestApiNode } from '../explorer/apiNodes'
 import { getLogger, Logger } from '../../shared/logger'
 
-// import { template } from 'lodash'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { Resource } from 'aws-sdk/clients/apigateway'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -82,6 +81,8 @@ export async function invokeRemoteRestApi(
     try {
         const client = globals.toolkitClientBuilder.createApiGatewayClient(params.apiNode.regionCode)
         logger.info(`Loading API Resources for API ${params.apiNode.name} (id: ${params.apiNode.id})`)
+        // object instead of array for json serialization purposes.
+        // can use a Map (like original impl) if `compileVueWebview` can accept a current context upon start
         const resources = (await toArrayAsync(client.getResourcesForApi(params.apiNode.id)))
             .sort((a, b) => a.path!.localeCompare(b.path!))
             .reduce<{ [key: string]: Resource }>((prev, curr) => {
