@@ -141,12 +141,28 @@ export const MDE_STATUS_PRIORITY = new Map<string, number>([
  *
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
-export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }> {
+export async function ensureMdeSshConfig(): Promise<{
+    ok: boolean
+    err:
+        | ''
+        | 'bash not found'
+        | 'failed to copy mde_connect'
+        | 'ssh not found'
+        | 'old config'
+        | 'ssh failed'
+        | 'user canceled'
+        | 'write failed'
+    msg: string
+}> {
     const iswin = process.platform === 'win32'
 
     const bash = await SystemUtilities.findBashPath()
     if (!bash && !iswin) {
-        return { ok: false, err: 'bash not found' }
+        return {
+            ok: false,
+            err: 'bash not found',
+            msg: localize('AWS.mde.error.noBash', 'Cannot find required tool: bash'),
+        }
     }
 
     const scriptName = `mde_connect${iswin ? '.ps1' : ''}`
@@ -164,9 +180,14 @@ export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }
         if (isOutdated) {
             fs.copyFileSync(mdeScriptRes, mdeScript)
         }
+        getLogger().info('ensureMdeSshConfig: updated mde_connect script: %O', mdeScript)
     } catch (e) {
-        getLogger().error('ensureMdeSshConfig: failed to update: %O\n%O', mdeScript, e)
-        return { ok: false, err: 'failed to copy mde_connect' }
+        getLogger().error('ensureMdeSshConfig: failed to write mde_connect script: %O\n%O', mdeScript, e)
+        return {
+            ok: false,
+            err: 'failed to copy mde_connect',
+            msg: localize('AWS.mde.error.copyScript', 'Failed to update script: {0}', mdeScript),
+        }
     }
 
     const proxyCommand = iswin
@@ -177,21 +198,30 @@ export async function ensureMdeSshConfig(): Promise<{ ok: boolean; err: string }
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host aws-mde-*
     ForwardAgent yes
+    StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}"
 `
     const ssh = await SystemUtilities.findSshPath()
     if (!ssh) {
-        return { ok: false, err: 'ssh not found' }
+        return {
+            ok: false,
+            err: 'ssh not found',
+            msg: localize('AWS.mde.error.noSsh', 'Cannot find required tool: ssh'),
+        }
     }
     // Check if the "aws-mde-*" hostname pattern is working.
     const proc = new ChildProcess(ssh, ['-G', 'aws-mde-test'])
     const r = await proc.run()
     if (r.exitCode !== 0) {
         // Should never happen...
-        return { ok: false, err: 'ssh failed' }
+        return {
+            ok: false,
+            err: 'ssh failed',
+            msg: localize('AWS.mde.error.sshFail', 'ssh failed: {0}', mdeScript),
+        }
     }
     const matches = r.stdout.match(/proxycommand.*mde_connect(.ps1)?/i)
-    const hasMdeProxyCommand = matches && matches[0].includes(mdeScript)
+    const hasMdeProxyCommand = matches && matches[0].includes(proxyCommand)
 
     if (!hasMdeProxyCommand) {
         if (matches && matches[0]) {
@@ -200,8 +230,7 @@ Host aws-mde-*
                 'AWS.mde.error.oldConfig',
                 'Your ~/.ssh/config has a "aws-mde-*" section that might be out of date. Delete it, then try again.'
             )
-            showViewLogsMessage(oldConfig)
-            return { ok: false, err: 'old config' }
+            return { ok: false, err: 'old config', msg: oldConfig }
         }
 
         const confirmTitle = localize(
@@ -213,7 +242,7 @@ Host aws-mde-*
         const confirmText = localize('AWS.mde.confirm.installSshConfig.button', 'Update SSH config')
         const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
         if (!response) {
-            return { ok: false, err: 'user canceled' }
+            return { ok: false, err: 'user canceled', msg: '' }
         }
 
         const sshConfigDir = path.join(SystemUtilities.getHomeDirectory(), '.ssh')
@@ -223,11 +252,15 @@ Host aws-mde-*
             fs.appendFileSync(sshConfigPath, mdeSshConfig)
         } catch (e) {
             getLogger().error('ensureMdeSshConfig: failed to write: %O', sshConfigPath)
-            return { ok: false, err: 'write failed' }
+            return {
+                ok: false,
+                err: 'write failed',
+                msg: localize('AWS.mde.error.writeFail', 'Failed to write SSH config: {0}', sshConfigPath),
+            }
         }
     }
 
-    return { ok: true, err: '' }
+    return { ok: true, err: '', msg: '' }
 }
 
 /**
@@ -337,7 +370,11 @@ export async function connectToMde(
 
     const hasSshConfig = await ensureMdeSshConfig()
     if (!hasSshConfig.ok) {
-        showMissingToolMsg('ssh')
+        if (hasSshConfig.msg) {
+            showViewLogsMessage(hasSshConfig.msg, window)
+        } else if (hasSshConfig.err !== 'user canceled') {
+            showMissingToolMsg('ssh')
+        }
         return
     }
 
