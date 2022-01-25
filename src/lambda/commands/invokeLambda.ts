@@ -37,7 +37,9 @@ interface InvokeLambdaMessage extends CommandMessage {
     region: string
 }
 
-interface PromptFileMessage extends CommandMessage {}
+interface PromptFileMessage extends CommandMessage {
+    command: 'promptForFile'
+}
 
 export interface InitialData {
     FunctionName: string
