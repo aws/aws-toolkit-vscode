@@ -16,6 +16,8 @@ import { setLogger } from './logger'
 import { LOG_OUTPUT_CHANNEL } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import globals from '../extensionGlobals'
+import { waitUntil } from '../utilities/timeoutUtils'
+import { cleanLogFiles } from './util'
 
 const localize = nls.loadMessageBundle()
 
@@ -74,9 +76,13 @@ export async function activate(
     )
 
     await registerLoggerCommands(extensionContext)
-    logOutputChannel.appendLine(
-        localize('AWS.log.fileLocation', 'Error logs for this session are permanently stored in {0}', logPath)
-    )
+    getLogger().debug(`Logging started: ${logPath}`)
+
+    extensionContext.subscriptions.push(await createLogWatcher(logPath))
+
+    cleanLogFiles(path.dirname(logPath)).catch(err => {
+        getLogger().warn('Failed to clean-up old logs: %s', (err as Error).message)
+    })
 }
 
 /**
@@ -197,4 +203,37 @@ async function registerLoggerCommands(context: vscode.ExtensionContext): Promise
             }
         )
     )
+}
+
+/**
+ * Watches for renames on the log file and notifies the user.
+ */
+async function createLogWatcher(logPath: string): Promise<vscode.Disposable> {
+    const exists = await waitUntil(() => fs.pathExists(logPath), { interval: 1000, timeout: 60000 })
+
+    if (!exists) {
+        getLogger().warn(`Log file ${logPath} does not exist!`)
+        return { dispose: () => {} }
+    }
+
+    let checking = false
+    // TODO: fs.watch() has many problems, consider instead:
+    //   - https://github.com/paulmillr/chokidar
+    //   - https://www.npmjs.com/package/fb-watchman
+    const watcher = fs.watch(logPath, async eventType => {
+        if (checking || eventType !== 'rename') {
+            return
+        }
+        checking = true
+        const exists = await fs.pathExists(logPath).catch(() => true)
+        if (!exists) {
+            vscode.window.showWarningMessage(
+                localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
+            )
+            watcher.close()
+        }
+        checking = false
+    })
+
+    return { dispose: () => watcher.close() }
 }

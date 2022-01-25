@@ -112,14 +112,14 @@ export function createQuickPickTester<T>(
     /* Waits until the picker is both enabled and not busy. */
     function whenReady(): Promise<void[]> {
         return Promise.all([
-            new Promise(r => {
+            new Promise<void>(r => {
                 if (testPicker.enabled) {
                     return r()
                 }
 
                 const d = prompter.onDidChangeEnablement(e => e && d.dispose(), r())
             }),
-            new Promise(r => {
+            new Promise<void>(r => {
                 if (!testPicker.busy) {
                     return r()
                 }

@@ -8,17 +8,22 @@ import { EcsClient } from '../../shared/clients/ecsClient'
 import globals from '../../shared/extensionGlobals'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { EcsServiceNode } from './ecsServiceNode'
+
+const CONTEXT_EXEC_ENABLED = 'awsEcsContainerNodeExecEnabled'
+const CONTEXT_EXEC_DISABLED = 'awsEcsContainerNodeExecDisabled'
 
 export class EcsContainerNode extends AWSTreeNodeBase {
     public constructor(
         public readonly containerName: string,
         public readonly serviceName: string,
         public readonly clusterArn: string,
-        public readonly ecs: EcsClient
+        public readonly ecs: EcsClient,
+        public readonly parent: EcsServiceNode
     ) {
         super(containerName)
         this.tooltip = containerName
-        this.contextValue = 'awsEcsContainerNode'
+        this.contextValue = this.parent.service.enableExecuteCommand ? CONTEXT_EXEC_ENABLED : CONTEXT_EXEC_DISABLED
 
         this.iconPath = {
             dark: vscode.Uri.file(globals.iconPaths.dark.container),

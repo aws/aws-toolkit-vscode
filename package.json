@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.35.0-SNAPSHOT",
+    "version": "1.36.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -82,7 +82,9 @@
         "onCommand:aws.addSamDebugConfig",
         "onCommand:aws.s3.uploadFile",
         "onCommand:aws.cloudFormation.newTemplate",
-        "onCommand:aws.sam.newTemplate"
+        "onCommand:aws.sam.newTemplate",
+        "onFileSystem:s3",
+        "onFileSystem:s3-readonly"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -204,7 +206,8 @@
                         "ecsRunCommand": false,
                         "ecsRunCommandDisable": false,
                         "ecsRunCommandEnable": false,
-                        "yamlExtPrompt": false
+                        "yamlExtPrompt": false,
+                        "fileViewerEdit": false
                     },
                     "properties": {
                         "apprunnerNotifyPricing": {
@@ -224,6 +227,10 @@
                             "default": false
                         },
                         "yamlExtPrompt": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "fileViewerEdit": {
                             "type": "boolean",
                             "default": false
                         }
@@ -785,6 +792,10 @@
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
+                    "command": "aws.s3.editFile",
+                    "when": "resourceScheme == s3-readonly"
+                },
+                {
                     "command": "aws.cloudWatchLogs.viewLogStream",
                     "when": "false"
                 },
@@ -901,6 +912,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.s3.openFile",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.editFile",
+                    "when": "false"
+                },
+                {
                     "command": "aws.s3.uploadFileToParent",
                     "when": "false"
                 },
@@ -1002,6 +1021,11 @@
                 {
                     "command": "aws.saveCurrentLogStreamContent",
                     "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.s3.editFile",
+                    "when": "resourceScheme == s3-readonly",
                     "group": "navigation"
                 },
                 {
@@ -1153,9 +1177,19 @@
                     "group": "inline@1"
                 },
                 {
+                    "command": "aws.s3.openFile",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode && !isCloud9",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.s3.editFile",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode && !isCloud9",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.s3.downloadFileAs",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
-                    "group": "inline@1"
+                    "group": "inline@2"
                 },
                 {
                     "command": "aws.s3.createBucket",
@@ -1470,7 +1504,7 @@
                 {
                     "command": "aws.ecs.runCommandInContainer",
                     "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
                 },
                 {
                     "command": "aws.ecs.enableEcsExec",
@@ -1978,6 +2012,18 @@
                 }
             },
             {
+                "command": "aws.s3.openFile",
+                "title": "%AWS.command.s3.openFile%",
+                "category": "%AWS.title%",
+                "icon": "$(open-preview)"
+            },
+            {
+                "command": "aws.s3.editFile",
+                "title": "%AWS.command.s3.editFile%",
+                "category": "%AWS.title%",
+                "icon": "$(edit)"
+            },
+            {
                 "command": "aws.s3.uploadFile",
                 "title": "%AWS.command.s3.uploadFile%",
                 "category": "%AWS.title%",
@@ -2451,6 +2497,7 @@
                 "command": "aws.ecs.runCommandInContainer",
                 "title": "%AWS.ecs.runCommandInContainer%",
                 "category": "%AWS.title%",
+                "enablement": "viewItem == awsEcsContainerNodeExecEnabled",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2875,20 +2922,20 @@
         "@types/readline-sync": "^1.4.3",
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.5",
-        "@types/sinonjs__fake-timers": "^8.1.0",
+        "@types/sinonjs__fake-timers": "^8.1.1",
         "@types/tcp-port-used": "^1.0.0",
-        "@types/uuid": "^8.3.1",
+        "@types/uuid": "^8.3.3",
         "@types/vscode": "1.44.0",
         "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
-        "@typescript-eslint/eslint-plugin": "^5.4.0",
+        "@typescript-eslint/eslint-plugin": "^5.9.0",
         "@typescript-eslint/parser": "^5.4.0",
-        "@vue/compiler-sfc": "^3.2.6",
+        "@vue/compiler-sfc": "^3.2.26",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.5.1",
         "decache": "^4.4.0",
         "esbuild-loader": "2.16.0",
-        "eslint": "^8.3.0",
+        "eslint": "^8.5.0",
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
@@ -2900,12 +2947,12 @@
         "mocha": "^9.1.3",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
-        "prettier": "^2.3.2",
-        "prettier-plugin-sh": "^0.7.1",
+        "prettier": "^2.5.1",
+        "prettier-plugin-sh": "^0.8.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.13.0",
-        "sinon": "^11.1.2",
+        "sinon": "^12.0.1",
         "source-map-support": "^0.5.21",
         "ts-mockito": "^2.5.0",
         "ts-node": "^10.4.0",
@@ -2915,21 +2962,21 @@
         "vscode-test": "^1.5.2",
         "vue-loader": "^16.8.1",
         "vue-style-loader": "^4.1.3",
-        "webpack": "^5.59.1",
+        "webpack": "^5.65.0",
         "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^4.6.0"
     },
     "dependencies": {
         "@aws-sdk/client-sso": "^3.16.0",
         "@aws-sdk/client-sso-oidc": "^3.16.0",
-        "@aws-sdk/credential-provider-ini": "^3.36.1",
+        "@aws-sdk/credential-provider-ini": "^3.46.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.38.0",
-        "@aws-sdk/util-arn-parser": "^3.37.0",
+        "@aws-sdk/util-arn-parser": "^3.46.0",
         "adm-zip": "^0.5.9",
         "amazon-states-language-service": "^1.6.4",
         "async-lock": "^1.3.0",
-        "aws-sdk": "^2.998.0",
+        "aws-sdk": "^2.1048.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
         "cross-spawn": "^7.0.3",
@@ -2946,11 +2993,11 @@
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^4.4.4",
+        "typescript": "^4.5.4",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
-        "vscode-languageserver-textdocument": "^1.0.1",
+        "vscode-languageserver-textdocument": "^1.0.3",
         "vscode-nls": "^5.0.0",
         "vue": "^3.2.6",
         "winston": "^3.2.1",
