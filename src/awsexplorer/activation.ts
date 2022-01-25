@@ -157,11 +157,7 @@ async function registerAwsExplorerCommands(
     context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.executeStateMachine',
-            async (node: StateMachineNode) =>
-                await executeStateMachine({
-                    stateMachineNode: node,
-                    outputChannel: toolkitOutputChannel,
-                })
+            async (node: StateMachineNode) => await executeStateMachine(context, node)
         )
     )
 

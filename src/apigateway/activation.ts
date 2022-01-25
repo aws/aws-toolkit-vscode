@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RestApiNode } from './explorer/apiNodes'
-import { invokeRemoteRestApi2 } from './commands/invokeRemoteRestApi'
+import { invokeRemoteRestApi } from './commands/invokeRemoteRestApi'
 import { copyUrlCommand } from './commands/copyUrl'
 import { ExtContext } from '../shared/extensions'
 
@@ -29,7 +29,7 @@ export async function activate(activateArguments: {
         vscode.commands.registerCommand(
             'aws.apig.invokeRemoteRestApi',
             async (node: RestApiNode) =>
-                await invokeRemoteRestApi2(activateArguments.extContext, {
+                await invokeRemoteRestApi(activateArguments.extContext, {
                     apiNode: node,
                     outputChannel: activateArguments.outputChannel,
                 })

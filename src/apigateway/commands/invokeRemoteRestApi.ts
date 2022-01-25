@@ -72,7 +72,7 @@ const VueWebview = compileVueWebview({
 })
 export class RemoteRestInvokeWebview extends VueWebview {}
 
-export async function invokeRemoteRestApi2(
+export async function invokeRemoteRestApi(
     context: ExtContext,
     params: { outputChannel: vscode.OutputChannel; apiNode: RestApiNode }
 ): Promise<void> {

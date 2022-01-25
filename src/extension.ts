@@ -255,10 +255,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
-            await activateSchemas({
-                context: extContext.extensionContext,
-                outputChannel: toolkitOutputChannel,
-            })
+            await activateSchemas(extContext)
         }
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)

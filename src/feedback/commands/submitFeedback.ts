@@ -25,7 +25,7 @@ const VueWebview = compileVueWebview({
     webviewJs: 'feedbackVue.js',
     commands: {
         feedback: function (message: FeedbackMessage) {
-            feedback(this, message)
+            submitFeedbackMessage(this, message)
         },
     },
     cssFiles: ['submitFeedback.css'],
@@ -38,7 +38,7 @@ export async function submitFeedback(context: ExtContext) {
     await wv.start()
 }
 
-async function feedback(
+export async function submitFeedbackMessage(
     server: WebviewServer,
     message: FeedbackMessage,
     constructs: {
