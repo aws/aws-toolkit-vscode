@@ -192,14 +192,14 @@ export async function ensureMdeSshConfig(): Promise<{
 
     const proxyCommand = iswin
         ? `powershell.exe -ExecutionPolicy Bypass -File "${mdeScript}" %h`
-        : `"${bash}" -c "'${mdeScript}' %h"`
+        : `'${mdeScript}' '%h'`
 
     const mdeSshConfig = `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host aws-mde-*
     ForwardAgent yes
     StrictHostKeyChecking accept-new
-    ProxyCommand ${proxyCommand}"
+    ProxyCommand ${proxyCommand}
 `
     const ssh = await SystemUtilities.findSshPath()
     if (!ssh) {
