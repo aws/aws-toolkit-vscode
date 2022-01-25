@@ -54,7 +54,20 @@ class CreateEcrRepoDialog(
         super.doCancelAction()
     }
 
+    override fun continuousValidation() = false
+
+    override fun doValidateAll(): List<ValidationInfo> {
+        return panel.validateCallbacks.mapNotNull { it() }
+    }
+
     override fun doOKAction() {
+        val validation = doValidateAll()
+        if (!validation.isEmpty()) {
+            setErrorInfoAll(validation)
+            return
+        }
+        panel.apply()
+
         if (okAction.isEnabled) {
             setOKButtonText(message("general.create_in_progress"))
             isOKActionEnabled = false
@@ -71,9 +84,14 @@ class CreateEcrRepoDialog(
                     project.refreshAwsTree(EcrResources.LIST_REPOS)
                     EcrTelemetry.createRepository(project, Result.Succeeded)
                 } catch (e: Exception) {
-                    setErrorText(e.message)
-                    setOKButtonText(message("general.create_button"))
-                    isOKActionEnabled = true
+                    ApplicationManager.getApplication().invokeLater(
+                        {
+                            setErrorText(e.message, panel)
+                            setOKButtonText(message("general.create_button"))
+                            isOKActionEnabled = true
+                        },
+                        ModalityState.stateForComponent(rootPane)
+                    )
                     EcrTelemetry.createRepository(project, Result.Failed)
                 }
             }
