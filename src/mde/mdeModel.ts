@@ -220,7 +220,7 @@ Host aws-mde-*
             msg: localize('AWS.mde.error.sshFail', 'ssh failed: {0}', mdeScript),
         }
     }
-    const matches = r.stdout.match(/proxycommand.*mde_connect(.ps1)?/i)
+    const matches = r.stdout.match(/proxycommand.{0,1024}mde_connect(.ps1)?.{0,99}/i)
     const hasMdeProxyCommand = matches && matches[0].includes(proxyCommand)
 
     if (!hasMdeProxyCommand) {
