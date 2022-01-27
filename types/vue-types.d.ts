@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// temporary ambient declaration
-// this does not really extract types from vue components
-// it just prevents TSC from complaining when trying to import them
+/**
+ * Ambient declaration that describes what '.vue' files export.
+ *
+ * Typescript is unable to parse Vue SFCs, so cannot populate the template types.
+ */
 declare module '*.vue' {
-    import { defineComponent } from 'vue'
-    const Component: ReturnType<typeof defineComponent>
+    import { Component } from 'vue'
+    const Component: Component
     export default Component
 }

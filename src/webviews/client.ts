@@ -45,49 +45,57 @@ type ClientCommands<T> = {
         : never
 }
 
+/** Can be created by {@link WebviewClientFactory} */
 export type WebviewClient<T> = ClientCommands<T>
+
+/** A narrowed form of `window` containing only the methods needed by the client */
+type Window = Pick<typeof window, 'addEventListener' | 'removeEventListener' | 'clearTimeout' | 'dispatchEvent'>
+type VscodeApi = typeof vscode
+
 /**
- * Used to create a new 'WebviewClient' to communicate with the backend.
+ * Implements message sending/receiving for the frontend, keeping track of required state.
  */
-export class WebviewClientFactory {
-    /** Used to generate unique ids per request/message. */
-    private static counter = 0
-    /** Set to true the first time a client is created. */
-    private static initialized = false
+export class WebviewClientAgent {
     /** All listeners (except the 'global' commands) registered to `message`. */
-    private static messageListeners: Set<() => any> = new Set()
+    private readonly _messageListeners: Set<() => any> = new Set()
+    /** Resources that should be freed when the client is no longer needed. */
+    private readonly _disposables: { dispose: () => void }[] = []
 
-    /**
-     * Sets up 'global' commands used internally for special functionality that is otherwise
-     * not exposed to the frontend or backend code.
-     */
-    private static registerGlobalCommands() {
-        const remountEvent = new Event('remount')
-
-        window.addEventListener('message', (event: { data: Message }) => {
-            const { command } = event.data
-            if (command === '$clear') {
-                vscode.setState({})
-                this.messageListeners.forEach(listener => this.removeListener(listener))
-                window.dispatchEvent(remountEvent)
-            }
-        })
+    public constructor(protected readonly window: Window, protected readonly vscode: VscodeApi) {
+        this.registerGlobalCommands()
     }
 
     /**
      * Adds a new listener to the `message` event.
      */
-    private static addListener(listener: (...args: any) => void): void {
-        this.messageListeners.add(listener)
-        window.addEventListener('message', listener)
+    private addListener(listener: (...args: any) => void): void {
+        this._messageListeners.add(listener)
+        this.window.addEventListener('message', listener)
     }
 
     /**
      * Removes the listener from the backing store and unregisters it from the window.
      */
-    private static removeListener(listener: (...args: any) => void): void {
-        this.messageListeners.delete(listener)
-        window.removeEventListener('message', listener)
+    private removeListener(listener: (...args: any) => void): void {
+        this._messageListeners.delete(listener)
+        this.window.removeEventListener('message', listener)
+    }
+
+    /**
+     * Sets up 'global' commands used internally for special functionality that is otherwise
+     * not exposed to the frontend or backend code.
+     */
+    private registerGlobalCommands() {
+        const remountEvent = new Event('remount')
+
+        this.window.addEventListener('message', (event: { data: Message }) => {
+            const { command } = event.data
+            if (command === '$clear') {
+                vscode.setState({})
+                this._messageListeners.forEach(listener => this.removeListener(listener))
+                this.window.dispatchEvent(remountEvent)
+            }
+        })
     }
 
     /**
@@ -100,13 +108,15 @@ export class WebviewClientFactory {
      * @param id Message ID. Should be unique to each individual request.
      * @param command Identifier associated with the backend command.
      * @param args Arguments to pass to the backend command.
+     * @param timeout How long to wait for a response from the backend.
      *
      * @returns The backend's response as a Promise.
      */
-    private static sendRequest<T extends any[], R, U extends string>(
+    public sendRequest<T extends any[], R, U extends string>(
         id: string,
         command: U,
-        args: T
+        args: T,
+        timeout = 300000
     ): Promise<R | { dispose: () => void }> {
         const deproxied = JSON.parse(JSON.stringify(args))
         const response = new Promise<R | { dispose: () => void }>((resolve, reject) => {
@@ -118,7 +128,7 @@ export class WebviewClientFactory {
                 }
 
                 this.removeListener(listener)
-                window.clearTimeout(timeout)
+                this.window.clearTimeout(timer)
 
                 if (message.error === true) {
                     const revived = JSON.parse(message.data as string)
@@ -133,19 +143,19 @@ export class WebviewClientFactory {
                 }
             }
 
-            const timeout = setTimeout(() => {
+            const timer = setTimeout(() => {
                 this.removeListener(listener)
                 reject(new Error(`Timed out while waiting for response: id: ${id}, command: ${command}`))
-            }, 300000)
+            }, timeout)
 
             this.addListener(listener)
         })
 
-        vscode.postMessage({ id, command, data: deproxied } as Message<T, U>)
+        this.vscode.postMessage({ id, command, data: deproxied } as Message<T, U>)
         return response
     }
 
-    private static registerEventHandler<T extends (e: R) => void, R, U extends string>(
+    private registerEventHandler<T extends (e: R) => void, R, U extends string>(
         command: U,
         args: T
     ): { dispose: () => void } {
@@ -167,6 +177,23 @@ export class WebviewClientFactory {
         return { dispose: () => this.removeListener(listener) }
     }
 
+    public dispose(): void {
+        // TODO: dispose of `_messageListeners`
+        while (this._disposables.length) {
+            this._disposables.shift()!.dispose()
+        }
+    }
+}
+
+/**
+ * Used to create a new 'WebviewClient' to communicate with the backend.
+ */
+export class WebviewClientFactory {
+    /** Used to generate unique ids per request/message. */
+    private static _counter = 0 // Should initialize this with epoch time or something
+    /** The 'agent' handles the communication protocol between client/server. */
+    private static _agent: WebviewClientAgent
+
     /**
      * Creates a new client. These clients are defined by their types; they do not have any knowledge
      * of the backend protocol other than the specified type.
@@ -174,13 +201,8 @@ export class WebviewClientFactory {
     public static create<T extends VueWebview<any>>(): WebviewClient<T['protocol']>
     public static create<T extends VueWebviewPanel<any>>(): WebviewClient<T['protocol']>
     public static create<T extends VueWebviewView<any>>(): WebviewClient<T['protocol']>
-    public static create<T extends Protocol<any, any>>(): WebviewClient<T>
-    public static create<T extends ClientCommands<T>>(): WebviewClient<T>
     public static create<T extends Protocol<any, any>>(): WebviewClient<T> {
-        if (!this.initialized) {
-            this.initialized = true
-            this.registerGlobalCommands()
-        }
+        const agent = (this._agent ??= new WebviewClientAgent(window, vscode))
 
         return new Proxy(
             {},
@@ -202,8 +224,12 @@ export class WebviewClientFactory {
                         vscode.setState(Object.assign(state, { __once: true }))
                     }
 
-                    const id = (this.counter++).toString()
-                    return (...args: any) => this.sendRequest(id, prop, args)
+                    const id = String(this._counter++)
+                    return (...args: any) => agent.sendRequest(id, prop, args)
+                },
+                // Makes Vue happy, though it's still erroneous
+                getPrototypeOf() {
+                    return Object
                 },
             }
         ) as WebviewClient<T>

@@ -41,7 +41,7 @@ const localize = nls.loadMessageBundle()
 const VueWebview = compileVueWebview({
     id: 'createLambda',
     title: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
-    webviewJs: 'lambdaVue.js',
+    webviewJs: 'src/lambda/vue/entry.js',
     commands: {
         getRuntimes: () => samLambdaCreatableRuntimes().toArray().sort(),
         getTemplate,
@@ -81,7 +81,6 @@ export interface AwsSamDebuggerConfigurationLoose extends AwsSamDebuggerConfigur
  * Open a quick pick containing the names of launch configs in the `launch.json` array.
  * Filter out non-supported launch configs.
  * Call back into the webview with the selected launch config.
- * @param postMessageFn
  */
 async function loadSamLaunchConfig(): Promise<AwsSamDebuggerConfiguration | undefined> {
     // TODO: Find a better way to infer this. Might need another arg from the frontend (depends on the context in which the launch config is made?)
@@ -125,7 +124,6 @@ interface SampleQuickPickItem extends vscode.QuickPickItem {
 /**
  * Open a quick pick containing upstream sample payloads.
  * Call back into the webview with the contents of the payload to add to the JSON field.
- * @param postMessageFn
  */
 async function getSamplePayload(): Promise<string | undefined> {
     try {
