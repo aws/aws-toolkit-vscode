@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Usage:
 #   AWS_REGION=… AWS_SSM_CLI=… AWS_MDE_SESSION=… AWS_MDE_STREAMURL=… AWS_MDE_TOKEN=… ./mde_connect <env-id>
