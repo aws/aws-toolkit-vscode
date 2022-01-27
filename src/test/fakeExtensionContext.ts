@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { resolve } from 'path'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
@@ -41,7 +42,10 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storagePath: string | undefined
     public logPath: string = ''
 
-    private _extensionPath: string = ''
+    // Seems to be the most reliable way to set the extension path (unfortunately)
+    // TODO: figure out a robust way to source the project directory that is invariant to entry point
+    // Using `package.json` as a reference point seems to make the most sense
+    private _extensionPath: string = resolve(__dirname, '../../..')
     private _globalStoragePath: string = '.'
 
     public constructor(preload?: FakeExtensionState) {

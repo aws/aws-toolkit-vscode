@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { ExtContext } from '../shared/extensions'
 import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
-import { ClientQuery, ClientStatus } from './client'
+import { ClientCommand, ClientQuery, ClientStatus } from './client'
 import {
     CompileContext,
     DataFromOptions,
@@ -64,6 +64,18 @@ export interface VueWebview<Options extends WebviewCompileOptions> {
      * Trying to access it on the backend will result in an error.
      */
     readonly protocol: OptionsToProtocol<Options>
+    /**
+     * Returns the current state of the first component that responds to the query.
+     *
+     * This is `undefined` if no response is received.
+     */
+    inspect(query: ClientQuery): Promise<ClientStatus | undefined>
+    /**
+     * Attempts to execute a method located within the target component.
+     *
+     * Returns `undefined` on any failures.
+     */
+    execute(command: ClientCommand): Promise<ClientStatus | undefined>
 }
 
 /**
@@ -133,6 +145,7 @@ export function compileVueWebview<Options extends WebviewCompileOptions>(
 
         private readonly _onDidReport = new vscode.EventEmitter<ClientStatus>()
         private readonly _onDidInspect = new vscode.EventEmitter<ClientQuery>()
+        private readonly _onDidExecute = new vscode.EventEmitter<ClientCommand>()
         public readonly onDidReport = this._onDidReport.event
 
         public get panel() {
@@ -150,6 +163,16 @@ export function compileVueWebview<Options extends WebviewCompileOptions>(
                 listener = this._onDidReport.event(resolve)
                 setTimeout(resolve, 5000)
                 this._onDidInspect.fire(query)
+            }).finally(() => listener.dispose())
+        }
+
+        public execute(command: ClientCommand): Promise<ClientStatus | undefined> {
+            let listener: vscode.Disposable
+
+            return new Promise<ClientStatus | undefined>(resolve => {
+                listener = this._onDidReport.event(resolve)
+                setTimeout(resolve, 5000)
+                this._onDidExecute.fire(command)
             }).finally(() => listener.dispose())
         }
 
@@ -184,6 +207,7 @@ export function compileVueWebview<Options extends WebviewCompileOptions>(
                     })
                     const reporterCommands = {
                         $inspect: this._onDidInspect,
+                        $execute: this._onDidExecute,
                         $report: (status: ClientStatus) => this._onDidReport.fire(status),
                     }
                     Object.defineProperty(modifiedWebview, 'data', { get: () => this.initialData })
@@ -219,8 +243,8 @@ const MIN_WEBVIEW_VIEW_VERSION = '1.50.0'
  */
 export function compileVueWebviewView<Options extends WebviewCompileOptions>(
     params: WebviewViewParams & Options & { commands?: CompileContext<Options> }
-): { new (context: ExtContext): VueWebviewView<Options> } {
-    return class implements VueWebviewView<Options> {
+): { new (context: ExtContext): Omit<VueWebviewView<Options>, 'inspect' | 'execute'> } {
+    return class implements Omit<VueWebviewView<Options>, 'inspect' | 'execute'> {
         private _view: vscode.WebviewView | undefined
         private initialData?: PropsFromOptions<Options>
         public readonly emitters: Options['events']

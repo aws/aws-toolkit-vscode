@@ -2891,7 +2891,7 @@
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
         "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
-        "testCompile": "tsc -p ./ && npm run buildScripts",
+        "testCompile": "tsc -p ./ && npm run buildScripts && webpack --config-name vue --mode development",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
         "lint": "eslint -c .eslintrc.js --ext .ts .",

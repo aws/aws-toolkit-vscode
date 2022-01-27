@@ -51,18 +51,6 @@ describe('Sam Invoke Vue Backend', () => {
         server.panel?.dispose()
     })
 
-    it('can inspect', async function () {
-        sinon.restore()
-        context.extensionContext.extensionPath = '/Users/sijaden/VSCode/aws-toolkit-vscode' // xxx
-
-        const server = new SamInvokeWebview(context)
-        server.start()
-
-        await sleep(3000)
-        const s = await server.inspect()
-        console.log(s)
-    })
-
     it('can get a template from the user', async function () {
         // Setup some fake templates
         const template1 = vscode.Uri.file(path.join(tempFolder, 'test1.yaml'))
@@ -88,6 +76,27 @@ describe('Sam Invoke Vue Backend', () => {
         assert.strictEqual(vscode.Uri.file(template?.template ?? '').fsPath, template1.fsPath)
 
         server.panel?.dispose()
+    })
+
+    it('can load payload', async function () {
+        // This test runs the real webview by restoring the window stub
+        sinon.restore()
+
+        const server = new SamInvokeWebview(context)
+        server.start()
+
+        // Pause so mixins can register listeners
+        // An event would be better here
+        await sleep(2500)
+
+        const component = await server.inspect({})
+        assert.ok(component?.name, 'Could not find any component')
+        assert.strictEqual(component.data.payload?.value, '')
+
+        sinon.stub(picker, 'promptUser').callsFake(async args => [args.picker.items[0]])
+
+        const response = await server.execute({ target: component.name, method: 'loadPayload', args: [] })
+        assert.ok(response?.data?.payload?.value, 'Payload was not set')
     })
 
     describe('finalizeConfig', () => {

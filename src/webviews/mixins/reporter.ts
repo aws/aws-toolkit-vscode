@@ -15,21 +15,43 @@ const reporter: Vue.ComponentOptionsMixin = {
             return
         }
 
-        const format = (message: string) =>
-            console.log(`${this.name ?? 'unknown'} (${this.id ?? 'unknown'}): ${message}`)
+        const id = this.$options.id ?? this.id ?? this.$options._unid
+        const name = this.$options.name ?? this.name
+        const isValidTarget = (target?: string) => !target || target === name || target === id
+        const format = (message: string) => `${name ?? 'unknown'} (${id ?? 'unknown'}): ${message}`
         const client = WebviewClientFactory.create<GlobalProtocol>()
 
         client.$inspect(event => {
-            if (this.name && event.target && event.target !== this.name) {
+            if (!isValidTarget(event.target)) {
                 console.log(format(`Ignoring inspection request for ${event.target}`))
                 return
             }
 
-            // There is no consistent scheme for determining a name.
-            // Components should set names and/or ids as-needed.
-            client.$report({ name: this.name, id: this.id, data: this.$data }).catch(err => {
+            client.$report({ name, id, data: this.$data }).catch(err => {
                 console.warn(format(`Failed to send $inspect response: ${err.message}`))
             })
+        })
+
+        client.$execute(async event => {
+            if (!isValidTarget(event.target)) {
+                console.log(format(`Ignoring execution request for ${event.target}`))
+                return
+            }
+
+            const method = this[event.method]
+
+            if (typeof method !== 'function') {
+                console.warn(format(`Method "${method}" was ${!method ? 'undefined or null' : typeof method}`))
+                return
+            }
+
+            // Not going to worry about sending back whatever the function returns
+            try {
+                await method.call(this, ...event.args)
+                await client.$report({ name, id, data: this.$data })
+            } catch (err) {
+                console.warn(format(`Failed to send $execute response: ${(err as Error).message}`))
+            }
         })
     },
 }

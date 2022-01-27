@@ -138,16 +138,16 @@ export default defineComponent({
             this.headers.errorMsg = ''
             this.stageVariables.errorMsg = ''
         },
-        launch() {
+        async launch() {
             const config = this.formatConfig()
-            config && client.invokeLaunchConfig(config)
+            config && (await client.invokeLaunchConfig(config))
         },
-        save() {
+        async save() {
             const config = this.formatConfig()
-            config && client.saveLaunchConfig(config)
+            config && (await client.saveLaunchConfig(config))
         },
-        loadConfig() {
-            client.loadSamLaunchConfig().then(config => this.parseConfig(config))
+        async loadConfig() {
+            this.parseConfig(await client.loadSamLaunchConfig())
         },
         parseConfig(config?: AwsSamDebuggerConfiguration) {
             if (!config) {
@@ -174,18 +174,18 @@ export default defineComponent({
             this.skipNewImageCheck = config.sam?.skipNewImageCheck ?? false
             this.msg = `Loaded config ${config}`
         },
-        loadPayload() {
+        async loadPayload() {
             this.resetJsonErrors()
-            client.getSamplePayload().then(sample => {
+            await client.getSamplePayload().then(sample => {
                 if (!sample) {
                     return
                 }
                 this.payload.value = JSON.stringify(JSON.parse(sample), undefined, 4)
             })
         },
-        loadResource() {
+        async loadResource() {
             this.resetJsonErrors()
-            client.getTemplate().then(template => {
+            await client.getTemplate().then(template => {
                 if (!template) {
                     return
                 }

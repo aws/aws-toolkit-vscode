@@ -46,8 +46,16 @@ type ClientCommands<T> = {
 }
 
 export interface ClientQuery {
+    /** A component name or id. If not provided, all components will respond to the query. */
     readonly target?: string
 }
+
+export interface ClientCommand {
+    readonly target: string
+    readonly method: string
+    readonly args: any[]
+}
+
 export interface ClientStatus {
     readonly id?: string
     readonly name?: string
@@ -56,6 +64,7 @@ export interface ClientStatus {
 
 export interface GlobalProtocol extends Protocol {
     $inspect: EventEmitter<ClientQuery>
+    $execute: EventEmitter<ClientCommand>
     $report: (status: ClientStatus) => void
     $clear: () => void
 }
