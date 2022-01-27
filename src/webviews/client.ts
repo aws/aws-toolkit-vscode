@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventEmitter } from 'vscode'
+import type { EventEmitter } from 'vscode'
 import { WebviewApi } from 'vscode-webview'
 import { VueWebview, VueWebviewPanel, VueWebviewView } from './main'
 import { Protocol } from './server'
@@ -62,7 +62,10 @@ export class WebviewClientAgent {
     private readonly _disposables: { dispose: () => void }[] = []
 
     public constructor(protected readonly window: Window, protected readonly vscode: VscodeApi) {
-        this.registerGlobalCommands()
+        // Explicitly check for its presence as `Event` is not available in Node
+        if (globalThis.Event) {
+            this.registerGlobalCommands()
+        }
     }
 
     /**

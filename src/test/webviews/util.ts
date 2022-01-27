@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import { EventEmitter } from 'vscode'
+import { EventEmitter as WindowEventEmitter } from 'events'
 import { WebviewClient, WebviewClientAgent } from '../../webviews/client'
 import { VueWebview } from '../../webviews/main'
 
@@ -17,38 +18,26 @@ export function createTestClient<T extends VueWebview<any>>(
     receiver: EventEmitter<any>['event'],
     emitter: EventEmitter<any>
 ): WebviewClient<T['protocol']> {
-    type Listener = Parameters<typeof window['addEventListener']>[1]
     type Window = ConstructorParameters<typeof WebviewClientAgent>[0]
 
-    const listeners: Record<string, Listener[]> = {}
-
-    const dispatch = (event: Event) => {
-        for (const listener of listeners[event.type] ?? []) {
-            if (typeof listener === 'function') {
-                listener(event)
-            } else {
-                listener.handleEvent(event)
-            }
-        }
-
-        return true // Not technically true to spec but good enough
-    }
+    const windowEmitter = new WindowEventEmitter()
 
     const window: Window = {
         addEventListener: (...args: Parameters<typeof window['addEventListener']>) => {
-            const [type, listener] = args
-            ;(listeners[type] ??= []).push(listener)
+            if (typeof args[1] === 'object') {
+                throw new Error('Object event listeners are not supported')
+            }
+            windowEmitter.addListener(args[0], args[1])
         },
         removeEventListener: (...args: Parameters<typeof window['removeEventListener']>) => {
-            const [type, listener] = args
-            const arr = listeners[type] ?? []
-            const ind = arr.indexOf(listener)
-
-            if (ind !== -1) {
-                arr.splice(ind, 1)
+            if (typeof args[1] === 'object') {
+                throw new Error('Object event listeners are not supported')
             }
+            windowEmitter.removeListener(args[0], args[1])
         },
-        dispatchEvent: dispatch,
+        dispatchEvent: () => {
+            throw new Error('Firing events is not supported.')
+        },
         clearTimeout: clearTimeout,
     }
 
@@ -60,7 +49,7 @@ export function createTestClient<T extends VueWebview<any>>(
     })
 
     // TODO: add clean-up logic
-    receiver(e => dispatch(new MessageEvent('message', { data: e })))
+    receiver(e => windowEmitter.emit('message', { data: e }))
 
     let counter = 0
     return new Proxy<WebviewClient<T['protocol']>>({} as any, {
