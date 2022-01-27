@@ -26,13 +26,6 @@ export async function runCommandInContainer(
     outputChannel = globals.outputChannel,
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 ): Promise<void> {
-    if (!(node instanceof EcsContainerNode)) {
-        getLogger().error('Cannot run command on node that has not loaded')
-        window.showErrorMessage(
-            localize('AWS.explorerNode.notLoaded', 'This resource may not be fully loaded yet. Please try again.')
-        )
-        return
-    }
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
     let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
     let status: vscode.Disposable | undefined
