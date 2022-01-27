@@ -9,6 +9,7 @@ import { AwsSamDebuggerConfigurationLoose, SamInvokeWebview } from './samInvokeB
 import settingsPanel from '../../webviews/components/settingsPanel.vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
+import reporter from '../../webviews/mixins/reporter'
 
 const client = WebviewClientFactory.create<SamInvokeWebview>()
 
@@ -116,7 +117,7 @@ export default defineComponent({
             this.runtimes = runtimes
         })
     },
-    mixins: [saveData],
+    mixins: [saveData, reporter],
     data(): SamInvokeVueData {
         return {
             ...initData(),

@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WebviewApi } from 'vscode-webview'
 import * as Vue from 'vue'
+import { WebviewApi } from 'vscode-webview'
+
 declare const vscode: WebviewApi<{ [key: string]: any }>
 
 /* Keep track of registered IDs to warn if duplicates appears */

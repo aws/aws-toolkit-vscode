@@ -20,6 +20,7 @@ import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/t
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { toFile } from '../../testUtil'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
+import { sleep } from '../../../shared/utilities/promiseUtilities'
 
 describe('Sam Invoke Vue Backend', () => {
     let context: ExtContext
@@ -48,6 +49,18 @@ describe('Sam Invoke Vue Backend', () => {
         assert.deepStrictEqual(runtimes, samLambdaCreatableRuntimes().toArray().sort())
 
         server.panel?.dispose()
+    })
+
+    it('can inspect', async function () {
+        sinon.restore()
+        context.extensionContext.extensionPath = '/Users/sijaden/VSCode/aws-toolkit-vscode' // xxx
+
+        const server = new SamInvokeWebview(context)
+        server.start()
+
+        await sleep(3000)
+        const s = await server.inspect()
+        console.log(s)
     })
 
     it('can get a template from the user', async function () {

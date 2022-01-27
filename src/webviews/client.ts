@@ -45,6 +45,21 @@ type ClientCommands<T> = {
         : never
 }
 
+export interface ClientQuery {
+    readonly target?: string
+}
+export interface ClientStatus {
+    readonly id?: string
+    readonly name?: string
+    readonly data: Record<string, any>
+}
+
+export interface GlobalProtocol extends Protocol {
+    $inspect: EventEmitter<ClientQuery>
+    $report: (status: ClientStatus) => void
+    $clear: () => void
+}
+
 /** Can be created by {@link WebviewClientFactory} */
 export type WebviewClient<T> = ClientCommands<T>
 
@@ -86,7 +101,8 @@ export class WebviewClientAgent {
 
     /**
      * Sets up 'global' commands used internally for special functionality that is otherwise
-     * not exposed to the frontend or backend code.
+     * not exposed to the frontend or backend code. This is intended for persistent listeners
+     * that are not directly tied to the application.
      */
     private registerGlobalCommands() {
         const remountEvent = new Event('remount')
@@ -204,6 +220,7 @@ export class WebviewClientFactory {
     public static create<T extends VueWebview<any>>(): WebviewClient<T['protocol']>
     public static create<T extends VueWebviewPanel<any>>(): WebviewClient<T['protocol']>
     public static create<T extends VueWebviewView<any>>(): WebviewClient<T['protocol']>
+    public static create<T extends Protocol<any, any>>(): WebviewClient<T>
     public static create<T extends Protocol<any, any>>(): WebviewClient<T> {
         const agent = (this._agent ??= new WebviewClientAgent(window, vscode))
 

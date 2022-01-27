@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import { ExtContext } from '../shared/extensions'
 import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
+import { ClientQuery, ClientStatus } from './client'
 import {
     CompileContext,
     DataFromOptions,
@@ -130,12 +131,26 @@ export function compileVueWebview<Options extends WebviewCompileOptions>(
         private initialData?: PropsFromOptions<Options>
         public readonly emitters: Options['events']
 
+        private readonly _onDidReport = new vscode.EventEmitter<ClientStatus>()
+        private readonly _onDidInspect = new vscode.EventEmitter<ClientQuery>()
+        public readonly onDidReport = this._onDidReport.event
+
         public get panel() {
             return this._panel
         }
 
         public get protocol(): OptionsToProtocol<Options> {
             throw new Error('Cannot access the webview protocol on the backend.')
+        }
+
+        public inspect(query: ClientQuery): Promise<ClientStatus | undefined> {
+            let listener: vscode.Disposable
+
+            return new Promise<ClientStatus | undefined>(resolve => {
+                listener = this._onDidReport.event(resolve)
+                setTimeout(resolve, 5000)
+                this._onDidInspect.fire(query)
+            }).finally(() => listener.dispose())
         }
 
         constructor(private readonly context: ExtContext) {
@@ -167,8 +182,18 @@ export function compileVueWebview<Options extends WebviewCompileOptions>(
                         context: this.context,
                         emitters: this.emitters,
                     })
+                    const reporterCommands = {
+                        $inspect: this._onDidInspect,
+                        $report: (status: ClientStatus) => this._onDidReport.fire(status),
+                    }
                     Object.defineProperty(modifiedWebview, 'data', { get: () => this.initialData })
-                    registerWebviewServer(modifiedWebview, { init, submit, ...params.commands, ...this.emitters })
+                    registerWebviewServer(modifiedWebview, {
+                        init,
+                        submit,
+                        ...params.commands,
+                        ...this.emitters,
+                        ...reporterCommands,
+                    })
                 }
             })
         }
