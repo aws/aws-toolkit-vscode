@@ -25,7 +25,7 @@ val msBuild by lazy {
     "${dotNetSdk}\\MSBuild.dll"
 }
 
-// TODO: Remove when https://youtrack.jetbrains.com/issue/RIDER-47995 is fixed FIX_WHEN_MIN_IS_211
+// TODO: Remove when https://youtrack.jetbrains.com/issue/RIDER-47995 is fixed FIX_WHEN_MIN_IS_212
 fun allowCustomDotnetRoots() {
     // Rider Test Framework miss VFS root access for the case when running tests on local environment with custom SDK path
     // This should be fixed on Rider Test Framework level. Workaround it until related ticket RIDER-47995 is fixed.
