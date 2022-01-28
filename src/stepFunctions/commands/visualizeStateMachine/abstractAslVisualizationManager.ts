@@ -20,7 +20,7 @@ export abstract class AbstractAslVisualizationManager {
 
     public abstract visualizeStateMachine(
         globalStorage: vscode.Memento,
-        input: vscode.TextEditor | ConstructNode | undefined
+        input: vscode.Uri | vscode.TextEditor | ConstructNode | undefined
     ): Promise<vscode.WebviewPanel | undefined>
 
     protected pushToExtensionContextSubscriptions(visualizationDisposable: vscode.Disposable): void {
