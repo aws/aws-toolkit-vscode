@@ -1010,6 +1010,10 @@
                 {
                     "command": "aws.ecs.viewDocumentation",
                     "when": "false"
+                },
+                {
+                    "command": "aws.renderStateMachineGraph",
+                    "when": "false"
                 }
             ],
             "editor/title": [
