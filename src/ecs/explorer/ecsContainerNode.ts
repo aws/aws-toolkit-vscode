@@ -2,6 +2,9 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
 import { EcsClient } from '../../shared/clients/ecsClient'
 import globals from '../../shared/extensionGlobals'
@@ -51,7 +54,9 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         )
     }
 
-    public async updateRunningTasks(): Promise<void> {
-        this.description = (await this.hasRunningTasks()) ? false : `[no running tasks]`
+    public async updateNodeDescription(): Promise<void> {
+        this.description = (await this.hasRunningTasks())
+            ? false
+            : localize('AWS.explorerNode.ecs.noRunningTasks', '[no running tasks]')
     }
 }
