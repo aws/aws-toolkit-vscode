@@ -17,6 +17,7 @@ import { getLogger } from '../shared/logger'
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ecs.runCommandInContainer', async (node: EcsContainerNode) => {
+            // VS Code will rarely call the command with `undefined` if the tree is still loading
             if (!(node instanceof EcsContainerNode)) {
                 getLogger().error('Cannot run command on node: %O', node)
                 vscode.window.showErrorMessage(
