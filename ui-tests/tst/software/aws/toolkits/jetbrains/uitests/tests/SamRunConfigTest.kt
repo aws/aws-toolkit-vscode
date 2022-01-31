@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.uitests.tests
 
 import com.intellij.remoterobot.fixtures.ComboBoxFixture
+import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.ContainerFixture
 import com.intellij.remoterobot.fixtures.JListFixture
 import com.intellij.remoterobot.search.locators.byXpath
@@ -53,7 +54,7 @@ class SamRunConfigTest {
 
             idea {
                 waitForBackgroundTasks()
-                findAndClick("//div[@accessiblename='Add Configuration...']")
+                findAndClick("//div[contains(@accessiblename,'Add Configuration')]")
                 step("Create and populate template based run configuration") {
                     addRunConfig()
                     step("Populate run configuration") {
@@ -75,7 +76,7 @@ class SamRunConfigTest {
                 step("Validate template run configuration was saved and loads properly") {
                     step("Reopen the run configuration") {
                         findAndClick("//div[@accessiblename='[Local] SomeFunction']")
-                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations...")
+                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations", fullMatch = false)
                     }
                     step("Assert the same function is selected") {
                         assertThat(functionModel().selectedText()).isEqualTo("SomeFunction")
@@ -94,10 +95,13 @@ class SamRunConfigTest {
                 step("Setup handler based run configuration") {
                     step("Reopen the run configuration menu") {
                         findAndClick("//div[@accessiblename='[Local] SomeFunction']")
-                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations...")
+                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations", fullMatch = false)
                     }
                     addRunConfig()
-                    find<ComboBoxFixture>(byXpath("(//div[@text='Runtime:']/following-sibling::div[@class='ComboBox'])[1]")).selectItem("java11")
+                    find<ComboBoxFixture>(
+                        byXpath("(//div[@text='Runtime:']/following-sibling::div[@class='ComboBox'])[1]"),
+                        Duration.ofSeconds(10)
+                    ).selectItem("java11")
                     findAndClick("//div[@class='HandlerPanel']")
                     keyboard { enterText("helloworld.App::handleRequest") }
                     findAndClick("//div[@class='MyEditorTextField']")
@@ -107,10 +111,11 @@ class SamRunConfigTest {
                 step("Validate handler run configuration was saved and loads properly") {
                     step("Reopen the run configuration") {
                         findAndClick("//div[@accessiblename='[Local] App.handleRequest']")
-                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations...")
+                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations", fullMatch = false)
+                        waitForConfigurationLoad()
                     }
                     step("Assert the same handler is selected") {
-                        val fixture = findRunDialog().find<ContainerFixture>(byXpath("//div[@class='HandlerPanel']"))
+                        val fixture = find<ContainerFixture>(byXpath("//div[@class='HandlerPanel']"))
                         assertThat(fixture.findAllText().joinToString("") { it.text }).isEqualTo("helloworld.App::handleRequest")
                     }
                     // We might want to assert no errors here in the future. However, since we do not import the project, we don't
@@ -121,15 +126,21 @@ class SamRunConfigTest {
         }
     }
 
-    private fun ContainerFixture.functionModel(): ComboBoxFixture =
-        find(byXpath("//div[@class='TextFieldWithBrowseButton']/following-sibling::div[@class='ComboBox']"))
+    private fun ContainerFixture.waitForConfigurationLoad() = find<ComponentFixture>(byXpath("//div[@text='Configuration']"), Duration.ofSeconds(10))
 
-    private fun ContainerFixture.findRunDialog() = find<DialogFixture>(DialogFixture.byTitleContains("Run"), Duration.ofSeconds(5))
+    private fun ContainerFixture.functionModel(): ComboBoxFixture {
+        waitForConfigurationLoad()
+        return find(byXpath("//div[@class='TextFieldWithBrowseButton']/following-sibling::div[@class='ComboBox']"))
+    }
+
+    private fun ContainerFixture.findRunDialog() = find<DialogFixture>(DialogFixture.byTitleContains("Run"), Duration.ofSeconds(10))
 
     private fun ContainerFixture.addRunConfig() {
         step("Add a local run configuration") {
             findRunDialog().findAndClick("//div[@accessiblename='Add New Configuration']")
             find<JTreeFixture>(byXpath("//div[@accessiblename='WizardTree' and @class='MyTree']")).clickPath("AWS Lambda", "Local")
+            // wait for run config panel to render
+            waitForConfigurationLoad()
         }
     }
 }

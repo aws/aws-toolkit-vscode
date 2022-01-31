@@ -37,7 +37,13 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
     }
 
     fun selectTab(tabName: String) {
-        jList(byXpath("//div[@accessiblename='Welcome screen categories']")).clickItem(tabName)
+        // TODO: FIX_WHEN_MIN_IS_213
+        try {
+            find<JTreeFixture>(JTreeFixture.byType()).clickRowWithText(tabName, fullMatch = false)
+        } catch (e: Exception) {
+            // <2021.3
+            jList(byXpath("//div[@accessiblename='Welcome screen categories']")).clickItem(tabName)
+        }
     }
 
     fun openFolder(path: Path) {

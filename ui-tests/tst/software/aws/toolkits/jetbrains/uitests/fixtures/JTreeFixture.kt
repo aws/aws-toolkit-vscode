@@ -211,8 +211,8 @@ fun JTreeFixture.waitUntilLoaded() {
     step("waiting for loading text to go away...") {
         Pause.pause(100)
         waitFor(duration = Duration.ofMinutes(1)) {
-            // Do not use hasText(String) https://github.com/JetBrains/intellij-ui-test-robot/issues/10
-            !hasText { txt -> txt.text == "loading..." }
+            // FIX_WHEN_MIN_IS_213: changed to unicode ellipses in IDEA-270680
+            !hasText("loading...") && !hasText("loading…")
         }
         Pause.pause(100)
     }

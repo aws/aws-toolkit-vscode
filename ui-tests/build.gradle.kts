@@ -5,6 +5,7 @@ import software.aws.toolkits.gradle.jacoco.RemoteCoverage.Companion.enableRemote
 // SPDX-License-Identifier: Apache-2.0
 
 val remoteRobotPort: String by project
+val ideProfileName: String by project
 
 repositories {
     maven { url = uri("https://cache-redirector.jetbrains.com/intellij-dependencies") }
@@ -44,6 +45,7 @@ tasks.register<Test>("uiTestCore") {
     dependsOn(":jetbrains-core:buildPlugin")
     inputs.files(":jetbrains-core:buildPlugin")
 
+    systemProperty("org.gradle.project.ideProfileName", ideProfileName)
     systemProperty("robot-server.port", remoteRobotPort)
     systemProperty("junit.jupiter.extensions.autodetection.enabled", true)
 
