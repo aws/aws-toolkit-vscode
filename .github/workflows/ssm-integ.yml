@@ -4,9 +4,9 @@ name: SSM Integration Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master, feature/* ]
+    branches: [ main, feature/* ]
     # PRs only need to run this if the SSM plugin logic has changed
     paths:
       - 'jetbrains-core/src/software/aws/toolkits/jetbrains/services/ssm/SsmPlugin.kt'
