@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix image-based Lambda debugging for Python 3.6"
+}
