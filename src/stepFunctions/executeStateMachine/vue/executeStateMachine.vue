@@ -70,7 +70,6 @@ export default defineComponent({
     }),
     watch: {
         inputChoice: function (newValue, oldValue) {
-            console.log(newValue)
             this.handleInputChange(newValue)
         },
     },
