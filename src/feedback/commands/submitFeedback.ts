@@ -33,9 +33,18 @@ const VueWebview = compileVueWebview({
 })
 export class FeedbackWebview extends VueWebview {}
 
+let activeWebview: FeedbackWebview | undefined
+
 export async function submitFeedback(context: ExtContext) {
-    const wv = new FeedbackWebview(context)
-    await wv.start()
+    if (activeWebview) {
+        activeWebview.panel?.reveal(activeWebview.panel.viewColumn)
+    } else {
+        activeWebview = new FeedbackWebview(context)
+        await activeWebview.start()
+        // note: `start` lasts for the webview's whole lifecycle
+        //       the line below will be called after the webview is closed
+        activeWebview = undefined
+    }
 }
 
 export async function submitFeedbackMessage(

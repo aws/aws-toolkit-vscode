@@ -48,7 +48,6 @@ const VueWebview = compileVueWebview({
         },
     },
     start: (init: InitialData) => init,
-    retainContextWhenHidden: true, // TODO: necessary? Holdover from old impl...
 })
 export class ExecuteStateMachineWebview extends VueWebview {}
 

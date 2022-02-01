@@ -33,7 +33,6 @@ import { WebviewClientFactory } from '../../webviews/client'
 import { SchemaVersionedSummary, SearchSchemasWebview } from '../commands/searchSchemas'
 import saveData from '../../webviews/mixins/saveData'
 
-const deproxify = (obj: any) => JSON.parse(JSON.stringify(obj))
 const client = WebviewClientFactory.create<SearchSchemasWebview>()
 
 export default defineComponent({
@@ -55,7 +54,7 @@ export default defineComponent({
             searchText: '',
             searchProgressInfo: '',
             searchResults: [] as SchemaVersionedSummary[],
-            selectedSchema: {},
+            selectedSchema: {} as SchemaVersionedSummary,
             selectedVersion: '',
             schemaContent: '',
             schemaVersions: [],
@@ -100,7 +99,7 @@ export default defineComponent({
             this.schemaContent = this.initialData.LocalizedMessages.loading
             client.handler({
                 command: 'fetchSchemaContent',
-                schemaSummary: deproxify(this.selectedSchema),
+                schemaSummary: this.selectedSchema,
                 regionCode: this.initialData.Region,
                 version: this.selectedVersion,
             })
@@ -110,7 +109,7 @@ export default defineComponent({
             this.schemaContent = this.initialData.LocalizedMessages.loading
             client.handler({
                 command: 'fetchSchemaContent',
-                schemaSummary: deproxify(this.selectedSchema),
+                schemaSummary: this.selectedSchema,
                 regionCode: this.initialData.Region,
                 version: this.selectedVersion,
             })
@@ -118,7 +117,7 @@ export default defineComponent({
         downloadClicked: function () {
             client.handler({
                 command: 'downloadCodeBindings',
-                schemaSummary: deproxify(this.selectedSchema),
+                schemaSummary: this.selectedSchema,
                 regionCode: this.initialData.Region,
             })
         },
@@ -156,7 +155,7 @@ export default defineComponent({
             this.searchResults = results
         },
         resetSearchResults: function () {
-            this.selectedSchema = ''
+            this.selectedSchema = {} as SchemaVersionedSummary
             this.searchResults = []
             this.searchProgressInfo = ''
         },

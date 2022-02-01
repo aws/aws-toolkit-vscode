@@ -8,7 +8,7 @@
         </div>
         <br />
         <div>
-            <input type="radio" v-model="inputChoice" value="textarea" checked />
+            <input type="radio" v-model="inputChoice" value="textarea" />
             <label for="textarea"> Provide JSON </label>
         </div>
         <div>
@@ -43,6 +43,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
+import saveData from '../../../webviews/mixins/saveData'
 import { ExecuteStateMachineWebview } from '../../commands/executeStateMachine'
 
 const defaultJsonPlaceholder = '{\n\t"key1": "value1",\n\t"key2": "value2",\n\t"key3": "value3"\n}'
@@ -54,7 +55,6 @@ const defaultInitialData = {
 }
 
 export default defineComponent({
-    // no savedata mixin: currently retains context while hidden; unsure if this is necessary.
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
     },
@@ -70,23 +70,25 @@ export default defineComponent({
     }),
     watch: {
         inputChoice: function (newValue, oldValue) {
+            console.log(newValue)
             this.handleInputChange(newValue)
         },
     },
     methods: {
+        // TODO: move this functionality to backend?
+        // combination of this and "watch" call blank the `placeholderJson` on file load
         handleInputChange: function (inputType: string) {
-            const self = this
             switch (inputType) {
                 case 'file':
-                    self.selectedFile = 'No file selected'
-                    self.placeholderJson = ''
-                    self.executionInput = ''
-                    self.fileInputVisible = true
+                    this.selectedFile = 'No file selected'
+                    this.placeholderJson = ''
+                    this.executionInput = ''
+                    this.fileInputVisible = true
                     break
                 case 'textarea':
-                    self.placeholderJson = defaultJsonPlaceholder
-                    self.executionInput = ''
-                    self.fileInputVisible = false
+                    this.placeholderJson = defaultJsonPlaceholder
+                    this.executionInput = ''
+                    this.fileInputVisible = false
                     break
             }
         },
@@ -94,21 +96,21 @@ export default defineComponent({
             console.log($event)
             console.log($event.target)
             const inputFile = $event.target as HTMLInputElement
-            const self = this
+            // const self = this
             if (inputFile.files && inputFile.files.length > 0) {
                 const reader = new FileReader()
                 reader.onload = event => {
                     if (event.target) {
                         const result = event.target.result
-                        self.executionInput = result as string
+                        this.executionInput = result as string
                     }
                 } // desired file content
                 reader.onerror = error => {
                     throw error
                 }
                 reader.readAsText(inputFile.files[0])
-                self.selectedFile = inputFile.files[0].name
-                self.textAreaVisible = true
+                this.selectedFile = inputFile.files[0].name
+                this.textAreaVisible = true
             }
         },
         sendInput: function () {
@@ -122,5 +124,6 @@ export default defineComponent({
             })
         },
     },
+    mixins: [saveData],
 })
 </script>
