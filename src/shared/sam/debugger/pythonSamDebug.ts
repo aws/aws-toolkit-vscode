@@ -246,7 +246,7 @@ function getPythonExeAndBootstrap(runtime: Runtime) {
     // https://github.com/aws/aws-sam-cli/blob/7d5101a8edeb575b6925f9adecf28f47793c403c/samcli/local/docker/lambda_debug_settings.py
     switch (runtime) {
         case 'python3.6':
-            return { python: '/var/lang/bin/python3.6', boostrap: '/var/runtime/awslambda/bootstrap.py' }
+            return { python: '/var/lang/bin/python3.6', boostrap: '/var/runtime/bootstrap.py' }
         case 'python3.7':
             return { python: '/var/lang/bin/python3.7', boostrap: '/var/runtime/bootstrap' }
         case 'python3.8':
