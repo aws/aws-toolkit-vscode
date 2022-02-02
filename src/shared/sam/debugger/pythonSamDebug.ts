@@ -105,7 +105,7 @@ export async function makePythonDebugConfig(
             const debugArgs = `${DEBUGPY_WRAPPER_PATH} --listen 0.0.0.0:${config.debugPort} --wait-for-client --log-to-stderr`
             if (isImageLambda) {
                 const params = getPythonExeAndBootstrap(config.runtime)
-                config.debugArgs = [`${params.python} ${debugArgs} ${params.boostrap}`]
+                config.debugArgs = [`${params.python} ${debugArgs} ${params.bootstrap}`]
             } else {
                 config.debugArgs = [debugArgs]
             }
@@ -246,13 +246,13 @@ function getPythonExeAndBootstrap(runtime: Runtime) {
     // https://github.com/aws/aws-sam-cli/blob/7d5101a8edeb575b6925f9adecf28f47793c403c/samcli/local/docker/lambda_debug_settings.py
     switch (runtime) {
         case 'python3.6':
-            return { python: '/var/lang/bin/python3.6', boostrap: '/var/runtime/awslambda/bootstrap.py' }
+            return { python: '/var/lang/bin/python3.6', bootstrap: '/var/runtime/bootstrap.py' }
         case 'python3.7':
-            return { python: '/var/lang/bin/python3.7', boostrap: '/var/runtime/bootstrap' }
+            return { python: '/var/lang/bin/python3.7', bootstrap: '/var/runtime/bootstrap' }
         case 'python3.8':
-            return { python: '/var/lang/bin/python3.8', boostrap: '/var/runtime/bootstrap.py' }
+            return { python: '/var/lang/bin/python3.8', bootstrap: '/var/runtime/bootstrap.py' }
         case 'python3.9':
-            return { python: '/var/lang/bin/python3.9', boostrap: '/var/runtime/bootstrap.py' }
+            return { python: '/var/lang/bin/python3.9', bootstrap: '/var/runtime/bootstrap.py' }
         default:
             throw new Error(`Python SAM debug logic ran for invalid Python runtime: ${runtime}`)
     }
