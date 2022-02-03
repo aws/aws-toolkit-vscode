@@ -42,9 +42,12 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
                 const childNodes = containerNames.map(
                     name => new EcsContainerNode(name, this.name, this.parent.arn, this.ecs, this)
                 )
+
+                const childPromises = []
                 for (const node of childNodes) {
-                    await node.updateNodeDescription()
+                    childPromises.push(node.updateNodeDescription())
                 }
+                await Promise.all(childPromises)
                 return childNodes
             },
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
