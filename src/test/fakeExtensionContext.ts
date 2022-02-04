@@ -96,16 +96,18 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const regionProvider = new FakeRegionProvider()
         const settings = new DefaultSettingsConfiguration('aws')
         const outputChannel = new MockOutputChannel()
+        const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
         return {
             extensionContext: ctx,
-            awsContext: awsContext,
-            samCliContext: samCliContext,
-            regionProvider: regionProvider,
-            settings: settings,
-            outputChannel: outputChannel,
-            telemetryService: telemetryService,
+            awsContext,
+            samCliContext,
+            regionProvider,
+            settings,
+            outputChannel,
+            invokeOutputChannel,
+            telemetryService,
             credentialsStore: new CredentialsStore(),
         }
     }
