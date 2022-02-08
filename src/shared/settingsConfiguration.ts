@@ -22,6 +22,7 @@ export type AwsDevSetting =
     | 'aws.dev.forceInstallTools'
     | 'aws.dev.telemetryEndpoint'
     | 'aws.dev.telemetryUserPool'
+    | 'aws.dev.githubPat'
 
 type JSPrimitiveTypeName =
     | 'undefined'

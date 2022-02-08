@@ -77,6 +77,8 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 
+import { activate as activateSdkAccess } from './sdkAccess/activation'
+
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -252,6 +254,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateIot(extContext)
 
         await activateEcs(extContext)
+
+        activateSdkAccess(extContext)
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {

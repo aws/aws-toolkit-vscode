@@ -16,6 +16,7 @@ import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 import { Timeout } from '../utilities/timeoutUtils'
+import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -43,6 +44,7 @@ interface FetcherStreams {
 
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
+    private readonly settings = new DefaultSettingsConfiguration()
 
     /**
      *
@@ -131,6 +133,9 @@ export class HttpResourceFetcher implements ResourceFetcher {
         const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
         const promise = requester(this.url, {
             headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
+            username: this.url.includes('github')
+                ? this.settings.readDevSetting<string>('aws.dev.githubPat', 'string', true)
+                : undefined,
         })
         timeout?.timer.catch(err => promise.cancel(err.message))
 
