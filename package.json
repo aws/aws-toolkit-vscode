@@ -84,7 +84,8 @@
         "onCommand:aws.cloudFormation.newTemplate",
         "onCommand:aws.sam.newTemplate",
         "onFileSystem:s3",
-        "onFileSystem:s3-readonly"
+        "onFileSystem:s3-readonly",
+        "onCommand:aws.sdk.openSdk"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -2739,6 +2740,16 @@
             {
                 "command": "aws.sam.newTemplate",
                 "title": "%AWS.command.sam.newTemplate%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sdk.openSdk",
+                "title": "%AWS.command.sdk.openSdk%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

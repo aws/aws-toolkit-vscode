@@ -618,6 +618,7 @@
     "AWS.samcli.build.failedBuild": "\"sam build\" failed: {0}",
     "AWS.samcli.deprecatedRuntime": "Runtime {0} has been deprecated. Update to a currently-supported runtime.",
     "AWS.sam.localApi.request": "Sending request to local API: {0}",
+    "AWS.command.sdk.openSdk": "EXPERIMENTAL!!! Open SDK Invoker",
     "AWS.pickDebugHandler.noEditor": "Toolkit could not find an active editor",
     "AWS.pickDebugHandler.invalidLanguage": "Toolkit cannot detect handlers in language: {0}",
     "AWS.pickDebugHandler.prompt": "Create a Debug Configuration from a valid handler",

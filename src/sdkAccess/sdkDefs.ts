@@ -25,7 +25,9 @@ export interface SdkDefService {
 
 export interface SdkDefServiceCall {
     documentation: string
-    input: SdkDefServiceCallShape
+    input: {
+        shape: string
+    }
     // plus a lot more fields: we don't care about error or output shapes!!! (probably)
 }
 
@@ -46,15 +48,29 @@ interface Metadata {
 
 type ServiceOrPlaceholder = SdkDefService | string
 
+export type SdkDefStructType =
+    | 'string'
+    | 'list'
+    | 'blob'
+    | 'map'
+    | 'integer'
+    | 'timestamp'
+    | 'double'
+    | 'boolean'
+    | 'long'
+    | 'structure'
+
 export interface SdkDefServiceCallShape {
-    type: 'string' | 'list' | 'blob' | 'structure' | 'map' | 'integer' | 'timestamp' | 'double' | 'boolean' | 'long'
+    type: SdkDefStructType
     enum?: string[]
     documentation?: string
     required?: string[]
+    // required for structure and list
     members?: {
-        // required for structure and list
-        documentation: string
-        shape: SdkDefServiceCallShape
+        [key: string]: {
+            documentation: string
+            shape: SdkDefServiceCallShape
+        }
     }
     key?: {
         // required for map

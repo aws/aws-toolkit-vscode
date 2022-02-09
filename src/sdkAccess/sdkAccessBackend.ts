@@ -15,6 +15,8 @@ import { WebviewServer } from '../webviews/server'
 import { getRegionsForActiveCredentials } from '../shared/regions/regionUtilities'
 import globals from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
+import { doTraverseAndPrune } from '../lambda/configEditor/vue/samInvokeBackend'
+import { getLogger } from '../shared/logger/logger'
 const localize = nls.loadMessageBundle()
 
 export interface InitialData {
@@ -49,8 +51,12 @@ const VueWebview = compileVueWebview({
             }
         },
         makeSdkCall: async function (params: MakeSdkCallParams, data: any) {
-            const response = await makeSdkCall(this, params, data)
-            this.emitters.onSDKResponse.fire(response)
+            try {
+                const response = await makeSdkCall(this, params, data)
+                this.emitters.onSDKResponse.fire(response)
+            } catch (e) {
+                this.emitters.onSDKResponse.fire({ ERROR: e })
+            }
         },
     },
     events: {
@@ -88,9 +94,14 @@ async function getServiceDefinition(service: string): Promise<SdkDefService | un
 async function makeSdkCall(server: WebviewServer, params: MakeSdkCallParams, request: any): Promise<any> {
     // client abstractions? we don't need no stinkin' client abstractions
     const AWSLike = AWS as any // big yikes
+    const apiName = `${params.api[0].toLowerCase()}${params.api.slice(1)}`
+    const prunedRequest = doTraverseAndPrune(request)
+    if (!prunedRequest) {
+        throw new Error('Request was empty!')
+    }
     const client: AWSServiceLike = new AWSLike[params.service]({
         region: params.region,
         credentials: await server.context.awsContext.getCredentials(),
     })
-    return await client[params.api](request).promise()
+    return await client[apiName](prunedRequest).promise()
 }

@@ -2,7 +2,7 @@
 <template>
     <h1>AWS SDK Invoker</h1>
     <div id="top">
-        <div id="selectors" float="left">
+        <div id="selectors">
             <select v-model="currRegion">
                 <option disabled value="">Select AWS Region...</option>
                 <option v-for="region in initialData.regions" :key="region.id" :value="region.id">
@@ -28,11 +28,20 @@
                 </option>
             </select>
         </div>
-        <div id="serviceDescription" float="right" v-html="currDocumentation"></div>
+        <div id="serviceDescription" v-html="currDocumentation"></div>
     </div>
-    <div id="inputs"></div>
-    <pre v-if="currApi && currServiceDefinition">{{ currServiceDefinition.operations[currApi] }}</pre>
-    <pre v-if="response">{{ response }}</pre>
+    <form id="inputs" v-if="currApiDefinition">
+        <pre>{{ request }}</pre>
+        <SdkDefServiceCallShapeComponent
+            :key="currApiDefinition.input.shape"
+            :val="currApiDefinition.input.shape"
+            :schema="currServiceDefinition.shapes[currApiDefinition.input.shape]"
+            :service="currServiceDefinition"
+            @updateRequest="handleUpdateRequest"
+        />
+        <button v-on:click.prevent="submitRequest">Call {{ currService }}.{{ currApi }}</button>
+    </form>
+    <pre v-if="response" v-bind:class="{ error: isResponseErr }">{{ response }}</pre>
 </template>
 
 <script lang="ts">
@@ -40,6 +49,7 @@ import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import { InitialData, SdkAccessWebview } from '../sdkAccessBackend'
 import { SdkDefService, SdkDefServiceCall } from '../sdkDefs'
+import SdkDefServiceCallShapeComponent from './SdkDefServiceCallShapeComponent.vue'
 
 interface DataShape {
     initialData: InitialData
@@ -51,6 +61,7 @@ interface DataShape {
     currDocumentation: string
     request: any
     response: any
+    isResponseErr: boolean
 }
 
 const defaultInitialData: InitialData = {
@@ -61,6 +72,9 @@ const defaultInitialData: InitialData = {
 
 const client = WebviewClientFactory.create<SdkAccessWebview>()
 export default defineComponent({
+    components: {
+        SdkDefServiceCallShapeComponent,
+    },
     data: (): DataShape => ({
         initialData: defaultInitialData,
         currService: '',
@@ -70,7 +84,8 @@ export default defineComponent({
         currApiDefinition: undefined,
         currDocumentation: '',
         request: {},
-        response: {},
+        response: undefined,
+        isResponseErr: false,
     }),
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
@@ -81,22 +96,35 @@ export default defineComponent({
     methods: {
         getService: function () {
             this.currApi = ''
+            this.currApiDefinition = undefined
+            this.request = {}
             client.getServiceDefinition(this.currService)
         },
         submitRequest: function () {
+            console.log('calling!!!')
             client.makeSdkCall({ service: this.currService, region: this.currRegion, api: this.currApi }, this.request)
         },
         selectApi: function () {
             this.currDocumentation =
                 this.currServiceDefinition?.operations[this.currApi].documentation ?? this.currDocumentation
+            this.currApiDefinition = this.currServiceDefinition?.operations[this.currApi]
+            this.request = {}
+        },
+        handleUpdateRequest: function (key: string, incoming: any) {
+            this.request = incoming[this.currApiDefinition!.input.shape]
         },
         onLoadedServiceDefinition: function (service: SdkDefService) {
             this.currServiceDefinition = service
             this.currDocumentation = service.documentation
         },
         onSDKResponse: function (response: any) {
-            // dump response onto page
-            // can we determine errors? if so, give them a tasteful color
+            if (response.ERROR) {
+                this.isResponseErr = true
+                this.response = response.ERROR
+            } else {
+                this.isResponseErr = false
+                this.response = response
+            }
         },
     },
 
@@ -108,9 +136,24 @@ export default defineComponent({
     overflow: hidden;
 }
 #top div {
-    width: 50%;
     overflow: hidden;
     float: left;
     /* padding: 1em; */
+}
+#selectors {
+    width: 20%;
+}
+#serviceDescription {
+    width: 70%;
+}
+.temp {
+    height: 20px;
+    width: 20px;
+    background-color: red;
+    margin: 1em;
+}
+.error {
+    border-style: solid;
+    color: red;
 }
 </style>
