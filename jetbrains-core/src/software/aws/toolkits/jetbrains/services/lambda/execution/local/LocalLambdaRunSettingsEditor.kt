@@ -8,6 +8,7 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.util.PathMappingSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.registerConfigValidationListeners
+import software.aws.toolkits.jetbrains.services.lambda.execution.validateSupportedArchitecture
 import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import javax.swing.JComponent
@@ -39,7 +40,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
             }
         } else {
             view.rawSettings.runtimeModel.selectedItem = configuration.runtime()
-            view.rawSettings.architectureModel.selectedItem = configuration.architecture()
+            view.rawSettings.architectureModel.selectedItem = configuration.architecture()?.validateSupportedArchitecture()
             view.rawSettings.handlerPanel.handler.text = configuration.handler() ?: ""
             view.rawSettings.timeoutSlider.value = configuration.timeout()
             view.rawSettings.memorySlider.value = configuration.memorySize()

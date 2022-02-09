@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaArchitecture
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
@@ -642,6 +643,7 @@ class LocalLambdaRunConfigurationTest {
             """
             <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
               <option name="credentialProviderId" value="profile:default" />
+              <option name="architecture" value="arm64" />
               <option name="environmentVariables">
                 <map>
                   <entry key="Foo" value="Bar" />
@@ -669,6 +671,7 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration.templateFile()).isNull()
             assertThat(runConfiguration.logicalId()).isNull()
             assertThat(runConfiguration.handler()).isEqualTo("helloworld.App::handleRequest")
+            assertThat(runConfiguration.architecture()).isEqualTo(LambdaArchitecture.ARM64.toString())
             assertThat(runConfiguration.runtime()).isEqualTo(LambdaRuntime.PYTHON3_6)
             assertThat(runConfiguration.environmentVariables()).containsAllEntriesOf(mapOf("Foo" to "Bar"))
             assertThat(runConfiguration.regionId()).isEqualTo("us-west-2")
