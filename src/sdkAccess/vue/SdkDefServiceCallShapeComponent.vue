@@ -2,7 +2,16 @@
 
 <template>
     <div class="nestedInput">
-        {{ val }} <span class="requiredParam" v-if="required">*</span>
+        <span
+            v-if="!listEntry"
+            v-bind:class="doc || schema.documentation ? 'doc_link' : ''"
+            v-on:click="
+                doc ? showCurrentDoc(doc) : schema.documentation ? showCurrentDoc(schema.documentation) : undefined
+            "
+        >
+            {{ val }}
+        </span>
+        <span class="requiredParam" v-if="required">*</span>
         <div v-if="schema.members">
             <SdkDefServiceCallShapeComponent
                 v-for="key in Object.keys(schema.members)"
@@ -11,7 +20,10 @@
                 :schema="service.shapes[schema.members[key].shape]"
                 :service="service"
                 :required="schema.required && schema.required.includes(key)"
+                :doc="schema.members[key].documentation"
+                v-bind:listEntry="false"
                 @updateRequest="handleUpdateRequest"
+                @showDoc="showDoc"
             />
         </div>
         <div v-else-if="schema.enum">
@@ -29,24 +41,43 @@
             <input type="checkbox" v-model="data[val]" v-on:change="handleUpdateData" />
         </div>
         <div v-else-if="schema.type === 'list'">
-            <input type="checkbox" v-model="data[val]" v-on:change="handleUpdateData" />
+            <div v-for="(item, index) in data[val]" :key="index">
+                <div v-if="item !== DELETED_STR">
+                    <SdkDefServiceCallShapeComponent
+                        :val="index"
+                        :schema="service.shapes[schema.member.shape]"
+                        :service="service"
+                        :required="schema.required && schema.required.includes(key)"
+                        :doc="schema.member.shape.documentation"
+                        v-bind:listEntry="true"
+                        @updateRequest="handleUpdateRequest"
+                        @showDoc="showDoc"
+                    />
+                    <button v-on:click.prevent="deleteElement(index)">Delete Entry</button>
+                </div>
+            </div>
+            <button v-if="!schema.max || listLength < schema.max" v-on:click.prevent="addToList">
+                Add Entry to List
+            </button>
         </div>
         <div v-else-if="schema.type === 'blob'">
+            PLACEHOLDER BLOB
             <input type="file" />
         </div>
         <div v-else-if="schema.type === 'map'">
+            PLACEHOLDER MAP
             <input type="checkbox" v-model="data[val]" v-on:change="handleUpdateData" />
         </div>
     </div>
 </template>
 
 <script lang="ts">
-// import { SdkDefServiceCallShape } from '../sdkDefs'
+import { SdkDefDocumentation } from '../sdkDefs'
 
 export default {
     name: 'SdkDefServiceCallShapeComponent',
-    props: ['schema', 'val', 'service', 'required'],
-    emits: ['updateRequest'],
+    props: ['schema', 'val', 'service', 'required', 'doc', 'listEntry'],
+    emits: ['updateRequest', 'showDoc'],
     created: function () {
         if (['structure', 'map'].includes(this.schema.type)) {
             this.data[this.val] = {}
@@ -65,30 +96,63 @@ export default {
     data: () =>
         ({
             data: {},
+            deletedCount: 0,
+            DELETED_STR: '🗑🗑🗑DELETED🗑🗑🗑',
         } as any),
+    computed: {
+        listLength: function () {
+            if (this.schema.type === 'list') {
+                return this.data[this.val].length - this.deletedCount
+            } else {
+                return -1
+            }
+        },
+    },
     methods: {
-        // changeCurr: function () {
-        //     this.$emit('updateRequest', {
-        //         str: `changed!x${this.changes}`,
-        //         val: this.curr.val,
-        //         next: this.curr.next
-        //     })
-        //     this.changes++
-        // },
+        addToList: function () {
+            this.data[this.val].push(undefined)
+        },
+        deleteElement: function (index: number) {
+            this.data[this.val][index] = this.DELETED_STR
+            this.deletedCount++
+            this.handleUpdateData()
+        },
+        showCurrentDoc: function (doc: string) {
+            this.showDoc({
+                text: doc,
+                component: `${this.val} (API Parameter)`,
+            })
+        },
+        showDoc: function (doc: SdkDefDocumentation) {
+            this.$emit('showDoc', doc)
+        },
         handleUpdateData: function () {
-            this.$emit('updateRequest', this.val, this.data)
+            let data = { ...this.data }
+            if (Array.isArray(data[this.val])) {
+                data[this.val] = this.filterEliminatedItemsFromArray([...data[this.val]])
+            }
+            this.$emit('updateRequest', this.val, data)
         },
         handleUpdateRequest: function (key: string, incoming: any) {
-            console.log(this.val)
-            console.log(incoming)
-            this.data = {
-                ...this.data,
-                [this.val]: {
-                    ...this.data[this.val],
-                    ...incoming,
-                },
+            let data = { ...this.data }
+            // array: don't modify array in-place so mappings still line up
+            if (Array.isArray(data[this.val])) {
+                data[this.val][key] = incoming[key]
+                data[this.val] = this.filterEliminatedItemsFromArray([...data[this.val]])
+            } else {
+                data = {
+                    ...data,
+                    [this.val]: {
+                        ...data[this.val],
+                        ...incoming,
+                    },
+                }
+                this.data = data
             }
-            this.$emit('updateRequest', this.val, this.data)
+            this.$emit('updateRequest', this.val, data)
+        },
+        filterEliminatedItemsFromArray: function (arr: any[]) {
+            return arr.filter((val: any) => val && val !== this.DELETED_STR)
         },
     },
 }

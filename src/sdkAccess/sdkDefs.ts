@@ -48,6 +48,11 @@ interface Metadata {
 
 type ServiceOrPlaceholder = SdkDefService | string
 
+export interface SdkDefDocumentation {
+    component: string
+    text: string
+}
+
 export type SdkDefStructType =
     | 'string'
     | 'list'
