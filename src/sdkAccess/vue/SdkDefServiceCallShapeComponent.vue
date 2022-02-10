@@ -4,14 +4,16 @@
     <div class="nestedInput">
         <span
             v-if="!listEntry"
-            v-bind:class="doc || schema.documentation ? 'doc_link' : ''"
+            v-bind:class="{ doc_link: doc || schema.documentation, requiredParam: required }"
             v-on:click="
                 doc ? showCurrentDoc(doc) : schema.documentation ? showCurrentDoc(schema.documentation) : undefined
             "
         >
             {{ val }}
         </span>
-        <span class="requiredParam" v-if="required">*</span>
+        <!--
+            Structure: just pass it down the chain and use this component as an aggregator
+        -->
         <div v-if="schema.members">
             <SdkDefServiceCallShapeComponent
                 v-for="key in Object.keys(schema.members)"
@@ -26,6 +28,9 @@
                 @showDoc="showDoc"
             />
         </div>
+        <!--
+            Enum: doesn't matter what type, we'll handle them all as strings
+        -->
         <div v-else-if="schema.enum">
             <select v-model="data[val]" v-on:change="handleUpdateData">
                 <option disabled value="">Select Value...</option>
@@ -34,12 +39,20 @@
                 </option>
             </select>
         </div>
+        <!--
+            String-likes: Anything we can handle as a string, let's handle as a string. Maybe modify eventually for timestamps
+        -->
         <div v-else-if="['string', 'integer', 'timestamp', 'double', 'long'].includes(schema.type)">
             <input type="text" v-model="data[val]" v-on:change="handleUpdateData" />
         </div>
+        <!-- Boolean: are checkboxes OK? Probably have inline with some nice padding...will figure out the CSS later -->
         <div v-else-if="schema.type === 'boolean'">
             <input type="checkbox" v-model="data[val]" v-on:change="handleUpdateData" />
         </div>
+        <!--
+            List: handle with an array that checks for a max size (ignore min for now) and doesn't remove deleted objects
+            since it's hard to map items holding their own data to array positions in the parent array
+        -->
         <div v-else-if="schema.type === 'list'">
             <div v-for="(item, index) in data[val]" :key="index">
                 <div v-if="item !== DELETED_STR">
@@ -53,16 +66,27 @@
                         @updateRequest="handleUpdateRequest"
                         @showDoc="showDoc"
                     />
-                    <button v-on:click.prevent="deleteElement(index)">Delete Entry</button>
+                    <button v-on:click.prevent="deleteElementFromArr(index)">Delete Entry</button>
                 </div>
             </div>
             <button v-if="!schema.max || listLength < schema.max" v-on:click.prevent="addToList">
                 Add Entry to List
             </button>
         </div>
+        <!--
+            Blob: handle file inputs (ONLY WORKS ON CLOUD9 FOR NOW!!!) and raw JSON
+        -->
         <div v-else-if="schema.type === 'blob'">
-            PLACEHOLDER BLOB
-            <input type="file" />
+            <div>
+                <input type="radio" id="file" v-bind:value="true" v-model="useFile" />
+                <label for="file">File</label>
+                <br />
+                <input type="radio" id="text" v-bind:value="false" v-model="useFile" />
+                <label for="text">Text</label>
+            </div>
+
+            <input v-if="useFile" type="file" @change="processFile($event)" />
+            <textarea v-if="!useFile" v-model="data[val]" v-on:change="handleUpdateData"></textarea>
         </div>
         <div v-else-if="schema.type === 'map'">
             PLACEHOLDER MAP
@@ -98,6 +122,7 @@ export default {
             data: {},
             deletedCount: 0,
             DELETED_STR: '🗑🗑🗑DELETED🗑🗑🗑',
+            useFile: true,
         } as any),
     computed: {
         listLength: function () {
@@ -112,11 +137,6 @@ export default {
         addToList: function () {
             this.data[this.val].push(undefined)
         },
-        deleteElement: function (index: number) {
-            this.data[this.val][index] = this.DELETED_STR
-            this.deletedCount++
-            this.handleUpdateData()
-        },
         showCurrentDoc: function (doc: string) {
             this.showDoc({
                 text: doc,
@@ -129,7 +149,7 @@ export default {
         handleUpdateData: function () {
             let data = { ...this.data }
             if (Array.isArray(data[this.val])) {
-                data[this.val] = this.filterEliminatedItemsFromArray([...data[this.val]])
+                data[this.val] = this.filterEliminatedItemsFromArr([...data[this.val]])
             }
             this.$emit('updateRequest', this.val, data)
         },
@@ -138,7 +158,7 @@ export default {
             // array: don't modify array in-place so mappings still line up
             if (Array.isArray(data[this.val])) {
                 data[this.val][key] = incoming[key]
-                data[this.val] = this.filterEliminatedItemsFromArray([...data[this.val]])
+                data[this.val] = this.filterEliminatedItemsFromArr([...data[this.val]])
             } else {
                 data = {
                     ...data,
@@ -151,8 +171,31 @@ export default {
             }
             this.$emit('updateRequest', this.val, data)
         },
-        filterEliminatedItemsFromArray: function (arr: any[]) {
+        deleteElementFromArr: function (index: number) {
+            this.data[this.val][index] = this.DELETED_STR
+            this.deletedCount++
+            this.handleUpdateData()
+        },
+        filterEliminatedItemsFromArr: function (arr: any[]) {
             return arr.filter((val: any) => val && val !== this.DELETED_STR)
+        },
+        processFile: function ($event: Event) {
+            const inputFile = $event.target as HTMLInputElement
+            if (inputFile.files && inputFile.files.length > 0) {
+                console.log(inputFile.files[0])
+                this.data[this.val] = {
+                    blob: true,
+                    // HACK!!!: `.path` only works on Electron!!!
+                    //          this will not work in Cloud9!!!!!
+                    //          cloud9 can probably use a native c9 file picker.
+                    //          maybe do this for VS Code too
+                    //          we'll have to kick out to a command from the webview client
+                    path: inputFile.files[0].path,
+                }
+            } else {
+                delete this.data[this.val]
+            }
+            this.handleUpdateData()
         },
     },
 }
@@ -162,7 +205,8 @@ export default {
 .nestedInput {
     padding-left: 1em;
 }
-.requiredParam {
+.requiredParam::before {
+    content: '* ';
     color: red;
     font-weight: bolder;
 }

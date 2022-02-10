@@ -15,7 +15,7 @@
             <div class="selector">
                 <div class="selector_heading">
                     <span
-                        v-bind:class="currServiceDefinition && currServiceDefinition.documentation ? 'doc_link' : ''"
+                        v-bind:class="{ doc_link: currServiceDefinition && currServiceDefinition.documentation }"
                         v-on:click="
                             currServiceDefinition && currServiceDefinition.documentation
                                 ? showServiceDocumentation()
@@ -35,13 +35,12 @@
             <div class="selector">
                 <div class="selector_heading">
                     <span
-                        v-bind:class="
-                            currServiceDefinition &&
-                            currServiceDefinition.operations[currApi] &&
-                            currServiceDefinition.operations[currApi].documentation
-                                ? 'doc_link'
-                                : ''
-                        "
+                        v-bind:class="{
+                            doc_link:
+                                currServiceDefinition &&
+                                currServiceDefinition.operations[currApi] &&
+                                currServiceDefinition.operations[currApi].documentation,
+                        }"
                         v-on:click="
                             currServiceDefinition &&
                             currServiceDefinition.operations[currApi] &&
@@ -251,6 +250,12 @@ export default defineComponent({
 .doc_link {
     text-decoration-line: underline;
     text-decoration-style: dotted;
+}
+.doc_link::after {
+    content: ' (?)';
+    vertical-align: super;
+    font-size: xx-small;
+    line-height: normal;
 }
 button {
     margin: 3px;
