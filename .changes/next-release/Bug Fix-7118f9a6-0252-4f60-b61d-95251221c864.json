@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "ECS: prevent command executing before node has loaded"
+	"description": "ECS: avoid null reference error when loading nodes #2441"
 }
