@@ -95,7 +95,7 @@ async function makeSdkCall(server: WebviewServer, params: MakeSdkCallParams, req
     // client abstractions? we don't need no stinkin' client abstractions
     const AWSLike = AWS as any // big yikes
     const apiName = `${params.api[0].toLowerCase()}${params.api.slice(1)}`
-    const prunedRequest = doTraverseAndPrune(request)
+    const prunedRequest = doTraverseAndPrune(request) ?? {}
     if (!prunedRequest) {
         throw new Error('Request was empty!')
     }

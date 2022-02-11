@@ -26,7 +26,7 @@
                     </span>
                 </div>
                 <select v-model="currService" v-on:change="getService">
-                    <option disabled value="">Select AWS Service...</option>
+                    <option disabled selected hidden v-bind:value="undefined">Select AWS Service...</option>
                     <option v-for="service in initialData.services" :key="service" :value="service">
                         {{ service }}
                     </option>
@@ -57,7 +57,7 @@
                     v-if="currServiceDefinition && currServiceDefinition.operations"
                     v-on:change="selectApi"
                 >
-                    <option disabled value="">Select a Service First...</option>
+                    <option disabled selected hidden v-bind:value="undefined">Select a Service First...</option>
                     <option v-for="api in Object.keys(currServiceDefinition.operations)" :key="api" :value="api">
                         {{ api }}
                     </option>
@@ -74,6 +74,7 @@
     </div>
     <form id="inputs" v-if="currApiDefinition">
         <SdkDefServiceCallShapeComponent
+            v-if="currApiDefinition.input"
             :key="currApiDefinition.input.shape"
             :val="currApiDefinition.input.shape"
             :schema="currServiceDefinition.shapes[currApiDefinition.input.shape]"
@@ -159,7 +160,7 @@ export default defineComponent({
             this.last = {
                 service: this.currService,
                 api: this.currApi,
-                request: this.request,
+                request: { ...this.request },
             }
             this.isResponseErr = false
             this.response = '...waiting for response...'
@@ -168,6 +169,7 @@ export default defineComponent({
         selectApi: function () {
             this.currApiDefinition = this.currServiceDefinition?.operations[this.currApi]
             this.request = {}
+            console.log(this.currApiDefinition)
             this.showApiDocumentation()
         },
         handleUpdateRequest: function (key: string, incoming: any) {
