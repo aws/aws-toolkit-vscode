@@ -192,7 +192,7 @@ export default {
         showCurrentDoc: function (doc: string) {
             this.showDoc({
                 text: doc,
-                component: `${this.val} (API Parameter)`,
+                component: `${this.val} (API Parameter - ${this.schema.type})`,
             })
         },
         /**

@@ -149,13 +149,13 @@ function generateSampleCode(
 ): string {
     const clientName = strToCamelCase(params.service)
     const credentialsName = credentials?.slice(credentials.indexOf(':') + 1)
-    return `// note: sample code is currently using the AWS JS SDK v2, written for NodeJS
+    return `// NOTE: sample code is currently using the AWS JS SDK v2, written for NodeJS
 // see details here: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/welcome.html
 
 // import the AWS SDK
 var AWS = require('aws-sdk');${
         hasBlob
-            ? "\n// NOTE!: sample code generator is currently WIP.\n//remove the quotes wrapping the `fs.readFileSync` calls in the request body!\nvar fs = require('fs');"
+            ? "\n// NOTE!: sample code generator is currently WIP.\n// remove the quotes wrapping the `fs.readFileSync` calls in the request body!\nvar fs = require('fs');"
             : ''
     }
 
