@@ -1,98 +1,125 @@
 /*! * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 <template>
-    <h1>AWS SDK Invoker</h1>
-    <div id="top">
-        <div id="selectors">
-            <div class="selector">
-                <div class="selector_heading">AWS Region</div>
-                <select v-model="currRegion">
-                    <option disabled value="">Select AWS Region...</option>
-                    <option v-for="region in initialData.regions" :key="region.id" :value="region.id">
-                        {{ region.name }}
-                    </option>
-                </select>
-            </div>
-            <div class="selector">
-                <div class="selector_heading">
-                    <span
-                        v-bind:class="{ doc_link: currServiceDefinition && currServiceDefinition.documentation }"
-                        v-on:click="
-                            currServiceDefinition && currServiceDefinition.documentation
-                                ? showServiceDocumentation()
-                                : undefined
-                        "
-                    >
-                        Service
-                    </span>
+    <div id="invoker-app">
+        <div id="invoker-controls">
+            <div id="top">
+                <h1>AWS SDK Invoker</h1>
+                <div id="selectors">
+                    <div class="selector">
+                        <div class="selector-heading">AWS Region</div>
+                        <select v-model="currRegion">
+                            <option disabled value="">Select AWS Region...</option>
+                            <option v-for="region in initialData.regions" :key="region.id" :value="region.id">
+                                {{ region.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="selector">
+                        <div class="selector-heading">
+                            <span
+                                v-bind:class="{
+                                    'doc-link': currServiceDefinition && currServiceDefinition.documentation,
+                                }"
+                                v-on:click="
+                                    currServiceDefinition && currServiceDefinition.documentation
+                                        ? showServiceDocumentation()
+                                        : undefined
+                                "
+                            >
+                                Service
+                            </span>
+                        </div>
+                        <select v-model="currService" v-on:change="getService">
+                            <option disabled selected hidden v-bind:value="undefined">Select AWS Service...</option>
+                            <option v-for="service in initialData.services" :key="service" :value="service">
+                                {{ service }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="selector">
+                        <div class="selector-heading">
+                            <span
+                                v-bind:class="{
+                                    'doc-link':
+                                        currServiceDefinition &&
+                                        currServiceDefinition.operations[currApi] &&
+                                        currServiceDefinition.operations[currApi].documentation,
+                                }"
+                                v-on:click="
+                                    currServiceDefinition &&
+                                    currServiceDefinition.operations[currApi] &&
+                                    currServiceDefinition.operations[currApi].documentation
+                                        ? showApiDocumentation()
+                                        : undefined
+                                "
+                            >
+                                API
+                            </span>
+                        </div>
+                        <select
+                            v-model="currApi"
+                            v-if="currServiceDefinition && currServiceDefinition.operations"
+                            v-on:change="selectApi"
+                        >
+                            <option disabled selected hidden v-bind:value="undefined">Select a Service First...</option>
+                            <option
+                                v-for="api in Object.keys(currServiceDefinition.operations)"
+                                :key="api"
+                                :value="api"
+                            >
+                                {{ api }}
+                            </option>
+                        </select>
+                        <select v-else>
+                            <option disabled value="">Select AWS Service API...</option>
+                        </select>
+                    </div>
                 </div>
-                <select v-model="currService" v-on:change="getService">
-                    <option disabled selected hidden v-bind:value="undefined">Select AWS Service...</option>
-                    <option v-for="service in initialData.services" :key="service" :value="service">
-                        {{ service }}
-                    </option>
-                </select>
-            </div>
-            <div class="selector">
-                <div class="selector_heading">
-                    <span
-                        v-bind:class="{
-                            doc_link:
-                                currServiceDefinition &&
-                                currServiceDefinition.operations[currApi] &&
-                                currServiceDefinition.operations[currApi].documentation,
-                        }"
-                        v-on:click="
-                            currServiceDefinition &&
-                            currServiceDefinition.operations[currApi] &&
-                            currServiceDefinition.operations[currApi].documentation
-                                ? showApiDocumentation()
-                                : undefined
-                        "
-                    >
-                        API
-                    </span>
+                <div v-if="currDocumentation" id="documentation-container">
+                    <h2>Documentation: {{ currDocumentation.component }}</h2>
+                    <div id="service-documentation" v-html="currDocumentation.text"></div>
                 </div>
-                <select
-                    v-model="currApi"
-                    v-if="currServiceDefinition && currServiceDefinition.operations"
-                    v-on:change="selectApi"
-                >
-                    <option disabled selected hidden v-bind:value="undefined">Select a Service First...</option>
-                    <option v-for="api in Object.keys(currServiceDefinition.operations)" :key="api" :value="api">
-                        {{ api }}
-                    </option>
-                </select>
-                <select v-else>
-                    <option disabled value="">Select AWS Service API...</option>
-                </select>
+            </div>
+            <div id="inputs-container">
+                <form id="inputs" v-if="currApiDefinition">
+                    <SdkDefServiceCallShapeComponent
+                        v-if="currApiDefinition.input"
+                        :key="currApiDefinition.input.shape"
+                        :val="currApiDefinition.input.shape"
+                        :schema="currServiceDefinition.shapes[currApiDefinition.input.shape]"
+                        :service="currServiceDefinition"
+                        @updateRequest="handleUpdateRequest"
+                        @showDoc="showArbitraryDocumentation"
+                    />
+                    <button
+                        :disabled="pendingResponse"
+                        id="submit-dryrun-button"
+                        v-on:click.prevent="submitRequest(true)"
+                    >
+                        Generate Sample <strong>{{ currService }}.{{ currApi }}</strong> Call</button
+                    ><br />
+                    <button
+                        :disabled="pendingResponse"
+                        id="submit-request-button"
+                        v-on:click.prevent="submitRequest(false)"
+                    >
+                        Call <strong>{{ currService }}.{{ currApi }}</strong>
+                    </button>
+                </form>
             </div>
         </div>
-        <div v-if="currDocumentation" id="description">
-            <h2>Documentation: {{ currDocumentation.component }}</h2>
-            <div id="serviceDescription" v-html="currDocumentation.text"></div>
-        </div>
-    </div>
-    <form id="inputs" v-if="currApiDefinition">
-        <SdkDefServiceCallShapeComponent
-            v-if="currApiDefinition.input"
-            :key="currApiDefinition.input.shape"
-            :val="currApiDefinition.input.shape"
-            :schema="currServiceDefinition.shapes[currApiDefinition.input.shape]"
-            :service="currServiceDefinition"
-            @updateRequest="handleUpdateRequest"
-            @showDoc="showArbitraryDocumentation"
-        />
-        <button v-on:click.prevent="submitRequest">Call {{ currService }}.{{ currApi }}</button>
-    </form>
-    <div v-if="last" id="inputoutput">
-        <h3>Most Recent Request ({{ `${last.service}.${last.api}` }})</h3>
-        <div class="service_io">
-            <p>Request</p>
-            <pre v-if="last.request">{{ last.request }}</pre>
-        </div>
-        <div class="service_io">
-            <p>Response</p>
-            <pre v-if="response" v-bind:class="{ error: isResponseErr }">{{ response }}</pre>
+        <div>
+            <div id="io-title">Most Recent Request {{ last ? `(${last.service}.${last.api})` : '' }}</div>
+            <div id="input-output">
+                <div class="service-io">
+                    Request
+                    <pre>{{ last && last.request ? last.request : '' }}</pre>
+                </div>
+                <div class="service-io">
+                    Response
+                    <pre v-bind:class="{ error: isResponseErr }">{{ response ? response : '' }}</pre>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -117,12 +144,13 @@ interface DataShape {
     response: any
     last: any
     isResponseErr: boolean
+    pendingResponse: boolean
 }
 
 const defaultInitialData: InitialData = {
     services: [],
     regions: [],
-    profile: '',
+    defaultRegion: '',
 }
 
 const client = WebviewClientFactory.create<SdkAccessWebview>()
@@ -142,9 +170,11 @@ export default defineComponent({
         response: undefined,
         last: undefined,
         isResponseErr: false,
+        pendingResponse: false,
     }),
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
+        this.currRegion = this.initialData.defaultRegion ?? ''
         // incoming data
         client.onLoadedServiceDefinition(this.onLoadedServiceDefinition)
         client.onSDKResponse(this.onSDKResponse)
@@ -156,20 +186,24 @@ export default defineComponent({
             this.request = {}
             client.getServiceDefinition(this.currService)
         },
-        submitRequest: function () {
+        submitRequest: function (dryrun: boolean) {
             this.last = {
                 service: this.currService,
                 api: this.currApi,
-                request: { ...this.request },
+                request: '...waiting for response...',
             }
+            this.pendingResponse = true
             this.isResponseErr = false
             this.response = '...waiting for response...'
-            client.makeSdkCall({ service: this.currService, region: this.currRegion, api: this.currApi }, this.request)
+            client.makeSdkCall(
+                { service: this.currService, region: this.currRegion, api: this.currApi },
+                this.request,
+                dryrun
+            )
         },
         selectApi: function () {
             this.currApiDefinition = this.currServiceDefinition?.operations[this.currApi]
             this.request = {}
-            console.log(this.currApiDefinition)
             this.showApiDocumentation()
         },
         handleUpdateRequest: function (key: string, incoming: any) {
@@ -199,44 +233,84 @@ export default defineComponent({
             this.currDocumentation = documentation
         },
         onSDKResponse: function (response: any) {
+            this.pendingResponse = false
+            this.last.request = response.request
             if (response.ERROR) {
                 this.isResponseErr = true
                 this.response = response.ERROR
             } else {
-                this.response = response
+                this.response = response.response
             }
         },
     },
+    // currently has issues when recovering from page swap and then swapping services:
+    // `Unexpected token u in JSON at position 0` (internet suggests this is parsing an undefined val)
+    // will persist for demo purposes, but we should get this looked at at some point.
+
+    // mixins: [saveData]
 })
 </script>
+
 <style>
+#invoker-app {
+    max-width: 1300px;
+    overflow-x: scroll;
+    margin: 0 auto;
+    height: 100%;
+}
+#invoker-controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    min-height: 500px;
+    max-height: 80vh;
+    overflow: scroll;
+}
 #top {
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 300px;
+    width: 900px;
+    flex-grow: 1;
 }
-#top div {
-    overflow: hidden;
-    float: left;
-    /* padding: 1em; */
+#inputs-container {
+    display: flex;
+    flex-direction: column;
+    min-width: 300px;
+    width: 900px;
+    flex-grow: 1;
+    overflow: scroll;
 }
-#selectors {
-    width: 20%;
+#documentation-container {
+    overflow: scroll;
 }
-#serviceDescription {
-    width: 70%;
+#input-output {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    max-height: 600px;
 }
 .error {
     border-style: solid;
     border-color: red;
 }
-.service_io {
-    float: left;
-    width: 40%;
+.service-io {
+    display: flex;
+    flex-direction: column;
+    min-width: 300px;
+    width: 900px;
+    flex-grow: 1;
+    padding: 2px;
 }
-.service_io pre {
+.service-io pre {
     white-space: pre-wrap;
     padding: 2px;
     background-color: black;
     color: white;
+    height: 100%;
+    min-height: 2em;
+    overflow-y: scroll;
 }
 .selector {
     width: 100%;
@@ -246,14 +320,14 @@ export default defineComponent({
 .selector * {
     float: left;
 }
-.selector_heading {
+.selector-heading {
     width: 7em;
 }
-.doc_link {
+.doc-link {
     text-decoration-line: underline;
     text-decoration-style: dotted;
 }
-.doc_link::after {
+.doc-link::after {
     content: ' (?)';
     vertical-align: super;
     font-size: xx-small;
@@ -261,5 +335,13 @@ export default defineComponent({
 }
 button {
     margin: 3px;
+}
+#io-title {
+    display: block;
+    font-size: 1.17em;
+    font-weight: bold;
+}
+#submit-dryrun-button {
+    background-color: gray;
 }
 </style>

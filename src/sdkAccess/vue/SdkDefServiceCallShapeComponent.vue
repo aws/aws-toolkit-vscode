@@ -1,20 +1,32 @@
 /*! * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <template>
-    <div class="nestedInput">
-        <span
-            v-if="!listEntry"
-            v-bind:class="{ doc_link: doc || schema.documentation, requiredParam: required }"
-            v-on:click="
-                doc ? showCurrentDoc(doc) : schema.documentation ? showCurrentDoc(schema.documentation) : undefined
-            "
-        >
-            {{ val }}
-        </span>
+    <div
+        class="nested-input"
+        v-bind:class="{
+            'flex-input': !listEntry && !['structure', 'list', 'map'].includes(schema.type),
+        }"
+    >
+        <div class="nested-input-title">
+            <span
+                v-if="!listEntry"
+                v-bind:class="{ 'doc-link': doc || schema.documentation, 'required-param': required }"
+                v-on:click="
+                    doc ? showCurrentDoc(doc) : schema.documentation ? showCurrentDoc(schema.documentation) : undefined
+                "
+            >
+                {{ val }}
+            </span>
+            <template v-if="['list', 'map'].includes(schema.type)">
+                <button class="add-button" v-if="!schema.max || listLength < schema.max" v-on:click.prevent="addToList">
+                    + Add to {{ schema.type }}
+                </button>
+            </template>
+        </div>
         <!--
             Structure: just pass it down the chain and use this component as an aggregator
         -->
-        <div v-if="schema.members">
+        <template v-if="schema.members">
             <SdkDefServiceCallShapeComponent
                 v-for="key in Object.keys(schema.members)"
                 :key="key"
@@ -27,11 +39,11 @@
                 @updateRequest="handleUpdateRequest"
                 @showDoc="showDoc"
             />
-        </div>
+        </template>
         <!--
             Enum: doesn't matter what type, we'll handle them all as strings
         -->
-        <div v-else-if="schema.enum">
+        <template v-else-if="schema.enum">
             <select v-model="data[val]" v-on:change="handleUpdateData">
                 <option disabled selected hidden>Select Value...</option>
                 <option v-bind:value="undefined">(unset value)</option>
@@ -39,95 +51,97 @@
                     {{ schema.enum[e] }}
                 </option>
             </select>
-        </div>
+        </template>
         <!--
             String-likes: Anything we can handle as a string, let's handle as a string. Maybe modify eventually for timestamps
         -->
-        <div v-else-if="['string', 'integer', 'timestamp', 'double', 'long'].includes(schema.type)">
+        <template v-else-if="['string', 'integer', 'timestamp', 'double', 'long'].includes(schema.type)">
             <input type="text" v-model="data[val]" v-on:change="handleUpdateData" />
-        </div>
+        </template>
         <!-- Boolean: are checkboxes OK? Probably have inline with some nice padding...will figure out the CSS later -->
-        <div v-else-if="schema.type === 'boolean'">
+        <template v-else-if="schema.type === 'boolean'">
             <input type="checkbox" v-model="data[val]" v-on:change="handleUpdateData" />
-        </div>
+        </template>
         <!--
             List: handle with an array that checks for a max size (ignore min for now) and doesn't remove deleted objects
             since it's hard to map items holding their own data to array positions in the parent array
         -->
-        <div v-else-if="schema.type === 'list'">
-            <div v-for="(item, index) in data[val]" :key="index">
-                <div v-if="item !== DELETED_STR">
-                    <SdkDefServiceCallShapeComponent
-                        :val="index"
-                        :schema="service.shapes[schema.member.shape]"
-                        :service="service"
-                        :required="schema.required && schema.required.includes(key)"
-                        :doc="schema.member.shape.documentation"
-                        v-bind:listEntry="true"
-                        @updateRequest="handleUpdateRequest"
-                        @showDoc="showDoc"
-                    />
-                    <button v-on:click.prevent="deleteElementFromArr(index)">Delete Entry</button>
-                </div>
+        <template v-else-if="schema.type === 'list'">
+            <div class="list-container">
+                <template v-for="(item, index) in data[val]" :key="index">
+                    <div v-if="item !== DELETED_STR" class="list-entry">
+                        <button class="delete-button" v-on:click.prevent="deleteElementFromArr(index)">x</button>
+                        <SdkDefServiceCallShapeComponent
+                            :val="index"
+                            :schema="service.shapes[schema.member.shape]"
+                            :service="service"
+                            :required="schema.required && schema.required.includes(key)"
+                            :doc="schema.member.shape.documentation"
+                            v-bind:listEntry="true"
+                            @updateRequest="handleUpdateRequest"
+                            @showDoc="showDoc"
+                        />
+                    </div>
+                </template>
             </div>
-            <button v-if="!schema.max || listLength < schema.max" v-on:click.prevent="addToList">
-                Add Entry to List
-            </button>
-        </div>
+        </template>
         <!--
             Blob: handle file inputs (ONLY WORKS ON CLOUD9 FOR NOW!!!) and raw JSON
         -->
-        <div v-else-if="schema.type === 'blob'">
+        <template v-else-if="schema.type === 'blob'">
             <div>
-                <input type="radio" id="file" v-bind:value="true" v-model="useFile" />
+                <input type="radio" id="file" v-bind:value="true" v-model="useFile" v-on:change="handleUpdateData" />
                 <label for="file">File</label>
                 <br />
-                <input type="radio" id="text" v-bind:value="false" v-model="useFile" />
+                <input type="radio" id="text" v-bind:value="false" v-model="useFile" v-on:change="handleUpdateData" />
                 <label for="text">Text</label>
             </div>
 
-            <input v-if="useFile" type="file" @change="processFile($event)" />
-            <textarea v-if="!useFile" v-model="data[val]" v-on:change="handleUpdateData"></textarea>
-        </div>
+            <input v-if="useFile" type="file" @change="processFile" />
+            <textarea v-if="!useFile" v-model="data[val].text" v-on:change="handleUpdateData"></textarea>
+        </template>
         <!--
             Map: handle like a list. Same tradeoffs, store in an array and process the array before pushing up.
         -->
-        <div v-else-if="schema.type === 'map'">
-            <div v-for="(item, index) in data[val]" :key="index">
-                <div v-if="item !== DELETED_STR">
-                    Key:
-                    <SdkDefServiceCallShapeComponent
-                        :val="`${index}:key`"
-                        :schema="service.shapes[schema.key.shape]"
-                        :service="service"
-                        :required="schema.required && schema.required.includes(key)"
-                        :doc="service.shapes[schema.key.shape]"
-                        v-bind:listEntry="true"
-                        @updateRequest="handleUpdateRequest"
-                        @showDoc="showDoc"
-                    />
-                    Value:
-                    <SdkDefServiceCallShapeComponent
-                        :val="`${index}:value`"
-                        :schema="service.shapes[schema.value.shape]"
-                        :service="service"
-                        :required="schema.required && schema.required.includes(key)"
-                        :doc="service.shapes[schema.value.shape]"
-                        v-bind:listEntry="true"
-                        @updateRequest="handleUpdateRequest"
-                        @showDoc="showDoc"
-                    />
-                    <button v-on:click.prevent="deleteElementFromArr(index)">Delete Entry</button>
+        <template v-else-if="schema.type === 'map'">
+            <template v-for="(item, index) in data[val]" :key="index">
+                <div class="map-entry" v-if="item !== DELETED_STR">
+                    <button class="delete-button" v-on:click.prevent="deleteElementFromArr(index)">x</button>
+                    <div class="map-cell">
+                        Key:
+                        <SdkDefServiceCallShapeComponent
+                            :val="`${index}:key`"
+                            :schema="service.shapes[schema.key.shape]"
+                            :service="service"
+                            :required="schema.required && schema.required.includes(key)"
+                            :doc="service.shapes[schema.key.shape]"
+                            v-bind:listEntry="true"
+                            @updateRequest="handleUpdateRequest"
+                            @showDoc="showDoc"
+                        />
+                    </div>
+                    <div class="map-cell">
+                        Value:
+                        <SdkDefServiceCallShapeComponent
+                            :val="`${index}:value`"
+                            :schema="service.shapes[schema.value.shape]"
+                            :service="service"
+                            :required="schema.required && schema.required.includes(key)"
+                            :doc="service.shapes[schema.value.shape]"
+                            v-bind:listEntry="true"
+                            @updateRequest="handleUpdateRequest"
+                            @showDoc="showDoc"
+                        />
+                    </div>
                 </div>
-            </div>
-            <button v-if="!schema.max || listLength < schema.max" v-on:click.prevent="addToList">
-                Add Entry to Map
-            </button>
-        </div>
+            </template>
+        </template>
     </div>
 </template>
 
 <script lang="ts">
+import { SdkDefDocumentation } from '../sdkDefs'
+
 export default {
     name: 'SdkDefServiceCallShapeComponent',
     props: ['schema', 'val', 'service', 'required', 'doc', 'listEntry'],
@@ -143,7 +157,8 @@ export default {
             this.data[this.val] = {}
         } else if (this.schema.type === 'blob') {
             this.data[this.val] = {
-                filename: '',
+                files: {},
+                text: '',
             }
         }
     },
@@ -175,10 +190,16 @@ export default {
          * Bubbles documentation information up stack, if present
          */
         showCurrentDoc: function (doc: string) {
-            this.$emit('showDoc', {
+            this.showDoc({
                 text: doc,
                 component: `${this.val} (API Parameter)`,
             })
+        },
+        /**
+         * Bubbles doc requests up from child components
+         */
+        showDoc: function (doc: SdkDefDocumentation) {
+            this.$emit('showDoc', doc)
         },
         /**
          * Handles edits to own data.
@@ -192,8 +213,17 @@ export default {
             }
             let data = { ...this.data }
             // handles deletions
-            if (Array.isArray(data[this.val])) {
+            if (Array.isArray(this.data[this.val])) {
                 data[this.val] = this.handleArrayOperations([...data[this.val]])
+            } else if (this.schema.type === 'blob') {
+                if (this.useFile) {
+                    if (data[this.val].path) {
+                        data = { [this.val]: { blob: true, path: data[this.val].path } }
+                    }
+                } else {
+                    this.data[this.val].path = undefined
+                    data = { [this.val]: this.data[this.val].text !== '' ? this.data[this.val].text : undefined }
+                }
             }
             this.$emit('updateRequest', this.val, data)
         },
@@ -254,7 +284,6 @@ export default {
          */
         handleArrayOperations: function (arr: any[]) {
             let data = arr.filter((val: any) => val && val !== this.DELETED_STR)
-            console.log(data)
             if (this.schema.type === 'map') {
                 data = data.reduce((acc: any, curr: any) => {
                     return {
@@ -274,7 +303,7 @@ export default {
             const inputFile = $event.target as HTMLInputElement
             if (inputFile.files && inputFile.files.length > 0) {
                 this.data[this.val] = {
-                    blob: true,
+                    ...this.data[this.val],
                     // HACK!!!: `.path` only works on Electron!!!
                     //          this will not work in Cloud9!!!!!
                     //          cloud9 can probably use a native c9 file picker.
@@ -283,7 +312,7 @@ export default {
                     path: inputFile.files[0].path,
                 }
             } else {
-                delete this.data[this.val]
+                delete this.data[this.val].path
             }
             this.handleUpdateData()
         },
@@ -292,12 +321,47 @@ export default {
 </script>
 
 <style scoped>
-.nestedInput {
+.nested-input {
     padding-left: 1em;
+    margin: 3px;
+    display: flex;
+    flex-direction: column;
 }
-.requiredParam::before {
+.nested-input * {
+    margin-left: 3px;
+}
+.nested-input input[type='text'] {
+    flex: 1;
+}
+.nested-input-title {
+    width: 14em;
+}
+.flex-input {
+    display: flex;
+    flex-direction: row;
+}
+.flex-input * {
+    margin-left: 3px;
+}
+.list-entry,
+.map-entry {
+    display: flex;
+    flex: 0 0 auto;
+}
+.map-cell {
+    flex: 1;
+}
+.required-param::before {
     content: '* ';
     color: red;
     font-weight: bolder;
+}
+.delete-button,
+.add-button {
+    width: max-content;
+    padding: 1px 6px;
+}
+.add-button {
+    margin-left: 1em;
 }
 </style>

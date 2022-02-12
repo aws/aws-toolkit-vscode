@@ -5,6 +5,7 @@
 
 import { mkdirp, readFileSync } from 'fs-extra'
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { ExtContext } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger } from '../shared/logger/logger'
@@ -100,6 +101,7 @@ export class SdkDefs {
     private sdkDefsAttempted: boolean = false
     private sdkDefs: Record<string, ServiceOrPlaceholder> = {}
     private sdkDefsPromise: Promise<void> | undefined = undefined
+    private sdkDefsProgress: Thenable<void> | undefined = undefined
     private readonly VERSION: string
     private readonly defsDir = normalizeSeparator(
         path.join(this.ctx.extensionContext.globalStoragePath, 'sdkDefinitions')
@@ -135,8 +137,18 @@ export class SdkDefs {
         // TODO: async lock or have a scoped boolean to prevent multiple attempts at creating SdkDefs
         while (!this.sdkDefs) {
             if (!this.sdkDefsAttempted) {
-                // show progress
-                await this.sdkDefsPromise
+                if (!this.sdkDefsProgress) {
+                    this.sdkDefsProgress = vscode.window.withProgress(
+                        {
+                            location: vscode.ProgressLocation.Notification,
+                            cancellable: false,
+                        },
+                        async progress => {
+                            return await this.sdkDefsPromise
+                        }
+                    )
+                    await this.sdkDefsProgress
+                }
             }
             if (Object.keys(this.sdkDefs).length === 0) {
                 // prompt to try again

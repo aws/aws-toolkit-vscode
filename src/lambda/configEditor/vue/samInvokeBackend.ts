@@ -380,7 +380,13 @@ export function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string
  * @param object
  * @returns Pruned object
  */
-export function doTraverseAndPrune(object: { [key: string]: any }): any | undefined {
+export function doTraverseAndPrune(
+    object: { [key: string]: any },
+    extra?: {
+        criteria(o: any): boolean
+        transform(o: any): any
+    }
+): any | undefined {
     const keys = Object.keys(object)
     const final = JSON.parse(JSON.stringify(object))
     for (const key of keys) {
@@ -388,7 +394,11 @@ export function doTraverseAndPrune(object: { [key: string]: any }): any | undefi
         if (val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) {
             delete final[key]
         } else if (typeof val === 'object') {
-            const pruned = doTraverseAndPrune(val)
+            const pruned = extra
+                ? extra.criteria(val)
+                    ? extra.transform(val)
+                    : doTraverseAndPrune(val)
+                : doTraverseAndPrune(val)
             if (pruned) {
                 final[key] = pruned
             } else {
