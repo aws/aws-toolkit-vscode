@@ -104,7 +104,7 @@ async function makeSdkCall(
             criteria: (o: any) => o && typeof o.path === 'string' && o.blob === true,
             transform: (o: any) => {
                 hasBlob = true
-                return `fs.readFileSync(${normalize(o.path)})`
+                return `fs.readFileSync('${normalize(o.path)}')`
             },
         }) ?? {}
     const credentialsName = server.context.awsContext.getCredentialProfileName()
@@ -153,19 +153,23 @@ function generateSampleCode(
 // see details here: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/welcome.html
 
 // import the AWS SDK
-var AWS = require('aws-sdk');${hasBlob ? "\nvar fs = require('fs');" : ''}
+var AWS = require('aws-sdk');${
+        hasBlob
+            ? "\n// NOTE!: sample code generator is currently WIP.\n//remove the quotes wrapping the `fs.readFileSync` calls in the request body!\nvar fs = require('fs');"
+            : ''
+    }
 
 // Set credentials and Region
 // This can also be done directly on the service client
 ${credentialsName ? `var profileCredentials = new AWS.SharedIniFileCredentials({profile: '${credentialsName}'});` : ''}
-AWS.config.update({region: 'us-west-1'${credentials ? ', credentials: profileCredentials' : ''}});
+AWS.config.update({region: '${params.region}'${credentials ? ', credentials: profileCredentials' : ''}});
 
 // initialize client
 var ${clientName} = new AWS.${params.service}();
 
 // make call: sample shows callback
-// convert to promise by appending \`.promise()\` and removing callback function
-${clientName}.${params.api}(${JSON.stringify(request)}, (err, data) => {
+// convert to promise by appending \`.promise()\` and removing callback function parameter
+${clientName}.${strToCamelCase(params.api)}(${JSON.stringify(request)}, (err, data) => {
     if (err) {
         throw err;
     }
