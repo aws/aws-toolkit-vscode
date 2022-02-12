@@ -17,8 +17,6 @@ import { getRegionsForActiveCredentials } from '../shared/regions/regionUtilitie
 import globals from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
 import { doTraverseAndPrune } from '../lambda/configEditor/vue/samInvokeBackend'
-import { getLogger } from '../shared/logger/logger'
-import { Credentials } from 'aws-sdk'
 import { normalize } from '../shared/utilities/pathUtils'
 const localize = nls.loadMessageBundle()
 
