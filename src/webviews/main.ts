@@ -362,7 +362,7 @@ function resolveWebviewHtml(params: {
             content=
                 "default-src 'none';
                 connect-src ${resolvedParams.connectSource};
-                img-src ${resolvedParams.cspSource} https:;
+                img-src ${resolvedParams.cspSource} https: data:;
                 script-src ${resolvedParams.cspSource};
                 style-src ${resolvedParams.cspSource} 'unsafe-inline';
                 font-src 'self' data:;"

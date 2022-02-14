@@ -66,7 +66,7 @@ export async function runCommandInContainer(
             outputChannel
         )
 
-        const cp = await new ChildProcess(ssmPlugin, args).run({
+        const cp = await new ChildProcess(ssmPlugin, args, { logging: 'noparams' }).run({
             onStdout: text => {
                 showOutputMessage(removeAnsi(text), outputChannel)
             },

@@ -7,41 +7,41 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
+import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 
-import { ExtContext } from '../../shared/extensions'
-import { getLogger } from '../../shared/logger'
-import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
+import { ExtContext } from '../../../shared/extensions'
+import { getLogger } from '../../../shared/logger'
+import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import {
     AwsSamDebuggerConfiguration,
     isCodeTargetProperties,
     isTemplateTargetProperties,
-} from '../../shared/sam/debugger/awsSamDebugConfiguration'
+} from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import {
     DefaultAwsSamDebugConfigurationValidator,
     resolveWorkspaceFolderVariable,
-} from '../../shared/sam/debugger/awsSamDebugConfigurationValidator'
-import * as input from '../../shared/ui/input'
-import * as picker from '../../shared/ui/picker'
-import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { compileVueWebview } from '../../webviews/main'
-import { sampleRequestPath } from '../constants'
-import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
-import { CloudFormation } from '../../shared/cloudformation/cloudformation'
-import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
-import { recordSamOpenConfigUi } from '../../shared/telemetry/telemetry.gen'
-import { getSampleLambdaPayloads } from '../utils'
-import { isCloud9 } from '../../shared/extensionUtilities'
-import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
-import { samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
-import globals from '../../shared/extensionGlobals'
+} from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
+import * as input from '../../../shared/ui/input'
+import * as picker from '../../../shared/ui/picker'
+import { addCodiconToString } from '../../../shared/utilities/textUtilities'
+import { compileVueWebview } from '../../../webviews/main'
+import { sampleRequestPath } from '../../constants'
+import { tryGetAbsolutePath } from '../../../shared/utilities/workspaceUtils'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import { openLaunchJsonFile } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
+import { recordSamOpenConfigUi } from '../../../shared/telemetry/telemetry.gen'
+import { getSampleLambdaPayloads } from '../../utils'
+import { isCloud9 } from '../../../shared/extensionUtilities'
+import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
+import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
+import globals from '../../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
 const VueWebview = compileVueWebview({
     id: 'createLambda',
     title: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
-    webviewJs: 'lambdaVue.js',
+    webviewJs: 'lambdaConfigEditorVue.js',
     commands: {
         getRuntimes: () => samLambdaCreatableRuntimes().toArray().sort(),
         getTemplate,
