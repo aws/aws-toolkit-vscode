@@ -86,8 +86,7 @@ export async function createDevEnv(): Promise<void> {
     const args = {
         organizationName: p.org.name ?? '?',
         projectName: p.name ?? '?',
-        // TODO: change to 'VSCode' after Velox implements it.
-        ideRuntimes: ['Cloud9'],
+        ideRuntimes: ['VSCode'],
         repositories: [
             {
                 branchName: r.defaultBranch,
@@ -163,12 +162,12 @@ export async function openCawsResource(kind: 'org' | 'project' | 'repo' | 'env')
                     organizationName: env.org.name,
                     developmentWorkspaceId: env.developmentWorkspaceId,
                 })
-                if (!session) {
+                if (!session?.sessionId) {
                     return undefined
                 }
                 return {
                     ...session,
-                    id: session.developmentWorkspaceId,
+                    id: session.sessionId,
                     startedAt: new Date(),
                     status: 'CONNECTED',
                 }
