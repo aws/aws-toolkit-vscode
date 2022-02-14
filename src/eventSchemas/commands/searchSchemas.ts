@@ -6,8 +6,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { Schemas } from 'aws-sdk'
-import _ = require('lodash')
-import path = require('path')
 import * as vscode from 'vscode'
 import { downloadSchemaItemCode } from '../../eventSchemas/commands/downloadSchemaItemCode'
 import { RegistryItemNode } from '../../eventSchemas/explorer/registryItemNode'
@@ -16,83 +14,70 @@ import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
 import { listRegistryItems, searchSchemas } from '../../eventSchemas/utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
-import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasSearch, recordSchemasView, Result } from '../../shared/telemetry/telemetry'
-import { TelemetryService } from '../../shared/telemetry/telemetryService'
-import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import { SchemaTemplates } from '../templates/searchSchemasTemplates'
 import globals from '../../shared/extensionGlobals'
-import { updateCspSource } from '../../webviews/main'
+import { ExtContext } from '../../shared/extensions'
+import { compileVueWebview } from '../../webviews/main'
+import { WebviewServer } from '../../webviews/server'
 
-export async function createSearchSchemasWebView(params: {
-    node: RegistryItemNode | SchemasNode
-    outputChannel: vscode.OutputChannel
-}): Promise<void> {
+interface InitialData {
+    Header: string
+    SearchInputPlaceholder: string
+    VersionPrefix: string
+    RegistryNames: string[]
+    Region: string
+    LocalizedMessages: {
+        noSchemasFound: string
+        searching: string
+        loading: string
+        select: string
+    }
+}
+
+const VueWebview = compileVueWebview({
+    id: 'remoteInvoke',
+    title: localize('AWS.executeStateMachine.title', 'Start Execution'),
+    webviewJs: 'eventSchemasVue.js',
+    cssFiles: ['searchSchemas.css'],
+    commands: {
+        handler: function (message: CommandMessages) {
+            handleSchemaSearchMessage(this, message)
+        },
+    },
+    start: (init: InitialData) => init,
+})
+export class SearchSchemasWebview extends VueWebview {}
+
+export async function createSearchSchemasWebView(context: ExtContext, node: RegistryItemNode | SchemasNode) {
     const logger: Logger = getLogger()
-    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
-    const registryNames = await getRegistryNames(params.node, client)
+    // note: this isn't tied to actually running a search (it's tied to opening the webview successfully), but this preserves existing metric behavior
     let webviewResult: Result = 'Succeeded'
 
     try {
+        const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(node.regionCode)
+        const registryNames = await getRegistryNames(node, client)
         if (registryNames.length === 0) {
             vscode.window.showInformationMessage(localize('AWS.schemas.search.no_registries', 'No Schema Registries'))
 
             return
         }
-
-        const view = vscode.window.createWebviewPanel(
-            'html',
-            localize('AWS.schemas.search.title', 'EventBridge Schemas Search'),
-            vscode.ViewColumn.Active,
-            {
-                enableScripts: true,
-                retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.file(path.join(globals.context.extensionPath, 'media'))],
-            }
-        )
-        const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
-        const searchTemplate = _.template(SchemaTemplates.SEARCH_TEMPLATE)
-        const loadScripts = ExtensionUtilities.getScriptsForHtml(['searchSchemasVue.js'], view.webview)
-        const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js', 'lodash.min.js'], view.webview)
-        const loadStylesheets = ExtensionUtilities.getCssForHtml(['searchSchemas.css'], view.webview)
-
-        view.webview.html = baseTemplateFn({
-            cspSource: updateCspSource(view.webview.cspSource),
-            content: searchTemplate({
-                Header: getPageHeader(registryNames),
-                SearchInputPlaceholder: localize(
-                    'AWS.schemas.search.input.placeholder',
-                    'Search for schema keyword...'
-                ),
-                VersionPrefix: localize('AWS.schemas.search.version.prefix', 'Search matched version:'),
-                Scripts: loadScripts,
-                Libraries: loadLibs,
-                Stylesheets: loadStylesheets,
-            }),
+        const wv = new SearchSchemasWebview(context)
+        await wv.start({
+            RegistryNames: registryNames,
+            Header: getPageHeader(registryNames),
+            SearchInputPlaceholder: localize('AWS.schemas.search.input.placeholder', 'Search for schema keyword...'),
+            VersionPrefix: localize('AWS.schemas.search.version.prefix', 'Search matched version:'),
+            Region: node.regionCode,
+            LocalizedMessages: {
+                noSchemasFound: localize('AWS.schemas.search.no_results', 'No schemas found'),
+                searching: localize('AWS.schemas.search.searching', 'Searching for schemas...'),
+                loading: localize('AWS.schemas.search.loading', 'Loading...'),
+                select: localize('AWS.schemas.search.select', 'Select a schema'),
+            },
         })
-
-        view.webview.postMessage({
-            command: 'setLocalizedMessages',
-            noSchemasFound: localize('AWS.schemas.search.no_results', 'No schemas found'),
-            searching: localize('AWS.schemas.search.searching', 'Searching for schemas...'),
-            loading: localize('AWS.schemas.search.loading', 'Loading...'),
-            select: localize('AWS.schemas.search.select', 'Select a schema'),
-        })
-
-        view.webview.onDidReceiveMessage(
-            createMessageReceivedFunc({
-                registryNames: registryNames,
-                schemaClient: client,
-                telemetryService: globals.telemetry,
-                onPostMessage: message => view.webview.postMessage(message),
-                outputChannel: params.outputChannel,
-            }),
-            undefined,
-            globals.context.subscriptions
-        )
     } catch (err) {
         webviewResult = 'Failed'
         const error = err as Error
@@ -136,88 +121,99 @@ export function getPageHeader(registryNames: string[]): string {
 
 export interface CommandMessage {
     command: string
-    keyword?: string
-    schemaSummary?: SchemaVersionedSummary
-    version?: string
+    regionCode: string
 }
 
-export function createMessageReceivedFunc({
-    registryNames,
-    schemaClient,
-    telemetryService,
-    ...restParams
-}: {
+interface FetchSchemaContentCommand extends CommandMessage {
+    version?: string
+    schemaSummary: SchemaVersionedSummary
+}
+function isFetchSchemaContentCommand(c: CommandMessage): c is FetchSchemaContentCommand {
+    return c.command === 'fetchSchemaContent'
+}
+
+interface SearchSchemasCommand extends CommandMessage {
+    keyword: string
     registryNames: string[]
-    schemaClient: SchemaClient
-    telemetryService: TelemetryService
-    onPostMessage(message: any): Thenable<boolean>
-    outputChannel: vscode.OutputChannel
-}): (message: CommandMessage) => Promise<void> {
-    return async (message: CommandMessage) => {
-        switch (message.command) {
-            case 'fetchSchemaContent': {
-                recordSchemasView({ result: 'Succeeded' })
+}
+function isSearchSchemasCommand(c: CommandMessage): c is SearchSchemasCommand {
+    return c.command === 'searchSchemas'
+}
 
-                let selectedVersion = message.version
-                let versionList: string[] = []
-                // if user has not selected version, set it to latestMatchingSchemaVerion
-                if (!selectedVersion) {
-                    versionList = message.schemaSummary!.VersionList
-                    selectedVersion = versionList[0]
-                }
+interface DownloadCodeBindingsCommand extends CommandMessage {
+    schemaSummary: SchemaVersionedSummary
+}
+function isDownloadCodeBindingsCommand(c: CommandMessage): c is DownloadCodeBindingsCommand {
+    return c.command === 'downloadCodeBindings'
+}
 
-                const response = await schemaClient.describeSchema(
-                    message.schemaSummary!.RegistryName!,
-                    getSchemaNameFromTitle(message.schemaSummary!.Title),
-                    selectedVersion
-                )
-                const prettySchema = JSON.stringify(JSON.parse(response.Content!), undefined, getTabSizeSetting())
-                restParams.onPostMessage({
-                    command: 'showSchemaContent',
-                    results: prettySchema,
-                    version: selectedVersion,
-                })
+export type CommandMessages =
+    | FetchSchemaContentCommand
+    | SearchSchemasCommand
+    | DownloadCodeBindingsCommand
+    | CommandMessage
 
-                //if versionList is intialized, dropdown needs to be populated
-                if (versionList.length !== 0) {
-                    restParams.onPostMessage({ command: 'setVersionsDropdown', results: versionList })
-                }
+export async function handleSchemaSearchMessage(
+    server: Pick<WebviewServer, 'postMessage' | 'context'>,
+    message: CommandMessages,
+    testSchemaClient?: SchemaClient
+) {
+    const schemaClient = testSchemaClient ?? globals.toolkitClientBuilder.createSchemaClient(message.regionCode)
+    if (isFetchSchemaContentCommand(message)) {
+        recordSchemasView({ result: 'Succeeded' })
 
-                return
-            }
-            case 'searchSchemas': {
-                recordSchemasSearch({ result: 'Succeeded' })
-
-                const results = await getSearchResults(schemaClient, registryNames, message.keyword!)
-
-                restParams.onPostMessage({
-                    command: 'showSearchSchemaList',
-                    results: results,
-                    resultsNotFound: results.length === 0,
-                })
-
-                return
-            }
-            case 'downloadCodeBindings': {
-                const schemaItem: Schemas.SchemaSummary = {
-                    SchemaName: getSchemaNameFromTitle(message.schemaSummary!.Title),
-                }
-                const schemaItemNode = new SchemaItemNode(
-                    schemaItem,
-                    schemaClient,
-                    message.schemaSummary!.RegistryName!
-                )
-                await downloadSchemaItemCode(schemaItemNode, restParams.outputChannel)
-
-                return
-            }
-            default:
-                throw new Error(`Search webview command ${message.command} is invalid`)
+        let selectedVersion = message.version
+        let versionList: string[] = []
+        // if user has not selected version, set it to latestMatchingSchemaVerion
+        if (!selectedVersion) {
+            versionList = message.schemaSummary!.VersionList
+            selectedVersion = versionList[0]
         }
+
+        const response = await schemaClient.describeSchema(
+            message.schemaSummary!.RegistryName!,
+            getSchemaNameFromTitle(message.schemaSummary!.Title),
+            selectedVersion
+        )
+        const prettySchema = JSON.stringify(JSON.parse(response.Content!), undefined, getTabSizeSetting())
+        server.postMessage({
+            command: 'showSchemaContent',
+            results: prettySchema,
+            version: selectedVersion,
+        })
+
+        //if versionList is intialized, dropdown needs to be populated
+        if (versionList.length !== 0) {
+            server.postMessage({ command: 'setVersionsDropdown', results: versionList })
+        }
+
+        return
+    } else if (isSearchSchemasCommand(message)) {
+        recordSchemasSearch({ result: 'Succeeded' })
+
+        const results = await getSearchResults(schemaClient, message.registryNames, message.keyword!)
+
+        server.postMessage({
+            command: 'showSearchSchemaList',
+            results: results,
+            resultsNotFound: results.length === 0,
+        })
+
+        return
+    } else if (isDownloadCodeBindingsCommand(message)) {
+        const schemaItem: Schemas.SchemaSummary = {
+            SchemaName: getSchemaNameFromTitle(message.schemaSummary!.Title),
+        }
+        const schemaItemNode = new SchemaItemNode(schemaItem, schemaClient, message.schemaSummary!.RegistryName!)
+        await downloadSchemaItemCode(schemaItemNode, server.context.outputChannel)
+
+        return
+    } else {
+        throw new Error(`Search webview command ${message.command} is invalid`)
     }
 }
 
-interface SchemaVersionedSummary {
+export interface SchemaVersionedSummary {
     RegistryName: string
     Title: string
     VersionList: string[]

@@ -4,11 +4,11 @@
  */
 
 import { defineComponent } from 'vue'
-import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
+import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { AwsSamDebuggerConfigurationLoose, SamInvokeWebview } from './samInvokeBackend'
-import settingsPanel from '../../webviews/components/settingsPanel.vue'
-import { WebviewClientFactory } from '../../webviews/client'
-import saveData from '../../webviews/mixins/saveData'
+import settingsPanel from '../../../webviews/components/settingsPanel.vue'
+import { WebviewClientFactory } from '../../../webviews/client'
+import saveData from '../../../webviews/mixins/saveData'
 
 const client = WebviewClientFactory.create<SamInvokeWebview>()
 

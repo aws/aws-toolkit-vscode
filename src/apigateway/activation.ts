@@ -29,7 +29,7 @@ export async function activate(activateArguments: {
         vscode.commands.registerCommand(
             'aws.apig.invokeRemoteRestApi',
             async (node: RestApiNode) =>
-                await invokeRemoteRestApi({
+                await invokeRemoteRestApi(activateArguments.extContext, {
                     apiNode: node,
                     outputChannel: activateArguments.outputChannel,
                 })
