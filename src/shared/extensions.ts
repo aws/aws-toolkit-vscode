@@ -35,6 +35,7 @@ export interface ExtContext {
     outputChannel: vscode.OutputChannel
     telemetryService: TelemetryService
     credentialsStore: CredentialsStore
+    invokeOutputChannel: vscode.OutputChannel
 }
 
 /**

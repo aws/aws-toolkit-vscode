@@ -4,30 +4,34 @@
  */
 
 import { anything, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
-import { FeedbackPanel, submitFeedbackListener, Window } from '../../../feedback/commands/submitFeedbackListener'
+import { submitFeedbackMessage } from '../../../feedback/commands/submitFeedback'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
+import { Window } from '../../../shared/vscode/window'
+import { WebviewServer } from '../../../webviews/server'
 
 const COMMENT = 'comment'
 const SENTIMENT = 'Positive'
 const message = { command: 'submitFeedback', comment: COMMENT, sentiment: SENTIMENT }
 
 describe('submitFeedbackListener', function () {
-    let mockPanel: FeedbackPanel
+    let mockWebviewServer: WebviewServer
     let mockWindow: Window
     let mockTelemetry: TelemetryService
 
     beforeEach(function () {
-        mockPanel = mock()
+        mockWebviewServer = mock()
         mockWindow = mock()
         mockTelemetry = mock()
     })
 
     it('submits feedback, disposes, and shows message on success', async function () {
-        const listener = submitFeedbackListener(instance(mockPanel), instance(mockWindow), instance(mockTelemetry))
-        await listener(message)
+        await submitFeedbackMessage(instance(mockWebviewServer), message, {
+            telemetryService: instance(mockTelemetry),
+            window: instance(mockWindow),
+        })
 
         verify(mockTelemetry.postFeedback(deepEqual({ comment: COMMENT, sentiment: SENTIMENT }))).once()
-        verify(mockPanel.dispose()).once()
+        verify(mockWebviewServer.dispose()).once()
         verify(mockWindow.showInformationMessage('Thanks for the feedback!')).once()
     })
 
@@ -36,9 +40,11 @@ describe('submitFeedbackListener', function () {
 
         when(mockTelemetry.postFeedback(anything())).thenThrow(new Error(error))
 
-        const listener = submitFeedbackListener(instance(mockPanel), instance(mockWindow), instance(mockTelemetry))
-        await listener(message)
+        await submitFeedbackMessage(instance(mockWebviewServer), message, {
+            telemetryService: instance(mockTelemetry),
+            window: instance(mockWindow),
+        })
 
-        verify(mockPanel.postMessage(deepEqual({ statusCode: 'Failure', error: error }))).once()
+        verify(mockWebviewServer.postMessage(deepEqual({ statusCode: 'Failure', error: error }))).once()
     })
 })

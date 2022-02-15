@@ -8,25 +8,31 @@ import * as assert from 'assert'
 import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
 import {
-    CommandMessage,
-    createMessageReceivedFunc,
+    CommandMessages,
     getPageHeader,
     getRegistryNames,
     getSearchListForSingleRegistry,
     getSearchResults,
+    handleSchemaSearchMessage,
 } from '../../../eventSchemas/commands/searchSchemas'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
-import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
-import { MockOutputChannel } from '../../../test/mockOutputChannel'
 import { MockSchemaClient } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 import * as vscode from 'vscode'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { ExtContext } from '../../../shared/extensions'
 
 describe('Search Schemas', function () {
     let sandbox: sinon.SinonSandbox
+    let fakeExtContext: ExtContext
+
+    before(async function () {
+        fakeExtContext = await FakeExtensionContext.getFakeExtContext()
+    })
+
     beforeEach(function () {
         sandbox = sinon.createSandbox()
     })
@@ -170,17 +176,12 @@ describe('Search Schemas', function () {
         })
     })
 
-    describe('createMessageReceivedFunc', function () {
+    describe('handleMessage', function () {
         let postMessageSpy: sinon.SinonSpy<[any], Thenable<boolean>>
         beforeEach(function () {
             postMessageSpy = sandbox.spy(onPostMessage)
         })
 
-        const mockTelemetryService = ({
-            record: () => {},
-        } as any) as TelemetryService
-
-        const outputChannel = new MockOutputChannel()
         const singleRegistryName = [TEST_REGISTRY]
         const multipleRegistryNames = [TEST_REGISTRY, TEST_REGISTRY2]
         const AWS_EVENT_SCHEMA_RAW =
@@ -195,10 +196,10 @@ describe('Search Schemas', function () {
                 Title: getPageHeader(singleRegistryName),
                 VersionList: ['3', '2', '1'],
             }
-            const fakeMessage: CommandMessage = {
+            const fakeMessage: CommandMessages = {
                 command: 'fetchSchemaContent',
-                version: undefined,
                 schemaSummary: versionedSummary,
+                regionCode: 'us-weast-1',
             }
 
             sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
@@ -214,15 +215,11 @@ describe('Search Schemas', function () {
                 results: fakeMessage.schemaSummary!.VersionList,
             }
 
-            const returnedFunc = createMessageReceivedFunc({
-                registryNames: singleRegistryName,
-                schemaClient: schemaClient,
-                telemetryService: mockTelemetryService,
-                onPostMessage: postMessageSpy,
-                outputChannel: outputChannel,
-            })
-
-            await returnedFunc(fakeMessage)
+            await handleSchemaSearchMessage(
+                { postMessage: postMessageSpy, context: fakeExtContext },
+                fakeMessage,
+                schemaClient
+            )
 
             assert.strictEqual(
                 postMessageSpy.callCount,
@@ -247,10 +244,11 @@ describe('Search Schemas', function () {
                 Title: getPageHeader(multipleRegistryNames),
                 VersionList: ['1'],
             }
-            const fakeMessage: CommandMessage = {
+            const fakeMessage: CommandMessages = {
                 command: 'fetchSchemaContent',
-                version: '1',
+                regionCode: 'us-weast-1',
                 schemaSummary: versionedSummary,
+                version: '1',
             }
 
             sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
@@ -261,15 +259,11 @@ describe('Search Schemas', function () {
                 version: '1',
             }
 
-            const returnedFunc = createMessageReceivedFunc({
-                registryNames: multipleRegistryNames,
-                schemaClient: schemaClient,
-                telemetryService: mockTelemetryService,
-                onPostMessage: postMessageSpy,
-                outputChannel: outputChannel,
-            })
-
-            await returnedFunc(fakeMessage)
+            await handleSchemaSearchMessage(
+                { postMessage: postMessageSpy, context: fakeExtContext },
+                fakeMessage,
+                schemaClient
+            )
 
             assert.strictEqual(
                 postMessageSpy.callCount,
@@ -284,7 +278,12 @@ describe('Search Schemas', function () {
         })
 
         it('shows schema list when user makes a search', async function () {
-            const fakeMessage: CommandMessage = { command: 'searchSchemas', keyword: 'searchText' }
+            const fakeMessage: CommandMessages = {
+                command: 'searchSchemas',
+                keyword: 'searchText',
+                regionCode: 'us-weast-1',
+                registryNames: [TEST_REGISTRY, TEST_REGISTRY],
+            }
 
             const expectResults1 = {
                 RegistryName: TEST_REGISTRY,
@@ -309,15 +308,11 @@ describe('Search Schemas', function () {
                 .withArgs('searchText', TEST_REGISTRY)
                 .returns(asyncGenerator(searchSummaryList))
 
-            const returnedFunc = createMessageReceivedFunc({
-                registryNames: multipleRegistryNames,
-                schemaClient: schemaClient,
-                telemetryService: mockTelemetryService,
-                onPostMessage: postMessageSpy,
-                outputChannel: outputChannel,
-            })
-
-            await returnedFunc(fakeMessage)
+            await handleSchemaSearchMessage(
+                { postMessage: postMessageSpy, context: fakeExtContext },
+                fakeMessage,
+                schemaClient
+            )
 
             assert.strictEqual(postMessageSpy.callCount, 1, 'postMessage should call showSearchSchemaList command')
             assert.deepStrictEqual(
@@ -328,17 +323,18 @@ describe('Search Schemas', function () {
         })
 
         it('throws an error for an invalid command message', async function () {
-            const fakeMessage: CommandMessage = { command: 'invalidCommand' }
+            const fakeMessage: CommandMessages = { command: 'invalidCommand', regionCode: 'us-weast-1' }
             const errorMessage = `Search webview command ${fakeMessage.command} is invalid`
-            const returnedFunc = createMessageReceivedFunc({
-                registryNames: multipleRegistryNames,
-                schemaClient: schemaClient,
-                telemetryService: mockTelemetryService,
-                onPostMessage: postMessageSpy,
-                outputChannel: outputChannel,
-            })
 
-            await assert.rejects(returnedFunc(fakeMessage), new Error(errorMessage), 'Should fail for invalidCommand')
+            await assert.rejects(
+                handleSchemaSearchMessage(
+                    { postMessage: postMessageSpy, context: fakeExtContext },
+                    fakeMessage,
+                    schemaClient
+                ),
+                new Error(errorMessage),
+                'Should fail for invalidCommand'
+            )
         })
 
         function onPostMessage(message: any): Thenable<boolean> {
