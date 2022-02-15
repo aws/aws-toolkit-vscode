@@ -360,7 +360,7 @@ export class MockEcsClient implements EcsClient {
     public readonly getClusters: (nextToken?: string) => Promise<EcsResourceAndToken>
     public readonly getServices: (cluster: string, nextToken?: string) => Promise<EcsResourceAndToken>
     public readonly getContainerNames: (taskDefinition: string) => Promise<string[]>
-    public readonly listTasks: (cluster: string, serviceName: string) => Promise<string[]>
+    public readonly listTasks: (args: ECS.ListTasksRequest) => Promise<string[]>
     public readonly describeTasks: (cluster: string, tasks: string[]) => Promise<ECS.Task[]>
     public readonly updateService: (cluster: string, serviceName: string, enable: boolean) => Promise<void>
     public readonly describeServices: (cluster: string, services: string[]) => Promise<ECS.Service[]>
