@@ -46,7 +46,7 @@ export async function runCommandInContainer(
                 .showErrorMessage(
                     localize(
                         'AWS.command.ecs.runCommandInContainer.missingPermissions',
-                        'You may not have the permissions required for using the execute command. Please set up a Task Role with the required permissions and retry...'
+                        'You may not have the permissions required for using execute command. Please set up a Task Role with the required permissions and retry.'
                     ),
                     viewDocsItem
                 )
