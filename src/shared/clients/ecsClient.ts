@@ -50,13 +50,9 @@ export class DefaultEcsClient {
         return response
     }
 
-    public async getContainerNames(taskDefinition: string): Promise<string[]> {
+    public async describeTaskDefinition(taskDefinition: string): Promise<ECS.DescribeTaskDefinitionResponse> {
         const sdkClient = await this.createSdkClient()
-        const describeTaskDefinitionResponse = await sdkClient.describeTaskDefinition({ taskDefinition }).promise()
-        const containerNames = describeTaskDefinitionResponse.taskDefinition?.containerDefinitions?.map(cd => {
-            return cd.name ?? ''
-        })
-        return containerNames ?? []
+        return await sdkClient.describeTaskDefinition({ taskDefinition }).promise()
     }
 
     public async listTasks(cluster: string, serviceName: string): Promise<string[]> {

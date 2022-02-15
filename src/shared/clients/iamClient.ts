@@ -58,6 +58,15 @@ export class DefaultIamClient {
         await sdkClient.attachRolePolicy(request).promise()
     }
 
+    public async simulatePrincipalPolicy(
+        request: IAM.SimulatePrincipalPolicyRequest
+    ): Promise<IAM.SimulatePolicyResponse> {
+        const sdkClient = await this.createSdkClient()
+        const response = await sdkClient.simulatePrincipalPolicy(request).promise()
+
+        return response
+    }
+
     private async createSdkClient(): Promise<IAM> {
         return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
     }

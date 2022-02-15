@@ -16,10 +16,9 @@ const CONTEXT_EXEC_DISABLED = 'awsEcsContainerNodeExecDisabled'
 export class EcsContainerNode extends AWSTreeNodeBase {
     public constructor(
         public readonly containerName: string,
-        public readonly serviceName: string,
-        public readonly clusterArn: string,
         public readonly ecs: EcsClient,
-        public readonly parent: EcsServiceNode
+        public readonly parent: EcsServiceNode,
+        public readonly taskRoleArn: string | undefined
     ) {
         super(containerName)
         this.tooltip = containerName
@@ -32,10 +31,10 @@ export class EcsContainerNode extends AWSTreeNodeBase {
     }
 
     public listTasks() {
-        return this.ecs.listTasks(this.clusterArn, this.serviceName)
+        return this.ecs.listTasks(this.parent.service.clusterArn!, this.parent.service.serviceName!)
     }
 
     public describeTasks(tasks: string[]) {
-        return this.ecs.describeTasks(this.clusterArn, tasks)
+        return this.ecs.describeTasks(this.parent.service.clusterArn!, tasks)
     }
 }

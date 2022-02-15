@@ -359,7 +359,7 @@ export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
     public readonly getClusters: (nextToken?: string) => Promise<EcsResourceAndToken>
     public readonly getServices: (cluster: string, nextToken?: string) => Promise<EcsResourceAndToken>
-    public readonly getContainerNames: (taskDefinition: string) => Promise<string[]>
+    public readonly describeTaskDefinition: (taskDefinition: string) => Promise<ECS.DescribeTaskDefinitionResponse>
     public readonly listTasks: (cluster: string, serviceName: string) => Promise<string[]>
     public readonly describeTasks: (cluster: string, tasks: string[]) => Promise<ECS.Task[]>
     public readonly updateService: (cluster: string, serviceName: string, enable: boolean) => Promise<void>
@@ -375,7 +375,7 @@ export class MockEcsClient implements EcsClient {
         regionCode = '',
         getClusters = async () => ({ resource: [], nextToken: undefined }),
         getServices = async () => ({ resource: [], nextToken: undefined }),
-        listContainerNames = async () => [],
+        describeTaskDefinition = async () => ({} as ECS.DescribeTaskDefinitionResponse),
         listTasks = async () => [],
         describeTasks = async () => [],
         updateService = async () => undefined,
@@ -385,7 +385,7 @@ export class MockEcsClient implements EcsClient {
         regionCode?: string
         getClusters?(): Promise<EcsResourceAndToken>
         getServices?(): Promise<EcsResourceAndToken>
-        listContainerNames?(): Promise<string[]>
+        describeTaskDefinition?(): Promise<ECS.DescribeTaskDefinitionResponse>
         listTasks?(): Promise<string[]>
         describeTasks?(): Promise<ECS.Task[]>
         updateService?(): Promise<void>
@@ -395,7 +395,7 @@ export class MockEcsClient implements EcsClient {
         this.regionCode = regionCode
         this.getClusters = getClusters
         this.getServices = getServices
-        this.getContainerNames = listContainerNames
+        this.describeTaskDefinition = describeTaskDefinition
         this.listTasks = listTasks
         this.describeTasks = describeTasks
         this.updateService = updateService
@@ -418,6 +418,9 @@ export class MockIamClient implements IamClient {
         throw new Error('Method not implemented.')
     }
     public attachRolePolicy(request: IAM.AttachRolePolicyRequest): Promise<void> {
+        throw new Error('Method not implemented.')
+    }
+    public simulatePrincipalPolicy(request: IAM.SimulatePrincipalPolicyRequest): Promise<IAM.SimulatePolicyResponse> {
         throw new Error('Method not implemented.')
     }
 }
