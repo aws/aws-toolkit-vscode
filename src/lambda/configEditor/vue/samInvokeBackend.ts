@@ -397,8 +397,8 @@ export function doTraverseAndPrune(
             const pruned = extra
                 ? extra.criteria(val)
                     ? extra.transform(val)
-                    : doTraverseAndPrune(val)
-                : doTraverseAndPrune(val)
+                    : doTraverseAndPrune(val, extra)
+                : doTraverseAndPrune(val, extra)
             if (pruned) {
                 final[key] = pruned
             } else {
