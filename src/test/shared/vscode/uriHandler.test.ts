@@ -5,10 +5,10 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { ParsedUrlQuery as Query } from 'querystring'
 import { UriHandler } from '../../../shared/vscode/uriHandler'
 import * as mdeUriHandlers from '../../../mde/mdeUriHandlers'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { URLSearchParams } from 'url'
 
 describe('UriHandler', function () {
     const TEST_PATH = '/my/path'
@@ -23,7 +23,7 @@ describe('UriHandler', function () {
     })
 
     it('can register a handler', async function () {
-        uriHandler.registerHandler(TEST_PATH, q => assert.strictEqual(q['key'], 'value'))
+        uriHandler.registerHandler(TEST_PATH, q => assert.strictEqual(q.get('key'), 'value'))
         return uriHandler.handleUri(makeUri('key=value'))
     })
 
@@ -31,13 +31,13 @@ describe('UriHandler', function () {
         uriHandler.registerHandler(
             TEST_PATH,
             q => assert.strictEqual(q.myNumber, 123),
-            (q: Query) => ({ myNumber: Number(q['myString']) })
+            (q: URLSearchParams) => ({ myNumber: Number(q.get('myString')) })
         )
         return uriHandler.handleUri(makeUri('myString=123'))
     })
 
     it('can handle lists', async function () {
-        uriHandler.registerHandler(TEST_PATH, q => assert.deepStrictEqual(q['list'], ['1', '2', '3']))
+        uriHandler.registerHandler(TEST_PATH, q => assert.deepStrictEqual(q.get('list'), ['1', '2', '3']))
         return uriHandler.handleUri(makeUri('list=1&list=2&list=3'))
     })
 
