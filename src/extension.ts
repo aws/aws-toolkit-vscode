@@ -164,6 +164,7 @@ export async function activate(context: vscode.ExtensionContext) {
             regionProvider: regionProvider,
             settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
+            invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
             uriHandler: globals.uriHandler,
             credentialsStore,
@@ -234,7 +235,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await activateAwsExplorer({
-            awsContext: globals.awsContext,
+            context: extContext,
             awsContextTrees,
             regionProvider,
             toolkitOutputChannel,
@@ -268,10 +269,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
-            await activateSchemas({
-                context: extContext.extensionContext,
-                outputChannel: toolkitOutputChannel,
-            })
+            await activateSchemas(extContext)
         }
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)

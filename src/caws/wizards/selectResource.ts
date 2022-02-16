@@ -14,8 +14,8 @@ import { IteratorTransformer } from '../../shared/utilities/collectionUtils'
  * Shows a picker and returns the user-selected item.
  */
 export async function selectCawsResource(
-    kind: 'org' | 'project' | 'repo'
-): Promise<caws.CawsOrg | caws.CawsProject | caws.CawsRepo | undefined> {
+    kind: 'org' | 'project' | 'repo' | 'env'
+): Promise<caws.CawsOrg | caws.CawsProject | caws.CawsRepo | caws.CawsDevEnv | undefined> {
     if (!checkCaws()) {
         return
     }
@@ -29,13 +29,16 @@ export async function selectCawsResource(
     picker.matchOnDescription = true
 
     if (kind === 'org') {
-        picker.title = 'Open CODE.AWS Organization'
+        picker.title = 'Select a CODE.AWS Organization'
         picker.placeholder = 'Choose an organization'
     } else if (kind === 'project') {
-        picker.title = 'Open CODE.AWS Project'
+        picker.title = 'Select a CODE.AWS Project'
         picker.placeholder = 'Choose a project'
+    } else if (kind === 'env') {
+        picker.title = 'Select a CODE.AWS Development Environment'
+        picker.placeholder = 'Choose a dev env'
     } else {
-        picker.title = 'Open CODE.AWS repository'
+        picker.title = 'Select a CODE.AWS Repository'
         picker.placeholder = 'Choose a repository'
     }
 
@@ -68,6 +71,8 @@ export async function selectCawsResource(
         return val as caws.CawsOrg
     } else if (kind === 'project') {
         return val as caws.CawsProject
+    } else if (kind === 'env') {
+        return val as caws.CawsDevEnv
     }
     return val as caws.CawsRepo
 }

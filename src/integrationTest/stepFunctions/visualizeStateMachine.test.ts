@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { spy } from 'sinon'
-import { closeAllEditors } from '../../shared/utilities/vsCodeUtils'
+import { closeAllEditors } from '../../test/testUtil'
 
 const sampleStateMachine = `
 	 {

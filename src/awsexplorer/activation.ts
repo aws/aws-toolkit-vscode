@@ -41,19 +41,20 @@ let didTryAutoConnect = false
 
 import * as nls from 'vscode-nls'
 import globals from '../shared/extensionGlobals'
+import { ExtContext } from '../shared/extensions'
 const localize = nls.loadMessageBundle()
 
 /**
  * Activates the AWS Explorer UI and related functionality.
  */
 export async function activate(args: {
-    awsContext: AwsContext
+    context: ExtContext
     awsContextTrees: AwsContextTreeCollection
     regionProvider: RegionProvider
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(globals.context, args.awsContext, args.regionProvider)
+    const awsExplorer = new AwsExplorer(globals.context, args.context.awsContext, args.regionProvider)
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
@@ -61,19 +62,19 @@ export async function activate(args: {
     })
     globals.context.subscriptions.push(view)
 
-    await registerAwsExplorerCommands(globals.context, awsExplorer, args.toolkitOutputChannel)
+    await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
 
     globals.context.subscriptions.push(
         view.onDidChangeVisibility(async e => {
             if (e.visible) {
-                await tryAutoConnect(args.awsContext)
+                await tryAutoConnect(args.context.awsContext)
             }
         })
     )
 
     args.awsContextTrees.addTree(awsExplorer)
 
-    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, globals.context)
+    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.context.awsContext, globals.context)
 }
 
 async function tryAutoConnect(awsContext: AwsContext) {
@@ -86,17 +87,17 @@ async function tryAutoConnect(awsContext: AwsContext) {
             await loginWithMostRecentCredentials(toolkitSettings, loginManager)
         }
     } catch (err) {
-        getLogger().error('credentials: failed to auto-connect: %O', (err as Error).message)
+        getLogger().error('credentials: failed to auto-connect: %O', err)
         showViewLogsMessage(localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting'))
     }
 }
 
 async function registerAwsExplorerCommands(
-    context: vscode.ExtensionContext,
+    context: ExtContext,
     awsExplorer: AwsExplorer,
     toolkitOutputChannel: vscode.OutputChannel
 ): Promise<void> {
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.showRegion', async () => {
             try {
                 await globals.awsContextCommands.onCommandShowRegion()
@@ -107,7 +108,7 @@ async function registerAwsExplorerCommands(
         })
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
             try {
                 await globals.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
@@ -118,26 +119,13 @@ async function registerAwsExplorerCommands(
         })
     )
 
-    let submitFeedbackPanel: vscode.WebviewPanel | undefined
-    context.subscriptions.push(
-        vscode.commands.registerCommand('aws.submitFeedback', () => {
-            if (submitFeedbackPanel) {
-                submitFeedbackPanel.reveal(submitFeedbackPanel.viewColumn || vscode.ViewColumn.One)
-            } else {
-                submitFeedbackPanel = submitFeedback()
-
-                submitFeedbackPanel.onDidDispose(
-                    () => {
-                        submitFeedbackPanel = undefined
-                    },
-                    undefined,
-                    context.subscriptions
-                )
-            }
+    context.extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('aws.submitFeedback', async () => {
+            await submitFeedback(context)
         })
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.refreshAwsExplorer', async (passive: boolean = false) => {
             awsExplorer.refresh()
 
@@ -147,7 +135,7 @@ async function registerAwsExplorerCommands(
         })
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.deleteCloudFormation',
             async (node: CloudFormationStackNode) =>
@@ -155,7 +143,7 @@ async function registerAwsExplorerCommands(
         )
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.downloadStateMachineDefinition',
             async (node: StateMachineNode) =>
@@ -166,18 +154,14 @@ async function registerAwsExplorerCommands(
         )
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.executeStateMachine',
-            async (node: StateMachineNode) =>
-                await executeStateMachine({
-                    stateMachineNode: node,
-                    outputChannel: toolkitOutputChannel,
-                })
+            async (node: StateMachineNode) => await executeStateMachine(context, node)
         )
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.renderStateMachineGraph',
             async (node: StateMachineNode) =>
@@ -189,21 +173,21 @@ async function registerAwsExplorerCommands(
         )
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node))
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.copyName', async (node: AWSResourceNode) => await copyNameCommand(node))
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
         })
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.loadMoreChildren', async (node: AWSTreeNodeBase & LoadMoreNode) => {
             await loadMoreChildrenCommand(node, awsExplorer)
         })

@@ -86,7 +86,8 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
     private async downloadRequest(): Promise<string | undefined> {
         try {
-            const contents = (await this.getResponseFromGetRequest(this.params.timeout)).body
+            // HACK(?): receiving JSON as a string without `toString` makes it so we can't deserialize later
+            const contents = (await this.getResponseFromGetRequest(this.params.timeout)).body.toString()
             if (this.params.onSuccess) {
                 this.params.onSuccess(contents)
             }

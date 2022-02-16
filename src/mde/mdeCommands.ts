@@ -9,11 +9,10 @@ import * as mde from '../shared/clients/mdeClient'
 import * as nls from 'vscode-nls'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
-import { showConfirmationMessage, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
+import { showConfirmationMessage, showMessageWithCancel } from '../shared/utilities/messages'
 import { Commands } from '../shared/vscode/commands'
 import { Window } from '../shared/vscode/window'
 import { MdeRootNode } from './mdeRootNode'
-import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { Timeout, waitTimeout, waitUntil } from '../shared/utilities/timeoutUtils'
 import { ExtContext } from '../shared/extensions'
 import { DeleteEnvironmentResponse, TagMap } from '../../types/clientmde'
@@ -21,30 +20,10 @@ import { SystemUtilities } from '../shared/systemUtilities'
 import * as mdeModel from './mdeModel'
 import { localizedDelete } from '../shared/localizedText'
 import { MDE_RESTART_KEY } from './constants'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { parse } from '@aws-sdk/util-arn-parser'
 import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
-
-export function getMdeSsmEnv(
-    region: string,
-    endpoint: string,
-    ssmPath: string,
-    session: mde.MdeSession
-): NodeJS.ProcessEnv {
-    return Object.assign(
-        {
-            AWS_REGION: region,
-            AWS_SSM_CLI: ssmPath,
-            AWS_MDE_ENDPOINT: endpoint,
-            AWS_MDE_SESSION: session.id,
-            AWS_MDE_STREAMURL: session.accessDetails.streamUrl,
-            AWS_MDE_TOKEN: session.accessDetails.tokenValue,
-        },
-        process.env
-    )
-}
 
 /**
  * Best-effort attempt to start an MDE given an ID, showing a progress notifcation with a cancel button
@@ -105,71 +84,11 @@ export async function startMde(
     })
 }
 
-export async function mdeConnectCommand(
-    args: Pick<mde.MdeEnvironment, 'id'>,
-    region: string,
-    window = Window.vscode()
-): Promise<void> {
-    if (!isExtensionInstalledMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to MDE')) {
-        return
-    }
-
-    function showMissingToolMsg(s: string) {
-        const m = localize(
-            'AWS.mde.missingRequiredTool',
-            'Failed to connect to MDE environment, missing required tool: {0}',
-            s
-        )
-        showViewLogsMessage(m, window)
-    }
-
-    const vsc = await SystemUtilities.getVscodeCliPath()
-    if (!vsc) {
-        showMissingToolMsg('code')
-        return
-    }
-
-    const hasSshConfig = await mdeModel.ensureMdeSshConfig()
-    if (!hasSshConfig.ok) {
-        showMissingToolMsg('ssh')
-        return
-    }
-
-    const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
-    const session = await mdeClient.startSession(args)
-    if (!session) {
-        return
-    }
-
-    const ssmPath = await mdeModel.ensureSsmCli()
-    if (!ssmPath.ok) {
-        return
-    }
-
-    // temporary until we can dynamically find the directory
-    const projectDir = '/projects'
-
-    const cmd = new ChildProcess(vsc, ['--folder-uri', `vscode-remote://ssh-remote+aws-mde-${args.id}${projectDir}`], {
-        spawnOptions: {
-            env: getMdeSsmEnv(region, mde.mdeEndpoint(), ssmPath.result, session),
-        },
-    })
-
-    const settings = new DefaultSettingsConfiguration()
-    settings.ensureToolkitInVscodeRemoteSsh()
-
-    // Note: `await` is intentionally not used.
-    cmd.run({
-        onStdout(stdout) {
-            getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
-        },
-        onStderr(stderr) {
-            getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
-        },
-    }).then(o => {
-        if (o.exitCode !== 0) {
-            getLogger().error('MDE connect: failed to start: %O', cmd)
-        }
+export async function mdeConnectCommand(args: Pick<mde.MdeEnvironment, 'id'>, region: string): Promise<void> {
+    mdeModel.connectToMde(args, region, async () => {
+        const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
+        const session = await mdeClient.startSession(args)
+        return session
     })
 }
 
@@ -269,7 +188,7 @@ export async function createMdeSshCommand(
     }
 
     // TODO: check SSH version to verify 'accept-new' is available
-    const mdeEnvVars = getMdeSsmEnv(region, mde.mdeEndpoint(), ssmPath.result, session)
+    const mdeEnvVars = mdeModel.getMdeSsmEnv(region, ssmPath.result, session)
     const env = { [mdeModel.SSH_AGENT_SOCKET_VARIABLE]: agentSock, ...mdeEnvVars }
 
     const sshPath = await SystemUtilities.findSshPath()

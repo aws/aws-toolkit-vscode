@@ -363,7 +363,7 @@ export function getToolkitEnvironmentDetails(): string {
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}{5} Toolkit Version:  {6}\n',
+        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\n{5} Toolkit Version:  {6}\n',
         osType,
         osArch,
         osRelease,

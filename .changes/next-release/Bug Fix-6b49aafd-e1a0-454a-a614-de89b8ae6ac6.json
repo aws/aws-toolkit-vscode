@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Logging: Toolkit logs are now cleaned up automatically by the extension to prevent excessive storage consumption"
-}

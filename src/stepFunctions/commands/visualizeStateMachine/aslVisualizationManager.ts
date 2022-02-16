@@ -19,7 +19,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
     public async visualizeStateMachine(
         globalStorage: vscode.Memento,
-        activeTextEditor: vscode.TextEditor | undefined
+        input: vscode.Uri | vscode.TextEditor | undefined
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
 
@@ -29,17 +29,18 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
          * Ensure tests are written for this use case as well.
          */
 
-        // Output channel is considered a text editor by VSCode (which we don't want)
-        // This check is required to prevent integration tests from failing due to the Go extension
-        if (!activeTextEditor || activeTextEditor.document.fileName.includes('extension-output')) {
+        const document =
+            input instanceof vscode.Uri
+                ? await vscode.workspace.openTextDocument(input)
+                : input?.document ?? vscode.window.activeTextEditor?.document
+
+        if (!document || document.fileName.includes('extension-output')) {
             logger.error('Could not get active text editor for state machine render.')
             throw new Error('Could not get active text editor for state machine render.')
         }
 
-        const textDocument: vscode.TextDocument = activeTextEditor.document
-
         // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(textDocument.uri.fsPath)
+        const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
         if (existingVisualization) {
             existingVisualization.showPanel()
 
@@ -50,7 +51,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
         try {
             await this.cache.updateCache(globalStorage)
 
-            const newVisualization = new AslVisualization(textDocument)
+            const newVisualization = new AslVisualization(document)
             this.handleNewVisualization(newVisualization)
 
             return newVisualization.getPanel()

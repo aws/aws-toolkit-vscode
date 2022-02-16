@@ -12,7 +12,7 @@ import { GitExtension } from '../../types/git'
 import { initCurrentRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { getLogger } from '../shared/logger/logger'
 import { onCredentialsChanged } from './utils'
-import { cloneCawsRepo, listCommands, login, logout, openCawsResource } from './commands'
+import { cloneCawsRepo, createDevEnv, listCommands, login, logout, openCawsResource } from './commands'
 import { registerCloneHandler } from './cloneHandler'
 
 /**
@@ -54,8 +54,10 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.caws.openOrg', () => openCawsResource('org')),
         vscode.commands.registerCommand('aws.caws.openProject', () => openCawsResource('project')),
         vscode.commands.registerCommand('aws.caws.openRepo', () => openCawsResource('repo')),
+        vscode.commands.registerCommand('aws.caws.openDevEnv', () => openCawsResource('env')),
         vscode.commands.registerCommand('aws.caws.cloneRepo', () => cloneCawsRepo()),
         vscode.commands.registerCommand('aws.caws.listCommands', () => listCommands()),
-        registerCloneHandler(ctx.uriHandler)
+        vscode.commands.registerCommand('aws.caws.createDevEnv', () => createDevEnv()),
+        registerCloneHandler(ctx.uriHandler),
     )
 }

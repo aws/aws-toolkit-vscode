@@ -33,16 +33,13 @@ function copyClock(): Clock {
     return { ...globalThis, Date, Promise } as Clock
 }
 
-const globals = {} as ToolkitGlobals
+const globals = { clock: copyClock() } as ToolkitGlobals
 
 export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
 export function initialize(context: ExtensionContext, window: Window): ToolkitGlobals {
-    // TODO: we should throw here if already assigned. A few tests actually depend on the combined state
-    // of the extension activating plus test setup, so for now we have to do it like this :(
-
     Object.assign(globals, {
         context,
         window,

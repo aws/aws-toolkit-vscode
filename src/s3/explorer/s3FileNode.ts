@@ -15,6 +15,7 @@ import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
 import globals from '../../shared/extensionGlobals'
 import { getRelativeDate } from '../../shared/utilities/textUtilities'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 /**
  * Moment format for rendering readable dates for S3.
@@ -52,6 +53,13 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
         }
         this.iconPath = fileIconPath()
         this.contextValue = 'awsS3FileNode'
+        this.command = !isCloud9()
+            ? {
+                  command: 'aws.s3.openFile',
+                  title: localize('AWS.command.s3.openFile', 'Open File'),
+                  arguments: [this],
+              }
+            : undefined
     }
 
     /**

@@ -12,7 +12,7 @@ export class BaseTemplates {
             <meta http-equiv="Content-Security-Policy"
                 content="default-src 'none';
                 img-src <%= cspSource %> https: data:;
-                script-src <%= cspSource %> 'self' 'unsafe-eval';
+                script-src <%= cspSource %> 'self';
                 style-src <%= cspSource %>;"
             >
         </head>
