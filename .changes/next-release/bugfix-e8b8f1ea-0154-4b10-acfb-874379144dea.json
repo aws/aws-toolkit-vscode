@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Lambda run configuration exception while setting handler architecture"
+}
