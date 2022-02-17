@@ -79,7 +79,7 @@ export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
     }
 }
 
-interface SampleRequest {
+export interface SampleRequest {
     name: string | undefined
     filename: string | undefined
 }
