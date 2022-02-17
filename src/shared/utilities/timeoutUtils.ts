@@ -26,7 +26,7 @@ export class CancellationError extends Error {
     }
 }
 
-interface CancelEvent {
+export interface CancelEvent {
     readonly agent: CancellationAgent
 }
 

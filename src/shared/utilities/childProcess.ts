@@ -95,6 +95,9 @@ export class ChildProcess {
     }
 
     // Inspired by 'got'
+    /**
+     * Creates a one-off {@link ChildProcess} class that always uses the specified options.
+     */
     public static extend(options: ChildProcessOptions) {
         return class extends this {
             public constructor(command: string, args: string[] = []) {

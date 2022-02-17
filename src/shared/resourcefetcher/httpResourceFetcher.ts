@@ -15,7 +15,7 @@ import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
-import { Timeout, CancellationError } from '../utilities/timeoutUtils'
+import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -105,6 +105,10 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
     }
 
+    private logCancellation(event: CancelEvent) {
+        getLogger().debug(`Download for "${this.logText()}" ${event.agent === 'user' ? 'cancelled' : 'timed out'}`)
+    }
+
     // TODO: make pipeLocation a vscode.Uri
     private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherResult {
         const requester = semver.lt(vscode.version, MIN_VERSION_FOR_GOT) ? patchedGot : got
@@ -119,9 +123,9 @@ export class HttpResourceFetcher implements ResourceFetcher {
                 err ? reject(err) : resolve()
             })
 
-            timeout?.token.onCancellationRequested(({ agent }) => {
-                getLogger().debug(`Download for "${this.logText()}" ${agent === 'user' ? 'cancelled' : 'timed out'}`)
-                pipe.destroy(new CancellationError(agent))
+            timeout?.token.onCancellationRequested(event => {
+                this.logCancellation(event)
+                pipe.destroy(new CancellationError(event.agent))
             })
         })
 
@@ -134,9 +138,9 @@ export class HttpResourceFetcher implements ResourceFetcher {
             headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
         })
 
-        timeout?.token.onCancellationRequested(({ agent }) => {
-            getLogger().debug(`Download for "${this.logText()}" ${agent === 'user' ? 'cancelled' : 'timed out'}`)
-            promise.cancel(new CancellationError(agent).message)
+        timeout?.token.onCancellationRequested(event => {
+            this.logCancellation(event)
+            promise.cancel(new CancellationError(event.agent).message)
         })
 
         return promise.catch((err: RequestError | CancelError) => {

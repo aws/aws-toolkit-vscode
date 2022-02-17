@@ -232,71 +232,84 @@ function getToolkitLocalCliPath(): string {
     return path.join(getToolkitCliDir(), 'Amazon')
 }
 
+function handleError<T extends Promise<unknown>>(promise: T): T {
+    return promise.catch<never>(err => {
+        if (
+            !(err instanceof CancellationError || err instanceof InstallerError || err instanceof InvalidPlatformError)
+        ) {
+            throw new InstallerError((err as Error).message)
+        }
+        throw err
+    }) as T
+}
+
 async function installSsmCli(
     tempDir: string,
     progress: vscode.Progress<{ message?: string; increment?: number }>,
     timeout: Timeout
 ): Promise<string> {
     progress.report({ message: msgDownloading })
-    const ssmInstaller = await downloadCliSource(AWS_CLIS['session-manager-plugin']!, tempDir, timeout)
+
+    const ssmInstaller = await downloadCliSource(AWS_CLIS['session-manager-plugin'], tempDir, timeout)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
-    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(AWS_CLIS['session-manager-plugin']!))
-    const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true })
+    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(AWS_CLIS['session-manager-plugin']))
+    const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })
-    switch (process.platform) {
-        case 'darwin': {
-            try {
-                const tempPath = path.join(tempDir, 'tmp')
-                const pkgArgs = ['--expand', 'session-manager-plugin.pkg', tempPath]
-                const tarArgs = ['-xzf', path.join(tempPath, 'Payload')]
-                await new TimedProcess('pkgutil', pkgArgs).run({ spawnOptions: { cwd: tempDir } })
-                await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: tempPath } })
 
-                fs.copySync(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
-                    recursive: true,
-                })
+    return handleError(install())
 
-                return finalPath
-            } catch (err) {
-                if (CancellationError.isUserCancelled(err)) {
-                    throw err
-                }
-                throw new InstallerError((err as Error).message)
-            }
+    async function install() {
+        switch (process.platform) {
+            case 'darwin':
+                return installOnMac()
+            case 'win32':
+                return installOnWindows()
+            case 'linux':
+                return installOnLinux()
+            default:
+                throw new InvalidPlatformError(
+                    `Platform ${process.platform} is not supported for CLI autoinstallation.`
+                )
         }
-        case 'win32': {
-            try {
-                new admZip(ssmInstaller).extractAllTo(tempDir, true)
-                const secondZip = path.join(tempDir, 'package.zip')
-                new admZip(secondZip).extractAllTo(outDir, true)
+    }
 
-                return finalPath
-            } catch (err) {
-                if (CancellationError.isUserCancelled(err)) {
-                    throw err
-                }
-                throw new InstallerError((err as Error).message)
-            }
-        }
-        case 'linux': {
-            const ssmDir = path.dirname(ssmInstaller)
-            // extract deb file (using ar) to ssmInstaller dir
-            await new TimedProcess('ar', ['-x', ssmInstaller]).run({ spawnOptions: { cwd: ssmDir } })
-            // extract data.tar.gz to CLI dir
-            const tarArgs = ['-xzf', path.join(ssmDir, 'data.tar.gz')]
-            await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: ssmDir } }),
-                fs.mkdirSync(outDir, { recursive: true })
-            fs.copySync(path.join(ssmDir, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
-                recursive: true,
-            })
+    async function installOnMac() {
+        const tempPath = path.join(tempDir, 'tmp')
+        const pkgArgs = ['--expand', 'session-manager-plugin.pkg', tempPath]
+        const tarArgs = ['-xzf', path.join(tempPath, 'Payload')]
+        await new TimedProcess('pkgutil', pkgArgs).run({ spawnOptions: { cwd: tempDir } })
+        await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: tempPath } })
 
-            return finalPath
-        }
-        default: {
-            throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
-        }
+        fs.copySync(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
+            recursive: true,
+        })
+
+        return finalPath
+    }
+
+    async function installOnWindows() {
+        new admZip(ssmInstaller).extractAllTo(tempDir, true)
+        const secondZip = path.join(tempDir, 'package.zip')
+        new admZip(secondZip).extractAllTo(outDir, true)
+
+        return finalPath
+    }
+
+    async function installOnLinux() {
+        const ssmDir = path.dirname(ssmInstaller)
+        // extract deb file (using ar) to ssmInstaller dir
+        await new TimedProcess('ar', ['-x', ssmInstaller]).run({ spawnOptions: { cwd: ssmDir } })
+        // extract data.tar.gz to CLI dir
+        const tarArgs = ['-xzf', path.join(ssmDir, 'data.tar.gz')]
+        await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: ssmDir } }),
+            fs.mkdirSync(outDir, { recursive: true })
+        fs.copySync(path.join(ssmDir, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
+            recursive: true,
+        })
+
+        return finalPath
     }
 }
 
