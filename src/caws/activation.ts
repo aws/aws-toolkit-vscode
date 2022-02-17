@@ -13,7 +13,7 @@ import { initCurrentRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { getLogger } from '../shared/logger/logger'
 import { onCredentialsChanged } from './utils'
 import { cloneCawsRepo, createDevEnv, listCommands, login, logout, openCawsResource } from './commands'
-import { registerCloneHandler } from './cloneHandler'
+import * as uriHandlers from './uriHandlers'
 
 /**
  * Activate CAWS functionality.
@@ -58,6 +58,6 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.caws.cloneRepo', () => cloneCawsRepo()),
         vscode.commands.registerCommand('aws.caws.listCommands', () => listCommands()),
         vscode.commands.registerCommand('aws.caws.createDevEnv', () => createDevEnv()),
-        registerCloneHandler(ctx.uriHandler),
+        uriHandlers.register(ctx.uriHandler)
     )
 }

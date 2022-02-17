@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { CawsClient, CawsDevEnv, CawsRepo, cawsRegion } from '../shared/clients/cawsClient'
+import { CawsClient, CawsDevEnv, CawsRepo, cawsRegion, CawsProject, CawsOrg } from '../shared/clients/cawsClient'
 import globals, { checkCaws } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { showViewLogsMessage } from '../shared/utilities/messages'
@@ -72,19 +72,15 @@ export async function cloneCawsRepo(url?: vscode.Uri): Promise<void> {
         if (!r) {
             return
         }
-        // TODO: move this logic up into the model
-        if (!r.org.name || !r.project.name || !r.name) {
-            throw new Error(`Invalid CAWS repo: ${JSON.stringify(r, undefined, 4)}`)
-        }
         const cloneLink = await c.toCawsGitUri(r.org.name, r.project.name, r.name)
-        vscode.commands.executeCommand('git.clone', cloneLink)
+        await vscode.commands.executeCommand('git.clone', cloneLink)
     } else {
         const [_, org, repo, project] = url.path.slice(1).split('/')
         if (!project) {
             throw new Error(`CAWS URL is invalid, project was undefined: ${url.path}`)
         }
 
-        vscode.commands.executeCommand('git.clone', await c.toCawsGitUri(org, repo, project))
+        await vscode.commands.executeCommand('git.clone', await c.toCawsGitUri(org, repo, project))
     }
 }
 
@@ -133,6 +129,44 @@ export async function createDevEnv(): Promise<void> {
     }
 }
 
+export async function openDevEnv(client: CawsClient, env: CawsDevEnv): Promise<void> {
+    const runningEnv = await client.startEnvironmentWithProgress(
+        {
+            developmentWorkspaceId: env.developmentWorkspaceId,
+            organizationName: env.org.name,
+            projectName: env.project.name,
+        },
+        ''
+    )
+    if (!runningEnv) {
+        getLogger().error('openDevEnv: failed to start environment: %s', env.developmentWorkspaceId)
+        return
+    }
+
+    await mdeModel.connectToMde(
+        {
+            id: env.developmentWorkspaceId,
+        },
+        cawsRegion,
+        async () => {
+            const session = await client.startDevEnvSession({
+                projectName: env.project.name,
+                organizationName: env.org.name,
+                developmentWorkspaceId: env.developmentWorkspaceId,
+            })
+            if (!session?.sessionId) {
+                return undefined
+            }
+            return {
+                ...session,
+                id: session.sessionId,
+                startedAt: new Date(),
+                status: 'CONNECTED',
+            }
+        }
+    )
+}
+
 /**
  * Implements commands:
  * - "Open CODE.AWS Organization"
@@ -150,54 +184,13 @@ export async function openCawsResource(kind: 'org' | 'project' | 'repo' | 'env')
         return
     }
     if (kind !== 'env') {
-        c.openCawsUrl(o)
+        c.openCawsUrl(o as CawsRepo | CawsProject | CawsOrg)
         return
     }
 
     const env = o as CawsDevEnv
     try {
-        const runningEnv = await c.startEnvironmentWithProgress(
-            {
-                developmentWorkspaceId: env.developmentWorkspaceId,
-                organizationName: env.org.name,
-                projectName: env.project.name,
-            },
-            ''
-        )
-        if (!runningEnv) {
-            getLogger().error('openCawsResource: failed to start environment: %s', env.developmentWorkspaceId)
-            return
-        }
-        mdeModel.connectToMde(
-            {
-                id: env.developmentWorkspaceId,
-            },
-            cawsRegion,
-            async () => {
-                const session = await c.startDevEnvSession({
-                    projectName: env.project.name,
-                    organizationName: env.org.name,
-                    developmentWorkspaceId: env.developmentWorkspaceId,
-                })
-                if (!session?.sessionId) {
-                    return undefined
-                }
-                return {
-                    ...session,
-                    id: session.sessionId,
-                    startedAt: new Date(),
-                    status: 'CONNECTED',
-                }
-            }
-        )
-
-        // if (request.devfile) {
-        //     await c.waitForDevfile(runningEnv)
-        //     // XXX: most devfiles specify mounting the 'project' directory, not 'projects'
-        //     await cloneToMde(runningEnv, { ...repo, uri: repoUri }, '/project')
-        // } else {
-        //     await cloneToMde(runningEnv, { ...repo, uri: repoUri })
-        // }
+        await openDevEnv(c, env)
     } catch (err) {
         showViewLogsMessage(
             localize(

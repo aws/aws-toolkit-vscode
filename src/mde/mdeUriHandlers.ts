@@ -4,12 +4,12 @@
  */
 
 /** The 'path' for external URIs attempting to open an MDE within VS Code */
-const MDE_URI_PATH = '/connect' as const
+const MDE_URI_PATH = '/connect/mde' as const
 
 import { EnvironmentId } from '../../types/clientmde'
 import * as vscode from 'vscode'
 import { mdeConnectCommand } from './mdeCommands'
-import { UriHandler } from '../shared/vscode/uriHandler'
+import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
 import { ExtContext } from '../shared/extensions'
 import { createMdeWebview } from './vue/create/backend'
 
@@ -27,12 +27,11 @@ export function activateUriHandlers(ctx: ExtContext, uriHandler: UriHandler): vo
     )
 }
 
-export function parseMdeUriParams(query: URLSearchParams): MdeUriParams {
-    const result: MdeUriParams = {}
-
-    result.id = query.get('id') ?? undefined
-    result.cloneUrl = query.has('cloneUrl') ? vscode.Uri.parse(query.get('cloneUrl')!, true) : undefined
-    result.branch = query.get('branch') ?? undefined
+export function parseMdeUriParams(query: SearchParams): MdeUriParams {
+    const result = {
+        cloneUrl: query.getAs('cloneUrl', v => vscode.Uri.parse(v, true)),
+        ...query.getFromKeys(['id', 'branch'] as const),
+    }
 
     if (result.branch !== undefined && result.cloneUrl === undefined) {
         throw new Error('Cannot clone without a source URL')

@@ -6,7 +6,7 @@
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { registerCloneHandler } from '../../caws/cloneHandler'
+import { register } from '../../caws/uriHandlers'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 
@@ -22,7 +22,7 @@ describe('Clone Handler', function () {
 
     beforeEach(function () {
         handler = new UriHandler()
-        registerCloneHandler(handler)
+        register(handler)
         commandStub = sinon.stub(vscode.commands, 'executeCommand')
     })
 

@@ -5,10 +5,9 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { UriHandler } from '../../../shared/vscode/uriHandler'
+import { SearchParams, UriHandler } from '../../../shared/vscode/uriHandler'
 import * as mdeUriHandlers from '../../../mde/mdeUriHandlers'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { URLSearchParams } from 'url'
 
 describe('UriHandler', function () {
     const TEST_PATH = '/my/path'
@@ -31,7 +30,7 @@ describe('UriHandler', function () {
         uriHandler.registerHandler(
             TEST_PATH,
             q => assert.strictEqual(q.myNumber, 123),
-            (q: URLSearchParams) => ({ myNumber: Number(q.get('myString')) })
+            (q: SearchParams) => ({ myNumber: Number(q.get('myString')) })
         )
         return uriHandler.handleUri(makeUri('myString=123'))
     })
@@ -70,6 +69,23 @@ describe('UriHandler', function () {
 
         uriHandler.registerHandler(TEST_PATH, handler)
         return assert.doesNotReject(uriHandler.handleUri(makeUri()))
+    })
+})
+
+describe('SearchParams', function () {
+    const params = new SearchParams({ foo: 'bar', baz: 'qaz', number: '1' })
+
+    it('can map params', function () {
+        assert.strictEqual(params.getAs('number', Number), 1)
+    })
+
+    it('can convert keys to an object', function () {
+        assert.deepStrictEqual(params.getFromKeys(['foo', 'baz', 'xyz']), { foo: 'bar', baz: 'qaz', xyz: undefined })
+    })
+
+    it('can throw if the parameter does not exist', function () {
+        assert.throws(() => params.getOrThrow('foob', ''))
+        assert.throws(() => params.getOrThrow('foob', new Error()))
     })
 })
 

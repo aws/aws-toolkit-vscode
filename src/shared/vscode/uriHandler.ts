@@ -16,7 +16,7 @@ const localize = nls.loadMessageBundle()
 /** Handles an external URI targeting the extension */
 export type PathHandler<T> = (query: T) => Promise<void> | void
 /** Parses the 'query' or arguments from a URI */
-export type QueryParser<T> = (params: URLSearchParams) => Promise<T> | T | never
+export type QueryParser<T> = (params: SearchParams) => Promise<T> | T | never
 
 interface HandlerWithParser<T> {
     handler: PathHandler<T>
@@ -43,9 +43,10 @@ export class UriHandler implements vscode.UriHandler {
         let parsedQuery: Parameters<typeof handler>[0]
 
         const url = new URL(uri.toString(true))
+        const params = new SearchParams(url.searchParams)
 
         try {
-            parsedQuery = parser ? await parser(url.searchParams) : url.searchParams
+            parsedQuery = parser ? await parser(params) : params
         } catch (err) {
             showViewLogsMessage(localize('AWS.uriHandler.parser.failed', 'Failed to parse URI query: {0}', uriNoQuery))
             getLogger().error(`UriHandler: query parsing failed for path "${uri.path}": %O`, err)
@@ -82,5 +83,44 @@ export class UriHandler implements vscode.UriHandler {
 
         this.handlers.set(path, { handler, parser })
         return { dispose: () => this.handlers.delete(path) }
+    }
+}
+
+/**
+ * Minimal wrapper around {@link URLSearchParams} for better ergonomics.
+ */
+export class SearchParams extends URLSearchParams {
+    public getAs<T>(name: string, mapper: (v: string) => T): T | undefined {
+        return super.has(name) ? mapper(super.get(name)!) : undefined
+    }
+
+    public getOrThrow(name: string, message: string | Error): string {
+        this.assertHas(name, message)
+        return super.get(name)!
+    }
+
+    public getAsOrThrow<T>(name: string, message: string | Error, mapper: (v: string) => T): T {
+        this.assertHas(name, message)
+        return this.getAs(name, mapper)!
+    }
+
+    public getFromKeys<T extends readonly string[]>(keys: T): { [P in T[number]]: string | undefined } {
+        return keys.reduce(
+            (a, b: T[number]) => ((a[b] = super.get(b) ?? undefined), a),
+            {} as { [P in T[number]]: string | undefined }
+        )
+    }
+
+    public getFromKeysOrThrow<T extends readonly string[]>(keys: T): { [P in T[number]]: string } {
+        return keys.reduce(
+            (a, b: T[number]) => ((a[b] = this.getOrThrow(b, `"${b}" must be provided`)), a),
+            {} as { [P in T[number]]: string }
+        )
+    }
+
+    private assertHas(name: string, message: string | Error): void | never {
+        if (!super.has(name)) {
+            throw message instanceof Error ? message : new Error(message)
+        }
     }
 }

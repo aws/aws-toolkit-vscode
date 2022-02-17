@@ -54,6 +54,7 @@ export interface CawsProject extends caws.ProjectSummary {
 export interface CawsRepo extends caws.SourceRepositorySummary {
     readonly org: CawsOrg
     readonly project: CawsProject
+    readonly name: string
 }
 
 async function createCawsClient(
@@ -418,9 +419,9 @@ export class CawsClient {
             for (const p of projs.items ?? []) {
                 if (p.name) {
                     yield {
+                        ...p,
                         id: '', // TODO: not provided by CAWS yet.
                         org: org,
-                        ...p,
                         name: p.name,
                     }
                 }
@@ -472,6 +473,7 @@ export class CawsClient {
                     yield {
                         org: p.org,
                         project: p,
+                        name: r.name,
                         ...r,
                     }
                 }
