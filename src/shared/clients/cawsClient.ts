@@ -604,7 +604,12 @@ export class CawsClient {
 
             for (const r of envs?.items ?? []) {
                 if (r.developmentWorkspaceId) {
-                    const desc = r.labels?.join(', ')
+                    const desc = r.repositories
+                        ?.map(o => {
+                            const pr = o.pullRequestNumber ? `#${o.pullRequestNumber}` : ''
+                            return `${o.repositoryName}:${o.branchName ?? ''} ${pr}`
+                        })
+                        .join(', ')
                     yield {
                         id: r.developmentWorkspaceId,
                         description: desc,
@@ -631,12 +636,16 @@ export class CawsClient {
         status: string,
         timeout: Timeout = new Timeout(MDE_START_TIMEOUT)
     ): Promise<CawsDevEnv | undefined> {
-        // 'debounce' in case caller did not check if the environment was already running
-        if (status === 'RUNNING') {
-            const resp = await this.getDevEnv(args)
-            if (resp && resp.status === 'RUNNING') {
-                return resp
+        let lastStatus: undefined | string
+        try {
+            const env = await this.getDevEnv(args)
+            lastStatus = env?.status
+            if (status === 'RUNNING' && lastStatus === 'RUNNING') {
+                // "Debounce" in case caller did not check if the environment was already running.
+                return env
             }
+        } catch {
+            lastStatus = undefined
         }
 
         const progress = await showMessageWithCancel(localize('AWS.caws.startMde.message', 'CODE.AWS'), timeout)
@@ -650,6 +659,9 @@ export class CawsClient {
                 }
 
                 const resp = await this.getDevEnv(args)
+                if (lastStatus === 'STARTING' && (resp?.status === 'STOPPED' || resp?.status === 'STOPPING')) {
+                    throw Error('Evironment failed to start')
+                }
 
                 if (resp?.status === 'STOPPED') {
                     progress.report({ message: localize('AWS.caws.startMde.stopStart', 'resuming environment...') })
@@ -664,6 +676,7 @@ export class CawsClient {
                     })
                 }
 
+                lastStatus = resp?.status
                 return resp?.status === 'RUNNING' ? resp : undefined
             },
             // note: the `waitUntil` will resolve prior to the real timeout if it is refreshed
@@ -697,12 +710,17 @@ export class CawsClient {
     ): AsyncIterableIterator<vscode.QuickPickItem> {
         for await (const o of items) {
             let label: string
-            if ((o as CawsRepo).project) {
+            let desc = o.id
+            if ((o as CawsDevEnv).developmentWorkspaceId) {
+                const repo1 = (o as CawsDevEnv).repositories[0]?.repositoryName
+                label = `${(o as CawsDevEnv).org.name} / ${(o as CawsDevEnv).project.name} / ${repo1}`
+                desc = `${(o as CawsDevEnv).lastUpdatedTime.toISOString()} ${(o as CawsDevEnv).ide} ${
+                    (o as CawsDevEnv).status
+                }`
+            } else if ((o as CawsRepo).project) {
                 label = this.createRepoLabel(o as CawsRepo)
             } else if ((o as CawsProject).org) {
                 label = `${(o as CawsProject).org.name} / ${(o as CawsProject).name}`
-            } else if ((o as CawsDevEnv).developmentWorkspaceId) {
-                label = `TODO: <org> / <project>`
             } else {
                 label = `${(o as CawsOrg).name}`
             }
@@ -710,9 +728,8 @@ export class CawsClient {
             yield {
                 label: label,
                 detail: o.description,
-                description: o.id,
-                // Extra state
-                val: o,
+                description: desc,
+                val: o, // Extra state
             } as vscode.QuickPickItem
         }
     }

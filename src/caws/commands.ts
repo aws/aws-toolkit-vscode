@@ -115,7 +115,7 @@ export async function createDevEnv(): Promise<void> {
                 developmentWorkspaceId: env.developmentWorkspaceId,
                 ...args,
             },
-            ''
+            'RUNNING'
         )
     } catch (err) {
         showViewLogsMessage(
@@ -136,7 +136,7 @@ export async function openDevEnv(client: CawsClient, env: CawsDevEnv): Promise<v
             organizationName: env.org.name,
             projectName: env.project.name,
         },
-        ''
+        'RUNNING'
     )
     if (!runningEnv) {
         getLogger().error('openDevEnv: failed to start environment: %s', env.developmentWorkspaceId)
