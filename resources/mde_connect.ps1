@@ -34,7 +34,6 @@ function Main {
         [string] $EnvironmentID
     )
 
-    $endpoint = Require -VariableName "AWS_MDE_ENDPOINT"
     $region = Require -VariableName "AWS_REGION"
     $ssmPath = Require -VariableName "AWS_SSM_CLI"
     $sessionId = Require -VariableName "AWS_MDE_SESSION"
