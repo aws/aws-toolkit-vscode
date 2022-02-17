@@ -106,11 +106,10 @@ describe('Connect Script', function () {
 
     it('can run the script with environment variables', async function () {
         const script = await ensureConnectScript(context)
-        const region = 'us-weast-1'
-        const streamUrl = '123'
-        const tokenValue = '456'
-        const id = '01234567890'
-        const env = getMdeSsmEnv(region, 'echo', { id, accessDetails: { streamUrl, tokenValue } })
+        const env = getMdeSsmEnv('us-weast-1', 'echo', {
+            id: '01234567890',
+            accessDetails: { streamUrl: '123', tokenValue: '456' },
+        })
 
         // This could be de-duped
         const isWindows = process.platform === 'win32'
@@ -119,11 +118,5 @@ describe('Connect Script', function () {
 
         const output = await new ChildProcess(cmd, args).run({ spawnOptions: { env } })
         assert.strictEqual(output.exitCode, 0, 'Connect script should exit with a zero status')
-
-        // The below can be removed when we have integration tests, otherwise it's good to keep around as a sanity check
-        const expected = `{"streamUrl":"${streamUrl}","tokenValue":"${tokenValue}","sessionId":"${id}"}\\s+${region}\\s+StartSession`
-        if (!output.stdout.match(RegExp(expected.replace('"', '\\\\?"')))) {
-            assert.fail(`Script output did not echo back parameters, actual: ${output.stdout}`)
-        }
     })
 })
