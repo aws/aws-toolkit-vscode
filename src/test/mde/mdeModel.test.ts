@@ -122,6 +122,8 @@ describe('Connect Script', function () {
 
         // The below can be removed when we have integration tests, otherwise it's good to keep around as a sanity check
         const expected = `{"streamUrl":"${streamUrl}","tokenValue":"${tokenValue}","sessionId":"${id}"}\\s+${region}\\s+StartSession`
-        assert.ok(output.stdout.match(RegExp(expected)), 'Script did not echo back parameters')
+        if (!output.stdout.match(RegExp(expected))) {
+            assert.fail(`Script output did not echo back parameters, actual: ${output.stdout}`)
+        }
     })
 })
