@@ -26,6 +26,7 @@ import globals from '../shared/extensionGlobals'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { Window } from '../shared/vscode/window'
+import { ToolkitError } from '../shared/toolkitError'
 
 const localize = nls.loadMessageBundle()
 
@@ -136,6 +137,35 @@ export const MDE_STATUS_PRIORITY = new Map<string, number>([
     ['DELETING', 6],
     ['DELETED', 7],
 ])
+
+export async function getConnectScriptPath(context = globals.context): Promise<string> {
+    const scriptName = `mde_connect${process.platform === 'win32' ? '.ps1' : ''}`
+
+    // Script resource path. Includes the Toolkit version string so it changes with each release.
+    const mdeScriptRes = context.asAbsolutePath(path.join('resources', scriptName))
+
+    // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
+    const mdeScript = path.join(context.globalStoragePath, scriptName)
+
+    try {
+        const contents1 = await readFileAsString(mdeScriptRes)
+        let contents2 = ''
+        if (fs.existsSync(mdeScript)) {
+            contents2 = await readFileAsString(mdeScript)
+        }
+        const isOutdated = contents1 !== contents2
+        if (isOutdated) {
+            fs.copyFileSync(mdeScriptRes, mdeScript)
+        }
+        getLogger().info('ensureMdeSshConfig: updated mde_connect script: %O', mdeScript)
+
+        return mdeScript
+    } catch (e) {
+        getLogger().error('ensureMdeSshConfig: failed to write mde_connect script: %O\n%O', mdeScript, e)
+        throw new ToolkitError(localize('AWS.mde.error.copyScript', 'Failed to update script: {0}', mdeScript))
+    }
+}
+
 /**
  * Checks if the "aws-mde-*" SSH config hostname pattern is working, else prompts user to add it.
  *
@@ -165,29 +195,18 @@ export async function ensureMdeSshConfig(): Promise<{
         }
     }
 
-    const scriptName = `mde_connect${iswin ? '.ps1' : ''}`
-    // Script resource path. Includes the Toolkit version string so it changes with each release.
-    const mdeScriptRes = globals.context.asAbsolutePath(path.join('resources', scriptName))
-    // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
-    const mdeScript = path.join(globals.context.globalStoragePath, scriptName)
+    let mdeScript: string
     try {
-        const contents1 = await readFileAsString(mdeScriptRes)
-        let contents2 = ''
-        if (fs.existsSync(mdeScript)) {
-            contents2 = await readFileAsString(mdeScript)
-        }
-        const isOutdated = contents1 !== contents2
-        if (isOutdated) {
-            fs.copyFileSync(mdeScriptRes, mdeScript)
-        }
-        getLogger().info('ensureMdeSshConfig: updated mde_connect script: %O', mdeScript)
+        mdeScript = await getConnectScriptPath()
     } catch (e) {
-        getLogger().error('ensureMdeSshConfig: failed to write mde_connect script: %O\n%O', mdeScript, e)
-        return {
-            ok: false,
-            err: 'failed to copy mde_connect',
-            msg: localize('AWS.mde.error.copyScript', 'Failed to update script: {0}', mdeScript),
+        if (e instanceof ToolkitError) {
+            return {
+                ok: false,
+                err: 'failed to copy mde_connect',
+                msg: e.message,
+            }
         }
+        throw e
     }
 
     const proxyCommand = iswin

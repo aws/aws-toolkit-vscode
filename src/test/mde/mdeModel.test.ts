@@ -4,8 +4,18 @@
  */
 
 import * as assert from 'assert'
+import * as path from 'path'
 import { Repository } from '../../../types/git'
-import { getEmailHash, getTagsAndLabels, makeLabelsString } from '../../mde/mdeModel'
+import {
+    getConnectScriptPath,
+    getEmailHash,
+    getMdeSsmEnv,
+    getTagsAndLabels,
+    makeLabelsString,
+} from '../../mde/mdeModel'
+import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { ChildProcess } from '../../shared/utilities/childProcess'
+import { FakeExtensionContext } from '../fakeExtensionContext'
 
 describe('mdeModel', async function () {
     describe('getEmailHash', async function () {
@@ -78,5 +88,36 @@ describe('makeLabelsString', function () {
         const str = makeLabelsString({ tags: {} })
 
         assert.strictEqual(str, '')
+    })
+})
+
+describe('Connect Script', function () {
+    let context: FakeExtensionContext
+
+    function isWithin(path1: string, path2: string): boolean {
+        const rel = path.relative(path1, path2)
+        return !path.isAbsolute(rel) && !rel.startsWith('..') && !!rel
+    }
+
+    beforeEach(async function () {
+        context = new FakeExtensionContext()
+        context.globalStoragePath = await makeTemporaryToolkitFolder()
+    })
+
+    it('can get a connect script path, adding a copy to global storage', async function () {
+        const script = await getConnectScriptPath(context)
+        assert.ok(await fileExists(script))
+        assert.ok(isWithin(context.globalStoragePath, script))
+    })
+
+    it('can run the script with environment variables', async function () {
+        const script = await getConnectScriptPath(context)
+        const env = getMdeSsmEnv('foo', 'echo', {
+            id: 'e-01234567890',
+            accessDetails: { streamUrl: '123', tokenValue: '456' },
+        })
+
+        const output = await new ChildProcess(script).run({ spawnOptions: { env } })
+        assert.strictEqual(output.exitCode, 0, 'Connect script should exit with a zero status')
     })
 })
