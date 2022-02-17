@@ -64,7 +64,7 @@ export interface ChildProcessResult {
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
-    private static runningProcesses: Record<string, ChildProcess> = {}
+    private static runningProcesses: Map<number, ChildProcess> = new Map()
     private childProcess: child_process.ChildProcess | undefined
     private processErrors: Error[] = []
     private processResult: ChildProcessResult | undefined
@@ -116,7 +116,7 @@ export class ChildProcess {
         }
 
         const debugDetail = this.log.logLevelEnabled('debug')
-            ? ` (running processes: ${Object.keys(ChildProcess.runningProcesses).length})`
+            ? ` (running processes: ${ChildProcess.runningProcesses.size})`
             : ''
         this.log.info(`Running: ${this.toString(this.options.logging === 'noparams')}${debugDetail}`)
 
@@ -292,7 +292,7 @@ export class ChildProcess {
         timeout?: Timeout
     ): void {
         const pid = process.pid
-        ChildProcess.runningProcesses[pid] = this
+        ChildProcess.runningProcesses.set(pid, this)
 
         const timeoutListener = timeout?.token.onCancellationRequested(({ agent }) => {
             const message = agent == 'user' ? 'Cancelled: ' : 'Timed out: '
@@ -302,7 +302,7 @@ export class ChildProcess {
 
         const dispose = () => {
             timeoutListener?.dispose()
-            delete ChildProcess.runningProcesses[pid]
+            ChildProcess.runningProcesses.delete(pid)
         }
 
         process.on('exit', dispose)

@@ -124,10 +124,12 @@ export class HttpResourceFetcher implements ResourceFetcher {
                 err ? reject(err) : resolve()
             })
 
-            timeout?.token.onCancellationRequested(event => {
+            const cancelListener = timeout?.token.onCancellationRequested(event => {
                 this.logCancellation(event)
                 pipe.destroy(new CancellationError(event.agent))
             })
+
+            pipe.on('close', () => cancelListener?.dispose())
         })
 
         return Object.assign(done, { requestStream, fsStream })
@@ -139,10 +141,12 @@ export class HttpResourceFetcher implements ResourceFetcher {
             headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
         })
 
-        timeout?.token.onCancellationRequested(event => {
+        const cancelListener = timeout?.token.onCancellationRequested(event => {
             this.logCancellation(event)
             promise.cancel(new CancellationError(event.agent).message)
         })
+
+        promise.finally(() => cancelListener?.dispose())
 
         return promise.catch((err: RequestError | CancelError) => {
             // Cancel error has no sensitive info
