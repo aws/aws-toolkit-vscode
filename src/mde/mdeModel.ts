@@ -138,7 +138,7 @@ export const MDE_STATUS_PRIORITY = new Map<string, number>([
     ['DELETED', 7],
 ])
 
-export async function getConnectScriptPath(context = globals.context): Promise<string> {
+export async function ensureConnectScript(context = globals.context): Promise<string> {
     const scriptName = `mde_connect${process.platform === 'win32' ? '.ps1' : ''}`
 
     // Script resource path. Includes the Toolkit version string so it changes with each release.
@@ -197,7 +197,7 @@ export async function ensureMdeSshConfig(): Promise<{
 
     let mdeScript: string
     try {
-        mdeScript = await getConnectScriptPath()
+        mdeScript = await ensureConnectScript()
     } catch (e) {
         if (e instanceof ToolkitError) {
             return {
