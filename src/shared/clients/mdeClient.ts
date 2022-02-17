@@ -17,7 +17,7 @@ import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
-export const MDE_START_TIMEOUT = 120000
+export const MDE_START_TIMEOUT = 240000
 
 export const MDE_REGION = 'us-west-2'
 export function mdeEndpoint(): string {

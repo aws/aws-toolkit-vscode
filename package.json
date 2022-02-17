@@ -1183,6 +1183,11 @@
                     "group": "1_caws@1"
                 },
                 {
+                    "command": "aws.caws.openDevEnv",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
                     "command": "aws.refreshCdkExplorer",
                     "when": "view == aws.cdk.explorer",
                     "group": "navigation@5"
