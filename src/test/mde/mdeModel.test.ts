@@ -121,7 +121,7 @@ describe('Connect Script', function () {
         assert.strictEqual(output.exitCode, 0, 'Connect script should exit with a zero status')
 
         // The below can be removed when we have integration tests, otherwise it's good to keep around as a sanity check
-        const expected = `{"streamUrl":"${streamUrl}","tokenValue":"${tokenValue}","sessionId":"${id}"} ${region} StartSession`
-        assert.ok(output.stdout.includes(expected), 'Script did not echo back parameters')
+        const expected = `{"streamUrl":"${streamUrl}","tokenValue":"${tokenValue}","sessionId":"${id}"}\\s+${region}\\s+StartSession`
+        assert.ok(output.stdout.match(RegExp(expected)), 'Script did not echo back parameters')
     })
 })
