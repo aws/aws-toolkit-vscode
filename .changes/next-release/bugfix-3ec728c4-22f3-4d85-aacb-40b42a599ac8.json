@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix StringIndexOutOfBoundsException (#3025)"
-}

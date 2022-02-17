@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix regression preventing ECR repository creation"
-}

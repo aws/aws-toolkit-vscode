@@ -1,3 +1,10 @@
+# _1.38_ (2022-02-17)
+- **(Bug Fix)** Fix StringIndexOutOfBoundsException ([#3025](https://github.com/aws/aws-toolkit-jetbrains/issues/3025))
+- **(Bug Fix)** Fix regression preventing ECR repository creation
+- **(Bug Fix)** Fix Lambda run configuration exception while setting handler architecture
+- **(Bug Fix)** Fix image-based Lambda debugging for Python 3.6
+- **(Removal)** Removed support for 2020.3.x IDEs
+
 # _1.37_ (2022-01-06)
 - **(Feature)** Add SAM Lambda ARM support
 - **(Bug Fix)** Fix plugin deprecation warning in DynamoDB viewer ([#2987](https://github.com/aws/aws-toolkit-jetbrains/issues/2987))

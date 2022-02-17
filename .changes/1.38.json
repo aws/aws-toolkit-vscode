@@ -1,0 +1,20 @@
+{
+  "date" : "2022-02-17",
+  "version" : "1.38",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix StringIndexOutOfBoundsException (#3025)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix regression preventing ECR repository creation"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Lambda run configuration exception while setting handler architecture"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix image-based Lambda debugging for Python 3.6"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for 2020.3.x IDEs"
+  } ]
+}
