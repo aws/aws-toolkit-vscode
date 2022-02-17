@@ -31,7 +31,7 @@ export interface ChildProcessOptions {
     /** Rejects the Promise on any error. Can also use a callback for custom errors. (default: false) */
     rejectOnError?: boolean | ((error: Error) => Error)
     /** Rejects the Promise on non-zero exit codes. Can also use a callback for custom errors. (default: false) */
-    rejectOnExit?: boolean | ((code: number) => Error)
+    rejectOnErrorCode?: boolean | ((code: number) => Error)
     /** A `Timeout` token. The running process will be terminated on expiration or cancellation. */
     timeout?: Timeout
     /** Options sent to the `spawn` command. This is merged in with the base options if they exist. */
@@ -127,7 +127,7 @@ export class ChildProcess {
             ...params,
             spawnOptions: { ...this.options.spawnOptions, ...params.spawnOptions },
         }
-        const { rejectOnError, rejectOnExit, timeout } = mergedOptions
+        const { rejectOnError, rejectOnErrorCode, timeout } = mergedOptions
         const args = this.args.concat(mergedOptions.extraArgs ?? [])
 
         // Defaults
@@ -215,9 +215,9 @@ export class ChildProcess {
                     typeof code === 'number' ? code : -1,
                     typeof signal === 'string' ? signal : undefined
                 )
-                if (code && rejectOnExit) {
-                    if (typeof rejectOnExit === 'function') {
-                        reject(rejectOnExit(code))
+                if (code && rejectOnErrorCode) {
+                    if (typeof rejectOnErrorCode === 'function') {
+                        reject(rejectOnErrorCode(code))
                     } else {
                         reject(new Error(`Command exited with non-zero code: ${code}`))
                     }
