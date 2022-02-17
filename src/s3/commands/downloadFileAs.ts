@@ -16,7 +16,7 @@ import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/messages'
 import { S3Client } from '../../shared/clients/s3Client'
-import { Timeout, TimeoutError } from '../../shared/utilities/timeoutUtils'
+import { Timeout, CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../shared/toolkitError'
 import { streamToBuffer, streamToFile } from '../../shared/utilities/streamUtilities'
 import { S3File } from '../fileViewerManager'
@@ -66,7 +66,7 @@ async function downloadS3File(
         ? streamToFile(downloadStream, options.saveLocation)
         : streamToBuffer(downloadStream, file.sizeBytes)
 
-    options?.timeout?.token.onCancellationRequested(({ type }) => downloadStream.destroy(new TimeoutError(type)))
+    options?.timeout?.token.onCancellationRequested(({ agent }) => downloadStream.destroy(new CancellationError(agent)))
 
     if (options?.progressLocation) {
         ;(options.window ?? Window.vscode()).withProgress(
@@ -78,7 +78,7 @@ async function downloadS3File(
             (progress, token) => {
                 const reporter = progressReporter(progress, { totalBytes: file.sizeBytes })
                 const report = (chunk: Buffer | string) => reporter(chunk.length)
-                token.onCancellationRequested(() => downloadStream.destroy(new TimeoutError('cancelled')))
+                token.onCancellationRequested(() => downloadStream.destroy(new CancellationError('user')))
                 downloadStream.on('data', report)
 
                 return new Promise<void>(resolve => result.finally(resolve))
@@ -103,7 +103,7 @@ export async function downloadFile(file: S3File, options?: FileOptions | BufferO
             detail: `Failed to download ${readablePath({ bucket: file.bucket, path: file.key })}${extraDetail}`,
             metric: {
                 name: 's3_downloadObject',
-                result: TimeoutError.isCancelled(err) ? 'Cancelled' : 'Failed',
+                result: CancellationError.isUserCancelled(err) ? 'Cancelled' : 'Failed',
             },
         })
     })

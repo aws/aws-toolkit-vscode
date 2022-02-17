@@ -16,7 +16,7 @@ import { ChildProcess } from '../utilities/childProcess'
 import { Window } from '../vscode/window'
 
 import * as nls from 'vscode-nls'
-import { Timeout, TimeoutError } from './timeoutUtils'
+import { Timeout, CancellationError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { extensionSettingsPrefix } from '../constants'
@@ -102,7 +102,7 @@ export async function installCli(cli: AwsClis, confirm: boolean, window: Window 
             if (selection === manualInstall) {
                 vscode.env.openExternal(vscode.Uri.parse(cliToInstall.manualInstallLink))
             }
-            throw new TimeoutError('cancelled')
+            throw new CancellationError('user')
         }
 
         const timeout = new Timeout(600000)
@@ -122,7 +122,7 @@ export async function installCli(cli: AwsClis, confirm: boolean, window: Window 
                     throw new InstallerError(`Invalid not found for CLI: ${cli}`)
             }
         } finally {
-            timeout.complete()
+            timeout.dispose()
         }
         // validate
         if (!(await hasCliCommand(cliToInstall, false))) {
@@ -131,7 +131,7 @@ export async function installCli(cli: AwsClis, confirm: boolean, window: Window 
 
         return cliPath
     } catch (err) {
-        if (TimeoutError.isCancelled(err)) {
+        if (CancellationError.isUserCancelled(err)) {
             result = 'Cancelled'
             getLogger().info(`Cancelled installation for: ${cli}`)
             throw err
@@ -260,7 +260,7 @@ async function installSsmCli(
 
                 return finalPath
             } catch (err) {
-                if (TimeoutError.isCancelled(err)) {
+                if (CancellationError.isUserCancelled(err)) {
                     throw err
                 }
                 throw new InstallerError((err as Error).message)
@@ -274,7 +274,7 @@ async function installSsmCli(
 
                 return finalPath
             } catch (err) {
-                if (TimeoutError.isCancelled(err)) {
+                if (CancellationError.isUserCancelled(err)) {
                     throw err
                 }
                 throw new InstallerError((err as Error).message)
@@ -301,7 +301,7 @@ async function installSsmCli(
 }
 
 /**
- * @throws {@link TimeoutError} if the install times out or the user cancels
+ * @throws {@link CancellationError} if the install times out or the user cancels
  */
 export async function getOrInstallCli(
     cli: AwsClis,

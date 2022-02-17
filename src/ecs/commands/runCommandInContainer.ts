@@ -19,7 +19,7 @@ import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
-import { TimeoutError } from '../../shared/utilities/timeoutUtils'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
@@ -75,7 +75,7 @@ export async function runCommandInContainer(
 
         result = 'Succeeded'
     } catch (error) {
-        if (TimeoutError.isCancelled(error)) {
+        if (CancellationError.isUserCancelled(error)) {
             return
         }
 

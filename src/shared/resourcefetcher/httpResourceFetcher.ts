@@ -15,7 +15,7 @@ import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
-import { Timeout, TimeoutError } from '../utilities/timeoutUtils'
+import { Timeout, CancellationError } from '../utilities/timeoutUtils'
 
 // XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
 // `got` has also deprecated `urlToOptions`
@@ -119,9 +119,9 @@ export class HttpResourceFetcher implements ResourceFetcher {
                 err ? reject(err) : resolve()
             })
 
-            timeout?.token.onCancellationRequested(({ type }) => {
-                getLogger().debug(`Download for "${this.logText()}" ${type === 'cancelled' ? type : 'timed out'}`)
-                pipe.destroy(new TimeoutError(type))
+            timeout?.token.onCancellationRequested(({ agent }) => {
+                getLogger().debug(`Download for "${this.logText()}" ${agent === 'user' ? 'cancelled' : 'timed out'}`)
+                pipe.destroy(new CancellationError(agent))
             })
         })
 
@@ -134,9 +134,9 @@ export class HttpResourceFetcher implements ResourceFetcher {
             headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
         })
 
-        timeout?.token.onCancellationRequested(({ type }) => {
-            getLogger().debug(`Download for "${this.logText()}" ${type === 'cancelled' ? type : 'timed out'}`)
-            promise.cancel(new TimeoutError(type).message)
+        timeout?.token.onCancellationRequested(({ agent }) => {
+            getLogger().debug(`Download for "${this.logText()}" ${agent === 'user' ? 'cancelled' : 'timed out'}`)
+            promise.cancel(new CancellationError(agent).message)
         })
 
         return promise.catch((err: RequestError | CancelError) => {

@@ -11,25 +11,26 @@ export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
 export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
 export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
 
-export class TimeoutError extends Error {
-    public constructor(public readonly type: 'expired' | 'cancelled') {
-        super(type === 'cancelled' ? TIMEOUT_CANCELLED_MESSAGE : TIMEOUT_EXPIRED_MESSAGE)
+type CancellationAgent = 'user' | 'timeout'
+export class CancellationError extends Error {
+    public constructor(public readonly agent: CancellationAgent) {
+        super(agent === 'user' ? TIMEOUT_CANCELLED_MESSAGE : TIMEOUT_EXPIRED_MESSAGE)
     }
 
-    public static isCancelled(err: any): err is TimeoutError & { type: 'cancelled' } {
-        return err instanceof TimeoutError && err.type === 'cancelled'
+    public static isUserCancelled(err: any): err is CancellationError & { agent: 'user' } {
+        return err instanceof CancellationError && err.agent === 'user'
     }
 
-    public static isExpired(err: any): err is TimeoutError & { type: 'expired' } {
-        return err instanceof TimeoutError && err.type === 'expired'
+    public static isExpired(err: any): err is CancellationError & { agent: 'timeout' } {
+        return err instanceof CancellationError && err.agent === 'timeout'
     }
 }
 
 interface CancelEvent {
-    readonly type: 'expired' | 'cancelled'
+    readonly agent: CancellationAgent
 }
 
-/** A {@link CancellationToken} that provides a reasoning for the cancellation event. */
+/** A {@link CancellationToken} that provides a reason for the cancellation event. */
 interface TypedCancellationToken extends CancellationToken {
     readonly onCancellationRequested: Event<CancelEvent>
 }
@@ -45,7 +46,7 @@ export class Timeout {
     private _endTime: number
     private readonly _timeoutLength: number
     private _timerTimeout: NodeJS.Timeout
-    private _completionReason?: CancelEvent['type'] | 'completed'
+    private _completionReason?: CancellationAgent | 'completed'
     private readonly _token: TypedCancellationToken
     private readonly _onCancellationRequestedEmitter = new EventEmitter<CancelEvent>()
     private readonly _onCompletionEmitter = new EventEmitter<void>()
@@ -62,10 +63,10 @@ export class Timeout {
         }
 
         Object.defineProperty(this._token, 'isCancellationRequested', {
-            get: () => this._completionReason === 'cancelled' || this._completionReason === 'expired',
+            get: () => this._completionReason === 'user' || this._completionReason === 'timeout',
         })
 
-        this._timerTimeout = globals.clock.setTimeout(() => this.final('expired'), timeoutLength)
+        this._timerTimeout = globals.clock.setTimeout(() => this.stop('timeout'), timeoutLength)
     }
 
     /**
@@ -115,7 +116,7 @@ export class Timeout {
         return (this.completed ? this._endTime : globals.clock.Date.now()) - this._startTime
     }
 
-    private final(type: CancelEvent['type'] | 'completed'): void {
+    private stop(type: CancellationAgent | 'completed'): void {
         if (this.completed) {
             return
         }
@@ -125,7 +126,7 @@ export class Timeout {
         globals.clock.clearTimeout(this._timerTimeout)
 
         if (type !== 'completed') {
-            this._onCancellationRequestedEmitter.fire({ type })
+            this._onCancellationRequestedEmitter.fire({ agent: type })
         }
 
         this._onCancellationRequestedEmitter.dispose()
@@ -133,9 +134,13 @@ export class Timeout {
         this._onCompletionEmitter.dispose()
     }
 
-    /** Cancels the timer, notifying any subscribing of the cancellation and locking in the time. */
+    /**
+     * Cancels the timer, notifying any subscribing of the cancellation and locking in the time.
+     *
+     * This always assumes cancellation was caused by the user. Use {@link dispose} when the Timeout is no longer needed.
+     */
     public cancel(): void {
-        this.final('cancelled')
+        this.stop('user')
     }
 
     /**
@@ -143,8 +148,8 @@ export class Timeout {
      *
      * Any listeners still using this token will receive a 'cancelled' event.
      */
-    public complete(): void {
-        this.final('completed')
+    public dispose(): void {
+        this.stop('completed')
     }
 
     /**
@@ -156,12 +161,12 @@ export class Timeout {
         if (this._completionReason === 'completed') {
             return Promise.resolve()
         } else if (this._completionReason) {
-            return Promise.reject(new TimeoutError(this._completionReason))
+            return Promise.reject(new CancellationError(this._completionReason))
         }
 
         return new Promise((resolve, reject) => {
             this._onCompletionEmitter.event(resolve)
-            this._onCancellationRequestedEmitter.event(({ type }) => reject(new TimeoutError(type)))
+            this._onCancellationRequestedEmitter.event(({ agent }) => reject(new CancellationError(agent)))
         })
     }
 }
@@ -211,6 +216,8 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
 }
 
 /**
+ * @deprecated Prefer using event-driven timeout mechanisms over racing promises.
+ *
  * Race a Timeout object against a Promise. Handles Timeout expiration and cancellation, exposing access through
  * the use of callbacks. Timeout tokens are cleaned up automatically after completion. Set `opt.completeTimeout`
  * to false if this is not desired.
@@ -242,26 +249,23 @@ export async function waitTimeout<T, R = void, B extends boolean = true>(
         .catch(e => (e instanceof Error ? e : new Error(`unknown error: ${e}`)))
         .finally(() => {
             if ((opt.completeTimeout ?? true) === true) {
-                timeout.complete()
+                timeout.dispose()
             }
         })
 
     if (result instanceof Error) {
-        if (opt.onExpire && TimeoutError.isExpired(result)) {
+        if (opt.onExpire && CancellationError.isExpired(result)) {
             return opt.onExpire()
         }
-        if (opt.onCancel && TimeoutError.isCancelled(result)) {
+        if (opt.onCancel && CancellationError.isUserCancelled(result)) {
             return opt.onCancel()
         }
         throw result
     }
 
-    if (result !== undefined) {
-        return result
-    }
-    if ((opt.allowUndefined ?? true) !== true) {
+    if (result === undefined && (opt.allowUndefined ?? true) !== true) {
         throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
     }
 
-    return undefined as any
+    return result as T
 }

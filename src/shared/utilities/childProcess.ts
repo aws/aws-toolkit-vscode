@@ -6,7 +6,7 @@
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
-import { Timeout, TimeoutError, waitUntil } from './timeoutUtils'
+import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 
 interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -291,10 +291,10 @@ export class ChildProcess {
         const pid = process.pid
         ChildProcess.runningProcesses[pid] = this
 
-        const timeoutListener = timeout?.token.onCancellationRequested(({ type }) => {
-            const message = type == 'cancelled' ? 'Cancelled: ' : 'Timed out: '
+        const timeoutListener = timeout?.token.onCancellationRequested(({ agent }) => {
+            const message = agent == 'user' ? 'Cancelled: ' : 'Timed out: '
             this.log.verbose(`${message}${this}`)
-            errorHandler(new TimeoutError(type), true)
+            errorHandler(new CancellationError(agent), true)
         })
 
         const dispose = () => {
