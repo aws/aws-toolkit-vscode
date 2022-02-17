@@ -400,6 +400,13 @@ export async function connectToMde(
     const settings = new DefaultSettingsConfiguration()
     settings.ensureToolkitInVscodeRemoteSsh()
 
+    getLogger().debug(
+        `AWS_SSM_CLI='${ssmPath.result}' AWS_REGION='${region}' AWS_MDE_SESSION='${session.id}' AWS_MDE_STREAMURL='${session.accessDetails.streamUrl}' AWS_MDE_TOKEN='${session.accessDetails.tokenValue}' ssh 'aws-mde-${args.id}'`
+    )
+    getLogger().debug(
+        `"${ssmPath.result}" "{\\"streamUrl\\":\\"${session.accessDetails.streamUrl}\\",\\"tokenValue\\":\\"${session.accessDetails.tokenValue}\\",\\"sessionId\\":\\"\\"}" "${region}" "StartSession"`
+    )
+
     // Note: `await` is intentionally not used.
     return cmd
         .run({
