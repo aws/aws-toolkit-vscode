@@ -172,7 +172,7 @@ async function downloadAndUnzipLambda(
             progress.report({ message, increment })
         })
 
-        await streams.done
+        await streams
         progress.report({ message: 'Extracting...' })
         new AdmZip(downloadLocation).extractAllTo(extractLocation, true)
     } finally {

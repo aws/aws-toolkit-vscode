@@ -16,7 +16,7 @@ import { ChildProcess } from '../utilities/childProcess'
 import { Window } from '../vscode/window'
 
 import * as nls from 'vscode-nls'
-import { Timeout } from './timeoutUtils'
+import { Timeout, CancellationError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { extensionSettingsPrefix } from '../constants'
@@ -74,11 +74,7 @@ export const AWS_CLIS: { [cli in AwsClis]: Cli } = {
  * @param confirmBefore Prompt before starting install?
  * @returns CLI Path
  */
-export async function installCli(
-    cli: AwsClis,
-    confirm: boolean,
-    window: Window = Window.vscode()
-): Promise<string | undefined> {
+export async function installCli(cli: AwsClis, confirm: boolean, window: Window = Window.vscode()): Promise<string> {
     const cliToInstall = AWS_CLIS[cli]
     if (!cliToInstall) {
         throw new InstallerError(`Invalid not found for CLI: ${cli}`)
@@ -106,9 +102,7 @@ export async function installCli(
             if (selection === manualInstall) {
                 vscode.env.openExternal(vscode.Uri.parse(cliToInstall.manualInstallLink))
             }
-            result = 'Cancelled'
-
-            return undefined
+            throw new CancellationError('user')
         }
 
         const timeout = new Timeout(600000)
@@ -122,13 +116,13 @@ export async function installCli(
         try {
             switch (cli) {
                 case 'session-manager-plugin':
-                    cliPath = await installSsmCli(tempDir, progress)
+                    cliPath = await installSsmCli(tempDir, progress, timeout)
                     break
                 default:
                     throw new InstallerError(`Invalid not found for CLI: ${cli}`)
             }
         } finally {
-            timeout.complete()
+            timeout.dispose()
         }
         // validate
         if (!(await hasCliCommand(cliToInstall, false))) {
@@ -137,6 +131,12 @@ export async function installCli(
 
         return cliPath
     } catch (err) {
+        if (CancellationError.isUserCancelled(err)) {
+            result = 'Cancelled'
+            getLogger().info(`Cancelled installation for: ${cli}`)
+            throw err
+        }
+
         result = 'Failed'
 
         window
@@ -159,7 +159,7 @@ export async function installCli(
                 if (success) {
                     getLogger().info('Removed installer.')
                 } else {
-                    getLogger().error(`Failed to clean up installer in temp directory: ${tempDir}`)
+                    getLogger().warn(`Failed to clean up installer in temp directory: ${tempDir}`)
                 }
             })
         }
@@ -210,12 +210,12 @@ function getOsCliSource(cli: Cli): string {
     }
 }
 
-async function downloadCliSource(cli: Cli, tempDir: string): Promise<string> {
+async function downloadCliSource(cli: Cli, tempDir: string, timeout: Timeout): Promise<string> {
     const installerSource = getOsCliSource(cli)
     const destinationFile = path.join(tempDir, path.parse(getOsCliSource(cli)).base)
-    const fetcher = new HttpResourceFetcher(installerSource, { showUrl: true })
+    const fetcher = new HttpResourceFetcher(installerSource, { showUrl: true, timeout })
     getLogger().info(`Downloading installer from ${installerSource}...`)
-    await fetcher.get(destinationFile).done
+    await fetcher.get(destinationFile)
 
     return destinationFile
 }
@@ -232,90 +232,102 @@ function getToolkitLocalCliPath(): string {
     return path.join(getToolkitCliDir(), 'Amazon')
 }
 
+function handleError<T extends Promise<unknown>>(promise: T): T {
+    return promise.catch<never>(err => {
+        if (
+            !(err instanceof CancellationError || err instanceof InstallerError || err instanceof InvalidPlatformError)
+        ) {
+            throw new InstallerError((err as Error).message)
+        }
+        throw err
+    }) as T
+}
+
 async function installSsmCli(
     tempDir: string,
-    progress: vscode.Progress<{ message?: string; increment?: number }>
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    timeout: Timeout
 ): Promise<string> {
     progress.report({ message: msgDownloading })
-    const ssmInstaller = await downloadCliSource(AWS_CLIS['session-manager-plugin']!, tempDir)
+
+    const ssmInstaller = await downloadCliSource(AWS_CLIS['session-manager-plugin'], tempDir, timeout)
     const outDir = path.join(getToolkitLocalCliPath(), 'sessionmanagerplugin')
-    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(AWS_CLIS['session-manager-plugin']!))
+    const finalPath = path.join(getToolkitLocalCliPath(), getOsCommand(AWS_CLIS['session-manager-plugin']))
+    const TimedProcess = ChildProcess.extend({ timeout, rejectOnError: true, rejectOnErrorCode: true })
 
     getLogger('channel').info(`Installing SSM CLI from ${ssmInstaller} to ${outDir}...`)
     progress.report({ message: msgInstallingLocal })
-    switch (process.platform) {
-        case 'darwin': {
-            return new Promise<string>(async (resolve, reject) => {
-                try {
-                    const tempPath = path.join(tempDir, 'tmp')
-                    const pkgArgs = ['--expand', 'session-manager-plugin.pkg', tempPath]
-                    const tarArgs = ['-xzf', path.join(tempPath, 'Payload')]
-                    await new ChildProcess('pkgutil', pkgArgs, { spawnOptions: { cwd: tempDir } }).run()
-                    await new ChildProcess('tar', tarArgs, { spawnOptions: { cwd: tempPath } }).run()
 
-                    fs.copySync(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
-                        recursive: true,
-                    })
+    return handleError(install())
 
-                    resolve(finalPath)
-                } catch (err) {
-                    reject(new InstallerError((err as Error).message))
-                }
-            })
+    async function install() {
+        switch (process.platform) {
+            case 'darwin':
+                return installOnMac()
+            case 'win32':
+                return installOnWindows()
+            case 'linux':
+                return installOnLinux()
+            default:
+                throw new InvalidPlatformError(
+                    `Platform ${process.platform} is not supported for CLI autoinstallation.`
+                )
         }
-        case 'win32': {
-            return new Promise<string>(async (resolve, reject) => {
-                try {
-                    new admZip(ssmInstaller).extractAllTo(tempDir, true)
-                    const secondZip = path.join(tempDir, 'package.zip')
-                    new admZip(secondZip).extractAllTo(outDir, true)
+    }
 
-                    resolve(finalPath)
-                } catch (err) {
-                    if (err) {
-                        reject(new InstallerError((err as Error).message))
-                    }
-                }
-            })
-        }
-        case 'linux': {
-            return new Promise<string>(async (resolve, reject) => {
-                // extract deb file (using ar) to ssmInstaller dir
-                await new ChildProcess('ar', ['-x', ssmInstaller], {
-                    spawnOptions: { cwd: path.dirname(ssmInstaller) },
-                }).run()
-                // extract data.tar.gz to CLI dir
-                const tarArgs = ['-xzf', path.join(path.dirname(ssmInstaller), 'data.tar.gz')]
-                await new ChildProcess('tar', tarArgs, { spawnOptions: { cwd: path.dirname(ssmInstaller) } }).run(),
-                    fs.mkdirSync(outDir, { recursive: true })
-                fs.copySync(path.join(path.dirname(ssmInstaller), 'usr', 'local', 'sessionmanagerplugin'), outDir, {
-                    recursive: true,
-                })
+    async function installOnMac() {
+        const tempPath = path.join(tempDir, 'tmp')
+        const pkgArgs = ['--expand', 'session-manager-plugin.pkg', tempPath]
+        const tarArgs = ['-xzf', path.join(tempPath, 'Payload')]
+        await new TimedProcess('pkgutil', pkgArgs).run({ spawnOptions: { cwd: tempDir } })
+        await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: tempPath } })
 
-                resolve(finalPath)
-            })
-        }
-        default: {
-            throw new InvalidPlatformError(`Platform ${process.platform} is not supported for CLI autoinstallation.`)
-        }
+        fs.copySync(path.join(tempPath, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
+            recursive: true,
+        })
+
+        return finalPath
+    }
+
+    async function installOnWindows() {
+        new admZip(ssmInstaller).extractAllTo(tempDir, true)
+        const secondZip = path.join(tempDir, 'package.zip')
+        new admZip(secondZip).extractAllTo(outDir, true)
+
+        return finalPath
+    }
+
+    async function installOnLinux() {
+        const ssmDir = path.dirname(ssmInstaller)
+        // extract deb file (using ar) to ssmInstaller dir
+        await new TimedProcess('ar', ['-x', ssmInstaller]).run({ spawnOptions: { cwd: ssmDir } })
+        // extract data.tar.gz to CLI dir
+        const tarArgs = ['-xzf', path.join(ssmDir, 'data.tar.gz')]
+        await new TimedProcess('tar', tarArgs).run({ spawnOptions: { cwd: ssmDir } }),
+            fs.mkdirSync(outDir, { recursive: true })
+        fs.copySync(path.join(ssmDir, 'usr', 'local', 'sessionmanagerplugin'), outDir, {
+            recursive: true,
+        })
+
+        return finalPath
     }
 }
 
+/**
+ * @throws {@link CancellationError} if the install times out or the user cancels
+ */
 export async function getOrInstallCli(
     cli: AwsClis,
     confirm: boolean,
     window: Window = Window.vscode(),
     settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-): Promise<string | undefined> {
+): Promise<string> {
     let cliCommand: string | undefined
     if (!settings.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)) {
         cliCommand = await getCliCommand(AWS_CLIS[cli])
     }
 
-    if (!cliCommand) {
-        cliCommand = await installCli(cli, confirm, window)
-    }
-    return cliCommand
+    return cliCommand ?? (await installCli(cli, confirm, window))
 }
 
 // TODO: uncomment for AWS CLI installation
