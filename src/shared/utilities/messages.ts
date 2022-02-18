@@ -105,9 +105,9 @@ async function showProgressWithTimeout(
 
     const progressPromise: Promise<vscode.Progress<{ message?: string; increment?: number }>> = new Promise(resolve => {
         window.withProgress(options, function (progress, token) {
-            token.onCancellationRequested(() => timeout.complete(true))
+            token.onCancellationRequested(() => timeout.cancel())
             resolve(progress)
-            return timeout.timer
+            return new Promise(timeout.onCompletion)
         })
     })
 

@@ -4,7 +4,7 @@
  */
 
 import * as telemetry from './telemetry/telemetry'
-import { TimeoutError } from './utilities/timeoutUtils'
+import { CancellationError } from './utilities/timeoutUtils'
 
 interface ErrorMetadata {
     // TODO: when `cause` is natively supported this can be removed
@@ -72,6 +72,6 @@ export class ToolkitError extends Error implements ErrorMetadata {
     public get cancelled(): boolean {
         const cause = this.metadata.cause
 
-        return TimeoutError.isCancelled(cause) || (cause instanceof ToolkitError && cause.cancelled)
+        return CancellationError.isUserCancelled(cause) || (cause instanceof ToolkitError && cause.cancelled)
     }
 }
