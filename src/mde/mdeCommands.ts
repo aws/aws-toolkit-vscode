@@ -9,7 +9,7 @@ import * as mde from '../shared/clients/mdeClient'
 import * as nls from 'vscode-nls'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
-import { showConfirmationMessage, showMessageWithCancel } from '../shared/utilities/messages'
+import { showConfirmationMessage, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
 import { Commands } from '../shared/vscode/commands'
 import { Window } from '../shared/vscode/window'
 import { MdeRootNode } from './mdeRootNode'
@@ -22,6 +22,8 @@ import { localizedDelete } from '../shared/localizedText'
 import { MDE_RESTART_KEY } from './constants'
 import { parse } from '@aws-sdk/util-arn-parser'
 import globals from '../shared/extensionGlobals'
+import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
+import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -243,4 +245,44 @@ export async function resumeEnvironments(ctx: ExtContext) {
 
 export async function tagMde(arn: string, tagMap: TagMap) {
     await globals.mde.tagResource(arn, tagMap)
+}
+
+/**
+ * Tries to restart an environment, prompting the user if any unsaved documents (excluding webviews) are
+ * opened when restarting the current environment.
+ *
+ * This function basically acts like a transactional wrapper around the `restarter` callback
+ */
+export async function tryRestart(arn: string, restarter: () => Promise<void>): Promise<void> {
+    const client = new DefaultMdeEnvironmentClient()
+    const canAutoConnect = client.arn === arn
+
+    if (canAutoConnect && checkUnsavedChanges()) {
+        // TODO: show confirmation prompt instead
+        vscode.window.showErrorMessage('Cannot stop current environment with unsaved changes')
+        throw new Error('Cannot stop environment with unsaved changes')
+    }
+
+    try {
+        await restarter()
+
+        // TODO: find way to open local workspace from remote window (or even better, open no workspace)
+        /*
+        const state = memento.get(arn)
+        if (state.localSessionHome) {
+            const home = vscode.Uri.parse(`vscode://folder/${state.localSessionHome}`)
+            vscode.commands.executeCommand('vscode.openFolder', home)
+        }
+        */
+    } catch (err) {
+        // This is stubbed out until we fully implement a 'resume' workflow
+        //await memento.with(arn, { previousRemoteWorkspace: undefined, pendingResume: false, canAutoConnect: false })
+        if (!(err instanceof Error)) {
+            // hmmm
+            throw new TypeError(`Received unknown error: ${JSON.stringify(err ?? 'null')}`)
+        }
+
+        getLogger().error('Failed to restart environment: %O', err)
+        showViewLogsMessage(`Failed to restart environment: ${err.message}`)
+    }
 }
