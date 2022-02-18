@@ -39,7 +39,7 @@ export async function runCommandInContainer(
     let status: vscode.Disposable | undefined
 
     try {
-        const taskHasPermissions = await checkRequiredPermissions(node)
+        const taskHasPermissions = await taskHasRequiredPermissions(node.taskRoleArn, node.ecs.regionCode)
         if (node.taskRoleArn === undefined || !taskHasPermissions) {
             const viewDocsItem = localize('AWS.generic.viewDocs', 'View Documentation')
             window
@@ -120,21 +120,22 @@ export async function runCommandInContainer(
     }
 }
 
-async function checkRequiredPermissions(node: EcsContainerNode): Promise<boolean> {
-    if (node.taskRoleArn === undefined) {
+export async function taskHasRequiredPermissions(
+    taskRoleArn: string | undefined,
+    regionCode: string
+): Promise<boolean> {
+    if (taskRoleArn === undefined) {
         return false
     }
-    const iamClient = globals.toolkitClientBuilder.createIamClient(node.ecs.regionCode)
-    const permissionResponse = (
-        await iamClient.simulatePrincipalPolicy({
-            PolicySourceArn: node.taskRoleArn,
-            ActionNames: required_ssm_permissions,
-        })
-    ).EvaluationResults
-    if (!permissionResponse) {
+    const iamClient = globals.toolkitClientBuilder.createIamClient(regionCode)
+    const permissionResponse = await iamClient.simulatePrincipalPolicy({
+        PolicySourceArn: taskRoleArn,
+        ActionNames: required_ssm_permissions,
+    })
+    if (!permissionResponse || !permissionResponse.EvaluationResults) {
         return false
     }
-    for (const evalResult of permissionResponse) {
+    for (const evalResult of permissionResponse.EvaluationResults) {
         if (evalResult.EvalDecision !== 'allowed') {
             return false
         }
