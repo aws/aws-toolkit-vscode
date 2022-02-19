@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import globals from '../../shared/extensionGlobals'
 import { IamClient } from '../../shared/clients/iamClient'
-import { taskHasRequiredPermissions } from '../../ecs/commands/runCommandInContainer'
+import { isMissingRequiredPermissions } from '../../ecs/commands/runCommandInContainer'
 import { MockIamClient } from '../shared/clients/mockClients'
 
 describe('runCommandInContainer', async function () {
@@ -31,11 +31,11 @@ describe('runCommandInContainer', async function () {
     it('verifies correct task permissions', async function () {
         sandbox.stub(globals.toolkitClientBuilder, 'createIamClient').returns(iamClient)
         sandbox.stub(iamClient, 'simulatePrincipalPolicy').resolves(correctPermissionsResponse)
-        assert.strictEqual(await taskHasRequiredPermissions('taskRoleArn1234', 'region'), true)
+        assert.strictEqual(await isMissingRequiredPermissions('taskRoleArn1234', 'region'), true)
     })
     it('denies incorrect task permissions', async function () {
         sandbox.stub(globals.toolkitClientBuilder, 'createIamClient').returns(iamClient)
         sandbox.stub(iamClient, 'simulatePrincipalPolicy').resolves(incorrectPermissionsResponse)
-        assert.strictEqual(await taskHasRequiredPermissions('taskRoleArn1234', 'region'), false)
+        assert.strictEqual(await isMissingRequiredPermissions('taskRoleArn1234', 'region'), false)
     })
 })

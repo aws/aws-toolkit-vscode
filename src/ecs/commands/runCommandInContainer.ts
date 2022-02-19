@@ -21,7 +21,7 @@ import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
-const required_ssm_permissions = [
+const REQUIRED_SSM_PERMISSIONS = [
     'ssmmessages:CreateControlChannel',
     'ssmmessages:CreateDataChannel',
     'ssmmessages:OpenControlChannel',
@@ -39,8 +39,7 @@ export async function runCommandInContainer(
     let status: vscode.Disposable | undefined
 
     try {
-        const taskHasPermissions = await taskHasRequiredPermissions(node.taskRoleArn, node.ecs.regionCode)
-        if (node.taskRoleArn === undefined || !taskHasPermissions) {
+        if (await isMissingRequiredPermissions(node.taskRoleArn, node.ecs.regionCode)) {
             const viewDocsItem = localize('AWS.generic.viewDocs', 'View Documentation')
             window
                 .showErrorMessage(
@@ -119,26 +118,36 @@ export async function runCommandInContainer(
         status?.dispose()
     }
 }
-
-export async function taskHasRequiredPermissions(
+/**
+ * Attempts to verify if the task role provided has the required SSM permissions to run ECS Exec
+ * @param taskRoleArn
+ * @param regionCode
+ * @returns True if the permissions are missing from the Task role. False when all required permissions were found. Undefined when the task role is missing or the 'simulatePrincipalPolicy' call was unsuccessful.
+ */
+export async function isMissingRequiredPermissions(
     taskRoleArn: string | undefined,
     regionCode: string
-): Promise<boolean> {
+): Promise<boolean | undefined> {
     if (taskRoleArn === undefined) {
-        return false
+        return undefined
     }
-    const iamClient = globals.toolkitClientBuilder.createIamClient(regionCode)
-    const permissionResponse = await iamClient.simulatePrincipalPolicy({
-        PolicySourceArn: taskRoleArn,
-        ActionNames: required_ssm_permissions,
-    })
-    if (!permissionResponse || !permissionResponse.EvaluationResults) {
-        return false
-    }
-    for (const evalResult of permissionResponse.EvaluationResults) {
-        if (evalResult.EvalDecision !== 'allowed') {
-            return false
+    try {
+        const iamClient = globals.toolkitClientBuilder.createIamClient(regionCode)
+        const permissionResponse = await iamClient.simulatePrincipalPolicy({
+            PolicySourceArn: taskRoleArn,
+            ActionNames: REQUIRED_SSM_PERMISSIONS,
+        })
+        if (!permissionResponse || !permissionResponse.EvaluationResults) {
+            return undefined
         }
+        for (const evalResult of permissionResponse.EvaluationResults) {
+            if (evalResult.EvalDecision !== 'allowed') {
+                return true
+            }
+        }
+        return false
+    } catch (error) {
+        getLogger().error('Failed to simulate permissions, %O', error)
+        return undefined
     }
-    return true
 }
