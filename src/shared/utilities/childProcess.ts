@@ -6,7 +6,7 @@
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
-import { Timeout, waitUntil } from './timeoutUtils'
+import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 
 interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -31,7 +31,7 @@ export interface ChildProcessOptions {
     /** Rejects the Promise on any error. Can also use a callback for custom errors. (default: false) */
     rejectOnError?: boolean | ((error: Error) => Error)
     /** Rejects the Promise on non-zero exit codes. Can also use a callback for custom errors. (default: false) */
-    rejectOnExit?: boolean | ((code: number) => Error)
+    rejectOnErrorCode?: boolean | ((code: number) => Error)
     /** A `Timeout` token. The running process will be terminated on expiration or cancellation. */
     timeout?: Timeout
     /** Options sent to the `spawn` command. This is merged in with the base options if they exist. */
@@ -64,12 +64,11 @@ export interface ChildProcessResult {
  * - call and await run to get the results (pass or fail)
  */
 export class ChildProcess {
+    private static runningProcesses: Map<number, ChildProcess> = new Map()
     private childProcess: child_process.ChildProcess | undefined
     private processErrors: Error[] = []
     private processResult: ChildProcessResult | undefined
     private log: logger.Logger
-
-    // TODO: we probably should keep track of all spawned processes in the prototype to make sure they are cleaned up
 
     /** Collects stdout data if the process was started with `collect=true`. */
     private stdoutChunks: string[] = []
@@ -95,8 +94,18 @@ export class ChildProcess {
         this.log = options.logging !== 'no' ? logger.getLogger() : logger.getNullLogger()
     }
 
-    // TODO: add a way to create 'base' child process instances without necessarily needing to construct a new one each time
-    // this way modules can define default parameters (e.g. `Timeout`) and have all downstream functions use it
+    // Inspired by 'got'
+    /**
+     * Creates a one-off {@link ChildProcess} class that always uses the specified options.
+     */
+    public static extend(options: ChildProcessOptions) {
+        return class extends this {
+            public constructor(command: string, args: string[] = []) {
+                super(command, args, options)
+            }
+        }
+    }
+
     /**
      * Runs the child process. Options passed here are merged with the options passed in during construction.
      * Priority is given to `run` options, overriding the previous value.
@@ -106,10 +115,12 @@ export class ChildProcess {
             throw new Error('process already started')
         }
 
-        this.log.info(`Running: ${this.toString(this.options.logging === 'noparams')}`)
+        const debugDetail = this.log.logLevelEnabled('debug')
+            ? ` (running processes: ${ChildProcess.runningProcesses.size})`
+            : ''
+        this.log.info(`Running: ${this.toString(this.options.logging === 'noparams')}${debugDetail}`)
 
         const cleanup = () => {
-            this.childProcess?.removeAllListeners()
             this.childProcess?.stdout?.removeAllListeners()
             this.childProcess?.stderr?.removeAllListeners()
         }
@@ -119,7 +130,7 @@ export class ChildProcess {
             ...params,
             spawnOptions: { ...this.options.spawnOptions, ...params.spawnOptions },
         }
-        const { rejectOnError, rejectOnExit, timeout } = mergedOptions
+        const { rejectOnError, rejectOnErrorCode, timeout } = mergedOptions
         const args = this.args.concat(mergedOptions.extraArgs ?? [])
 
         // Defaults
@@ -148,12 +159,8 @@ export class ChildProcess {
                 reportError: err => errorHandler(err instanceof Error ? err : new Error(err)),
             }
 
-            if (timeout) {
-                if (timeout?.completed) {
-                    throw new Error('Timeout token was already completed.')
-                }
-
-                timeout.timer.catch(err => errorHandler(err, true))
+            if (timeout && timeout?.completed) {
+                throw new Error('Timeout token was already completed.')
             }
 
             // Async.
@@ -163,6 +170,7 @@ export class ChildProcess {
             // [2] https://nodejs.org/api/child_process.html
             try {
                 this.childProcess = crossSpawn.spawn(this.command, args, mergedOptions.spawnOptions)
+                this.registerLifecycleListeners(this.childProcess, errorHandler, timeout)
             } catch (err) {
                 return errorHandler(err as Error)
             }
@@ -210,9 +218,9 @@ export class ChildProcess {
                     typeof code === 'number' ? code : -1,
                     typeof signal === 'string' ? signal : undefined
                 )
-                if (code && rejectOnExit) {
-                    if (typeof rejectOnExit === 'function') {
-                        reject(rejectOnExit(code))
+                if (code && rejectOnErrorCode) {
+                    if (typeof rejectOnErrorCode === 'function') {
+                        reject(rejectOnErrorCode(code))
                     } else {
                         reject(new Error(`Command exited with non-zero code: ${code}`))
                     }
@@ -276,6 +284,29 @@ export class ChildProcess {
         } else {
             throw new Error('Attempting to kill a process that has already been killed')
         }
+    }
+
+    private registerLifecycleListeners(
+        process: child_process.ChildProcess,
+        errorHandler: (error: Error, forceStop?: boolean) => void,
+        timeout?: Timeout
+    ): void {
+        const pid = process.pid
+        ChildProcess.runningProcesses.set(pid, this)
+
+        const timeoutListener = timeout?.token.onCancellationRequested(({ agent }) => {
+            const message = agent == 'user' ? 'Cancelled: ' : 'Timed out: '
+            this.log.verbose(`${message}${this}`)
+            errorHandler(new CancellationError(agent), true)
+        })
+
+        const dispose = () => {
+            timeoutListener?.dispose()
+            ChildProcess.runningProcesses.delete(pid)
+        }
+
+        process.on('exit', dispose)
+        process.on('error', dispose)
     }
 
     /**

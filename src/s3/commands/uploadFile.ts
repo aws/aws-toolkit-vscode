@@ -23,7 +23,7 @@ import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import * as localizedText from '../../shared/localizedText'
-import { TimeoutError } from '../../shared/utilities/timeoutUtils'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { progressReporter } from '../progressReporter'
 import globals from '../../shared/extensionGlobals'
 
@@ -373,7 +373,7 @@ async function uploadWithProgress(
     const cancelled = new Promise<void>((_, reject) => {
         token.onCancellationRequested(e => {
             currentStream.abort()
-            reject(new TimeoutError('cancelled'))
+            reject(new CancellationError('user'))
         })
     })
 

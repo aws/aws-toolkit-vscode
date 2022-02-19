@@ -19,6 +19,7 @@ import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
@@ -35,7 +36,6 @@ export async function runCommandInContainer(
         const response = await wizard.run()
 
         if (!response) {
-            result = 'Cancelled'
             return
         }
 
@@ -66,7 +66,8 @@ export async function runCommandInContainer(
             outputChannel
         )
 
-        const cp = await new ChildProcess(ssmPlugin, args, { logging: 'noparams' }).run({
+        await new ChildProcess(ssmPlugin, args, { logging: 'noparams' }).run({
+            rejectOnErrorCode: true,
             onStdout: text => {
                 showOutputMessage(removeAnsi(text), outputChannel)
             },
@@ -75,13 +76,13 @@ export async function runCommandInContainer(
             },
         })
 
-        if (cp.exitCode !== 0) {
-            result = 'Failed'
-            throw cp.error
-        } else {
-            result = 'Succeeded'
-        }
+        result = 'Succeeded'
     } catch (error) {
+        if (CancellationError.isUserCancelled(error)) {
+            return
+        }
+
+        result = 'Failed'
         getLogger().error('Failed to execute command in container, %O', error)
         showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
     } finally {
