@@ -16,13 +16,15 @@ const CONTEXT_EXEC_DISABLED = 'awsEcsContainerNodeExecDisabled'
 const TASK_STATUS_RUNNING = 'RUNNING'
 
 export class EcsContainerNode extends AWSTreeNodeBase {
+    public readonly ecs: EcsClient
+
     public constructor(
         public readonly containerName: string,
-        public readonly ecs: EcsClient,
         public readonly parent: EcsServiceNode,
         public readonly taskRoleArn: string | undefined
     ) {
         super(containerName)
+        this.ecs = this.parent.ecs
         this.tooltip = containerName
         this.contextValue = this.parent.service.enableExecuteCommand ? CONTEXT_EXEC_ENABLED : CONTEXT_EXEC_DISABLED
 
