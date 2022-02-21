@@ -62,9 +62,7 @@ export class DefaultIamClient {
         request: IAM.SimulatePrincipalPolicyRequest
     ): Promise<IAM.SimulatePolicyResponse> {
         const sdkClient = await this.createSdkClient()
-        const response = await sdkClient.simulatePrincipalPolicy(request).promise()
-
-        return response
+        return await sdkClient.simulatePrincipalPolicy(request).promise()
     }
 
     private async createSdkClient(): Promise<IAM> {

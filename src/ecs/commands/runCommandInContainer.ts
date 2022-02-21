@@ -56,7 +56,7 @@ export async function runCommandInContainer(
                         vscode.env.openExternal(vscode.Uri.parse(ecsRequiredPermissionsUrl))
                     }
                 })
-            result = 'Cancelled'
+            result = 'Failed'
             return
         }
 
