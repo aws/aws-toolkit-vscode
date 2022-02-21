@@ -20,6 +20,7 @@ import { removeAnsi } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
 import { IamClient } from '../../shared/clients/iamClient'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
 const REQUIRED_SSM_PERMISSIONS = [
@@ -64,7 +65,6 @@ export async function runCommandInContainer(
         const response = await wizard.run()
 
         if (!response) {
-            result = 'Cancelled'
             return
         }
 
@@ -73,11 +73,6 @@ export async function runCommandInContainer(
         }
 
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', true, window, settings)
-
-        if (!ssmPlugin) {
-            result = 'Failed'
-            throw Error('SSM Plugin not installed and cannot auto install')
-        }
 
         status = vscode.window.setStatusBarMessage(
             localize('AWS.command.ecs.statusBar.executing', 'ECS: Executing command...')
@@ -97,7 +92,8 @@ export async function runCommandInContainer(
             outputChannel
         )
 
-        const cp = await new ChildProcess(ssmPlugin, args, { logging: 'noparams' }).run({
+        await new ChildProcess(ssmPlugin, args, { logging: 'noparams' }).run({
+            rejectOnErrorCode: true,
             onStdout: text => {
                 showOutputMessage(removeAnsi(text), outputChannel)
             },
@@ -106,13 +102,13 @@ export async function runCommandInContainer(
             },
         })
 
-        if (cp.exitCode !== 0) {
-            result = 'Failed'
-            throw cp.error
-        } else {
-            result = 'Succeeded'
-        }
+        result = 'Succeeded'
     } catch (error) {
+        if (CancellationError.isUserCancelled(error)) {
+            return
+        }
+
+        result = 'Failed'
         getLogger().error('Failed to execute command in container, %O', error)
         showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
     } finally {
@@ -123,7 +119,7 @@ export async function runCommandInContainer(
 /**
  * Attempts to verify if the task role provided has the required SSM permissions to run ECS Exec
  * @param taskRoleArn
- * @param regionCode
+ * @param iamClient
  * @returns True if the permissions are missing from the Task role. False when all required permissions were found. Undefined when the task role is missing or the 'simulatePrincipalPolicy' call was unsuccessful.
  */
 export async function isMissingRequiredPermissions(
