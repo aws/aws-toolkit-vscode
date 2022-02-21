@@ -19,6 +19,7 @@ import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
+import { IamClient } from '../../shared/clients/iamClient'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
 const REQUIRED_SSM_PERMISSIONS = [
@@ -39,7 +40,8 @@ export async function runCommandInContainer(
     let status: vscode.Disposable | undefined
 
     try {
-        if (await isMissingRequiredPermissions(node.taskRoleArn, node.ecs.regionCode)) {
+        const iamClient = globals.toolkitClientBuilder.createIamClient(node.ecs.regionCode)
+        if (await isMissingRequiredPermissions(node.taskRoleArn, iamClient)) {
             const viewDocsItem = localize('AWS.generic.viewDocs', 'View Documentation')
             window
                 .showErrorMessage(
@@ -126,13 +128,12 @@ export async function runCommandInContainer(
  */
 export async function isMissingRequiredPermissions(
     taskRoleArn: string | undefined,
-    regionCode: string
+    iamClient: IamClient
 ): Promise<boolean | undefined> {
     if (taskRoleArn === undefined) {
         return undefined
     }
     try {
-        const iamClient = globals.toolkitClientBuilder.createIamClient(regionCode)
         const permissionResponse = await iamClient.simulatePrincipalPolicy({
             PolicySourceArn: taskRoleArn,
             ActionNames: REQUIRED_SSM_PERMISSIONS,
@@ -147,7 +148,7 @@ export async function isMissingRequiredPermissions(
         }
         return false
     } catch (error) {
-        getLogger().error('Failed to simulate permissions, %O', error)
+        getLogger().error('Error during policy simulation. Skipping permissions check. Error: %O', error)
         return undefined
     }
 }

@@ -6,7 +6,6 @@
 import { IAM } from 'aws-sdk'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import globals from '../../shared/extensionGlobals'
 import { IamClient } from '../../shared/clients/iamClient'
 import { isMissingRequiredPermissions } from '../../ecs/commands/runCommandInContainer'
 import { MockIamClient } from '../shared/clients/mockClients'
@@ -29,13 +28,15 @@ describe('runCommandInContainer', async function () {
         sandbox.restore()
     })
     it('verifies correct task permissions', async function () {
-        sandbox.stub(globals.toolkitClientBuilder, 'createIamClient').returns(iamClient)
-        sandbox.stub(iamClient, 'simulatePrincipalPolicy').resolves(correctPermissionsResponse)
-        assert.strictEqual(await isMissingRequiredPermissions('taskRoleArn1234', 'region'), true)
+        sandbox.stub(iamClient, 'simulatePrincipalPolicy').resolves(incorrectPermissionsResponse)
+        assert.strictEqual(await isMissingRequiredPermissions('taskRoleArn1234', iamClient), true)
     })
     it('denies incorrect task permissions', async function () {
-        sandbox.stub(globals.toolkitClientBuilder, 'createIamClient').returns(iamClient)
-        sandbox.stub(iamClient, 'simulatePrincipalPolicy').resolves(incorrectPermissionsResponse)
-        assert.strictEqual(await isMissingRequiredPermissions('taskRoleArn1234', 'region'), false)
+        sandbox.stub(iamClient, 'simulatePrincipalPolicy').resolves(correctPermissionsResponse)
+        assert.strictEqual(await isMissingRequiredPermissions('taskRoleArn1234', iamClient), false)
+    })
+    it('catches errors during permissions check', async function () {
+        sandbox.stub(iamClient, 'simulatePrincipalPolicy').throws()
+        assert.strictEqual(await isMissingRequiredPermissions('taskRoleArn1234', iamClient), undefined)
     })
 })
