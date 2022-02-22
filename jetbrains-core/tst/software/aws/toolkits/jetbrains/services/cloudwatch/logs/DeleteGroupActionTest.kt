@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -21,6 +20,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsRe
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.ToolWindowHeadlessManagerImpl
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.DeleteGroupAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.toolwindow.CloudWatchLogsToolWindowFactory
 import java.util.function.Consumer

@@ -18,6 +18,7 @@ buildscript {
 
     repositories {
         maven("https://www.myget.org/F/rd-snapshots/maven/")
+        mavenCentral()
     }
 
     dependencies {
@@ -98,6 +99,7 @@ configure<RdGenExtension> {
     packages = "model"
 }
 
+// TODO: migrate to official rdgen gradle plugin https://www.jetbrains.com/help/resharper/sdk/Rider.html#plugin-project-jvm
 val generateModels = tasks.register<RdGenTask>("generateModels") {
     group = protocolGroup
     description = "Generates protocol models"

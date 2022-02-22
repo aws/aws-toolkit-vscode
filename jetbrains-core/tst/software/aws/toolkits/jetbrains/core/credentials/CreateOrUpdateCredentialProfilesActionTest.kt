@@ -158,7 +158,9 @@ class CreateOrUpdateCredentialProfilesActionTest {
 
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying {
             assertThat(it.name).isEqualTo("credentials")
-            assertThat(it.fileType).isEqualTo(FileTypes.PLAIN_TEXT)
+            // FIX_WHEN_MIN_IS_212: assert that type is `FileTypes.PLAIN_TEXT` or `DetectedByContentFileType`
+            assertThat(it.fileType).isNotNull()
+            assertThat(it.fileType).isNotEqualTo(FileTypes.UNKNOWN)
         }
     }
 

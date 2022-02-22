@@ -29,6 +29,7 @@ import org.intellij.lang.annotations.Language
 import org.jetbrains.jps.model.java.JavaResourceRootType
 import org.jetbrains.jps.model.java.JavaSourceRootType
 import org.jetbrains.jps.model.module.JpsModuleSourceRootType
+import software.aws.toolkits.jetbrains.core.NoopLoggedErrorProcessor
 import java.io.File
 import java.nio.file.Paths
 
@@ -42,7 +43,11 @@ class JavaCodeInsightTestFixtureRule(testDescription: DefaultLightProjectDescrip
     CodeInsightTestFixtureRule(testDescription) {
 
     override fun createTestFixture(): CodeInsightTestFixture {
-        val fixtureBuilder = IdeaTestFixtureFactory.getFixtureFactory().createLightFixtureBuilder(testDescription)
+        // HACK: 221.4165 snapshot broke binary compatability
+        // remove after https://github.com/JetBrains/intellij-community/commit/0e6212b7b5a07804287050a22bf9ce9d0f7116bd is available
+        val fixtureBuilder = NoopLoggedErrorProcessor.execute {
+            IdeaTestFixtureFactory.getFixtureFactory().createLightFixtureBuilder(testDescription)
+        }
         val newFixture = JavaTestFixtureFactory.getFixtureFactory()
             .createCodeInsightFixture(fixtureBuilder.fixture, LightTempDirTestFixtureImpl(true))
         newFixture.setUp()

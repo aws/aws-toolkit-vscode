@@ -6,11 +6,14 @@ package software.aws.toolkits.jetbrains.uitests.fixtures
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.data.RemoteComponent
 import com.intellij.remoterobot.fixtures.FixtureName
+import com.intellij.remoterobot.fixtures.JButtonFixture
 import com.intellij.remoterobot.fixtures.JLabelFixture
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
+import com.intellij.remoterobot.utils.Locators
 import java.time.Duration
+import javax.swing.JButton
 
 fun RemoteRobot.newProjectWizard(
     timeout: Duration = Duration.ofSeconds(20),
@@ -51,6 +54,8 @@ open class NewProjectWizardDialog(
     }
 
     fun pressFinish() {
-        pressButton("Finish")
+        findAll<JButtonFixture>(Locators.byType(JButton::class.java)).first {
+            it.text == "Finish" || it.text == "Create"
+        }.click()
     }
 }

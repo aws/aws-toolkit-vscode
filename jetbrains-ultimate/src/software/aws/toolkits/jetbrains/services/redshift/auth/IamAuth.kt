@@ -3,13 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.redshift.auth
 
+import DatabaseAuthProviderCompatabilityAdapter
 import com.intellij.credentialStore.Credentials
 import com.intellij.database.access.DatabaseCredentials
-import com.intellij.database.dataSource.DatabaseAuthProvider
 import com.intellij.database.dataSource.DatabaseAuthProvider.AuthWidget
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
+import com.intellij.openapi.project.Project
 import kotlinx.coroutines.future.future
 import software.amazon.awssdk.services.redshift.RedshiftClient
 import software.aws.toolkits.core.ConnectionSettings
@@ -30,13 +31,13 @@ data class RedshiftSettings(
     val connectionSettings: ConnectionSettings
 )
 
-// [DatabaseAuthProvider] is marked as internal, but JetBrains advised this was a correct usage
-class IamAuth : DatabaseAuthProvider {
+class IamAuth : DatabaseAuthProviderCompatabilityAdapter {
     override fun getId(): String = providerId
     override fun isApplicable(dataSource: LocalDataSource): Boolean = dataSource.dbms.isRedshift
     override fun getDisplayName(): String = message("redshift.auth.aws")
 
-    override fun createWidget(creds: DatabaseCredentials, source: LocalDataSource): AuthWidget? = IamAuthWidget()
+    override fun createWidget(project: Project?, creds: DatabaseCredentials, source: LocalDataSource): AuthWidget? = IamAuthWidget()
+
     override fun intercept(connection: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection>? {
         LOG.info { "Intercepting db connection [$connection]" }
         val scope = projectCoroutineScope(connection.runConfiguration.project)

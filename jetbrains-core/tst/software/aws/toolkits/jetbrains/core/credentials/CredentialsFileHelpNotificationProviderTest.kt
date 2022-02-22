@@ -3,12 +3,10 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.openapi.application.impl.NonBlockingReadActionImpl
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.EdtRule
-import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.RunsInEdt
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
@@ -18,6 +16,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider.CredentialFileNotificationPanel
+import software.aws.toolkits.jetbrains.core.getEditorNotifications
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 
 @RunsInEdt
@@ -72,9 +71,6 @@ class CredentialsFileHelpNotificationProviderTest {
 
     private fun openEditor(file: VirtualFile): FileEditor = FileEditorManagerEx.getInstanceEx(projectRule.project).openFile(file, true).single()
 
-    private fun getEditorNotifications(editor: FileEditor): CredentialFileNotificationPanel? {
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-        NonBlockingReadActionImpl.waitForAsyncTaskCompletion()
-        return editor.getUserData(CredentialsFileHelpNotificationProvider.KEY)
-    }
+    private fun getEditorNotifications(editor: FileEditor): CredentialFileNotificationPanel? =
+        getEditorNotifications(editor, CredentialsFileHelpNotificationProvider::class.java, CredentialsFileHelpNotificationProvider.KEY)
 }

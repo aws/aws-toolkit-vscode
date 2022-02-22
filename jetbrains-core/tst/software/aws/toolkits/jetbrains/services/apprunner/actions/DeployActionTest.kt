@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.apprunner.actions
 import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.runInEdtAndWait
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,6 +31,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsRe
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsResponse
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.core.ToolWindowHeadlessManagerImpl
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindow
 import software.aws.toolkits.jetbrains.services.apprunner.AppRunnerServiceNode
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow

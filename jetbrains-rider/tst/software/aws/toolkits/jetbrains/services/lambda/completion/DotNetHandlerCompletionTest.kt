@@ -4,18 +4,11 @@
 package software.aws.toolkits.jetbrains.services.lambda.completion
 
 import base.allowCustomDotnetRoots
-import base.msBuild
-import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.util.IconLoader
-import com.intellij.openapi.util.SystemInfo
 import com.jetbrains.rd.ide.model.IconModel
 import com.jetbrains.rider.test.annotations.TestEnvironment
 import com.jetbrains.rider.test.base.BaseTestWithSolution
-import com.jetbrains.rider.test.base.PrepareTestEnvironment
-import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
-import com.jetbrains.rider.test.scriptingApi.setUpDotNetCoreCliPath
 import org.assertj.core.api.Assertions.assertThat
-import org.testng.annotations.BeforeClass
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
 
@@ -29,16 +22,6 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @BeforeSuite
     fun allowDotnetRoots() {
         allowCustomDotnetRoots()
-    }
-
-    @BeforeClass
-    fun setUpBuildToolPath() {
-        // TODO: Does not appear to be needed in 203+ FIX_WHEN_MIN_IS_203
-        if (SystemInfo.isWindows) {
-            PrepareTestEnvironment.dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
-            setUpDotNetCoreCliPath(PrepareTestEnvironment.dotnetCoreCliPath)
-            setUpCustomToolset(msBuild)
-        }
     }
 
     @Test(description = "Check a single handler is shown in lookup when one is defined in a project.")
@@ -75,13 +58,6 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
         assertThat(iconModel).isNotNull
         val ideaIconSecond = iconModel?.let { completionItemToIcon(project, iconModel) as? IconLoader.CachedImageIcon }
         assertThat(ideaIconSecond).isNotNull
-        // FIX_WHEN_MIN_IS_211 The icon path changed on 211 to not have a leading slash. This comes
-        // straight from the backend (`_psiIconManager.GetImage(method.GetElementType())`). For what it's worth
-        // originalPath is probably marked unstable for a reason
-        if (ApplicationInfo.getInstance().let { info -> info.majorVersion == "2020" }) {
-            assertThat(ideaIconSecond?.originalPath).isEqualTo(expectedPath)
-        } else {
-            assertThat(ideaIconSecond?.originalPath).isEqualTo(expectedPath.trimStart('/'))
-        }
+        assertThat(ideaIconSecond?.originalPath).isEqualTo(expectedPath.trimStart('/'))
     }
 }

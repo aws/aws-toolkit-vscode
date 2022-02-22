@@ -69,6 +69,9 @@ class MockNodeJsInterpreter(private var version: SemVer) : NodeJsLocalInterprete
             NodeJsLocalInterpreterManager.getInstance().interpreters + listOf(this)
     }
 
+    // could differ on windows causing interpreter lookup failure during tests
+    override fun getPresentableName(): String = referenceName
+
     override fun getCachedVersion(): Ref<SemVer> = Ref(version)
 }
 

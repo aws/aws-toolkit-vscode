@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.core.execution
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.RunConfigurationBase
+import com.intellij.execution.target.value.TargetEnvironmentFunction
+import com.intellij.execution.target.value.constant
 import com.intellij.openapi.util.Key
 import com.intellij.util.xmlb.XmlSerializer
 import org.jdom.Element
@@ -24,14 +26,31 @@ import software.aws.toolkits.telemetry.Result.Failed
 import software.aws.toolkits.telemetry.Result.Succeeded
 
 class AwsConnectionRunConfigurationExtension<T : RunConfigurationBase<*>> {
+    fun addToTargetEnvironment(configuration: T, environment: MutableMap<String, TargetEnvironmentFunction<String>>, runtimeString: () -> String? = { null }) {
+        injectCredentials(configuration, runtimeString) { settings ->
+            val putFn = { map: Map<String, String> ->
+                map.forEach { (k, v) -> environment.put(k, constant(v)) }
+            }
+
+            settings.region.mergeWithExistingEnvironmentVariables(environment.keys, putFn)
+            settings.credentials.resolveCredentials().mergeWithExistingEnvironmentVariables(environment.keys, environment::remove, putFn)
+        }
+    }
+
     fun addEnvironmentVariables(configuration: T, environment: MutableMap<String, String>, runtimeString: () -> String? = { null }) {
+        injectCredentials(configuration, runtimeString) {
+            it.region.mergeWithExistingEnvironmentVariables(environment)
+            it.credentials.resolveCredentials().mergeWithExistingEnvironmentVariables(environment)
+        }
+    }
+
+    private fun injectCredentials(configuration: T, runtimeString: () -> String?, environmentMutator: (ConnectionSettings) -> Unit) {
         try {
             val credentialConfiguration = credentialConfiguration(configuration) ?: return
             if (credentialConfiguration == DEFAULT_OPTIONS) return
 
             val connection = getConnection(configuration, credentialConfiguration)
-            connection.region.mergeWithExistingEnvironmentVariables(environment)
-            connection.credentials.resolveCredentials().mergeWithExistingEnvironmentVariables(environment)
+            environmentMutator(connection)
             AwsTelemetry.injectCredentials(configuration.project, result = Succeeded, runtimeString = tryOrNull { runtimeString() })
         } catch (e: Exception) {
             AwsTelemetry.injectCredentials(configuration.project, result = Failed, runtimeString = tryOrNull { runtimeString() })

@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.apprunner.actions
 import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndGet
@@ -29,6 +28,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsRes
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.ToolWindowHeadlessManagerImpl
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindow
 import software.aws.toolkits.jetbrains.services.apprunner.AppRunnerServiceNode
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow

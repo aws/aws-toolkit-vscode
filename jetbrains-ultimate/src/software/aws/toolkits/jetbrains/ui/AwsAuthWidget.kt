@@ -20,7 +20,6 @@ import software.aws.toolkits.jetbrains.ui.compatability.JBDBCredsAuthProviderUse
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.JPanel
-import javax.swing.event.DocumentListener
 
 abstract class AwsAuthWidget(private val userFieldEnabled: Boolean = true) : JBDBCredsAuthProviderUserWidget() {
     private val credentialSelector = CredentialProviderSelector()
@@ -97,7 +96,8 @@ abstract class AwsAuthWidget(private val userFieldEnabled: Boolean = true) : JBD
     }
 
     override fun isPasswordChanged(): Boolean = false
-    override fun onChanged(r: DocumentListener) {
+
+    override fun onChanged(r: Runnable) {
         // Tries to set username so if we don't have one, don't set
         if (userFieldEnabled) {
             super.onChanged(r)

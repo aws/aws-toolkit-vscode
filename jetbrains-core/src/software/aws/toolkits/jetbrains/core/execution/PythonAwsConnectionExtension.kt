@@ -6,10 +6,10 @@ package software.aws.toolkits.jetbrains.core.execution
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.RunnerSettings
 import com.intellij.openapi.options.SettingsEditor
+import com.intellij.openapi.util.registry.Registry
 import com.jetbrains.python.run.AbstractPythonRunConfiguration
 import com.jetbrains.python.run.PythonRunConfigurationExtension
 import org.jdom.Element
-import software.aws.toolkits.jetbrains.core.experiments.ToolkitExperiment
 import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.resources.message
 
@@ -45,12 +45,5 @@ class PythonAwsConnectionExtension : PythonRunConfigurationExtension() {
         delegate.validateConfiguration(configuration, isExecution)
     }
 
-    private fun isEnabled() = PythonAwsConnectionExperiment.isEnabled()
+    private fun isEnabled() = PythonAwsConnectionExperiment.isEnabled() && !Registry.`is`("python.use.targets.api", false)
 }
-
-object PythonAwsConnectionExperiment : ToolkitExperiment(
-    "pythonRunConfigurationExtension",
-    { message("run_configuration_extension.feature.python.title") },
-    { message("run_configuration_extension.feature.python.description") },
-    default = true
-)

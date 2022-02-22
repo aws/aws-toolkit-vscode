@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.sqs
 
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.replaceService
@@ -24,6 +23,7 @@ import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.MockToolWindow
 import software.aws.toolkits.jetbrains.services.sqs.actions.DeleteQueueAction
 import software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow
 import java.util.function.Consumer
@@ -47,7 +47,7 @@ class DeleteQueueActionTest {
     fun setup() {
         client = mockClientManagerRule.create()
 
-        val mockToolWindow = ToolWindowHeadlessManagerImpl.MockToolWindow(projectRule.project)
+        val mockToolWindow = MockToolWindow(projectRule.project)
         val mockToolWindowManager = mock<ToolWindowManager> {
             on { getToolWindow(any()) } doReturn mockToolWindow
         }

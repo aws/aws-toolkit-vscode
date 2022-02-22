@@ -3,12 +3,12 @@
 
 package software.aws.toolkits.jetbrains.datagrip.auth
 
+import DatabaseAuthProviderCompatabilityAdapter
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.credentialStore.Credentials
 import com.intellij.database.access.DatabaseCredentials
-import com.intellij.database.dataSource.DatabaseAuthProvider
 import com.intellij.database.dataSource.DatabaseAuthProvider.AuthWidget
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
@@ -36,7 +36,7 @@ data class SecretsManagerConfiguration(
     val secretId: String
 )
 
-class SecretsManagerAuth : DatabaseAuthProvider {
+class SecretsManagerAuth : DatabaseAuthProviderCompatabilityAdapter {
     private val objectMapper = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
     override fun getId(): String = providerId

@@ -10,10 +10,6 @@ import com.jetbrains.rider.test.base.BaseTestWithSolutionBase
 import com.jetbrains.rider.test.debugger.XDebuggerTestHelper
 import com.jetbrains.rider.test.scriptingApi.getVirtualFileFromPath
 import com.jetbrains.rider.test.scriptingApi.useCachedTemplates
-import org.apache.log4j.ConsoleAppender
-import org.apache.log4j.Level
-import org.apache.log4j.Logger
-import org.apache.log4j.PatternLayout
 import org.testng.annotations.AfterClass
 import org.testng.annotations.BeforeClass
 import java.io.File
@@ -47,15 +43,6 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
     @BeforeClass
     fun allowDotnetRoots() {
         allowCustomDotnetRoots()
-    }
-
-    @BeforeClass(alwaysRun = true)
-    fun enableToolkitDebugLogging() {
-        // TODO: output formatting needs to be cleaned up bit it'll do the job for now
-        Logger.getLogger("software.aws.toolkits").apply {
-            level = Level.DEBUG
-            addAppender(ConsoleAppender(PatternLayout("%-5p | %-30c{1} | %m%n")).also { it.threshold = Level.DEBUG })
-        }
     }
 
     @BeforeClass(alwaysRun = true)
