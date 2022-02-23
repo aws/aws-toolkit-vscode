@@ -72,6 +72,11 @@ class AwsConsoleUrlFactory(
                 client.getFederationToken {
                     it.durationSeconds(Duration.ofMinutes(15).toSeconds().toInt())
                     it.name("FederationViaAWSJetBrainsToolkit")
+                    // policy is required otherwise resulting session has no permissions
+                    // session will have the intersection of role permissions and this policy
+                    it.policyArns({ builder ->
+                        builder.arn("arn:aws:iam::aws:policy/AdministratorAccess")
+                    })
                 }
             }
 

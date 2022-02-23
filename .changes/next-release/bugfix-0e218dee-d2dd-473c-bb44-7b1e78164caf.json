@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue where console federation with long-term credentails results in session with no permissions"
+}

@@ -10,6 +10,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.SyntheticElement
 import com.intellij.psi.impl.FakePsiElement
+import software.amazon.awssdk.services.sts.model.StsException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettings
@@ -37,6 +38,10 @@ class ArnReference(element: PsiElement, textRange: TextRange, private val arn: S
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
                     BrowserUtil.browse(AwsConsoleUrlFactory().getSigninUrl(credProvider.resolveCredentials(), "/go/view/$arn", region))
+                } catch (e: StsException) {
+                    val message = message("general.open_in_aws_console.no_permission")
+                    notifyError(content = message, project = project)
+                    getLogger<ArnReference>().error(e) { message }
                 } catch (e: Exception) {
                     val message = message("general.open_in_aws_console.error")
                     notifyError(content = message, project = project)
