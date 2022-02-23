@@ -58,7 +58,8 @@ class ValidatingPanel internal constructor(
         }
     }
 
-    private fun updateActionButtons(panelIsValid: Boolean) {
+    // TODO: change back to private after moving to 221 release targets
+    internal fun updateActionButtons(panelIsValid: Boolean) {
         validatingActions.forEach { it.isEnabled = panelIsValid }
     }
 

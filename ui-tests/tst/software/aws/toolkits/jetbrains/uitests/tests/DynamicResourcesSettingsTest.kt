@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
+import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
@@ -18,6 +19,7 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.preferencesDialog
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
+import java.time.Duration
 
 @TestInstance(Lifecycle.PER_CLASS)
 class DynamicResourcesSettingsTest {
@@ -56,7 +58,9 @@ class DynamicResourcesSettingsTest {
                     applyButton.click()
 
                     awsExplorer {
-                        assertThat(explorerTree().findAllText { it.text.contains(message("aws.settings.title")) }).isNotEmpty()
+                        retryableAssert(timeout = Duration.ofSeconds(5)) {
+                            assertThat(explorerTree().findAllText { it.text.contains(message("aws.settings.title")) }).isNotEmpty()
+                        }
                     }
                 }
 
@@ -66,7 +70,9 @@ class DynamicResourcesSettingsTest {
                     applyButton.click()
 
                     awsExplorer {
-                        assertThat(explorerTree().findAllText { it.text.contains("AWS") }).isEmpty()
+                        retryableAssert(timeout = Duration.ofSeconds(5)) {
+                            assertThat(explorerTree().findAllText { it.text.contains("AWS") }).isEmpty()
+                        }
                     }
                 }
             }

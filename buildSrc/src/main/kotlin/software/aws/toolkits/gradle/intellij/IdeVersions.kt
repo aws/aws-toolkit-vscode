@@ -131,18 +131,18 @@ object IdeVersions {
             name = "2022.1",
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "221.4165-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "221.4501-EAP-CANDIDATE-SNAPSHOT",
                 plugins = commonPlugins + listOf(
                     "java",
                     "com.intellij.gradle",
                     "org.jetbrains.idea.maven",
-                    "PythonCore:221.4165.146",
-                    "Docker:221.4165.146"
+                    "PythonCore:221.4501.155",
+                    "Docker:221.4501.155"
                 )
             ),
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "221.4165-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "221.4501-EAP-CANDIDATE-SNAPSHOT",
                 plugins = commonPlugins + listOf(
                     "JavaScript",
                     // Transitive dependency needed for javascript
@@ -150,12 +150,12 @@ object IdeVersions {
                     "com.intellij.css",
                     "JavaScriptDebugger",
                     "com.intellij.database",
-                    "Pythonid:221.4165.146",
-                    "org.jetbrains.plugins.go:221.4165.146"
+                    "Pythonid:221.4501.155",
+                    "org.jetbrains.plugins.go:221.4501.155"
                 )
             ),
             rider = RiderProfile(
-                sdkVersion = "2022.1-SNAPSHOT",
+                sdkVersion = "2022.1-EAP3-SNAPSHOT",
                 plugins = commonPlugins + listOf(
                     "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
                 ),
