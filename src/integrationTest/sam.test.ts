@@ -58,7 +58,7 @@ interface TestScenario {
 }
 
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
-// to reduce the chance of automated tests timing out.
+// test to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
     // zips
     {
