@@ -77,6 +77,7 @@ const scenarios: TestScenario[] = [
         language: 'javascript',
         dependencyManager: 'npm',
     },
+    /*
     {
         runtime: 'python3.6',
         displayName: 'python3.6 (ZIP)',
@@ -93,6 +94,7 @@ const scenarios: TestScenario[] = [
         language: 'python',
         dependencyManager: 'pip',
     },
+    */
     {
         runtime: 'python3.8',
         displayName: 'python3.8 (ZIP)',
@@ -163,6 +165,7 @@ const scenarios: TestScenario[] = [
         language: 'javascript',
         dependencyManager: 'npm',
     },
+    /*
     {
         runtime: 'python3.6',
         displayName: 'python3.6 (Image)',
@@ -181,6 +184,7 @@ const scenarios: TestScenario[] = [
         language: 'python',
         dependencyManager: 'pip',
     },
+    */
     {
         runtime: 'python3.8',
         displayName: 'python3.8 (Image)',

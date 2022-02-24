@@ -46,12 +46,12 @@ describe('SamTemplateCodeLensProvider', async function () {
         )
 
         const expectedCodeLens = [
-            new vscode.CodeLens(new vscode.Range(25, 4, 30, 30), {
+            new vscode.CodeLens(new vscode.Range(25, 4, 31, 0), {
                 title: 'AWS: Add Debug Configuration',
                 command: 'aws.addSamDebugConfiguration',
                 arguments: [{ resourceName: 'Function2NotInLaunchJson', rootUri: templateUri }, TEMPLATE_TARGET_TYPE],
             }),
-            new vscode.CodeLens(new vscode.Range(31, 4, 42, 35), {
+            new vscode.CodeLens(new vscode.Range(31, 4, 43, 0), {
                 title: 'AWS: Add Debug Configuration',
                 command: 'aws.addSamDebugConfiguration',
                 arguments: [{ resourceName: 'Function3NotInLaunchJson', rootUri: templateUri }, TEMPLATE_TARGET_TYPE],
@@ -61,7 +61,7 @@ describe('SamTemplateCodeLensProvider', async function () {
         expectedCodeLens.splice(
             0,
             0,
-            new vscode.CodeLens(new vscode.Range(37, 12, 42, 35), {
+            new vscode.CodeLens(new vscode.Range(37, 12, 43, 0), {
                 title: 'AWS: Add API Debug Configuration',
                 command: 'aws.addSamDebugConfiguration',
                 arguments: [{ resourceName: 'Function3NotInLaunchJson', rootUri: templateUri }, API_TARGET_TYPE],
