@@ -26,6 +26,10 @@ phases:
             - '>/dev/null pip3 install --upgrade aws-sam-cli'
             - '>/dev/null pip3 install --upgrade awscli'
             - '>/dev/null pip3 install pylint'
+            # SAM CLI is ran inside of a pyenv shim so we need to install the versions with pyenv
+            - '>/dev/null pyenv install 3.6.15'
+            - '>/dev/null pyenv install 3.7.12'
+            - '>/dev/null pyenv install 3.8.12'
             # Install latest version of Go (known to 'goenv')
             - '>/dev/null VERSION=$(goenv install --list | tail -n 1) && goenv install $VERSION'
             - '>/dev/null goenv global $VERSION && go env -w GOPROXY=direct'
