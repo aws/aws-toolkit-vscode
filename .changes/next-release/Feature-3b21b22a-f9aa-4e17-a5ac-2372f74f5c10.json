@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM/Lambda: \"Create SAM Lambda Application\" can choose TypeScript \"Hello World\" template for nodejs14.x"
+}

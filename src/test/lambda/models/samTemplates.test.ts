@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import {
     CLI_VERSION_STEP_FUNCTIONS_TEMPLATE,
     getSamCliTemplateParameter,
-    getSamTemplateWizardOption,
+    getSamTemplateWizardOptions,
     getTemplateDescription,
     repromptUserForTemplate,
     SamTemplate,
@@ -53,7 +53,7 @@ before(function () {
 describe('getSamTemplateWizardOption', function () {
     it('should successfully return available templates for specific runtime', function () {
         for (const runtime of samZipLambdaRuntimes.values()) {
-            const result = getSamTemplateWizardOption(runtime, 'Zip', CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
+            const result = getSamTemplateWizardOptions(runtime, 'Zip', CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
             switch (runtime) {
                 case 'python3.6':
                 case 'python3.7':
@@ -85,7 +85,7 @@ describe('getSamTemplateWizardOption', function () {
 
     it('should not return Step Functions templates for a SAM CLI version that does not support them', function () {
         for (const runtime of samZipLambdaRuntimes.values()) {
-            const result = getSamTemplateWizardOption(runtime, 'Zip', '0.40.0')
+            const result = getSamTemplateWizardOptions(runtime, 'Zip', '0.40.0')
             assert(!result.contains(stepFunctionsSampleApp))
         }
     })

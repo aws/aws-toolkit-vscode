@@ -13,6 +13,7 @@ import { RuntimePackageType } from './samLambdaRuntime'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 
 export let helloWorldTemplate = 'helloWorldUninitialized'
+export let helloWorldTypescriptTemplate = 'helloWorldTypescriptUninitialized'
 export let eventBridgeHelloWorldTemplate = 'eventBridgeHelloWorldUninitialized'
 export let eventBridgeStarterAppTemplate = 'eventBridgeStarterAppUnintialized'
 export let stepFunctionsSampleApp = 'stepFunctionsSampleAppUnintialized'
@@ -33,6 +34,11 @@ export function lazyLoadSamTemplateStrings(): void {
         '{0} SAM Hello World',
         getIdeProperties().company
     )
+    helloWorldTypescriptTemplate = localize(
+        'AWS.samcli.initWizard.template.helloWorldTypescript.name',
+        '{0} SAM Hello World (TypeScript)',
+        getIdeProperties().company
+    )
     eventBridgeHelloWorldTemplate = localize(
         'AWS.samcli.initWizard.template.helloWorld.name',
         '{0} SAM EventBridge Hello World',
@@ -50,12 +56,16 @@ export function lazyLoadSamTemplateStrings(): void {
     )
 }
 
-export function getSamTemplateWizardOption(
+export function getSamTemplateWizardOptions(
     runtime: Runtime,
     packageType: RuntimePackageType,
     samCliVersion: string
 ): ImmutableSet<SamTemplate> {
     const templateOptions = Array<SamTemplate>(helloWorldTemplate)
+
+    if (runtime === 'nodejs14.x') {
+        templateOptions.push(helloWorldTypescriptTemplate)
+    }
 
     if (packageType === 'Image') {
         // only supports hello world for now
@@ -70,7 +80,7 @@ export function getSamTemplateWizardOption(
         templateOptions.push(stepFunctionsSampleApp)
     }
 
-    if (supportsTypeScriptBackendTemplate(runtime)) {
+    if (runtime === 'nodejs12.x') {
         templateOptions.push(typeScriptBackendTemplate)
     }
 
@@ -81,6 +91,8 @@ export function getSamCliTemplateParameter(templateSelected: SamTemplate): strin
     switch (templateSelected) {
         case helloWorldTemplate:
             return 'hello-world'
+        case helloWorldTypescriptTemplate:
+            return 'hello-world-typescript'
         case eventBridgeHelloWorldTemplate:
             return 'eventBridge-hello-world'
         case eventBridgeStarterAppTemplate:
@@ -98,6 +110,11 @@ export function getTemplateDescription(template: SamTemplate): string {
     switch (template) {
         case helloWorldTemplate:
             return localize('AWS.samcli.initWizard.template.helloWorld.description', 'A basic SAM app')
+        case helloWorldTypescriptTemplate:
+            return localize(
+                'AWS.samcli.initWizard.template.helloWorldTypescript.description',
+                'A basic SAM TypeScript app'
+            )
         case eventBridgeHelloWorldTemplate:
             return localize(
                 'AWS.samcli.initWizard.template.eventBridge_helloWorld.description',
@@ -128,8 +145,4 @@ export function supportsStepFuntionsTemplate(samCliVersion: string): boolean {
         return false
     }
     return semver.gte(samCliVersion, CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
-}
-
-export function supportsTypeScriptBackendTemplate(runtime: Runtime): boolean {
-    return runtime === 'nodejs12.x'
 }
