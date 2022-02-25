@@ -75,7 +75,7 @@ export class ChildProcess {
     /** Collects stderr data if the process was started with `collect=true`. */
     private stderrChunks: string[] = []
 
-    private makeResult(code: number, signal?: string): ChildProcessResult {
+    private makeResult(code: number, signal?: NodeJS.Signals): ChildProcessResult {
         return {
             exitCode: code,
             stdout: this.stdoutChunks.join('').trim(),
@@ -204,7 +204,7 @@ export class ChildProcess {
             // Emitted when streams are closed.
             // This will not be fired if `waitForStreams` is false
             this.childProcess.once('close', (code, signal) => {
-                this.processResult = this.makeResult(code, signal)
+                this.processResult = this.makeResult(code ?? -1, signal ?? undefined)
                 resolve(this.processResult)
             })
 
@@ -260,7 +260,7 @@ export class ChildProcess {
      * @param signal  Signal to send, defaults to SIGTERM (node default).
      *
      */
-    public stop(force: boolean = false, signal?: string): void {
+    public stop(force: boolean = false, signal?: NodeJS.Signals): void {
         const child = this.childProcess
         if (!child) {
             return
