@@ -423,6 +423,9 @@ export class MockIamClient implements IamClient {
     public simulatePrincipalPolicy(request: IAM.SimulatePrincipalPolicyRequest): Promise<IAM.SimulatePolicyResponse> {
         throw new Error('Method not implemented.')
     }
+    public hasRolePermissions(request: IAM.SimulatePrincipalPolicyRequest): Promise<boolean | undefined> {
+        throw new Error('Method not implemented.')
+    }
 }
 
 export class MockLambdaClient implements LambdaClient {

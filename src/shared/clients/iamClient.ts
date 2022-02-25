@@ -70,12 +70,12 @@ export class DefaultIamClient {
      * @param roleArn IAM.SimulatePrinicipalPolicyRequest
      * @returns True if the role has the provided permissions. Undefined when the role is missing or the 'simulatePrincipalPolicy' call was unsuccessful.
      */
-    public async hasRolePermissions(params: IAM.SimulatePrincipalPolicyRequest): Promise<boolean | undefined> {
-        if (params.PolicySourceArn === undefined) {
+    public async hasRolePermissions(request: IAM.SimulatePrincipalPolicyRequest): Promise<boolean | undefined> {
+        if (request.PolicySourceArn === undefined) {
             return undefined
         }
         try {
-            const permissionResponse = await this.simulatePrincipalPolicy(params)
+            const permissionResponse = await this.simulatePrincipalPolicy(request)
             if (!permissionResponse || !permissionResponse.EvaluationResults) {
                 return undefined
             }
