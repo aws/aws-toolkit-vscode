@@ -19,7 +19,6 @@ import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
-import { IamClient } from '../../shared/clients/iamClient'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
@@ -42,7 +41,13 @@ export async function runCommandInContainer(
 
     try {
         const iamClient = globals.toolkitClientBuilder.createIamClient(node.ecs.regionCode)
-        if (await isMissingRequiredPermissions(node.taskRoleArn, iamClient)) {
+        if (
+            node.taskRoleArn !== undefined &&
+            (await iamClient.hasRolePermissions({
+                PolicySourceArn: node.taskRoleArn,
+                ActionNames: REQUIRED_SSM_PERMISSIONS,
+            })) === false
+        ) {
             const viewDocsItem = localize('AWS.generic.viewDocs', 'View Documentation')
             window
                 .showErrorMessage(
@@ -114,37 +119,5 @@ export async function runCommandInContainer(
     } finally {
         recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })
         status?.dispose()
-    }
-}
-/**
- * Attempts to verify if the task role provided has the required SSM permissions to run ECS Exec
- * @param taskRoleArn
- * @param iamClient
- * @returns True if the permissions are missing from the Task role. False when all required permissions were found. Undefined when the task role is missing or the 'simulatePrincipalPolicy' call was unsuccessful.
- */
-export async function isMissingRequiredPermissions(
-    taskRoleArn: string | undefined,
-    iamClient: IamClient
-): Promise<boolean | undefined> {
-    if (taskRoleArn === undefined) {
-        return undefined
-    }
-    try {
-        const permissionResponse = await iamClient.simulatePrincipalPolicy({
-            PolicySourceArn: taskRoleArn,
-            ActionNames: REQUIRED_SSM_PERMISSIONS,
-        })
-        if (!permissionResponse || !permissionResponse.EvaluationResults) {
-            return undefined
-        }
-        for (const evalResult of permissionResponse.EvaluationResults) {
-            if (evalResult.EvalDecision !== 'allowed') {
-                return true
-            }
-        }
-        return false
-    } catch (error) {
-        getLogger().error('Error during policy simulation. Skipping permissions check. Error: %O', error)
-        return undefined
     }
 }
