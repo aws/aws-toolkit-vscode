@@ -29,30 +29,34 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.model.GetFederationTokenRequest
 import software.amazon.awssdk.services.sts.model.GetFederationTokenResponse
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.region.US_EAST_1
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import java.net.InetAddress
 
 class AwsConsoleUrlFactoryTest {
     val applicationRule = ApplicationRule()
     val mockClientManager = MockClientManagerRule()
+    val mockCredentialManager = MockCredentialManagerRule()
 
     @Rule
     @JvmField
-    val ruleChain = RuleChain(applicationRule, mockClientManager)
+    val ruleChain = RuleChain(applicationRule, mockClientManager, mockCredentialManager)
 
     @Rule
     @JvmField
     val wireMock = WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort())
 
     private lateinit var stsMock: StsClient
+    private lateinit var httpBuilderMock: HttpClientBuilder
     private lateinit var httpClient: CloseableHttpClient
     private lateinit var sut: AwsConsoleUrlFactory
 
     @Before
     fun setUp() {
-        val httpBuilderMock = mock<HttpClientBuilder>()
+        httpBuilderMock = mock<HttpClientBuilder>()
         httpClient = HttpClientBuilder.create()
             .setRoutePlanner(HttpRoutePlanner { _, _, _ -> HttpRoute(HttpHost(InetAddress.getLoopbackAddress(), wireMock.port(), "http")) })
             .build()
@@ -73,7 +77,7 @@ class AwsConsoleUrlFactoryTest {
             )
         )
 
-        sut = AwsConsoleUrlFactory(httpBuilderMock)
+        sut = AwsConsoleUrlFactory
     }
 
     @After
@@ -84,14 +88,17 @@ class AwsConsoleUrlFactoryTest {
     @Test
     fun `getSigninToken uses temporary credentials as-is`() {
         val tempCreds = AwsSessionCredentials.create("accessKey", "secretKey", "sessionToken")
+        val connectionSettings = ConnectionSettings(mockCredentialManager.createCredentialProvider("tempCreds", tempCreds), getDefaultRegion())
 
         verifyNoMoreInteractions(stsMock)
-        assertThat(sut.getSigninToken(tempCreds, US_EAST_1)).isEqualTo("signinToken")
+        assertThat(sut.getSigninToken(connectionSettings, httpBuilderMock)).isEqualTo("signinToken")
     }
 
     @Test
     fun `getSigninToken requests federation token for long-term credentials`() {
         val longCreds = AwsBasicCredentials.create("basicKeyId", "basicSecretKey")
+        val connectionSettings = ConnectionSettings(mockCredentialManager.createCredentialProvider("longCreds", longCreds), getDefaultRegion())
+
         whenever(stsMock.getFederationToken(any<GetFederationTokenRequest>())).thenReturn(
             GetFederationTokenResponse.builder()
                 .credentials {
@@ -102,14 +109,15 @@ class AwsConsoleUrlFactoryTest {
                 .build()
         )
 
-        assertThat(sut.getSigninToken(longCreds, US_EAST_1)).isEqualTo("signinToken")
+        assertThat(sut.getSigninToken(connectionSettings, httpBuilderMock)).isEqualTo("signinToken")
     }
 
     @Test
     fun `build sign-in url`() {
         val tempCreds = AwsSessionCredentials.create("accessKey", "secretKey", "sessionToken")
+        val connectionSettings = ConnectionSettings(mockCredentialManager.createCredentialProvider("tempCreds", tempCreds), getDefaultRegion())
 
-        assertThat(sut.getSigninUrl(tempCreds, destination = "/something", region = US_EAST_1))
+        assertThat(sut.getSigninUrl(connectionSettings = connectionSettings, destination = "/something", httpClientBuilder = httpBuilderMock))
             .isEqualTo(
                 """
                 https://signin.aws.amazon.com/federation?Action=login&SigninToken=signinToken&Destination=https%3A%2F%2Fus-east-1.console.aws.amazon.com%2Fsomething

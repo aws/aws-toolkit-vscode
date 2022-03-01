@@ -11,18 +11,16 @@ import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.message.BasicNameValuePair
-import software.amazon.awssdk.auth.credentials.AwsCredentials
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sts.StsClient
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import java.time.Duration
 
-class AwsConsoleUrlFactory(
-    private val httpClientBuilder: HttpClientBuilder = HttpClientBuilder.create()
-) {
+object AwsConsoleUrlFactory {
+    private val defaultHttpClientBuilder: HttpClientBuilder by lazy { HttpClientBuilder.create() }
+
     fun federationUrl(region: AwsRegion): String {
         // https://docs.aws.amazon.com/general/latest/gr/signin-service.html
         // https://docs.amazonaws.cn/en_us/aws/latest/userguide/endpoints-Beijing.html
@@ -63,10 +61,14 @@ class AwsConsoleUrlFactory(
         return "$consoleHome${fragment ?: "/"}"
     }
 
-    fun getSigninToken(credentials: AwsCredentials, region: AwsRegion): String {
-        val creds = if (credentials !is AwsSessionCredentials) {
-            val stsClient: StsClient = AwsClientManager.getInstance()
-                .createUnmanagedClient(AwsCredentialsProvider { credentials }, Region.of(region.id))
+    fun getSigninUrl(connectionSettings: ConnectionSettings, destination: String?, httpClientBuilder: HttpClientBuilder = defaultHttpClientBuilder): String {
+        return getSigninUrl(getSigninToken(connectionSettings, httpClientBuilder), destination, connectionSettings.region)
+    }
+
+    fun getSigninToken(connectionSettings: ConnectionSettings, httpClientBuilder: HttpClientBuilder = defaultHttpClientBuilder): String {
+        val resolvedCreds = connectionSettings.credentials.resolveCredentials()
+        val sessionCredentials = if (resolvedCreds !is AwsSessionCredentials) {
+            val stsClient = AwsClientManager.getInstance().getClient<StsClient>(connectionSettings)
 
             val tokenResponse = stsClient.use { client ->
                 client.getFederationToken {
@@ -82,14 +84,14 @@ class AwsConsoleUrlFactory(
 
             tokenResponse.credentials().let { AwsSessionCredentials.create(it.accessKeyId(), it.secretAccessKey(), it.sessionToken()) }
         } else {
-            credentials
+            resolvedCreds
         }
 
         val sessionJson = mapper.writeValueAsString(
             GetSigninTokenRequest(
-                sessionId = creds.accessKeyId(),
-                sessionKey = creds.secretAccessKey(),
-                sessionToken = creds.sessionToken()
+                sessionId = sessionCredentials.accessKeyId(),
+                sessionKey = sessionCredentials.secretAccessKey(),
+                sessionToken = sessionCredentials.sessionToken()
             )
         )
 
@@ -99,7 +101,7 @@ class AwsConsoleUrlFactory(
             "Session" to sessionJson
         ).map { BasicNameValuePair(it.key, it.value) }
 
-        val request = HttpPost(federationUrl(region))
+        val request = HttpPost(federationUrl(connectionSettings.region))
             .apply {
                 entity = UrlEncodedFormEntity(params)
             }
@@ -128,10 +130,6 @@ class AwsConsoleUrlFactory(
         ).map { BasicNameValuePair(it.key, it.value) }
 
         return "${federationUrl(region)}?${UrlEncodedFormEntity(params).toUrlEncodedString()}"
-    }
-
-    fun getSigninUrl(credentials: AwsCredentials, destination: String?, region: AwsRegion): String {
-        return getSigninUrl(getSigninToken(credentials, region), destination, region)
     }
 
     private val mapper = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

@@ -7,11 +7,14 @@ import com.intellij.testFramework.TestApplicationManager
 import com.intellij.util.io.HttpRequests
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assume.assumeFalse
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
+import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 @RunWith(Parameterized::class)
@@ -28,6 +31,10 @@ class AwsConsoleUrlFactoryIntegrationTest(@Suppress("UNUSED_PARAMETER") regionId
         }
     }
 
+    @Rule
+    @JvmField
+    val credRule = MockCredentialManagerRule()
+
     /**
      * There is currently no good way to test this in our integration CI fleet, so this test suite only runs locally
      */
@@ -42,8 +49,9 @@ class AwsConsoleUrlFactoryIntegrationTest(@Suppress("UNUSED_PARAMETER") regionId
         }
         assumeFalse("Skipping console sign-in test for $region since a credentials profile was not available", profileName.isNullOrBlank())
 
-        val credProvider = ProfileCredentialsProvider.create(profileName)
-        val signinUrl = AwsConsoleUrlFactory().getSigninUrl(credentials = credProvider.resolveCredentials(), destination = "", region = region)
+        val credProvider = credRule.createCredentialProvider(profileName, ProfileCredentialsProvider.create(profileName).resolveCredentials())
+        val credSettings = ConnectionSettings(credProvider, region)
+        val signinUrl = AwsConsoleUrlFactory.getSigninUrl(credSettings, destination = "")
         val responseCode = HttpRequests.request(signinUrl)
             // don't throw because it'll print the signin token as part of the exception
             .throwStatusCodeException(false)

@@ -34,10 +34,9 @@ class ArnReference(element: PsiElement, textRange: TextRange, private val arn: S
                 return
             }
 
-            val (credProvider, region) = connectionSettings
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
-                    BrowserUtil.browse(AwsConsoleUrlFactory().getSigninUrl(credProvider.resolveCredentials(), "/go/view/$arn", region))
+                    BrowserUtil.browse(AwsConsoleUrlFactory.getSigninUrl(connectionSettings, "/go/view/$arn"))
                 } catch (e: StsException) {
                     val message = message("general.open_in_aws_console.no_permission")
                     notifyError(content = message, project = project)
