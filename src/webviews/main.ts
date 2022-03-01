@@ -269,7 +269,13 @@ function createWebviewPanel(params: WebviewPanelParams & { context: ExtContext }
         {
             viewColumn: isCloud9() ? vscode.ViewColumn.Two : params.viewColumn ?? vscode.ViewColumn.Beside,
         },
-        { retainContextWhenHidden: isCloud9() || params.retainContextWhenHidden }
+        {
+            // The redundancy here is to correct a bug with Cloud9's Webview implementation
+            // We need to assign certain things on instantiation, otherwise they'll never be applied to the view
+            enableScripts: true,
+            enableCommandUris: true,
+            retainContextWhenHidden: isCloud9() || params.retainContextWhenHidden,
+        }
     )
     updateWebview(panel.webview, params)
 
@@ -342,7 +348,7 @@ function resolveWebviewHtml(params: {
     webviewJs: string
     main: vscode.Uri
 }): string {
-    const resolvedParams = { ...params, connectSource: 'none' }
+    const resolvedParams = { ...params, connectSource: `'none'` }
     const LOCAL_SERVER = process.env.WEBPACK_DEVELOPER_SERVER
 
     if (LOCAL_SERVER) {
