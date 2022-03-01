@@ -5,7 +5,7 @@
 
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
-import * as marked from 'marked'
+import { marked } from 'marked'
 import * as path from 'path'
 
 // doesn't use path utils as this should be formatted for finding images with HTML markup
