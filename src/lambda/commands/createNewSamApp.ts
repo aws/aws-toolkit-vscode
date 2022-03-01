@@ -318,7 +318,6 @@ export async function createNewSamApplication(
         }
 
         activationReloadState.clearSamInitState()
-        // TODO: Replace when Cloud9 supports `markdown` commands
 
         if (tryOpenReadme) {
             await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
