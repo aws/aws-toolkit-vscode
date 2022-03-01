@@ -2919,7 +2919,7 @@
         "@types/glob": "^7.1.1",
         "@types/js-yaml": "^4.0.3",
         "@types/lodash": "^4.14.173",
-        "@types/marked": "^3.0.1",
+        "@types/marked": "^4.0.2",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^9.0.0",
         "@types/node": "^14.18.5",
@@ -2972,7 +2972,7 @@
     },
     "dependencies": {
         "@aws-sdk/client-sso": "^3.16.0",
-        "@aws-sdk/client-sso-oidc": "^3.52.0",
+        "@aws-sdk/client-sso-oidc": "^3.53.0",
         "@aws-sdk/credential-provider-ini": "^3.46.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.38.0",
