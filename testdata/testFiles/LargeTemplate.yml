@@ -6149,5 +6149,5 @@ Resources:
     Properties:
       Handler: hello_world/app.lambda_handler
       CodeUri: .
-      Runtime: python2.7
+      Runtime: python3.9
       Timeout: 900

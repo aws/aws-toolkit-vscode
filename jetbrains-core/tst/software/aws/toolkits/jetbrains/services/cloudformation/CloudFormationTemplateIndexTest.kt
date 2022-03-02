@@ -233,7 +233,7 @@ Resources:
             """
 Globals:
     Function:
-        Runtime: python2.7
+        Runtime: python3.9
         Handler: bar
 Resources:
   ServerlessFunction:
