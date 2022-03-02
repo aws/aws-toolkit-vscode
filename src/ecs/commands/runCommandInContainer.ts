@@ -13,13 +13,21 @@ import { ChildProcess } from '../../shared/utilities/childProcess'
 import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
-import { extensionSettingsPrefix, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import { ecsRequiredPermissionsUrl, extensionSettingsPrefix, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+
+// Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
+const REQUIRED_SSM_PERMISSIONS = [
+    'ssmmessages:CreateControlChannel',
+    'ssmmessages:CreateDataChannel',
+    'ssmmessages:OpenControlChannel',
+    'ssmmessages:OpenDataChannel',
+]
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
@@ -32,6 +40,32 @@ export async function runCommandInContainer(
     let status: vscode.Disposable | undefined
 
     try {
+        const iamClient = globals.toolkitClientBuilder.createIamClient(node.ecs.regionCode)
+        if (
+            node.taskRoleArn !== undefined &&
+            (await iamClient.hasRolePermissions({
+                PolicySourceArn: node.taskRoleArn,
+                ActionNames: REQUIRED_SSM_PERMISSIONS,
+            })) === false
+        ) {
+            const viewDocsItem = localize('AWS.generic.viewDocs', 'View Documentation')
+            window
+                .showErrorMessage(
+                    localize(
+                        'AWS.command.ecs.runCommandInContainer.missingPermissions',
+                        'Insufficient permissions to execute command. Configure a task role as described in the documentation.'
+                    ),
+                    viewDocsItem
+                )
+                .then(selection => {
+                    if (selection === viewDocsItem) {
+                        vscode.env.openExternal(vscode.Uri.parse(ecsRequiredPermissionsUrl))
+                    }
+                })
+            result = 'Failed'
+            return
+        }
+
         const wizard = new CommandWizard(node, await settings.isPromptEnabled('ecsRunCommand'))
         const response = await wizard.run()
 
@@ -50,7 +84,7 @@ export async function runCommandInContainer(
         )
 
         const execCommand = await node.ecs.executeCommand(
-            node.clusterArn,
+            node.parent.service.clusterArn!,
             node.containerName,
             response.task,
             response.command
