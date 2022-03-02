@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
-import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { mock, instance, when } from 'ts-mockito'
 import { CloudFormation } from 'aws-sdk'
@@ -47,14 +46,14 @@ describe('ResourcesNode', function () {
         await setConfiguration(resourceTypes)
     })
 
-    it('returns placeholder node if no resource types are enabled', async function () {
+    it('shows all resources by default (if no resource types are configured)', async function () {
         const resourceTypes: string[] = []
 
         await setConfiguration(resourceTypes)
 
         const childNodes = await testNode.getChildren()
 
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assert.ok(childNodes.length > 200)
     })
 
     it('has ResourceTypeNode child nodes', async function () {
