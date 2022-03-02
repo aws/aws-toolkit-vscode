@@ -61,7 +61,8 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const resourceTypes = memoizedGetResourceTypes()
-        const enabledResources = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
+        const configuredResources = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
+        const enabledResources = configuredResources?.length ? configuredResources : resourceTypes.keys()
 
         if (enabledResources) {
             const availableTypes: Map<string, CloudFormation.TypeSummary> = toMap(
