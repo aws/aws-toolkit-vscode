@@ -1527,12 +1527,12 @@
                 },
                 {
                     "command": "aws.resources.configure",
-                    "when": "view == aws.explorer && viewItem == resourcesRootNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == resourcesRootNode",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.resources.configure",
-                    "when": "view == aws.explorer && viewItem == resourcesRootNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == resourcesRootNode",
                     "group": "inline@1"
                 },
                 {
