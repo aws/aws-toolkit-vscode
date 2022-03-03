@@ -22,7 +22,8 @@ class DotNetRuntimeGroup : SdkBasedRuntimeGroup() {
     )
     override val supportedRuntimes = listOf(
         LambdaRuntime.DOTNETCORE3_1,
-        LambdaRuntime.DOTNET5_0
+        LambdaRuntime.DOTNET5_0,
+        LambdaRuntime.DOTNET6_0
     )
 
     override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? = null

@@ -77,3 +77,8 @@ class Dotnet50ImageDebug : DotnetImageDebugSupport() {
     override val id: String = LambdaRuntime.DOTNET5_0.toString()
     override fun displayName() = LambdaRuntime.DOTNET5_0.toString().capitalize()
 }
+
+class Dotnet60ImageDebug : DotnetImageDebugSupport() {
+    override val id: String = LambdaRuntime.DOTNET6_0.toString()
+    override fun displayName() = LambdaRuntime.DOTNET6_0.toString().capitalize()
+}

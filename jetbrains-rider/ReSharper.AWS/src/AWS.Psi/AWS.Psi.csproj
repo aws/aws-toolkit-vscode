@@ -7,7 +7,7 @@
 
     <ItemGroup>
       <PackageReference Include="JetBrains.Rider.SDK" Version="$(RiderSDKVersion)" />
-      <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.$(NetFrameworkTarget)" Version="1.0.0" />
+      <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.$(NetFrameworkTarget)" Version="1.0.2" />
     </ItemGroup>
 
 </Project>
