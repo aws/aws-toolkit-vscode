@@ -20,6 +20,7 @@ import { removeAnsi } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
 const REQUIRED_SSM_PERMISSIONS = [
@@ -77,7 +78,7 @@ export async function runCommandInContainer(
             settings.disablePrompt('ecsRunCommand')
         }
 
-        const ssmPlugin = await getOrInstallCli('session-manager-plugin', true, window, settings)
+        const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9(), window, settings)
 
         status = vscode.window.setStatusBarMessage(
             localize('AWS.command.ecs.statusBar.executing', 'ECS: Executing command...')
