@@ -11,4 +11,5 @@ dependencies {
     testImplementation(libs.detekt.test)
     testImplementation(libs.junit4)
     testImplementation(libs.assertj)
+    testRuntimeOnly(libs.slf4j.api)
 }

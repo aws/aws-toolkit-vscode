@@ -27,6 +27,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.await
 import software.amazon.awssdk.services.ecr.model.AuthorizationData
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
@@ -107,11 +108,11 @@ object EcrUtils {
     suspend fun pushImage(project: Project, ecrLogin: EcrLogin, pushRequest: EcrPushRequest) {
         when (pushRequest) {
             is DockerfileEcrPushRequest -> {
-                LOG.debug("Building Docker image from ${pushRequest.dockerBuildConfiguration}")
+                LOG.debug { "Building Docker image from ${pushRequest.dockerBuildConfiguration}" }
                 buildAndPushDockerfile(project, ecrLogin, pushRequest)
             }
             is ImageEcrPushRequest -> {
-                LOG.debug("Pushing '${pushRequest.localImageId}' to ECR")
+                LOG.debug { "Pushing '${pushRequest.localImageId}' to ECR" }
                 val model = buildDockerRepositoryModel(ecrLogin, pushRequest.remoteRepo, pushRequest.remoteTag)
                 ToolkitDockerAdapter(project, pushRequest.dockerServerRuntime).pushImage(pushRequest.localImageId, model)
             }
@@ -131,9 +132,9 @@ object EcrUtils {
             return
         }
 
-        LOG.debug("Finding built image with prefix '$imageIdPrefix'")
+        LOG.debug { "Finding built image with prefix '$imageIdPrefix'" }
         val imageId = dockerRuntime.agent.getImages(null).first { it.imageId.startsWith(imageIdPrefix) }.imageId
-        LOG.debug("Found image with full id '$imageId'")
+        LOG.debug { "Found image with full id '$imageId'" }
 
         pushImage(project, ecrLogin, ImageEcrPushRequest(dockerRuntime, imageId, remoteRepo, remoteTag))
     }

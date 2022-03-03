@@ -145,7 +145,7 @@ class RemoteResourceResolverTest {
             // It's possible for it to be done writing but path.exists to not work yet which
             // makes the canDownloadAFileOnce test fail (on CodeBuild).
             while (!path.exists()) {
-                LOG.debug("writeDataToFile path does not exist yet: $path")
+                LOG.debug { "writeDataToFile path does not exist yet: $path" }
                 Thread.sleep(10)
             }
         }

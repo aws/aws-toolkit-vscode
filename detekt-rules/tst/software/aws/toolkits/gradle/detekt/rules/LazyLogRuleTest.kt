@@ -3,23 +3,31 @@
 
 package software.aws.toolkits.gradle.detekt.rules
 
-import io.gitlab.arturbosch.detekt.test.lint
+import io.github.detekt.test.utils.createEnvironment
+import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.io.File
 
 class LazyLogRuleTest {
     private val rule = LazyLogRule()
+    private val environment = createEnvironment(
+        additionalRootPaths = LazyLogRule.loggers.map {
+            File(Class.forName(it).protectionDomain.codeSource.location.path)
+        }
+    ).env
 
     @Test
     fun lambdaIsUsedToLog() {
         assertThat(
-            rule.lint(
+            rule.compileAndLintWithContext(
+                environment,
                 """
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger(T::class.java)
+val LOG = LoggerFactory.getLogger(LoggerFactory::class.java)
 fun foo() {
-    LOG.debug {"Hi" }
+    LOG.debug { "Hi" }
 }
                 """.trimIndent()
             )
@@ -29,11 +37,12 @@ fun foo() {
     @Test
     fun methodCallIsUsedToLog() {
         assertThat(
-            rule.lint(
+            rule.compileAndLintWithContext(
+                environment,
                 """
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger(T::class.java)
+val LOG = LoggerFactory.getLogger(LoggerFactory::class.java)
 fun foo() {
     LOG.debug("Hi")
 }
@@ -41,18 +50,19 @@ fun foo() {
             )
         ).singleElement()
             .matches {
-                it.id == "LazyLog" && it.message == "Use the Lambda version of LOG.debug instead"
+                it.id == "LazyLog" && it.message == "Use the lambda version of LOG.debug instead"
             }
     }
 
     @Test
     fun lambdaIsUsedToLogButWithException() {
         assertThat(
-            rule.lint(
+            rule.compileAndLintWithContext(
+                environment,
                 """
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger(T::class.java)
+val LOG = LoggerFactory.getLogger(LoggerFactory::class.java)
 fun foo() {
     val e = RuntimeException()
     LOG.debug(e) {"Hi" }
@@ -65,13 +75,14 @@ fun foo() {
     @Test
     fun methodCallIsUsedToLogInUiTests() {
         assertThat(
-            rule.lint(
+            rule.compileAndLintWithContext(
+                environment,
                 """
 package software.aws.toolkits.jetbrains.uitests.really.cool.test
 
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger(T::class.java)
+val LOG = LoggerFactory.getLogger(LoggerFactory::class.java)
 fun foo() {
     LOG.debug("Hi")
 }

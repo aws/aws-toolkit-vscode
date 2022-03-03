@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.QueryStatus
 import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineBgContext
@@ -507,15 +508,15 @@ class InsightsQueryResultsActor(
             }.chunked(1000)
 
             dedupedResults.forEach { chunk ->
-                LOG.info("loading block of ${chunk.size}")
+                LOG.info { "loading block of ${chunk.size}" }
                 table.listTableModel.addRows(chunk)
             }
         } while (isQueryRunning(response.status()))
 
-        LOG.info("done, ${loadedQueryResults.size} entries in set")
+        LOG.info { "done, ${loadedQueryResults.size} entries in set" }
         tableDoneLoading()
         table.emptyText.text = emptyText
-        LOG.info("total items in table: ${table.listTableModel.items.size}")
+        LOG.info { "total items in table: ${table.listTableModel.items.size}" }
         channel.close()
     }.also {
         loadJob = it
@@ -540,7 +541,7 @@ class InsightsQueryResultsActor(
                 }
             } catch (e: Exception) {
                 // best effort; this will fail if the query raced to completion or user does not have permission
-                LOG.warn("Failed to stop query", e)
+                LOG.warn(e) { "Failed to stop query" }
             }
         }
     }

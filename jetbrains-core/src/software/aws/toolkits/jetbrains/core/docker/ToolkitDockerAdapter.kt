@@ -81,7 +81,7 @@ abstract class AbstractToolkitDockerAdapter(protected val project: Project, prot
         // unfortunately no callbacks available to grab the Deployment instance
         val deploymentPromise = AsyncPromise<Deployment>()
         serverConnection.deploy(task) { deploymentName ->
-            EcrUtils.LOG.debug("Retrieving Deployment associated with '$deploymentName'")
+            LOG.debug { "Retrieving Deployment associated with '$deploymentName'" }
             RemoteServersView.getInstance(project).showDeployment(serverConnection, deploymentName)
             runInEdt {
                 deploymentPromise.setResult(serverConnection.deployments.first { it.name == deploymentName })
@@ -110,7 +110,7 @@ abstract class AbstractToolkitDockerAdapter(protected val project: Project, prot
         }
 
         if (!wasBuildOnly) {
-            EcrUtils.LOG.debug("Configuration specified additional 'run' parameters in Dockerfile that will be ignored")
+            LOG.debug { "Configuration specified additional 'run' parameters in Dockerfile that will be ignored" }
             logHandler.print("Skipping 'Run' portion of Dockerfile build configuration\n")
         }
 

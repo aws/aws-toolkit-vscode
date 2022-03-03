@@ -159,7 +159,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
             if (modificationStamp == this.modificationCount) {
                 connectionState = it
             } else {
-                LOGGER.warn("validateCredentials returned but the account manager state has been manipulated before results were back, ignoring")
+                LOGGER.warn { "validateCredentials returned but the account manager state has been manipulated before results were back, ignoring" }
             }
         }
     }
