@@ -1,0 +1,14 @@
+{
+  "date" : "2022-03-03",
+  "version" : "1.39",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Added in 1.37: The toolkit will now offer to open ARNs present in your code editor in your browser"
+  }, {
+    "type" : "feature",
+    "description" : "Added support for .NET 6 runtime for creating and debugging SAM functions"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue where console federation with long-term credentails results in session with no permissions"
+  } ]
+}

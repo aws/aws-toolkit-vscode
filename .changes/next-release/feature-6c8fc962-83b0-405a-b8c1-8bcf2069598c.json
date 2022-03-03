@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Added support for .NET 6 runtime for creating and debugging SAM functions"
-}
