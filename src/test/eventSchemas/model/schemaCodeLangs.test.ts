@@ -35,6 +35,11 @@ describe('getApiValueForSchemasDownload', function () {
                     assert.strictEqual(result, 'Python36', 'Api value used by schemas api')
                     break
                 }
+                case 'go1.x': {
+                    const result = getApiValueForSchemasDownload(runtime)
+                    assert.strictEqual(result, 'Go1', 'Api value used by schemas api')
+                    break
+                }
                 default: {
                     const errorMessage = `Runtime ${runtime} is not supported by eventBridge application`
                     assert.throws(
