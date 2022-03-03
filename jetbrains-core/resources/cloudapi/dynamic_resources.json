@@ -30,7 +30,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-accessanalyzer-analyzer.html"
   },
   "AWS::Amplify::App" : {
-    "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
+    "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-amplify-app.html"
   },
   "AWS::Amplify::Branch" : {
@@ -40,6 +40,14 @@
   "AWS::Amplify::Domain" : {
     "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-amplify-domain.html"
+  },
+  "AWS::AmplifyUIBuilder::Component" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-amplifyuibuilder-component.html"
+  },
+  "AWS::AmplifyUIBuilder::Theme" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-amplifyuibuilder-theme.html"
   },
   "AWS::ApiGateway::Account" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
@@ -65,6 +73,11 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/clientcertificates/(?<ClientCertificateId>[^/:]+)/",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-clientcertificate.html"
+  },
+  "AWS::ApiGateway::Deployment" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/restapis/(?<RestApiId>[^/:]+)/deployments/(?<DeploymentId>[^/:]+)/",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-deployment.html"
   },
   "AWS::ApiGateway::DocumentationVersion" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
@@ -121,6 +134,10 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):appflow:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):flow/(?<flowName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appflow-flow.html"
   },
+  "AWS::AppIntegrations::DataIntegration" : {
+    "operations" : [ "CREATE", "READ", "LIST", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appintegrations-dataintegration.html"
+  },
   "AWS::AppIntegrations::EventIntegration" : {
     "operations" : [ "CREATE", "READ", "LIST", "UPDATE", "DELETE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):app-integrations:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):event-integration/(?<EventIntegrationName>[^/:]+)",
@@ -130,21 +147,44 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apprunner-service.html"
   },
+  "AWS::AppRunner::VpcConnector" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apprunner-vpcconnector.html"
+  },
   "AWS::AppStream::AppBlock" : {
-    "operations" : [ "CREATE", "READ", "DELETE" ]
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appstream-appblock.html"
   },
   "AWS::AppStream::Application" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appstream-application.html"
+  },
+  "AWS::AppStream::ApplicationEntitlementAssociation" : {
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appstream-applicationentitlementassociation.html"
   },
   "AWS::AppStream::ApplicationFleetAssociation" : {
-    "operations" : [ "CREATE", "READ", "DELETE" ]
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appstream-applicationfleetassociation.html"
+  },
+  "AWS::AppStream::Entitlement" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appstream-entitlement.html"
+  },
+  "AWS::AppSync::DomainName" : {
+    "operations" : [ "CREATE", "DELETE", "UPDATE", "READ" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appsync-domainname.html"
+  },
+  "AWS::AppSync::DomainNameApiAssociation" : {
+    "operations" : [ "CREATE", "DELETE", "UPDATE", "READ" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-appsync-domainnameapiassociation.html"
   },
   "AWS::ApplicationInsights::Application" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-applicationinsights-application.html"
   },
   "AWS::Athena::DataCatalog" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):athena:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):datacatalog/(?<DataCatalogName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-athena-datacatalog.html"
   },
@@ -169,7 +209,7 @@
   "AWS::AutoScaling::LaunchConfiguration" : {
     "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):autoscaling:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):launchConfiguration:(?<Id>[^/:]+):launchConfigurationName/(?<LaunchConfigurationName>[^/:]+)",
-    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-as-launchconfig.html"
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-autoscaling-launchconfiguration.html"
   },
   "AWS::AutoScaling::LifecycleHook" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
@@ -201,6 +241,16 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-backup-reportplan.html"
   },
+  "AWS::Batch::ComputeEnvironment" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):batch:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):compute-environment/(?<ComputeEnvironmentName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-batch-computeenvironment.html"
+  },
+  "AWS::Batch::JobQueue" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):batch:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):job-queue/(?<JobQueueName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-batch-jobqueue.html"
+  },
   "AWS::Batch::SchedulingPolicy" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-batch-schedulingpolicy.html"
@@ -231,8 +281,20 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-chatbot-slackchannelconfiguration.html"
   },
+  "AWS::CloudFormation::HookDefaultVersion" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudformation-hookdefaultversion.html"
+  },
+  "AWS::CloudFormation::HookTypeConfig" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudformation-hooktypeconfig.html"
+  },
+  "AWS::CloudFormation::HookVersion" : {
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudformation-hookversion.html"
+  },
   "AWS::CloudFormation::ModuleDefaultVersion" : {
-    "operations" : [ "CREATE", "DELETE", "READ" ],
+    "operations" : [ "CREATE", "DELETE", "READ", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudformation-moduledefaultversion.html"
   },
   "AWS::CloudFormation::ModuleVersion" : {
@@ -371,6 +433,14 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):config:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):stored-query/(?<StoredQueryName>[^/:]+)/(?<StoredQueryId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-config-storedquery.html"
   },
+  "AWS::Connect::ContactFlow" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-connect-contactflow.html"
+  },
+  "AWS::Connect::ContactFlowModule" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-connect-contactflowmodule.html"
+  },
   "AWS::Connect::HoursOfOperation" : {
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-connect-hoursofoperation.html"
@@ -419,6 +489,10 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):databrew:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):recipe/(?<ResourceId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-databrew-recipe.html"
   },
+  "AWS::DataBrew::Ruleset" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-databrew-ruleset.html"
+  },
   "AWS::DataBrew::Schedule" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):databrew:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):schedule/(?<ResourceId>[^/:]+)",
@@ -432,6 +506,10 @@
   "AWS::DataSync::LocationEFS" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-datasync-locationefs.html"
+  },
+  "AWS::DataSync::LocationFSxLustre" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-datasync-locationfsxlustre.html"
   },
   "AWS::DataSync::LocationFSxWindows" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -547,6 +625,22 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dedicated-host/(?<DedicatedHostId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-host.html"
   },
+  "AWS::EC2::IPAM" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-ipam.html"
+  },
+  "AWS::EC2::IPAMAllocation" : {
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-ipamallocation.html"
+  },
+  "AWS::EC2::IPAMPool" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-ipampool.html"
+  },
+  "AWS::EC2::IPAMScope" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-ipamscope.html"
+  },
   "AWS::EC2::InternetGateway" : {
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):internet-gateway/(?<InternetGatewayId>[^/:]+)",
@@ -566,6 +660,14 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):network-acl/(?<NaclId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-networkacl.html"
   },
+  "AWS::EC2::NetworkInsightsAccessScope" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-networkinsightsaccessscope.html"
+  },
+  "AWS::EC2::NetworkInsightsAccessScopeAnalysis" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-networkinsightsaccessscopeanalysis.html"
+  },
   "AWS::EC2::NetworkInsightsAnalysis" : {
     "operations" : [ "CREATE", "DELETE", "READ", "LIST", "UPDATE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):network-insights-analysis/(?<NetworkInsightsAnalysisId>[^/:]+)",
@@ -575,6 +677,11 @@
     "operations" : [ "CREATE", "DELETE", "READ", "LIST", "UPDATE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):network-insights-path/(?<NetworkInsightsPathId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-networkinsightspath.html"
+  },
+  "AWS::EC2::NetworkInterface" : {
+    "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):network-interface/(?<NetworkInterfaceId>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-networkinterface.html"
   },
   "AWS::EC2::PrefixList" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -598,6 +705,10 @@
   "AWS::EC2::SubnetNetworkAclAssociation" : {
     "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet-network-acl-assoc.html"
+  },
+  "AWS::EC2::SubnetRouteTableAssociation" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnetroutetableassociation.html"
   },
   "AWS::EC2::TransitGateway" : {
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE", "LIST" ],
@@ -637,6 +748,14 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):vpc/(?<VpcId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc.html"
+  },
+  "AWS::EC2::VPCDHCPOptionsAssociation" : {
+    "operations" : [ "CREATE", "UPDATE", "DELETE", "READ", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpcdhcpoptionsassociation.html"
+  },
+  "AWS::ECR::PullThroughCacheRule" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecr-pullthroughcacherule.html"
   },
   "AWS::ECR::RegistryPolicy" : {
     "operations" : [ "CREATE", "READ", "LIST", "UPDATE", "DELETE" ],
@@ -704,7 +823,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-eks-addon.html"
   },
   "AWS::EKS::Cluster" : {
-    "operations" : [ "READ", "CREATE", "UPDATE", "LIST", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):eks:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):cluster/(?<ClusterName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-eks-cluster.html"
   },
@@ -712,6 +831,14 @@
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):eks:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):fargateprofile/(?<ClusterName>[^/:]+)/(?<FargateProfileName>[^/:]+)/(?<UUID>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-eks-fargateprofile.html"
+  },
+  "AWS::EKS::IdentityProviderConfig" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+  },
+  "AWS::EKS::Nodegroup" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):eks:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):nodegroup/(?<ClusterName>[^/:]+)/(?<NodegroupName>[^/:]+)/(?<UUID>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-eks-nodegroup.html"
   },
   "AWS::EMR::Studio" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -768,6 +895,22 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):events:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):connection/(?<ConnectionName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-events-connection.html"
   },
+  "AWS::Evidently::Experiment" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-evidently-experiment.html"
+  },
+  "AWS::Evidently::Feature" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-evidently-feature.html"
+  },
+  "AWS::Evidently::Launch" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-evidently-launch.html"
+  },
+  "AWS::Evidently::Project" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-evidently-project.html"
+  },
   "AWS::FIS::ExperimentTemplate" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):fis:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):experiment-template/(?<Id>[^/:]+)",
@@ -785,6 +928,16 @@
   "AWS::FinSpace::Environment" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-finspace-environment.html"
+  },
+  "AWS::Forecast::Dataset" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):forecast:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dataset/(?<ResourceId>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-forecast-dataset.html"
+  },
+  "AWS::Forecast::DatasetGroup" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):forecast:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dataset-group/(?<ResourceId>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-forecast-datasetgroup.html"
   },
   "AWS::FraudDetector::Detector" : {
     "operations" : [ "CREATE", "UPDATE", "DELETE", "READ", "LIST" ],
@@ -827,7 +980,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-gamelift-fleet.html"
   },
   "AWS::GameLift::GameServerGroup" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):gamelift:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):gameservergroup/(?<GameServerGroupName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-gamelift-gameservergroup.html"
   },
@@ -947,7 +1100,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-imagebuilder-distributionconfiguration.html"
   },
   "AWS::ImageBuilder::Image" : {
-    "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+    "operations" : [ "CREATE", "READ", "DELETE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):image/(?<ImageName>[^/:]+)/(?<ImageVersion>[^/:]+)/(?<ImageBuildVersion>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-imagebuilder-image.html"
   },
@@ -965,6 +1118,10 @@
     "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):infrastructure-configuration/(?<ResourceId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-imagebuilder-infrastructureconfiguration.html"
+  },
+  "AWS::InspectorV2::Filter" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-inspectorv2-filter.html"
   },
   "AWS::IoT::AccountAuditConfiguration" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -998,7 +1155,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iot-fleetmetric.html"
   },
   "AWS::IoT::JobTemplate" : {
-    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "operations" : [ "READ", "CREATE", "LIST", "DELETE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iot-jobtemplate.html"
   },
   "AWS::IoT::Logging" : {
@@ -1038,8 +1195,28 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iot-topicruledestination.html"
   },
+  "AWS::IoTAnalytics::Channel" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):iotanalytics:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):channel/(?<ChannelName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iotanalytics-channel.html"
+  },
+  "AWS::IoTAnalytics::Dataset" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):iotanalytics:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dataset/(?<DatasetName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iotanalytics-dataset.html"
+  },
+  "AWS::IoTAnalytics::Datastore" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):iotanalytics:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):datastore/(?<DatastoreName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iotanalytics-datastore.html"
+  },
+  "AWS::IoTAnalytics::Pipeline" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):iotanalytics:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):pipeline/(?<PipelineName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iotanalytics-pipeline.html"
+  },
   "AWS::IoTCoreDeviceAdvisor::SuiteDefinition" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iotcoredeviceadvisor-suitedefinition.html"
   },
   "AWS::IoTEvents::DetectorModel" : {
@@ -1134,13 +1311,17 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-alias.html"
   },
   "AWS::KMS::Key" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):kms:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):key/(?<KeyId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html"
   },
   "AWS::KMS::ReplicaKey" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-replicakey.html"
+  },
+  "AWS::KafkaConnect::Connector" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "UPDATE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kafkaconnect-connector.html"
   },
   "AWS::Kendra::DataSource" : {
     "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
@@ -1167,6 +1348,14 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):firehose:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):deliverystream/(?<DeliveryStreamName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesisfirehose-deliverystream.html"
   },
+  "AWS::KinesisVideo::SignalingChannel" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesisvideo-signalingchannel.html"
+  },
+  "AWS::KinesisVideo::Stream" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesisvideo-stream.html"
+  },
   "AWS::Lambda::CodeSigningConfig" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-codesigningconfig.html"
@@ -1181,6 +1370,22 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):lambda:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):function:(?<FunctionName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html"
   },
+  "AWS::Lex::Bot" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lex-bot.html"
+  },
+  "AWS::Lex::BotAlias" : {
+    "operations" : [ "CREATE", "UPDATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lex-botalias.html"
+  },
+  "AWS::Lex::BotVersion" : {
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lex-botversion.html"
+  },
+  "AWS::Lex::ResourcePolicy" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lex-resourcepolicy.html"
+  },
   "AWS::LicenseManager::Grant" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):license-manager::(?<AccountId>[0-9]{12}):grant:(?<GrantId>[^/:]+)",
@@ -1190,6 +1395,22 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):license-manager::(?<AccountId>[0-9]{12}):license:(?<LicenseId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-licensemanager-license.html"
+  },
+  "AWS::Lightsail::Alarm" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-alarm.html"
+  },
+  "AWS::Lightsail::Bucket" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-bucket.html"
+  },
+  "AWS::Lightsail::Certificate" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-certificate.html"
+  },
+  "AWS::Lightsail::Container" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-container.html"
   },
   "AWS::Lightsail::Database" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -1202,6 +1423,14 @@
   "AWS::Lightsail::Instance" : {
     "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-instance.html"
+  },
+  "AWS::Lightsail::LoadBalancer" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-loadbalancer.html"
+  },
+  "AWS::Lightsail::LoadBalancerTlsCertificate" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lightsail-loadbalancertlscertificate.html"
   },
   "AWS::Lightsail::StaticIp" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -1259,6 +1488,16 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):lookoutvision:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):project/(?<ProjectName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lookoutvision-project.html"
   },
+  "AWS::MSK::BatchScramSecret" : {
+    "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ]
+  },
+  "AWS::MSK::Cluster" : {
+    "operations" : [ "CREATE", "UPDATE", "DELETE", "LIST", "READ" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-msk-cluster.html"
+  },
+  "AWS::MSK::Configuration" : {
+    "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+  },
   "AWS::MWAA::Environment" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-mwaa-environment.html"
@@ -1274,7 +1513,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-macie-findingsfilter.html"
   },
   "AWS::Macie::Session" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "LIST", "UPDATE", "DELETE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-macie-session.html"
   },
   "AWS::MediaConnect::Flow" : {
@@ -1413,15 +1652,15 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opsworkscm-server.html"
   },
   "AWS::Panorama::ApplicationInstance" : {
-    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-panorama-applicationinstance.html"
   },
   "AWS::Panorama::Package" : {
-    "operations" : [ "CREATE", "READ", "LIST", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "LIST", "DELETE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-panorama-package.html"
   },
   "AWS::Panorama::PackageVersion" : {
-    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-panorama-packageversion.html"
   },
   "AWS::Pinpoint::InAppTemplate" : {
@@ -1480,6 +1719,10 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):rds::(?<AccountId>[0-9]{12}):global-cluster:(?<GlobalCluster>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-globalcluster.html"
   },
+  "AWS::RUM::AppMonitor" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rum-appmonitor.html"
+  },
   "AWS::Redshift::Cluster" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):redshift:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):cluster:(?<ClusterName>[^/:]+)",
@@ -1501,9 +1744,37 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-redshift-scheduledaction.html"
   },
+  "AWS::RefactorSpaces::Application" : {
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-refactorspaces-application.html"
+  },
+  "AWS::RefactorSpaces::Environment" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-refactorspaces-environment.html"
+  },
+  "AWS::RefactorSpaces::Route" : {
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-refactorspaces-route.html"
+  },
+  "AWS::RefactorSpaces::Service" : {
+    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-refactorspaces-service.html"
+  },
+  "AWS::Rekognition::Collection" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rekognition-collection.html"
+  },
   "AWS::Rekognition::Project" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rekognition-project.html"
+  },
+  "AWS::ResilienceHub::App" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-resiliencehub-app.html"
+  },
+  "AWS::ResilienceHub::ResiliencyPolicy" : {
+    "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-resiliencehub-resiliencypolicy.html"
   },
   "AWS::ResourceGroups::Group" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -1520,6 +1791,11 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):robomaker:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):robot/(?<RobotName>[^/:]+)/(?<CreatedOnEpoch>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-robomaker-robot.html"
   },
+  "AWS::RoboMaker::RobotApplication" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):robomaker:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):robot-application/(?<ApplicationName>[^/:]+)/(?<CreatedOnEpoch>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-robomaker-robotapplication.html"
+  },
   "AWS::RoboMaker::RobotApplicationVersion" : {
     "operations" : [ "CREATE", "DELETE", "READ" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-robomaker-robotapplicationversion.html"
@@ -1534,7 +1810,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-robomaker-simulationapplicationversion.html"
   },
   "AWS::Route53::DNSSEC" : {
-    "operations" : [ "CREATE", "READ", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53-dnssec.html"
   },
   "AWS::Route53::HealthCheck" : {
@@ -1548,7 +1824,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53-hostedzone.html"
   },
   "AWS::Route53::KeySigningKey" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53-keysigningkey.html"
   },
   "AWS::Route53RecoveryControl::Cluster" : {
@@ -1572,7 +1848,7 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53recoveryreadiness-cell.html"
   },
   "AWS::Route53RecoveryReadiness::ReadinessCheck" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53recoveryreadiness-readinesscheck.html"
   },
   "AWS::Route53RecoveryReadiness::RecoveryGroup" : {
@@ -1615,6 +1891,10 @@
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):route53resolver:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):resolver-rule/(?<ResourceId>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53resolver-resolverrule.html"
+  },
+  "AWS::Route53Resolver::ResolverRuleAssociation" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-route53resolver-resolverruleassociation.html"
   },
   "AWS::S3::AccessPoint" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
@@ -1670,9 +1950,23 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):ses:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):configuration-set/(?<ConfigurationSetName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ses-configurationset.html"
   },
+  "AWS::SES::ConfigurationSetEventDestination" : {
+    "operations" : [ "CREATE", "UPDATE", "DELETE", "READ" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ses-configurationseteventdestination.html"
+  },
   "AWS::SES::ContactList" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ses-contactlist.html"
+  },
+  "AWS::SES::Template" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "UPDATE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):ses:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):template/(?<TemplateName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ses-template.html"
+  },
+  "AWS::SQS::Queue" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "arnRegex" : "arn:(?<Partition>[a-z-]+):sqs:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):(?<QueueName>[^/:]+)",
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-sqs-queue.html"
   },
   "AWS::SSM::Association" : {
     "operations" : [ "CREATE", "DELETE", "UPDATE", "READ" ],
@@ -1803,11 +2097,11 @@
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-servicecatalog-serviceactionassociation.html"
   },
   "AWS::ServiceCatalogAppRegistry::Application" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-servicecatalogappregistry-application.html"
   },
   "AWS::ServiceCatalogAppRegistry::AttributeGroup" : {
-    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-servicecatalogappregistry-attributegroup.html"
   },
   "AWS::ServiceCatalogAppRegistry::AttributeGroupAssociation" : {
@@ -1847,10 +2141,18 @@
     "arnRegex" : "arn:(?<Partition>[a-z-]+):timestream:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):database/(?<DatabaseName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-timestream-database.html"
   },
+  "AWS::Timestream::ScheduledQuery" : {
+    "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-timestream-scheduledquery.html"
+  },
   "AWS::Timestream::Table" : {
     "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
     "arnRegex" : "arn:(?<Partition>[a-z-]+):timestream:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):database/(?<DatabaseName>[^/:]+)/table/(?<TableName>[^/:]+)",
     "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-timestream-table.html"
+  },
+  "AWS::Transfer::Workflow" : {
+    "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+    "documentation" : "http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-transfer-workflow.html"
   },
   "AWS::WAFv2::IPSet" : {
     "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
