@@ -178,6 +178,11 @@ export class MockCloudFormationClient implements CloudFormationClient {
         ) => Promise<CloudFormation.DescribeStackResourcesOutput> = async (name: string) => ({
             StackResources: [],
         }),
+        public readonly describeStacks: (name: string) => Promise<CloudFormation.DescribeStacksOutput> = async (
+            name: string
+        ) => ({
+            Stacks: [],
+        }),
 
         public readonly describeType: (typeName: string) => Promise<CloudFormation.DescribeTypeOutput> = async (
             typeName: string
