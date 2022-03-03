@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "ECS: Toolkit checks if the current credentials have permissions for \"Run Command in Container\""
-}
