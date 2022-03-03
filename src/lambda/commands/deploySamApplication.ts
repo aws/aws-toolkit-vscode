@@ -9,6 +9,8 @@ import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
+import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { awsConsoleUrl, awsHealthStatusUrl, stuckCfnDeploymentUrl } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
 
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
@@ -226,6 +228,7 @@ async function deployOperation(params: {
     deployParameters: DeploySamApplicationParameters
     invoker: SamCliProcessInvoker
 }): Promise<void> {
+    const notificationTimeout = notifyDuringLongDeployment(params.deployParameters)
     try {
         getLogger('channel').info(
             localize(
@@ -259,6 +262,8 @@ async function deployOperation(params: {
         globals.outputChannel.appendLine(errorMessage)
 
         throw new Error('Deploy failed')
+    } finally {
+        clearTimeout(notificationTimeout)
     }
 }
 
@@ -318,4 +323,32 @@ function getDefaultWindowFunctions(): WindowFunctions {
         showErrorMessage: vscode.window.showErrorMessage,
         showInformationMessage: vscode.window.showInformationMessage,
     }
+}
+
+function notifyDuringLongDeployment(deployParameters: DeploySamApplicationParameters): NodeJS.Timeout {
+    return setTimeout(async () => {
+        const cfnClient = new DefaultCloudFormationClient(deployParameters.region)
+        const stack = (await cfnClient.describeStacks(deployParameters.destinationStackName)).Stacks
+        if (stack !== undefined) {
+            const helpLink = localize('AWS.samcli.deploy.stuckStackHelpLink', 'View docs')
+            const awsConsole = localize('AWS.samcli.deploy.goToCfnDashboard', 'Go to AWS console')
+            const contWaiting = localize('AWS.samcli.deploy.contiueWaiting', 'Continue waiting')
+            const viewAwsStatus = localize('AWS.samcli.deploy.viewAwsStatus', 'View AWS status')
+            const stackStuckMessage = localize(
+                'AWS.sam.deploy.stackStuckWarning',
+                'Your deployment seems to be taking a while. If this is unexpected, it may be stuck in progress. What would you like to do?'
+            )
+            vscode.window
+                .showWarningMessage(stackStuckMessage, helpLink, awsConsole, viewAwsStatus, contWaiting)
+                .then((selection: string | undefined) => {
+                    if (selection === helpLink) {
+                        vscode.env.openExternal(vscode.Uri.parse(stuckCfnDeploymentUrl))
+                    } else if (selection === awsConsole) {
+                        vscode.env.openExternal(vscode.Uri.parse(awsConsoleUrl))
+                    } else if (selection === viewAwsStatus) {
+                        vscode.env.openExternal(vscode.Uri.parse(awsHealthStatusUrl))
+                    }
+                })
+        }
+    }, 600000)
 }

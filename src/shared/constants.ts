@@ -74,6 +74,16 @@ export const ecsDocumentationUrl: string = 'https://docs.aws.amazon.com/AmazonEC
 export const ecsExecToolkitGuideUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html'
 
+// URL for stuck CFN deployment help
+export const stuckCfnDeploymentUrl =
+    'https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-stack-stuck-progress/'
+
+// URL for AWS service health status
+export const awsHealthStatusUrl = 'https://status.aws.amazon.com/'
+
+// URL for AWS console
+export const awsConsoleUrl = 'https://aws.amazon.com/console/'
+
 /**
  * Moment format for rendering readable dates.
  *

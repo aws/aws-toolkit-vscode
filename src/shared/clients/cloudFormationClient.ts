@@ -82,6 +82,11 @@ export class DefaultCloudFormationClient {
             .promise()
     }
 
+    public async describeStacks(name: string): Promise<CloudFormation.DescribeStacksOutput> {
+        const client = this.createSdkClient()
+        return await (await client).describeStacks({ StackName: name }).promise()
+    }
+
     private async createSdkClient(): Promise<CloudFormation> {
         return await globals.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
     }
