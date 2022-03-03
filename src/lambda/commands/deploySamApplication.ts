@@ -12,6 +12,7 @@ import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { awsConsoleUrl, awsHealthStatusUrl, stuckCfnDeploymentUrl } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { checklogs } from '../../shared/localizedText'
@@ -331,9 +332,17 @@ function notifyDuringLongDeployment(deployParameters: DeploySamApplicationParame
         const stack = (await cfnClient.describeStacks(deployParameters.destinationStackName)).Stacks
         if (stack !== undefined) {
             const helpLink = localize('AWS.samcli.deploy.stuckStackHelpLink', 'View docs')
-            const awsConsole = localize('AWS.samcli.deploy.goToCfnDashboard', 'Go to AWS console')
+            const awsConsole = localize(
+                'AWS.samcli.deploy.goToCfnDashboard',
+                'Go to {0} console',
+                getIdeProperties().company
+            )
             const contWaiting = localize('AWS.samcli.deploy.contiueWaiting', 'Continue waiting')
-            const viewAwsStatus = localize('AWS.samcli.deploy.viewAwsStatus', 'View AWS status')
+            const viewAwsStatus = localize(
+                'AWS.samcli.deploy.viewAwsStatus',
+                'View {0} status',
+                getIdeProperties().company
+            )
             const stackStuckMessage = localize(
                 'AWS.sam.deploy.stackStuckWarning',
                 'Your deployment seems to be taking a while. If this is unexpected, it may be stuck in progress. What would you like to do?'
@@ -350,5 +359,5 @@ function notifyDuringLongDeployment(deployParameters: DeploySamApplicationParame
                     }
                 })
         }
-    }, 600000)
+    }, 10000)
 }
