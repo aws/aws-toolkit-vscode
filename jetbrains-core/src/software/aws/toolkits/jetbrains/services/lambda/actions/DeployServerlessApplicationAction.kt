@@ -23,13 +23,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jetbrains.yaml.YAMLFileType
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
-import software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
@@ -80,7 +80,7 @@ class DeployServerlessApplicationAction : AnAction(
                 return@thenAccept
             }
 
-            val templateFile = if (e.place == ExplorerToolWindow.explorerToolWindowPlace) {
+            val templateFile = if (e.place == ToolkitPlaces.EXPLORER_TOOL_WINDOW) {
                 runBlocking(edtContext) {
                     FileChooser.chooseFile(
                         FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML),
@@ -211,7 +211,7 @@ class DeployServerlessApplicationAction : AnAction(
         e.presentation.isVisible = if (LambdaHandlerResolver.supportedRuntimeGroups().isEmpty()) {
             false
         } else {
-            if (e.place == ExplorerToolWindow.explorerToolWindowPlace) {
+            if (e.place == ToolkitPlaces.EXPLORER_TOOL_WINDOW) {
                 true
             } else {
                 getSamTemplateFile(e) != null

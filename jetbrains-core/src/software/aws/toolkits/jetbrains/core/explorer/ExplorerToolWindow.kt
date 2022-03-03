@@ -42,6 +42,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.tree.TreeUtil
 import org.jetbrains.concurrency.CancellablePromise
+import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ChangeSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier
@@ -247,7 +248,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
                     val actionGroup = DefaultActionGroup(totalActions)
                     if (actionGroup.childrenCount > 0) {
-                        val popupMenu = actionManager.createActionPopupMenu(explorerToolWindowPlace, actionGroup)
+                        val popupMenu = actionManager.createActionPopupMenu(ToolkitPlaces.EXPLORER_TOOL_WINDOW, actionGroup)
                         popupMenu.component.show(comp, x, y)
                     }
                 }
@@ -327,7 +328,6 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
     companion object {
         fun getInstance(project: Project): ExplorerToolWindow = ServiceManager.getService(project, ExplorerToolWindow::class.java)
-        const val explorerToolWindowPlace = "ExplorerToolWindow"
     }
 }
 
