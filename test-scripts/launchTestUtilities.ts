@@ -5,7 +5,8 @@
 
 import * as child_process from 'child_process'
 import * as path from 'path'
-import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from 'vscode-test'
+import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from '@vscode/test-electron'
+import { DownloadPlatform } from '@vscode/test-electron/out/download'
 
 const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
 
@@ -39,7 +40,16 @@ export async function setupVSCodeTestInstance(): Promise<string> {
 }
 
 export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<string> {
-    const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
+    const platformMap = new Map<string, DownloadPlatform>([
+        ['win32', 'win32-x64-archive'],
+        ['darwin', 'darwin-x64-archive'],
+        ['linux', 'linux-x64'],
+    ])
+    const vscodePlatform = platformMap.get(process.platform)
+    if (!vscodePlatform) {
+        throw Error(`unknown platform: ${process.platform}`)
+    }
+    const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath, vscodePlatform)
 
     const cmdArgs = [...args]
 

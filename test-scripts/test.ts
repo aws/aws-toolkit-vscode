@@ -4,7 +4,7 @@
  */
 
 import { resolve } from 'path'
-import { runTests } from 'vscode-test'
+import { runTests } from '@vscode/test-electron'
 import { setupVSCodeTestInstance } from './launchTestUtilities'
 import { env } from 'process'
 import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
