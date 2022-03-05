@@ -8,17 +8,16 @@ import { Window } from '../shared/vscode/window'
 import * as localizedText from '../shared/localizedText'
 
 import * as nls from 'vscode-nls'
-import { cawsHelpUrl } from '../shared/clients/cawsClient'
+import { cawsHelpUrl, cawsHostname, CawsOrg, CawsProject, CawsRepo } from '../shared/clients/cawsClient'
 import { Commands } from '../shared/vscode/commands'
 import { ContextChangeEventsArgs } from '../shared/awsContext'
-import globals from '../shared/extensionGlobals'
 import { isNonNullable } from '../shared/utilities/tsUtils'
 import { CawsView } from './cawsView'
 const localize = nls.loadMessageBundle()
 
-export function promptCawsNotConnected(window = Window.vscode(), commands = Commands.vscode()): void {
+export async function promptCawsNotConnected(window = Window.vscode(), commands = Commands.vscode()): Promise<void> {
     const connect = localize('AWS.command.caws.connect', 'Connect to CODE.AWS')
-    window
+    return await window
         .showWarningMessage(
             localize('AWS.caws.badConnection', 'Not connected to CODE.AWS.'),
             connect,
@@ -49,14 +48,14 @@ export async function onCredentialsChanged(
     e: ContextChangeEventsArgs
 ) {
     view.title = e.cawsUsername ? `CODE.AWS (${e.cawsUsername})` : 'CODE.AWS'
-    await globals.caws.onCredentialsChanged(e.cawsUsername ?? '', e.cawsSecret ?? '')
 
     // vscode secrets API is only available in newer versions.
     if (e.cawsUsername && e.cawsSecret && ctx.secrets) {
         // This sets the OS keychain item "vscodeamazonwebservices.aws:caws/$user".
         ctx.secrets.store(`caws/${e.cawsUsername}`, e.cawsSecret)
 
-        // The proposed interface is `{ [username: string]: Record<string, any> }` where the value is metadata associated with the user
+        // The proposed interface is `{ [username: string]: Record<string, any> }` where the value
+        // is metadata associated with the user
         await ctx.globalState.update(USERS_MEMENTO_KEY, {
             ...ctx.globalState.get(USERS_MEMENTO_KEY, {}),
             [e.cawsUsername]: {},
@@ -79,4 +78,27 @@ export async function getSavedCookies(
     )
 
     return cookies.filter(isNonNullable)
+}
+
+/**
+ * Builds a web URL from the given CAWS object.
+ */
+export function toCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
+    const prefix = `https://${cawsHostname}/organizations`
+    let url: string
+    if ((o as CawsRepo).project) {
+        const r = o as CawsRepo
+        url = `${prefix}/${r.org.name}/projects/${r.project.name}/source-repositories/${r.name}/view`
+    } else if ((o as CawsProject).org) {
+        const p = o as CawsProject
+        url = `${prefix}/${p.org.name}/projects/${p.name}/view`
+    } else {
+        url = `${prefix}/${o.name}/view`
+    }
+    return url
+}
+
+export function openCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
+    const url = toCawsUrl(o)
+    vscode.env.openExternal(vscode.Uri.parse(url))
 }

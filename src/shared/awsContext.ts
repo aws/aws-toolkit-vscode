@@ -120,8 +120,10 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     /** Gets the current CODE.AWS credentials. */
-    public getCawsCredentials(): string | undefined {
-        return this.cawsUsername
+    public getCawsCredentials(): { username: string; secret: string } | undefined {
+        if (this.cawsUsername && this.cawsSecret) {
+            return { username: this.cawsUsername, secret: this.cawsSecret }
+        }
     }
 
     // returns the configured profile, if any

@@ -4,17 +4,11 @@
  */
 
 import * as assert from 'assert'
-import ClientCodeAws = require('../../../types/clientcodeaws')
+import { toCawsUrl } from '../../caws/utils'
 import * as caws from '../../shared/clients/cawsClient'
-
-// TODO: remove graphql
-import * as gql from 'graphql-request'
-import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
 
 describe('cawsClient', function () {
     it('toCawsUrl()', async function () {
-        const fakeSettings = new TestSettingsConfiguration()
-        const c = new caws.CawsClient(fakeSettings, '', '', {} as ClientCodeAws, {} as gql.GraphQLClient, '')
         const org: caws.CawsOrg = {
             id: 'orgid1',
             name: 'org1',
@@ -31,8 +25,8 @@ describe('cawsClient', function () {
             name: 'repo1',
         }
         const prefix = `https://${caws.cawsHostname}/organizations`
-        assert.deepStrictEqual(c.toCawsUrl(org), `${prefix}/org1/view`)
-        assert.deepStrictEqual(c.toCawsUrl(project), `${prefix}/org1/projects/project1/view`)
-        assert.deepStrictEqual(c.toCawsUrl(repo), `${prefix}/org1/projects/project1/source-repositories/repo1/view`)
+        assert.deepStrictEqual(toCawsUrl(org), `${prefix}/org1/view`)
+        assert.deepStrictEqual(toCawsUrl(project), `${prefix}/org1/projects/project1/view`)
+        assert.deepStrictEqual(toCawsUrl(repo), `${prefix}/org1/projects/project1/source-repositories/repo1/view`)
     })
 })

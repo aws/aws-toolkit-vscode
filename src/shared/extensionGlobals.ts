@@ -9,7 +9,6 @@ import { MdeClient } from './clients/mdeClient'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
-import { CawsClient } from './clients/cawsClient'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { RegionProvider } from './regions/regionProvider'
 import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
@@ -53,16 +52,6 @@ export function initialize(context: ExtensionContext, window: Window): ToolkitGl
     return globals
 }
 
-/**
- * Shows a message if client credentials are invalid/expired/logged out.
- */
-export function checkCaws(): boolean {
-    if (!globals.caws.connected()) {
-        globals.window.showErrorMessage('AWS: Not connected to CODE.AWS')
-    }
-    return globals.caws.connected()
-}
-
 export default globals
 
 /**
@@ -85,7 +74,6 @@ interface ToolkitGlobals {
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
     mde: MdeClient
-    caws: CawsClient
     uriHandler: UriHandler
 
     /**

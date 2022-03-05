@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as caws from '../../shared/clients/cawsClient'
-import globals, { checkCaws } from '../../shared/extensionGlobals'
 import { createHelpButton } from '../../shared/ui/buttons'
 import { IteratingQuickPickController, promptUser } from '../../shared/ui/picker'
 import { IteratorTransformer } from '../../shared/utilities/collectionUtils'
@@ -14,11 +13,9 @@ import { IteratorTransformer } from '../../shared/utilities/collectionUtils'
  * Shows a picker and returns the user-selected item.
  */
 export async function selectCawsResource(
+    client: caws.ConnectedCawsClient,
     kind: 'org' | 'project' | 'repo' | 'env'
 ): Promise<caws.CawsOrg | caws.CawsProject | caws.CawsRepo | caws.CawsDevEnv | undefined> {
-    if (!checkCaws()) {
-        return
-    }
     const helpButton = createHelpButton()
 
     const picker = vscode.window.createQuickPick<vscode.QuickPickItem>()
@@ -42,9 +39,8 @@ export async function selectCawsResource(
         picker.placeholder = 'Choose a repository'
     }
 
-    const c = globals.caws
     const populator = new IteratorTransformer<vscode.QuickPickItem, vscode.QuickPickItem>(
-        () => c.cawsItemsToQuickpickIter(kind),
+        () => client.cawsItemsToQuickpickIter(kind),
         o => (!o ? [] : [o])
     )
     const controller = new IteratingQuickPickController(picker, populator)

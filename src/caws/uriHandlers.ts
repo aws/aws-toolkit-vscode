@@ -5,15 +5,16 @@
 
 import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
-import { cloneCawsRepo, login, openDevEnv } from './commands'
-import { cawsHostname } from '../shared/clients/cawsClient'
+import { CawsClient, cawsHostname, ConnectedCawsClient } from '../shared/clients/cawsClient'
+import { cloneCawsRepo, openDevEnv, tryCommand } from './commands'
 
-import globals from '../shared/extensionGlobals'
+export function register(handler: UriHandler, clientFactory: () => Promise<CawsClient>) {
+    const tryHandleClone = tryCommand(clientFactory, handleCloneParams)
+    const tryHandleConnect = tryCommand(clientFactory, handleConnectParams)
 
-export function register(handler: UriHandler) {
     return vscode.Disposable.from(
-        handler.registerHandler('/clone', handleCloneParams, parseCloneParams),
-        handler.registerHandler('/connect/caws', handleConnectParams, parseConnectParams)
+        handler.registerHandler('/clone', tryHandleClone, parseCloneParams),
+        handler.registerHandler('/connect/caws', tryHandleConnect, parseConnectParams)
     )
 }
 
@@ -25,22 +26,19 @@ function parseConnectParams(query: SearchParams) {
     return query.getFromKeysOrThrow(['developmentWorkspaceId', 'organizationName', 'projectName'] as const)
 }
 
-async function handleCloneParams(params: { url: vscode.Uri }): Promise<void> {
+async function handleCloneParams(client: ConnectedCawsClient, params: { url: vscode.Uri }): Promise<void> {
     if (params.url.authority.endsWith(cawsHostname)) {
-        await cloneCawsRepo(params.url)
+        await cloneCawsRepo(client, params.url)
     } else {
         await vscode.commands.executeCommand('git.clone', params.url.toString())
     }
 }
 
-async function handleConnectParams(params: ReturnType<typeof parseConnectParams>): Promise<void> {
-    const client = globals.caws
-
-    if (!globals.caws.connected() && !(await login(globals.context, globals.awsContext, globals.caws))) {
-        return
-    }
-
-    const env = await client.getDevEnv(params) // just let the error bubble, we're catching it anyway
+async function handleConnectParams(
+    client: ConnectedCawsClient,
+    params: ReturnType<typeof parseConnectParams>
+): Promise<void> {
+    const env = await client.getDevEnv(params)
 
     if (!env) {
         throw new Error(`No workspace found with parameters: ${JSON.stringify(params, undefined, 4)}`)

@@ -72,7 +72,6 @@ import { activate as activateIot } from './iot/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
-import { CawsClient } from './shared/clients/cawsClient'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
@@ -136,7 +135,6 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
-        globals.caws = await CawsClient.create(toolkitSettings)
         globals.mde = await MdeClient.create()
         globals.awsContext.onDidChangeContext(ctx => globals.mde.onCredentialsChanged(ctx.cawsUsername))
 

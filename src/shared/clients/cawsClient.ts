@@ -18,6 +18,7 @@ import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { MDE_START_TIMEOUT } from './mdeClient'
 import * as nls from 'vscode-nls'
 import { showMessageWithCancel } from '../utilities/messages'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -127,7 +128,37 @@ async function gqlRequest<T>(
     }
 }
 
-export class CawsClient {
+// CAWS client has two variants: 'logged-in' and 'not logged-in'
+// The 'not logged-in' variant is a subtype and has restricted functionality
+// These characteristics appear in the Smithy model, but the SDK codegen is unable to model this
+
+export interface DisconnectedCawsClient extends Pick<CawsClientInternal, 'verifySession' | 'setCredentials'> {
+    readonly connected: false
+}
+
+export interface ConnectedCawsClient extends ClassToInterfaceType<CawsClientInternal> {
+    readonly connected: true
+}
+
+export type CawsClient = ConnectedCawsClient | DisconnectedCawsClient
+export type CawsClientFactory = () => Promise<CawsClient>
+
+/**
+ * Factory to create a new `CawsClient`. Call `onCredentialsChanged()` before making requests.
+ */
+export async function createClient(
+    settings: SettingsConfiguration,
+    regionCode: string = cawsRegion,
+    endpoint: string = cawsEndpoint,
+    authCookie?: string
+): Promise<CawsClient> {
+    const sdkClient = await createCawsClient(authCookie, 'xxx', regionCode, endpoint)
+    const gqlClient = createGqlClient('xxx', authCookie)
+    const c = new CawsClientInternal(settings, regionCode, endpoint, sdkClient, gqlClient, authCookie)
+    return c
+}
+
+class CawsClientInternal {
     private username: string | undefined
     private readonly log: logger.Logger
     private apiKey: string
@@ -144,46 +175,22 @@ export class CawsClient {
         this.apiKey = this.settings.readDevSetting('aws.dev.caws.apiKey', 'string', true) ?? ''
     }
 
-    /**
-     * Factory to create a new `CawsClient`. Call `onCredentialsChanged()` before making requests.
-     */
-    public static async create(
-        settings: SettingsConfiguration,
-        regionCode: string = cawsRegion,
-        endpoint: string = cawsEndpoint,
-        authCookie?: string
-    ): Promise<CawsClient> {
-        CawsClient.assertExtInitialized()
-        const sdkClient = await createCawsClient(authCookie, 'xxx', regionCode, endpoint)
-        const gqlClient = createGqlClient('xxx', authCookie)
-        const c = new CawsClient(settings, regionCode, endpoint, sdkClient, gqlClient, authCookie)
-        return c
-    }
-
-    private static assertExtInitialized() {
-        if (!globals.sdkClientBuilder) {
-            throw Error('ext.sdkClientBuilder must be initialized first')
-        }
+    public get connected(): boolean {
+        return !!(this.authCookie && this.username)
     }
 
     /**
-     * Rebuilds/reconnects CAWS clients with new credentials (or undefined to
-     * disconnect/logout).
+     * Rebuilds/reconnects CAWS clients with new credentials
      *
-     * @param username   CODE.AWS username, from `verifySession()`.
-     * @param authCookie   User secret, undefined means disconnected/logout.
+     * @param username   CAWS username
+     * @param authCookie   User secret
      * @returns
      */
-    public async onCredentialsChanged(username: string | undefined, authCookie: string | undefined) {
-        CawsClient.assertExtInitialized()
-        this.authCookie = authCookie
+    public async setCredentials(username: string, authCookie: string) {
         this.username = username
+        this.authCookie = authCookie
         this.sdkClient = await createCawsClient(authCookie, this.apiKey, this.regionCode, this.endpoint)
         this.gqlClient = createGqlClient(this.apiKey, this.authCookie)
-    }
-
-    public connected(): boolean {
-        return !!(this.authCookie && this.username)
     }
 
     public user(): string {
@@ -736,29 +743,6 @@ export class CawsClient {
 
     public createRepoLabel(r: CawsRepo): string {
         return `${r.org.name} / ${r.project.name} / ${r.name}`
-    }
-
-    /**
-     * Builds a web URL from the given CAWS object.
-     */
-    public toCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
-        const prefix = `https://${cawsHostname}/organizations`
-        let url: string
-        if ((o as CawsRepo).project) {
-            const r = o as CawsRepo
-            url = `${prefix}/${r.org.name}/projects/${r.project.name}/source-repositories/${r.name}/view`
-        } else if ((o as CawsProject).org) {
-            const p = o as CawsProject
-            url = `${prefix}/${p.org.name}/projects/${p.name}/view`
-        } else {
-            url = `${prefix}/${o.name}/view`
-        }
-        return url
-    }
-
-    public openCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
-        const url = this.toCawsUrl(o)
-        vscode.env.openExternal(vscode.Uri.parse(url))
     }
 
     /**

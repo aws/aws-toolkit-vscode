@@ -87,8 +87,10 @@ export class FakeAwsContext implements AwsContext {
         // this.cawsSecret = secret
     }
 
-    public getCawsCredentials(): string | undefined {
-        return this.cawsUsername
+    public getCawsCredentials(): { username: string; secret: string } | undefined {
+        if (this.cawsUsername) {
+            return { username: this.cawsUsername, secret: '' }
+        }
     }
 
     public getCredentialProfileName(): string | undefined {
