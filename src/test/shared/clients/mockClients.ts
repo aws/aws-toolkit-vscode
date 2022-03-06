@@ -184,6 +184,10 @@ export class MockCloudFormationClient implements CloudFormationClient {
             Stacks: [],
         }),
 
+        public readonly cancelUpdateStack: (request: CloudFormation.CancelUpdateStackInput) => Promise<any> = async (
+            request: CloudFormation.CancelUpdateStackInput
+        ) => ({}),
+
         public readonly describeType: (typeName: string) => Promise<CloudFormation.DescribeTypeOutput> = async (
             typeName: string
         ) =>
