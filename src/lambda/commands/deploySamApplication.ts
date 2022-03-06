@@ -337,27 +337,31 @@ function notifyDuringLongDeployment(deployParameters: DeploySamApplicationParame
                 'Go to {0} console',
                 getIdeProperties().company
             )
-            const contWaiting = localize('AWS.samcli.deploy.contiueWaiting', 'Continue waiting')
             const viewAwsStatus = localize(
                 'AWS.samcli.deploy.viewAwsStatus',
                 'View {0} status',
                 getIdeProperties().company
             )
+            const cancelUpdate = localize('AWS.samcli.deploy.cancelUpdate', 'Cancel update')
+            const items = [helpLink, awsConsole, viewAwsStatus]
+            if (stack[0].StackStatus === 'UPDATE_IN_PROGRESS') {
+                items.push(cancelUpdate)
+            }
             const stackStuckMessage = localize(
-                'AWS.sam.deploy.stackStuckWarning',
-                'Your deployment seems to be taking a while. If this is unexpected, it may be stuck in progress. What would you like to do?'
+                'AWS.samcli.deploy.stackStuckWarning',
+                'Your deployment seems to be taking a while. If this is unexpected, it may be stuck in progress. You may continue to wait or choose an option below.'
             )
-            vscode.window
-                .showWarningMessage(stackStuckMessage, helpLink, awsConsole, viewAwsStatus, contWaiting)
-                .then((selection: string | undefined) => {
-                    if (selection === helpLink) {
-                        vscode.env.openExternal(vscode.Uri.parse(stuckCfnDeploymentUrl))
-                    } else if (selection === awsConsole) {
-                        vscode.env.openExternal(vscode.Uri.parse(awsConsoleUrl))
-                    } else if (selection === viewAwsStatus) {
-                        vscode.env.openExternal(vscode.Uri.parse(awsHealthStatusUrl))
-                    }
-                })
+            vscode.window.showWarningMessage(stackStuckMessage, ...items).then((selection: string | undefined) => {
+                if (selection === helpLink) {
+                    vscode.env.openExternal(vscode.Uri.parse(stuckCfnDeploymentUrl))
+                } else if (selection === awsConsole) {
+                    vscode.env.openExternal(vscode.Uri.parse(awsConsoleUrl))
+                } else if (selection === viewAwsStatus) {
+                    vscode.env.openExternal(vscode.Uri.parse(awsHealthStatusUrl))
+                } else if (selection === cancelUpdate) {
+                    cfnClient.cancelUpdateStack({ StackName: deployParameters.destinationStackName })
+                }
+            })
         }
-    }, 10000)
+    }, 8000)
 }
