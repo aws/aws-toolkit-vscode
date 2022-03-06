@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.36.0-SNAPSHOT",
+    "version": "1.37.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -1527,12 +1527,12 @@
                 },
                 {
                     "command": "aws.resources.configure",
-                    "when": "view == aws.explorer && viewItem == resourcesRootNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == resourcesRootNode",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.resources.configure",
-                    "when": "view == aws.explorer && viewItem == resourcesRootNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == resourcesRootNode",
                     "group": "inline@1"
                 },
                 {
@@ -2919,10 +2919,10 @@
         "@types/glob": "^7.1.1",
         "@types/js-yaml": "^4.0.3",
         "@types/lodash": "^4.14.173",
-        "@types/marked": "^3.0.1",
+        "@types/marked": "^4.0.2",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^9.0.0",
-        "@types/node": "^10.14.22",
+        "@types/node": "^14.18.5",
         "@types/readline-sync": "^1.4.3",
         "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.5",
@@ -2961,7 +2961,7 @@
         "ts-mockito": "^2.5.0",
         "ts-node": "^10.4.0",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^1.99.0",
+        "vsce": "^2.6.3",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.5.2",
         "vue-loader": "^16.8.1",

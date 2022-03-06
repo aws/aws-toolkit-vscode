@@ -38,9 +38,13 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                const containerNames = await this.ecs.getContainerNames(this.service.taskDefinition!)
-                const childNodes = containerNames.map(
-                    name => new EcsContainerNode(name, this.name, this.parent.arn, this.ecs, this)
+                const taskDefinition = await this.ecs.describeTaskDefinition(this.service.taskDefinition!)
+                const containers = taskDefinition.taskDefinition?.containerDefinitions
+                if (!containers) {
+                    return []
+                }
+                const childNodes = containers.map(
+                    c => new EcsContainerNode(c.name!, this, taskDefinition.taskDefinition?.taskRoleArn)
                 )
 
                 const childPromises = []
