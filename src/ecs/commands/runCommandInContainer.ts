@@ -41,6 +41,17 @@ export async function runCommandInContainer(
     let status: vscode.Disposable | undefined
 
     try {
+        const wizard = new CommandWizard(node, await settings.isPromptEnabled('ecsRunCommand'))
+        const response = await wizard.run()
+
+        if (!response) {
+            return
+        }
+
+        if (response.confirmation === 'suppress') {
+            settings.disablePrompt('ecsRunCommand')
+        }
+
         const iamClient = globals.toolkitClientBuilder.createIamClient(node.ecs.regionCode)
         if (
             node.taskRoleArn !== undefined &&
@@ -65,17 +76,6 @@ export async function runCommandInContainer(
                 })
             result = 'Failed'
             return
-        }
-
-        const wizard = new CommandWizard(node, await settings.isPromptEnabled('ecsRunCommand'))
-        const response = await wizard.run()
-
-        if (!response) {
-            return
-        }
-
-        if (response.confirmation === 'suppress') {
-            settings.disablePrompt('ecsRunCommand')
         }
 
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9(), window, settings)
@@ -115,7 +115,7 @@ export async function runCommandInContainer(
         }
 
         result = 'Failed'
-        getLogger().error('Failed to execute command in container, %O', error)
+        getLogger().error('ecs: Failed to execute command in container, %O', error)
         showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
     } finally {
         recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })
