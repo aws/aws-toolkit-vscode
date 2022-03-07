@@ -1,0 +1,8 @@
+{
+  "date" : "2022-03-07",
+  "version" : "1.40",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix logged error due to ARN contributor taking too long (#3085)"
+  } ]
+}
