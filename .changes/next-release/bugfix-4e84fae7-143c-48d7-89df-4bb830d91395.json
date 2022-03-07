@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix logged error due to ARN contributor taking too long (#3085)"
+}

@@ -133,7 +133,7 @@ class ArnPsiReferenceProviderTest {
         val contents = """
             Hello:
               Some:
-                Nesting: arn:aws:lambda::123456789012:function
+                Nesting: 1 # arn:aws:lambda::123456789012:function
         """.trimIndent()
 
         val file = runInEdtAndGet {

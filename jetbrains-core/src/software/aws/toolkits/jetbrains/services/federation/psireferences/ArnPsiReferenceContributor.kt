@@ -4,13 +4,11 @@
 package software.aws.toolkits.jetbrains.services.federation.psireferences
 
 import com.intellij.patterns.PsiElementPattern
-import com.intellij.psi.ElementManipulators
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiLiteralValue
 import com.intellij.psi.PsiReferenceContributor
 import com.intellij.psi.PsiReferenceRegistrar
 import com.intellij.util.ProcessingContext
-import software.aws.toolkits.core.utils.debug
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 
 class ArnPsiReferenceContributor : PsiReferenceContributor() {
@@ -19,28 +17,9 @@ class ArnPsiReferenceContributor : PsiReferenceContributor() {
             object : PsiElementPattern.Capture<PsiElement>(
                 PsiElement::class.java
             ) {
-                override fun accepts(o: Any?, context: ProcessingContext): Boolean {
-                    if (o == null || o !is PsiElement) return false
-                    val manipulator = ElementManipulators.getManipulator(o)
-                    if (manipulator == null) return false
-
-                    try {
-                        val text = o.text
-                        val range = manipulator.getRangeInElement(o)
-                        if (range.length > text.length || range.endOffset > text.length) {
-                            LOG.debug { "Manipulator range: $range doesn't fit in PsiElement text: $text" }
-                            return false
-                        }
-                        if (range.substring(text).contains("arn:")) {
-                            return true
-                        }
-                    } catch (e: Exception) {
-                        LOG.error(e) { "Error while checking PsiElement" }
-                        return false
-                    }
-
-                    return false
-                }
+                override fun accepts(o: Any?, context: ProcessingContext): Boolean =
+                    // this is lower fidelity than we'd like but avoids resolving the entire PSI tree
+                    o is PsiLiteralValue && o.value is String
             },
             ArnPsiReferenceProvider(),
             PsiReferenceRegistrar.LOWER_PRIORITY
