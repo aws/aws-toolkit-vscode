@@ -11,6 +11,7 @@ import {
     Session,
 } from '../credentials/session'
 import { createClient } from '../shared/clients/cawsClient'
+import { getLogger } from '../shared/logger'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 export async function verifyCookie(cookie: string): Promise<{ username: string }> {
@@ -127,6 +128,8 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
                 id: `session-${(this.sessionCounter += 1)}`,
             }
         } catch (err) {
+            // Should handle https://github.com/aws/aws-toolkit-vscode-staging/pull/349 along with other potential issues
+            getLogger().debug(`CAWS: failed to login (will clear existing secrets): ${(err as Error).message}`)
             this.storage.updateUser(account.id, '', { invalidSession: true })
             throw err
         }

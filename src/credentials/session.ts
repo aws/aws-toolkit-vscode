@@ -44,21 +44,18 @@ export interface Session<T = string, U extends AccountDetails = AccountDetails> 
     readonly accountDetails: U
 }
 
-/** Stub event */
-export interface AuthenticationAccountsChangeEvent<T extends AccountDetails> {
-    readonly added?: T[]
-    readonly changed?: T[]
-    readonly removed?: T[]
-}
-
 export interface AuthenticationSessionsChangeEvent<T = Session<string, AccountDetails>> {
     readonly added?: T[]
     readonly changed?: T[]
     readonly removed?: T[]
 }
 
+// An 'account' is something you login to
+// A 'session' is what you get after being logged in
+// So for AWS credentials, an 'account' could be a single profile, while the 'session' is the actual credentials
+// For CAWS, an 'account' is your email/username, the 'session' is the cookie (and eventually, OIDC token(s))
+
 export interface AuthenticationProvider<T = string, U extends AccountDetails = AccountDetails> {
-    readonly onDidChangeAccounts?: vscode.Event<AuthenticationAccountsChangeEvent<U>>
     readonly onDidChangeSessions?: vscode.Event<AuthenticationSessionsChangeEvent<Session<T, U>>>
     listAccounts(): AsyncCollection<U> | Promise<U[]> | U[]
     listSessions(): AsyncCollection<Session<T, U>> | Promise<Session<T, U>[]> | Session<T, U>[]

@@ -38,6 +38,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
         // This should not be needed once we have the Bearer token
         await tryAutoConnect(ctx.awsContext)
 
+        // Assumption: the current auth provider only supports being logged into a single account at a time
+        // The VSC API can support multiple sessions, though we're probably a long way off from that
+        // TODO: just hide the full API behind something a bit lighter
         const creds = authProvider.listSessions()[0]
         const client = await createClient(settings)
 
