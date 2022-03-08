@@ -77,7 +77,7 @@ export async function activate(args: {
     updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.context.awsContext, globals.context)
 }
 
-async function tryAutoConnect(awsContext: AwsContext) {
+export async function tryAutoConnect(awsContext: AwsContext) {
     try {
         if (!didTryAutoConnect && !(await awsContext.getCredentials())) {
             getLogger().debug('credentials: attempting autoconnect...')

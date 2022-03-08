@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import globals from '../shared/extensionGlobals'
+import { CawsClient, CawsClientFactory } from '../shared/clients/cawsClient'
 
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 
@@ -12,8 +12,9 @@ export class CawsView implements vscode.TreeDataProvider<vscode.TreeItem> {
     public readonly viewId = 'aws.caws'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
+    private client: CawsClient | undefined
 
-    public constructor() {
+    public constructor(private readonly clientFactory: CawsClientFactory) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
     }
@@ -22,13 +23,15 @@ export class CawsView implements vscode.TreeDataProvider<vscode.TreeItem> {
         this._onDidChangeTreeData.fire(node)
     }
 
-    getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+    public getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
         return element
     }
 
-    getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-        const isConnected = !!globals.awsContext.getCawsCredentials()
-        if (!isConnected) {
+    public async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[]> {
+        if (element === undefined) {
+            this.client = await this.clientFactory()
+        }
+        if (!this.client?.connected) {
             // Will show the "welcome view" (`viewsWelcome`).
             return Promise.resolve([])
         }

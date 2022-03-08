@@ -10,15 +10,18 @@ import * as caws from '../../shared/clients/cawsClient'
 describe('cawsClient', function () {
     it('toCawsUrl()', async function () {
         const org: caws.CawsOrg = {
+            type: 'org',
             id: 'orgid1',
             name: 'org1',
         }
         const project: caws.CawsProject = {
+            type: 'project',
             org: org,
             id: 'projectid1',
             name: 'project1',
         }
         const repo: caws.CawsRepo = {
+            type: 'repo',
             org: org,
             project: project,
             id: 'repoid1',

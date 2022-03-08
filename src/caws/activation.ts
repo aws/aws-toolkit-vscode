@@ -23,6 +23,7 @@ import { CawsClientFactory, createClient } from '../shared/clients/cawsClient'
 import { GitExtension } from '../shared/extensions/git'
 import { CawsAuthenticationProvider, CawsAuthStorage } from './auth'
 import { initStatusbar } from './cawsStatusbar'
+import { tryAutoConnect } from '../awsexplorer/activation'
 
 /**
  * Activate CAWS functionality.
@@ -33,9 +34,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const settings = new DefaultSettingsConfiguration()
 
     const clientFactory = async () => {
-        // The current assumption is that `awsContext` only changes for valid credentials
-        // so we won't bother to check twice. However, this ignores the scenario of expired
-        // credentials. We will defer this case until OIDC auth is implemented.
+        // XXX: try to auto-connect with normal AWS credentials prior to creating a client
+        // This should not be needed once we have the Bearer token
+        await tryAutoConnect(ctx.awsContext)
+
         const creds = authProvider.listSessions()[0]
         const client = await createClient(settings)
 
@@ -46,7 +48,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         return client
     }
 
-    const viewProvider = new cawsView.CawsView(authProvider, await clientFactory())
+    const viewProvider = new cawsView.CawsView(clientFactory)
     const view = vscode.window.createTreeView(viewProvider.viewId, {
         treeDataProvider: viewProvider,
         showCollapseAll: true,

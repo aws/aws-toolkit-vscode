@@ -61,29 +61,9 @@ export function toCawsUrl(resource: CawsOrg | CawsProject | CawsRepo) {
     }
 }
 
-export function openCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
-    const url = toCawsUrl(o)
-    vscode.env.openExternal(vscode.Uri.parse(url))
-}
-
 /**
  * Builds a web URL from the given CAWS object.
  */
-export function toCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
-    const prefix = `https://${cawsHostname}/organizations`
-    let url: string
-    if ((o as CawsRepo).project) {
-        const r = o as CawsRepo
-        url = `${prefix}/${r.org.name}/projects/${r.project.name}/source-repositories/${r.name}/view`
-    } else if ((o as CawsProject).org) {
-        const p = o as CawsProject
-        url = `${prefix}/${p.org.name}/projects/${p.name}/view`
-    } else {
-        url = `${prefix}/${o.name}/view`
-    }
-    return url
-}
-
 export function openCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
     const url = toCawsUrl(o)
     vscode.env.openExternal(vscode.Uri.parse(url))
