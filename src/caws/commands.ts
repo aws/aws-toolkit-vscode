@@ -31,7 +31,7 @@ export async function login(authProvider: CawsAuthenticationProvider, client: Ca
 
     try {
         const { accountDetails, accessDetails } = response.session
-        client.setCredentials(accountDetails.label, accessDetails)
+        await client.setCredentials(accountDetails.label, accessDetails)
 
         if (lastSession) {
             authProvider.deleteSession(lastSession)
@@ -39,6 +39,7 @@ export async function login(authProvider: CawsAuthenticationProvider, client: Ca
 
         return 'Succeeded'
     } catch (err) {
+        getLogger().error('CAWS: failed to login: %O', err)
         return 'Failed'
     }
 }
@@ -52,7 +53,9 @@ export async function autoConnect(authProvider: CawsAuthenticationProvider): Pro
             getLogger().info(`CAWS: auto-connected with user: ${account.label}`)
 
             return true
-        } catch (err) {}
+        } catch (err) {
+            getLogger().debug(`CAWS: unable to auto-connect with user "${account.label}": %O`, err)
+        }
     }
 
     return false
