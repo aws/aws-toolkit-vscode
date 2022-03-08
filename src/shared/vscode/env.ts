@@ -7,6 +7,8 @@ import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
 
+const ENVIRONMENT_ARN_KEY = '__ENVIRONMENT_ARN'
+
 /**
  * Components associated with {@link module:vscode.env}.
  */
@@ -69,5 +71,5 @@ export function isMinimumVersion(): boolean {
 }
 
 export function getMdeEnvArn(): string | undefined {
-    return process.env['__ENVIRONMENT_ARN']
+    return process.env[ENVIRONMENT_ARN_KEY]
 }
