@@ -4,91 +4,66 @@
  */
 
 import * as vscode from 'vscode'
-import { AwsContext } from '../shared/awsContext'
-import {
-    CawsClient,
-    CawsDevEnv,
-    CawsRepo,
-    cawsRegion,
-    CawsProject,
-    CawsOrg,
-    ConnectedCawsClient,
-} from '../shared/clients/cawsClient'
+import { CawsClient, CawsDevEnv, cawsRegion, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
 import globals from '../shared/extensionGlobals'
-import { ExtContext } from '../shared/extensions'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { LoginWizard } from './wizards/login'
 import { selectCawsResource } from './wizards/selectResource'
 import * as nls from 'vscode-nls'
 import { getLogger } from '../shared/logger'
 import * as mdeModel from '../mde/mdeModel'
-import { getSavedCookies, openCawsUrl } from './utils'
+import { openCawsUrl } from './utils'
+import { CawsAuthenticationProvider } from './auth'
 
 const localize = nls.loadMessageBundle()
 
-type LoginResult = 'succeeded' | 'cancelled' | 'failed'
+type LoginResult = 'Succeeded' | 'Cancelled' | 'Failed'
 
-async function tryLogin(awsCtx: AwsContext, client: CawsClient, cookie: string): Promise<boolean> {
-    await client.setCredentials('', cookie)
-    await client.verifySession().catch() // Client is already logging...
-
-    if (client.connected) {
-        awsCtx.setCawsCredentials(client.user(), cookie)
-
-        return true
-    }
-
-    return false
-}
-
-export async function login(
-    ctx: vscode.ExtensionContext,
-    awsCtx: AwsContext,
-    client: CawsClient
-): Promise<LoginResult> {
+export async function login(authProvider: CawsAuthenticationProvider, client: CawsClient): Promise<LoginResult> {
     // TODO: add telemetry
-    const wizard = new LoginWizard(ctx)
+    const wizard = new LoginWizard(authProvider)
+    const lastSession = authProvider.listSessions()[0]
     const response = await wizard.run()
 
     if (!response) {
-        return 'cancelled'
+        return 'Cancelled'
     }
 
-    if (await tryLogin(awsCtx, client, response.user.cookie)) {
-        if (response?.user.newUser && client.connected) {
-            ctx.secrets.store(`caws/${client.user()}`, response.user.cookie)
+    try {
+        const { accountDetails, accessDetails } = response.session
+        client.setCredentials(accountDetails.label, accessDetails)
+
+        if (lastSession) {
+            authProvider.deleteSession(lastSession)
         }
 
-        return 'succeeded'
+        return 'Succeeded'
+    } catch (err) {
+        return 'Failed'
     }
-
-    return 'failed'
 }
 
-export async function autoConnect(
-    ctx: vscode.ExtensionContext,
-    awsCtx: AwsContext,
-    client: CawsClient
-): Promise<boolean> {
-    for (const session of await getSavedCookies(ctx.globalState, ctx.secrets)) {
-        getLogger().info(`CAWS: trying to auto-connect with user: ${session.name}`)
+export async function autoConnect(authProvider: CawsAuthenticationProvider): Promise<boolean> {
+    for (const account of authProvider.listAccounts()) {
+        getLogger().info(`CAWS: trying to auto-connect with user: ${account.label}`)
 
-        if (await tryLogin(awsCtx, client, session.cookie)) {
-            getLogger().info(`CAWS: auto-connected with user: ${session.name}`)
+        try {
+            await authProvider.createSession(account)
+            getLogger().info(`CAWS: auto-connected with user: ${account.label}`)
 
             return true
-        }
+        } catch (err) {}
     }
 
     return false
 }
 
-export async function logout(ctx: ExtContext): Promise<void> {
-    // TODO: add telemetry
-    if (!ctx.awsContext.getCawsCredentials()) {
-        return
+export async function logout(authProvider: CawsAuthenticationProvider): Promise<void> {
+    const session = authProvider.listSessions()[0]
+
+    if (session) {
+        return authProvider.deleteSession(session)
     }
-    ctx.awsContext.setCawsCredentials('', '')
 }
 
 /** "List CODE.AWS Commands" command. */
@@ -110,13 +85,13 @@ export function tryCommand<T, U>(
         const client = await clientFactory()
 
         if (!client.connected) {
-            const result = await login(globals.context, globals.awsContext, client)
+            const result = await login(CawsAuthenticationProvider.getInstance(), client)
 
-            if (result === 'succeeded' && client.connected) {
+            if (result === 'Succeeded' && client.connected) {
                 return command(client, ...args)
             }
 
-            if (result === 'failed') {
+            if (result === 'Failed') {
                 globals.window.showErrorMessage('AWS: Not connected to CODE.AWS')
             }
 
@@ -131,7 +106,7 @@ export function tryCommand<T, U>(
 export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Uri): Promise<void> {
     // TODO: add telemetry
     if (!url) {
-        const r = (await selectCawsResource(client, 'repo')) as CawsRepo
+        const r = await selectCawsResource(client, 'repo')
         if (!r) {
             return
         }
@@ -150,20 +125,23 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
 /** "Create CODE.AWS Development Environment" (MDE) command. */
 export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     // TODO: add telemetry
-    const r = (await selectCawsResource(client, 'repo')) as CawsRepo
-    const p = r.project
-    if (!r?.name || !p?.name) {
+    const repo = await selectCawsResource(client, 'repo')
+    const projectName = repo?.project.name
+    const organizationName = repo?.org.name
+
+    if (!projectName || !organizationName) {
         return
     }
+
     const args = {
-        organizationName: p.org.name ?? '?',
-        projectName: p.name ?? '?',
+        organizationName,
+        projectName,
         ideRuntimes: ['VSCode'],
         repositories: [
             {
-                branchName: r.defaultBranch,
-                projectName: p.name,
-                repositoryName: r.name,
+                projectName,
+                repositoryName: repo.name,
+                branchName: repo.defaultBranch,
             },
         ],
     }
@@ -181,7 +159,7 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
             localize(
                 'AWS.command.caws.createDevEnv.failed',
                 'Failed to create CODE.AWS development environment in "{0}": {1}',
-                p.name,
+                projectName,
                 (err as Error).message
             )
         )
@@ -232,29 +210,27 @@ export async function openDevEnv(client: ConnectedCawsClient, env: CawsDevEnv): 
  * - "Open CODE.AWS Project"
  * - "Open CODE.AWS Repository"
  */
-export async function openCawsResource(
-    client: ConnectedCawsClient,
-    kind: 'org' | 'project' | 'repo' | 'env'
-): Promise<void> {
+export async function openCawsResource(client: ConnectedCawsClient, kind: CawsResource['type']): Promise<void> {
     // TODO: add telemetry
-    const o = await selectCawsResource(client, kind)
-    if (!o) {
-        return
-    }
-    if (kind !== 'env') {
-        openCawsUrl(o as CawsRepo | CawsProject | CawsOrg)
+    const resource = await selectCawsResource(client, kind)
+
+    if (!resource) {
         return
     }
 
-    const env = o as CawsDevEnv
+    if (resource.type !== 'env') {
+        openCawsUrl(resource)
+        return
+    }
+
     try {
-        await openDevEnv(client, env)
+        await openDevEnv(client, resource)
     } catch (err) {
         showViewLogsMessage(
             localize(
                 'AWS.command.caws.createDevEnv.failed',
                 'Failed to start CODE.AWS development environment "{0}": {1}',
-                env.developmentWorkspaceId,
+                resource.developmentWorkspaceId,
                 (err as Error).message
             )
         )

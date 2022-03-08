@@ -102,26 +102,32 @@ async function* delegateGenerator<T, U, R = T>(
     generator: AsyncGenerator<T, R | undefined | void>,
     fn: (item: T | R, ret: () => void) => AsyncGenerator<U, void>
 ): AsyncGenerator<U, U | undefined> {
+    let isSet = false
+    let last: Awaited<U> | undefined
+
     while (true) {
-        let last: U | undefined
         const { value, done } = await generator.next()
         if (value !== undefined) {
             const delegate = fn(value, generator.return.bind(generator))
             while (true) {
                 const sub = await delegate.next()
+                // TODO: add test for delegation across nested iterables
                 if (sub.done) {
                     break
                 }
-                last = sub.value
-                if (!done) {
-                    yield last
+                if (isSet) {
+                    yield last!
                 }
+                last = sub.value as Awaited<U>
+                isSet = true
             }
         }
         if (done) {
-            return last as Awaited<U | undefined>
+            break
         }
     }
+
+    return last
 }
 
 async function* flatten<T, U extends SafeUnboxIterable<T>>(item: T) {
@@ -144,7 +150,7 @@ function takeFrom<T>(count: number) {
 /** Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable */
 type SafeUnboxIterable<T> = T extends Iterable<infer U> ? U : T
 
-function isIterable<T>(obj: any): obj is Iterable<T> {
+export function isIterable<T>(obj: any): obj is Iterable<T> {
     return obj !== undefined && typeof obj[Symbol.iterator] === 'function'
 }
 

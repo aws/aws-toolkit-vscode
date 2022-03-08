@@ -11,6 +11,7 @@ import { promptCawsNotConnected, toCawsUrl } from '../utils'
 import * as nls from 'vscode-nls'
 import globals from '../../shared/extensionGlobals'
 import { GitExtension } from '../../shared/extensions/git'
+import { CawsAuthenticationProvider } from '../auth'
 const localize = nls.loadMessageBundle()
 
 export class CawsRemoteSourceProvider implements RemoteSourceProvider {
@@ -36,7 +37,7 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
         }
 
         const repos: RemoteSource[] = []
-        const repositoryIter = this.client.listRepos(this.client.user())
+        const repositoryIter = this.client.listResources('repo').flatten()
 
         for await (const repo of repositoryIter) {
             const cloneUrl = await this.client.toCawsGitUri(repo.org.name, repo.project.name, repo.name)
@@ -57,6 +58,7 @@ export async function initCurrentRemoteSourceProvider(
     factory: CawsClientFactory,
     extension: GitExtension
 ): Promise<void> {
+    const authProvider = CawsAuthenticationProvider.getInstance()
     let currDisposable: Promise<vscode.Disposable> | undefined
 
     // TODO: Add user initialization outside git extension activation
@@ -67,14 +69,11 @@ export async function initCurrentRemoteSourceProvider(
     currDisposable = createSourceProvider(initialUser)
 
     globals.context.subscriptions.push(
-        globals.awsContext.onDidChangeContext(c => {
-            currDisposable?.then(d => d.dispose())
+        authProvider.onDidChangeSessions(e => {
+            const session = authProvider.listSessions()[0]
 
-            if (c.cawsUsername && c.cawsSecret) {
-                currDisposable = createSourceProvider(c.cawsUsername)
-            } else {
-                currDisposable = createSourceProvider()
-            }
+            currDisposable?.then(d => d.dispose())
+            currDisposable = createSourceProvider(session?.accountDetails.label)
         })
     )
 }

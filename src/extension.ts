@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import * as caws from './caws/activation'
-import * as cawsStatusbar from './caws/cawsStatusbar'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
@@ -123,7 +122,6 @@ export async function activate(context: vscode.ExtensionContext) {
             .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
-        await cawsStatusbar.initStatusbar()
         globals.regionProvider = regionProvider
         globals.awsContextCommands = new DefaultAWSContextCommands(
             globals.awsContext,
@@ -136,7 +134,6 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
         globals.mde = await MdeClient.create()
-        globals.awsContext.onDidChangeContext(ctx => globals.mde.onCredentialsChanged(ctx.cawsUsername))
 
         await initializeCredentials({
             extensionContext: context,
