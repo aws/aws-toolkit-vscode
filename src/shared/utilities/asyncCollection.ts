@@ -102,8 +102,8 @@ async function* delegateGenerator<T, U, R = T>(
     generator: AsyncGenerator<T, R | undefined | void>,
     fn: (item: T | R, ret: () => void) => AsyncGenerator<U, void>
 ): AsyncGenerator<U, U | undefined> {
-    let isSet = false
-    let last: Awaited<U> | undefined
+    type LastValue = Readonly<{ isSet: false; value?: undefined } | { isSet: true; value: Awaited<U> }>
+    let last: LastValue = { isSet: false }
 
     while (true) {
         const { value, done } = await generator.next()
@@ -111,15 +111,13 @@ async function* delegateGenerator<T, U, R = T>(
             const delegate = fn(value, generator.return.bind(generator))
             while (true) {
                 const sub = await delegate.next()
-                // TODO: add test for delegation across nested iterables
                 if (sub.done) {
                     break
                 }
-                if (isSet) {
-                    yield last!
+                if (last.isSet) {
+                    yield last.value
                 }
-                last = sub.value as Awaited<U>
-                isSet = true
+                last = { isSet: true, value: sub.value as Awaited<U> }
             }
         }
         if (done) {
@@ -127,7 +125,7 @@ async function* delegateGenerator<T, U, R = T>(
         }
     }
 
-    return last
+    return last.value
 }
 
 async function* flatten<T, U extends SafeUnboxIterable<T>>(item: T) {

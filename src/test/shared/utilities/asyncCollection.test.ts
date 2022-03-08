@@ -22,7 +22,7 @@ describe('AsyncCollection', function () {
     async function* returnGen() {
         yield 0
         yield 1
-        return 2 as const
+        return 2
     }
 
     async function* genPage() {

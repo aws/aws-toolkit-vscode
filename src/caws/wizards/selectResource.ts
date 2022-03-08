@@ -4,7 +4,7 @@
  */
 
 import * as caws from '../../shared/clients/cawsClient'
-import { createCommonButtons } from '../../shared/ui/buttons'
+import { createCommonButtons, createRefreshButton } from '../../shared/ui/buttons'
 import {
     createQuickPick,
     DataQuickPickItem,
@@ -47,15 +47,18 @@ export function asQuickpickItem<T extends caws.CawsResource>(resource: T): DataQ
 
 function createResourcePrompter<T extends caws.CawsResource>(
     resources: AsyncCollection<T[]>,
-    presentation: ExtendedQuickPickOptions<T>
+    presentation: Omit<ExtendedQuickPickOptions<T>, 'buttons'>
 ): QuickPickPrompter<T> {
-    return createQuickPick(
-        resources.map(p => p.map(asQuickpickItem)),
-        {
-            buttons: createCommonButtons(caws.cawsHelpUrl),
-            ...presentation,
-        }
-    )
+    const refresh = createRefreshButton()
+    const items = resources.map(p => p.map(asQuickpickItem))
+    const prompter = createQuickPick(items, {
+        buttons: [refresh, ...createCommonButtons(caws.cawsHelpUrl)],
+        ...presentation,
+    })
+
+    refresh.onClick = () => void prompter.clearAndLoadItems(items)
+
+    return prompter
 }
 
 export function createOrgPrompter(client: caws.ConnectedCawsClient): QuickPickPrompter<caws.CawsOrg> {
