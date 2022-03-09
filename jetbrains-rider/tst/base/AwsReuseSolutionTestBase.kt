@@ -4,10 +4,12 @@
 package base
 
 import com.intellij.ide.GeneralSettings
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.jetbrains.rider.projectView.solutionDirectory
 import com.jetbrains.rider.test.base.BaseTestWithSolutionBase
 import com.jetbrains.rider.test.debugger.XDebuggerTestHelper
+import com.jetbrains.rider.test.protocol.testProtocolHost
 import com.jetbrains.rider.test.scriptingApi.getVirtualFileFromPath
 import com.jetbrains.rider.test.scriptingApi.useCachedTemplates
 import org.testng.annotations.AfterClass
@@ -47,6 +49,8 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
 
     @BeforeClass(alwaysRun = true)
     fun setUpClassSolution() {
+        val host = ApplicationManager.getApplication().testProtocolHost
+        setUpCustomToolset(msBuild, host)
         openSolution(getSolutionDirectoryName())
     }
 
