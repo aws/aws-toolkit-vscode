@@ -84,9 +84,6 @@ export const stuckCfnDeploymentUrl =
 // URL for AWS service health status
 export const awsHealthStatusUrl = 'https://status.aws.amazon.com/'
 
-// URL for AWS console
-export const awsConsoleUrl = 'https://aws.amazon.com/console/'
-
 /**
  * Moment format for rendering readable dates.
  *

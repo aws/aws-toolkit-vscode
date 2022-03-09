@@ -10,7 +10,7 @@ import * as nls from 'vscode-nls'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
-import { awsConsoleUrl, awsHealthStatusUrl, stuckCfnDeploymentUrl } from '../../shared/constants'
+import { awsHealthStatusUrl, stuckCfnDeploymentUrl } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 
@@ -332,18 +332,15 @@ function notifyDuringLongDeployment(deployParameters: DeploySamApplicationParame
         const stack = (await cfnClient.describeStacks(deployParameters.destinationStackName)).Stacks
         if (stack !== undefined) {
             const helpLink = localize('AWS.samcli.deploy.stuckStackHelpLink', 'View docs')
-            const awsConsole = localize(
-                'AWS.samcli.deploy.goToCfnDashboard',
-                'Go to {0} console',
-                getIdeProperties().company
-            )
+            const cfnConsole = localize('AWS.samcli.deploy.goToCfnDashboard', 'Go to CFN dashboard')
             const viewAwsStatus = localize(
                 'AWS.samcli.deploy.viewAwsStatus',
                 'View {0} status',
                 getIdeProperties().company
             )
             const cancelUpdate = localize('AWS.samcli.deploy.cancelUpdate', 'Cancel update')
-            const items = [helpLink, awsConsole, viewAwsStatus]
+            const cfnConsoleUrl = `https://${deployParameters.region}.console.aws.amazon.com/cloudformation/home?region=${deployParameters.region}`
+            const items = [helpLink, cfnConsole, viewAwsStatus]
             if (stack[0].StackStatus === 'UPDATE_IN_PROGRESS') {
                 items.push(cancelUpdate)
             }
@@ -354,8 +351,8 @@ function notifyDuringLongDeployment(deployParameters: DeploySamApplicationParame
             vscode.window.showWarningMessage(stackStuckMessage, ...items).then((selection: string | undefined) => {
                 if (selection === helpLink) {
                     vscode.env.openExternal(vscode.Uri.parse(stuckCfnDeploymentUrl))
-                } else if (selection === awsConsole) {
-                    vscode.env.openExternal(vscode.Uri.parse(awsConsoleUrl))
+                } else if (selection === cfnConsole) {
+                    vscode.env.openExternal(vscode.Uri.parse(cfnConsoleUrl))
                 } else if (selection === viewAwsStatus) {
                     vscode.env.openExternal(vscode.Uri.parse(awsHealthStatusUrl))
                 } else if (selection === cancelUpdate) {
@@ -363,5 +360,5 @@ function notifyDuringLongDeployment(deployParameters: DeploySamApplicationParame
                 }
             })
         }
-    }, 8000)
+    }, 300000)
 }
