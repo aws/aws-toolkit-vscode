@@ -61,7 +61,7 @@ class SecretsManagerAuth : DatabaseAuthProviderCompatabilityAdapter {
                 val dbSecret = getDbSecret(connectionSettings)
                 if (
                     connection.connectionPoint.dataSource.sshConfiguration?.isEnabled != true &&
-                    connection.connectionPoint.additionalJdbcProperties[GET_URL_FROM_SECRET]?.toBoolean() == true
+                    connection.connectionPoint.additionalProperties[GET_URL_FROM_SECRET]?.toBoolean() == true
                 ) {
                     dbSecret.host ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_host", connectionSettings.secretId))
                     dbSecret.port ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_port", connectionSettings.secretId))
@@ -93,7 +93,7 @@ class SecretsManagerAuth : DatabaseAuthProviderCompatabilityAdapter {
 
     private fun getConfiguration(connection: ProtoConnection): SecretsManagerConfiguration {
         val connectionSettings = connection.getAwsConnectionSettings()
-        val secretId = connection.connectionPoint.additionalJdbcProperties[SECRET_ID_PROPERTY]
+        val secretId = connection.connectionPoint.additionalProperties[SECRET_ID_PROPERTY]
             ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_secret"))
         return SecretsManagerConfiguration(
             connectionSettings,

@@ -97,7 +97,7 @@ class SecretsManagerAuthWidgetTest {
     }
 
     private fun buildDataSource(hasSecret: Boolean = true, getUrlFromSecret: Boolean = false): LocalDataSource = mock {
-        on { additionalJdbcProperties } doAnswer {
+        on { additionalProperties } doAnswer {
             mutableMapOf<String, String>().also {
                 it[CREDENTIAL_ID_PROPERTY] = credentialId
                 it[REGION_ID_PROPERTY] = defaultRegion

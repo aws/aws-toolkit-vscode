@@ -63,7 +63,7 @@ class IamAuth : DatabaseAuthProviderCompatabilityAdapter {
 
     internal fun validateConnection(connection: ProtoConnection): RedshiftSettings {
         val auth = connection.getAwsConnectionSettings()
-        val clusterIdentifier = connection.connectionPoint.additionalJdbcProperties[CLUSTER_ID_PROPERTY]
+        val clusterIdentifier = connection.connectionPoint.additionalProperties[CLUSTER_ID_PROPERTY]
             ?: throw IllegalArgumentException(message("redshift.validation.no_cluster_id"))
         val username = connection.connectionPoint.dataSource.username
         if (username.isEmpty()) {

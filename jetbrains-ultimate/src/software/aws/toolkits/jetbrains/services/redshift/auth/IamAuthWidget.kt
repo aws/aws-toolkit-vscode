@@ -38,7 +38,7 @@ class IamAuthWidget : AwsAuthWidget() {
         super.save(dataSource, copyCredentials)
 
         DataSourceUiUtil.putOrRemove(
-            dataSource.additionalJdbcProperties,
+            dataSource.additionalProperties,
             CLUSTER_ID_PROPERTY,
             clusterIdSelector.text
         )
@@ -46,7 +46,7 @@ class IamAuthWidget : AwsAuthWidget() {
 
     override fun reset(dataSource: LocalDataSource, resetCredentials: Boolean) {
         super.reset(dataSource, resetCredentials)
-        clusterIdSelector.text = dataSource.additionalJdbcProperties[CLUSTER_ID_PROPERTY]
+        clusterIdSelector.text = dataSource.additionalProperties[CLUSTER_ID_PROPERTY]
     }
 
     override fun updateFromUrl(holder: ParametersHolder) {

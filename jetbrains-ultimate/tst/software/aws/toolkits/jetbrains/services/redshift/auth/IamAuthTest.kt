@@ -188,7 +188,7 @@ class IamAuthTest {
             on { username } doReturn if (hasUsername) username else ""
         }
         val dbConnectionPoint = mock<DatabaseConnectionPoint> {
-            on { additionalJdbcProperties } doAnswer {
+            on { additionalProperties } doAnswer {
                 val m = mutableMapOf<String, String>()
                 if (hasCredentials) {
                     m[CREDENTIAL_ID_PROPERTY] = credentialId

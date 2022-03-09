@@ -82,7 +82,7 @@ class DatagripUtilsTest {
     ): DatabaseConnectionInterceptor.ProtoConnection = mock {
         on { connectionPoint } doAnswer {
             mock {
-                on { additionalJdbcProperties } doAnswer {
+                on { additionalProperties } doAnswer {
                     val m = mutableMapOf<String, String?>()
                     m[CREDENTIAL_ID_PROPERTY] = credentials
                     m[REGION_ID_PROPERTY] = region

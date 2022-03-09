@@ -70,10 +70,10 @@ class IamAuth : DatabaseAuthProviderCompatabilityAdapter {
 
     internal fun getAuthInformation(connection: ProtoConnection): RdsAuth {
         validateIamConfiguration(connection)
-        val signingUrl = connection.connectionPoint.additionalJdbcProperties[RDS_SIGNING_HOST_PROPERTY]
+        val signingUrl = connection.connectionPoint.additionalProperties[RDS_SIGNING_HOST_PROPERTY]
             ?: connection.connectionPoint.url.hostFromJdbcString()
             ?: throw IllegalArgumentException(message("rds.validation.no_instance_host"))
-        val signingPort = connection.connectionPoint.additionalJdbcProperties[RDS_SIGNING_PORT_PROPERTY]?.toIntOrNull()
+        val signingPort = connection.connectionPoint.additionalProperties[RDS_SIGNING_PORT_PROPERTY]?.toIntOrNull()
             ?: connection.connectionPoint.url.portFromJdbcString()?.toIntOrNull()
             ?: throw IllegalArgumentException(message("rds.validation.no_instance_port"))
         val user = connection.connectionPoint.dataSource.username

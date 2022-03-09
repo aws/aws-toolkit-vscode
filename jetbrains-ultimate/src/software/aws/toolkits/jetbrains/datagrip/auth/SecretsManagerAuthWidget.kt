@@ -42,13 +42,13 @@ class SecretsManagerAuthWidget : AwsAuthWidget(userFieldEnabled = false) {
         super.save(dataSource, copyCredentials)
 
         DataSourceUiUtil.putOrRemove(
-            dataSource.additionalJdbcProperties,
+            dataSource.additionalProperties,
             SECRET_ID_PROPERTY,
             secretIdSelector.text.nullize()
         )
 
         DataSourceUiUtil.putOrRemove(
-            dataSource.additionalJdbcProperties,
+            dataSource.additionalProperties,
             GET_URL_FROM_SECRET,
             urlFromSecret.isSelected.toString()
         )
@@ -56,10 +56,10 @@ class SecretsManagerAuthWidget : AwsAuthWidget(userFieldEnabled = false) {
 
     override fun reset(dataSource: LocalDataSource, resetCredentials: Boolean) {
         super.reset(dataSource, resetCredentials)
-        dataSource.additionalJdbcProperties[SECRET_ID_PROPERTY]?.nullize()?.let {
+        dataSource.additionalProperties[SECRET_ID_PROPERTY]?.nullize()?.let {
             secretIdSelector.text = it
         }
-        dataSource.additionalJdbcProperties[GET_URL_FROM_SECRET]?.nullize()?.let {
+        dataSource.additionalProperties[GET_URL_FROM_SECRET]?.nullize()?.let {
             urlFromSecret.isSelected = it.toBoolean()
         }
     }

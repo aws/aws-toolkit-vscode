@@ -123,8 +123,8 @@ class CreateConfigurationActionTest {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.url).contains(port.toString())
             assertThat(it.url).contains(address)
-            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialIdentifier.displayName)
-            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
+            assertThat(it.additionalProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialIdentifier.displayName)
+            assertThat(it.additionalProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
             assertThat(it.authProviderId).isEqualTo(IamAuth.providerId)
         }
     }

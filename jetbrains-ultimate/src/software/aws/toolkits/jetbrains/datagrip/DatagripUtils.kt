@@ -29,13 +29,13 @@ val RequireSsl = DataSourceSslConfiguration("", "", "", true, SslMode.REQUIRE)
 
 fun ProtoConnection.getAwsConnectionSettings(): ConnectionSettings {
     val credentialManager = CredentialManager.getInstance()
-    val regionId = connectionPoint.additionalJdbcProperties[REGION_ID_PROPERTY]
+    val regionId = connectionPoint.additionalProperties[REGION_ID_PROPERTY]
         ?: throw IllegalArgumentException(message("settings.regions.none_selected"))
     val region = AwsRegionProvider.getInstance().allRegions()[regionId]
         ?: throw IllegalArgumentException(
             message("datagrip.validation.invalid_region_specified", regionId)
         )
-    val credentialId = connectionPoint.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]
+    val credentialId = connectionPoint.additionalProperties[CREDENTIAL_ID_PROPERTY]
         ?: throw IllegalArgumentException(message("settings.credentials.none_selected"))
     val credentials = credentialManager.getCredentialIdentifierById(credentialId)?.let {
         credentialManager.getAwsCredentialProvider(it, region)

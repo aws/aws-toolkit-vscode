@@ -55,9 +55,9 @@ class AddSecretsManagerConnectionTest {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.sslCfg?.myEnabled).isTrue()
             assertThat(it.url).isEqualTo("jdbc:adapter://$address:$port")
-            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialProvider.identifier.id)
-            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
-            assertThat(it.additionalJdbcProperties[SECRET_ID_PROPERTY]).isEqualTo(secretArn)
+            assertThat(it.additionalProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialProvider.identifier.id)
+            assertThat(it.additionalProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
+            assertThat(it.additionalProperties[SECRET_ID_PROPERTY]).isEqualTo(secretArn)
             assertThat(it.authProviderId).isEqualTo(SecretsManagerAuth.providerId)
         }
     }

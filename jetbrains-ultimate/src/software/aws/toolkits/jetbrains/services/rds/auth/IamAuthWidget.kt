@@ -47,7 +47,7 @@ class IamAuthWidget : AwsAuthWidget() {
             rdsSigningHostField.text
         }
         DataSourceUiUtil.putOrRemove(
-            dataSource.additionalJdbcProperties,
+            dataSource.additionalProperties,
             RDS_SIGNING_HOST_PROPERTY,
             host
         )
@@ -58,7 +58,7 @@ class IamAuthWidget : AwsAuthWidget() {
             rdsSigningPortField.text
         }
         DataSourceUiUtil.putOrRemove(
-            dataSource.additionalJdbcProperties,
+            dataSource.additionalProperties,
             RDS_SIGNING_PORT_PROPERTY,
             port
         )
@@ -66,8 +66,8 @@ class IamAuthWidget : AwsAuthWidget() {
 
     override fun reset(dataSource: LocalDataSource, resetCredentials: Boolean) {
         super.reset(dataSource, resetCredentials)
-        rdsSigningHostField.text = dataSource.additionalJdbcProperties[RDS_SIGNING_HOST_PROPERTY]
-        rdsSigningPortField.text = dataSource.additionalJdbcProperties[RDS_SIGNING_PORT_PROPERTY]
+        rdsSigningHostField.text = dataSource.additionalProperties[RDS_SIGNING_HOST_PROPERTY]
+        rdsSigningPortField.text = dataSource.additionalProperties[RDS_SIGNING_PORT_PROPERTY]
     }
 
     override fun updateFromUrl(holder: ParametersHolder) {

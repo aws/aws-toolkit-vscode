@@ -94,9 +94,9 @@ class IamAuthWidgetTest {
 
     @Test
     fun `Save saves set signing host and port if set`() {
-        widget.reset(mock { on { additionalJdbcProperties } doReturn mapOf(RDS_SIGNING_HOST_PROPERTY to "host", RDS_SIGNING_PORT_PROPERTY to "port") }, false)
+        widget.reset(mock { on { additionalProperties } doReturn mapOf(RDS_SIGNING_HOST_PROPERTY to "host", RDS_SIGNING_PORT_PROPERTY to "port") }, false)
         val m = mutableMapOf<String, String>()
-        widget.save(mock { on { additionalJdbcProperties } doReturn m }, false)
+        widget.save(mock { on { additionalProperties } doReturn m }, false)
         assertThat(m[RDS_SIGNING_HOST_PROPERTY]).isEqualTo("host")
         assertThat(m[RDS_SIGNING_PORT_PROPERTY]).isEqualTo("port")
     }
@@ -104,7 +104,7 @@ class IamAuthWidgetTest {
     @Test
     fun `Save saves null signing host and port if not set`() {
         val m = mutableMapOf<String, String>()
-        widget.save(mock { on { additionalJdbcProperties } doReturn m }, false)
+        widget.save(mock { on { additionalProperties } doReturn m }, false)
         assertThat(m[RDS_SIGNING_HOST_PROPERTY]).isNull()
         assertThat(m[RDS_SIGNING_PORT_PROPERTY]).isNull()
     }
@@ -113,7 +113,7 @@ class IamAuthWidgetTest {
         hasCredentials: Boolean = true,
         hasRegion: Boolean = true
     ): LocalDataSource = mock {
-        on { additionalJdbcProperties } doAnswer {
+        on { additionalProperties } doAnswer {
             val m = mutableMapOf<String, String>()
             if (hasCredentials) {
                 m[CREDENTIAL_ID_PROPERTY] = credentialId

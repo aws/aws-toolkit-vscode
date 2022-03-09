@@ -57,9 +57,9 @@ class CreateDataSourceActionTest {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.sslCfg?.myEnabled).isTrue()
             assertThat(it.url).isEqualTo("jdbc:redshift://$address:$port/$dbName")
-            assertThat(it.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialProvider.id)
-            assertThat(it.additionalJdbcProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
-            assertThat(it.additionalJdbcProperties[CLUSTER_ID_PROPERTY]).isEqualTo(address)
+            assertThat(it.additionalProperties[CREDENTIAL_ID_PROPERTY]).isEqualTo(credentialProvider.id)
+            assertThat(it.additionalProperties[REGION_ID_PROPERTY]).isEqualTo(region.id)
+            assertThat(it.additionalProperties[CLUSTER_ID_PROPERTY]).isEqualTo(address)
             assertThat(it.authProviderId).isEqualTo(IamAuth.providerId)
         }
     }
