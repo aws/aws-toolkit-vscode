@@ -51,7 +51,7 @@ class ResourceInstrumenter(private val settings: EcsServiceCloudDebuggingRunSett
         )
     }
 
-    override fun handleSuccessResult(output: String, messageEmitter: StepEmitter, context: Context) {
+    override fun handleSuccessResult(output: String, stepEmitter: StepEmitter, context: Context) {
         val targets = CliOutputParser.parseInstrumentResponse(output) ?: throw RuntimeException("Could not get targets from response")
         /* TODO uncomment this when the cli conforms to the contract
         val mappedTargets = targets.targets.map { it.name to it.target }.toMap()

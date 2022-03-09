@@ -33,7 +33,7 @@ abstract class Step {
         }
     }
 
-    protected abstract fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean)
+    protected abstract fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean)
 
     /**
      * Exception used to abort out of a step and mark it as skipped. This may be used in the case that a step has to make a decision before it decides it

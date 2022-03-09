@@ -42,6 +42,7 @@ class EventsFetcher(private val stackName: String) {
         when (pageToSwitchTo) {
             Page.NEXT -> currentPage?.let { previousPages.add(it) } // Store current as prev
             Page.PREVIOUS -> if (previousPages.isNotEmpty()) previousPages.removeAt(previousPages.size - 1)
+            else -> {}
         }
         nextPage = response.nextToken()
         currentPage = pageToFetch

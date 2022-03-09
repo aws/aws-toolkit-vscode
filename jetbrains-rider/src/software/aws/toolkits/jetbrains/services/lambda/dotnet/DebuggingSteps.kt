@@ -22,7 +22,7 @@ import java.time.Duration
 class FindDockerContainer : Step() {
     override val stepName = message("sam.debug.find_container")
     override val hidden = false
-    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
         val frontendPort = context.getRequiredAttribute(DEBUG_PORTS).first()
         val container = runProcessUntil(
             duration = Duration.ofMillis(SamDebugSupport.debuggerConnectTimeoutMs()),
@@ -47,7 +47,7 @@ class FindDockerContainer : Step() {
 class FindPid : Step() {
     override val stepName = message("sam.debug.dotnet_find_pid")
     override val hidden = false
-    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
         val dockerContainer = context.getRequiredAttribute(FindDockerContainer.DOCKER_CONTAINER)
         val pid = runProcessUntil(
             duration = Duration.ofMillis(SamDebugSupport.debuggerConnectTimeoutMs()),

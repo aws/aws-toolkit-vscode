@@ -60,6 +60,8 @@ class RunWithRealCredentials : TestRule {
                     ExtensionTestUtil.maskExtensions(DefaultCredentialManager.EP_NAME, listOf(ProfileCredentialProviderFactory()), disposable)
 
                     ApplicationManager.getApplication().replaceService(CredentialManager::class.java, DefaultCredentialManager(), disposable)
+                    // suppress beacuse otherwise we have to declare experimental coroutines on every single test where we use the rule
+                    @Suppress("EXPERIMENTAL_API_USAGE")
                     ApplicationManager.getApplication().replaceService(AwsResourceCache::class.java, DefaultAwsResourceCache(), disposable)
                     project.replaceService(AwsConnectionManager::class.java, DefaultAwsConnectionManager(project), disposable)
 

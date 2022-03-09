@@ -75,13 +75,14 @@ class LambdaDaemonHost(project: Project) : LifetimedProjectComponent(project) {
                 lambdaHandlerResolver = handlerResolver
             )
 
-            val contextMap = mapOf(
-                LangDataKeys.LANGUAGE.name to LanguageUtil.getRootLanguage(psiElement)
-            )
+            val context = SimpleDataContext.builder()
+                .add(LangDataKeys.LANGUAGE, LanguageUtil.getRootLanguage(psiElement))
+                .setParent(SimpleDataContext.getProjectContext(project))
+                .build()
 
             ActionUtil.invokeAction(
                 action,
-                SimpleDataContext.getSimpleContext(contextMap, SimpleDataContext.getProjectContext(project)),
+                context,
                 ActionPlaces.EDITOR_GUTTER_POPUP,
                 null,
                 null

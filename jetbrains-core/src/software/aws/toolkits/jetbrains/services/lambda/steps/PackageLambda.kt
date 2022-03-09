@@ -30,7 +30,7 @@ class PackageLambda(
         ecrRepo = ecrRepo
     )
 
-    override fun handleSuccessResult(output: String, messageEmitter: StepEmitter, context: Context) {
+    override fun handleSuccessResult(output: String, stepEmitter: StepEmitter, context: Context) {
         // We finished the upload, extract out the uploaded code location if we have a logicalId
         logicalId ?: return
 

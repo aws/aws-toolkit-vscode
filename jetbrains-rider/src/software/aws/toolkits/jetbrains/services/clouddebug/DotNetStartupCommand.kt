@@ -6,9 +6,9 @@ package software.aws.toolkits.jetbrains.services.clouddebug
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.jetbrains.rd.framework.RdTaskResult
+import com.jetbrains.rd.platform.util.lifetime
 import com.jetbrains.rdclient.protocol.IPermittedModalities
 import com.jetbrains.rider.projectView.solution
-import com.jetbrains.rider.util.idea.lifetime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
@@ -71,7 +71,7 @@ class DotNetStartupCommand : CloudDebugStartupCommand(CloudDebuggingPlatform.DOT
         //       One of the edge case here might be when a user specify a Local Path to a directory that is unrelated to a solution.
         //       In that case we are not able to get any information about an assembly.
         //       Alternatively, we could add a ComboBox with ability to select a Project for a run configuration and explicitly specify it when run.
-        model.getProjectOutput.start(AwsProjectOutputRequest(localPath)).result.advise(project.lifetime) { result ->
+        model.getProjectOutput.start(project.lifetime, AwsProjectOutputRequest(localPath)).result.advise(project.lifetime) { result ->
             when (result) {
                 is RdTaskResult.Success -> {
                     val assemblyInfo = result.value

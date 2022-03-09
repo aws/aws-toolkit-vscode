@@ -17,8 +17,8 @@ import software.aws.toolkits.resources.message
 class CloudDebugCliValidate : Step() {
     override val stepName = "Checking for cloud-debug validity and updates"
 
-    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
-        CloudDebugResolver.validateOrUpdateCloudDebug(context.getRequiredAttribute(Context.PROJECT_ATTRIBUTE), messageEmitter, context)
+    override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
+        CloudDebugResolver.validateOrUpdateCloudDebug(context.getRequiredAttribute(Context.PROJECT_ATTRIBUTE), stepEmitter, context)
     }
 
     companion object {

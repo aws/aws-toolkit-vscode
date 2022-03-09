@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.RuleChain
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -46,6 +47,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
+@ExperimentalCoroutinesApi
 class AwsResourceCacheTest {
     private val projectRule = ProjectRule()
     private val credentialsManager = MockCredentialManagerRule()

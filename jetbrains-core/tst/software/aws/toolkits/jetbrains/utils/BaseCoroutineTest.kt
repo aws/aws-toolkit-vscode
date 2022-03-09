@@ -11,12 +11,11 @@ import org.junit.After
 import org.junit.Rule
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 
-// ExperimentalCoroutinesApi is needed for TestCoroutineScope
-@ExperimentalCoroutinesApi
 /*
  * BaseCoroutineTest contains utilities that are useful for testing corutines which would otherwise
  * have to be copy pasted. It is abstract so it is not implemented.
  */
+@ExperimentalCoroutinesApi
 abstract class BaseCoroutineTest(timeoutSeconds: Int = 15) {
     @JvmField
     @Rule

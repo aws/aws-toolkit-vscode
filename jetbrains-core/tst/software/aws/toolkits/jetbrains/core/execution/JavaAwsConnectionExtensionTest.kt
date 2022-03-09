@@ -66,7 +66,7 @@ class JavaAwsConnectionExtensionTest {
         deserialized.readExternal(element)
 
         assertThat(deserialized.mainClassName).isEqualTo("com.bla.Boop")
-        assertThat(deserialized.getCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY)).isEqualToComparingFieldByField(data)
+        assertThat(deserialized.getCopyableUserData(AWS_CONNECTION_RUN_CONFIGURATION_KEY)).usingRecursiveComparison().isEqualTo(data)
     }
 
     @Test

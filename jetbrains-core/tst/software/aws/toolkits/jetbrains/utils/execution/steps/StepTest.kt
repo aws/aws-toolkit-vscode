@@ -16,7 +16,7 @@ class StepTest {
         val skipStep = object : Step() {
             override val stepName: String = "SkipStep"
 
-            override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+            override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
                 throw SkipStepException()
             }
         }

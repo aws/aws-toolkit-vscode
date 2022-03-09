@@ -33,7 +33,7 @@ class BuildLambda(private val request: BuildLambdaRequest) : SamCliStep() {
         samOptions = request.samOptions
     )
 
-    override fun handleSuccessResult(output: String, messageEmitter: StepEmitter, context: Context) {
+    override fun handleSuccessResult(output: String, stepEmitter: StepEmitter, context: Context) {
         context.putAttribute(BUILT_LAMBDA, BuiltLambda(request.buildDir.resolve("template.yaml"), request.logicalId))
     }
 

@@ -47,7 +47,7 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
             val buildWithTsStep = object : Step() {
                 override val stepName = message("lambda.build.typescript.compiler.step")
 
-                override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+                override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
                     // relative to source root so that SAM build can copy it over to the correct place
                     val tsOutput = sourceRoot.resolve(TS_BUILD_DIR).normalize().toAbsolutePath().toString()
                     // relative to existing tsconfig because there is no other option https://github.com/microsoft/TypeScript/issues/25430
@@ -82,27 +82,27 @@ class NodeJsLambdaBuilder : LambdaBuilder() {
                     val tsConfigVirtualFile = VfsUtil.findFile(tsConfig, true) ?: throw RuntimeException("Could not find temporary tsconfig file using VFS")
                     val tsService = TypeScriptCompilerService.getServiceForFile(project, handlerElement.containingFile.virtualFile)
 
-                    messageEmitter.emitMessageLine(message("lambda.build.typescript.compiler.running", tsConfig), false)
+                    stepEmitter.emitMessageLine(message("lambda.build.typescript.compiler.running", tsConfig), false)
                     val compilerFuture = tsService?.compileConfigProjectAndGetErrors(tsConfigVirtualFile)
                     val results = compilerFuture?.get()
                         ?: throw RuntimeException(message("lambda.build.typescript.compiler.ide_error"))
 
-                    messageEmitter.emitMessageLine(message("lambda.build.typescript.compiler.processed_files"), false)
+                    stepEmitter.emitMessageLine(message("lambda.build.typescript.compiler.processed_files"), false)
                     results.processedFiles.forEach {
-                        messageEmitter.emitMessageLine(it, false)
+                        stepEmitter.emitMessageLine(it, false)
                     }
 
-                    messageEmitter.emitMessageLine(message("lambda.build.typescript.compiler.emitted_files"), false)
+                    stepEmitter.emitMessageLine(message("lambda.build.typescript.compiler.emitted_files"), false)
                     results.emittedFiles.forEach {
-                        messageEmitter.emitMessageLine(it, false)
+                        stepEmitter.emitMessageLine(it, false)
                     }
 
                     // errors, warnings, etc
-                    messageEmitter.emitMessageLine(message("lambda.build.typescript.compiler.annotation_results"), false)
+                    stepEmitter.emitMessageLine(message("lambda.build.typescript.compiler.annotation_results"), false)
                     results.annotationResults.forEach {
                         val isError = it.severity >= HighlightSeverity.WARNING
                         val location = "${it.absoluteFilePath ?: '?'}:${it.line + 1}:"
-                        messageEmitter.emitMessageLine(location + it.description, isError)
+                        stepEmitter.emitMessageLine(location + it.description, isError)
                     }
                 }
             }

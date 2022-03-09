@@ -32,7 +32,7 @@ class AttachDebugger(val environment: ExecutionEnvironment, val state: SamRunnin
     override val stepName = message("sam.debug.attach")
     override val hidden = false
 
-    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
         try {
             val samProcessHandler = getSamProcess(context)
             val samCompleted = AtomicBoolean(false)

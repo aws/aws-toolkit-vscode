@@ -20,7 +20,7 @@ abstract class ContainerMappingTable<T>(emptyTableMainText: String, addNewEntryT
 
             emptyText.appendSecondaryText(
                 addNewEntryText,
-                SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBUI.CurrentTheme.Link.linkColor())
+                SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBUI.CurrentTheme.Link.Foreground.ENABLED)
             ) {
                 stopEditing()
 

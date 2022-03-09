@@ -22,7 +22,7 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
 
     override fun execute(
         context: Context,
-        messageEmitter: StepEmitter,
+        stepEmitter: StepEmitter,
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()

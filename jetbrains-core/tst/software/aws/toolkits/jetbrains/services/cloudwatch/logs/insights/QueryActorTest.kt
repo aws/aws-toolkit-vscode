@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runBlockingTest
@@ -31,6 +32,7 @@ import software.aws.toolkits.resources.message
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+@ExperimentalCoroutinesApi
 class QueryActorTest : BaseCoroutineTest() {
     private lateinit var client: CloudWatchLogsClient
     private lateinit var tableModel: ListTableModel<LogResult>

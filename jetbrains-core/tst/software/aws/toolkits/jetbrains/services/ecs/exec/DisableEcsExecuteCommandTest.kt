@@ -59,10 +59,10 @@ class DisableEcsExecuteCommandTest {
 
     private fun createEventFor(action: AnAction, node: List<EcsServiceNode>): AnActionEvent {
         val projectContext = SimpleDataContext.getProjectContext(projectRule.project)
-        val dataContext = SimpleDataContext.getSimpleContext(
-            mapOf(ExplorerDataKeys.SELECTED_NODES.name to node),
-            projectContext
-        )
+        val dataContext = SimpleDataContext.builder()
+            .setParent(projectContext)
+            .add(ExplorerDataKeys.SELECTED_NODES, node)
+            .build()
 
         return AnActionEvent.createFromAnAction(action, null, ActionPlaces.UNKNOWN, dataContext)
     }

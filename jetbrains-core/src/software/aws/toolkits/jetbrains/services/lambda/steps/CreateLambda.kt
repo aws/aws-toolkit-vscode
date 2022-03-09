@@ -16,7 +16,7 @@ import software.aws.toolkits.resources.message
 class CreateLambda(private val lambdaClient: LambdaClient, private val details: FunctionDetails) : Step() {
     override val stepName = message("lambda.create.step.create_lambda")
 
-    override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+    override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
         lambdaClient.createFunction {
             it.functionName(details.name)
             it.description(details.description)
@@ -50,7 +50,7 @@ class CreateLambda(private val lambdaClient: LambdaClient, private val details: 
             }
         }
 
-        messageEmitter.emitMessage(message("lambda.workflow.update_code.wait_for_stable"), isError = false)
+        stepEmitter.emitMessage(message("lambda.workflow.update_code.wait_for_stable"), isError = false)
         val response = lambdaClient.waiter().waitUntilFunctionExists() { it.functionName(details.name) }.matched().response().get()
 
         // Also wait for it to become active

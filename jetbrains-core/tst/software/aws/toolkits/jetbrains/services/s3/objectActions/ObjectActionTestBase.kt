@@ -52,12 +52,10 @@ abstract class ObjectActionTestBase {
     @Test
     fun `action is disabled when UI element is not present`() {
         val projectContext = SimpleDataContext.getProjectContext(projectRule.project)
-        val dc = SimpleDataContext.getSimpleContext(
-            mapOf(
-                S3EditorDataKeys.BUCKET_TABLE.name to null
-            ),
-            projectContext
-        )
+        val dc = SimpleDataContext.builder()
+            .setParent(projectContext)
+            .add(S3EditorDataKeys.BUCKET_TABLE, null)
+            .build()
         val actionEvent = AnActionEvent.createFromAnAction(sut, null, ActionPlaces.UNKNOWN, dc)
 
         sut.update(actionEvent)
@@ -78,13 +76,12 @@ abstract class ObjectActionTestBase {
 
     private fun createEventFor(action: AnAction, nodes: List<S3TreeNode>): AnActionEvent {
         val projectContext = SimpleDataContext.getProjectContext(projectRule.project)
-        val dc = SimpleDataContext.getSimpleContext(
-            mapOf(
-                S3EditorDataKeys.SELECTED_NODES.name to nodes,
-                S3EditorDataKeys.BUCKET_TABLE.name to treeTable
-            ),
-            projectContext
-        )
+        val dc = SimpleDataContext.builder()
+            .setParent(projectContext)
+            .add(S3EditorDataKeys.SELECTED_NODES, nodes)
+            .add(S3EditorDataKeys.BUCKET_TABLE, treeTable)
+            .build()
+
         return AnActionEvent.createFromAnAction(action, null, ActionPlaces.UNKNOWN, dc)
     }
 }

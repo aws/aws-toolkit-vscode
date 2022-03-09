@@ -132,7 +132,7 @@ class AwsConnectionExtensionSettingsEditorTest {
         satisfies {
             val updatedConfiguration = createConfiguration { }
             it.applyTo(updatedConfiguration)
-            assertThat(updatedConfiguration.extensionOptions()).isEqualToComparingFieldByField(AwsCredentialInjectionOptions(expected))
+            assertThat(updatedConfiguration.extensionOptions()).usingRecursiveComparison().isEqualTo(AwsCredentialInjectionOptions(expected))
         }
     }
 }

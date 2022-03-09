@@ -10,6 +10,7 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.ui.EditorNotificationPanel
 import com.intellij.ui.EditorNotifications
 
+@Suppress("UNUSED_PARAMETER")
 fun <T : EditorNotifications.Provider<*>, U : EditorNotificationPanel> getEditorNotifications(editor: FileEditor, provider: Class<T>, key: Key<U>): U? {
     PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
     NonBlockingReadActionImpl.waitForAsyncTaskCompletion()

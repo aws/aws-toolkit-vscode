@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -273,6 +274,7 @@ class ExecutableBackedCacheResource<ReturnType, ExecType : ExecutableType<*>>(
     override fun toString(): String = "ExecutableBackedCacheResource(id='$id')"
 }
 
+@ExperimentalCoroutinesApi
 class DefaultAwsResourceCache(
     private val clock: Clock,
     private val maximumCacheEntries: Int,

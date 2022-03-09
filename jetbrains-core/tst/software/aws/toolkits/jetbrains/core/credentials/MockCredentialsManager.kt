@@ -26,6 +26,7 @@ class MockCredentialsManager : CredentialManager() {
         reset()
     }
 
+    @Suppress("DEPRECATION")
     fun reset() {
         getCredentialIdentifiers().filterNot { it.id == DUMMY_PROVIDER_IDENTIFIER.id }.forEach { removeProvider(it) }
 

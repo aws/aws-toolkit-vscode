@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.notification
 
 import com.intellij.ide.util.PropertiesComponent
+import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.ApplicationManager
@@ -125,8 +126,12 @@ class MinimumVersionChangeTest {
         // While this code should never throw...the DateKey for the Notification is private, so we can't make this logic 100% safe forever.
         // The logic that makes use of it is to dismiss the balloon and runs after our logic, so it should be safe.
         runCatching {
-            val actionEvent = TestActionEvent(SimpleDataContext.getSimpleContext("Notification", notifications.notifications.first()))
-            notifications.notifications.first().actions.first().actionPerformed(actionEvent)
+            val notification = notifications.notifications.first()
+            val context = SimpleDataContext.builder()
+                .add(DataKey.create("Notification"), notification)
+                .build()
+            val actionEvent = TestActionEvent(context)
+            notification.actions.first().actionPerformed(actionEvent)
         }
 
         assertThat(PropertiesComponent.getInstance().getBoolean(MinimumVersionChange.IGNORE_PROMPT)).isTrue

@@ -80,7 +80,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
     private val awsTreeModel = AwsExplorerTreeStructure(project)
 
     // The 4 max threads is arbitrary, but we want > 1 so that we can load more than one node at a time
-    private val structureTreeModel = StructureTreeModel(awsTreeModel, null, Invoker.Background(this, 4), this)
+    private val structureTreeModel = StructureTreeModel(awsTreeModel, null, Invoker.forBackgroundPoolWithReadAction(this), this)
     private val awsTree = createTree(AsyncTreeModel(structureTreeModel, true, this))
     private val awsTreePanel = ScrollPaneFactory.createScrollPane(awsTree)
     private val accountSettingsManager = AwsConnectionManager.getInstance(project)

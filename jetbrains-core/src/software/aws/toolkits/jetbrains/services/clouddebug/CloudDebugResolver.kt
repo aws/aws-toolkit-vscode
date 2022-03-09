@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
+import com.intellij.util.system.CpuArch
 import com.intellij.util.text.SemVer
 import org.apache.commons.codec.digest.DigestUtils
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
@@ -149,7 +150,7 @@ object CloudDebugResolver {
     }
 
     private fun generateCloudDebugManifestUrl(suffix: String): String {
-        if (!SystemInfo.is64Bit) {
+        if (CpuArch.CURRENT.width != 64) {
             throw RuntimeException("Cloud Debugging requires a 64-bit OS")
         }
         val os = when {

@@ -53,6 +53,7 @@ class ToolConfigurable : BoundConfigurable(message("executableCommon.configurabl
     }
 
     override fun disposeUIResources() {
+        // TODO: why are we overriding and not allowing the disposable to be disposed?
         panel.drop()
     }
 

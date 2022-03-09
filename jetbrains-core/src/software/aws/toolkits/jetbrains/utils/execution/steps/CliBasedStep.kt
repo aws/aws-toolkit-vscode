@@ -25,7 +25,7 @@ abstract class CliBasedStep : Step() {
     protected open fun onProcessStart(context: Context, processHandler: ProcessHandler) {}
     protected open fun createProcessEmitter(stepEmitter: StepEmitter): ProcessListener = CliOutputEmitter(stepEmitter)
 
-    protected open fun handleSuccessResult(output: String, messageEmitter: StepEmitter, context: Context) {}
+    protected open fun handleSuccessResult(output: String, stepEmitter: StepEmitter, context: Context) {}
 
     /**
      * Processes the command's stdout and throws an exception after the CLI exits with failure.
@@ -35,7 +35,7 @@ abstract class CliBasedStep : Step() {
         throw IllegalStateException(message("general.execution.cli_error", exitCode))
     }
 
-    final override fun execute(context: Context, messageEmitter: StepEmitter, ignoreCancellation: Boolean) {
+    final override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
         val startTime = Instant.now()
         var result = Result.Succeeded
         try {
@@ -50,8 +50,8 @@ abstract class CliBasedStep : Step() {
             val processHandler = createProcessHandler(commandLine, context)
             val processCapture = CapturingProcessAdapter()
             processHandler.addProcessListener(processCapture)
-            processHandler.addProcessListener(createProcessEmitter(messageEmitter))
-            messageEmitter.attachProcess(processHandler)
+            processHandler.addProcessListener(createProcessEmitter(stepEmitter))
+            stepEmitter.attachProcess(processHandler)
             processHandler.startNotify()
 
             monitorProcess(processHandler, context, ignoreCancellation)
@@ -61,11 +61,11 @@ abstract class CliBasedStep : Step() {
             }
 
             if (processHandler.exitCode == 0) {
-                handleSuccessResult(processCapture.output.stdout, messageEmitter, context)
+                handleSuccessResult(processCapture.output.stdout, stepEmitter, context)
                 return
             }
 
-            handleErrorResult(processCapture.output.exitCode, processCapture.output.stdout, messageEmitter)
+            handleErrorResult(processCapture.output.exitCode, processCapture.output.stdout, stepEmitter)
         } catch (e: SkipStepException) {
             LOG.debug(e) { """Step "$stepName" skipped!""" }
         } catch (e: ProcessCanceledException) {

@@ -65,11 +65,11 @@ class StopApplication(
         )
     }
 
-    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: StepEmitter) =
+    override fun handleErrorResult(exitCode: Int, output: String, stepEmitter: StepEmitter) =
         if (isCleanup) {
-            super.handleErrorResult(exitCode, output, messageEmitter)
+            super.handleErrorResult(exitCode, output, stepEmitter)
         } else {
-            messageEmitter.emitMessage(output, true)
+            stepEmitter.emitMessage(output, true)
             // suppress the error if stop fails
         }
 }

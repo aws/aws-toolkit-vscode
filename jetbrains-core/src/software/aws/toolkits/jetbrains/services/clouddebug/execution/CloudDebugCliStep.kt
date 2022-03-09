@@ -24,20 +24,20 @@ import java.util.concurrent.atomic.AtomicReference
 abstract class CloudDebugCliStep : CliBasedStep() {
     protected fun getCli(context: Context): GeneralCommandLine = context.getRequiredAttribute(CloudDebugCliValidate.EXECUTABLE_ATTRIBUTE).getCommandLine()
 
-    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: StepEmitter) {
+    override fun handleErrorResult(exitCode: Int, output: String, stepEmitter: StepEmitter) {
         if (output.isNotEmpty()) {
-            messageEmitter.emitMessage("Error details:\n", true)
+            stepEmitter.emitMessage("Error details:\n", true)
             CliOutputParser.parseErrorOutput(output)?.run {
                 errors.forEach {
-                    messageEmitter.emitMessage("\t- $it\n", true)
+                    stepEmitter.emitMessage("\t- $it\n", true)
                 }
-            } ?: messageEmitter.emitMessage(output, true)
+            } ?: stepEmitter.emitMessage(output, true)
         }
 
         throw IllegalStateException(message("cloud_debug.step.general.cli_error"))
     }
 
-    override fun createProcessEmitter(messageEmitter: StepEmitter): ProcessListener = CliOutputEmitter(messageEmitter)
+    override fun createProcessEmitter(stepEmitter: StepEmitter): ProcessListener = CliOutputEmitter(stepEmitter)
 
     private class CliOutputEmitter(private val messageEmitter: StepEmitter) : ProcessAdapter() {
         val previousLevel = AtomicReference<Level>(null)

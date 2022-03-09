@@ -25,6 +25,7 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
         recentlyUsedRegions.clear()
         recentlyUsedProfiles.clear()
         val regionProvider = AwsRegionProvider.getInstance()
+        @Suppress("DEPRECATION")
         changeConnectionSettings(DUMMY_PROVIDER_IDENTIFIER, regionProvider.defaultRegion())
 
         waitUntilConnectionStateIsStable()
