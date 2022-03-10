@@ -8,6 +8,10 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ApplicationRule
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.extension.AfterEachCallback
+import org.junit.jupiter.api.extension.BeforeEachCallback
+import org.junit.jupiter.api.extension.ExtensionContext
+import org.junit.runner.Description
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
@@ -99,12 +103,30 @@ class MockResourceCache : AwsResourceCache {
     }
 }
 
-class MockResourceCacheRule : ApplicationRule() {
-    private val cache by lazy { MockResourceCache.getInstance() }
+class MockResourceCacheRule : ApplicationRule(), MockResourceCacheInterface by MockResourceCacheInterface.delegate() {
+    public override fun before(description: Description) {
+        super.before(description)
+    }
 
-    override fun after() {
+    public override fun after() {
         runBlocking { cache.clear() }
     }
+}
+
+class MockResourceCacheExtension : BeforeEachCallback, AfterEachCallback, MockResourceCacheInterface by MockResourceCacheInterface.delegate() {
+    private val rule = MockResourceCacheRule()
+
+    override fun beforeEach(context: ExtensionContext) {
+        rule.before(Description.EMPTY)
+    }
+
+    override fun afterEach(context: ExtensionContext) {
+        rule.after()
+    }
+}
+
+interface MockResourceCacheInterface {
+    val cache: MockResourceCache
 
     fun addEntry(resourceId: String, regionId: String, credentialsId: String, value: Any) {
         cache.addEntry(resourceId, regionId, credentialsId, value)
@@ -145,4 +167,10 @@ class MockResourceCacheRule : ApplicationRule() {
     }
 
     fun size() = cache.entryCount()
+
+    companion object {
+        fun delegate() = object : MockResourceCacheInterface {
+            override val cache by lazy { MockResourceCache.getInstance() }
+        }
+    }
 }

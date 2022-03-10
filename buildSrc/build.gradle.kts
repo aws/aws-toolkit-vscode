@@ -29,4 +29,10 @@ dependencies {
     testImplementation(deps.assertj)
     testImplementation(deps.junit4)
     testImplementation(deps.bundles.mockito)
+
+    testRuntimeOnly(deps.junit5.jupiterVintage)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

@@ -22,4 +22,10 @@ dependencies {
     api(libs.bundles.jackson)
 
     testImplementation(libs.junit4)
+
+    testRuntimeOnly(libs.junit5.jupiterVintage)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

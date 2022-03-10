@@ -118,8 +118,8 @@
     <ID>UnsafeCallOnNullableType:JavaTestUtils.kt$psiFile.classes[0].allMethods[0].body!!</ID>
     <ID>UnsafeCallOnNullableType:LambdaRunLineMarkerContributorTest.kt$LambdaRunLineMarkerContributorTest$it!!</ID>
     <ID>UnsafeCallOnNullableType:LocalLambdaRunConfigurationTest.kt$LocalLambdaRunConfigurationTest$PsiDocumentManager.getInstance(projectRule.project).getDocument(eventFile)!!</ID>
-    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheRule$connectionManager.selectedCredentialIdentifier!!</ID>
-    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheRule$connectionManager.selectedRegion!!</ID>
+    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedCredentialIdentifier!!</ID>
+    <ID>UnsafeCallOnNullableType:MockResourceCache.kt$MockResourceCacheInterface$connectionManager.selectedRegion!!</ID>
     <ID>UnsafeCallOnNullableType:ProfileCredentialProviderFactoryTest.kt$ProfileCredentialProviderFactoryTest$LocalFileSystem.getInstance().findFileByIoFile(profileFile)!!</ID>
     <ID>UnsafeCallOnNullableType:ProfileCredentialProviderFactoryTest.kt$ProfileCredentialProviderFactoryTest$LocalFileSystem.getInstance().refreshAndFindFileByIoFile(this)!!</ID>
     <ID>UnsafeCallOnNullableType:PythonCodeInsightTestFixtureRule.kt$PythonCodeInsightTestFixtureRule$newFixture.tempDirFixture.getFile(".")!!</ID>

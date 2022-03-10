@@ -3,26 +3,26 @@
 
 package software.aws.toolkits.jetbrains.services.redshift
 
-import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Rule
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import software.amazon.awssdk.services.redshift.model.Cluster
 import software.aws.toolkits.core.utils.RuleUtils
-import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
+import software.aws.toolkits.jetbrains.core.MockResourceCacheExtension
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.sts.StsResources
+import software.aws.toolkits.jetbrains.testFramework.ProjectExtension
 
 class RedshiftUtilsTest {
     @JvmField
-    @Rule
-    val projectRule = ProjectRule()
+    @RegisterExtension
+    val projectRule = ProjectExtension()
 
     @JvmField
-    @Rule
-    val resourceCache = MockResourceCacheRule()
+    @RegisterExtension
+    val resourceCache = MockResourceCacheExtension()
 
     private val clusterId = RuleUtils.randomName()
     private val accountId = RuleUtils.randomName()

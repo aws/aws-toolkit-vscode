@@ -57,6 +57,16 @@ configurations {
         // Exclude dependencies we don't use to make plugin smaller
         exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
     }
+
+    // TODO: https://github.com/gradle/gradle/issues/15383
+    val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+    dependencies {
+        testImplementation(platform(versionCatalog.findDependency("junit5-bom").get()))
+        testImplementation(versionCatalog.findDependency("junit5-jupiterApi").get())
+
+        testRuntimeOnly(versionCatalog.findDependency("junit5-jupiterEngine").get())
+        testRuntimeOnly(versionCatalog.findDependency("junit5-jupiterVintage").get())
+    }
 }
 
 tasks.processResources {
@@ -127,6 +137,8 @@ tasks.withType<Test>().all {
     // FIX_WHEN_MIN_IS_221: log4j 1.2 removed in 221
     systemProperty("log4j.configuration", jetbrainsCoreTestResources.resolve("log4j.xml"))
     systemProperty("idea.log.config.properties.file", jetbrainsCoreTestResources.resolve("toolkit-test-log.properties"))
+
+    useJUnitPlatform()
 }
 
 tasks.withType<JavaExec> {

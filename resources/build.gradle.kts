@@ -18,6 +18,11 @@ sourceSets {
 
 dependencies {
     testImplementation(libs.junit4)
+    testRuntimeOnly(libs.junit5.jupiterVintage)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 val download = tasks.register<Download>("downloadResources") {

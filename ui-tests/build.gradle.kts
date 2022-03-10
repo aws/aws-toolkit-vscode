@@ -33,7 +33,7 @@ dependencies {
     testImplementation(libs.aws.sqs)
     testImplementation(libs.commons.io)
 
-    testRuntimeOnly(libs.junit5.jupiterEngione)
+    testRuntimeOnly(libs.junit5.jupiterEngine)
 }
 
 // don't run gui tests as part of check

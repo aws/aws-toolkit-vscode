@@ -9,8 +9,8 @@ intellijRemoteRobot = "0.11.11"
 jackson = "2.11.1"
 jacoco = "0.8.7"
 jgit = "5.11.0.202103091610-r"
-junit4 = "4.13.1"
-junit5 = "5.6.2"
+junit4 = "4.13.2"
+junit5 = "5.8.2"
 kotlin = "1.6.10"
 kotlinCoroutines = "1.3.9"
 mockito = "4.0.0"
@@ -68,8 +68,10 @@ jackson-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-y
 jacoco = { module = "org.jacoco:org.jacoco.core", version.ref = "jacoco" }
 jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "jgit" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
-junit5-jupiterApi = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
-junit5-jupiterEngione = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
+junit5-bom = { module = "org.junit:junit-bom", version.ref = "junit5" }
+junit5-jupiterApi = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
+junit5-jupiterEngine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
+junit5-jupiterVintage = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit5" }
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
 kotlin-coroutinesDebug = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-debug", version.ref = "kotlinCoroutines" }
 kotlin-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinCoroutines" }
