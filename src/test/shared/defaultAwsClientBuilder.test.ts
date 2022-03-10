@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import { AWSError, Request, Service } from 'aws-sdk'
-import { util } from 'prettier'
 import { version } from 'vscode'
 import { AWSClientBuilder, DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
