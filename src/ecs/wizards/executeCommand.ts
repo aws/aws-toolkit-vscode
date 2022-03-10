@@ -31,7 +31,11 @@ function createValidTaskFilter(containerName: string) {
 
 function createTaskPrompter(node: EcsContainerNode) {
     const taskItems = (async () => {
-        const taskArns = await node.listTasks()
+        const args: ECS.ListTasksRequest = {
+            cluster: node.parent.service.clusterArn,
+            serviceName: node.parent.service.serviceName,
+        }
+        const taskArns = await node.ecs.listTasks(args)
         if (taskArns.length === 0) {
             return []
         }

@@ -1,3 +1,12 @@
+## 1.36.0 2022-03-03
+
+- **Bug Fix** Step Functions: fixed issue with opening a graph render from the editor
+- **Bug Fix** ECS: avoid null reference error when loading nodes #2441
+- **Feature** SAM/Lambda: add support for .NET 6 (dotnet6)
+- **Feature** ECS: Container node displays when there is no running containers
+- **Feature** Cloud9: user can choose which Resources to show
+- **Feature** ECS: Toolkit checks if the current credentials have permissions for "Run Command in Container"
+
 ## 1.35.0 2022-01-13
 
 - **Bug Fix** Schemas: handle errors for invalid settings configurations on activation

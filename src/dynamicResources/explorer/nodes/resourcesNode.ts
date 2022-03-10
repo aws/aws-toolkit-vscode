@@ -14,8 +14,8 @@ import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/co
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
-import { isCloud9 } from '../../../shared/extensionUtilities'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 import globals from '../../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
@@ -62,9 +62,8 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const resourceTypes = memoizedGetResourceTypes()
-        const enabledResources = !isCloud9()
-            ? vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
-            : resourceTypes.keys()
+        const configuredResources = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
+        const enabledResources = configuredResources?.length || !isCloud9() ? configuredResources : resourceTypes.keys()
 
         if (enabledResources) {
             const availableTypes: Map<string, CloudFormation.TypeSummary> = toMap(
