@@ -21,7 +21,25 @@ interface RequestExtras {
 
 type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
 type ServiceOptions = ServiceConfigurationOptions & {
-    onRequest?: RequestListener | RequestListener[]
+    /**
+     * The frequency and (lack of) idempotency of events is highly dependent on the SDK implementation
+     * For example, 'error' may fire more than once for a single request
+     *
+     * Example usage:
+     *
+     * ```ts
+     * const service = await builder.createAwsService(FakeService, {
+     *     onRequestSetup: [
+     *         req => {
+     *             const serviceName = req.service.constructor.name
+     *             console.log('req: %O [%O]', req.operation, req.params)
+     *             req.on('error', e => (errorCount += !e.originalError ? 1 : 0))
+     *         },
+     *     ],
+     * })
+     * ```
+     */
+    onRequestSetup?: RequestListener | RequestListener[]
 }
 
 export interface AWSClientBuilder {
@@ -55,10 +73,10 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         region?: string,
         userAgent: boolean = true
     ): Promise<T> {
-        const onRequest = options?.onRequest ?? []
+        const onRequest = options?.onRequestSetup ?? []
         const listeners = Array.isArray(onRequest) ? onRequest : [onRequest]
         const opt = { ...options }
-        delete opt.onRequest
+        delete opt.onRequestSetup
 
         if (!opt.credentials) {
             opt.credentials = await this._awsContext.getCredentials()
