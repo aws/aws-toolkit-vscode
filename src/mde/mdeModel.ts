@@ -21,7 +21,6 @@ import { getIdeProperties } from '../shared/extensionUtilities'
 import { showConfirmationMessage, showViewLogsMessage } from '../shared/utilities/messages'
 import { getLogger } from '../shared/logger/logger'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
-import { execFileSync } from 'child_process'
 import globals from '../shared/extensionGlobals'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
@@ -342,18 +341,17 @@ if (!$?) {
 }
 exit $?
 `
-            execFileSync('powershell.exe', ['Invoke-Expression', script])
+            await new ChildProcess('powershell.exe', ['Invoke-Expression', script]).run()
             // TODO: we should verify that the agent is active (or not) prior to running this codepath
             // On unix machines the environment variable is set, but on windows we might have to execute something to check
             vscode.window.showInformationMessage(localize('AWS.mde.ssh-agent.start', 'The SSH agent has been started.'))
             return
         }
 
-        // note: using 'sync' callbacks since `promisify` is inconsistent
         // TODO: this command outputs a shell command that you're supposed to execute, for now
         // we'll just parse the socket out and inject it into the ssh command
-        const result = execFileSync('ssh-agent', ['-s'])
-        return (result.match(/$SSH_AGENT_VAR=(.*?);/) ?? [])[1]
+        const r = await new ChildProcess('ssh-agent', ['-s']).run()
+        return (r.stdout.match(/$SSH_AGENT_VAR=(.*?);/) ?? [])[1]
     } catch (err) {
         getLogger().error('mde: failed to start SSH agent, clones may not work as expected: %O', err)
     }
