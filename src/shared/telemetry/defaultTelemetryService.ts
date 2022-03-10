@@ -37,6 +37,7 @@ export class DefaultTelemetryService implements TelemetryService {
     private publisher?: TelemetryPublisher
     private readonly _eventQueue: MetricDatum[]
     private readonly _telemetryLogger = new TelemetryLogger()
+    private hasAssertedPassiveStartup: boolean = false
 
     public constructor(
         private readonly context: ExtensionContext,
@@ -69,7 +70,10 @@ export class DefaultTelemetryService implements TelemetryService {
         // TODO: `readEventsFromCache` should be async
         const cacheEvents = DefaultTelemetryService.readEventsFromCache(cachePath)
         if (cacheEvents.length > 0) {
-            await this.flushRecords(cacheEvents)
+            // TODO: Defer this until after extension load?
+            // ultimately: create a separate promise with an awaited flush followed by the start timer:
+            // publisher has no safeguards on whether or not it's actively flushing: just start the timer after the initial flush
+            this.flushRecords(cacheEvents)
         }
         recordSessionStart()
         this.startTimer()
@@ -144,19 +148,28 @@ export class DefaultTelemetryService implements TelemetryService {
         this._eventQueue.length = 0
     }
 
-    private async flushRecords(overrideEvents?: MetricDatum[]): Promise<void> {
+    /**
+     * @param directPublishEvents Events to be published immediately. Won't flush this._eventQueue.
+     */
+    private async flushRecords(directPublishEvents?: MetricDatum[]): Promise<void> {
         if (this.telemetryEnabled) {
             if (this.publisher === undefined) {
                 await this.createDefaultPublisherAndClient()
             }
             if (this.publisher !== undefined) {
                 let currQueue: MetricDatum[]
-                if (overrideEvents) {
-                    currQueue = overrideEvents
-                } else {
+                if (directPublishEvents) {
+                    currQueue = directPublishEvents
+                } else if (this.hasAssertedPassiveStartup) {
                     currQueue = [...this._eventQueue]
                     // open queue for new telemetry ASAP
                     this.clearRecords()
+                } else {
+                    getLogger().warn(
+                        'Attempting to flush telemetry queue prior to calling `assertOnlyPassiveTelemetryInQueue` on startup'
+                    )
+
+                    return
                 }
 
                 this.publisher.enqueue(...currQueue)
@@ -279,11 +292,18 @@ export class DefaultTelemetryService implements TelemetryService {
 
     /**
      * Verifies that telemetry queue only has passive metrics (except for some known
-     * special-cases).
+     * special-cases). Logs error or throws depending on if this is a prod version or not (respectively)
      *
-     * Used while validating extension activation.
+     * Should only be called once per session.
+     *
+     * Specifically designed to be used while validating extension activation.
      */
-    public assertPassiveTelemetry(didReload: boolean) {
+    public assertOnlyPassiveTelemetryInQueue(didReload: boolean) {
+        // should only be called once per activation.
+        if (this.hasAssertedPassiveStartup) {
+            this.throwIfDev('assertOnlyPassiveTelemetryInQueue already called this session')
+        }
+
         // Special case: these may be non-passive during a VSCode "reload". #1592
         const maybeActiveOnReload = ['sam_init']
 
@@ -293,12 +313,18 @@ export class DefaultTelemetryService implements TelemetryService {
             if (metric.Passive || (didReload && maybeActiveOnReload.includes(metric.MetricName))) {
                 continue
             }
-            const msg = `non-passive metric detected in queue: ${metric.MetricName}`
-            if (isReleaseVersion()) {
-                getLogger().error(msg)
-            } else {
-                throw Error(msg)
-            }
+            this.hasAssertedPassiveStartup = true
+            this.throwIfDev(`non-passive metric detected in queue: ${metric.MetricName}`)
+        }
+
+        this.hasAssertedPassiveStartup = true
+    }
+
+    private throwIfDev(msg: string) {
+        if (isReleaseVersion()) {
+            getLogger().error(msg)
+        } else {
+            throw Error(msg)
         }
     }
 }
@@ -331,7 +357,7 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
             return false
         }
 
-        if ((item as any)?.Metadata?.some((m: any) => m?.Value === undefined || m.Value === '')) {
+        if ((item as any)?.Metadata?.some((m: any) => !m?.Value || m.Value === '')) {
             getLogger().warn(`telemetry: skipping cached item with null/empty metadata field:\n${item}`)
 
             return false
