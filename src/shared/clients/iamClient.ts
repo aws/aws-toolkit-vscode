@@ -58,6 +58,39 @@ export class DefaultIamClient {
         await sdkClient.attachRolePolicy(request).promise()
     }
 
+    public async simulatePrincipalPolicy(
+        request: IAM.SimulatePrincipalPolicyRequest
+    ): Promise<IAM.SimulatePolicyResponse> {
+        const sdkClient = await this.createSdkClient()
+        return await sdkClient.simulatePrincipalPolicy(request).promise()
+    }
+
+    /**
+     * Attempts to verify if a role has the provided permissions.
+     * @param roleArn IAM.SimulatePrinicipalPolicyRequest
+     * @returns True if the role has the provided permissions. Undefined when the role is missing or the 'simulatePrincipalPolicy' call was unsuccessful.
+     */
+    public async hasRolePermissions(request: IAM.SimulatePrincipalPolicyRequest): Promise<boolean | undefined> {
+        if (request.PolicySourceArn === undefined) {
+            return undefined
+        }
+        try {
+            const permissionResponse = await this.simulatePrincipalPolicy(request)
+            if (!permissionResponse || !permissionResponse.EvaluationResults) {
+                return undefined
+            }
+            for (const evalResult of permissionResponse.EvaluationResults) {
+                if (evalResult.EvalDecision !== 'allowed') {
+                    return false
+                }
+            }
+            return true
+        } catch (error) {
+            getLogger().error('iam: Error during policy simulation. Skipping permissions check. Error: %O', error)
+            return undefined
+        }
+    }
+
     private async createSdkClient(): Promise<IAM> {
         return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
     }

@@ -36,7 +36,7 @@ export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
 ])
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java11', 'java8', 'java8.al2'])
-export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore3.1'])
+export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore3.1', 'dotnet6'])
 
 /**
  * Deprecated runtimes can be found at https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html
@@ -83,7 +83,6 @@ export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>
 // Cloud9 supports a subset of runtimes for debugging.
 // * .NET is not supported
 // * Python3.6 is not supported for debugging by IKP3db
-// for some reason, ImmutableSet does not like `ImmutableSet.union().filter()`; initialize union set here.
 const cloud9SupportedBaseRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 const cloud9SupportedCreateRuntimes = cloud9SupportedBaseRuntimes.filter(
     (runtime: string) => !['python3.6'].includes(runtime)

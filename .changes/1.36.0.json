@@ -1,0 +1,30 @@
+{
+	"date": "2022-03-03",
+	"version": "1.36.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Step Functions: fixed issue with opening a graph render from the editor"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "ECS: avoid null reference error when loading nodes #2441"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM/Lambda: add support for .NET 6 (dotnet6)"
+		},
+		{
+			"type": "Feature",
+			"description": "ECS: Container node displays when there is no running containers"
+		},
+		{
+			"type": "Feature",
+			"description": "Cloud9: user can choose which Resources to show"
+		},
+		{
+			"type": "Feature",
+			"description": "ECS: Toolkit checks if the current credentials have permissions for \"Run Command in Container\""
+		}
+	]
+}
