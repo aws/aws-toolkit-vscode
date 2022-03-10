@@ -43,10 +43,7 @@ describe('DefaultAwsClientBuilder', function () {
                     apiConfig: { operations: { FakeOperation: {} } },
                     onRequestSetup: [
                         request => {
-                            const serviceName = request.service.constructor.name
-
-                            // No subclass = no service name
-                            assert.strictEqual(serviceName, '')
+                            assert.ok(request.service instanceof Service)
                             assert.strictEqual(request.operation, 'FakeOperation')
                             assert.deepStrictEqual(request.params, { foo: 'bar' })
 

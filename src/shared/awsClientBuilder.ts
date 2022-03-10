@@ -31,7 +31,6 @@ type ServiceOptions = ServiceConfigurationOptions & {
      * const service = await builder.createAwsService(FakeService, {
      *     onRequestSetup: [
      *         req => {
-     *             const serviceName = req.service.constructor.name
      *             console.log('req: %O [%O]', req.operation, req.params)
      *             req.on('error', e => (errorCount += !e.originalError ? 1 : 0))
      *         },
