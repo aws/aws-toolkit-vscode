@@ -3,10 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Request, AWSError } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
 import { extensionVersion } from './vscode/env'
+
+interface RequestExtras {
+    readonly service: AWS.Service
+    readonly operation: string
+    readonly params?: any
+}
+
+type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
+type ServiceOptions = ServiceConfigurationOptions & { requestListeners?: RequestListener[] }
 
 export interface AWSClientBuilder {
     /**
@@ -20,7 +30,7 @@ export interface AWSClientBuilder {
      */
     createAwsService<T extends AWS.Service>(
         type: new (o: ServiceConfigurationOptions) => T,
-        options?: ServiceConfigurationOptions,
+        options?: ServiceOptions,
         region?: string,
         userAgent?: boolean
     ): Promise<T>
@@ -33,14 +43,15 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         this._awsContext = awsContext
     }
 
-    /** @inheritdoc */
     public async createAwsService<T extends AWS.Service>(
         type: new (o: ServiceConfigurationOptions) => T,
-        options?: ServiceConfigurationOptions,
+        options?: ServiceOptions,
         region?: string,
         userAgent: boolean = true
     ): Promise<T> {
-        const opt = { ...options } as ServiceConfigurationOptions
+        const listeners = options?.requestListeners ?? []
+        const opt = { ...options }
+        delete opt.requestListeners
 
         if (!opt.credentials) {
             opt.credentials = await this._awsContext.getCredentials()
@@ -56,6 +67,13 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         }
 
         const service = new type(opt)
+        const originalSetup = service.setupRequestListeners.bind(service)
+
+        service.setupRequestListeners = (request: Request<any, AWSError>) => {
+            originalSetup(request)
+            listeners.forEach(l => l(request as AWS.Request<any, AWSError> & RequestExtras))
+        }
+
         return service
     }
 }
