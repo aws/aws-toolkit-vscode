@@ -77,7 +77,10 @@ async function createCawsClient(
         // apiConfig is internal and not in the TS declaration file
         apiConfig: apiConfig,
         region: regionCode,
-        // credentials: credentials,
+        // XXX: remove when Bearer token auth is added
+        // The SDK has logic to automatically throw if no credentials are set
+        // despite the service not requiring credentials.
+        credentials: { accessKeyId: 'xxx', secretAccessKey: 'xxx' },
         correctClockSkew: true,
         endpoint: endpoint,
     } as ServiceConfigurationOptions)) as caws
@@ -441,6 +444,9 @@ class CawsClientInternal {
     public listResources(resourceType: CawsResource['type']): AsyncCollection<CawsResource[]> {
         // Don't really want to expose this apart of the `AsyncCollection` API yet
         // The semantics of concatenating async iterables is rather ambiguous
+        // For example, an array of async iterables can be joined either in-order or out-of-order.
+        // In-order concatenations only makes sense for finite iterables, though I'm unaware of any
+        // convention to declare an iterable to be finite.
         function mapInner<T, U>(
             collection: AsyncCollection<T[]>,
             fn: (element: T) => AsyncCollection<U[]>

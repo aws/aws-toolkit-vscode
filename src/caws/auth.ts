@@ -9,7 +9,7 @@ import {
     AuthenticationProvider,
     AuthenticationSessionsChangeEvent,
     Session,
-} from '../credentials/session'
+} from '../credentials/authentication'
 import { createClient } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
@@ -37,7 +37,7 @@ interface UserMetadata {
 
 export class CawsAuthStorage {
     private static readonly USERS_MEMENTO_KEY = 'caws/users'
-    private static readonly SECRETS_KEY = 'caws/cookies'
+    private static readonly SECRETS_KEY = 'caws/authtokens'
 
     public constructor(private readonly memento: vscode.Memento, private readonly secrets: vscode.SecretStorage) {}
 
@@ -128,7 +128,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
                 id: `session-${(this.sessionCounter += 1)}`,
             }
         } catch (err) {
-            // Should handle https://github.com/aws/aws-toolkit-vscode-staging/pull/349 along with other potential issues
+            // Handle "Decryption Failed" and other potential issues.
             getLogger().debug(`CAWS: failed to login (will clear existing secrets): ${(err as Error).message}`)
             this.storage.updateUser(account.id, '', { invalidSession: true })
             throw err

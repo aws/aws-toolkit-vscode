@@ -56,7 +56,9 @@ function createResourcePrompter<T extends caws.CawsResource>(
         ...presentation,
     })
 
-    refresh.onClick = () => void prompter.clearAndLoadItems(items)
+    refresh.onClick = () => {
+        prompter.clearAndLoadItems(items)
+    }
 
     return prompter
 }

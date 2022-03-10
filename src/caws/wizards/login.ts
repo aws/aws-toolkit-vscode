@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AccountDetails, Session } from '../../credentials/session'
+import { AccountDetails, Session } from '../../credentials/authentication'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'

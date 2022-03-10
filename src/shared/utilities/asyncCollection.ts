@@ -87,12 +87,9 @@ async function* filterGenerator<T, U extends T, R = T>(
         const { value, done } = await generator.next()
         if (value === undefined || !predicate(value)) {
             if (done) {
-                break
+                return value as Awaited<U> | undefined
             }
             continue
-        }
-        if (done) {
-            return value as Awaited<U | undefined>
         }
         yield value
     }
@@ -125,6 +122,8 @@ async function* delegateGenerator<T, U, R = T>(
         }
     }
 
+    // The last value is buffered by one step to ensure it is returned here
+    // rather than yielded in the while loops.
     return last.value
 }
 
@@ -145,7 +144,9 @@ function takeFrom<T>(count: number) {
     }
 }
 
-/** Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable */
+/**
+ * Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable
+ */
 type SafeUnboxIterable<T> = T extends Iterable<infer U> ? U : T
 
 export function isIterable<T>(obj: any): obj is Iterable<T> {

@@ -23,7 +23,6 @@ import { CawsClientFactory, createClient } from '../shared/clients/cawsClient'
 import { GitExtension } from '../shared/extensions/git'
 import { CawsAuthenticationProvider, CawsAuthStorage } from './auth'
 import { initStatusbar } from './cawsStatusbar'
-import { tryAutoConnect } from '../awsexplorer/activation'
 
 /**
  * Activate CAWS functionality.
@@ -34,10 +33,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const settings = new DefaultSettingsConfiguration()
 
     const clientFactory = async () => {
-        // XXX: try to auto-connect with normal AWS credentials prior to creating a client
-        // This should not be needed once we have the Bearer token
-        await tryAutoConnect(ctx.awsContext)
-
         // Assumption: the current auth provider only supports being logged into a single account at a time
         // The VSC API can support multiple sessions, though we're probably a long way off from that
         // TODO: just hide the full API behind something a bit lighter
