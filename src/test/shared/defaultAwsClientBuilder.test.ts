@@ -47,7 +47,7 @@ describe('DefaultAwsClientBuilder', function () {
                 let errorCount = 0
 
                 const service = await builder.createAwsService(FakeService, {
-                    requestListeners: [
+                    onRequest: [
                         request => {
                             const serviceName = request.service.constructor.name
 
@@ -86,9 +86,7 @@ describe('DefaultAwsClientBuilder', function () {
 
                 const expected = getDescriptors(Original)
                 const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
-                const service = await builder.createAwsService(Original, {
-                    requestListeners: [request => {}],
-                })
+                const service = await builder.createAwsService(Original, { onRequest: () => {} })
 
                 assert.deepStrictEqual(getDescriptors(Original), expected)
                 assert.ok(service instanceof Original)

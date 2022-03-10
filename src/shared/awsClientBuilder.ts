@@ -9,6 +9,10 @@ import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
 import { extensionVersion } from './vscode/env'
 
+// These are not on the public API but are very useful for logging purposes.
+// Tests guard against the possibility that these values change unexpectedly.
+// Since the field names are not prepended with `_` to signify visibility, the
+// fact that they're not in the API may have been an oversight.
 interface RequestExtras {
     readonly service: AWS.Service
     readonly operation: string
@@ -16,7 +20,9 @@ interface RequestExtras {
 }
 
 type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
-type ServiceOptions = ServiceConfigurationOptions & { requestListeners?: RequestListener[] }
+type ServiceOptions = ServiceConfigurationOptions & {
+    onRequest?: RequestListener | RequestListener[]
+}
 
 export interface AWSClientBuilder {
     /**
@@ -49,9 +55,10 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         region?: string,
         userAgent: boolean = true
     ): Promise<T> {
-        const listeners = options?.requestListeners ?? []
+        const onRequest = options?.onRequest ?? []
+        const listeners = Array.isArray(onRequest) ? onRequest : [onRequest]
         const opt = { ...options }
-        delete opt.requestListeners
+        delete opt.onRequest
 
         if (!opt.credentials) {
             opt.credentials = await this._awsContext.getCredentials()
