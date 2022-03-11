@@ -212,9 +212,11 @@ class CawsClientInternal {
         return this.username
     }
 
-    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean = false, defaultVal?: T): Promise<T> {
+    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false, defaultVal?: T): Promise<T>
+    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true): Promise<T | undefined>
+    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T | undefined> {
         const log = this.log
-        return new Promise<T>((resolve, reject) => {
+        return new Promise<T | undefined>((resolve, reject) => {
             req.send(function (e, data) {
                 const r = req as any
                 if (e) {
@@ -264,7 +266,7 @@ class CawsClientInternal {
                     if (silent && defaultVal) {
                         resolve(defaultVal)
                     } else if (silent) {
-                        resolve({ length: 0, items: undefined } as unknown as T)
+                        resolve(undefined)
                     } else {
                         reject(e)
                     }
@@ -301,7 +303,7 @@ class CawsClientInternal {
         }
 
         const c = this.sdkClient
-        const token = await this.call(c.createAccessToken(args))
+        const token = await this.call(c.createAccessToken(args), false)
         return token
     }
 
@@ -312,9 +314,9 @@ class CawsClientInternal {
     public async verifySession(): Promise<caws.VerifySessionResponse | undefined> {
         if (!useGraphql) {
             const c = this.sdkClient
-            const o = await this.call(c.verifySession())
+            const o = await this.call(c.verifySession(), false)
             if (o?.identity) {
-                const person = await this.call(c.getPerson({ id: o.identity }))
+                const person = await this.call(c.getPerson({ id: o.identity }), false)
                 this.username = person.userName
             }
             return o
@@ -358,7 +360,8 @@ class CawsClientInternal {
             return { id: '', type: 'org', name: org.name ?? 'unknown', ...org }
         }
 
-        const requester = (request: caws.ListOrganizationsInput) => this.call(this.sdkClient.listOrganizations(request))
+        const requester = async (request: caws.ListOrganizationsInput) =>
+            (await this.call(this.sdkClient.listOrganizations(request), true)) ?? { items: [] }
         const collection = pageableToCollection(requester, {}, 'nextToken', 'items')
         return collection.map(summaries => summaries?.map(asCawsOrg) ?? [])
     }
@@ -367,7 +370,8 @@ class CawsClientInternal {
      * Gets a list of all projects for the given CAWS user.
      */
     public listProjects(request: caws.ListProjectsInput): AsyncCollection<CawsProject[]> {
-        const requester = (request: caws.ListProjectsInput) => this.call(this.sdkClient.listProjects(request))
+        const requester = async (request: caws.ListProjectsInput) =>
+            (await this.call(this.sdkClient.listProjects(request), true)) ?? { items: [] }
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
         return collection.map(
@@ -388,8 +392,8 @@ class CawsClientInternal {
      */
     public listDevEnvs(proj: CawsProject): AsyncCollection<CawsDevEnv[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
-        const requester = (request: caws.ListDevelopmentWorkspaceInput) =>
-            this.call(this.sdkClient.listDevelopmentWorkspace(request))
+        const requester = async (request: caws.ListDevelopmentWorkspaceInput) =>
+            (await this.call(this.sdkClient.listDevelopmentWorkspace(request), true)) ?? { items: [] }
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
 
         const makeDescription = (env: caws.DevelopmentWorkspaceSummary) => {
@@ -418,8 +422,8 @@ class CawsClientInternal {
      * Gets a flat list of all repos for the given CAWS user.
      */
     public listRepos(request: caws.ListSourceRepositoriesInput): AsyncCollection<CawsRepo[]> {
-        const requester = (request: caws.ListSourceRepositoriesInput) =>
-            this.call(this.sdkClient.listSourceRepositories(request))
+        const requester = async (request: caws.ListSourceRepositoriesInput) =>
+            (await this.call(this.sdkClient.listSourceRepositories(request), true)) ?? { items: [] }
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(
             summaries =>
@@ -477,7 +481,7 @@ class CawsClientInternal {
         if (!args.ideRuntimes || args.ideRuntimes.length === 0) {
             throw Error('missing ideRuntimes')
         }
-        const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args))
+        const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
         const env = await this.getDevEnv({
             developmentWorkspaceId: r.developmentWorkspaceId,
             organizationName: args.organizationName,
@@ -502,7 +506,7 @@ class CawsClientInternal {
     public async startDevEnv(
         args: caws.StartDevelopmentWorkspaceInput
     ): Promise<caws.StartDevelopmentWorkspaceOutput | undefined> {
-        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args))
+        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args), false)
         return r
     }
 
@@ -510,7 +514,7 @@ class CawsClientInternal {
     public async startDevEnvSession(
         args: caws.StartSessionDevelopmentWorkspaceInput
     ): Promise<caws.StartSessionDevelopmentWorkspaceOutput | undefined> {
-        const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args))
+        const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args), false)
         return r
     }
 
@@ -524,7 +528,7 @@ class CawsClientInternal {
         const a = { ...args }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
-        const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a))
+        const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a), false)
         const desc = r.labels?.join(', ')
 
         return {
@@ -543,7 +547,7 @@ class CawsClientInternal {
     public async deleteDevEnv(
         args: caws.DeleteDevelopmentWorkspaceInput
     ): Promise<caws.DeleteDevelopmentWorkspaceOutput | undefined> {
-        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args))
+        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
         return r
     }
 
