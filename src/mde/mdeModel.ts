@@ -218,6 +218,9 @@ Host aws-mde-*
     ForwardAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}
+    ControlMaster auto
+    ControlPath ~/.ssh/%h
+    ControlPersist 15m
 `
     const ssh = await SystemUtilities.findSshPath()
     if (!ssh) {
@@ -240,8 +243,9 @@ Host aws-mde-*
     }
     const matches = r.stdout.match(/proxycommand.{0,1024}mde_connect(.ps1)?.{0,99}/i)
     const hasMdeProxyCommand = matches && matches[0].includes(proxyCommand)
+    const hasControlPersist = !!r.stdout.match(/controlpersist [0-9]+/)
 
-    if (!hasMdeProxyCommand) {
+    if (!hasMdeProxyCommand || !hasControlPersist) {
         if (matches && matches[0]) {
             getLogger().warn('MDE: SSH config: found old/outdated aws-mde-* section:\n%O', matches[0])
             const oldConfig = localize(
