@@ -75,7 +75,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
     private readonly sessions = new Map<string, Session>()
     private sessionCounter = 0
 
-    protected constructor(protected readonly storage: CawsAuthStorage) {}
+    public constructor(protected readonly storage: CawsAuthStorage) {}
 
     public listAccounts(): AccountDetails[] {
         return this.storage.getUsers().map(user => ({
@@ -164,22 +164,5 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
         const old = this.sessions.get(session.id)
         this.sessions.delete(session.id)
         old && this._onDidChangeSessions.fire({ removed: [old] })
-    }
-
-    // Static methods for a singleton
-    // Not really meant to be used much other than for prototyping
-    private static _instance: CawsAuthenticationProvider
-    public static getInstance() {
-        if (!this._instance) {
-            throw new Error('CAWS authentication provider was never instantiated.')
-        }
-        return this._instance
-    }
-
-    public static initialize(storage: CawsAuthStorage) {
-        if (this._instance) {
-            throw new Error('CAWS authentication provider was already instantiated.')
-        }
-        return (this._instance = new this(storage))
     }
 }

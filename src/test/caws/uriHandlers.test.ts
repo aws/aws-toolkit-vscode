@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import { register } from '../../caws/uriHandlers'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { CawsClient } from '../../shared/clients/cawsClient'
+import { ConnectedCawsClient } from '../../shared/clients/cawsClient'
 
 type Stub<T extends (...args: any[]) => any> = sinon.SinonStub<Parameters<T>, ReturnType<T>>
 
@@ -23,7 +23,12 @@ describe('Clone Handler', function () {
 
     beforeEach(function () {
         handler = new UriHandler()
-        register(handler, () => Promise.resolve({} as CawsClient))
+        register(
+            handler,
+            command =>
+                async (...args) =>
+                    command({} as ConnectedCawsClient, ...args)
+        )
         commandStub = sinon.stub(vscode.commands, 'executeCommand')
     })
 

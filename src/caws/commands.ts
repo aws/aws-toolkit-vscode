@@ -75,33 +75,42 @@ export async function listCommands(): Promise<void> {
     vscode.commands.executeCommand('workbench.action.quickOpen', '> CODE.AWS')
 }
 
+type CawsCommand<T extends any[], U> = (client: ConnectedCawsClient, ...args: T) => U | Promise<U>
+export type TryCommandDecorator = {
+    <T extends any[], U>(command: CawsCommand<T, U>): (...args: T) => Promise<U | undefined>
+}
+
 /**
- * Decorates a command, attempting to login prior to execution
+ * Creates a new decorator for a command, attempting to login prior to execution
  *
  * Can be used to inject context/dependencies later
  */
-export function tryCommand<T, U>(
-    clientFactory: () => Promise<CawsClient>,
-    command: (client: ConnectedCawsClient, ...args: T[]) => U | Promise<U>
-): (...args: T[]) => Promise<U | undefined> {
-    return async (...args: T[]) => {
-        const client = await clientFactory()
+export function createCommandDecorator(
+    authProvider: CawsAuthenticationProvider,
+    clientFactory: () => Promise<CawsClient>
+): TryCommandDecorator {
+    return command => {
+        type Args = typeof command extends CawsCommand<infer T, infer _> ? T : never
 
-        if (!client.connected) {
-            const result = await login(CawsAuthenticationProvider.getInstance(), client)
+        return async (...args: Args) => {
+            const client = await clientFactory()
 
-            if (result === 'Succeeded' && client.connected) {
-                return command(client, ...args)
+            if (!client.connected) {
+                const result = await login(authProvider, client)
+
+                if (result === 'Succeeded' && client.connected) {
+                    return command(client, ...args)
+                }
+
+                if (result === 'Failed') {
+                    globals.window.showErrorMessage('AWS: Not connected to CODE.AWS')
+                }
+
+                return
             }
 
-            if (result === 'Failed') {
-                globals.window.showErrorMessage('AWS: Not connected to CODE.AWS')
-            }
-
-            return
+            return command(client, ...args)
         }
-
-        return command(client, ...args)
     }
 }
 
