@@ -14,6 +14,7 @@ import urlToOptions from 'got/dist/source/core/utils/url-to-options'
 import Request from 'got/dist/source/core'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger'
+import { logging } from '../utilities/decorators'
 import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
 
@@ -39,8 +40,9 @@ type FetcherResult = Promise<void> & {
     fsStream: fs.WriteStream
 }
 
+@logging
 export class HttpResourceFetcher implements ResourceFetcher {
-    private readonly logger: Logger = getLogger()
+    public readonly logger: Logger = getLogger()
 
     /**
      *

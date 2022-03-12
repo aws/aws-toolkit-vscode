@@ -34,7 +34,9 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
                         return info.message
                     }
 
-                    return `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`
+                    const nameLabel = info.name ? ` (${info.name})` : ''
+
+                    return `${info.timestamp} [${info.level.toUpperCase()}]:${nameLabel} ${info.message}`
                 })
             ),
             level: logLevel,
