@@ -5,6 +5,7 @@
 
 import { getMdeSsmEnv } from '../mde/mdeModel'
 import { CawsDevEnv, ConnectedCawsClient } from '../shared/clients/cawsClient'
+import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
 
 export interface SessionDetails {
@@ -62,9 +63,9 @@ export class CawsSessionManager {
         const host = `aws-mde-${env.developmentWorkspaceId}`
         const result = await new ChildProcess('ssh', ['-O', 'check', host]).run()
 
-        console.log(`check session stdout: ${result.stdout}`)
-        console.log(`check session stderr: ${result.stderr}`)
-        console.log(`check session exit: ${result.exitCode}`)
+        getLogger().debug(`CawsSessionManager: check session stdout: ${result.stdout}`)
+        getLogger().debug(`CawsSessionManager: check session stderr: ${result.stderr}`)
+        getLogger().debug(`CawsSessionManager: check session exit: ${result.exitCode}`)
 
         return result.exitCode !== 0
     }
