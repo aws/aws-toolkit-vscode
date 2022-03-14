@@ -8,7 +8,12 @@ import { CawsDevEnv, ConnectedCawsClient } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
 
-export interface SessionDetails {
+interface OldSessionDetails {
+    readonly type: 'old'
+}
+
+interface NewSessionDetails {
+    readonly type: 'new'
     readonly id: string
     readonly region: string
     readonly ssmPath: string
@@ -18,10 +23,34 @@ export interface SessionDetails {
     }
 }
 
+type SessionDetails = OldSessionDetails | NewSessionDetails
+
+/**
+ * Checks if the `ssh` daemon is still active or not.
+ */
+async function checkSession(env: DevEnvId): Promise<boolean> {
+    const host = `aws-mde-${env.developmentWorkspaceId}`
+    const result = await new ChildProcess('ssh', ['-O', 'check', host]).run()
+
+    getLogger().debug(`cawsSessionProvider: check session stdout: ${result.stdout}`)
+    getLogger().debug(`cawsSessionProvider: check session stderr: ${result.stderr}`)
+    getLogger().debug(`cawsSessionProvider: check session exit: ${result.exitCode}`)
+
+    return result.exitCode !== 0
+}
+
 type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
-export function cawsSessionProvider(client: ConnectedCawsClient, region: string, ssmPath: string): SessionProvider {
+export function createCawsSessionProvider(
+    client: ConnectedCawsClient,
+    region: string,
+    ssmPath: string
+): SessionProvider {
     return {
-        create: async (env: DevEnvId) => {
+        get: async (env: DevEnvId) => {
+            if (await checkSession(env)) {
+                return { type: 'old' }
+            }
+
             const session = await client.startDevEnvSession({
                 projectName: env.project.name,
                 organizationName: env.org.name,
@@ -33,6 +62,7 @@ export function cawsSessionProvider(client: ConnectedCawsClient, region: string,
             }
 
             return {
+                type: 'new',
                 region,
                 ssmPath,
                 id: session.sessionId,
@@ -43,105 +73,28 @@ export function cawsSessionProvider(client: ConnectedCawsClient, region: string,
 }
 
 interface SessionProvider {
-    create: (env: DevEnvId) => Promise<SessionDetails>
+    get: (env: DevEnvId) => Promise<SessionDetails>
     status?: (env: DevEnvId) => Promise<boolean> // stub, maybe not needed
 }
 
-interface ActiveSession {
-    readonly details: SessionDetails
-    readonly processes: ChildProcess[]
-}
+/**
+ * Creates a new {@link ChildProcess} class bound to a specific CAWS workspace. All instances of this
+ * derived class will have SSM session information injected as environment variables as-needed.
+ */
+export function createBoundChildProcess(provider: SessionProvider, env: DevEnvId): typeof ChildProcess {
+    type Run = ChildProcess['run']
 
-// Are there a better names than "manager" or "factory" or "provider"?
-// Feels overused, though I just can't think of a better name for these things.
-export class CawsSessionManager {
-    private readonly sessions: Map<string, ActiveSession> = new Map()
-
-    public constructor(private readonly provider: SessionProvider) {}
-
-    private async checkSession(env: DevEnvId): Promise<boolean> {
-        const host = `aws-mde-${env.developmentWorkspaceId}`
-        const result = await new ChildProcess('ssh', ['-O', 'check', host]).run()
-
-        getLogger().debug(`CawsSessionManager: check session stdout: ${result.stdout}`)
-        getLogger().debug(`CawsSessionManager: check session stderr: ${result.stderr}`)
-        getLogger().debug(`CawsSessionManager: check session exit: ${result.exitCode}`)
-
-        return result.exitCode !== 0
-    }
-
-    private async getSession(env: DevEnvId): Promise<SessionDetails> {
-        const prev = this.sessions.get(env.developmentWorkspaceId)
-
-        if (!prev) {
-            const sessionDetails = await this.provider.create(env)
-
-            this.sessions.set(env.developmentWorkspaceId, {
-                details: sessionDetails,
-                processes: [],
-            })
-
-            return sessionDetails
-        }
-
-        if (!(await this.checkSession(env))) {
-            for (const p of prev.processes) {
-                p.stop(true)
-            }
-            this.sessions.delete(env.developmentWorkspaceId)
-            return this.getSession(env)
-        }
-
-        return prev.details
-    }
-
-    public createProcess(env: DevEnvId): typeof ChildProcess {
-        type Run = ChildProcess['run']
-
-        const getSession = () => this.getSession(env)
-
-        const removeProcess = (process: ChildProcess) => {
-            const current = this.sessions.get(env.developmentWorkspaceId)
-
-            if (!current) {
-                return
+    return class SessionBoundProcess extends ChildProcess {
+        public override async run(...args: Parameters<Run>): ReturnType<Run> {
+            const options = args[0]
+            const session = await provider.get(env)
+            const envVars = session.type === 'new' ? getMdeSsmEnv(session.region, session.ssmPath, session) : {}
+            const spawnOptions = {
+                ...options?.spawnOptions,
+                env: { ...envVars, ...options?.spawnOptions?.env },
             }
 
-            const filtered = current.processes.filter(p => p !== process)
-            this.sessions.set(env.developmentWorkspaceId, { ...current, processes: filtered })
-        }
-
-        const addProcess = (process: ChildProcess) => {
-            this.sessions.get(env.developmentWorkspaceId)?.processes?.push(process)
-        }
-
-        return class SessionBoundProcess extends ChildProcess {
-            public override async run(...args: Parameters<Run>): ReturnType<Run> {
-                const options = args[0]
-                const session = await getSession()
-                const spawnOptions = {
-                    ...options?.spawnOptions,
-                    env: {
-                        ...getMdeSsmEnv(session.region, session.ssmPath, session),
-                        ...options?.spawnOptions?.env,
-                    },
-                }
-
-                const result = super.run({ ...options, spawnOptions })
-                const process = this.getProcess()
-
-                process.on('error', e => {
-                    removeProcess(this)
-                })
-
-                process.on('exit', (code, signal) => {
-                    removeProcess(this)
-                })
-
-                addProcess(this)
-
-                return result
-            }
+            return super.run({ ...options, spawnOptions })
         }
     }
 }

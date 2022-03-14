@@ -157,10 +157,12 @@ class SecretStorage implements vscode.SecretStorage {
 
     public async store(key: string, value: string): Promise<void> {
         this.storage[key] = value
+        this._onDidChange.fire({ key })
     }
 
     public async delete(key: string): Promise<void> {
         delete this.storage[key]
+        this._onDidChange.fire({ key })
     }
 }
 

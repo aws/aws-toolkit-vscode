@@ -22,7 +22,7 @@ import { ensureSsmCli } from '../mde/mdeModel'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
-import { cawsSessionProvider, CawsSessionManager } from '../caws/model'
+import { createBoundChildProcess, createCawsSessionProvider } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 
@@ -254,9 +254,8 @@ async function installVsix(
         return
     }
 
-    const provider = cawsSessionProvider(client, 'us-east-1', ssmPath.result)
-    const manager = new CawsSessionManager(provider)
-    const SessionProcess = manager.createProcess(env).extend({
+    const provider = createCawsSessionProvider(client, 'us-east-1', ssmPath.result)
+    const SessionProcess = createBoundChildProcess(provider, env).extend({
         timeout: progress.getToken(),
         onStdout: logOutput(`install: ${env.id}:`),
         onStderr: logOutput(`install (stderr): ${env.id}:`),

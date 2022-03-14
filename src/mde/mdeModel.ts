@@ -212,6 +212,15 @@ export async function ensureMdeSshConfig(): Promise<{
         ? `powershell.exe -ExecutionPolicy Bypass -File "${mdeScript}" %h`
         : `'${mdeScript}' '%h'`
 
+    // The "Control" parts of the config enable SSH multiplexing. This causes SSH commands against a host
+    // to use (or at least try to) a shared connection. One session becomes the primary, managing subsequent
+    // connections. Specifying "ControlPersist" creates a daemon that can live without the Toolkit. It can be
+    // communicated to using the "ControlPath" socket (or just `ssh` commands).
+    //
+    // A new SSM session only needs to be created if there is not an existing _working_ connection already in place.
+    // If one already exists, "ProxyCommand" is not executed since it is only needed to establish a connection, not
+    // maintain one.
+
     const mdeSshConfig = `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host aws-mde-*
@@ -243,7 +252,7 @@ Host aws-mde-*
     }
     const matches = r.stdout.match(/proxycommand.{0,1024}mde_connect(.ps1)?.{0,99}/i)
     const hasMdeProxyCommand = matches && matches[0].includes(proxyCommand)
-    const hasControlPersist = !!r.stdout.match(/controlpersist [0-9]+/)
+    const hasControlPersist = !!r.stdout.match(/controlpersist [0-9]{0, 99}/i)
 
     if (!hasMdeProxyCommand || !hasControlPersist) {
         if (matches && matches[0]) {

@@ -68,7 +68,7 @@ import { activate as activateDynamicResources } from './dynamicResources/activat
 import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
-import { activate as activeDevTools } from './dev/activation'
+import { activate as activateDevTools } from './dev/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
@@ -171,7 +171,7 @@ export async function activate(context: vscode.ExtensionContext) {
             cawsAuthProvider,
         }
 
-        activeDevTools(extContext)
+        activateDevTools(extContext)
 
         // Used as a command for decoration-only codelenses.
         context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))

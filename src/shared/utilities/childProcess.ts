@@ -335,14 +335,4 @@ export class ChildProcess {
         const pid = this.pid() > 0 ? `PID ${this.pid()}:` : '(not started)'
         return `${pid} [${this.command} ${noparams ? '...' : this.args.join(' ')}]`
     }
-
-    protected getProcess(): child_process.ChildProcess {
-        if (this.processErrors.length > 0) {
-            throw this.processErrors[0]
-        }
-        if (!this.childProcess) {
-            throw new Error('"getProcess" called prior to running the process')
-        }
-        return this.childProcess
-    }
 }
