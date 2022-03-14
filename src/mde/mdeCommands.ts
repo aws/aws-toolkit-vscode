@@ -278,7 +278,6 @@ export async function tryRestart(arn: string, restarter: () => Promise<void>): P
         // This is stubbed out until we fully implement a 'resume' workflow
         //await memento.with(arn, { previousRemoteWorkspace: undefined, pendingResume: false, canAutoConnect: false })
         if (!(err instanceof Error)) {
-            // hmmm
             throw new TypeError(`Received unknown error: ${JSON.stringify(err ?? 'null')}`)
         }
 
