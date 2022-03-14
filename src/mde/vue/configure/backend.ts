@@ -15,10 +15,11 @@ import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourc
 import { DefaultMdeEnvironmentClient, GetStatusResponse } from '../../../shared/clients/mdeEnvironmentClient'
 import { sleep } from '../../../shared/utilities/promiseUtilities'
 import { compare } from 'fast-json-patch'
-import { mdeConnectCommand, mdeDeleteCommand } from '../../mdeCommands'
+import { mdeConnectCommand, mdeDeleteCommand, tryRestart } from '../../mdeCommands'
 import { getLogger } from '../../../shared/logger/logger'
 import { parse } from '@aws-sdk/util-arn-parser'
 import globals from '../../../shared/extensionGlobals'
+import { checkUnsavedChanges } from '../../../shared/utilities/workspaceUtils'
 
 const localize = nls.loadMessageBundle()
 export interface DefinitionTemplate {
@@ -184,10 +185,6 @@ async function openDevfile(uri: string | vscode.Uri) {
     }
 }
 
-function checkUnsavedChanges(): boolean {
-    return vscode.workspace.textDocuments.some(doc => doc.isDirty)
-}
-
 async function toggleMdeState(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'status'> & { connected?: boolean }) {
     if (mde.status === 'RUNNING') {
         if (mde.connected && checkUnsavedChanges()) {
@@ -291,29 +288,4 @@ async function updateTags(arn: string, tags: Record<string, string | undefined>)
         deletedTags.length > 0 ? globals.mde.untagResource(arn, deletedTags) : Promise.resolve(),
         Object.keys(filteredTags).length > 0 ? globals.mde.tagResource(arn, filteredTags) : Promise.resolve(),
     ])
-}
-
-async function tryRestart(arn: string, restarter: () => Promise<void>) {
-    const canAutoConnect = new DefaultMdeEnvironmentClient().arn === arn
-    if (canAutoConnect && checkUnsavedChanges()) {
-        // TODO: show confirmation prompt instead?
-        vscode.window.showErrorMessage('Cannot stop current environment with unsaved changes')
-        throw new Error('Cannot stop environment with unsaved changes')
-    }
-
-    return restarter()
-        .then(() => {
-            // TODO: find way to open local workspace from remote window (or even better, open no workspace)
-            /*
-            const state = memento.get(arn)
-            if (state.localSessionHome) {
-                const home = vscode.Uri.parse(`vscode://folder/${state.localSessionHome}`)
-                vscode.commands.executeCommand('vscode.openFolder', home)
-            }
-            */
-        })
-        .catch(async err => {
-            //await memento.with(arn, { previousRemoteWorkspace: undefined, pendingResume: false, canAutoConnect: false })
-            throw err
-        })
 }

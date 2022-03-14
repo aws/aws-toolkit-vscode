@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { ExtContext } from '../shared/extensions'
 import { MdeDevfileCodeLensProvider } from '../shared/codelens/devfileCodeLensProvider'
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
-import { localize } from '../shared/utilities/messages'
-import { mdeConnectCommand, mdeDeleteCommand, tagMde, resumeEnvironments } from './mdeCommands'
+import { mdeConnectCommand, mdeDeleteCommand, tagMde, resumeEnvironments, tryRestart } from './mdeCommands'
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
@@ -21,6 +21,10 @@ import { MDE_RESTART_KEY } from './constants'
 import { initStatusBar } from './mdeStatusBarItem'
 import { getMdeEnvArn } from '../shared/vscode/env'
 import { createMdeWebview } from './vue/create/backend'
+import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
 /**
  * Activates MDE functionality.
@@ -57,12 +61,19 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ),
         vscode.workspace.onDidSaveTextDocument(async (doc: vscode.TextDocument) => {
             if (doc && devfileRegistry.getRegisteredItem(doc.fileName)) {
-                // TODO: placeholder - detect we are in environment and wire up update command
-                await vscode.window.showInformationMessage(
+                const resp = await vscode.window.showInformationMessage(
                     localize('AWS.mde.devfile.updatePrompt', 'Update the current environment with this Devfile?'),
                     localizedText.yes,
                     localizedText.no
                 )
+
+                if (arn && resp === localizedText.yes) {
+                    const client = new DefaultMdeEnvironmentClient()
+                    // XXX: hard-coded `projects` path, waiting for MDE to provide an environment variable
+                    // could also just parse the devfile...
+                    const location = path.relative('/projects', doc.uri.fsPath)
+                    await tryRestart(arn, () => client.startDevfile({ location }))
+                }
             }
         })
     )
