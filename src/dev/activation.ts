@@ -19,7 +19,7 @@ import * as manifest from '../../package.json'
 import { ensureDependencies } from '../mde/mdeModel'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
-import { createBoundChildProcess, createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
+import { createBoundProcess, createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { createClientFactory } from '../caws/activation'
@@ -257,7 +257,7 @@ async function installVsix(
     }
 
     const provider = createCawsSessionProvider(client, 'us-east-1', ssm, ssh)
-    const SessionProcess = createBoundChildProcess(provider, env).extend({
+    const SessionProcess = createBoundProcess(provider, env).extend({
         timeout: progress.getToken(),
         onStdout: logOutput(`install: ${env.id}:`),
         onStderr: logOutput(`install (stderr): ${env.id}:`),

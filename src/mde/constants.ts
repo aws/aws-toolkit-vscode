@@ -26,5 +26,5 @@ export const VSCODE_MDE_TAGS = {
 export const CREATE_ONLY_FIELDS: (keyof SettingsForm)[] = ['persistentStorage']
 /** Used in global state */
 export const MDE_RESTART_KEY = 'MDE_RESTART'
-
+/** MDE hostname prefix used in the Toolkit-managed local SSH config. */
 export const HOST_NAME_PREFIX = 'aws-mde-'

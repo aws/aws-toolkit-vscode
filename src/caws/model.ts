@@ -71,11 +71,7 @@ interface SessionProvider {
  * Creates a new {@link ChildProcess} class bound to a specific CAWS workspace. All instances of this
  * derived class will have SSM session information injected as environment variables as-needed.
  */
-export function createBoundChildProcess(
-    provider: SessionProvider,
-    env: DevEnvId,
-    useSshAgent = true
-): typeof ChildProcess {
+export function createBoundProcess(provider: SessionProvider, env: DevEnvId, useSshAgent = true): typeof ChildProcess {
     type Run = ChildProcess['run']
 
     async function getEnvVars(): Promise<NodeJS.ProcessEnv> {
