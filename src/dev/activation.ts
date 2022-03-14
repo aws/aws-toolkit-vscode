@@ -8,8 +8,6 @@ import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick, DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import { isValidResponse, Wizard, WIZARD_RETRY } from '../shared/wizards/wizard'
-import { createClientFactory } from '../caws/activation'
-import { createCommandDecorator } from '../caws/commands'
 
 // CAWS imports
 // Planning on splitting this file up.
@@ -22,9 +20,11 @@ import { ensureSsmCli } from '../mde/mdeModel'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
-import { createBoundChildProcess, createCawsSessionProvider } from '../caws/model'
+import { createBoundChildProcess, createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
+import { createClientFactory } from '../caws/activation'
+import { createCommandDecorator } from '../caws/commands'
 
 const menuOptions = {
     installVsix: {
@@ -226,7 +226,7 @@ async function installVsix(
 ): Promise<void> {
     const resp = await promptVsix(ctx, progress).then(r => r?.fsPath)
 
-    if (!isValidResponse(resp)) {
+    if (!resp) {
         return
     }
 
@@ -254,7 +254,12 @@ async function installVsix(
         return
     }
 
-    const provider = createCawsSessionProvider(client, 'us-east-1', ssmPath.result)
+    const sshPath = await SystemUtilities.findSshPath()
+    if (!sshPath) {
+        return
+    }
+
+    const provider = createCawsSessionProvider(client, 'us-east-1', ssmPath.result, sshPath)
     const SessionProcess = createBoundChildProcess(provider, env).extend({
         timeout: progress.getToken(),
         onStdout: logOutput(`install: ${env.id}:`),
@@ -262,11 +267,11 @@ async function installVsix(
         rejectOnErrorCode: true,
     })
 
-    const baseUri = `aws-mde-${env.id}`
+    const hostName = getHostNameFromEnv(env)
     const remoteVsix = `/projects/${path.basename(resp)}`
 
     progress.report({ message: 'Copying VSIX...' })
-    await new SessionProcess('scp', ['-v', resp, `mde-user@${baseUri}:${remoteVsix}`]).run()
+    await new SessionProcess('scp', ['-v', resp, `mde-user@${hostName}:${remoteVsix}`]).run()
 
     const EXT_ID = 'amazonwebservices.aws-toolkit-vscode'
     const EXT_PATH = `/home/mde-user/.vscode-server/extensions`
@@ -288,9 +293,9 @@ async function installVsix(
     ].join(' && ')
 
     progress.report({ message: 'Installing VSIX...' })
-    await new SessionProcess('ssh', [`${baseUri}`, '-v', installCmd]).run()
+    await new SessionProcess(sshPath, [`${hostName}`, '-v', installCmd]).run()
 
-    const workspaceUri = `vscode-remote://ssh-remote+${baseUri}/projects`
+    const workspaceUri = `vscode-remote://ssh-remote+${hostName}/projects`
     progress.report({ message: 'Launching instance...' })
     await new SessionProcess(vsc, ['--folder-uri', workspaceUri]).run()
 }

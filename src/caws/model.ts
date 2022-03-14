@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getMdeSsmEnv } from '../mde/mdeModel'
+import { HOST_NAME_PREFIX } from '../mde/constants'
+import { getMdeSsmEnv, SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../mde/mdeModel'
 import { CawsDevEnv, ConnectedCawsClient } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
@@ -28,9 +29,9 @@ type SessionDetails = OldSessionDetails | NewSessionDetails
 /**
  * Checks if the `ssh` daemon is still active or not.
  */
-async function checkSession(env: DevEnvId): Promise<boolean> {
-    const host = `aws-mde-${env.developmentWorkspaceId}`
-    const result = await new ChildProcess('ssh', ['-O', 'check', host]).run()
+async function checkSession(env: DevEnvId, sshPath: string): Promise<boolean> {
+    const host = getHostNameFromEnv(env)
+    const result = await new ChildProcess(sshPath, ['-O', 'check', host]).run()
 
     getLogger().debug(`cawsSessionProvider: check session stdout: ${result.stdout}`)
     getLogger().debug(`cawsSessionProvider: check session stderr: ${result.stderr}`)
@@ -43,11 +44,12 @@ type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
 export function createCawsSessionProvider(
     client: ConnectedCawsClient,
     region: string,
-    ssmPath: string
+    ssmPath: string,
+    sshPath = 'ssh'
 ): SessionProvider {
     return {
         get: async (env: DevEnvId) => {
-            if (await checkSession(env)) {
+            if (await checkSession(env, sshPath)) {
                 return { type: 'old' }
             }
 
@@ -81,14 +83,29 @@ interface SessionProvider {
  * Creates a new {@link ChildProcess} class bound to a specific CAWS workspace. All instances of this
  * derived class will have SSM session information injected as environment variables as-needed.
  */
-export function createBoundChildProcess(provider: SessionProvider, env: DevEnvId): typeof ChildProcess {
+export function createBoundChildProcess(
+    provider: SessionProvider,
+    env: DevEnvId,
+    useSshAgent = true
+): typeof ChildProcess {
     type Run = ChildProcess['run']
+
+    async function getEnvVars(): Promise<NodeJS.ProcessEnv> {
+        const session = await provider.get(env)
+
+        if (session.type === 'old') {
+            return {}
+        }
+
+        const vars = getMdeSsmEnv(session.region, session.ssmPath, session)
+
+        return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
+    }
 
     return class SessionBoundProcess extends ChildProcess {
         public override async run(...args: Parameters<Run>): ReturnType<Run> {
             const options = args[0]
-            const session = await provider.get(env)
-            const envVars = session.type === 'new' ? getMdeSsmEnv(session.region, session.ssmPath, session) : {}
+            const envVars = await getEnvVars()
             const spawnOptions = {
                 ...options?.spawnOptions,
                 env: { ...envVars, ...options?.spawnOptions?.env },
@@ -97,4 +114,8 @@ export function createBoundChildProcess(provider: SessionProvider, env: DevEnvId
             return super.run({ ...options, spawnOptions })
         }
     }
+}
+
+export function getHostNameFromEnv(env: DevEnvId): string {
+    return `${HOST_NAME_PREFIX}${env.developmentWorkspaceId}`
 }

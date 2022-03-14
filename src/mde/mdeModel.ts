@@ -14,7 +14,7 @@ import { GitExtension } from '../shared/extensions/git'
 import * as mde from '../shared/clients/mdeClient'
 import { getStringHash } from '../shared/utilities/textUtilities'
 import { readFileAsString } from '../shared/filesystemUtilities'
-import { VSCODE_MDE_TAGS } from './constants'
+import { HOST_NAME_PREFIX, VSCODE_MDE_TAGS } from './constants'
 import { SystemUtilities } from '../shared/systemUtilities'
 import { ChildProcess, ChildProcessResult } from '../shared/utilities/childProcess'
 import { getIdeProperties } from '../shared/extensionUtilities'
@@ -165,6 +165,11 @@ export async function ensureConnectScript(context = globals.context): Promise<st
     }
 }
 
+function getSshConfigPath(): string {
+    const sshConfigDir = path.join(SystemUtilities.getHomeDirectory(), '.ssh')
+    return path.join(sshConfigDir, 'config')
+}
+
 /**
  * Checks if the "aws-mde-*" SSH config hostname pattern is working, else prompts user to add it.
  *
@@ -221,9 +226,10 @@ export async function ensureMdeSshConfig(): Promise<{
     // If one already exists, "ProxyCommand" is not executed since it is only needed to establish a connection, not
     // maintain one.
 
+    const configHostName = `${HOST_NAME_PREFIX}*`
     const mdeSshConfig = `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-Host aws-mde-*
+Host ${configHostName}
     ForwardAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}
@@ -240,7 +246,7 @@ Host aws-mde-*
         }
     }
     // Check if the "aws-mde-*" hostname pattern is working.
-    const proc = new ChildProcess(ssh, ['-G', 'aws-mde-test'])
+    const proc = new ChildProcess(ssh, ['-G', `${HOST_NAME_PREFIX}test`])
     const r = await proc.run()
     if (r.exitCode !== 0) {
         // Should never happen...
@@ -252,23 +258,24 @@ Host aws-mde-*
     }
     const matches = r.stdout.match(/proxycommand.{0,1024}mde_connect(.ps1)?.{0,99}/i)
     const hasMdeProxyCommand = matches && matches[0].includes(proxyCommand)
-    const hasControlPersist = !!r.stdout.match(/controlpersist [0-9]{0, 99}/i)
+    const hasControlPersist = !!r.stdout.match(/controlpersist [0-9]{1,99}/i)
 
     if (!hasMdeProxyCommand || !hasControlPersist) {
         if (matches && matches[0]) {
-            getLogger().warn('MDE: SSH config: found old/outdated aws-mde-* section:\n%O', matches[0])
+            getLogger().warn(`MDE: SSH config: found old/outdated "${configHostName}" section:\n%O`, matches[0])
             const oldConfig = localize(
                 'AWS.mde.error.oldConfig',
-                'Your ~/.ssh/config has a "aws-mde-*" section that might be out of date. Delete it, then try again.'
+                'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
+                configHostName
             )
             return { ok: false, err: 'old config', msg: oldConfig }
         }
 
         const confirmTitle = localize(
             'AWS.mde.confirm.installSshConfig.title',
-            '{0} Toolkit will add host "aws-mde-*" to ~/.ssh/config. This allows you to use SSH with your {1} MDE environments.',
+            '{0} Toolkit will add host {1} to ~/.ssh/config. This allows you to use SSH with your {0} MDE environments.',
             getIdeProperties().company,
-            getIdeProperties().company
+            configHostName
         )
         const confirmText = localize('AWS.mde.confirm.installSshConfig.button', 'Update SSH config')
         const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
@@ -276,10 +283,9 @@ Host aws-mde-*
             return { ok: false, err: 'user canceled', msg: '' }
         }
 
-        const sshConfigDir = path.join(SystemUtilities.getHomeDirectory(), '.ssh')
-        const sshConfigPath = path.join(sshConfigDir, 'config')
+        const sshConfigPath = getSshConfigPath()
         try {
-            fs.mkdirpSync(sshConfigDir)
+            fs.mkdirpSync(path.dirname(sshConfigPath))
             fs.appendFileSync(sshConfigPath, mdeSshConfig)
         } catch (e) {
             getLogger().error('ensureMdeSshConfig: failed to write: %O', sshConfigPath)
@@ -332,21 +338,24 @@ export const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
  */
 export async function startSshAgent(): Promise<string | undefined> {
     if (process.env[SSH_AGENT_SOCKET_VARIABLE] !== undefined) {
-        return
+        return process.env[SSH_AGENT_SOCKET_VARIABLE]
     }
 
     getLogger().info('Starting SSH agent...')
 
     try {
-        // TODO: if users are using
         if (process.platform === 'win32') {
+            const runningMessage = 'Already running'
             // First check if it's running
             // if not, try to start it
             // if that fails, try to set the start-up type to automatic
             // if that fails, then no agent
             const script = `
 $info = Get-Service ssh-agent
-if ($info.Status -eq "Running") { exit 0 }
+if ($info.Status -eq "Running") { 
+    echo "${runningMessage}"
+    exit 0 
+}
 Start-Service ssh-agent
 if (!$?) {
     Get-Service -Name ssh-agent | Set-Service -StartupType Manual
@@ -354,10 +363,16 @@ if (!$?) {
 }
 exit $?
 `
-            await new ChildProcess('powershell.exe', ['Invoke-Expression', script]).run()
-            // TODO: we should verify that the agent is active (or not) prior to running this codepath
-            // On unix machines the environment variable is set, but on windows we might have to execute something to check
-            vscode.window.showInformationMessage(localize('AWS.mde.ssh-agent.start', 'The SSH agent has been started.'))
+            const result = await new ChildProcess('powershell.exe', ['Invoke-Expression', script]).run({
+                rejectOnErrorCode: true,
+            })
+
+            if (!result.stdout.includes(runningMessage)) {
+                vscode.window.showInformationMessage(
+                    localize('AWS.mde.ssh-agent.start', 'The SSH agent has been started.')
+                )
+            }
+
             return
         }
 
@@ -400,7 +415,14 @@ export async function connectToMde(
 
     const hasSshConfig = await ensureMdeSshConfig()
     if (!hasSshConfig.ok) {
-        if (hasSshConfig.msg) {
+        if (hasSshConfig.err === 'old config') {
+            const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
+            vscode.window.showWarningMessage(hasSshConfig.msg, openConfig).then(resp => {
+                if (resp === openConfig) {
+                    vscode.window.showTextDocument(vscode.Uri.file(getSshConfigPath()))
+                }
+            })
+        } else if (hasSshConfig.msg) {
             showViewLogsMessage(hasSshConfig.msg, window)
         } else if (hasSshConfig.err !== 'user canceled') {
             showMissingToolMsg('ssh')
@@ -421,17 +443,21 @@ export async function connectToMde(
     // temporary until we can dynamically find the directory
     const projectDir = '/projects'
 
-    const cmd = new ChildProcess(vsc, ['--folder-uri', `vscode-remote://ssh-remote+aws-mde-${args.id}${projectDir}`], {
-        spawnOptions: {
-            env: getMdeSsmEnv(region, ssmPath.result, session),
-        },
-    })
+    const cmd = new ChildProcess(
+        vsc,
+        ['--folder-uri', `vscode-remote://ssh-remote+${HOST_NAME_PREFIX}${args.id}${projectDir}`],
+        {
+            spawnOptions: {
+                env: getMdeSsmEnv(region, ssmPath.result, session),
+            },
+        }
+    )
 
     const settings = new DefaultSettingsConfiguration()
     settings.ensureToolkitInVscodeRemoteSsh()
 
     getLogger().debug(
-        `AWS_SSM_CLI='${ssmPath.result}' AWS_REGION='${region}' AWS_MDE_SESSION='${session.id}' AWS_MDE_STREAMURL='${session.accessDetails.streamUrl}' AWS_MDE_TOKEN='${session.accessDetails.tokenValue}' ssh 'aws-mde-${args.id}'`
+        `AWS_SSM_CLI='${ssmPath.result}' AWS_REGION='${region}' AWS_MDE_SESSION='${session.id}' AWS_MDE_STREAMURL='${session.accessDetails.streamUrl}' AWS_MDE_TOKEN='${session.accessDetails.tokenValue}' ssh '${HOST_NAME_PREFIX}${args.id}'`
     )
     getLogger().debug(
         `"${ssmPath.result}" "{\\"streamUrl\\":\\"${session.accessDetails.streamUrl}\\",\\"tokenValue\\":\\"${session.accessDetails.tokenValue}\\",\\"sessionId\\":\\"\\"}" "${region}" "StartSession"`

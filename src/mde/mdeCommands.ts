@@ -19,7 +19,7 @@ import { DeleteEnvironmentResponse, TagMap } from '../../types/clientmde'
 import { SystemUtilities } from '../shared/systemUtilities'
 import * as mdeModel from './mdeModel'
 import { localizedDelete } from '../shared/localizedText'
-import { MDE_RESTART_KEY } from './constants'
+import { HOST_NAME_PREFIX, MDE_RESTART_KEY } from './constants'
 import { parse } from '@aws-sdk/util-arn-parser'
 import globals from '../shared/extensionGlobals'
 
@@ -197,7 +197,7 @@ export async function createMdeSshCommand(
     }
 
     const sshArgs = [
-        `aws-mde-${mdeEnv.id}`,
+        `${HOST_NAME_PREFIX}${mdeEnv.id}`,
         `${useAgent ? '-A' : ''}`,
         '-o',
         'StrictHostKeyChecking=accept-new',

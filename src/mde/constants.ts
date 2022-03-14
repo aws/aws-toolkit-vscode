@@ -26,3 +26,5 @@ export const VSCODE_MDE_TAGS = {
 export const CREATE_ONLY_FIELDS: (keyof SettingsForm)[] = ['persistentStorage']
 /** Used in global state */
 export const MDE_RESTART_KEY = 'MDE_RESTART'
+
+export const HOST_NAME_PREFIX = 'aws-mde-'
