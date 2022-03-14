@@ -224,11 +224,15 @@ export async function ensureMdeSshConfig(sshPath: string): Promise<{
     // If one already exists, "ProxyCommand" is not executed since it is only needed to establish a connection, not
     // maintain one.
 
+    // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
+    // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
+
     const configHostName = `${HOST_NAME_PREFIX}*`
     const mdeSshConfig = `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host ${configHostName}
     ForwardAgent yes
+    AddKeysToAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}
     ControlMaster auto
