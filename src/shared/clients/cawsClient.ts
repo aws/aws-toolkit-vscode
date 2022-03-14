@@ -18,6 +18,9 @@ import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { MDE_START_TIMEOUT } from './mdeClient'
 import * as nls from 'vscode-nls'
 import { showMessageWithCancel } from '../utilities/messages'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
+import { pageableToCollection } from '../utilities/collectionUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -33,29 +36,36 @@ export const cawsHelpUrl = `https://${cawsHostname}/help`
 /** CAWS-MDE developer environment. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CawsDevEnv extends caws.DevelopmentWorkspaceSummary {
+    readonly type: 'env'
     readonly id: string // Alias of developmentWorkspaceId.
+    readonly name: string
     readonly description?: string
-    readonly org: CawsOrg
-    readonly project: CawsProject
+    readonly org: Pick<CawsOrg, 'name'>
+    readonly project: Pick<CawsProject, 'name'>
 }
 /** CAWS-MDE developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspaceOutput {}
 
 export interface CawsOrg extends caws.OrganizationSummary {
+    readonly type: 'org'
     readonly id: string // TODO: why doesn't OrganizationSummary have this already?
     readonly name: string
 }
 export interface CawsProject extends caws.ProjectSummary {
-    readonly org: CawsOrg
+    readonly type: 'project'
+    readonly org: Pick<CawsOrg, 'name'>
     readonly id: string // TODO: why doesn't ProjectSummary have this already?
     readonly name: string
 }
 export interface CawsRepo extends caws.SourceRepositorySummary {
-    readonly org: CawsOrg
-    readonly project: CawsProject
+    readonly type: 'repo'
+    readonly org: Pick<CawsOrg, 'name'>
+    readonly project: Pick<CawsProject, 'name'>
     readonly name: string
 }
+
+export type CawsResource = CawsOrg | CawsProject | CawsRepo | CawsDevEnv
 
 async function createCawsClient(
     authCookie: string | undefined,
@@ -67,7 +77,10 @@ async function createCawsClient(
         // apiConfig is internal and not in the TS declaration file
         apiConfig: apiConfig,
         region: regionCode,
-        // credentials: credentials,
+        // XXX: remove when Bearer token auth is added
+        // The SDK has logic to automatically throw if no credentials are set
+        // despite the service not requiring credentials.
+        credentials: { accessKeyId: 'xxx', secretAccessKey: 'xxx' },
         correctClockSkew: true,
         endpoint: endpoint,
     } as ServiceConfigurationOptions)) as caws
@@ -127,7 +140,37 @@ async function gqlRequest<T>(
     }
 }
 
-export class CawsClient {
+// CAWS client has two variants: 'logged-in' and 'not logged-in'
+// The 'not logged-in' variant is a subtype and has restricted functionality
+// These characteristics appear in the Smithy model, but the SDK codegen is unable to model this
+
+export interface DisconnectedCawsClient extends Pick<CawsClientInternal, 'verifySession' | 'setCredentials'> {
+    readonly connected: false
+}
+
+export interface ConnectedCawsClient extends ClassToInterfaceType<CawsClientInternal> {
+    readonly connected: true
+}
+
+export type CawsClient = ConnectedCawsClient | DisconnectedCawsClient
+export type CawsClientFactory = () => Promise<CawsClient>
+
+/**
+ * Factory to create a new `CawsClient`. Call `onCredentialsChanged()` before making requests.
+ */
+export async function createClient(
+    settings: SettingsConfiguration,
+    regionCode: string = cawsRegion,
+    endpoint: string = cawsEndpoint,
+    authCookie?: string
+): Promise<CawsClient> {
+    const sdkClient = await createCawsClient(authCookie, 'xxx', regionCode, endpoint)
+    const gqlClient = createGqlClient('xxx', authCookie)
+    const c = new CawsClientInternal(settings, regionCode, endpoint, sdkClient, gqlClient, authCookie)
+    return c
+}
+
+class CawsClientInternal {
     private username: string | undefined
     private readonly log: logger.Logger
     private apiKey: string
@@ -144,46 +187,22 @@ export class CawsClient {
         this.apiKey = this.settings.readDevSetting('aws.dev.caws.apiKey', 'string', true) ?? ''
     }
 
-    /**
-     * Factory to create a new `CawsClient`. Call `onCredentialsChanged()` before making requests.
-     */
-    public static async create(
-        settings: SettingsConfiguration,
-        regionCode: string = cawsRegion,
-        endpoint: string = cawsEndpoint,
-        authCookie?: string
-    ): Promise<CawsClient> {
-        CawsClient.assertExtInitialized()
-        const sdkClient = await createCawsClient(authCookie, 'xxx', regionCode, endpoint)
-        const gqlClient = createGqlClient('xxx', authCookie)
-        const c = new CawsClient(settings, regionCode, endpoint, sdkClient, gqlClient, authCookie)
-        return c
-    }
-
-    private static assertExtInitialized() {
-        if (!globals.sdkClientBuilder) {
-            throw Error('ext.sdkClientBuilder must be initialized first')
-        }
+    public get connected(): boolean {
+        return !!(this.authCookie && this.username)
     }
 
     /**
-     * Rebuilds/reconnects CAWS clients with new credentials (or undefined to
-     * disconnect/logout).
+     * Rebuilds/reconnects CAWS clients with new credentials
      *
-     * @param username   CODE.AWS username, from `verifySession()`.
-     * @param authCookie   User secret, undefined means disconnected/logout.
+     * @param username   CAWS username
+     * @param authCookie   User secret
      * @returns
      */
-    public async onCredentialsChanged(username: string | undefined, authCookie: string | undefined) {
-        CawsClient.assertExtInitialized()
-        this.authCookie = authCookie
+    public async setCredentials(username: string, authCookie: string) {
         this.username = username
+        this.authCookie = authCookie
         this.sdkClient = await createCawsClient(authCookie, this.apiKey, this.regionCode, this.endpoint)
         this.gqlClient = createGqlClient(this.apiKey, this.authCookie)
-    }
-
-    public connected(): boolean {
-        return !!(this.authCookie && this.username)
     }
 
     public user(): string {
@@ -193,9 +212,11 @@ export class CawsClient {
         return this.username
     }
 
-    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean = false, defaultVal?: T): Promise<T> {
+    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false, defaultVal?: T): Promise<T>
+    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true): Promise<T | undefined>
+    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T | undefined> {
         const log = this.log
-        return new Promise<T>((resolve, reject) => {
+        return new Promise<T | undefined>((resolve, reject) => {
             req.send(function (e, data) {
                 const r = req as any
                 if (e) {
@@ -245,7 +266,7 @@ export class CawsClient {
                     if (silent && defaultVal) {
                         resolve(defaultVal)
                     } else if (silent) {
-                        resolve({ length: 0, items: undefined } as unknown as T)
+                        resolve(undefined)
                     } else {
                         reject(e)
                     }
@@ -282,7 +303,7 @@ export class CawsClient {
         }
 
         const c = this.sdkClient
-        const token = await this.call(c.createAccessToken(args))
+        const token = await this.call(c.createAccessToken(args), false)
         return token
     }
 
@@ -293,9 +314,9 @@ export class CawsClient {
     public async verifySession(): Promise<caws.VerifySessionResponse | undefined> {
         if (!useGraphql) {
             const c = this.sdkClient
-            const o = await this.call(c.verifySession())
+            const o = await this.call(c.verifySession(), false)
             if (o?.identity) {
-                const person = await this.call(c.getPerson({ id: o.identity }))
+                const person = await this.call(c.getPerson({ id: o.identity }), false)
                 this.username = person.userName
             }
             return o
@@ -331,153 +352,127 @@ export class CawsClient {
         return o
     }
 
-    public async *cawsItemsToQuickpickIter(
-        kind: 'org' | 'project' | 'repo' | 'env'
-    ): AsyncIterableIterator<vscode.QuickPickItem> {
-        if (kind === 'org') {
-            yield* this.mapToQuickpick(this.listOrgs())
-        } else if (kind === 'project') {
-            yield* this.mapToQuickpick(this.listProjects(this.user()))
-        } else if (kind === 'env') {
-            yield* this.mapToQuickpick(this.listDevEnvs(this.user()))
-        } else {
-            yield* this.mapToQuickpick(this.listRepos(this.user()))
-        }
-    }
-
     /**
      * Gets a list of all orgs for the current CAWS user.
      */
-    public async *listOrgs(): AsyncIterableIterator<CawsOrg> {
-        const c = this.sdkClient
-        let orgs: caws.ListOrganizationsOutput | undefined
-        const args: caws.ListOrganizationsInput = {}
-        if (useGraphql) {
-            orgs = await gqlRequest<caws.ListOrganizationsOutput>(
-                this.gqlClient,
-                `query ($input: ListOrganizationsInput!) {
-                    listOrganizations(input: $input) {
-                        items {
-                            name
-                            displayName
-                            description
-                            region
-                        }
-                    }
-                }`,
-                args
-            )
-        } else {
-            orgs = await this.call(c.listOrganizations({}), true)
+    public listOrgs(): AsyncCollection<CawsOrg[]> {
+        function asCawsOrg(org: caws.OrganizationSummary & { id?: string }): CawsOrg {
+            return { id: '', type: 'org', name: org.name ?? 'unknown', ...org }
         }
-        if (!orgs || !orgs.items) {
-            return
-        }
-        for (const org of orgs.items) {
-            if (org.name) {
-                yield {
-                    ...org,
-                    id: '', // TODO: not provided by CAWS yet.
-                    name: org.name,
-                }
-            }
-        }
+
+        const requester = async (request: caws.ListOrganizationsInput) =>
+            (await this.call(this.sdkClient.listOrganizations(request), true)) ?? { items: [] }
+        const collection = pageableToCollection(requester, {}, 'nextToken', 'items')
+        return collection.map(summaries => summaries?.map(asCawsOrg) ?? [])
     }
 
     /**
      * Gets a list of all projects for the given CAWS user.
      */
-    public async *listProjects(userid: string): AsyncIterableIterator<CawsProject> {
-        for await (const org of this.listOrgs()) {
-            if (!org.name) {
-                continue
-            }
-            let projs: caws.ListProjectsOutput | undefined
-            const args: caws.ListProjectsInput = { organizationName: org.name }
-            if (useGraphql) {
-                projs = await gqlRequest<caws.ListProjectsOutput>(
-                    this.gqlClient,
-                    `query ($input: ListProjectsInput!) {
-                        listProjects(input: $input) {
-                            items {
-                                name
-                                description
-                                displayName
-                                templateArn
-                            }
-                        }
-                    }`,
-                    args
-                )
-            } else {
-                projs = await this.call(this.sdkClient.listProjects(args), true)
-            }
-            if (!projs) {
-                continue
-            }
+    public listProjects(request: caws.ListProjectsInput): AsyncCollection<CawsProject[]> {
+        const requester = async (request: caws.ListProjectsInput) =>
+            (await this.call(this.sdkClient.listProjects(request), true)) ?? { items: [] }
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
-            for (const p of projs.items ?? []) {
-                if (p.name) {
-                    yield {
-                        ...p,
-                        id: '', // TODO: not provided by CAWS yet.
-                        org: org,
-                        name: p.name,
-                    }
-                }
-            }
+        return collection.map(
+            summaries =>
+                summaries?.map(s => ({
+                    type: 'project',
+                    id: '',
+                    org: { name: request.organizationName },
+                    name: s.name ?? 'unknown',
+                    ...s,
+                })) ?? []
+        )
+    }
+
+    /**
+     * CAWS-MDE
+     * Gets a flat list of all workspaces for the given CAWS project.
+     */
+    public listDevEnvs(proj: CawsProject): AsyncCollection<CawsDevEnv[]> {
+        const initRequest = { organizationName: proj.org.name, projectName: proj.name }
+        const requester = async (request: caws.ListDevelopmentWorkspaceInput) =>
+            (await this.call(this.sdkClient.listDevelopmentWorkspace(request), true)) ?? { items: [] }
+        const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
+
+        const makeDescription = (env: caws.DevelopmentWorkspaceSummary) => {
+            return env.repositories
+                .map(r => {
+                    const pr = r.pullRequestNumber ? `#${r.pullRequestNumber}` : ''
+                    return `${r.repositoryName}:${r.branchName ?? ''} ${pr}`
+                })
+                .join(', ')
         }
+
+        return collection.map(envs =>
+            envs.map(env => ({
+                type: 'env',
+                id: env.developmentWorkspaceId,
+                name: env.developmentWorkspaceId,
+                org: proj.org,
+                project: proj,
+                description: makeDescription(env),
+                ...env,
+            }))
+        )
     }
 
     /**
      * Gets a flat list of all repos for the given CAWS user.
      */
-    public async *listRepos(userid: string): AsyncIterableIterator<CawsRepo> {
-        const c = this.sdkClient
-        const projs = this.listProjects(userid)
-        for await (const p of projs) {
-            if (!p.org.name || !p.name) {
-                continue
-            }
-            let repos: caws.ListProjectsOutput | undefined
-            const args: caws.ListSourceRepositoriesInput = {
-                organizationName: p.org.name,
-                projectName: p.name,
-            }
-            if (useGraphql) {
-                repos = await gqlRequest<caws.ListSourceRepositoriesOutput>(
-                    this.gqlClient,
-                    `query ($input: ListSourceRepositoriesInput!) {
-                        listSourceRepositories(input: $input) {
-                            items {
-                                id
-                                name
-                                creationDate
-                                defaultBranch
-                                description
-                                lastUpdatedTime
-                                projectName
-                            }
-                        }
-                    }`,
-                    args
-                )
-            } else {
-                repos = await this.call(c.listSourceRepositories(args), true)
-            }
+    public listRepos(request: caws.ListSourceRepositoriesInput): AsyncCollection<CawsRepo[]> {
+        const requester = async (request: caws.ListSourceRepositoriesInput) =>
+            (await this.call(this.sdkClient.listSourceRepositories(request), true)) ?? { items: [] }
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
+        return collection.map(
+            summaries =>
+                summaries?.map(s => ({
+                    type: 'repo',
+                    id: '',
+                    org: { name: request.organizationName },
+                    project: { name: request.projectName },
+                    name: s.name ?? 'unknown',
+                    ...s,
+                })) ?? []
+        )
+    }
 
-            // TODO: Yield all as one array instead of individuals?
-            // Maps 1:1 with API calls
-            for (const r of repos?.items ?? []) {
-                if (r.name) {
-                    yield {
-                        org: p.org,
-                        project: p,
-                        name: r.name,
-                        ...r,
-                    }
+    /**
+     * Lists ALL of the given resource in the current account
+     */
+    public listResources(resourceType: 'org'): AsyncCollection<CawsOrg[]>
+    public listResources(resourceType: 'project'): AsyncCollection<CawsProject[]>
+    public listResources(resourceType: 'repo'): AsyncCollection<CawsRepo[]>
+    public listResources(resourceType: 'env'): AsyncCollection<CawsDevEnv[]>
+    public listResources(resourceType: CawsResource['type']): AsyncCollection<CawsResource[]> {
+        // Don't really want to expose this apart of the `AsyncCollection` API yet
+        // The semantics of concatenating async iterables is rather ambiguous
+        // For example, an array of async iterables can be joined either in-order or out-of-order.
+        // In-order concatenations only makes sense for finite iterables, though I'm unaware of any
+        // convention to declare an iterable to be finite.
+        function mapInner<T, U>(
+            collection: AsyncCollection<T[]>,
+            fn: (element: T) => AsyncCollection<U[]>
+        ): AsyncCollection<U[]> {
+            return toCollection(async function* () {
+                for await (const element of await collection.promise()) {
+                    yield* await Promise.all(element.map(e => fn(e).flatten().promise()))
                 }
-            }
+            })
+        }
+
+        switch (resourceType) {
+            case 'org':
+                return this.listOrgs()
+            case 'project':
+                return mapInner(this.listResources('org'), o => this.listProjects({ organizationName: o.name }))
+            case 'repo':
+                return mapInner(this.listResources('project'), p =>
+                    this.listRepos({ projectName: p.name, organizationName: p.org.name })
+                )
+            case 'env':
+                return mapInner(this.listResources('project'), p => this.listDevEnvs(p))
         }
     }
 
@@ -486,7 +481,7 @@ export class CawsClient {
         if (!args.ideRuntimes || args.ideRuntimes.length === 0) {
             throw Error('missing ideRuntimes')
         }
-        const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args))
+        const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
         const env = await this.getDevEnv({
             developmentWorkspaceId: r.developmentWorkspaceId,
             organizationName: args.organizationName,
@@ -511,7 +506,7 @@ export class CawsClient {
     public async startDevEnv(
         args: caws.StartDevelopmentWorkspaceInput
     ): Promise<caws.StartDevelopmentWorkspaceOutput | undefined> {
-        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args))
+        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args), false)
         return r
     }
 
@@ -519,7 +514,7 @@ export class CawsClient {
     public async startDevEnvSession(
         args: caws.StartSessionDevelopmentWorkspaceInput
     ): Promise<caws.StartSessionDevelopmentWorkspaceOutput | undefined> {
-        const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args))
+        const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args), false)
         return r
     }
 
@@ -533,47 +528,18 @@ export class CawsClient {
         const a = { ...args }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
-        const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a))
+        const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a), false)
         const desc = r.labels?.join(', ')
 
-        const p = await this.call(
-            this.sdkClient.getProject({
-                name: args.projectName,
-                organizationName: args.organizationName,
-            })
-        )
-        const o = await this.call(
-            this.sdkClient.getOrganization({
-                name: args.organizationName,
-            })
-        )
-        if (!o.name) {
-            this.log.error('getDevEnv: missing fields on org: %O', o)
-            throw Error('org response is missing fields')
-        }
-        if (!p.name) {
-            this.log.error('getDevEnv: missing fields on project: %O', p)
-            throw Error('project response is missing fields')
-        }
-        const org = {
-            id: o.id ?? '',
-            ...o,
-            name: o.name,
-        }
-        const proj = {
-            id: p.id ?? '',
-            ...p,
-            name: p.name,
-            org: org,
-        }
-
         return {
+            type: 'env',
             id: a.developmentWorkspaceId,
+            name: a.developmentWorkspaceId,
             developmentWorkspaceId: a.developmentWorkspaceId,
             description: desc,
+            org: { name: args.organizationName },
+            project: { name: args.projectName },
             ...r,
-            org: org,
-            project: proj,
         }
     }
 
@@ -581,45 +547,8 @@ export class CawsClient {
     public async deleteDevEnv(
         args: caws.DeleteDevelopmentWorkspaceInput
     ): Promise<caws.DeleteDevelopmentWorkspaceOutput | undefined> {
-        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args))
+        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
         return r
-    }
-
-    /**
-     * CAWS-MDE
-     * Gets a flat list of all workspaces for the given CAWS user.
-     */
-    public async *listDevEnvs(userid: string): AsyncIterableIterator<CawsDevEnv> {
-        const c = this.sdkClient
-        const projs = this.listProjects(userid)
-        for await (const p of projs) {
-            if (!p.org.name || !p.name) {
-                continue
-            }
-            const args: caws.ListDevelopmentWorkspaceInput = {
-                organizationName: p.org.name,
-                projectName: p.name,
-            }
-            const envs = await this.call(c.listDevelopmentWorkspace(args), true)
-
-            for (const r of envs?.items ?? []) {
-                if (r.developmentWorkspaceId) {
-                    const desc = r.repositories
-                        ?.map(o => {
-                            const pr = o.pullRequestNumber ? `#${o.pullRequestNumber}` : ''
-                            return `${o.repositoryName}:${o.branchName ?? ''} ${pr}`
-                        })
-                        .join(', ')
-                    yield {
-                        id: r.developmentWorkspaceId,
-                        description: desc,
-                        org: p.org,
-                        project: p,
-                        ...r,
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -698,67 +627,8 @@ export class CawsClient {
         })
     }
 
-    /**
-     * Maps CawsFoo objects to `vscode.QuickPickItem` objects.
-     */
-    public async *mapToQuickpick(
-        items:
-            | AsyncIterableIterator<CawsRepo>
-            | AsyncIterableIterator<CawsProject>
-            | AsyncIterableIterator<CawsOrg>
-            | AsyncIterableIterator<CawsDevEnv>
-    ): AsyncIterableIterator<vscode.QuickPickItem> {
-        for await (const o of items) {
-            let label: string
-            let desc = o.id
-            if ((o as CawsDevEnv).developmentWorkspaceId) {
-                const repo1 = (o as CawsDevEnv).repositories[0]?.repositoryName
-                label = `${(o as CawsDevEnv).org.name} / ${(o as CawsDevEnv).project.name} / ${repo1}`
-                desc = `${(o as CawsDevEnv).lastUpdatedTime.toISOString()} ${(o as CawsDevEnv).ide} ${
-                    (o as CawsDevEnv).status
-                }`
-            } else if ((o as CawsRepo).project) {
-                label = this.createRepoLabel(o as CawsRepo)
-            } else if ((o as CawsProject).org) {
-                label = `${(o as CawsProject).org.name} / ${(o as CawsProject).name}`
-            } else {
-                label = `${(o as CawsOrg).name}`
-            }
-
-            yield {
-                label: label,
-                detail: o.description,
-                description: desc,
-                val: o, // Extra state
-            } as vscode.QuickPickItem
-        }
-    }
-
     public createRepoLabel(r: CawsRepo): string {
         return `${r.org.name} / ${r.project.name} / ${r.name}`
-    }
-
-    /**
-     * Builds a web URL from the given CAWS object.
-     */
-    public toCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
-        const prefix = `https://${cawsHostname}/organizations`
-        let url: string
-        if ((o as CawsRepo).project) {
-            const r = o as CawsRepo
-            url = `${prefix}/${r.org.name}/projects/${r.project.name}/source-repositories/${r.name}/view`
-        } else if ((o as CawsProject).org) {
-            const p = o as CawsProject
-            url = `${prefix}/${p.org.name}/projects/${p.name}/view`
-        } else {
-            url = `${prefix}/${o.name}/view`
-        }
-        return url
-    }
-
-    public openCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
-        const url = this.toCawsUrl(o)
-        vscode.env.openExternal(vscode.Uri.parse(url))
     }
 
     /**

@@ -8,7 +8,7 @@ import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/toolkitError'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { TimeoutError } from '../../shared/utilities/timeoutUtils'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -48,7 +48,7 @@ function runWithTelemetry(fn: () => Promise<void>, mode: TabMode): Promise<void>
     return fn()
         .then(() => recordMetric('Succeeded'))
         .catch(err => {
-            if (TimeoutError.isCancelled(err)) {
+            if (CancellationError.isUserCancelled(err)) {
                 return recordMetric('Cancelled')
             }
             if (!(err instanceof ToolkitError)) {

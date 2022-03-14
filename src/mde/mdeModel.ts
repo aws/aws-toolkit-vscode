@@ -21,11 +21,11 @@ import { getIdeProperties } from '../shared/extensionUtilities'
 import { showConfirmationMessage, showViewLogsMessage } from '../shared/utilities/messages'
 import { getLogger } from '../shared/logger/logger'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
-import { execFileSync } from 'child_process'
 import globals from '../shared/extensionGlobals'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { Window } from '../shared/vscode/window'
+import { ToolkitError } from '../shared/toolkitError'
 
 const localize = nls.loadMessageBundle()
 
@@ -136,6 +136,35 @@ export const MDE_STATUS_PRIORITY = new Map<string, number>([
     ['DELETING', 6],
     ['DELETED', 7],
 ])
+
+export async function ensureConnectScript(context = globals.context): Promise<string> {
+    const scriptName = `mde_connect${process.platform === 'win32' ? '.ps1' : ''}`
+
+    // Script resource path. Includes the Toolkit version string so it changes with each release.
+    const mdeScriptRes = context.asAbsolutePath(path.join('resources', scriptName))
+
+    // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
+    const mdeScript = path.join(context.globalStoragePath, scriptName)
+
+    try {
+        const contents1 = await readFileAsString(mdeScriptRes)
+        let contents2 = ''
+        if (fs.existsSync(mdeScript)) {
+            contents2 = await readFileAsString(mdeScript)
+        }
+        const isOutdated = contents1 !== contents2
+        if (isOutdated) {
+            fs.copyFileSync(mdeScriptRes, mdeScript)
+        }
+        getLogger().info('ensureMdeSshConfig: updated mde_connect script: %O', mdeScript)
+
+        return mdeScript
+    } catch (e) {
+        getLogger().error('ensureMdeSshConfig: failed to write mde_connect script: %O\n%O', mdeScript, e)
+        throw new ToolkitError(localize('AWS.mde.error.copyScript', 'Failed to update script: {0}', mdeScript))
+    }
+}
+
 /**
  * Checks if the "aws-mde-*" SSH config hostname pattern is working, else prompts user to add it.
  *
@@ -165,29 +194,18 @@ export async function ensureMdeSshConfig(): Promise<{
         }
     }
 
-    const scriptName = `mde_connect${iswin ? '.ps1' : ''}`
-    // Script resource path. Includes the Toolkit version string so it changes with each release.
-    const mdeScriptRes = globals.context.asAbsolutePath(path.join('resources', scriptName))
-    // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
-    const mdeScript = path.join(globals.context.globalStoragePath, scriptName)
+    let mdeScript: string
     try {
-        const contents1 = await readFileAsString(mdeScriptRes)
-        let contents2 = ''
-        if (fs.existsSync(mdeScript)) {
-            contents2 = await readFileAsString(mdeScript)
-        }
-        const isOutdated = contents1 !== contents2
-        if (isOutdated) {
-            fs.copyFileSync(mdeScriptRes, mdeScript)
-        }
-        getLogger().info('ensureMdeSshConfig: updated mde_connect script: %O', mdeScript)
+        mdeScript = await ensureConnectScript()
     } catch (e) {
-        getLogger().error('ensureMdeSshConfig: failed to write mde_connect script: %O\n%O', mdeScript, e)
-        return {
-            ok: false,
-            err: 'failed to copy mde_connect',
-            msg: localize('AWS.mde.error.copyScript', 'Failed to update script: {0}', mdeScript),
+        if (e instanceof ToolkitError) {
+            return {
+                ok: false,
+                err: 'failed to copy mde_connect',
+                msg: e.message,
+            }
         }
+        throw e
     }
 
     const proxyCommand = iswin
@@ -323,18 +341,17 @@ if (!$?) {
 }
 exit $?
 `
-            execFileSync('powershell.exe', ['Invoke-Expression', script])
+            await new ChildProcess('powershell.exe', ['Invoke-Expression', script]).run()
             // TODO: we should verify that the agent is active (or not) prior to running this codepath
             // On unix machines the environment variable is set, but on windows we might have to execute something to check
             vscode.window.showInformationMessage(localize('AWS.mde.ssh-agent.start', 'The SSH agent has been started.'))
             return
         }
 
-        // note: using 'sync' callbacks since `promisify` is inconsistent
         // TODO: this command outputs a shell command that you're supposed to execute, for now
         // we'll just parse the socket out and inject it into the ssh command
-        const result = execFileSync('ssh-agent', ['-s'])
-        return (result.match(/$SSH_AGENT_VAR=(.*?);/) ?? [])[1]
+        const r = await new ChildProcess('ssh-agent', ['-s']).run()
+        return (r.stdout.match(/$SSH_AGENT_VAR=(.*?);/) ?? [])[1]
     } catch (err) {
         getLogger().error('mde: failed to start SSH agent, clones may not work as expected: %O', err)
     }

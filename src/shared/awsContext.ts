@@ -22,10 +22,6 @@ export interface ContextChangeEventsArgs {
     readonly profileName?: string
     /** AWS account. */
     readonly accountId?: string
-    /** CODE.AWS username. */
-    readonly cawsUsername?: string
-    /** CODE.AWS secret. */
-    readonly cawsSecret?: string
     /** Developer-mode settings */
     readonly developerMode: Set<string>
 }
@@ -56,8 +52,6 @@ export class DefaultAwsContext implements AwsContext {
     private readonly explorerRegions: string[]
 
     private credentials: AwsContextCredentials | undefined
-    private cawsUsername: string | undefined
-    private cawsSecret: string | undefined
     private developerMode = new Set<string>()
 
     public constructor(private context: vscode.ExtensionContext) {
@@ -110,18 +104,6 @@ export class DefaultAwsContext implements AwsContext {
      */
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
         return this.credentials?.credentials
-    }
-
-    /** Sets the current CODE.AWS credentials, or undefined to logout. */
-    public setCawsCredentials(username: string, secret: string): void {
-        this.cawsUsername = username
-        this.cawsSecret = secret
-        this.emitEvent()
-    }
-
-    /** Gets the current CODE.AWS credentials. */
-    public getCawsCredentials(): string | undefined {
-        return this.cawsUsername
     }
 
     // returns the configured profile, if any
@@ -184,8 +166,6 @@ export class DefaultAwsContext implements AwsContext {
             profileName: this.credentials?.credentialsId,
             accountId: this.credentials?.accountId,
             developerMode: this.developerMode,
-            cawsUsername: this.cawsUsername,
-            cawsSecret: this.cawsSecret,
         })
     }
 }

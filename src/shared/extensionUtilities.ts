@@ -276,10 +276,10 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 
 /**
  * Shows a message with a link to the quickstart page.
- * In cloud9, directly opens quickstart instead
+ * In cloud9 and MDEs, directly opens quickstart instead
  */
 async function showOrPromptQuickstart(): Promise<void> {
-    if (isCloud9()) {
+    if (isCloud9() || getMdeEnvArn() !== undefined) {
         vscode.commands.executeCommand('aws.quickStart')
     } else {
         const view = localize('AWS.command.quickStart', 'View Quick Start')

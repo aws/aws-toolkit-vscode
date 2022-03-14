@@ -1,5 +1,5 @@
 # Usage:
-#   AWS_REGION=… AWS_MDE_ENDPOINT=… AWS_SSM_CLI=… AWS_MDE_SESSION=… AWS_MDE_STREAMURL=… AWS_MDE_TOKEN=… ./mde_connect.ps1 <env-id>
+#   $Env:AWS_REGION=… $Env:AWS_SSM_CLI=… $Env:AWS_MDE_SESSION=… $Env:AWS_MDE_STREAMURL=… $Env:AWS_MDE_TOKEN=… ./mde_connect.ps1 <env-id>
 
 param (
     [string] $EnvironmentID
@@ -34,7 +34,6 @@ function Main {
         [string] $EnvironmentID
     )
 
-    $endpoint = Require -VariableName "AWS_MDE_ENDPOINT"
     $region = Require -VariableName "AWS_REGION"
     $ssmPath = Require -VariableName "AWS_SSM_CLI"
     $sessionId = Require -VariableName "AWS_MDE_SESSION"

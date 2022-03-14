@@ -5,11 +5,13 @@ env:
         AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
         NO_COVERAGE: 'true'
+        # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
+        DEBIAN_FRONTEND: 'noninteractive'
 
 phases:
     install:
         runtime-versions:
-            nodejs: 12
+            nodejs: 14
             dotnet: 3.1
 
         commands:
@@ -19,25 +21,30 @@ phases:
             - '>/dev/null apt-get -qq install -y apt-transport-https'
             - '>/dev/null apt-get -qq update'
             - '>/dev/null apt-get -qq install -y ca-certificates'
+            - 'apt-get install --reinstall ca-certificates'
+            - 'add-apt-repository -y ppa:deadsnakes/ppa'
             # Install other needed dependencies
-            - '>/dev/null apt-get -qq install -y jq python3.6 python3.7 python3.8 python3-pip python3-distutils'
+            - 'apt-get -qq install -y jq python3.6 python3.7 python3.8 python3-pip python3-distutils'
+            # Fail early if any of these not found.
+            - 'python3.6 --version'
+            - 'python3.7 --version'
+            - 'python3.8 --version'
+            - 'python3.9 --version'
             - '>/dev/null apt-get -qq install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
             - '>/dev/null apt-get -qq install -y java-1.8.0-amazon-corretto-jdk java-11-amazon-corretto-jdk'
             - '>/dev/null pip3 install --upgrade aws-sam-cli'
+            # Print info about sam (version, location, …).
+            - 'pip3 show aws-sam-cli'
             - '>/dev/null pip3 install --upgrade awscli'
             - '>/dev/null pip3 install pylint'
             # Install latest version of Go (known to 'goenv')
-            - '>/dev/null VERSION=$(goenv install --list | tail -n 1) && goenv install $VERSION'
+            - '>/dev/null VERSION=$(goenv install --list | tail -n 1) && 2>/dev/null goenv install $VERSION'
             - '>/dev/null goenv global $VERSION && go env -w GOPROXY=direct'
             - go version
             # login to DockerHub so we don't get throttled
             - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
             # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
             - sysctl fs.inotify.max_user_watches=524288
-            # update git so integ tests pass
-            # TODO: remove when git version >= 2.27.0 is included in CI image
-            - '>/dev/null apt-get -qq install -y git'
-            - git --version
 
     pre_build:
         commands:

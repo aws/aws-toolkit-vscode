@@ -4,60 +4,93 @@
  */
 
 import * as vscode from 'vscode'
-import globals from '../shared/extensionGlobals'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { activateExtension } from '../shared/utilities/vsCodeUtils'
+import { ExtContext } from '../shared/extensions'
 import * as cawsView from './cawsView'
-import { GitExtension } from '../../types/git'
 import { initCurrentRemoteSourceProvider } from './repos/remoteSourceProvider'
-import { getLogger } from '../shared/logger/logger'
-import { onCredentialsChanged } from './utils'
-import { cloneCawsRepo, createDevEnv, listCommands, login, logout, openCawsResource } from './commands'
+import {
+    autoConnect,
+    cloneCawsRepo,
+    createDevEnv,
+    listCommands,
+    login,
+    logout,
+    openCawsResource,
+    tryCommand,
+} from './commands'
 import * as uriHandlers from './uriHandlers'
+import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
+import { CawsClientFactory, createClient } from '../shared/clients/cawsClient'
+import { GitExtension } from '../shared/extensions/git'
+import { CawsAuthenticationProvider, CawsAuthStorage } from './auth'
+import { initStatusbar } from './cawsStatusbar'
 
 /**
  * Activate CAWS functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
-    const viewProvider = new cawsView.CawsView()
+    const sessionStorage = new CawsAuthStorage(ctx.extensionContext.globalState, ctx.extensionContext.secrets)
+    const authProvider = CawsAuthenticationProvider.initialize(sessionStorage)
+    const settings = new DefaultSettingsConfiguration()
+
+    const clientFactory = async () => {
+        // Assumption: the current auth provider only supports being logged into a single account at a time
+        // The VSC API can support multiple sessions, though we're probably a long way off from that
+        // TODO: just hide the full API behind something a bit lighter
+        const creds = authProvider.listSessions()[0]
+        const client = await createClient(settings)
+
+        if (creds) {
+            await client.setCredentials(creds.accountDetails.label, creds.accessDetails)
+        }
+
+        return client
+    }
+
+    const viewProvider = new cawsView.CawsView(clientFactory)
     const view = vscode.window.createTreeView(viewProvider.viewId, {
         treeDataProvider: viewProvider,
         showCollapseAll: true,
     })
 
-    globals.context.subscriptions.push(
-        // vscode.window.registerTreeDataProvider(viewProvider.viewId, viewProvider),
+    registerCommands(clientFactory, authProvider, ctx)
+    ctx.extensionContext.subscriptions.push(
         view,
-        globals.awsContext.onDidChangeContext(async e => {
-            onCredentialsChanged(ctx.extensionContext, viewProvider, view, e)
+        initStatusbar(authProvider),
+        uriHandlers.register(ctx.uriHandler, clientFactory),
+        authProvider.onDidChangeSessions(e => {
+            const session = authProvider.listSessions()[0]
+
+            view.title = session ? `CODE.AWS (${session.accountDetails.label})` : 'CODE.AWS'
+            viewProvider.refresh()
         })
     )
 
     // Git Extension handling
-    activateExtension<GitExtension>(VSCODE_EXTENSION_ID.git).then(extension => {
-        if (extension) {
-            initCurrentRemoteSourceProvider(extension)
-        } else {
-            getLogger().warn('Git Extension could not be activated.')
-        }
-    })
+    await initCurrentRemoteSourceProvider(clientFactory, GitExtension.instance)
 
-    await registerCommands(ctx)
+    // This function call could be placed inside `tryCommand`, though for now auto-connect and explicit
+    // login flows are kept separate.
+    await autoConnect(authProvider)
 }
 
-async function registerCommands(ctx: ExtContext): Promise<void> {
+function registerCommands(
+    clientFactory: CawsClientFactory,
+    authProvider: CawsAuthenticationProvider,
+    ctx: ExtContext
+): void {
+    const tryOpenCawsResource = tryCommand(clientFactory, openCawsResource)
+    const tryCloneCawsResource = tryCommand(clientFactory, cloneCawsRepo)
+    const tryCreateDevEnv = tryCommand(clientFactory, createDevEnv)
+
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.caws.connect', () =>
-            login(ctx.extensionContext, ctx.awsContext, globals.caws)
-        ),
-        vscode.commands.registerCommand('aws.caws.logout', () => logout(ctx, globals.caws)),
-        vscode.commands.registerCommand('aws.caws.openOrg', () => openCawsResource('org')),
-        vscode.commands.registerCommand('aws.caws.openProject', () => openCawsResource('project')),
-        vscode.commands.registerCommand('aws.caws.openRepo', () => openCawsResource('repo')),
-        vscode.commands.registerCommand('aws.caws.openDevEnv', () => openCawsResource('env')),
-        vscode.commands.registerCommand('aws.caws.cloneRepo', () => cloneCawsRepo()),
+        vscode.commands.registerCommand('aws.caws.connect', async () => login(authProvider, await clientFactory())),
+        vscode.commands.registerCommand('aws.caws.logout', () => logout(authProvider)),
+        vscode.commands.registerCommand('aws.caws.openOrg', () => tryOpenCawsResource('org')),
+        vscode.commands.registerCommand('aws.caws.openProject', () => tryOpenCawsResource('project')),
+        vscode.commands.registerCommand('aws.caws.openRepo', () => tryOpenCawsResource('repo')),
+        vscode.commands.registerCommand('aws.caws.openDevEnv', () => tryOpenCawsResource('env')),
+        vscode.commands.registerCommand('aws.caws.cloneRepo', () => tryCloneCawsResource()),
         vscode.commands.registerCommand('aws.caws.listCommands', () => listCommands()),
-        vscode.commands.registerCommand('aws.caws.createDevEnv', () => createDevEnv()),
-        uriHandlers.register(ctx.uriHandler)
+        vscode.commands.registerCommand('aws.caws.createDevEnv', () => tryCreateDevEnv())
     )
 }

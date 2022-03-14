@@ -3,76 +3,130 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as caws from '../../shared/clients/cawsClient'
-import globals, { checkCaws } from '../../shared/extensionGlobals'
-import { createHelpButton } from '../../shared/ui/buttons'
-import { IteratingQuickPickController, promptUser } from '../../shared/ui/picker'
-import { IteratorTransformer } from '../../shared/utilities/collectionUtils'
+import { createCommonButtons, createRefreshButton } from '../../shared/ui/buttons'
+import {
+    createQuickPick,
+    DataQuickPickItem,
+    ExtendedQuickPickOptions,
+    QuickPickPrompter,
+} from '../../shared/ui/pickerPrompter'
+import { AsyncCollection } from '../../shared/utilities/asyncCollection'
+import { isValidResponse } from '../../shared/wizards/wizard'
+
+function createRepoLabel(r: caws.CawsRepo): string {
+    return `${r.org.name} / ${r.project.name} / ${r.name}`
+}
 
 /**
- * Shows a picker and returns the user-selected item.
+ * Maps CawsFoo objects to `vscode.QuickPickItem` objects.
  */
-export async function selectCawsResource(
-    kind: 'org' | 'project' | 'repo' | 'env'
-): Promise<caws.CawsOrg | caws.CawsProject | caws.CawsRepo | caws.CawsDevEnv | undefined> {
-    if (!checkCaws()) {
-        return
-    }
-    const helpButton = createHelpButton()
+export function asQuickpickItem<T extends caws.CawsResource>(resource: T): DataQuickPickItem<T> {
+    let label: string
+    let desc = resource.id
 
-    const picker = vscode.window.createQuickPick<vscode.QuickPickItem>()
-    picker.busy = true
-    picker.canSelectMany = false
-    picker.ignoreFocusOut = true
-    picker.matchOnDetail = false
-    picker.matchOnDescription = true
-
-    if (kind === 'org') {
-        picker.title = 'Select a CODE.AWS Organization'
-        picker.placeholder = 'Choose an organization'
-    } else if (kind === 'project') {
-        picker.title = 'Select a CODE.AWS Project'
-        picker.placeholder = 'Choose a project'
-    } else if (kind === 'env') {
-        picker.title = 'Select a CODE.AWS Development Environment'
-        picker.placeholder = 'Choose a dev env'
+    if (resource.type === 'repo') {
+        label = createRepoLabel(resource)
+    } else if (resource.type === 'project') {
+        label = `${resource.org.name} / ${resource.name}`
+    } else if (resource.type === 'env') {
+        const repo1 = resource.repositories[0]?.repositoryName
+        label = `${resource.org.name} / ${resource.project.name} / ${repo1}`
+        desc = `${resource.lastUpdatedTime.toISOString()} ${resource.ide} ${resource.status}`
     } else {
-        picker.title = 'Select a CODE.AWS Repository'
-        picker.placeholder = 'Choose a repository'
+        label = `${resource.name}`
     }
 
-    const c = globals.caws
-    const populator = new IteratorTransformer<vscode.QuickPickItem, vscode.QuickPickItem>(
-        () => c.cawsItemsToQuickpickIter(kind),
-        o => (!o ? [] : [o])
-    )
-    const controller = new IteratingQuickPickController(picker, populator)
-    controller.startRequests()
-
-    const choices =
-        (await promptUser({
-            picker: picker,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(caws.cawsHelpUrl, true))
-                }
-            },
-        })) ?? []
-
-    const choice = choices[0]
-    if (!choice) {
-        return undefined
+    return {
+        label,
+        detail: resource.description,
+        description: desc,
+        data: resource,
     }
-    const val = (choice as any).val
-    if (kind === 'org') {
-        return val as caws.CawsOrg
-    } else if (kind === 'project') {
-        return val as caws.CawsProject
-    } else if (kind === 'env') {
-        return val as caws.CawsDevEnv
+}
+
+function createResourcePrompter<T extends caws.CawsResource>(
+    resources: AsyncCollection<T[]>,
+    presentation: Omit<ExtendedQuickPickOptions<T>, 'buttons'>
+): QuickPickPrompter<T> {
+    const refresh = createRefreshButton()
+    const items = resources.map(p => p.map(asQuickpickItem))
+    const prompter = createQuickPick(items, {
+        buttons: [refresh, ...createCommonButtons(caws.cawsHelpUrl)],
+        ...presentation,
+    })
+
+    refresh.onClick = () => {
+        prompter.clearAndLoadItems(items)
     }
-    return val as caws.CawsRepo
+
+    return prompter
+}
+
+export function createOrgPrompter(client: caws.ConnectedCawsClient): QuickPickPrompter<caws.CawsOrg> {
+    return createResourcePrompter(client.listOrgs(), {
+        title: 'Select a CODE.AWS Organization',
+        placeholder: 'Choose an organization',
+    })
+}
+
+export function createProjectPrompter(
+    client: caws.ConnectedCawsClient,
+    org?: caws.CawsOrg
+): QuickPickPrompter<caws.CawsProject> {
+    const projects = org ? client.listProjects({ organizationName: org.name }) : client.listResources('project')
+
+    return createResourcePrompter(projects, {
+        title: 'Select a CODE.AWS Project',
+        placeholder: 'Choose a project',
+    })
+}
+
+export function createRepoPrompter(
+    client: caws.ConnectedCawsClient,
+    proj?: caws.CawsProject
+): QuickPickPrompter<caws.CawsRepo> {
+    const repos = proj
+        ? client.listRepos({ organizationName: proj.org.name, projectName: proj.name })
+        : client.listResources('repo')
+
+    return createResourcePrompter(repos, {
+        title: 'Select a CODE.AWS Repository',
+        placeholder: 'Choose a repository',
+    })
+}
+
+export function createDevEnvPrompter(
+    client: caws.ConnectedCawsClient,
+    proj?: caws.CawsProject
+): QuickPickPrompter<caws.CawsDevEnv> {
+    const envs = proj ? client.listDevEnvs(proj) : client.listResources('env')
+
+    return createResourcePrompter(envs, {
+        title: 'Select a CODE.AWS Development Environment',
+        placeholder: 'Choose a dev env',
+    })
+}
+
+type ResourceType = caws.CawsResource['type']
+
+export async function selectCawsResource<T extends ResourceType>(
+    client: caws.ConnectedCawsClient,
+    type: T & ResourceType
+): Promise<(caws.CawsResource & { type: typeof type }) | undefined> {
+    const prompter = (() => {
+        switch (type as ResourceType) {
+            case 'org':
+                return createOrgPrompter(client)
+            case 'project':
+                return createProjectPrompter(client)
+            case 'repo':
+                return createRepoPrompter(client)
+            case 'env':
+                return createDevEnvPrompter(client)
+        }
+    })()
+
+    const response = await prompter.prompt()
+    return isValidResponse(response) ? (response as caws.CawsResource & { type: T }) : undefined
 }

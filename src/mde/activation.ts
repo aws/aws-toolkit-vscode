@@ -18,7 +18,6 @@ import { getLogger } from '../shared/logger'
 import { GitExtension } from '../shared/extensions/git'
 import { createTagMapFromRepo } from './mdeModel'
 import { createMdeConfigureWebview } from './vue/configure/backend'
-import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { MDE_RESTART_KEY } from './constants'
 import { initStatusBar } from './mdeStatusBarItem'
 import { getMdeEnvArn } from '../shared/vscode/env'
@@ -28,7 +27,6 @@ import { createMdeWebview } from './vue/create/backend'
  * Activates MDE functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
-    const client = new DefaultMdeEnvironmentClient()
     await registerCommands(ctx)
 
     const devfileRegistry = new DevfileRegistry()
@@ -80,18 +78,17 @@ export async function activate(ctx: ExtContext): Promise<void> {
     activateUriHandlers(ctx, ctx.uriHandler)
 
     // Namespacing the clause context since I believe they are shared across extensions
-    vscode.commands.executeCommand('setContext', 'aws.isMde', !!client.arn)
+    vscode.commands.executeCommand('setContext', 'aws.isMde', !!arn)
 
-    handleRestart(ctx)
+    handleRestart(ctx, arn)
 }
 
-function handleRestart(ctx: ExtContext) {
-    const envClient = new DefaultMdeEnvironmentClient()
-    if (envClient.arn !== undefined) {
+function handleRestart(ctx: ExtContext, arn: string | undefined) {
+    if (arn !== undefined) {
         // Remove this environment
         const memento = ctx.extensionContext.globalState
         const pendingRestarts = memento.get<Record<string, boolean>>(MDE_RESTART_KEY, {})
-        delete pendingRestarts[envClient.arn.split('/').pop() ?? '']
+        delete pendingRestarts[arn.split('/').pop() ?? '']
         memento.update(MDE_RESTART_KEY, pendingRestarts)
     } else {
         // Resume environments (if coming from a restart)

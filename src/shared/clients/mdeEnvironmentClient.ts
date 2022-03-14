@@ -5,8 +5,8 @@
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import got, { Got } from 'got'
+import { getMdeEnvArn } from '../vscode/env'
 
-const ENVIRONMENT_ARN_KEY = '__ENVIRONMENT_ARN'
 const ENVIRONMENT_AUTH_TOKEN = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
 export const MDE_ENVIRONMENT_ENDPOINT = 'http://127.0.0.1:1339'
 
@@ -15,7 +15,7 @@ export class DefaultMdeEnvironmentClient {
     public constructor(private endpoint: string = MDE_ENVIRONMENT_ENDPOINT) {}
 
     public get arn(): string | undefined {
-        return process.env[ENVIRONMENT_ARN_KEY]
+        return getMdeEnvArn()
     }
 
     private get authToken(): string | undefined {

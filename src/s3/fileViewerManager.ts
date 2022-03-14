@@ -11,7 +11,7 @@ import { getLogger } from '../shared/logger'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { parse } from '@aws-sdk/util-arn-parser'
-import { TimeoutError } from '../shared/utilities/timeoutUtils'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../shared/settingsConfiguration'
 import { s3FileViewerHelpUrl } from '../shared/constants'
@@ -272,7 +272,7 @@ export class S3FileViewerManager {
      */
     private async createTab(file: S3File, mode: TabMode): Promise<void> {
         if (!(await this.canContinueDownload(file))) {
-            throw new TimeoutError('cancelled')
+            throw new CancellationError('user')
         }
 
         const uri = S3FileViewerManager.fileToUri(file, mode)

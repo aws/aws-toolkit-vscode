@@ -362,7 +362,7 @@ describe('ChildProcess', async function () {
 
             it('still runs if the timer completed (not rejected) after starting', async function () {
                 const timer = new Timeout(10)
-                setTimeout(() => timer.complete())
+                setTimeout(() => timer.dispose())
                 await childProcess.run({
                     waitForStreams: false,
                     onStdout: (text, context) => {
@@ -375,7 +375,7 @@ describe('ChildProcess', async function () {
 
             it('rejects if using a completed timer', async function () {
                 const timer = new Timeout(10)
-                timer.complete()
+                timer.dispose()
                 await assert.rejects(childProcess.run({ timeout: timer }))
                 assert.strictEqual(childProcess.result(), undefined)
                 // Just make sure no process was ever ran

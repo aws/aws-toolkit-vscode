@@ -13,12 +13,22 @@ import { ChildProcess } from '../../shared/utilities/childProcess'
 import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
-import { extensionSettingsPrefix, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import { ecsRequiredPermissionsUrl, extensionSettingsPrefix, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { isCloud9 } from '../../shared/extensionUtilities'
+
+// Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
+const REQUIRED_SSM_PERMISSIONS = [
+    'ssmmessages:CreateControlChannel',
+    'ssmmessages:CreateDataChannel',
+    'ssmmessages:OpenControlChannel',
+    'ssmmessages:OpenDataChannel',
+]
 
 export async function runCommandInContainer(
     node: EcsContainerNode,
@@ -35,7 +45,6 @@ export async function runCommandInContainer(
         const response = await wizard.run()
 
         if (!response) {
-            result = 'Cancelled'
             return
         }
 
@@ -43,7 +52,33 @@ export async function runCommandInContainer(
             settings.disablePrompt('ecsRunCommand')
         }
 
-        const ssmPlugin = await getOrInstallCli('session-manager-plugin', true, window, settings).catch(e => {
+        const iamClient = globals.toolkitClientBuilder.createIamClient(node.ecs.regionCode)
+        if (
+            node.taskRoleArn !== undefined &&
+            (await iamClient.hasRolePermissions({
+                PolicySourceArn: node.taskRoleArn,
+                ActionNames: REQUIRED_SSM_PERMISSIONS,
+            })) === false
+        ) {
+            const viewDocsItem = localize('AWS.generic.viewDocs', 'View Documentation')
+            window
+                .showErrorMessage(
+                    localize(
+                        'AWS.command.ecs.runCommandInContainer.missingPermissions',
+                        'Insufficient permissions to execute command. Configure a task role as described in the documentation.'
+                    ),
+                    viewDocsItem
+                )
+                .then(selection => {
+                    if (selection === viewDocsItem) {
+                        vscode.env.openExternal(vscode.Uri.parse(ecsRequiredPermissionsUrl))
+                    }
+                })
+            result = 'Failed'
+            return
+        }
+
+        const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9(), window, settings).catch(e => {
             result = 'Failed'
             throw Error('SSM Plugin not installed and cannot auto install')
         })
@@ -53,7 +88,7 @@ export async function runCommandInContainer(
         )
 
         const execCommand = await node.ecs.executeCommand(
-            node.clusterArn,
+            node.parent.service.clusterArn!,
             node.containerName,
             response.task,
             response.command
@@ -66,7 +101,8 @@ export async function runCommandInContainer(
             outputChannel
         )
 
-        const cp = await new ChildProcess(ssmPlugin, args, { logging: 'noparams' }).run({
+        await new ChildProcess(ssmPlugin, args, { logging: 'noparams' }).run({
+            rejectOnErrorCode: true,
             onStdout: text => {
                 showOutputMessage(removeAnsi(text), outputChannel)
             },
@@ -75,14 +111,14 @@ export async function runCommandInContainer(
             },
         })
 
-        if (cp.exitCode !== 0) {
-            result = 'Failed'
-            throw cp.error
-        } else {
-            result = 'Succeeded'
-        }
+        result = 'Succeeded'
     } catch (error) {
-        getLogger().error('Failed to execute command in container, %O', error)
+        if (CancellationError.isUserCancelled(error)) {
+            return
+        }
+
+        result = 'Failed'
+        getLogger().error('ecs: Failed to execute command in container, %O', error)
         showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
     } finally {
         recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })

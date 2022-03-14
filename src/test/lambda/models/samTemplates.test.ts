@@ -25,6 +25,7 @@ import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 let validTemplateOptions: Set<SamTemplate>
 let validPythonTemplateOptions: Set<SamTemplate>
 let validNode12TemplateOptions: Set<SamTemplate>
+let validGoTemplateOptions: Set<SamTemplate>
 let defaultTemplateOptions: Set<SamTemplate>
 
 before(function () {
@@ -46,6 +47,13 @@ before(function () {
     ])
 
     validNode12TemplateOptions = Set([helloWorldTemplate, stepFunctionsSampleApp, typeScriptBackendTemplate])
+
+    validGoTemplateOptions = Set([
+        helloWorldTemplate,
+        eventBridgeHelloWorldTemplate,
+        eventBridgeStarterAppTemplate,
+        stepFunctionsSampleApp,
+    ])
 
     defaultTemplateOptions = Set([helloWorldTemplate, stepFunctionsSampleApp])
 })
@@ -70,6 +78,13 @@ describe('getSamTemplateWizardOption', function () {
                         result,
                         validNode12TemplateOptions,
                         'Node12.x supports default and TS template options'
+                    )
+                    break
+                case 'go1.x':
+                    assert.deepStrictEqual(
+                        result,
+                        validGoTemplateOptions,
+                        'Go 1.x supports additional template options'
                     )
                     break
                 default:
