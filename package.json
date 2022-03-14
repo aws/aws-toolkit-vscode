@@ -1050,6 +1050,10 @@
                 {
                     "command": "aws.renderStateMachineGraph",
                     "when": "false"
+                },
+                {
+                    "command": "aws.dev.openMenu",
+                    "when": "aws.isDevMode"
                 }
             ],
             "editor/title": [
@@ -2935,6 +2939,12 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.dev.openMenu",
+                "title": "Open Developer Menu",
+                "category": "AWS (Developer)",
+                "enablement": "aws.isDevMode"
             }
         ],
         "jsonValidation": [

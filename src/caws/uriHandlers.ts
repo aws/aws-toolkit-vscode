@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
-import { CawsClient, cawsHostname, ConnectedCawsClient } from '../shared/clients/cawsClient'
-import { cloneCawsRepo, openDevEnv, tryCommand } from './commands'
+import { cawsHostname, ConnectedCawsClient } from '../shared/clients/cawsClient'
+import { cloneCawsRepo, openDevEnv, TryCommandDecorator } from './commands'
 
-export function register(handler: UriHandler, clientFactory: () => Promise<CawsClient>) {
-    const tryHandleClone = tryCommand(clientFactory, handleCloneParams)
-    const tryHandleConnect = tryCommand(clientFactory, handleConnectParams)
+export function register(handler: UriHandler, tryCommand: TryCommandDecorator) {
+    const tryHandleClone = tryCommand(handleCloneParams)
+    const tryHandleConnect = tryCommand(handleConnectParams)
 
     return vscode.Disposable.from(
         handler.registerHandler('/clone', tryHandleClone, parseCloneParams),

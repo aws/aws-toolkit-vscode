@@ -55,10 +55,10 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
 }
 
 export async function initCurrentRemoteSourceProvider(
+    authProvider: CawsAuthenticationProvider,
     factory: CawsClientFactory,
     extension: GitExtension
 ): Promise<void> {
-    const authProvider = CawsAuthenticationProvider.getInstance()
     let currDisposable: Promise<vscode.Disposable> | undefined
 
     // TODO: Add user initialization outside git extension activation
