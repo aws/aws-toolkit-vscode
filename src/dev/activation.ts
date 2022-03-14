@@ -16,8 +16,7 @@ import * as glob from 'glob'
 import * as path from 'path'
 import { promisify } from 'util'
 import * as manifest from '../../package.json'
-import { ensureSsmCli } from '../mde/mdeModel'
-import { SystemUtilities } from '../shared/systemUtilities'
+import { ensureDependencies } from '../mde/mdeModel'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
 import { createBoundChildProcess, createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
@@ -25,6 +24,7 @@ import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { createClientFactory } from '../caws/activation'
 import { createCommandDecorator } from '../caws/commands'
+import { showViewLogsMessage } from '../shared/utilities/messages'
 
 const menuOptions = {
     installVsix: {
@@ -116,7 +116,12 @@ async function installVsixCommand(ctx: ExtContext) {
         }
         const progress = lazyProgress<{ message: string }>(new Timeout(900000))
 
-        await installVsix(ctx, client, progress, env).finally(() => progress.dispose())
+        try {
+            await installVsix(ctx, client, progress, env).finally(() => progress.dispose())
+        } catch (err) {
+            getLogger().error(`installVsixCommand: installation failed: %O`, err)
+            showViewLogsMessage('VSIX installation failed')
+        }
     })()
 }
 
@@ -230,6 +235,13 @@ async function installVsix(
         return
     }
 
+    const deps = await ensureDependencies()
+    if (!deps) {
+        return
+    }
+
+    const { vsc, ssh, ssm } = deps
+
     progress.report({ message: 'Waiting...' })
     const runningEnv = await client.startEnvironmentWithProgress(
         {
@@ -244,22 +256,7 @@ async function installVsix(
         return
     }
 
-    const vsc = await SystemUtilities.getVscodeCliPath()
-    if (!vsc) {
-        return
-    }
-
-    const ssmPath = await ensureSsmCli()
-    if (!ssmPath.ok) {
-        return
-    }
-
-    const sshPath = await SystemUtilities.findSshPath()
-    if (!sshPath) {
-        return
-    }
-
-    const provider = createCawsSessionProvider(client, 'us-east-1', ssmPath.result, sshPath)
+    const provider = createCawsSessionProvider(client, 'us-east-1', ssm, ssh)
     const SessionProcess = createBoundChildProcess(provider, env).extend({
         timeout: progress.getToken(),
         onStdout: logOutput(`install: ${env.id}:`),
@@ -269,6 +266,20 @@ async function installVsix(
 
     const hostName = getHostNameFromEnv(env)
     const remoteVsix = `/projects/${path.basename(resp)}`
+
+    progress.report({ message: 'Starting controller...' })
+    await new Promise<void>((resolve, reject) => {
+        new SessionProcess(ssh, ['-v', hostName, 'echo "Host Ready"'])
+            .run({
+                rejectOnErrorCode: true,
+                onStdout(text) {
+                    if (text.includes('Host Ready')) {
+                        resolve()
+                    }
+                },
+            })
+            .catch(reject)
+    })
 
     progress.report({ message: 'Copying VSIX...' })
     await new SessionProcess('scp', ['-v', resp, `mde-user@${hostName}:${remoteVsix}`]).run()
@@ -293,7 +304,7 @@ async function installVsix(
     ].join(' && ')
 
     progress.report({ message: 'Installing VSIX...' })
-    await new SessionProcess(sshPath, [`${hostName}`, '-v', installCmd]).run()
+    await new SessionProcess(ssh, [`${hostName}`, '-v', installCmd]).run()
 
     const workspaceUri = `vscode-remote://ssh-remote+${hostName}/projects`
     progress.report({ message: 'Launching instance...' })

@@ -70,7 +70,7 @@ export async function startMde(
 
             return resp?.status === 'RUNNING' ? resp : undefined
         },
-        { interval: 1500, timeout: TIMEOUT_LENGTH, truthy: true }
+        { interval: 10000, timeout: TIMEOUT_LENGTH, truthy: true }
     )
 
     return waitTimeout(pollMde, timeout, {

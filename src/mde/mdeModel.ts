@@ -23,9 +23,8 @@ import { getLogger } from '../shared/logger/logger'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import globals from '../shared/extensionGlobals'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
-import { Window } from '../shared/vscode/window'
 import { ToolkitError } from '../shared/toolkitError'
+import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -175,13 +174,12 @@ function getSshConfigPath(): string {
  *
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
-export async function ensureMdeSshConfig(): Promise<{
+export async function ensureMdeSshConfig(sshPath: string): Promise<{
     ok: boolean
     err:
         | ''
         | 'bash not found'
         | 'failed to copy mde_connect'
-        | 'ssh not found'
         | 'old config'
         | 'ssh failed'
         | 'user canceled'
@@ -237,16 +235,9 @@ Host ${configHostName}
     ControlPath ~/.ssh/%h
     ControlPersist 15m
 `
-    const ssh = await SystemUtilities.findSshPath()
-    if (!ssh) {
-        return {
-            ok: false,
-            err: 'ssh not found',
-            msg: localize('AWS.mde.error.noSsh', 'Cannot find required tool: ssh'),
-        }
-    }
+
     // Check if the "aws-mde-*" hostname pattern is working.
-    const proc = new ChildProcess(ssh, ['-G', `${HOST_NAME_PREFIX}test`])
+    const proc = new ChildProcess(sshPath, ['-G', `${HOST_NAME_PREFIX}test`])
     const r = await proc.run()
     if (r.exitCode !== 0) {
         // Should never happen...
@@ -391,9 +382,86 @@ exit $?
 export async function connectToMde(
     args: Pick<mde.MdeEnvironment, 'id'>,
     region: string,
-    startFn: () => Promise<mde.MdeSession | undefined>,
-    window = Window.vscode()
+    startFn: () => Promise<mde.MdeSession | undefined>
 ): Promise<ChildProcessResult | undefined> {
+    const deps = await ensureDependencies()
+    if (!deps) {
+        return
+    }
+
+    const { vsc, ssm, ssh } = deps
+    const sshAgentSocket = await startSshAgent()
+
+    const session = await startFn()
+    if (!session) {
+        return
+    }
+
+    await new Promise<void>((resolve, reject) => {
+        new ChildProcess(ssh, ['-v', `${HOST_NAME_PREFIX}${args.id}`, 'echo "Host Ready"'])
+            .run({
+                rejectOnErrorCode: true,
+                onStdout: text => {
+                    // Not that robust. Should use different mechanism for knowing when process has been
+                    // moved to the background.
+                    if (text.includes('Host Ready')) {
+                        resolve()
+                    }
+                },
+                onStderr: text => {
+                    getLogger().debug(`MDE connect (stderr): ${text}`)
+                },
+                spawnOptions: {
+                    env: {
+                        [SSH_AGENT_SOCKET_VARIABLE]: sshAgentSocket,
+                        ...getMdeSsmEnv(region, ssm, session),
+                    },
+                },
+            })
+            .catch(reject)
+    })
+
+    // temporary until we can dynamically find the directory
+    const projectDir = '/projects'
+    const cmdArgs = ['--folder-uri', `vscode-remote://ssh-remote+${HOST_NAME_PREFIX}${args.id}${projectDir}`]
+
+    const cmd = new ChildProcess(vsc, cmdArgs)
+
+    const settings = new DefaultSettingsConfiguration()
+    settings.ensureToolkitInVscodeRemoteSsh()
+
+    getLogger().debug(
+        `AWS_SSM_CLI='${ssm}' AWS_REGION='${region}' AWS_MDE_SESSION='${session.id}' AWS_MDE_STREAMURL='${session.accessDetails.streamUrl}' AWS_MDE_TOKEN='${session.accessDetails.tokenValue}' ssh '${HOST_NAME_PREFIX}${args.id}'`
+    )
+    getLogger().debug(
+        `"${ssm}" "{\\"streamUrl\\":\\"${session.accessDetails.streamUrl}\\",\\"tokenValue\\":\\"${session.accessDetails.tokenValue}\\",\\"sessionId\\":\\"\\"}" "${region}" "StartSession"`
+    )
+
+    // Note: `await` is intentionally not used.
+    return cmd
+        .run({
+            onStdout(stdout) {
+                getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
+            },
+            onStderr(stderr) {
+                getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
+            },
+        })
+        .then(o => {
+            if (o.exitCode !== 0) {
+                getLogger().error('MDE connect: failed to start: %O', cmd)
+            }
+            return o
+        })
+}
+
+interface DependencyPaths {
+    vsc: string
+    ssm: string
+    ssh: string
+}
+
+export async function ensureDependencies(window = vscode.window): Promise<DependencyPaths | undefined> {
     if (!isExtensionInstalledMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to environment')) {
         return
     }
@@ -413,7 +481,25 @@ export async function connectToMde(
         return
     }
 
-    const hasSshConfig = await ensureMdeSshConfig()
+    const ssh = await SystemUtilities.findSshPath()
+    if (!ssh) {
+        showMissingToolMsg('ssh')
+        return
+    }
+
+    const ssm = await ensureSsmCli().then(({ ok, result }) => {
+        if (!ok) {
+            getLogger().error(`ensureDependencies: missing SSM CLI: %O`, result)
+            return
+        }
+        return result
+    })
+    if (!ssm) {
+        showMissingToolMsg('ssm')
+        return
+    }
+
+    const hasSshConfig = await ensureMdeSshConfig(ssh)
     if (!hasSshConfig.ok) {
         if (hasSshConfig.err === 'old config') {
             const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
@@ -424,59 +510,10 @@ export async function connectToMde(
             })
         } else if (hasSshConfig.msg) {
             showViewLogsMessage(hasSshConfig.msg, window)
-        } else if (hasSshConfig.err !== 'user canceled') {
-            showMissingToolMsg('ssh')
         }
+
         return
     }
 
-    const session = await startFn()
-    if (!session) {
-        return
-    }
-
-    const ssmPath = await ensureSsmCli()
-    if (!ssmPath.ok) {
-        return
-    }
-
-    // temporary until we can dynamically find the directory
-    const projectDir = '/projects'
-
-    const cmd = new ChildProcess(
-        vsc,
-        ['--folder-uri', `vscode-remote://ssh-remote+${HOST_NAME_PREFIX}${args.id}${projectDir}`],
-        {
-            spawnOptions: {
-                env: getMdeSsmEnv(region, ssmPath.result, session),
-            },
-        }
-    )
-
-    const settings = new DefaultSettingsConfiguration()
-    settings.ensureToolkitInVscodeRemoteSsh()
-
-    getLogger().debug(
-        `AWS_SSM_CLI='${ssmPath.result}' AWS_REGION='${region}' AWS_MDE_SESSION='${session.id}' AWS_MDE_STREAMURL='${session.accessDetails.streamUrl}' AWS_MDE_TOKEN='${session.accessDetails.tokenValue}' ssh '${HOST_NAME_PREFIX}${args.id}'`
-    )
-    getLogger().debug(
-        `"${ssmPath.result}" "{\\"streamUrl\\":\\"${session.accessDetails.streamUrl}\\",\\"tokenValue\\":\\"${session.accessDetails.tokenValue}\\",\\"sessionId\\":\\"\\"}" "${region}" "StartSession"`
-    )
-
-    // Note: `await` is intentionally not used.
-    return cmd
-        .run({
-            onStdout(stdout) {
-                getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
-            },
-            onStderr(stderr) {
-                getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
-            },
-        })
-        .then(o => {
-            if (o.exitCode !== 0) {
-                getLogger().error('MDE connect: failed to start: %O', cmd)
-            }
-            return o
-        })
+    return { vsc, ssm, ssh }
 }

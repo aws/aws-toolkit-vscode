@@ -9,12 +9,7 @@ import { CawsDevEnv, ConnectedCawsClient } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
 
-interface OldSessionDetails {
-    readonly type: 'old'
-}
-
-interface NewSessionDetails {
-    readonly type: 'new'
+interface SessionDetails {
     readonly id: string
     readonly region: string
     readonly ssmPath: string
@@ -24,20 +19,15 @@ interface NewSessionDetails {
     }
 }
 
-type SessionDetails = OldSessionDetails | NewSessionDetails
-
 /**
  * Checks if the `ssh` daemon is still active or not.
  */
-async function checkSession(env: DevEnvId, sshPath: string): Promise<boolean> {
-    const host = getHostNameFromEnv(env)
-    const result = await new ChildProcess(sshPath, ['-O', 'check', host]).run()
+async function checkSession(host: string, sshPath: string): Promise<boolean> {
+    const result = await new ChildProcess(sshPath, ['-O', 'check', host]).run({
+        onStderr: text => getLogger().debug(`cawsSessionProvider (stderr): ${text}`),
+    })
 
-    getLogger().debug(`cawsSessionProvider: check session stdout: ${result.stdout}`)
-    getLogger().debug(`cawsSessionProvider: check session stderr: ${result.stderr}`)
-    getLogger().debug(`cawsSessionProvider: check session exit: ${result.exitCode}`)
-
-    return result.exitCode !== 0
+    return result.exitCode === 0
 }
 
 type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
@@ -48,11 +38,8 @@ export function createCawsSessionProvider(
     sshPath = 'ssh'
 ): SessionProvider {
     return {
-        get: async (env: DevEnvId) => {
-            if (await checkSession(env, sshPath)) {
-                return { type: 'old' }
-            }
-
+        isActive: env => checkSession(getHostNameFromEnv(env), sshPath),
+        getDetails: async env => {
             const session = await client.startDevEnvSession({
                 projectName: env.project.name,
                 organizationName: env.org.name,
@@ -64,9 +51,10 @@ export function createCawsSessionProvider(
             }
 
             return {
-                type: 'new',
                 region,
+                sshPath,
                 ssmPath,
+                host: getHostNameFromEnv(env),
                 id: session.sessionId,
                 ...session,
             }
@@ -75,8 +63,8 @@ export function createCawsSessionProvider(
 }
 
 interface SessionProvider {
-    get: (env: DevEnvId) => Promise<SessionDetails>
-    status?: (env: DevEnvId) => Promise<boolean> // stub, maybe not needed
+    isActive: (env: DevEnvId) => Promise<boolean>
+    getDetails: (env: DevEnvId) => Promise<SessionDetails>
 }
 
 /**
@@ -91,12 +79,11 @@ export function createBoundChildProcess(
     type Run = ChildProcess['run']
 
     async function getEnvVars(): Promise<NodeJS.ProcessEnv> {
-        const session = await provider.get(env)
-
-        if (session.type === 'old') {
+        if (await provider.isActive(env)) {
             return {}
         }
 
+        const session = await provider.getDetails(env)
         const vars = getMdeSsmEnv(session.region, session.ssmPath, session)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
