@@ -14,7 +14,7 @@ import { createClient } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
-export async function verifyCookie(cookie: string): Promise<{ username: string }> {
+async function verifyCookie(cookie: string): Promise<{ username: string }> {
     const client = await createClient(new DefaultSettingsConfiguration())
     await client.setCredentials('', cookie)
     await client.verifySession()
@@ -75,7 +75,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
     private readonly sessions = new Map<string, Session>()
     private sessionCounter = 0
 
-    public constructor(protected readonly storage: CawsAuthStorage) {}
+    public constructor(protected readonly storage: CawsAuthStorage, private readonly getUser = verifyCookie) {}
 
     public listAccounts(): AccountDetails[] {
         return this.storage.getUsers().map(user => ({
@@ -95,7 +95,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
      * itself becomes a prompt.
      */
     public async createAccount(cookie: string): Promise<AccountDetails> {
-        const person = await verifyCookie(cookie)
+        const person = await this.getUser(cookie)
         await this.storage.updateUser(person.username, cookie)
 
         return {
@@ -119,7 +119,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
             const cookie = await this.storage.getSecret(account.id)
             // Ideally a client should always be immutable after creation
             // Additional context could be bound to derived instances, but best practice is to keep SDK clients 'pure'
-            const person = await verifyCookie(cookie)
+            const person = await this.getUser(cookie)
             await this.storage.updateUser(person.username, cookie)
 
             return {
@@ -143,10 +143,6 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
      * Usually with an SSO flow we won't know account details until after a session has been created.
      */
     public async createSession(account: AccountDetails): Promise<Session> {
-        if (this.sessions.has(account.id)) {
-            throw new Error(`Session already exists for account: ${account.id}`)
-        }
-
         // ---- CAWS auth flow goes here ---- //
         // using a cookie to login makes the logic a lot clunkier than it should be
 

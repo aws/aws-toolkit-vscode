@@ -212,9 +212,9 @@ class CawsClientInternal {
         return this.username
     }
 
-    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false, defaultVal?: T): Promise<T>
-    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true): Promise<T | undefined>
-    public async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T | undefined> {
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false, defaultVal?: T): Promise<T>
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true): Promise<T | undefined>
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T | undefined> {
         const log = this.log
         return new Promise<T | undefined>((resolve, reject) => {
             req.send(function (e, data) {
@@ -625,10 +625,6 @@ class CawsClientInternal {
             ),
             onCancel: () => undefined,
         })
-    }
-
-    public createRepoLabel(r: CawsRepo): string {
-        return `${r.org.name} / ${r.project.name} / ${r.name}`
     }
 
     /**

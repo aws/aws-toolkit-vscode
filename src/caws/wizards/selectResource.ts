@@ -14,7 +14,7 @@ import {
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { isValidResponse } from '../../shared/wizards/wizard'
 
-function createRepoLabel(r: caws.CawsRepo): string {
+export function createRepoLabel(r: caws.CawsRepo): string {
     return `${r.org.name} / ${r.project.name} / ${r.name}`
 }
 
