@@ -12,6 +12,7 @@ import * as nls from 'vscode-nls'
 import globals from '../../shared/extensionGlobals'
 import { GitExtension } from '../../shared/extensions/git'
 import { CawsAuthenticationProvider } from '../auth'
+import { createRepoLabel } from '../wizards/selectResource'
 const localize = nls.loadMessageBundle()
 
 export class CawsRemoteSourceProvider implements RemoteSourceProvider {
@@ -43,7 +44,7 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
             const cloneUrl = await this.client.toCawsGitUri(repo.org.name, repo.project.name, repo.name)
             const url = toCawsUrl(repo)
             repos.push({
-                name: this.client.createRepoLabel(repo),
+                name: createRepoLabel(repo),
                 url: cloneUrl,
                 description: repo.description,
             })

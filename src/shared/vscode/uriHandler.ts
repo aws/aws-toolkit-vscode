@@ -24,6 +24,8 @@ interface HandlerWithParser<T> {
 }
 
 export class UriHandler implements vscode.UriHandler {
+    public constructor(private readonly window = vscode.window) {}
+
     private handlers: Map<string, HandlerWithParser<any>> = new Map()
 
     public async handleUri(uri: vscode.Uri): Promise<void> {
@@ -48,7 +50,12 @@ export class UriHandler implements vscode.UriHandler {
         try {
             parsedQuery = parser ? await parser(params) : params
         } catch (err) {
-            showViewLogsMessage(localize('AWS.uriHandler.parser.failed', 'Failed to parse URI query: {0}', uriNoQuery))
+            const failedParsedMessage = localize(
+                'AWS.uriHandler.parser.failed',
+                'Failed to parse URI query: {0}',
+                uriNoQuery
+            )
+            showViewLogsMessage(failedParsedMessage, this.window)
             getLogger().error(`UriHandler: query parsing failed for path "${uri.path}": %O`, err)
             return
         }
@@ -57,7 +64,12 @@ export class UriHandler implements vscode.UriHandler {
             // This await is needed to catch unhandled rejected Promises
             return await handler(parsedQuery)
         } catch (err) {
-            showViewLogsMessage(localize('AWS.uriHandler.handler.failed', 'Failed to handle URI: {0}', uriNoQuery))
+            const failedResolvedMessage = localize(
+                'AWS.uriHandler.handler.failed',
+                'Failed to handle URI: {0}',
+                uriNoQuery
+            )
+            showViewLogsMessage(failedResolvedMessage, this.window)
             getLogger().error(`UriHandler: unexpected exception when handling "${uri.path}": %O`, err)
         }
     }
