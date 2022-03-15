@@ -2971,7 +2971,7 @@
         "webpack-dev-server": "^4.4.0"
     },
     "dependencies": {
-        "@aws-sdk/client-sso": "^3.16.0",
+        "@aws-sdk/client-sso": "^3.54.0",
         "@aws-sdk/client-sso-oidc": "^3.52.0",
         "@aws-sdk/credential-provider-ini": "^3.46.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
