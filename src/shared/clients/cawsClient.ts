@@ -212,11 +212,11 @@ class CawsClientInternal {
         return this.username
     }
 
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false, defaultVal?: T): Promise<T>
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true): Promise<T | undefined>
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T | undefined> {
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false): Promise<T>
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T> {
         const log = this.log
-        return new Promise<T | undefined>((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
                 const r = req as any
                 if (e) {
@@ -263,10 +263,11 @@ class CawsClientInternal {
                     } else {
                         log.error('API request failed:%O\nheaders: %O', req, logHeaders)
                     }
-                    if (silent && defaultVal) {
+                    if (silent) {
+                        if (defaultVal === undefined) {
+                            throw Error()
+                        }
                         resolve(defaultVal)
-                    } else if (silent) {
-                        resolve(undefined)
                     } else {
                         reject(e)
                     }
@@ -361,7 +362,7 @@ class CawsClientInternal {
         }
 
         const requester = async (request: caws.ListOrganizationsInput) =>
-            (await this.call(this.sdkClient.listOrganizations(request), true)) ?? { items: [] }
+            this.call(this.sdkClient.listOrganizations(request), true, { items: [] })
         const collection = pageableToCollection(requester, {}, 'nextToken', 'items')
         return collection.map(summaries => summaries?.map(asCawsOrg) ?? [])
     }
@@ -371,7 +372,7 @@ class CawsClientInternal {
      */
     public listProjects(request: caws.ListProjectsInput): AsyncCollection<CawsProject[]> {
         const requester = async (request: caws.ListProjectsInput) =>
-            (await this.call(this.sdkClient.listProjects(request), true)) ?? { items: [] }
+            this.call(this.sdkClient.listProjects(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
         return collection.map(
@@ -393,7 +394,7 @@ class CawsClientInternal {
     public listDevEnvs(proj: CawsProject): AsyncCollection<CawsDevEnv[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
         const requester = async (request: caws.ListDevelopmentWorkspaceInput) =>
-            (await this.call(this.sdkClient.listDevelopmentWorkspace(request), true)) ?? { items: [] }
+            this.call(this.sdkClient.listDevelopmentWorkspace(request), true, { items: [] })
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
 
         const makeDescription = (env: caws.DevelopmentWorkspaceSummary) => {
@@ -423,7 +424,7 @@ class CawsClientInternal {
      */
     public listRepos(request: caws.ListSourceRepositoriesInput): AsyncCollection<CawsRepo[]> {
         const requester = async (request: caws.ListSourceRepositoriesInput) =>
-            (await this.call(this.sdkClient.listSourceRepositories(request), true)) ?? { items: [] }
+            this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(
             summaries =>
