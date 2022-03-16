@@ -66,7 +66,7 @@ class DynamicResourceUpdateManagerTest {
 
     @Test
     fun `Resource State Change Triggers are correctly reflected`() {
-        var testOperationState: MutableList<ResourceMutationState> = mutableListOf()
+        val testOperationState: MutableList<ResourceMutationState> = mutableListOf()
         dynamicResourceUpdateManager = DynamicResourceUpdateManager.getInstance(projectRule.project)
 
         cloudControlClient.stub {
@@ -115,7 +115,7 @@ class DynamicResourceUpdateManagerTest {
 
     @Test
     fun `Resource State Change Triggers are updates status text`() {
-        var testOperationStatus: MutableList<OperationStatus> = mutableListOf()
+        val testOperationStatus: MutableList<OperationStatus> = mutableListOf()
         dynamicResourceUpdateManager = DynamicResourceUpdateManager.getInstance(projectRule.project)
 
         cloudControlClient.stub {

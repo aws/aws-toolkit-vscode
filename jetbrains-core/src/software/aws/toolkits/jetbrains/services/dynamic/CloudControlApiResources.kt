@@ -16,15 +16,14 @@ import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 
 object CloudControlApiResources {
-    fun listResources(typeName: String): Resource<List<DynamicResource>> {
-        return when (typeName) {
+    fun listResources(typeName: String): Resource<List<DynamicResource>> =
+        when (typeName) {
             S3_BUCKET -> S3Resources.LIST_BUCKETS.map { it.name() }
             else -> ClientBackedCachedResource(CloudControlClient::class, "cloudcontrolapi.dynamic.resources.$typeName") {
                 this.listResourcesPaginator { req -> req.typeName(typeName) }
                     .flatMap { page -> page.resourceDescriptions().map { it.identifier() } }
             }
         }.map { DynamicResource(resourceTypeFromResourceTypeName(typeName), it) }
-    }
 
     fun resourceTypeFromResourceTypeName(typeName: String): ResourceType {
         val (_, svc, type) = typeName.split("::")

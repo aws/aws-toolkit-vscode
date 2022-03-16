@@ -14,10 +14,8 @@ import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionIte
 import java.time.Duration
 
 object SchemasResources {
-    @JvmField
-    val AWS_EVENTS_REGISTRY = "aws.events"
+    const val AWS_EVENTS_REGISTRY = "aws.events"
 
-    @JvmField
     val LIST_REGISTRIES: Resource.Cached<List<RegistrySummary>> =
         ClientBackedCachedResource(SchemasClient::class, "schemas.list_registries") {
             listRegistriesPaginator { it.build() }
@@ -26,7 +24,6 @@ object SchemasResources {
                 .toList()
         }
 
-    @JvmField
     val LIST_REGISTRIES_AND_SCHEMAS: Resource.Cached<List<SchemaSelectionItem>> =
         ClientBackedCachedResource(SchemasClient::class, "schemas.list_registries_and_schemas") {
             listRegistriesPaginator { it.build() }

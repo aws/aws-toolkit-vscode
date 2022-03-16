@@ -56,9 +56,8 @@ class CreateEcrRepoDialog(
 
     override fun continuousValidation() = false
 
-    override fun doValidateAll(): List<ValidationInfo> {
-        return panel.validateCallbacks.mapNotNull { it() }
-    }
+    override fun doValidateAll(): List<ValidationInfo> =
+        panel.validateCallbacks.mapNotNull { it() }
 
     override fun doOKAction() {
         val validation = doValidateAll()

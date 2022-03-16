@@ -64,8 +64,6 @@ formatting:
   EnumEntryNameCase:
     active: false
     autoCorrect: true
-  ExpressionBodySyntax:
-    includeLineWrapping: true
   Filename:
     active: true
   FinalNewline:
@@ -282,4 +280,25 @@ potential-bugs:
   UselessPostfixExpression:
     active: false
   WrongEqualsTypeParameter:
+    active: true
+
+style:
+  EqualsNullCall:
+    active: true
+  ExpressionBodySyntax:
+    active: true
+    includeLineWrapping: true
+  MayBeConst:
+    active: true
+  ModifierOrder:
+    active: true
+  NoTabs:
+    active: true
+  OptionalAbstractKeyword:
+    active: true
+  SafeCast:
+    active: true
+  UnusedPrivateClass:
+    active: true
+  VarCouldBeVal:
     active: true

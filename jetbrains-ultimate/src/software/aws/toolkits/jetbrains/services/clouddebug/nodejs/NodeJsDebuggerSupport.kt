@@ -86,6 +86,6 @@ class NodeJsDebuggerSupport : DebuggerSupport() {
 
     private companion object {
         private val NODE_EXECUTABLES = setOf("node", "nodejs")
-        private val NODE_DEBUG = "--inspect-brk"
+        private const val NODE_DEBUG = "--inspect-brk"
     }
 }
