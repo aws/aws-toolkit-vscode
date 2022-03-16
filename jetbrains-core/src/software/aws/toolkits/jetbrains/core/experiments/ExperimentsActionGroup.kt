@@ -12,10 +12,10 @@ import software.aws.toolkits.resources.message
 
 class ExperimentsActionGroup : DefaultActionGroup(message("aws.toolkit.experimental.title"), true), DumbAware {
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-        ToolkitExperimentManager.visibileExperiments().map { EnableExperimentAction(it) }.toTypedArray()
+        ToolkitExperimentManager.visibleExperiments().map { EnableExperimentAction(it) }.toTypedArray()
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = ToolkitExperimentManager.visibileExperiments().isNotEmpty()
+        e.presentation.isEnabledAndVisible = ToolkitExperimentManager.visibleExperiments().isNotEmpty()
     }
 }
 

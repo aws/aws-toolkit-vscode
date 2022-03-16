@@ -15,7 +15,7 @@ class ExperimentConfigurable : BoundConfigurable(message("aws.toolkit.experiment
 
     override fun createPanel() = panel {
         row { label(message("aws.toolkit.experimental.description").htmlWrap()).apply { component.icon = AllIcons.General.Warning } }
-        ToolkitExperimentManager.visibileExperiments().forEach {
+        ToolkitExperimentManager.visibleExperiments().forEach {
             row { checkBox(it.title(), it::isEnabled, it::setState, it.description()) }
         }
     }

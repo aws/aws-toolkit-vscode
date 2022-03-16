@@ -92,7 +92,7 @@ internal class ToolkitExperimentManager : PersistentStateComponent<ExperimentSta
     companion object {
         internal val EP_NAME = ExtensionPointName.create<ToolkitExperiment>("aws.toolkit.experiment")
         internal fun getInstance(): ToolkitExperimentManager = service()
-        internal fun visibileExperiments(): List<ToolkitExperiment> = EP_NAME.extensionList.filterNot { it.hidden }
+        internal fun visibleExperiments(): List<ToolkitExperiment> = EP_NAME.extensionList.filterNot { it.hidden }
     }
 }
 

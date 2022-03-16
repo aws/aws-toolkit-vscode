@@ -85,7 +85,7 @@ class ToolkitExperimentManagerTest {
 
         ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(regular, hidden), disposableRule.disposable)
 
-        assertThat(ToolkitExperimentManager.visibileExperiments()).containsOnly(regular)
+        assertThat(ToolkitExperimentManager.visibleExperiments()).containsOnly(regular)
     }
 
     @Test
@@ -134,7 +134,7 @@ class ToolkitExperimentManagerTest {
     }
 
     @Test
-    fun `explicit enable or disable takes precidence over dev mode and system property`() {
+    fun `explicit enable or disable takes precedence over dev mode and system property`() {
         val experiment = DummyExperiment()
         ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
         developerModeRule.setState(true)
