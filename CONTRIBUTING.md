@@ -255,10 +255,10 @@ requests just from the model/types.
 
 1. Add an entry to the list in `generateServiceClient.ts`:
     ```diff
-     diff --git a/build-scripts/generateServiceClient.ts b/build-scripts/generateServiceClient.ts
+     diff --git a/src/scripts/build/generateServiceClient.ts b/src/scripts/build/generateServiceClient.ts
      index 8bb278972d29..6c6914ec8812 100644
-     --- a/build-scripts/generateServiceClient.ts
-     +++ b/build-scripts/generateServiceClient.ts
+     --- a/src/scripts/build/generateServiceClient.ts
+     +++ b/src/scripts/build/generateServiceClient.ts
      @@ -199,6 +199,10 @@ ${fileContents}
       ;(async () => {
           const serviceClientDefinitions: ServiceClientDefinition[] = [
@@ -272,7 +272,7 @@ requests just from the model/types.
     ```
 2. Run the script:
     ```
-    ./node_modules/.bin/ts-node ./build-scripts/generateServiceClient.ts
+    ./node_modules/.bin/ts-node ./scripts/build/generateServiceClient.ts
     ```
 3. The script produces a `*.d.ts` file (used only for IDE
    code-completion, not required to actually make requests):

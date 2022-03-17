@@ -25,7 +25,7 @@ function parseArgs() {
     //   $ npm run package -- foo
     // yields this argv:
     //   0: /…/node_modules/.bin/ts-node
-    //   1: /…/build-scripts/package.ts
+    //   1: /…/src/scripts/build/package.ts
     //   2: foo
 
     const args = {

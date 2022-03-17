@@ -287,7 +287,7 @@ function createWebviewPanel(params: WebviewPanelParams & { context: ExtContext }
  */
 function updateWebview(webview: vscode.Webview, params: WebviewParams & { context: ExtContext }): vscode.Webview {
     const context = params.context.extensionContext
-    const libsPath: string = path.join(context.extensionPath, 'media', 'libs')
+    const libsPath: string = path.join(context.extensionPath, 'dist', 'libs')
     const jsPath: string = path.join(context.extensionPath, 'media', 'js')
     const cssPath: string = path.join(context.extensionPath, 'media', 'css')
     const webviewPath: string = path.join(context.extensionPath, 'dist')
