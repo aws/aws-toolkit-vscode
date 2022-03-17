@@ -6,9 +6,6 @@
 import * as vscode from 'vscode'
 import * as AWS from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-// TEMPORARY: graphql
-import * as gql from 'graphql-request'
-import * as gqltypes from 'graphql-request/dist/types'
 import * as caws from '../../../types/clientcodeaws'
 import * as logger from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
@@ -23,8 +20,6 @@ import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 
 const localize = nls.loadMessageBundle()
-
-export const useGraphql = false
 
 export const cawsRegion = 'us-east-1' // Try "us-west-2" for beta/integ/gamma.
 export const cawsEndpoint = 'https://public.api-gamma.REMOVED.codes' // gamma web: https://integ.stage.REMOVED.codes/
@@ -96,50 +91,6 @@ async function createCawsClient(
     return c
 }
 
-function createGqlClient(
-    apiKey: string,
-    authCookie: string = '',
-    endpoint: string = cawsEndpointGql
-): gql.GraphQLClient {
-    const client = new gql.GraphQLClient(endpoint, {
-        headers: {
-            'x-api-key': apiKey,
-            ...(authCookie ? { cookie: authCookie } : {}),
-        },
-    })
-    return client
-}
-
-/**
- * Executes a graphql query/mutation and returns the result.
- */
-async function gqlRequest<T>(
-    gqlClient: gql.GraphQLClient,
-    q: string,
-    args: gqltypes.Variables
-): Promise<T | undefined> {
-    try {
-        const resp = await gqlClient.rawRequest(q, { input: args })
-        const reqId = resp.headers.get('x-request-id')
-        logger.getLogger().verbose('graphql response (%d):\n  x-request-id: %s  \n  %O', resp.status, reqId, resp.data)
-        if (!resp.data) {
-            return undefined
-        }
-        // There is always one top-level key, we want the child object.
-        const r = resp.data[Object.keys(resp.data)[0]]
-        return r as T
-    } catch (e) {
-        const err = e as any
-        const reqId = err?.response?.headers?.get ? err.response.headers.get('x-request-id') : undefined
-        delete err.request // Redundant, and may contain private info.
-        if (err.response) {
-            delete err.message // Redundant, and prints unwanted info.
-            delete err.response.headers // Noisy.
-        }
-        logger.getLogger().error('graphql request failed:\n  x-request-id: %s\n  %O', reqId, err.response)
-    }
-}
-
 // CAWS client has two variants: 'logged-in' and 'not logged-in'
 // The 'not logged-in' variant is a subtype and has restricted functionality
 // These characteristics appear in the Smithy model, but the SDK codegen is unable to model this
@@ -165,8 +116,7 @@ export async function createClient(
     authCookie?: string
 ): Promise<CawsClient> {
     const sdkClient = await createCawsClient(authCookie, 'xxx', regionCode, endpoint)
-    const gqlClient = createGqlClient('xxx', authCookie)
-    const c = new CawsClientInternal(settings, regionCode, endpoint, sdkClient, gqlClient, authCookie)
+    const c = new CawsClientInternal(settings, regionCode, endpoint, sdkClient, authCookie)
     return c
 }
 
@@ -180,7 +130,6 @@ class CawsClientInternal {
         private readonly regionCode: string,
         private readonly endpoint: string,
         private sdkClient: caws,
-        private gqlClient: gql.GraphQLClient,
         private authCookie?: string
     ) {
         this.log = logger.getLogger()
@@ -202,7 +151,6 @@ class CawsClientInternal {
         this.username = username
         this.authCookie = authCookie
         this.sdkClient = await createCawsClient(authCookie, this.apiKey, this.regionCode, this.endpoint)
-        this.gqlClient = createGqlClient(this.apiKey, this.authCookie)
     }
 
     public user(): string {
@@ -212,11 +160,11 @@ class CawsClientInternal {
         return this.username
     }
 
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false, defaultVal?: T): Promise<T>
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true): Promise<T | undefined>
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T | undefined> {
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false): Promise<T>
+    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T> {
         const log = this.log
-        return new Promise<T | undefined>((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
                 const r = req as any
                 if (e) {
@@ -263,10 +211,11 @@ class CawsClientInternal {
                     } else {
                         log.error('API request failed:%O\nheaders: %O', req, logHeaders)
                     }
-                    if (silent && defaultVal) {
+                    if (silent) {
+                        if (defaultVal === undefined) {
+                            throw Error()
+                        }
                         resolve(defaultVal)
-                    } else if (silent) {
-                        resolve(undefined)
                     } else {
                         reject(e)
                     }
@@ -288,20 +237,6 @@ class CawsClientInternal {
     public async createAccessToken(
         args: caws.CreateAccessTokenRequest
     ): Promise<caws.CreateAccessTokenResponse | undefined> {
-        if (useGraphql) {
-            const o = await gqlRequest<caws.CreateAccessTokenResponse>(
-                this.gqlClient,
-                `mutation ($input: CreateAccessTokenRequestInput!) {
-                    createAccessToken(input: $input) {
-                        secret
-                        __typename
-                    }
-                }`,
-                args
-            )
-            return o
-        }
-
         const c = this.sdkClient
         const token = await this.call(c.createAccessToken(args), false)
         return token
@@ -312,43 +247,8 @@ class CawsClientInternal {
      * stores the username for use in later calls.
      */
     public async verifySession(): Promise<caws.VerifySessionResponse | undefined> {
-        if (!useGraphql) {
-            const c = this.sdkClient
-            const o = await this.call(c.verifySession(), false)
-            if (o?.identity) {
-                const person = await this.call(c.getPerson({ id: o.identity }), false)
-                this.username = person.userName
-            }
-            return o
-        }
-
-        const o = await gqlRequest<caws.VerifySessionResponse>(
-            this.gqlClient,
-            gql.gql`{ verifySession { identity, self { userName }} }`,
-            {}
-        )
-        if (useGraphql && o?.self && (o.self as any).userName) {
-            this.username = (o?.self as any).userName
-        } else {
-            this.username = o?.self
-        }
-        return o
-    }
-
-    /** Gets info about the current user */
-    public async getUser(args: caws.GetPersonRequest): Promise<caws.GetPersonResponse | undefined> {
-        const o = await gqlRequest<caws.GetPersonResponse>(
-            this.gqlClient,
-            gql.gql`query ($input: GetPersonRequestInput!) {
-                getPerson(input: $input) {
-                    displayName
-                    userId
-                    userName
-                    version
-                }
-            }`,
-            args
-        )
+        const o = await this.call(this.sdkClient.verifySession(), false)
+        this.username = o?.self
         return o
     }
 
@@ -361,7 +261,7 @@ class CawsClientInternal {
         }
 
         const requester = async (request: caws.ListOrganizationsInput) =>
-            (await this.call(this.sdkClient.listOrganizations(request), true)) ?? { items: [] }
+            this.call(this.sdkClient.listOrganizations(request), true, { items: [] })
         const collection = pageableToCollection(requester, {}, 'nextToken', 'items')
         return collection.map(summaries => summaries?.map(asCawsOrg) ?? [])
     }
@@ -371,7 +271,7 @@ class CawsClientInternal {
      */
     public listProjects(request: caws.ListProjectsInput): AsyncCollection<CawsProject[]> {
         const requester = async (request: caws.ListProjectsInput) =>
-            (await this.call(this.sdkClient.listProjects(request), true)) ?? { items: [] }
+            this.call(this.sdkClient.listProjects(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
         return collection.map(
@@ -393,7 +293,7 @@ class CawsClientInternal {
     public listDevEnvs(proj: CawsProject): AsyncCollection<CawsDevEnv[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
         const requester = async (request: caws.ListDevelopmentWorkspaceInput) =>
-            (await this.call(this.sdkClient.listDevelopmentWorkspace(request), true)) ?? { items: [] }
+            this.call(this.sdkClient.listDevelopmentWorkspace(request), true, { items: [] })
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
 
         const makeDescription = (env: caws.DevelopmentWorkspaceSummary) => {
@@ -423,7 +323,7 @@ class CawsClientInternal {
      */
     public listRepos(request: caws.ListSourceRepositoriesInput): AsyncCollection<CawsRepo[]> {
         const requester = async (request: caws.ListSourceRepositoriesInput) =>
-            (await this.call(this.sdkClient.listSourceRepositories(request), true)) ?? { items: [] }
+            this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(
             summaries =>
