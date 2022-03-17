@@ -332,12 +332,8 @@ function notifyDuringLongDeployment(deployParameters: DeploySamApplicationParame
         const stack = (await cfnClient.describeStacks(deployParameters.destinationStackName)).Stacks
         if (stack !== undefined) {
             const helpLink = localize('AWS.samcli.deploy.stuckStackHelpLink', 'View docs')
-            const cfnConsole = localize('AWS.samcli.deploy.goToCfnDashboard', 'Go to CFN dashboard')
-            const viewAwsStatus = localize(
-                'AWS.samcli.deploy.viewAwsStatus',
-                'View {0} status',
-                getIdeProperties().company
-            )
+            const cfnConsole = localize('AWS.samcli.deploy.goToCfnDashboard', 'View Stack')
+            const viewAwsStatus = localize('AWS.samcli.deploy.viewAwsStatus', '{0} status', getIdeProperties().company)
             const cancelUpdate = localize('AWS.samcli.deploy.cancelUpdate', 'Cancel update')
             const cfnConsoleUrl = `https://${deployParameters.region}.console.aws.amazon.com/cloudformation/home?region=${deployParameters.region}`
             const items = [helpLink, cfnConsole, viewAwsStatus]
