@@ -62,7 +62,8 @@
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "null",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
             },
             "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
@@ -81,7 +82,8 @@
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
             },
             "outFiles": ["${workspaceFolder}/dist/.vscode/*", "${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
@@ -99,7 +101,8 @@
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "null",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"
@@ -117,7 +120,8 @@
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"

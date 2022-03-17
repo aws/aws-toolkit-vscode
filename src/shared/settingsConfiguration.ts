@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import { ClassToInterfaceType } from './utilities/tsUtils'
-import { isReleaseVersion } from './vscode/env'
+import { isAutomation, isReleaseVersion } from './vscode/env'
 import * as logger from './logger'
 import globals from './extensionGlobals'
 
@@ -220,8 +220,8 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         silent: boolean = false
     ): T | undefined {
         const val = this.getSetting<T>(key, type, {
-            // Never throw in a release environment, but throw in CI
-            silent: silent ? 'yes' : isReleaseVersion() ? 'notfound' : 'no',
+            // Throw if this is CI and not a release version
+            silent: silent ? 'yes' : !isAutomation() || isReleaseVersion() ? 'notfound' : 'no',
             logging: true,
         })
         if (val === undefined) {
