@@ -6,7 +6,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { extensionVersion, isAutomation } from '../vscode/env'
+import { extensionVersion, isAutomation, isReleaseVersion } from '../vscode/env'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
 import { MetricDatum } from './clienttelemetry'
@@ -55,7 +55,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 return undefined
             }
 
-            if (!isAutomation()) {
+            if (!isAutomation() || isReleaseVersion()) {
                 await this.client
                     .postMetrics({
                         AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,

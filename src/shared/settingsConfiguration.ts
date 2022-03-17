@@ -18,7 +18,6 @@ export type SettingsConfiguration = ClassToInterfaceType<DefaultSettingsConfigur
 
 export type AwsDevSetting =
     | 'aws.forceCloud9'
-    | 'aws.dev.forceTelemetry'
     | 'aws.dev.forceInstallTools'
     | 'aws.dev.telemetryEndpoint'
     | 'aws.dev.telemetryUserPool'
