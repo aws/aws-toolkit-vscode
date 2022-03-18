@@ -3,7 +3,7 @@
 .vscode/**
 .vscode-test/**
 .changes/**
-build-scripts/**
+scripts/**
 buildspec/**
 dist/src/test/**
 dist/src/integrationTest/**
@@ -11,12 +11,10 @@ dist/src/testFixtures/**
 dist/test/**
 dist/integrationTest/**
 dist/third-party/test/**
-dist/extension.js.map
 dist/**/*.map
 src/**
 out/**
 third-party/test/**
-test-scripts/**
 webpack.config.js
 .gitignore
 coverconfig.json
