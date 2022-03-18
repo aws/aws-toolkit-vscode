@@ -111,7 +111,7 @@ export function isCn(): boolean {
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'media', 'libs')
+        const basePath = path.join(globals.context.extensionPath, 'dist', 'libs')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }

@@ -13,7 +13,7 @@ import { realpath } from 'fs-extra'
 import { execFileSync } from 'child_process'
 import { sleep } from '../../../shared/utilities/promiseUtilities'
 import { getLogger } from '../../../shared/logger/logger'
-import { getMinVsCodeVersion } from '../../../../test-scripts/launchTestUtilities'
+import { getMinVsCodeVersion } from '../../../../scripts/test/launchTestUtilities' // TODO: don't use stuff from 'scripts'
 
 const TEST_REMOTE_NAME = 'test-origin'
 const TEST_REMOTE_URL = 'https://github.com/aws/aws-toolkit-vscode'

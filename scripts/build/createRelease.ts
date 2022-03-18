@@ -6,11 +6,12 @@
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import { version } from '../../package.json'
 
-const changesDirectory = '.changes'
+const cwd = process.cwd()
+const changesDirectory = path.join(cwd, '.changes')
 const nextReleaseDirectory = path.join(changesDirectory, 'next-release')
-const releaseVersion = require(path.join('..', 'package.json')).version
-const changesFile = path.join(changesDirectory, `${releaseVersion}.json`)
+const changesFile = path.join(changesDirectory, `${version}.json`)
 
 fs.mkdirpSync(nextReleaseDirectory)
 
@@ -21,7 +22,7 @@ if (changeFiles.length === 0) {
 }
 try {
     fs.accessSync(changesFile)
-    console.log(`Error! changelog file ${changesFile} already exists for version ${releaseVersion}!`)
+    console.log(`Error! changelog file ${changesFile} already exists for version ${version}!`)
     process.exit(-1)
 } catch (err) {
     // This is what we want to happen, the file should not exist
@@ -30,7 +31,7 @@ try {
 const timestamp = new Date().toISOString().split('T')[0]
 const changelog: any = {
     date: timestamp,
-    version: releaseVersion,
+    version: version,
     entries: [],
 }
 
@@ -43,8 +44,8 @@ changelog.entries.sort((x: { type: string }, y: { type: string }) => x.type.loca
 
 // Write changelog file
 fs.writeFileSync(changesFile, JSON.stringify(changelog, undefined, '\t'))
-const fileData = fs.readFileSync('CHANGELOG.md')
-let append = `## ${releaseVersion} ${timestamp}\n\n`
+const fileData = fs.readFileSync(path.join(cwd, 'CHANGELOG.md'))
+let append = `## ${version} ${timestamp}\n\n`
 for (const file of changelog.entries) {
     append += `- **${file.type}** ${file.description}\n`
 }

@@ -4,7 +4,7 @@
  */
 
 import * as child_process from 'child_process'
-import * as path from 'path'
+import * as manifest from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from 'vscode-test'
 
 const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
@@ -99,10 +99,8 @@ export async function getCliArgsToDisableExtensions(
 }
 
 export function getMinVsCodeVersion(): string {
-    const vsCodeVersion: string | undefined = require(path.join('..', 'package.json'))?.engines?.vscode
-    if (!vsCodeVersion) {
-        throw Error('Minimum version specified to run tests, but package.json does not have a .engine.vscode!')
-    }
+    const vsCodeVersion = manifest.engines.vscode
+
     // We assume that we specify a minium, so it matches ^<number>, so remove ^'s
     const sanitizedVersion = vsCodeVersion.replace('^', '')
     console.log(`Using minimum VSCode version specified in package.json: ${sanitizedVersion}`)

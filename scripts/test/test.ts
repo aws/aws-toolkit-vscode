@@ -6,9 +6,8 @@
 import { resolve } from 'path'
 import { runTests } from 'vscode-test'
 import { setupVSCodeTestInstance } from './launchTestUtilities'
-import { env } from 'process'
-import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
-import { sleep } from '../src/shared/utilities/promiseUtilities'
+import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
+import { sleep } from '../../src/shared/utilities/promiseUtilities'
 
 /**
  * Amount of time to wait before executing tests.
@@ -31,9 +30,8 @@ async function setupVSCode(): Promise<string> {
     try {
         console.log('Running Main test suite...')
 
-        env['AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE'] = 'true'
         const vsCodeExecutablePath = await setupVSCode()
-        const rootDir = resolve(__dirname, '../')
+        const rootDir = process.cwd()
         const testEntrypoint = resolve(rootDir, 'dist/src/test/index.js')
         const testWorkspace = resolve(rootDir, 'src/testFixtures/workspaceFolder')
         console.log(`Starting tests: ${testEntrypoint}`)
@@ -44,6 +42,7 @@ async function setupVSCode(): Promise<string> {
             extensionTestsPath: testEntrypoint,
             // For verbose VSCode logs, add "--verbose --log debug". c2165cf48e62c
             launchArgs: [testWorkspace, DISABLE_EXTENSIONS, VSCODE_EXTENSION_ID.awstoolkit],
+            extensionTestsEnv: { ['AWS_TOOLKIT_AUTOMATION']: 'UNIT_TESTS' },
         })
 
         console.log(`Finished running Main test suite with result code: ${result}`)
