@@ -5,7 +5,7 @@
 
 import * as child_process from 'child_process'
 import * as manifest from '../../package.json'
-import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from 'vscode-test'
+import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
 
 const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
 
@@ -39,9 +39,8 @@ export async function setupVSCodeTestInstance(): Promise<string> {
 }
 
 export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<string> {
-    const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
-
-    const cmdArgs = [...args]
+    const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(vsCodeExecutablePath)
+    const cmdArgs = [...cliArgs, ...args]
 
     // Workaround: set --user-data-dir to avoid this error in CI:
     // "You are trying to start Visual Studio Code as a super user …"
@@ -49,14 +48,14 @@ export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string
         cmdArgs.push('--user-data-dir', process.env.AWS_TOOLKIT_TEST_USER_DIR)
     }
 
-    console.log(`Invoking vscode CLI command:\n    "${vsCodeCliPath}" ${JSON.stringify(cmdArgs)}`)
-    const spawnResult = child_process.spawnSync(vsCodeCliPath, cmdArgs, {
+    console.log(`Invoking vscode CLI command:\n    "${cli}" ${JSON.stringify(cmdArgs)}`)
+    const spawnResult = child_process.spawnSync(cli, cmdArgs, {
         encoding: 'utf-8',
         stdio: 'pipe',
     })
 
     if (spawnResult.status !== 0) {
-        throw new Error(`VS Code CLI command failed (exit-code: ${spawnResult.status}): ${vsCodeCliPath} ${cmdArgs}`)
+        throw new Error(`VS Code CLI command failed (exit-code: ${spawnResult.status}): ${cli} ${cmdArgs}`)
     }
 
     if (spawnResult.error) {
