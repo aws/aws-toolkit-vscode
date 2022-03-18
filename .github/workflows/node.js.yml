@@ -36,6 +36,7 @@ jobs:
             - name: Code coverage
               uses: codecov/codecov-action@v2
               with:
+                  verbose: true
                   directory: ./.coverage
                   flags: macos-unittests
 
@@ -63,5 +64,6 @@ jobs:
             - name: Code coverage
               uses: codecov/codecov-action@v2
               with:
+                  verbose: true
                   directory: ./.coverage
                   flags: windows-unittests
