@@ -14,7 +14,7 @@
 // 3. restore the original package.json
 //
 
-import type * as manifest from '../package.json'
+import type * as manifest from '../../package.json'
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 
