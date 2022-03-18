@@ -14,7 +14,7 @@
 // 3. restore the original package.json
 //
 
-import type * as manifest from '../package.json'
+import type * as manifest from '../../package.json'
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 
@@ -26,7 +26,7 @@ function parseArgs() {
     //   $ npm run package -- foo
     // yields this argv:
     //   0: /…/node_modules/.bin/ts-node
-    //   1: /…/build-scripts/package.ts
+    //   1: /…/src/scripts/build/package.ts
     //   2: foo
 
     const givenArgs = process.argv.slice(2)

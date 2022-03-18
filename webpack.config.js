@@ -24,7 +24,7 @@ const baseConfig = {
     name: 'main',
     target: 'node',
     entry: {
-        extension: './src/extension.ts',
+        'src/main': './src/main.ts',
         'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
     },
     output: {
@@ -51,8 +51,6 @@ const baseConfig = {
                 exclude: /node_modules|testFixtures/,
                 use: [
                     {
-                        // vscode-nls-dev loader:
-                        // * rewrite nls-calls
                         loader: 'vscode-nls-dev/lib/webpack-loader',
                         options: {
                             base: path.join(__dirname, 'src'),

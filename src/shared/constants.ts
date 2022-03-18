@@ -6,8 +6,6 @@
 import { isCloud9 } from './extensionUtilities'
 
 export const extensionSettingsPrefix: string = 'aws'
-/** Enable telemetry, even in a prerelease build. */
-export const forceTelemetry: boolean = false
 export const regionSettingKey: string = 'region'
 export const profileSettingKey: string = 'profile'
 export const productName: string = 'aws-toolkit-vscode'

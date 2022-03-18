@@ -22,6 +22,10 @@ export function runTestsInFolder(testFolder: string, initTests: string[] = []): 
     const outputFile = path.resolve(process.env['TEST_REPORT_DIR'] || '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 
+    if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
+        throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
+    }
+
     // Create the mocha test
     const mocha = new Mocha({
         ui: 'bdd',

@@ -7,8 +7,7 @@ import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
-const repoRoot = path.dirname(__dirname)
-
+const repoRoot = process.cwd()
 /**
  * This script uses the AWS JS SDK to generate service clients where the client definition is contained within
  * this repo. Client definitions are added at the bottom of this script.
@@ -34,7 +33,7 @@ async function generateServiceClients(serviceClientDefinitions: ServiceClientDef
 
 /** When cloning aws-sdk-js, we want to pull the version actually used in package-lock.json. */
 function getJsSdkVersion(): string {
-    const json = fs.readFileSync(path.resolve(__dirname, '..', 'package-lock.json')).toString()
+    const json = fs.readFileSync(path.resolve(repoRoot, 'package-lock.json')).toString()
     const packageLock = JSON.parse(json)
 
     return packageLock['dependencies']['aws-sdk']['version']

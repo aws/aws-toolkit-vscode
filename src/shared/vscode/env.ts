@@ -60,6 +60,13 @@ export function isReleaseVersion(prereleaseOk: boolean = false): boolean {
     return (prereleaseOk || !semver.prerelease(extensionVersion)) && extensionVersion !== TEST_VERSION
 }
 
+/**
+ * Returns true if the extension is being ran from automation.
+ */
+export function isAutomation(): boolean {
+    return isCI() || !!process.env['AWS_TOOLKIT_AUTOMATION']
+}
+
 export { extensionVersion }
 
 /**

@@ -6,3 +6,4 @@ types/clientcodeaws.d.ts
 types/clientmde.d.ts
 **/*.gen.ts
 src/testFixtures/workspaceFolder/ts-plain-sam-app/
+dist/**

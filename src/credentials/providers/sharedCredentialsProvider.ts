@@ -4,10 +4,9 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import { fromIni } from '@aws-sdk/credential-provider-ini'
+import { AssumeRoleParams, fromIni } from '@aws-sdk/credential-provider-ini'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
 import { ParsedIniData, SharedConfigFiles } from '@aws-sdk/shared-ini-file-loader'
-import { AssumeRoleParams } from '@aws-sdk/credential-provider-ini/dist-types/resolveAssumeRoleCredentials'
 import { SSO } from '@aws-sdk/client-sso'
 import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
 import { chain } from '@aws-sdk/property-provider'

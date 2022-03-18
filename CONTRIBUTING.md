@@ -240,11 +240,12 @@ Toolkit for testing and development purposes. To use a setting just add it to
 your `settings.json`. At runtime if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/credentials/awsCredentialsStatusBarItem.ts#L58).
 
-### Telemetry in prerelease builds
+### Telemetry and Automation
 
-Normally, a non-release VSIX of AWS Toolkit will not send telemetry. Sometimes
-you might want to override this, when sharing a build with a beta-tester
-audience. To enable telemetry to in a non-release build, set [forceTelemetry = true]().
+Metrics are only emitted if the extension is assumed to be ran from an actual user rather than automation scripts.
+This condition is checked through an environment variable `AWS_TOOLKIT_AUTOMATION` which is set by test entry points.
+If any truthy value is present, telemetry will be dropped if the current build is not a release version. Utility functions,
+such as `assertTelemetry`, can be used to test specific telemetry emits even in automation.
 
 ### AWS SDK generator
 
@@ -255,10 +256,10 @@ requests just from the model/types.
 
 1. Add an entry to the list in `generateServiceClient.ts`:
     ```diff
-     diff --git a/build-scripts/generateServiceClient.ts b/build-scripts/generateServiceClient.ts
+     diff --git a/src/scripts/build/generateServiceClient.ts b/src/scripts/build/generateServiceClient.ts
      index 8bb278972d29..6c6914ec8812 100644
-     --- a/build-scripts/generateServiceClient.ts
-     +++ b/build-scripts/generateServiceClient.ts
+     --- a/src/scripts/build/generateServiceClient.ts
+     +++ b/src/scripts/build/generateServiceClient.ts
      @@ -199,6 +199,10 @@ ${fileContents}
       ;(async () => {
           const serviceClientDefinitions: ServiceClientDefinition[] = [
@@ -272,7 +273,7 @@ requests just from the model/types.
     ```
 2. Run the script:
     ```
-    ./node_modules/.bin/ts-node ./build-scripts/generateServiceClient.ts
+    ./node_modules/.bin/ts-node ./scripts/build/generateServiceClient.ts
     ```
 3. The script produces a `*.d.ts` file (used only for IDE
    code-completion, not required to actually make requests):
