@@ -305,6 +305,10 @@ requests just from the model/types.
     req.send(function (err, data) { ... });
     ```
 
+### Webview dev-server
+
+Webviews can be hot-reloaded (updated without restarting the extension) by running a developer server provided by webpack. This server is started automatically when running the `Extension` launch configuration. You can also start it by running `npm serve`. Note that only frontend components will be updated; if you change backend code you will still need to restart the development extension.
+
 ## Importing icons from other open source repos
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:

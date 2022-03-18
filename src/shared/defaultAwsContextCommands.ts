@@ -32,6 +32,7 @@ import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
 import { showViewLogsMessage } from './utilities/messages'
 import globals from './extensionGlobals'
+import { getMdeEnvArn } from './vscode/env'
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
@@ -183,6 +184,7 @@ export class DefaultAWSContextCommands {
     /**
      * @description Responsible for getting a profile from the user,
      * working with them to define one if necessary.
+     * Does not prompt the user if in an MDE.
      *
      * @returns User's selected Profile name, or undefined if none was selected.
      * undefined is also returned if we leave the user in a state where they are
@@ -199,13 +201,15 @@ export class DefaultAWSContextCommands {
             if (state && state.credentialProfile) {
                 return state.credentialProfile.label
             }
-        } else if (credentialsFiles.length === 0) {
-            if (await this.promptCredentialsSetup()) {
-                return await this.promptAndCreateNewCredentialsFile()
-            }
-        } else {
-            if (await this.promptCredentialsSetup()) {
-                await this.editCredentials()
+        } else if (!getMdeEnvArn()) {
+            if (credentialsFiles.length === 0) {
+                if (await this.promptCredentialsSetup()) {
+                    return await this.promptAndCreateNewCredentialsFile()
+                }
+            } else {
+                if (await this.promptCredentialsSetup()) {
+                    await this.editCredentials()
+                }
             }
         }
         return undefined

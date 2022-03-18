@@ -78,7 +78,10 @@ export async function runCommandInContainer(
             return
         }
 
-        const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9(), window, settings)
+        const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9(), window, settings).catch(e => {
+            result = 'Failed'
+            throw Error('SSM Plugin not installed and cannot auto install')
+        })
 
         status = vscode.window.setStatusBarMessage(
             localize('AWS.command.ecs.statusBar.executing', 'ECS: Executing command...')

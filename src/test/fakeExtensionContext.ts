@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
@@ -22,6 +23,8 @@ import {
 } from '../shared/sam/cli/samCliValidator'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
+import { UriHandler } from '../shared/vscode/uriHandler'
+import { CawsAuthenticationProvider, CawsAuthStorage } from '../caws/auth'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -41,7 +44,12 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storagePath: string | undefined
     public logPath: string = ''
 
-    private _extensionPath: string = ''
+    public secrets = new SecretStorage()
+
+    // Seems to be the most reliable way to set the extension path (unfortunately)
+    // TODO: figure out a robust way to source the project directory that is invariant to entry point
+    // Using `package.json` as a reference point seems to make the most sense
+    private _extensionPath: string = path.resolve(__dirname, '../../..')
     private _globalStoragePath: string = '.'
 
     public constructor(preload?: FakeExtensionState) {
@@ -68,7 +76,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     }
 
     public asAbsolutePath(relativePath: string): string {
-        return relativePath
+        return path.resolve(this._extensionPath, relativePath)
     }
 
     /**
@@ -99,6 +107,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
+        const cawsAuthProvider = new CawsAuthenticationProvider(new CawsAuthStorage(ctx.globalState, ctx.secrets))
         return {
             extensionContext: ctx,
             awsContext,
@@ -109,6 +118,8 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             invokeOutputChannel,
             telemetryService,
             credentialsStore: new CredentialsStore(),
+            uriHandler: new UriHandler(),
+            cawsAuthProvider,
         }
     }
 }
@@ -131,6 +142,27 @@ class FakeMemento implements vscode.Memento {
         this._storage[key] = value
 
         return Promise.resolve()
+    }
+}
+
+class SecretStorage implements vscode.SecretStorage {
+    private _onDidChange = new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
+    public readonly onDidChange = this._onDidChange.event
+
+    public constructor(private readonly storage: Record<string, string> = {}) {}
+
+    public async get(key: string): Promise<string | undefined> {
+        return this.storage[key]
+    }
+
+    public async store(key: string, value: string): Promise<void> {
+        this.storage[key] = value
+        this._onDidChange.fire({ key })
+    }
+
+    public async delete(key: string): Promise<void> {
+        delete this.storage[key]
+        this._onDidChange.fire({ key })
     }
 }
 

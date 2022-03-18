@@ -11,6 +11,10 @@ export const getPropAs = <T>(obj: any, key: string) => {
     )[key]
 }
 
+export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
+    return !!obj
+}
+
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
 export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 /**

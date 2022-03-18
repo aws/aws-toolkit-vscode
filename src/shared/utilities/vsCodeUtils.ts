@@ -6,9 +6,11 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import globals from '../extensionGlobals'
-
+import { getIdeProperties } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
-import { Timeout, waitTimeout } from './timeoutUtils'
+import { Window } from '../vscode/window'
+import { showViewLogsMessage } from './messages'
+import { Timeout, waitTimeout, waitUntil } from './timeoutUtils'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -45,7 +47,38 @@ export function folderIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: 
 }
 
 /**
- * Checks if the given extension is installed and active.
+ * Executes the close all editors command and waits for all visible editors to disappear
+ */
+export async function closeAllEditors() {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+
+    // The output channel counts as an editor, but you can't really close that...
+    const noVisibleEditor: boolean | undefined = await waitUntil(
+        async () => {
+            const visibleEditors = vscode.window.visibleTextEditors.filter(
+                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
+            )
+
+            return visibleEditors.length === 0
+        },
+        {
+            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
+            interval: 250,
+            truthy: true,
+        }
+    )
+
+    if (!noVisibleEditor) {
+        throw new Error(
+            `Editor "${
+                vscode.window.activeTextEditor!.document.fileName
+            }" was still open after executing "closeAllEditors"`
+        )
+    }
+}
+
+/**
+ * Checks if an extension is installed and active.
  */
 export function isExtensionActive(extId: string): boolean {
     const extension = vscode.extensions.getExtension(extId)
@@ -53,8 +86,27 @@ export function isExtensionActive(extId: string): boolean {
 }
 
 /**
- * Activates the given extension and returns it, or does nothing
- * if the extension is not installed.
+ * Checks if an extension is installed, and shows a message if not.
+ */
+export function isExtensionInstalledMsg(extId: string, extName: string, feat?: string): boolean {
+    if (vscode.extensions.getExtension(extId)) {
+        return true
+    }
+    feat = feat ? feat : `${getIdeProperties().company} Toolkit`
+    const msg = localize(
+        'AWS.missingExtension',
+        '{0} requires the {1} extension ({2}) to be installed and enabled.',
+        feat,
+        extName,
+        extId
+    )
+    showViewLogsMessage(msg, Window.vscode())
+    return false
+}
+
+/**
+ * Activates an extension and returns it, or does nothing if the extension is
+ * not installed.
  *
  * @param extId Extension id
  * @param silent Return undefined on failure, instead of throwing
