@@ -4,14 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import * as path from 'path'
 import { ExtContext } from '../shared/extensions'
-import { MdeDevfileCodeLensProvider } from '../shared/codelens/devfileCodeLensProvider'
+import { MdeDevfileCodeLensProvider } from './devfileCodeLensProvider'
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
-import { mdeConnectCommand, mdeDeleteCommand, tagMde, resumeEnvironments, tryRestart } from './mdeCommands'
+import { mdeConnectCommand, mdeDeleteCommand, tagMde, resumeEnvironments, UPDATE_DEVFILE_COMMAND } from './mdeCommands'
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
-import * as localizedText from '../shared/localizedText'
 import { activateUriHandlers } from './mdeUriHandlers'
 import { getLogger } from '../shared/logger'
 import { GitExtension } from '../shared/extensions/git'
@@ -21,19 +19,15 @@ import { MDE_RESTART_KEY } from './constants'
 import { initStatusBar } from './mdeStatusBarItem'
 import { getMdeEnvArn } from '../shared/vscode/env'
 import { createMdeWebview } from './vue/create/backend'
-import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
-
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
 /**
  * Activates MDE functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
-    await registerCommands(ctx)
+    registerCommands(ctx)
 
     const devfileRegistry = new DevfileRegistry()
-    await devfileRegistry.addWatchPattern(DEVFILE_GLOB_PATTERN)
+    devfileRegistry.addWatchPattern(DEVFILE_GLOB_PATTERN)
 
     const arn = getMdeEnvArn()
     if (arn) {
@@ -57,25 +51,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 scheme: 'file',
                 pattern: DEVFILE_GLOB_PATTERN,
             },
-            new MdeDevfileCodeLensProvider()
-        ),
-        vscode.workspace.onDidSaveTextDocument(async (doc: vscode.TextDocument) => {
-            if (doc && devfileRegistry.getRegisteredItem(doc.fileName)) {
-                const resp = await vscode.window.showInformationMessage(
-                    localize('AWS.mde.devfile.updatePrompt', 'Update the current environment with this Devfile?'),
-                    localizedText.yes,
-                    localizedText.no
-                )
-
-                if (arn && resp === localizedText.yes) {
-                    const client = new DefaultMdeEnvironmentClient()
-                    // XXX: hard-coded `projects` path, waiting for MDE to provide an environment variable
-                    // could also just parse the devfile...
-                    const location = path.relative('/projects', doc.uri.fsPath)
-                    await tryRestart(arn, () => client.startDevfile({ location }))
-                }
-            }
-        })
+            new MdeDevfileCodeLensProvider(devfileRegistry)
+        )
     )
 
     activateUriHandlers(ctx, ctx.uriHandler)
@@ -101,7 +78,7 @@ function handleRestart(ctx: ExtContext, arn: string | undefined) {
     }
 }
 
-async function registerCommands(ctx: ExtContext): Promise<void> {
+function registerCommands(ctx: ExtContext): void {
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.connect', async (treenode: MdeInstanceNode) => {
             mdeConnectCommand(treenode.env, treenode.parent.regionCode)
@@ -149,6 +126,7 @@ async function registerCommands(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.mde.configure.current', async () => {
             createMdeConfigureWebview(ctx)
-        })
+        }),
+        vscode.commands.registerCommand(UPDATE_DEVFILE_COMMAND[0], UPDATE_DEVFILE_COMMAND[1])
     )
 }

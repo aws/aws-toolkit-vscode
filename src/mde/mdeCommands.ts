@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as awsArn from '@aws-sdk/util-arn-parser'
 import * as mde from '../shared/clients/mdeClient'
 import * as nls from 'vscode-nls'
+import * as path from 'path'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showConfirmationMessage, showMessageWithCancel, showViewLogsMessage } from '../shared/utilities/messages'
@@ -24,6 +25,7 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import globals from '../shared/extensionGlobals'
 import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
+import { getMdeEnvArn } from '../shared/vscode/env'
 
 const localize = nls.loadMessageBundle()
 
@@ -284,4 +286,23 @@ export async function tryRestart(arn: string, restarter: () => Promise<void>): P
         getLogger().error('Failed to restart environment: %O', err)
         showViewLogsMessage(`Failed to restart environment: ${err.message}`)
     }
+}
+
+export const UPDATE_DEVFILE_COMMAND = ['aws.mde.updateDevfile', updateDevfile] as const
+export async function updateDevfile(uri: vscode.Uri): Promise<void> {
+    const arn = getMdeEnvArn()
+    if (!arn) {
+        return void getLogger().debug(`mde: not current in a environment`)
+    }
+
+    const client = new DefaultMdeEnvironmentClient()
+    // XXX: hard-coded `projects` path, waiting for MDE to provide an environment variable
+    // could also just parse the devfile...
+    const location = path.relative('/projects', uri.fsPath)
+
+    const title = localize('AWS.mde.container.restart', 'Restarting container...')
+    await vscode.window.withProgress({ title, location: vscode.ProgressLocation.Notification }, () =>
+        tryRestart(arn, () => client.startDevfile({ location }))
+    )
+    // if we get here, no restart happened :(
 }

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { ExtContext } from '../shared/extensions'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick, DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import { isValidResponse, Wizard, WIZARD_RETRY } from '../shared/wizards/wizard'
@@ -13,6 +13,7 @@ import { isValidResponse, Wizard, WIZARD_RETRY } from '../shared/wizards/wizard'
 // Planning on splitting this file up.
 import { CawsDevEnv, ConnectedCawsClient } from '../shared/clients/cawsClient'
 import * as glob from 'glob'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import { promisify } from 'util'
 import * as manifest from '../../package.json'
@@ -184,12 +185,18 @@ async function promptVsix(
         },
     }
 
+    const localInstall = {
+        label: 'Use local install (experimental)',
+        detail: extPath,
+        data: vscode.Uri.file(extPath),
+    }
+
     const seps = [
         { label: 'Scripts', kind: -1, data: {} as any },
         { label: 'Packages', kind: -1, data: {} as any },
     ]
     const items = (async function* () {
-        yield [seps.shift()!, packageNew]
+        yield [seps.shift()!, packageNew, localInstall]
 
         for (const f of folders) {
             const paths = await promisify(glob)('*.vsix', { cwd: f.fsPath })
@@ -265,7 +272,6 @@ async function installVsix(
     })
 
     const hostName = getHostNameFromEnv(env)
-    const remoteVsix = `/projects/${path.basename(resp)}`
 
     progress.report({ message: 'Starting controller...' })
     await new Promise<void>((resolve, reject) => {
@@ -281,30 +287,53 @@ async function installVsix(
             .catch(reject)
     })
 
-    progress.report({ message: 'Copying VSIX...' })
-    await new SessionProcess('scp', ['-v', resp, `mde-user@${hostName}:${remoteVsix}`]).run()
-
-    const EXT_ID = 'amazonwebservices.aws-toolkit-vscode'
+    const EXT_ID = VSCODE_EXTENSION_ID.awstoolkit
     const EXT_PATH = `/home/mde-user/.vscode-server/extensions`
+    const userWithHost = `mde-user@${hostName}`
 
-    const suffixParts = path
-        .basename(resp)
-        .split('-')
-        .reverse()
-        .slice(0, 2)
-        .map(s => s.replace('.vsix', ''))
-    const destName = [EXT_ID, ...suffixParts.reverse()].join('-')
-    const installCmd = [
-        `mkdir -p ${EXT_PATH}/${destName}`,
-        `unzip ${remoteVsix} "extension/*" "extension.vsixmanifest" -d ${EXT_PATH}`,
-        `rm -rf ${EXT_PATH}/${destName} || true`,
-        `rm -rf ${EXT_PATH}/${destName.split('-').slice(0, -1).join('-')} || true`,
-        `mv ${EXT_PATH}/extension ${EXT_PATH}/${destName}`,
-        `mv ${EXT_PATH}/extension.vsixmanifest ${EXT_PATH}/${destName}/.vsixmanifest`,
-    ].join(' && ')
+    if (path.extname(resp) !== '.vsix') {
+        progress.report({ message: 'Copying extension...' })
 
-    progress.report({ message: 'Installing VSIX...' })
-    await new SessionProcess(ssh, [`${hostName}`, '-v', installCmd]).run()
+        const packageData = await fs.readFile(path.join(resp, 'package.json'), 'utf-8')
+        const targetManfiest: typeof manifest = JSON.parse(packageData)
+        const destName = `${EXT_PATH}/${EXT_ID}-${targetManfiest.version}`
+        const source = `${resp}${path.sep}`
+
+        // Using `.vscodeignore` would be nice here but `rsync` doesn't understand glob patterns
+        const excludes = ['.git/', 'node_modules/', '/src/', '/scripts/', '/dist/src/test/']
+            .map(p => ['--exclude', p])
+            .reduce((a, b) => a.concat(b))
+
+        const installCommand = [`cd ${destName}`, 'npm i --ignore-scripts'].join(' && ')
+
+        await new SessionProcess('ssh', [hostName, '-v', `mkdir -p ${destName}`]).run()
+        await new SessionProcess('rsync', ['-vr', ...excludes, source, `${userWithHost}:${destName}`]).run()
+        await new SessionProcess('ssh', [hostName, '-v', installCommand]).run()
+    } else {
+        progress.report({ message: 'Copying VSIX...' })
+        const remoteVsix = `/projects/${path.basename(resp)}`
+
+        await new SessionProcess('scp', ['-v', resp, `${userWithHost}:${remoteVsix}`]).run()
+
+        const suffixParts = path
+            .basename(resp)
+            .split('-')
+            .reverse()
+            .slice(0, 2)
+            .map(s => s.replace('.vsix', ''))
+        const destName = [EXT_ID, ...suffixParts.reverse()].join('-')
+        const installCmd = [
+            `mkdir -p ${EXT_PATH}/${destName}`,
+            `unzip ${remoteVsix} "extension/*" "extension.vsixmanifest" -d ${EXT_PATH}`,
+            `rm -rf ${EXT_PATH}/${destName} || true`,
+            `rm -rf ${EXT_PATH}/${destName.split('-').slice(0, -1).join('-')} || true`,
+            `mv ${EXT_PATH}/extension ${EXT_PATH}/${destName}`,
+            `mv ${EXT_PATH}/extension.vsixmanifest ${EXT_PATH}/${destName}/.vsixmanifest`,
+        ].join(' && ')
+
+        progress.report({ message: 'Installing VSIX...' })
+        await new SessionProcess(ssh, [`${hostName}`, '-v', installCmd]).run()
+    }
 
     const workspaceUri = `vscode-remote://ssh-remote+${hostName}/projects`
     progress.report({ message: 'Launching instance...' })
