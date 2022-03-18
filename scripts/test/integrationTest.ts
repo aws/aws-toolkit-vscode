@@ -5,7 +5,7 @@
 
 import { join, resolve } from 'path'
 import { runTests } from 'vscode-test'
-import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
+import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 import { installVSCodeExtension, setupVSCodeTestInstance, getCliArgsToDisableExtensions } from './launchTestUtilities'
 
 const DISABLE_WORKSPACE_TRUST = '--disable-workspace-trust'
@@ -49,6 +49,7 @@ async function setupVSCode(): Promise<string> {
             extensionDevelopmentPath: cwd,
             extensionTestsPath: testEntrypoint,
             launchArgs: [...disableExtensions, workspacePath, DISABLE_WORKSPACE_TRUST],
+            extensionTestsEnv: { ['AWS_TOOLKIT_AUTOMATION']: 'INTEGRATION_TESTS' },
         }
         console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
         const result = await runTests(args)

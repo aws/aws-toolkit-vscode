@@ -17,7 +17,6 @@
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
             },
@@ -63,8 +62,8 @@
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "null",
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
             },
             "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
@@ -83,8 +82,8 @@
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
             },
             "outFiles": ["${workspaceFolder}/dist/.vscode/*", "${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
@@ -102,8 +101,8 @@
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "null",
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"
@@ -121,8 +120,8 @@
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
                 "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
-                "NO_COVERAGE": "true"
+                "NO_COVERAGE": "true",
+                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"

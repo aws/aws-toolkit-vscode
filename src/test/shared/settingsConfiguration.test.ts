@@ -230,7 +230,7 @@ describe('DefaultSettingsConfiguration', function () {
     })
 
     describe('readDevSetting', async function () {
-        const TEST_SETTING = 'aws.dev.forceTelemetry'
+        const TEST_SETTING = 'aws.forceCloud9'
         let prevReleaseMethod: (() => boolean) | undefined
 
         before(function () {

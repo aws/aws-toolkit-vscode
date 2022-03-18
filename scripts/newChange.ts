@@ -9,8 +9,7 @@ import { join } from 'path'
 import * as readlineSync from 'readline-sync'
 import { v4 as uuid } from 'uuid'
 
-const directory = '.changes/next-release'
-
+const directory = join(process.cwd(), '.changes', 'next-release')
 const changeTypes = ['Breaking Change', 'Feature', 'Bug Fix', 'Deprecation', 'Removal', 'Test']
 
 interface NewChange {
