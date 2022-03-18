@@ -26,15 +26,18 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
-            - run: npm install
+            - run: npm i -g npm@7
+            - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
               uses: GabrielBB/xvfb-action@v1
               with:
                   run: npm test
             - name: Code coverage
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              run: bash <(curl -s https://codecov.io/bash) -s .coverage
+              uses: codecov/codecov-action@v2
+              with:
+                  directory: ./.coverage
+                  flags: macos-unittests
 
     windows:
         name: Windows nodejs
@@ -52,7 +55,13 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
-            - run: npm install
+            - run: npm i -g npm@7
+            - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
               run: npm test
+            - name: Code coverage
+              uses: codecov/codecov-action@v2
+              with:
+                  directory: ./.coverage
+                  flags: windows-unittests

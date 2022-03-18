@@ -17,7 +17,7 @@ out/**
 third-party/test/**
 webpack.config.js
 .gitignore
-coverconfig.json
+.nycrc.json
 Dockerfile
 tsconfig.json
 tslint.json

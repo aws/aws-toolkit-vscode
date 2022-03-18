@@ -22,6 +22,7 @@ phases:
                         echo "CodeArtifact connection failed. Falling back to npm"
                     fi
                 fi
+            - npm i -g npm@7
             - npm ci --unsafe-perm
 
     build:
@@ -32,8 +33,8 @@ phases:
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
-            - test -n "$CODE_COV_TOKEN" && curl -s https://codecov.io/bash > codecov.sh || true # this sometimes times out but we don't want to fail the build
-            - test -n "$CODE_COV_TOKEN" && bash ./codecov.sh -t $CODE_COV_TOKEN || true
+            - test -n "$CODE_COV_TOKEN" && curl -Os https://uploader.codecov.io/latest/linux/codecov
+            - test -n "$CODE_COV_TOKEN" && chmod +x ./codecov && ./codecov -t $CODE_COV_TOKEN -s .coverage -F linux-unittests
 
 reports:
     unit-test:

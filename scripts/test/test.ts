@@ -42,7 +42,10 @@ async function setupVSCode(): Promise<string> {
             extensionTestsPath: testEntrypoint,
             // For verbose VSCode logs, add "--verbose --log debug". c2165cf48e62c
             launchArgs: [testWorkspace, DISABLE_EXTENSIONS, VSCODE_EXTENSION_ID.awstoolkit],
-            extensionTestsEnv: { ['AWS_TOOLKIT_AUTOMATION']: 'UNIT_TESTS' },
+            extensionTestsEnv: {
+                ['DEVELOPMENT_PATH']: rootDir,
+                ['AWS_TOOLKIT_AUTOMATION']: 'unit',
+            },
         })
 
         console.log(`Finished running Main test suite with result code: ${result}`)

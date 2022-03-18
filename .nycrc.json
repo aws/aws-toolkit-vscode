@@ -1,0 +1,6 @@
+{
+    "all": true,
+    "report-dir": "./.coverage",
+    "include": ["src/**", "dist/src/**"],
+    "exclude": ["test/**", "integrationTest/**", "testFixtures/**"]
+}
