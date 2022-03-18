@@ -18,11 +18,12 @@ import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
-import globals from '../shared/extensionGlobals'
+import globals, { initialize } from '../shared/extensionGlobals'
 import { activateExtension } from '../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { initializeIconPaths } from '../shared/icons'
 import { FakeExtensionContext } from './fakeExtensionContext'
+import * as extWindow from '../shared/vscode/window'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -37,11 +38,13 @@ before(async function () {
     } catch (e) {}
     mkdirpSync(testReportDir)
 
+    const fakeContext = new FakeExtensionContext()
+    initialize(fakeContext, extWindow.Window.vscode())
+
     // Extension activation has many side-effects such as changing globals
     // For stability in tests we will wait until the extension has activated prior to injecting mocks
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
 
-    const fakeContext = new FakeExtensionContext()
     fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
     initializeIconPaths(fakeContext)
     Object.assign(globals, { context: fakeContext })

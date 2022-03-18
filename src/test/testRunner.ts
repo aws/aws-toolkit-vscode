@@ -72,6 +72,7 @@ export async function runTestsInFolder(testFolder: string, initTests: string[] =
         if (coverage) {
             const dst = path.resolve(root, '.nyc_output', 'out.json')
             console.log(`Writing test coverage to "${dst}"`)
+            await fs.ensureDir(path.dirname(dst))
             await fs.writeFile(dst, JSON.stringify(coverage))
         } else {
             console.log('No test coverage found')
