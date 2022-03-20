@@ -130,7 +130,7 @@ export const CREDENTIAL_ERROR_REQUEST_LISTENER: ServiceOptions = {
                         vscode.window.showInformationMessage(
                             localize(
                                 'AWS.message.retryLoginSuccessful',
-                                'The credentilas for profile:{0} were invalid or expired. The profile has successfully reconnected.',
+                                'The credentilas "{0}" were invalid or expired. The profile has successfully reconnected.',
                                 profileName
                             )
                         )
