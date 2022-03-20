@@ -6,7 +6,7 @@
 import { ECS } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../requestListeners'
 
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
 

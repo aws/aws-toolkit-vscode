@@ -14,7 +14,7 @@ import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilit
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals from '../extensionGlobals'
-import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../requestListeners'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'

@@ -9,7 +9,7 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { getLogger } from '../logger'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import globals from '../extensionGlobals'
-import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../requestListeners'
 
 export const DEFAULT_MAX_THINGS = 250 // 250 is the maximum allowed by the API
 export const DEFAULT_DELIMITER = '/'

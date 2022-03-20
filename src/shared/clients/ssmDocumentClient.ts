@@ -4,7 +4,7 @@
  */
 
 import { SSM } from 'aws-sdk'
-import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../requestListeners'
 import globals from '../extensionGlobals'
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'

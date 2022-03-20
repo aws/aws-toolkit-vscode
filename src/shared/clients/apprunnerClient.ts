@@ -4,8 +4,8 @@
  */
 
 import { AppRunner } from 'aws-sdk'
-import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 import globals from '../extensionGlobals'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../requestListeners'
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 

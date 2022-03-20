@@ -5,8 +5,8 @@
 
 import { APIGateway } from 'aws-sdk'
 import { RestApi, Stages } from 'aws-sdk/clients/apigateway'
-import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 import globals from '../extensionGlobals'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../requestListeners'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type ApiGatewayClient = ClassToInterfaceType<DefaultApiGatewayClient>

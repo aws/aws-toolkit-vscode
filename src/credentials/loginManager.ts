@@ -15,8 +15,11 @@ import {
     CredentialsProvider,
     CredentialsId,
     credentialsProviderToTelemetryType,
+    fromString,
 } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import globals from '../shared/extensionGlobals'
+import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -98,5 +101,18 @@ export class LoginManager {
      */
     public async logout(force?: boolean): Promise<void> {
         await this.awsContext.setCredentials(undefined, force)
+    }
+
+    /**
+     * Retries login with last used credentials.
+     */
+    public async retryLogin(): Promise<boolean | undefined> {
+        try {
+            getLogger().debug('credentials: attempting retry login...')
+            const mruProfile = new CredentialsProfileMru(globals.context).getMruList()[0]
+            return await this.login({ passive: false, providerId: fromString(mruProfile) })
+        } catch (err) {
+            getLogger().error('credentials: failed to connect on retry: %O', err)
+        }
     }
 }

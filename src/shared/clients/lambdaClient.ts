@@ -5,7 +5,7 @@
 
 import { Lambda } from 'aws-sdk'
 import { _Blob } from 'aws-sdk/clients/lambda'
-import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../requestListeners'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'

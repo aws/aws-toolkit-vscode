@@ -11,15 +11,10 @@ import { Credentials } from '@aws-sdk/types'
 import { credentialHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { CredentialsId, asString, fromString } from './providers/credentials'
+import { CredentialsId, asString } from './providers/credentials'
 import { waitTimeout, Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
-import { CredentialsStore } from './credentialsStore'
-import { LoginManager } from './loginManager'
-import { ServiceOptions } from '../shared/awsClientBuilder'
-import { getLogger } from '../shared/logger/logger'
-import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 
 const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
 const CREDENTIALS_PROGRESS_DELAY = 1000
@@ -103,60 +98,4 @@ export async function resolveProviderWithCancel(
             throw new Error(`Request to get credentials for "${profile}" expired`)
         },
     })
-}
-
-export async function retryLogin(): Promise<boolean | undefined> {
-    try {
-        getLogger().debug('credentials: attempting retry login...')
-        const loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
-        const mruProfile = new CredentialsProfileMru(globals.context).getMruList()[0]
-        return await loginManager.login({ passive: false, providerId: fromString(mruProfile) })
-    } catch (err) {
-        getLogger().error('credentials: failed to connect on retry: %O', err)
-    }
-}
-
-export const CREDENTIAL_ERROR_REQUEST_LISTENER: ServiceOptions = {
-    onRequestSetup: [
-        req => {
-            req.on('error', async err => {
-                if (
-                    err.name.includes('ExpiredToken') ||
-                    err.message.includes('The security token included in the request is expired')
-                ) {
-                    let retryLoginResult = await retryLogin()
-                    const profileName = new CredentialsProfileMru(globals.context).getMruList()[0]
-                    if (retryLoginResult) {
-                        vscode.window.showInformationMessage(
-                            localize(
-                                'AWS.message.retryLoginSuccessful',
-                                'The credentilas "{0}" were invalid or expired. The profile has successfully reconnected.',
-                                profileName
-                            )
-                        )
-                    } else {
-                        const invalidCredentialMessage = localize(
-                            'AWS.message.credentials.error.retry',
-                            'The credentials for profile "{0}" are invalid or expired.',
-                            profileName
-                        )
-                        const chooseRetry = localize('AWS.message.retryLogin', 'Retry Login')
-                        const changeProfile = localize('AWS.message.changeProfile', 'Change Profile')
-                        while (!retryLoginResult) {
-                            await vscode.window
-                                .showErrorMessage(invalidCredentialMessage, chooseRetry, changeProfile)
-                                .then(async selection => {
-                                    if (selection === chooseRetry) {
-                                        retryLoginResult = await retryLogin()
-                                    } else if (selection === changeProfile) {
-                                        retryLoginResult = true
-                                        globals.awsContextCommands.onCommandLogin()
-                                    }
-                                })
-                        }
-                    }
-                }
-            })
-        },
-    ],
 }
