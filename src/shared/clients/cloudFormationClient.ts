@@ -4,6 +4,7 @@
  */
 
 import { CloudFormation } from 'aws-sdk'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -83,6 +84,10 @@ export class DefaultCloudFormationClient {
     }
 
     private async createSdkClient(): Promise<CloudFormation> {
-        return await globals.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            CloudFormation,
+            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            this.regionCode
+        )
     }
 }

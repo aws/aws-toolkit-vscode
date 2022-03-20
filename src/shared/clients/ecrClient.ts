@@ -4,6 +4,7 @@
  */
 
 import { ECR } from 'aws-sdk'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 export interface EcrRepository {
@@ -76,6 +77,6 @@ export class DefaultEcrClient {
     }
 
     protected async createSdkClient(): Promise<ECR> {
-        return await globals.sdkClientBuilder.createAwsService(ECR, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(ECR, CREDENTIAL_ERROR_REQUEST_LISTENER, this.regionCode)
     }
 }

@@ -6,6 +6,7 @@
 import { ECS } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
 
@@ -87,7 +88,7 @@ export class DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return await globals.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(ECS, CREDENTIAL_ERROR_REQUEST_LISTENER, this.regionCode)
     }
 
     public async executeCommand(

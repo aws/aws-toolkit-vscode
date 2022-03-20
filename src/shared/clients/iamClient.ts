@@ -4,6 +4,7 @@
  */
 
 import { IAM } from 'aws-sdk'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -92,6 +93,6 @@ export class DefaultIamClient {
     }
 
     private async createSdkClient(): Promise<IAM> {
-        return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(IAM, CREDENTIAL_ERROR_REQUEST_LISTENER, this.regionCode)
     }
 }

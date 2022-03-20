@@ -5,6 +5,7 @@
 
 import { Lambda } from 'aws-sdk'
 import { _Blob } from 'aws-sdk/clients/lambda'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -97,6 +98,10 @@ export class DefaultLambdaClient {
     }
 
     private async createSdkClient(): Promise<Lambda> {
-        return await globals.sdkClientBuilder.createAwsService(Lambda, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            Lambda,
+            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            this.regionCode
+        )
     }
 }

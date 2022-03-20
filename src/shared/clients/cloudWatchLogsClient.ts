@@ -4,6 +4,7 @@
  */
 
 import { CloudWatchLogs } from 'aws-sdk'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -48,6 +49,10 @@ export class DefaultCloudWatchLogsClient {
     }
 
     protected async createSdkClient(): Promise<CloudWatchLogs> {
-        return await globals.sdkClientBuilder.createAwsService(CloudWatchLogs, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            CloudWatchLogs,
+            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            this.regionCode
+        )
     }
 }

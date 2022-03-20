@@ -4,6 +4,7 @@
  */
 
 import { CloudControl } from 'aws-sdk'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { localize } from '../utilities/vsCodeUtils'
@@ -112,6 +113,10 @@ export class DefaultCloudControlClient implements CloudControlClient {
     }
 
     private async createSdkClient(): Promise<CloudControl> {
-        return await globals.sdkClientBuilder.createAwsService(CloudControl, undefined, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            CloudControl,
+            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            this.regionCode
+        )
     }
 }

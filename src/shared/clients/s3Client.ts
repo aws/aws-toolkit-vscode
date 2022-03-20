@@ -14,6 +14,7 @@ import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilit
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals from '../extensionGlobals'
+import { CREDENTIAL_ERROR_REQUEST_LISTENER } from '../../credentials/credentialsUtilities'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -756,7 +757,11 @@ function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucke
 async function createSdkClient(regionCode: string): Promise<S3> {
     clearInternalBucketCache()
 
-    return await globals.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
+    return await globals.sdkClientBuilder.createAwsService(
+        S3,
+        { computeChecksums: true, ...CREDENTIAL_ERROR_REQUEST_LISTENER },
+        regionCode
+    )
 }
 
 /**
