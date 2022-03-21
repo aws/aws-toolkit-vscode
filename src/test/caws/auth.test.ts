@@ -9,28 +9,29 @@ import { FakeExtensionContext } from '../fakeExtensionContext'
 import { Session } from '../../credentials/authentication'
 
 describe('CawsAuthenticationProvider', function () {
-    let users: Record<string, string>
+    let users: Record<string, { id: string; name: string }>
     let authProvider: CawsAuthenticationProvider
 
-    async function getUser(secret: string): Promise<{ username: string }> {
-        const username = users[secret]
-        if (!username) {
+    async function getUser(secret: string): Promise<{ id: string; name: string }> {
+        const data = users[secret]
+        if (!data) {
             throw new Error('Invalid session')
         }
-        return { username }
+        return data
     }
 
     beforeEach(function () {
         const ctx = new FakeExtensionContext()
         authProvider = new CawsAuthenticationProvider(new CawsAuthStorage(ctx.globalState, ctx.secrets), getUser)
         users = {
-            cookie: 'foo?',
-            'cooooooooookie?': 'foo!!!',
+            cookie: { id: '123', name: 'foo?' },
+            'cooooooooookie?': { id: '456', name: 'foo!!!' },
         }
     })
 
     it('can login', async function () {
         const account = await authProvider.createAccount('cookie')
+        assert.strictEqual(account.id, '123')
         assert.strictEqual(account.label, 'foo?')
         assert.strictEqual(authProvider.listAccounts().length, 1)
     })

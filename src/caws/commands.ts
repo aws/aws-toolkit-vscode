@@ -31,7 +31,7 @@ export async function login(authProvider: CawsAuthenticationProvider, client: Ca
 
     try {
         const { accountDetails, accessDetails } = response.session
-        await client.setCredentials(accountDetails.label, accessDetails)
+        await client.setCredentials(accessDetails, accountDetails.id)
 
         if (lastSession) {
             authProvider.deleteSession(lastSession)

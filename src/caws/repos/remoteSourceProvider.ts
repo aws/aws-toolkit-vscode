@@ -63,7 +63,7 @@ export async function initCurrentRemoteSourceProvider(
     let currDisposable: Promise<vscode.Disposable> | undefined
 
     // TODO: Add user initialization outside git extension activation
-    const initialUser = await factory().then(c => (c.connected ? c.user() : undefined))
+    const initialUser = await factory().then(async c => (c.connected ? await c.getUsername() : undefined))
     const createSourceProvider = async (uname?: string) =>
         extension.registerRemoteSourceProvider(new CawsRemoteSourceProvider(await factory(), uname))
 

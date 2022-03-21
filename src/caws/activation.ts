@@ -36,7 +36,7 @@ export function createClientFactory(authProvider: CawsAuthenticationProvider): (
         const client = await createClient(settings)
 
         if (creds) {
-            await client.setCredentials(creds.accountDetails.label, creds.accessDetails)
+            await client.setCredentials(creds.accessDetails, creds.accountDetails.id)
         }
 
         return client

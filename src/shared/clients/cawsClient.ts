@@ -24,8 +24,9 @@ const localize = nls.loadMessageBundle()
 export const cawsRegion = 'us-east-1' // Try "us-west-2" for beta/integ/gamma.
 export const cawsEndpoint = 'https://public.api-gamma.REMOVED.codes' // gamma web: https://integ.stage.REMOVED.codes/
 export const cawsEndpointGql = 'https://public.api-gamma.REMOVED.codes/graphql'
-export const cawsHostname = 'REMOVED.codes' // 'REMOVED.execute-api.us-east-1.amazonaws.cominteg.codedemo.REMOVED'
-export const cawsGitHostname = `git.service.${cawsHostname}`
+export const cawsHostname = 'integ.stage.REMOVED.codes' // 'REMOVED.execute-api.us-east-1.amazonaws.cominteg.codedemo.REMOVED'
+// export const cawsGitHostname = `git.service.${cawsHostname}` // prod endpoint
+export const cawsGitHostname = 'git.gamma.source.caws.REMOVED' // gamma
 export const cawsHelpUrl = `https://${cawsHostname}/help`
 
 /** CAWS-MDE developer environment. */
@@ -121,6 +122,7 @@ export async function createClient(
 }
 
 class CawsClientInternal {
+    private userId: string | undefined
     private username: string | undefined
     private readonly log: logger.Logger
     private apiKey: string
@@ -137,27 +139,20 @@ class CawsClientInternal {
     }
 
     public get connected(): boolean {
-        return !!(this.authCookie && this.username)
+        return !!(this.authCookie && this.userId)
     }
 
     /**
      * Rebuilds/reconnects CAWS clients with new credentials
      *
-     * @param username   CAWS username
      * @param authCookie   User secret
+     * @param userId       CAWS account id
      * @returns
      */
-    public async setCredentials(username: string, authCookie: string) {
-        this.username = username
+    public async setCredentials(authCookie: string, userId?: string) {
         this.authCookie = authCookie
+        this.userId = userId
         this.sdkClient = await createCawsClient(authCookie, this.apiKey, this.regionCode, this.endpoint)
-    }
-
-    public user(): string {
-        if (!this.username) {
-            throw Error('username is not set, call verifySession() first')
-        }
-        return this.username
     }
 
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
@@ -230,7 +225,7 @@ class CawsClientInternal {
     /**
      * Creates a PAT.
      *
-     * @param args.name CAWS username. Example: "justinmk"
+     * @param args.name Name of the token
      * @param args.expires PAT expires on this date, or undefined.
      * @returns PAT secret
      */
@@ -244,12 +239,29 @@ class CawsClientInternal {
 
     /**
      * Gets identity properties of the current authenticated principal, and
-     * stores the username for use in later calls.
+     * stores the id for use in later calls.
      */
-    public async verifySession(): Promise<caws.VerifySessionResponse | undefined> {
+    public async verifySession(): Promise<caws.VerifySessionResponse & { name: string; identity: string }> {
         const o = await this.call(this.sdkClient.verifySession(), false)
-        this.username = o?.self
-        return o
+        if (!o.identity) {
+            throw new Error('No CAWS account id found')
+        }
+        this.userId = o.identity
+
+        const name = (await this.getPerson({ id: this.userId })).userName
+
+        return { ...o, identity: this.userId, name }
+    }
+
+    public async getPerson(args: caws.GetPersonRequest): Promise<caws.GetPersonResponse & { userName: string }> {
+        const resp = await this.call(this.sdkClient.getPerson(args), false)
+
+        if (!resp.userName) {
+            throw new Error('No CAWS username found')
+        }
+        this.username = resp.userName
+
+        return { ...resp, userName: this.username }
     }
 
     /**
@@ -527,16 +539,22 @@ class CawsClientInternal {
         })
     }
 
+    public async getUsername(): Promise<string> {
+        return (this.username ??= (await this.getPerson({ id: this.userId! })).userName)
+    }
+
     /**
      * Creates a link for `git clone` usage
      * @param r CAWS repo
      */
     public async toCawsGitUri(org: string, project: string, repo: string): Promise<string> {
-        const pat = await this.createAccessToken({ name: this.user(), expires: undefined })
+        const pat = await this.createAccessToken({ name: 'aws-toolkits-vscode-token', expires: undefined })
         if (!pat?.secret) {
             throw Error('CODE.AWS: Failed to create personal access token (PAT)')
         }
 
-        return `https://${this.user()}:${pat.secret}@${cawsGitHostname}/v1/${org}/${project}/${repo}`
+        const username = await this.getUsername()
+
+        return `https://${username}:${pat.secret}@${cawsGitHostname}/v1/${org}/${project}/${repo}`
     }
 }

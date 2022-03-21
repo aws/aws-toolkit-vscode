@@ -14,18 +14,13 @@ import { createClient } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
-async function verifyCookie(cookie: string): Promise<{ username: string }> {
+async function verifyCookie(cookie: string): Promise<{ id: string; name: string }> {
     const client = await createClient(new DefaultSettingsConfiguration())
-    await client.setCredentials('', cookie)
-    await client.verifySession()
+    await client.setCredentials(cookie)
 
-    const username = client.connected ? client.user() : undefined
+    const user = await client.verifySession()
 
-    if (!username) {
-        throw new Error('Invalid session')
-    }
-
-    return { username }
+    return { id: user.identity, name: user.name }
 }
 
 interface UserMetadata {
@@ -33,6 +28,11 @@ interface UserMetadata {
      * Set true if the stored session token is known to be invalid
      */
     invalidSession?: boolean
+
+    /**
+     * Username associated with the account
+     */
+    username?: string
 }
 
 export class CawsAuthStorage {
@@ -41,10 +41,8 @@ export class CawsAuthStorage {
 
     public constructor(private readonly memento: vscode.Memento, private readonly secrets: vscode.SecretStorage) {}
 
-    public getUsers(): string[] {
-        const userdata = this.memento.get<Record<string, unknown>>(CawsAuthStorage.USERS_MEMENTO_KEY, {})
-
-        return Object.keys(userdata)
+    public getUsers(): Record<string, UserMetadata> {
+        return this.memento.get<Record<string, UserMetadata>>(CawsAuthStorage.USERS_MEMENTO_KEY, {})
     }
 
     public async getSecret(username: string): Promise<string> {
@@ -59,6 +57,15 @@ export class CawsAuthStorage {
 
     public async updateUser(username: string, secret: string, metadata?: UserMetadata): Promise<void> {
         const userdata = this.memento.get<Record<string, UserMetadata>>(CawsAuthStorage.USERS_MEMENTO_KEY, {})
+
+        // XXX: temporary code to remove older user data
+        for (const [k, v] of Object.entries(userdata)) {
+            if (!v.username) {
+                delete userdata[k]
+                getLogger().info(`CAWS: removed old user data "${k}"`)
+            }
+        }
+
         await this.memento.update(CawsAuthStorage.USERS_MEMENTO_KEY, {
             ...userdata,
             [username]: { ...userdata[username], ...metadata },
@@ -78,9 +85,9 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
     public constructor(protected readonly storage: CawsAuthStorage, private readonly getUser = verifyCookie) {}
 
     public listAccounts(): AccountDetails[] {
-        return this.storage.getUsers().map(user => ({
-            id: user,
-            label: user,
+        return Object.entries(this.storage.getUsers()).map(([id, data]) => ({
+            id,
+            label: data.username ?? id,
         }))
     }
 
@@ -96,11 +103,11 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
      */
     public async createAccount(cookie: string): Promise<AccountDetails> {
         const person = await this.getUser(cookie)
-        await this.storage.updateUser(person.username, cookie)
+        await this.storage.updateUser(person.id, cookie, { username: person.name })
 
         return {
-            id: person.username,
-            label: person.username,
+            id: person.id,
+            label: person.name,
         }
     }
 
@@ -120,11 +127,11 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
             // Ideally a client should always be immutable after creation
             // Additional context could be bound to derived instances, but best practice is to keep SDK clients 'pure'
             const person = await this.getUser(cookie)
-            await this.storage.updateUser(person.username, cookie)
+            await this.storage.updateUser(person.id, cookie, { username: person.name })
 
             return {
                 accessDetails: cookie,
-                accountDetails: { id: person.username, label: person.username },
+                accountDetails: { id: person.id, label: person.name },
                 id: `session-${(this.sessionCounter += 1)}`,
             }
         } catch (err) {
