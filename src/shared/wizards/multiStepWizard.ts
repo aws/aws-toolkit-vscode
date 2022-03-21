@@ -191,7 +191,7 @@ export async function promptUserForLocation(
             ignoreFocusOut: true,
             title: additionalParams?.overrideText?.title
                 ? additionalParams.overrideText.title
-                : localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
+                : localize('AWS.wizard.location.prompt', 'Select a workspace folder for your project'),
             step: additionalParams?.step,
             totalSteps: additionalParams?.totalSteps,
         },
