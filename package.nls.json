@@ -584,7 +584,6 @@
     "AWS.samcli.userChoice.browse": "Locate SAM CLI...",
     "AWS.samcli.userChoice.visit.install.url": "Get SAM CLI",
     "AWS.samcli.userChoice.update.awstoolkit.url": "Visit Marketplace",
-    "AWS.wizard.location.prompt": "Select a workspace folder for your new project",
     "AWS.initWizard.location.select.folder": "Select a different folder...",
     "AWS.initWizard.location.select.folder.empty.workspace": "There are no workspace folders open. Select a folder...",
     "AWS.wizard.location.select.folder.detail": "The selected folder will be added to the workspace.",

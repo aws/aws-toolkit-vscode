@@ -269,7 +269,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
         this.form.location.bindPrompter(() =>
             createFolderPrompt(vscode.workspace.workspaceFolders ?? [], {
                 buttons: createCommonButtons(samInitDocUrl),
-                title: localize('AWS.samInit.location.title', 'Select a workspace folder for your new project'),
+                title: localize('AWS.samInit.location.title', 'Select the folder for your new SAM application'),
                 browseFolderDetail: localize(
                     'AWS.samInit.location.detail',
                     'The selected folder will be added to the workspace.'
