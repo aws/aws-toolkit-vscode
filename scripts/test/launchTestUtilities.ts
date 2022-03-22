@@ -31,7 +31,8 @@ export async function setupVSCodeTestInstance(): Promise<string> {
     }
 
     console.log(`Setting up VS Code test instance, version: ${vsCodeVersion}`)
-    const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion)
+    const platform = process.platform === 'win32' ? 'win32-x64-archive' : undefined
+    const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion, platform)
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
     console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--version']))
 

@@ -26,7 +26,6 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
-            - run: npm i -g npm@7
             - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
@@ -34,10 +33,10 @@ jobs:
               with:
                   run: npm test
             - name: Code coverage
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
               uses: codecov/codecov-action@v2
               with:
                   verbose: true
-                  directory: ./.coverage
                   flags: macos-unittests
 
     windows:
@@ -56,14 +55,13 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
-            - run: npm i -g npm@7
             - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
               run: npm test
             - name: Code coverage
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
               uses: codecov/codecov-action@v2
               with:
                   verbose: true
-                  directory: ./.coverage
                   flags: windows-unittests

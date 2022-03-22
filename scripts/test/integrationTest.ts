@@ -31,8 +31,6 @@ async function setupVSCode(): Promise<string> {
         const workspacePath = join(cwd, 'dist', 'src', 'testFixtures', 'workspaceFolder')
         console.log(`Starting tests: ${testEntrypoint}`)
 
-        process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
-
         const disableExtensions = await getCliArgsToDisableExtensions(vsCodeExecutablePath, {
             except: [
                 VSCODE_EXTENSION_ID.python,

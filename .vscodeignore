@@ -1,4 +1,3 @@
-.coverage/**
 .github/**
 .vscode/**
 .vscode-test/**
@@ -25,4 +24,5 @@ codebuild-image-buildspec.yml
 node_modules
 docs/**
 designs/**
+coverage/**
 package.json.bk

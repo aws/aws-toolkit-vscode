@@ -17,7 +17,25 @@ export async function runTestsInFolder(testFolder: string, initTests: string[] =
         throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
     }
 
-    const root = process.env['DEVELOPMENT_PATH'] ?? process.cwd()
+    function getRoot(): string {
+        const abs = process.env['DEVELOPMENT_PATH'] ?? process.cwd()
+
+        if (process.platform !== 'win32') {
+            return abs
+        }
+
+        // Force all drive letters (or whatever else is before the first colon) to be lowercase.
+        //
+        // Node's `require` will always cache modules based off case-sensitive paths, regardless
+        // of the underlying file system. This is normally not a problem, but VS Code also happens
+        // to normalize paths on Windows to use lowercase drive letters when using its AMD loader.
+        // This means that each module ends up getting loaded twice, once by the extension and once
+        // by any test code, causing all sorts of bizarre behavior during tests.
+        const [drive, ...rest] = abs.split(':')
+        return rest.length === 0 ? abs : [drive.toLowerCase(), ...rest].join(':')
+    }
+
+    const root = getRoot()
     const outputFile = path.resolve(root, '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 

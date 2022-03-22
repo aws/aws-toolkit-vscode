@@ -159,8 +159,7 @@ To run a single test in VSCode, do any one of:
 
 ### Coverage report
 
-You can find the coverage report at `./.coverage/lcov-report/index.html` after running the tests. Tests ran from the workspace
-launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:
+You can find the coverage report at `./coverage/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:
 
 -   Run the command `Tasks: Run Build Task` if not already active
 -   Instrument built code with `npm run instrument`
