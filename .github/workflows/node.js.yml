@@ -32,12 +32,14 @@ jobs:
               uses: GabrielBB/xvfb-action@v1
               with:
                   run: npm test
+            # Needed because of https://github.com/codecov/uploader/issues/475
+            - run: unset NODE_OPTIONS
             - name: Code coverage
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
               uses: codecov/codecov-action@v2
               with:
                   verbose: true
-                  files: ./coverage/coverage-final.json
+                  file: ./coverage/coverage-final.json
                   flags: macos-unittests
 
     windows:
@@ -60,10 +62,12 @@ jobs:
             - run: npm run vscode:prepublish
             - name: Tests
               run: npm test
+            # Needed because of https://github.com/codecov/uploader/issues/475
+            - run: set NODE_OPTIONS=
             - name: Code coverage
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
               uses: codecov/codecov-action@v2
               with:
                   verbose: true
-                  files: ./coverage/coverage-final.json
+                  file: ./coverage/coverage-final.json
                   flags: windows-unittests
