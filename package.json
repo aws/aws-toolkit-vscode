@@ -2903,7 +2903,7 @@
         "createRelease": "ts-node ./scripts/build/createRelease.ts",
         "serve": "webpack serve --config-name vue-hmr --mode development",
         "instrument": "nyc instrument --in-place ./dist/src",
-        "report": "nyc report --reporter=lcov"
+        "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "1.0.28",

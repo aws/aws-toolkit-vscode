@@ -37,6 +37,7 @@ jobs:
               uses: codecov/codecov-action@v2
               with:
                   verbose: true
+                  files: ./coverage/coverage-final.json
                   flags: macos-unittests
 
     windows:
@@ -64,4 +65,5 @@ jobs:
               uses: codecov/codecov-action@v2
               with:
                   verbose: true
+                  files: ./coverage/coverage-final.json
                   flags: windows-unittests
