@@ -19,7 +19,6 @@ jobs:
                 vscode-version: [minimum, stable, insiders]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-            NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v2
             - name: Use Node.js ${{ matrix.node-version }}
@@ -30,14 +29,14 @@ jobs:
             - run: npm run vscode:prepublish
             - name: Tests
               uses: GabrielBB/xvfb-action@v1
+              # `NODE_OPTIONS` should be isolated because of https://github.com/codecov/uploader/issues/475
+              env:
+                  NODE_OPTIONS: '--max-old-space-size=8192'
               with:
                   run: npm test
             - name: Code coverage
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
               uses: codecov/codecov-action@v2
-              env:
-                  # Needed because of https://github.com/codecov/uploader/issues/475
-                  NODE_OPTIONS: ''
               with:
                   verbose: true
                   file: ./coverage/coverage-final.json
@@ -51,7 +50,6 @@ jobs:
                 node-version: [14.x]
                 vscode-version: [stable, insiders]
         env:
-            NODE_OPTIONS: '--max-old-space-size=8192'
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
         steps:
             - uses: actions/checkout@v2
@@ -62,13 +60,13 @@ jobs:
             - run: npm ci
             - run: npm run vscode:prepublish
             - name: Tests
+              # `NODE_OPTIONS` should be isolated because of https://github.com/codecov/uploader/issues/475
+              env:
+                  NODE_OPTIONS: '--max-old-space-size=8192'
               run: npm test
             - name: Code coverage
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
               uses: codecov/codecov-action@v2
-              env:
-                  # Needed because of https://github.com/codecov/uploader/issues/475
-                  NODE_OPTIONS: ''
               with:
                   verbose: true
                   file: ./coverage/coverage-final.json
