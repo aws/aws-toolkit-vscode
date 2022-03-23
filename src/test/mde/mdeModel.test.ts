@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
+import * as model from '../../mde/mdeModel'
 import { Repository } from '../../../types/git'
-import { ensureConnectScript, getEmailHash, getMdeSsmEnv, getTagsAndLabels, makeLabelsString } from '../../mde/mdeModel'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../fakeExtensionContext'
@@ -15,7 +15,7 @@ describe('mdeModel', async function () {
     describe('getEmailHash', async function () {
         it('returns undefined if no email is found', async function () {
             assert.strictEqual(
-                await getEmailHash({
+                await model.getEmailHash({
                     getConfig: async (repo?: Repository) => {
                         return {}
                     },
@@ -26,7 +26,7 @@ describe('mdeModel', async function () {
 
         it('returns a hashed email', async function () {
             assert.strictEqual(
-                await getEmailHash({
+                await model.getEmailHash({
                     getConfig: async (repo?: Repository) => {
                         return { 'user.email': 'hashSlingingSlasher@asdf.com' }
                     },
@@ -39,7 +39,7 @@ describe('mdeModel', async function () {
 
 describe('getTagsAndLabels', function () {
     it('returns tags and labels', function () {
-        const out = getTagsAndLabels({
+        const out = model.getTagsAndLabels({
             tags: {
                 tagA: 'val1',
                 tagB: 'val2',
@@ -55,7 +55,7 @@ describe('getTagsAndLabels', function () {
     })
 
     it('returns no tags and an empty array for labels', function () {
-        const out = getTagsAndLabels({ tags: {} })
+        const out = model.getTagsAndLabels({ tags: {} })
 
         assert.deepStrictEqual(out.tags, {})
         assert.deepStrictEqual(out.labels, [])
@@ -64,7 +64,7 @@ describe('getTagsAndLabels', function () {
 
 describe('makeLabelsString', function () {
     it('makes and alphabetizes a label string', function () {
-        const str = makeLabelsString({
+        const str = model.makeLabelsString({
             tags: {
                 tagA: 'val1',
                 tagB: 'val2',
@@ -79,9 +79,33 @@ describe('makeLabelsString', function () {
     })
 
     it('returns a blank str if no labels are present', function () {
-        const str = makeLabelsString({ tags: {} })
+        const str = model.makeLabelsString({ tags: {} })
 
         assert.strictEqual(str, '')
+    })
+})
+
+describe('SSH Agent', function () {
+    it('can start the agent on windows', async function () {
+        // TODO: we should also skip this test if not running in CI
+        // Local machines probably won't have admin permissions in the spawned processes
+        if (process.platform !== 'win32') {
+            this.skip()
+        }
+
+        const runCommand = (command: string) => {
+            const args = ['-Command', command]
+            return new ChildProcess('powershell.exe', args).run({ rejectOnErrorCode: true })
+        }
+
+        const getStatus = () => {
+            return runCommand('echo (Get-Service ssh-agent).Status').then(o => o.stdout)
+        }
+
+        await runCommand('Stop-Service ssh-agent')
+        assert.strictEqual(await getStatus(), 'Stopped')
+        await model.startSshAgent()
+        assert.strictEqual(await getStatus(), 'Running')
     })
 })
 
@@ -99,14 +123,14 @@ describe('Connect Script', function () {
     })
 
     it('can get a connect script path, adding a copy to global storage', async function () {
-        const script = await ensureConnectScript(context)
+        const script = await model.ensureConnectScript(context)
         assert.ok(await fileExists(script))
         assert.ok(isWithin(context.globalStoragePath, script))
     })
 
     it('can run the script with environment variables', async function () {
-        const script = await ensureConnectScript(context)
-        const env = getMdeSsmEnv('us-weast-1', 'echo', {
+        const script = await model.ensureConnectScript(context)
+        const env = model.getMdeSsmEnv('us-weast-1', 'echo', {
             id: '01234567890',
             accessDetails: { streamUrl: '123', tokenValue: '456' },
         })

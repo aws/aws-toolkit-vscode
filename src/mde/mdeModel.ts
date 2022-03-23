@@ -28,7 +28,7 @@ import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
-type VSCODE_MDE_TAG_NAMES = keyof typeof VSCODE_MDE_TAGS
+type TagName = keyof typeof VSCODE_MDE_TAGS
 
 /**
  * Creates tags tied to friendly names for lookup on the VS Code side, like filtering.
@@ -41,8 +41,8 @@ type VSCODE_MDE_TAG_NAMES = keyof typeof VSCODE_MDE_TAGS
 export async function createTagValuesFromRepo(
     repo: Pick<Repository, 'state'>,
     git: Pick<GitExtension, 'getConfig'> = GitExtension.instance
-): Promise<Partial<{ [key in VSCODE_MDE_TAG_NAMES]: string }>> {
-    const val: Partial<{ [key in VSCODE_MDE_TAG_NAMES]: string }> = {
+): Promise<Partial<{ [key in TagName]: string }>> {
+    const val: Partial<{ [key in TagName]: string }> = {
         repository: repo.state.remotes[0]?.fetchUrl ?? '',
         repositoryBranch: repo.state.HEAD?.name ?? '',
         tool: productName,
@@ -69,7 +69,7 @@ export async function createTagMapFromRepo(
 ): Promise<TagMap> {
     const tags = await createTagValuesFromRepo(repo, git)
     const final: TagMap = {}
-    for (const tagName of Object.keys(tags) as VSCODE_MDE_TAG_NAMES[]) {
+    for (const tagName of Object.keys(tags) as TagName[]) {
         final[VSCODE_MDE_TAGS[tagName]] = tags[tagName]!
     }
 
@@ -228,6 +228,12 @@ export async function ensureMdeSshConfig(sshPath: string): Promise<{
     // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
 
     const configHostName = `${HOST_NAME_PREFIX}*`
+    const controllerSettings = `
+    ControlMaster auto
+    ControlPath ~/.ssh/%h
+    ControlPersist 15m
+`.trim()
+
     const mdeSshConfig = `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host ${configHostName}
@@ -235,9 +241,7 @@ Host ${configHostName}
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}
-    ControlMaster auto
-    ControlPath ~/.ssh/%h
-    ControlPersist 15m
+    ${!iswin ? controllerSettings : ''}
 `
 
     // Check if the "aws-mde-*" hostname pattern is working.
@@ -255,7 +259,7 @@ Host ${configHostName}
     const hasMdeProxyCommand = matches && matches[0].includes(proxyCommand)
     const hasControlPersist = !!r.stdout.match(/controlpersist [0-9]{1,99}/i)
 
-    if (!hasMdeProxyCommand || !hasControlPersist) {
+    if (!hasMdeProxyCommand || !(hasControlPersist && !iswin)) {
         if (matches && matches[0]) {
             getLogger().warn(`MDE: SSH config: found old/outdated "${configHostName}" section:\n%O`, matches[0])
             const oldConfig = localize(
@@ -358,7 +362,7 @@ if (!$?) {
 }
 exit $?
 `
-            const result = await new ChildProcess('powershell.exe', ['Invoke-Expression', script]).run({
+            const result = await new ChildProcess('powershell.exe', ['-Command', script]).run({
                 rejectOnErrorCode: true,
             })
 
@@ -376,7 +380,10 @@ exit $?
         const r = await new ChildProcess('ssh-agent', ['-s']).run()
         return (r.stdout.match(/$SSH_AGENT_VAR=(.*?);/) ?? [])[1]
     } catch (err) {
-        getLogger().error('mde: failed to start SSH agent, clones may not work as expected: %O', err)
+        // The 'silent' failure here is not great, though the SSH agent is not necessarily a critical
+        // feature. It would be better to inform the user that the SSH agent could not be started, then
+        // go from there. Many users probably wouldn't care about the agent at all.
+        getLogger().warn('mde: failed to start SSH agent, clones may not work as expected: %O', err)
     }
 }
 
