@@ -36,6 +36,7 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
 import { sleep } from '../utilities/promiseUtilities'
 import globals from '../extensionGlobals'
+import { showMessageWithCancel } from '../utilities/messages'
 
 const localize = nls.loadMessageBundle()
 
@@ -373,14 +374,18 @@ export async function runLambdaFunction(
         return config
     }
 
-    if (!config.noDebug) {
+    if (config.noDebug) {
+        return config
+    }
+
+    async function attach() {
         if (config.invokeTarget.target === 'api') {
             const payload =
                 config.eventPayloadFile === undefined
                     ? undefined
                     : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
             // Send the request to the local API server.
-            await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
+            await requestLocalApi(timer, config.api!, config.apiPort!, payload)
             // Wait for cue messages ("Starting debugger" etc.) before attach.
             if (!(await samStartApi)) {
                 return config
@@ -424,6 +429,12 @@ export async function runLambdaFunction(
             })
     }
 
+    try {
+        await attach()
+    } finally {
+        timer.dispose()
+    }
+
     return config
 }
 
@@ -455,16 +466,19 @@ vscode.debug.onDidTerminateDebugSession(session => {
  * Lambda, which will then enter debugging.
  */
 async function requestLocalApi(
-    ctx: ExtContext,
+    timeout: Timeout,
     api: APIGatewayProperties,
     apiPort: number,
     payload: any
 ): Promise<void> {
-    const RETRY_LIMIT = 30
+    const RETRY_LIMIT = 10 // Number of attempts before showing a 'cancel' notification
     const RETRY_DELAY = 200
     const reqMethod = api?.httpMethod || 'GET'
     const qs = (api?.querystring?.startsWith('?') ? '' : '?') + (api?.querystring ?? '')
     const uri = `http://127.0.0.1:${apiPort}${api?.path}${qs}`
+
+    let notificationShown = false
+
     const reqOpts: OptionsOfTextResponseBody = {
         json: payload,
         timeout: { socket: 1000 },
@@ -477,16 +491,15 @@ async function requestLocalApi(
                 if (obj.error.response !== undefined) {
                     getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
                 }
-                if (
-                    obj.error.code === 'ETIMEDOUT' ||
-                    obj.attemptCount > RETRY_LIMIT ||
-                    obj.error.response?.statusCode === 403
-                ) {
+                if (obj.error.code === 'ETIMEDOUT' || obj.error.response?.statusCode === 403 || timeout.completed) {
                     return 0
+                } else if (!notificationShown && obj.attemptCount >= RETRY_LIMIT) {
+                    notificationShown = true
+                    getLogger().debug('Local API: showing cancel notification')
+                    showMessageWithCancel('Waiting for local API to start...', timeout)
                 }
-                getLogger().debug(
-                    `Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error.message}`
-                )
+
+                getLogger().debug(`Local API: retry (${obj.attemptCount}): ${uri}: ${obj.error.message}`)
                 return RETRY_DELAY
             },
         },
@@ -505,7 +518,7 @@ async function requestLocalApi(
         const msg =
             err.response?.statusCode === 403
                 ? `Local API failed to respond to path: ${api?.path}`
-                : `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err.message}`
+                : `Local API failed to respond (${err.code}) at path: ${api?.path}, error: ${err.message}`
         getLogger('channel').error(msg)
         throw new Error(msg)
     })
