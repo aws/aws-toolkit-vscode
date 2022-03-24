@@ -28,7 +28,7 @@ export async function runTestsInFolder(testFolder: string, initTests: string[] =
         //
         // Node's `require` will always cache modules based off case-sensitive paths, regardless
         // of the underlying file system. This is normally not a problem, but VS Code also happens
-        // to normalize paths on Windows to use lowercase drive letters when using its AMD loader.
+        // to normalize paths on Windows to use lowercase drive letters when using its bootstrap loader.
         // This means that each module ends up getting loaded twice, once by the extension and once
         // by any test code, causing all sorts of bizarre behavior during tests.
         const [drive, ...rest] = abs.split(':')
