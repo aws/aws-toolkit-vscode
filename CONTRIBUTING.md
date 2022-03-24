@@ -144,11 +144,11 @@ To run a single test in VSCode, do any one of:
 
     -   Unix/macOS/POSIX shell:
         ```
-        NO_COVERAGE=true TEST_FILE=src/test/foo.test npm run test
+        TEST_FILE=src/test/foo.test npm run test
         ```
     -   Powershell:
         ```
-        $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
+        $Env:TEST_FILE = "src/test/foo.test"; npm run test
         ```
 
 -   To run all tests in a particular subdirectory, you can edit
@@ -157,9 +157,14 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
-#### Coverage report
+### Coverage report
 
-You can find the coverage report at `./.coverage/index.html` after running the tests.
+You can find the coverage report at `./coverage/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:
+
+-   Run the command `Tasks: Run Build Task` if not already active
+-   Instrument built code with `npm run instrument`
+-   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
+-   Generate a report with `npm run report`
 
 ## Pull Requests
 

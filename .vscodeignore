@@ -1,4 +1,3 @@
-.coverage/**
 .github/**
 .vscode/**
 .vscode-test/**
@@ -17,7 +16,7 @@ out/**
 third-party/test/**
 webpack.config.js
 .gitignore
-coverconfig.json
+.nycrc.json
 Dockerfile
 tsconfig.json
 tslint.json
@@ -25,4 +24,5 @@ codebuild-image-buildspec.yml
 node_modules
 docs/**
 designs/**
+coverage/**
 package.json.bk

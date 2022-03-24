@@ -62,23 +62,11 @@ export function isExtensionActive(extId: string): boolean {
  */
 export async function activateExtension<T>(
     extId: string,
-    silent: boolean = true
+    silent: boolean = true,
+    log = (s: string, ...rest: any[]) => {
+        getLogger().debug(s, ...rest)
+    }
 ): Promise<vscode.Extension<T> | undefined> {
-    let loggerInitialized: boolean
-    try {
-        getLogger()
-        loggerInitialized = true
-    } catch {
-        loggerInitialized = false
-    }
-    function log(s: string, ...rest: any[]): void {
-        if (loggerInitialized) {
-            getLogger().debug(s, ...rest)
-        } else {
-            console.log(s, ...rest)
-        }
-    }
-
     const extension = vscode.extensions.getExtension<T>(extId)
     if (!extension) {
         if (silent) {
