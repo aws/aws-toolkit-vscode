@@ -23,8 +23,7 @@ phases:
                         echo "CodeArtifact connection failed. Falling back to npm"
                     fi
                 fi
-            # --unsafe-perm is needed because we run as root
-            - npm ci --unsafe-perm
+            - npm ci
 
     build:
         commands:

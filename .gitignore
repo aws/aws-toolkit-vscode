@@ -1,8 +1,9 @@
 out
 dist
 node_modules
-.coverage/
 .vscode-test/
+.nyc_output/
+coverage/
 *.vsix
 *.bk
 **/.DS_Store
