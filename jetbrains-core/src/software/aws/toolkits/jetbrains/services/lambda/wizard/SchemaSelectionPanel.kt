@@ -105,6 +105,7 @@ class SchemaSelectionPanel : WizardFragment {
         BuiltInRuntimeGroups.Java -> SchemaCodeLangs.JAVA8
         BuiltInRuntimeGroups.Python -> SchemaCodeLangs.PYTHON3_6
         BuiltInRuntimeGroups.NodeJs -> SchemaCodeLangs.TYPESCRIPT
+        BuiltInRuntimeGroups.Go -> SchemaCodeLangs.GO1
         else -> throw IllegalStateException("Schemas is not supported by $this")
     }
 }

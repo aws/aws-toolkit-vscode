@@ -28,7 +28,9 @@ class GoSamProjectWizard : SamProjectWizard {
     override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector = GoSdkSelectionPanel()
 
     override fun listTemplates(): Collection<SamProjectTemplate> = listOf(
-        SamHelloWorldGo()
+        SamHelloWorldGo(),
+        SamEventBridgeHelloWorldGo(),
+        SamEventBridgeStarterAppGo()
     )
 }
 
@@ -67,6 +69,48 @@ class SamHelloWorldGo : SamAppTemplateBased() {
     override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.GO1_X)
 
     override val appTemplateName: String = "hello-world"
+
+    override val dependencyManager: String = "mod"
+}
+
+class SamEventBridgeHelloWorldGo : SamAppTemplateBased() {
+    override fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel, indicator: ProgressIndicator) {
+        super.postCreationAction(settings, contentRoot, rootModel, indicator)
+        // Turn off indexing entire gopath for the project since we are using go modules
+        GoProjectLibrariesService.getInstance(rootModel.project).isIndexEntireGopath = false
+        // Turn on vgo integration, required for it to resolve dependencies properly
+        VgoProjectSettings.getInstance(rootModel.project).isIntegrationEnabled = true
+    }
+
+    override fun displayName() = message("sam.init.template.event_bridge_hello_world.name")
+    override fun description() = message("sam.init.template.event_bridge_hello_world.description")
+
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.GO1_X)
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
+
+    override val appTemplateName: String = "eventBridge-hello-world"
+
+    override val dependencyManager: String = "mod"
+}
+
+class SamEventBridgeStarterAppGo : SamAppTemplateBased() {
+    override fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel, indicator: ProgressIndicator) {
+        super.postCreationAction(settings, contentRoot, rootModel, indicator)
+        // Turn off indexing entire gopath for the project since we are using go modules
+        GoProjectLibrariesService.getInstance(rootModel.project).isIndexEntireGopath = false
+        // Turn on vgo integration, required for it to resolve dependencies properly
+        VgoProjectSettings.getInstance(rootModel.project).isIntegrationEnabled = true
+    }
+
+    override fun displayName() = message("sam.init.template.event_bridge_starter_app.name")
+    override fun description() = message("sam.init.template.event_bridge_starter_app.description")
+
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.GO1_X)
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
+
+    override val appTemplateName: String = "eventBridge-schema-app"
+
+    override fun supportsDynamicSchemas(): Boolean = true
 
     override val dependencyManager: String = "mod"
 }

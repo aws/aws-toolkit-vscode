@@ -16,7 +16,8 @@ enum class SchemaCodeLangs(
 ) {
     JAVA8("Java8", message("schemas.schema.language.java8"), "java", BuiltInRuntimeGroups.Java),
     PYTHON3_6("Python36", message("schemas.schema.language.python3_6"), "py", BuiltInRuntimeGroups.Python),
-    TYPESCRIPT("TypeScript3", message("schemas.schema.language.typescript"), "ts", BuiltInRuntimeGroups.NodeJs);
+    TYPESCRIPT("TypeScript3", message("schemas.schema.language.typescript"), "ts", BuiltInRuntimeGroups.NodeJs),
+    GO1("Go1", message("schemas.schema.language.go1"), "go", BuiltInRuntimeGroups.Go);
 
     override fun toString() = text
 }
