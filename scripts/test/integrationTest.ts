@@ -4,7 +4,7 @@
  */
 
 import { join, resolve } from 'path'
-import { runTests } from 'vscode-test'
+import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
 import { installVSCodeExtension, setupVSCodeTestInstance, getCliArgsToDisableExtensions } from './launchTestUtilities'
 
@@ -31,8 +31,6 @@ async function setupVSCode(): Promise<string> {
         const workspacePath = join(cwd, 'dist', 'src', 'testFixtures', 'workspaceFolder')
         console.log(`Starting tests: ${testEntrypoint}`)
 
-        process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
-
         const disableExtensions = await getCliArgsToDisableExtensions(vsCodeExecutablePath, {
             except: [
                 VSCODE_EXTENSION_ID.python,
@@ -49,7 +47,10 @@ async function setupVSCode(): Promise<string> {
             extensionDevelopmentPath: cwd,
             extensionTestsPath: testEntrypoint,
             launchArgs: [...disableExtensions, workspacePath, DISABLE_WORKSPACE_TRUST],
-            extensionTestsEnv: { ['AWS_TOOLKIT_AUTOMATION']: 'INTEGRATION_TESTS' },
+            extensionTestsEnv: {
+                ['DEVELOPMENT_PATH']: cwd,
+                ['AWS_TOOLKIT_AUTOMATION']: 'integration',
+            },
         }
         console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
         const result = await runTests(args)

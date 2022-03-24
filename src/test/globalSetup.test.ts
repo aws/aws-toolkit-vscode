@@ -7,6 +7,7 @@
  * Before/After hooks for all "unit" tests
  */
 import * as assert from 'assert'
+import { format } from 'util'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
@@ -39,7 +40,8 @@ before(async function () {
 
     // Extension activation has many side-effects such as changing globals
     // For stability in tests we will wait until the extension has activated prior to injecting mocks
-    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    const activationLogger = (msg: string, ...meta: any[]) => console.log(format(msg, ...meta))
+    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false, activationLogger)
 
     const fakeContext = new FakeExtensionContext()
     fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
