@@ -89,11 +89,25 @@ export async function startMde(
 }
 
 export async function mdeConnectCommand(args: Pick<mde.MdeEnvironment, 'id'>, region: string): Promise<void> {
-    mdeModel.connectToMde(args, region, async () => {
-        const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
-        const session = await mdeClient.startSession(args)
-        return session
+    const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
+
+    const deps = await mdeModel.ensureDependencies()
+    if (!deps) {
+        return
+    }
+
+    const provider = mdeModel.createMdeSessionProvider(mdeClient, region, deps.ssm, deps.ssh)
+    const SessionProcess = mdeModel.createBoundProcess(provider, args).extend({
+        onStdout(stdout) {
+            getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
+        },
+        onStderr(stderr) {
+            getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
+        },
+        rejectOnErrorCode: true,
     })
+
+    await mdeModel.startVscodeRemote(SessionProcess, `${HOST_NAME_PREFIX}${args.id}`, '/projects', deps.ssh, deps.vsc)
 }
 
 export async function mdeDeleteCommand(
@@ -186,10 +200,6 @@ export async function createMdeSshCommand(
     const region = parse(mdeEnv.arn).region
     const mdeClient = await mde.MdeClient.create(region, mde.mdeEndpoint())
     const session = options.session ?? (await mdeClient.startSession(mdeEnv))
-
-    if (!session) {
-        throw new Error('Unable to create MDE SSH command: could not start remote session')
-    }
 
     // TODO: check SSH version to verify 'accept-new' is available
     const mdeEnvVars = mdeModel.getMdeSsmEnv(region, ssmPath.result, session)

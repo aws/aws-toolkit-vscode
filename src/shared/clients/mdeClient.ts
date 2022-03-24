@@ -10,7 +10,7 @@ import apiConfig = require('../../../types/REMOVED.normal.json')
 import * as settings from '../../shared/settingsConfiguration'
 import * as logger from '../logger/logger'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
-import { showMessageWithCancel, showViewLogsMessage } from '../utilities/messages'
+import { showMessageWithCancel } from '../utilities/messages'
 import * as nls from 'vscode-nls'
 import { Window } from '../vscode/window'
 import globals from '../extensionGlobals'
@@ -32,7 +32,10 @@ export function mdeEndpoint(): string {
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface MdeEnvironment extends mde.EnvironmentSummary {}
-export interface MdeSession extends mde.SessionSummary, Omit<mde.StartSessionResponse, 'id'> {}
+export interface MdeSession extends mde.SessionSummary, Omit<mde.StartSessionResponse, 'id'> {
+    readonly id: string
+    readonly accessDetails: Required<mde.StartSessionResponse['accessDetails']>
+}
 
 async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string = mdeEndpoint()): Promise<mde> {
     const c = (await globals.sdkClientBuilder.createAwsService(AWS.Service, {
@@ -237,33 +240,34 @@ export class MdeClient {
      * Waits for the MDE environment to be available (and starts it if needed),
      * creaes a new session, and returns the session when available.
      */
-    public async startSession(args: Pick<MdeEnvironment, 'id'>): Promise<MdeSession | undefined> {
+    public async startSession(args: Pick<MdeEnvironment, 'id'>): Promise<MdeSession> {
         const runningMde = await this.startEnvironmentWithProgress(args)
 
         if (!runningMde) {
-            return
+            throw new Error('Cannot start a session without a running environment')
         }
 
-        try {
-            const session = await this.call(
-                this.sdkClient.startSession({
-                    environmentId: runningMde.id,
-                    sessionConfiguration: {
-                        ssh: {},
-                    },
-                })
-            )
+        const session = await this.call(
+            this.sdkClient.startSession({
+                environmentId: runningMde.id,
+                sessionConfiguration: {
+                    ssh: {},
+                },
+            })
+        )
 
-            return {
-                ...session,
-                id: session.id,
-                startedAt: new Date(),
-                status: 'CONNECTED',
-            }
-        } catch (err) {
-            showViewLogsMessage(
-                localize('AWS.mde.sessionFailed', 'Failed to start session for MDE environment: {0}', args.id)
-            )
+        const streamUrl = session.accessDetails.streamUrl
+        const tokenValue = session.accessDetails.tokenValue
+        if (!streamUrl || !tokenValue) {
+            throw new Error('Invalid MDE session access details')
+        }
+
+        return {
+            ...session,
+            id: session.id,
+            accessDetails: { streamUrl, tokenValue },
+            startedAt: new Date(),
+            status: 'CONNECTED',
         }
     }
 

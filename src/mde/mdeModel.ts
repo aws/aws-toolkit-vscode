@@ -16,7 +16,7 @@ import { getStringHash } from '../shared/utilities/textUtilities'
 import { readFileAsString } from '../shared/filesystemUtilities'
 import { HOST_NAME_PREFIX, VSCODE_MDE_TAGS } from './constants'
 import { SystemUtilities } from '../shared/systemUtilities'
-import { ChildProcess, ChildProcessResult } from '../shared/utilities/childProcess'
+import { ChildProcess } from '../shared/utilities/childProcess'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { showConfirmationMessage, showViewLogsMessage } from '../shared/utilities/messages'
 import { getLogger } from '../shared/logger/logger'
@@ -24,7 +24,6 @@ import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import globals from '../shared/extensionGlobals'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { ToolkitError } from '../shared/toolkitError'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -259,7 +258,7 @@ Host ${configHostName}
     const hasMdeProxyCommand = matches && matches[0].includes(proxyCommand)
     const hasControlPersist = !!r.stdout.match(/controlpersist [0-9]{1,99}/i)
 
-    if (!hasMdeProxyCommand || !(hasControlPersist && !iswin)) {
+    if (!hasMdeProxyCommand || (!hasControlPersist && !iswin)) {
         if (matches && matches[0]) {
             getLogger().warn(`MDE: SSH config: found old/outdated "${configHostName}" section:\n%O`, matches[0])
             const oldConfig = localize(
@@ -362,9 +361,11 @@ if (!$?) {
 }
 exit $?
 `
-            const result = await new ChildProcess('powershell.exe', ['-Command', script]).run({
+            const options = {
                 rejectOnErrorCode: true,
-            })
+                logging: 'noparams',
+            } as const
+            const result = await new ChildProcess('powershell.exe', ['-Command', script], options).run()
 
             if (!result.stdout.includes(runningMessage)) {
                 vscode.window.showInformationMessage(
@@ -385,85 +386,6 @@ exit $?
         // go from there. Many users probably wouldn't care about the agent at all.
         getLogger().warn('mde: failed to start SSH agent, clones may not work as expected: %O', err)
     }
-}
-
-/**
- * Starts an MDE session and connects a new vscode-remote instance to it.
- */
-export async function connectToMde(
-    args: Pick<mde.MdeEnvironment, 'id'>,
-    region: string,
-    startFn: () => Promise<mde.MdeSession | undefined>
-): Promise<ChildProcessResult | undefined> {
-    const deps = await ensureDependencies()
-    if (!deps) {
-        return
-    }
-
-    const { vsc, ssm, ssh } = deps
-    const sshAgentSocket = await startSshAgent()
-
-    const session = await startFn()
-    if (!session) {
-        return
-    }
-
-    await new Promise<void>((resolve, reject) => {
-        new ChildProcess(ssh, ['-v', `${HOST_NAME_PREFIX}${args.id}`, 'echo "Host Ready"'])
-            .run({
-                rejectOnErrorCode: true,
-                onStdout: text => {
-                    // Not that robust. Should use different mechanism for knowing when process has been
-                    // moved to the background.
-                    if (text.includes('Host Ready')) {
-                        resolve()
-                    }
-                },
-                onStderr: text => {
-                    getLogger().debug(`MDE connect (stderr): ${text}`)
-                },
-                spawnOptions: {
-                    env: {
-                        [SSH_AGENT_SOCKET_VARIABLE]: sshAgentSocket,
-                        ...getMdeSsmEnv(region, ssm, session),
-                    },
-                },
-            })
-            .catch(reject)
-    })
-
-    // temporary until we can dynamically find the directory
-    const projectDir = '/projects'
-    const cmdArgs = ['--folder-uri', `vscode-remote://ssh-remote+${HOST_NAME_PREFIX}${args.id}${projectDir}`]
-
-    const cmd = new ChildProcess(vsc, cmdArgs)
-
-    const settings = new DefaultSettingsConfiguration()
-    settings.ensureToolkitInVscodeRemoteSsh()
-
-    getLogger().debug(
-        `AWS_SSM_CLI='${ssm}' AWS_REGION='${region}' AWS_MDE_SESSION='${session.id}' AWS_MDE_STREAMURL='${session.accessDetails.streamUrl}' AWS_MDE_TOKEN='${session.accessDetails.tokenValue}' ssh '${HOST_NAME_PREFIX}${args.id}'`
-    )
-    getLogger().debug(
-        `"${ssm}" "{\\"streamUrl\\":\\"${session.accessDetails.streamUrl}\\",\\"tokenValue\\":\\"${session.accessDetails.tokenValue}\\",\\"sessionId\\":\\"\\"}" "${region}" "StartSession"`
-    )
-
-    // Note: `await` is intentionally not used.
-    return cmd
-        .run({
-            onStdout(stdout) {
-                getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
-            },
-            onStderr(stderr) {
-                getLogger().verbose(`MDE connect: ${args.id}: ${stderr}`)
-            },
-        })
-        .then(o => {
-            if (o.exitCode !== 0) {
-                getLogger().error('MDE connect: failed to start: %O', cmd)
-            }
-            return o
-        })
 }
 
 interface DependencyPaths {
@@ -527,4 +449,133 @@ export async function ensureDependencies(window = vscode.window): Promise<Depend
     }
 
     return { vsc, ssm, ssh }
+}
+
+interface SessionDetails {
+    readonly id: string
+    readonly region: string
+    readonly ssmPath: string
+    readonly accessDetails: {
+        readonly streamUrl: string
+        readonly tokenValue: string
+    }
+}
+
+export function createMdeSessionProvider(
+    client: mde.MdeClient,
+    region: string,
+    ssmPath: string,
+    sshPath: string
+): SessionProvider<Pick<mde.MdeEnvironment, 'id'>> {
+    return {
+        isActive: env => checkSession(`${HOST_NAME_PREFIX}${env.id}`, sshPath),
+        getDetails: async env => {
+            const session = await client.startSession({ id: env.id })
+
+            return {
+                region,
+                ssmPath,
+                host: `${HOST_NAME_PREFIX}${env.id}`,
+                ...session,
+            }
+        },
+    }
+}
+
+/**
+ * Simple interface to decouple MDE/CAWS from SSM/SSH
+ */
+export interface SessionProvider<T = unknown> {
+    isActive: (env: T) => Promise<boolean>
+    getDetails: (env: T) => Promise<SessionDetails>
+}
+
+/**
+ * Checks if the `ssh` daemon is still active or not.
+ */
+export async function checkSession(host: string, sshPath: string): Promise<boolean> {
+    const result = await new ChildProcess(sshPath, ['-O', 'check', host]).run({
+        onStderr: text => getLogger().debug(`ssh controller (stderr): ${text}`),
+    })
+
+    return result.exitCode === 0
+}
+
+/**
+ * Creates a new {@link ChildProcess} class bound to a specific CAWS workspace. All instances of this
+ * derived class will have SSM session information injected as environment variables as-needed.
+ */
+export function createBoundProcess<T>(provider: SessionProvider<T>, env: T, useSshAgent = true): typeof ChildProcess {
+    type Run = ChildProcess['run']
+
+    async function getEnvVars(): Promise<NodeJS.ProcessEnv> {
+        // Windows always needs a fresh session as it does not support multiplexing
+        if (process.platform !== 'win32' && (await provider.isActive(env))) {
+            return {}
+        }
+
+        const session = await provider.getDetails(env)
+        const vars = getMdeSsmEnv(session.region, session.ssmPath, session)
+
+        return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
+    }
+
+    return class SessionBoundProcess extends ChildProcess {
+        public override async run(...args: Parameters<Run>): ReturnType<Run> {
+            const options = args[0]
+            const envVars = await getEnvVars()
+            const spawnOptions = {
+                ...options?.spawnOptions,
+                env: { ...envVars, ...options?.spawnOptions?.env },
+            }
+
+            return super.run({ ...options, spawnOptions })
+        }
+    }
+}
+
+/**
+ * Starts a multiplexed SSH session if not on Windows. Resolves after a successful connection.
+ */
+export async function startSshController(
+    ProcessClass: typeof ChildProcess,
+    ssh: string,
+    hostName: string
+): Promise<void> {
+    if (process.platform === 'win32') {
+        getLogger().info('ssh controller: multiplexing is not supported on Windows, skipping.')
+        return
+    }
+
+    await new Promise<void>(async (resolve, reject) => {
+        await new ProcessClass(ssh, ['-v', hostName, 'echo "Host Ready"'])
+            .run({
+                rejectOnErrorCode: true,
+                onStdout(text) {
+                    if (text.includes('Host Ready')) {
+                        resolve()
+                    } else {
+                        getLogger().debug(`ssh controller (stdout): ${text}`)
+                    }
+                },
+                onStderr(text) {
+                    getLogger().debug(`ssh controller (stderr): ${text}`)
+                },
+            })
+            .catch(reject)
+
+        reject(new Error('SSH controller exited successfully but did not output a ready status'))
+    })
+}
+
+export async function startVscodeRemote(
+    ProcessClass: typeof ChildProcess,
+    hostName: string,
+    targetDirectory: string,
+    sshPath: string,
+    vscPath: string
+): Promise<void> {
+    const workspaceUri = `vscode-remote://ssh-remote+${hostName}${targetDirectory}`
+    await startSshController(ProcessClass, sshPath, hostName)
+    await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run({ rejectOnErrorCode: true })
 }

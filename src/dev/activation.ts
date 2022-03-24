@@ -17,10 +17,16 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { promisify } from 'util'
 import * as manifest from '../../package.json'
-import { ensureDependencies } from '../mde/mdeModel'
+import {
+    createBoundProcess,
+    ensureDependencies,
+    getMdeSsmEnv,
+    startSshController,
+    startVscodeRemote,
+} from '../mde/mdeModel'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
-import { createBoundProcess, createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
+import { createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { createClientFactory } from '../caws/activation'
@@ -32,6 +38,11 @@ const menuOptions = {
         label: 'Install VSIX on Remote Environment',
         description: 'Automatically upload/install a VSIX to a remote host',
         executor: installVsixCommand,
+    },
+    openTerminal: {
+        label: 'Open Remote Terminal',
+        description: 'Open a new terminal connected to the remote environment',
+        executor: openTerminalCommand,
     },
 }
 
@@ -104,6 +115,60 @@ function lazyProgress<T>(timeout: Timeout): LazyProgress<T> {
             progress.report(value)
         },
     }
+}
+
+async function openTerminalCommand(ctx: ExtContext) {
+    const factory = createClientFactory(ctx.cawsAuthProvider)
+    const decorator = createCommandDecorator(ctx.cawsAuthProvider, factory)
+    const command = decorator(openTerminal)
+    const progress = lazyProgress<{ message: string }>(new Timeout(900000))
+
+    await command(progress).finally(() => progress.dispose())
+}
+
+async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<{ message: string }>) {
+    const env = await selectCawsResource(client, 'env')
+    if (!env) {
+        return
+    }
+
+    const runningEnv = await client.startEnvironmentWithProgress(
+        {
+            developmentWorkspaceId: env.developmentWorkspaceId,
+            organizationName: env.org.name,
+            projectName: env.project.name,
+        },
+        'RUNNING'
+    )
+
+    if (!runningEnv) {
+        return
+    }
+
+    progress.report({ message: 'Checking dependencies...' })
+
+    const deps = await ensureDependencies()
+    if (!deps) {
+        return
+    }
+
+    progress.report({ message: 'Opening terminal...' })
+
+    const { ssh, ssm } = deps
+    const provider = createCawsSessionProvider(client, 'us-east-1', ssm, ssh)
+    const envVars = getMdeSsmEnv('us-east-1', ssm, await provider.getDetails(env))
+
+    const options: vscode.TerminalOptions = {
+        name: `Remote Connection (${env.id})`,
+        shellPath: ssh,
+        shellArgs: [getHostNameFromEnv(env)],
+        env: envVars as Record<string, string>,
+    }
+
+    // Running `exit` in the terminal reports an error unfortunately. Not sure if there's an
+    // easy solution besides wrapping `ssh` with a shell script to trap the exit code.
+    // Or use a pseudoterminal.
+    vscode.window.createTerminal(options).show()
 }
 
 async function installVsixCommand(ctx: ExtContext) {
@@ -274,18 +339,7 @@ async function installVsix(
     const hostName = getHostNameFromEnv(env)
 
     progress.report({ message: 'Starting controller...' })
-    await new Promise<void>((resolve, reject) => {
-        new SessionProcess(ssh, ['-v', hostName, 'echo "Host Ready"'])
-            .run({
-                rejectOnErrorCode: true,
-                onStdout(text) {
-                    if (text.includes('Host Ready')) {
-                        resolve()
-                    }
-                },
-            })
-            .catch(reject)
-    })
+    await startSshController(SessionProcess, ssh, hostName)
 
     const EXT_ID = VSCODE_EXTENSION_ID.awstoolkit
     const EXT_PATH = `/home/mde-user/.vscode-server/extensions`
@@ -335,7 +389,6 @@ async function installVsix(
         await new SessionProcess(ssh, [`${hostName}`, '-v', installCmd]).run()
     }
 
-    const workspaceUri = `vscode-remote://ssh-remote+${hostName}/projects`
     progress.report({ message: 'Launching instance...' })
-    await new SessionProcess(vsc, ['--folder-uri', workspaceUri]).run()
+    await startVscodeRemote(SessionProcess, hostName, '/projects', ssh, vsc)
 }

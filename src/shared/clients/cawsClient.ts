@@ -425,9 +425,12 @@ class CawsClientInternal {
     /** CAWS-MDE */
     public async startDevEnvSession(
         args: caws.StartSessionDevelopmentWorkspaceInput
-    ): Promise<caws.StartSessionDevelopmentWorkspaceOutput | undefined> {
+    ): Promise<caws.StartSessionDevelopmentWorkspaceOutput & { sessionId: string }> {
         const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args), false)
-        return r
+        if (!r.sessionId) {
+            throw new TypeError('Received falsy CAWS workspace "sessionId"')
+        }
+        return { ...r, sessionId: r.sessionId }
     }
 
     /** CAWS-MDE: does not have this operation (yet?) */

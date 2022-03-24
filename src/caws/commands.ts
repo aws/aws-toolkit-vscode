@@ -14,6 +14,7 @@ import { getLogger } from '../shared/logger'
 import * as mdeModel from '../mde/mdeModel'
 import { openCawsUrl } from './utils'
 import { CawsAuthenticationProvider } from './auth'
+import { createCawsSessionProvider, getHostNameFromEnv } from './model'
 
 const localize = nls.loadMessageBundle()
 
@@ -192,28 +193,23 @@ export async function openDevEnv(client: ConnectedCawsClient, env: CawsDevEnv): 
         return
     }
 
-    await mdeModel.connectToMde(
-        {
-            id: env.developmentWorkspaceId,
+    const deps = await mdeModel.ensureDependencies()
+    if (!deps) {
+        return
+    }
+
+    const provider = createCawsSessionProvider(client, cawsRegion, deps.ssm, deps.ssh)
+    const SessionProcess = mdeModel.createBoundProcess(provider, env).extend({
+        onStdout(stdout) {
+            getLogger().verbose(`CAWS connect: ${env.id}: ${stdout}`)
         },
-        cawsRegion,
-        async () => {
-            const session = await client.startDevEnvSession({
-                projectName: env.project.name,
-                organizationName: env.org.name,
-                developmentWorkspaceId: env.developmentWorkspaceId,
-            })
-            if (!session?.sessionId) {
-                return undefined
-            }
-            return {
-                ...session,
-                id: session.sessionId,
-                startedAt: new Date(),
-                status: 'CONNECTED',
-            }
-        }
-    )
+        onStderr(stderr) {
+            getLogger().verbose(`CAWS connect: ${env.id}: ${stderr}`)
+        },
+        rejectOnErrorCode: true,
+    })
+
+    await mdeModel.startVscodeRemote(SessionProcess, getHostNameFromEnv(env), '/projects', deps.ssh, deps.vsc)
 }
 
 /**
