@@ -2914,7 +2914,7 @@
         "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
         "@types/js-yaml": "^4.0.3",
-        "@types/lodash": "^4.14.173",
+        "@types/lodash": "^4.14.180",
         "@types/marked": "^4.0.2",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^9.0.0",
