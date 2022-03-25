@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM run/debug: slow debugger attachment for API configurations now shows a cancellable notification instead of automatically failing"
-}
