@@ -1,0 +1,8 @@
+{
+  "date" : "2022-03-25",
+  "version" : "1.41",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Adding Go (Golang) as a supported language for code binding generation through the EventBridge Schemas service"
+  } ]
+}

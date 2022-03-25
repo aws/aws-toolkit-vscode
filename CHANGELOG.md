@@ -1,3 +1,6 @@
+# _1.41_ (2022-03-25)
+- **(Feature)** Adding Go (Golang) as a supported language for code binding generation through the EventBridge Schemas service
+
 # _1.40_ (2022-03-07)
 - **(Bug Fix)** Fix logged error due to ARN contributor taking too long ([#3085](https://github.com/aws/aws-toolkit-jetbrains/issues/3085))
 
