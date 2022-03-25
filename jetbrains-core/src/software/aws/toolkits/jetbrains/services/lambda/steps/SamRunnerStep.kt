@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.steps
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.io.FileUtil
 import software.aws.toolkits.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.core.utils.AttributeBagKey
@@ -32,6 +33,10 @@ class SamRunnerStep(val environment: ExecutionEnvironment, val settings: LocalLa
             .withParameters("local")
             .withParameters("invoke")
             .apply {
+                if (ApplicationManager.getApplication().isUnitTestMode) {
+                    withParameters("--debug")
+                }
+
                 if (settings is TemplateSettings) {
                     withParameters(settings.logicalId)
                 }

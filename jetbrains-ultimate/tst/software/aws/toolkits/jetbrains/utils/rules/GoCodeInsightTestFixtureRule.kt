@@ -100,9 +100,13 @@ fun runGoModTidy(goModFile: VirtualFile) {
     }
 }
 
-fun compatibleGoForIde() = when (ApplicationInfo.getInstance().build.baselineVersion) {
-    211 -> "1.16.6" // TODO: FIX_WHEN_MIN_IS_212
-    else -> null
+fun compatibleGoForIde(): String {
+    val baseline = ApplicationInfo.getInstance().build.baselineVersion
+    return when {
+        baseline == 211 -> "1.16.6" // TODO: FIX_WHEN_MIN_IS_212
+        baseline < 221 -> "1.17.8" // TODO: FIX_WHEN_MIN_IS_221
+        else -> "1.18.0"
+    }
 }
 
 fun CodeInsightTestFixture.ensureCorrectGoVersion(disposable: Disposable) {
@@ -116,7 +120,7 @@ fun CodeInsightTestFixture.ensureCorrectGoVersion(disposable: Disposable) {
     }
 
     val goVersionOverride = compatibleGoForIde()
-    goVersionOverride?.let {
+    goVersionOverride.let {
         val overrideLocation = this.tempDirPath
 
         installGoSdk(overrideLocation, it)

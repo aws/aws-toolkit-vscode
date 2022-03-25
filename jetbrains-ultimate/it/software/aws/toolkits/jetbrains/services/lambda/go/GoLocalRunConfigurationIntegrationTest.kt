@@ -272,7 +272,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     fun samIsExecutedImage(): Unit = samImageRunDebugTest(
         projectRule = projectRule,
         relativePath = "samProjects/image/$runtime",
-        templatePatches = mapOf("[GoVersion]" to (compatibleGoForIde() ?: "1")),
+        templatePatches = mapOf("[GoVersion]" to (compatibleGoForIde())),
         sourceFileName = "main.go",
         runtime = runtime,
         mockCredentialsId = mockId,
@@ -285,7 +285,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         samImageRunDebugTest(
             projectRule = projectRule,
             relativePath = "samProjects/image/$runtime",
-            templatePatches = mapOf("[GoVersion]" to (compatibleGoForIde() ?: "1")),
+            templatePatches = mapOf("[GoVersion]" to (compatibleGoForIde())),
             sourceFileName = "main.go",
             runtime = runtime,
             mockCredentialsId = mockId,
