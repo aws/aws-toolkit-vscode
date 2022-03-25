@@ -181,7 +181,7 @@ export class AwsResourceManager {
             const type = await cloudFormation.describeType(typeName)
             if (type && type.Schema) {
                 const schemaFile = path.join(
-                    this.extensionContext.globalStoragePath,
+                    this.extensionContext.globalStorageUri.fsPath,
                     `${normalizedTypeName}.schema.json`
                 )
                 writeFileSync(schemaFile, JSON.stringify(JSON.parse(type.Schema), undefined, 2))

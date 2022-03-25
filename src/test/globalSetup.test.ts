@@ -43,8 +43,8 @@ before(async function () {
     const activationLogger = (msg: string, ...meta: any[]) => console.log(format(msg, ...meta))
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false, activationLogger)
 
-    const fakeContext = new FakeExtensionContext()
-    fakeContext.globalStoragePath = (await createTestWorkspaceFolder('globalStoragePath')).uri.fsPath
+    const fakeContext = await FakeExtensionContext.create()
+    fakeContext.globalStorageUri = (await createTestWorkspaceFolder('globalStoragePath')).uri
     initializeIconPaths(fakeContext)
     Object.assign(globals, { context: fakeContext })
 })

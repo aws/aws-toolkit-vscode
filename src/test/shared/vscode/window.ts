@@ -14,7 +14,7 @@ export interface TestWindow {
 }
 
 // TODO: it's better to just buffer event emitters until they have a listener
-function fireNext<T>(emitter: vscode.EventEmitter<T>, data?: T): void {
+function fireNext<T>(emitter: vscode.EventEmitter<T>, data: T): void {
     setTimeout(() => emitter.fire(data))
 }
 
