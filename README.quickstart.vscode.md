@@ -1,9 +1,11 @@
 # <a id="top"></a>AWS Toolkit
 
-AWS Toolkit is an extension for Visual Studio Code that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/).
-See the [AWS Toolkit for Visual Studio Code user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for complete documentation.
+The AWS Toolkit extension for Visual Studio Code enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/).
+See the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for complete documentation.
 
-See [Setup](#additional-setup-steps) for installation requirements, or [Get help](#get-help) for support.
+Try the [AWS Code Sample Catalog](https://docs.aws.amazon.com/code-samples/latest/catalog/welcome.html) to start coding with the AWS SDK.
+
+See [Setup](#additional-setup-steps) for prerequisites. If you run into a problem, try [support](#get-help).
 
 # <a id="features"></a>Features
 
@@ -13,6 +15,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
     -   CloudFormation stacks
     -   CloudWatch Logs
     -   ECR
+    -   [ECS](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html)
     -   EventBridge schemas
     -   [IoT explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/iot-start.html)
     -   Lambda functions

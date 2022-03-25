@@ -1,9 +1,9 @@
 # <a id="top"></a>AWS Toolkit
 
-AWS Toolkit is an extension for AWS Cloud9 that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/).
-See the [AWS Toolkit user guide](https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html) for complete documentation.
+The AWS Toolkit extension for AWS Cloud9 that enables you to interact with [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/).
+See the [user guide](https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html) for complete documentation.
 
-See [Get help](#get-help) for support.
+Try the [AWS Code Sample Catalog](https://docs.aws.amazon.com/code-samples/latest/catalog/welcome.html) to start coding with the AWS SDK.
 
 # <a id="features"></a>Features
 
@@ -13,6 +13,7 @@ See [Get help](#get-help) for support.
     -   CloudFormation stacks
     -   [CloudWatch Logs](https://docs.aws.amazon.com/cloud9/latest/user-guide/cloudwatch-logs-toolkit.html)
     -   ECR
+    -   [ECS](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html)
     -   IoT explorer
     -   Lambda functions
     -   S3 explorer

@@ -4,11 +4,11 @@ about: Ask for guidance, "how to", or other questions
 labels: guidance
 ---
 
-**Desktop (please complete the following information):**
+## System details (try the `AWS: About Toolkit` command)
 
 -   OS:
--   VS Code version:
--   AWS Toolkit extension version:
+-   Visual Studio Code version:
+-   AWS Toolkit version:
 
 **Question**
 
