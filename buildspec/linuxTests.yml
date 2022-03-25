@@ -22,7 +22,7 @@ phases:
                         echo "CodeArtifact connection failed. Falling back to npm"
                     fi
                 fi
-            - npm ci
+            - npm ci --unsafe-perm
 
     build:
         commands:
