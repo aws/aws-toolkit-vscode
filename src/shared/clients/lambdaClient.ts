@@ -100,7 +100,7 @@ export class DefaultLambdaClient {
     private async createSdkClient(): Promise<Lambda> {
         return await globals.sdkClientBuilder.createAwsService(
             Lambda,
-            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
             this.regionCode
         )
     }

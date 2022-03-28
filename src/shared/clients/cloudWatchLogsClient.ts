@@ -51,7 +51,7 @@ export class DefaultCloudWatchLogsClient {
     protected async createSdkClient(): Promise<CloudWatchLogs> {
         return await globals.sdkClientBuilder.createAwsService(
             CloudWatchLogs,
-            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
             this.regionCode
         )
     }

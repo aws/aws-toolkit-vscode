@@ -71,7 +71,7 @@ export class DefaultStepFunctionsClient {
     private async createSdkClient(): Promise<StepFunctions> {
         return await globals.sdkClientBuilder.createAwsService(
             StepFunctions,
-            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
             this.regionCode
         )
     }

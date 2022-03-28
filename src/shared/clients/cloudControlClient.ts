@@ -115,7 +115,7 @@ export class DefaultCloudControlClient implements CloudControlClient {
     private async createSdkClient(): Promise<CloudControl> {
         return await globals.sdkClientBuilder.createAwsService(
             CloudControl,
-            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
             this.regionCode
         )
     }

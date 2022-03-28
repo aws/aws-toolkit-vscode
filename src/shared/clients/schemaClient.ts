@@ -163,7 +163,7 @@ export class DefaultSchemaClient {
     private async createSdkClient(): Promise<Schemas> {
         return await globals.sdkClientBuilder.createAwsService(
             Schemas,
-            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
             this.regionCode
         )
     }

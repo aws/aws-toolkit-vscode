@@ -77,6 +77,10 @@ export class DefaultEcrClient {
     }
 
     protected async createSdkClient(): Promise<ECR> {
-        return await globals.sdkClientBuilder.createAwsService(ECR, CREDENTIAL_ERROR_REQUEST_LISTENER, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            ECR,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
+            this.regionCode
+        )
     }
 }

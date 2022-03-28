@@ -516,5 +516,9 @@ export class DefaultIotClient {
 }
 
 async function createSdkClient(regionCode: string): Promise<Iot> {
-    return await globals.sdkClientBuilder.createAwsService(Iot, CREDENTIAL_ERROR_REQUEST_LISTENER, regionCode)
+    return await globals.sdkClientBuilder.createAwsService(
+        Iot,
+        { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
+        regionCode
+    )
 }

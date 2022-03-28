@@ -15,11 +15,8 @@ import {
     CredentialsProvider,
     CredentialsId,
     credentialsProviderToTelemetryType,
-    fromString,
 } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import globals from '../shared/extensionGlobals'
-import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -36,10 +33,15 @@ export class LoginManager {
      *
      * @param passive  If true, this was _not_ a user-initiated action.
      * @param provider  Credentials provider id
+     * @param skipErrorMessage Optional, If true, will not show notification on error
      * @returns True if the toolkit could connect with the providerId
      */
 
-    public async login(args: { passive: boolean; providerId: CredentialsId }): Promise<boolean> {
+    public async login(args: {
+        passive: boolean
+        providerId: CredentialsId
+        skipErrorMessage?: boolean
+    }): Promise<boolean> {
         let provider: CredentialsProvider | undefined
         let telemetryResult: Result = 'Failed'
 
@@ -74,7 +76,9 @@ export class LoginManager {
             if (!CancellationError.isUserCancelled(err)) {
                 const msg = `login: failed to connect with "${asString(args.providerId)}": ${(err as Error).message}`
                 if (!args.passive) {
-                    notifyUserInvalidCredentials(args.providerId)
+                    if (!args.skipErrorMessage) {
+                        notifyUserInvalidCredentials(args.providerId)
+                    }
                     getLogger().error(msg)
                 }
             } else {
@@ -101,18 +105,5 @@ export class LoginManager {
      */
     public async logout(force?: boolean): Promise<void> {
         await this.awsContext.setCredentials(undefined, force)
-    }
-
-    /**
-     * Retries login with last used credentials.
-     */
-    public async retryLogin(): Promise<boolean | undefined> {
-        try {
-            getLogger().debug('credentials: attempting retry login...')
-            const mruProfile = new CredentialsProfileMru(globals.context).getMruList()[0]
-            return await this.login({ passive: false, providerId: fromString(mruProfile) })
-        } catch (err) {
-            getLogger().error('credentials: failed to connect on retry: %O', err)
-        }
     }
 }

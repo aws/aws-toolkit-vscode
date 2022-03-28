@@ -111,6 +111,10 @@ export class DefaultSsmDocumentClient {
     }
 
     private async createSdkClient(): Promise<SSM> {
-        return await globals.sdkClientBuilder.createAwsService(SSM, CREDENTIAL_ERROR_REQUEST_LISTENER, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            SSM,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
+            this.regionCode
+        )
     }
 }

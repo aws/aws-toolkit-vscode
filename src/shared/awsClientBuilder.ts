@@ -19,7 +19,7 @@ interface RequestExtras {
     readonly params?: any
 }
 
-type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
+export type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
 export type ServiceOptions = ServiceConfigurationOptions & {
     /**
      * The frequency and (lack of) idempotency of events is highly dependent on the SDK implementation

@@ -88,7 +88,11 @@ export class DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return await globals.sdkClientBuilder.createAwsService(ECS, CREDENTIAL_ERROR_REQUEST_LISTENER, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            ECS,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
+            this.regionCode
+        )
     }
 
     public async executeCommand(

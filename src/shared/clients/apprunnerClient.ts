@@ -69,7 +69,7 @@ export class DefaultAppRunnerClient {
     protected async createSdkClient(): Promise<AppRunner> {
         return await globals.sdkClientBuilder.createAwsService(
             AppRunner,
-            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
             this.regionCode
         )
     }

@@ -81,7 +81,7 @@ export class DefaultApiGatewayClient {
     private async createSdkClient(): Promise<APIGateway> {
         return await globals.sdkClientBuilder.createAwsService(
             APIGateway,
-            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
             this.regionCode
         )
     }

@@ -86,7 +86,7 @@ export class DefaultCloudFormationClient {
     private async createSdkClient(): Promise<CloudFormation> {
         return await globals.sdkClientBuilder.createAwsService(
             CloudFormation,
-            CREDENTIAL_ERROR_REQUEST_LISTENER,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
             this.regionCode
         )
     }

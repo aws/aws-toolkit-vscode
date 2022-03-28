@@ -93,6 +93,10 @@ export class DefaultIamClient {
     }
 
     private async createSdkClient(): Promise<IAM> {
-        return await globals.sdkClientBuilder.createAwsService(IAM, CREDENTIAL_ERROR_REQUEST_LISTENER, this.regionCode)
+        return await globals.sdkClientBuilder.createAwsService(
+            IAM,
+            { onRequestSetup: [CREDENTIAL_ERROR_REQUEST_LISTENER] },
+            this.regionCode
+        )
     }
 }
