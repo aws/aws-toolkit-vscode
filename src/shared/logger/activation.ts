@@ -145,8 +145,7 @@ function getLogPath(): string {
         return logPath
     }
 
-    // TODO: use context.logUri ?
-    const logsDir = path.join(globals.context.globalStorageUri.fsPath, 'logs')
+    const logsDir = globals.context.logUri.fsPath
 
     return path.join(logsDir, makeLogFilename())
 }
