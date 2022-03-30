@@ -145,8 +145,8 @@ function getLogPath(): string {
         return logPath
     }
 
-    // TODO: 'globalStoragePath' is deprecated in later versions of VS Code, use 'globalStorageUri' when min >= 1.48
-    const logsDir = path.join(globals.context.globalStoragePath, 'logs')
+    // TODO: use context.logUri ?
+    const logsDir = path.join(globals.context.globalStorageUri.fsPath, 'logs')
 
     return path.join(logsDir, makeLogFilename())
 }

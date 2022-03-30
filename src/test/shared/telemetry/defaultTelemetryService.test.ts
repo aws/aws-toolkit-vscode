@@ -60,8 +60,8 @@ describe('DefaultTelemetryService', function () {
         sandbox = sinon.createSandbox()
     })
 
-    beforeEach(function () {
-        mockContext = new FakeExtensionContext()
+    beforeEach(async function () {
+        mockContext = await FakeExtensionContext.create()
         mockPublisher = new FakeTelemetryPublisher()
         service = initService()
         logger = service.logger

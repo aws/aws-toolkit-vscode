@@ -118,10 +118,10 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
     try {
         // Convert the paths to URIs which is what the YAML extension expects
         const cfnSchemaUri = vscode.Uri.file(
-            normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
+            normalizeSeparator(path.join(extensionContext.globalStorageUri.fsPath, 'cloudformation.schema.json'))
         )
         const samSchemaUri = vscode.Uri.file(
-            normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json'))
+            normalizeSeparator(path.join(extensionContext.globalStorageUri.fsPath, 'sam.schema.json'))
         )
         const goformationSchemaVersion = await getPropertyFromJsonUrl(GOFORMATION_MANIFEST_URL, 'tag_name')
 

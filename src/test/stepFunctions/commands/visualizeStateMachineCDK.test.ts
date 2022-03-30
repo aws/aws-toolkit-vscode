@@ -16,6 +16,7 @@ import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { getLogger, Logger } from '../../../shared/logger'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 import globals from '../../../shared/extensionGlobals'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 // Top level defintions
 let mockAslVisualizationCDKManager: MockAslVisualizationCDKManager
@@ -63,17 +64,6 @@ const mockTextDocument: vscode.TextDocument = {
 
 const mockJsonData =
     '{"Comment":"A Hello World example of the Amazon States Language using Pass states","StartAt":"Hello","States":{"Hello":{"Type":"Pass","Result":"Hello","Next":"World"},"World":{"Type":"Pass","Result":"${Text}","End":true}}}'
-
-const mockExtensionContext: vscode.ExtensionContext = {
-    extensionPath: '',
-    globalState: mockGlobalStorage,
-    globalStoragePath: '',
-    logPath: '',
-    storagePath: '',
-    subscriptions: [],
-    workspaceState: mockGlobalStorage,
-    asAbsolutePath: sinon.spy(),
-}
 
 const mockNonSMConstructTreeEntity: ConstructTreeEntity = {
     id: 'MyLambdaFunction',
@@ -157,8 +147,12 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     })
 
     // Before each
-    beforeEach(function () {
-        mockAslVisualizationCDKManager = new MockAslVisualizationCDKManager(mockExtensionContext, 'Workspace1')
+    beforeEach(async function () {
+        const fakeExtCtx = await FakeExtensionContext.create()
+        fakeExtCtx.globalState = mockGlobalStorage
+        fakeExtCtx.workspaceState = mockGlobalStorage
+        fakeExtCtx.asAbsolutePath = sinon.spy()
+        mockAslVisualizationCDKManager = new MockAslVisualizationCDKManager(fakeExtCtx, 'Workspace1')
     })
 
     // After all

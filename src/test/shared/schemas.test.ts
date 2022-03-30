@@ -27,7 +27,7 @@ describe('SchemaService', function () {
     const samSchema = vscode.Uri.file('sam')
 
     beforeEach(async function () {
-        fakeExtensionContext = new FakeExtensionContext()
+        fakeExtensionContext = await FakeExtensionContext.create()
         fakeYamlExtension = mock()
         fakeConfig = mock()
         when(fakeConfig.update(anything(), anything(), anything())).thenResolve()

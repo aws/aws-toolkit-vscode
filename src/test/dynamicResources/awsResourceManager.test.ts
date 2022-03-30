@@ -63,8 +63,8 @@ describe('ResourceManager', function () {
             {} as ResourceTypeMetadata
         )
         resourceNode = new ResourceNode(resourceTypeNode, FAKE_IDENTIFIER)
-        const fakeContext = new FakeExtensionContext()
-        fakeContext.globalStoragePath = tempFolder
+        const fakeContext = await FakeExtensionContext.create()
+        fakeContext.globalStorageUri = vscode.Uri.file(tempFolder)
         resourceManager = new AwsResourceManager(fakeContext)
         globals.schemaService = instance(schemaService)
     })

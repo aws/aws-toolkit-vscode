@@ -20,8 +20,8 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 describe('createDocumentFromTemplate', async function () {
     let mockContext: vscode.ExtensionContext
     let sandbox: sinon.SinonSandbox
-    before(function () {
-        mockContext = new FakeExtensionContext()
+    before(async function () {
+        mockContext = await FakeExtensionContext.create()
     })
     beforeEach(function () {
         sandbox = sinon.createSandbox()
