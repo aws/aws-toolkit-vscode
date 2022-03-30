@@ -74,7 +74,7 @@ export function initalizeWebviewPaths(context: vscode.ExtensionContext): typeof 
     // and calls the code to render state machine graph
 
     // Locations for script and css that render the state machine
-    const visualizationLibraryCache = join(context.globalStoragePath, 'visualization')
+    const visualizationLibraryCache = join(context.globalStorageUri.fsPath, 'visualization')
 
     return {
         localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('media', 'js'))),

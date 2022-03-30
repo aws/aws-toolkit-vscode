@@ -18,7 +18,7 @@ describe('DefaultAwsContext', function () {
     const testAccountIdValue: string = '123456789012'
 
     it('instantiates with no credentials', async function () {
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
 
         assert.strictEqual(testContext.getCredentialProfileName(), undefined)
         assert.strictEqual(testContext.getCredentialAccountId(), undefined)
@@ -28,14 +28,14 @@ describe('DefaultAwsContext', function () {
     it('sets credentials and gets credentialsId', async function () {
         const awsCredentials = makeSampleAwsContextCredentials()
 
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
 
         await testContext.setCredentials(awsCredentials)
         assert.strictEqual(testContext.getCredentialProfileName(), awsCredentials.credentialsId)
     })
 
     it('sets undefined credentials and gets credentialsId', async function () {
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
 
         await testContext.setCredentials(undefined)
         assert.strictEqual(testContext.getCredentialProfileName(), undefined)
@@ -44,14 +44,14 @@ describe('DefaultAwsContext', function () {
     it('sets credentials and gets accountId', async function () {
         const awsCredentials = makeSampleAwsContextCredentials()
 
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
 
         await testContext.setCredentials(awsCredentials)
         assert.strictEqual(testContext.getCredentialAccountId(), awsCredentials.accountId)
     })
 
     it('sets undefined credentials and gets accountId', async function () {
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
 
         await testContext.setCredentials(undefined)
         assert.strictEqual(testContext.getCredentialAccountId(), undefined)
@@ -60,14 +60,14 @@ describe('DefaultAwsContext', function () {
     it('sets credentials and gets credentials', async function () {
         const awsCredentials = makeSampleAwsContextCredentials()
 
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
 
         await testContext.setCredentials(awsCredentials)
         assert.strictEqual(await testContext.getCredentials(), awsCredentials.credentials)
     })
 
     it('sets undefined credentials and gets credentials', async function () {
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
 
         await testContext.setCredentials(undefined)
         assert.strictEqual(await testContext.getCredentials(), undefined)
@@ -77,7 +77,7 @@ describe('DefaultAwsContext', function () {
         const fakeMementoStorage: FakeMementoStorage = {}
         fakeMementoStorage[regionSettingKey] = [testRegion1Value]
 
-        const fakeExtensionContext = new FakeExtensionContext({
+        const fakeExtensionContext = await FakeExtensionContext.create({
             globalState: fakeMementoStorage,
         })
 
@@ -91,7 +91,7 @@ describe('DefaultAwsContext', function () {
         const fakeMementoStorage: FakeMementoStorage = {}
         fakeMementoStorage[regionSettingKey] = [testRegion1Value, testRegion2Value]
 
-        const fakeExtensionContext = new FakeExtensionContext({
+        const fakeExtensionContext = await FakeExtensionContext.create({
             globalState: fakeMementoStorage,
         })
 
@@ -103,7 +103,7 @@ describe('DefaultAwsContext', function () {
     })
 
     it('updates globalState on single region change', async function () {
-        const extensionContext = new FakeExtensionContext()
+        const extensionContext = await FakeExtensionContext.create()
         const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value)
 
@@ -114,7 +114,7 @@ describe('DefaultAwsContext', function () {
     })
 
     it('updates globalState on multiple region change', async function () {
-        const extensionContext = new FakeExtensionContext()
+        const extensionContext = await FakeExtensionContext.create()
         const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
 
@@ -126,7 +126,7 @@ describe('DefaultAwsContext', function () {
     })
 
     it('updates globalState on region removal', async function () {
-        const extensionContext = new FakeExtensionContext()
+        const extensionContext = await FakeExtensionContext.create()
         const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value, testRegion3Value)
         await testContext.removeExplorerRegion(testRegion2Value)
@@ -139,7 +139,7 @@ describe('DefaultAwsContext', function () {
     })
 
     it('fires event on credentials change', async function () {
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
 
         const awsCredentials = makeSampleAwsContextCredentials()
 
@@ -155,7 +155,7 @@ describe('DefaultAwsContext', function () {
     })
 
     it('setDeveloperMode()', async function () {
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(await FakeExtensionContext.create())
         let result: Set<string> | undefined
         /** How many times did the event fire? */
         let count = 0
