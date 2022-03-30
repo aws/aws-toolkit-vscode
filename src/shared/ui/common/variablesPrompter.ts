@@ -23,7 +23,7 @@ function unquote(str: string): string {
     const isDoubleQuoted = str[0] === '"' && str[str.length - 1] === '"'
 
     if (isSingleQuoted || isDoubleQuoted) {
-        str = str.substr(1, str.length - 1)
+        str = str.slice(1, -1)
     }
 
     if (isDoubleQuoted) {
