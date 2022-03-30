@@ -79,7 +79,7 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
                             this,
                             this.iot,
                             (await this.iot.listPolicyTargets({ policyName: policy.policyName! })).map(certId =>
-                                certId.substr(certId.length - CERT_ID_LENGTH, CERT_PREVIEW_LENGTH)
+                                certId.slice(-CERT_ID_LENGTH, -CERT_ID_LENGTH + CERT_PREVIEW_LENGTH)
                             )
                         )
                 ) ?? []
