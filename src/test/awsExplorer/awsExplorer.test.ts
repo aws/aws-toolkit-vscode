@@ -56,7 +56,7 @@ describe('AwsExplorer', function () {
         const awsContext = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
-        const fakeContext = new FakeExtensionContext()
+        const fakeContext = await FakeExtensionContext.create()
         const awsExplorer = new AwsExplorer(fakeContext, awsContext, regionProvider)
 
         const treeNodes = await awsExplorer.getChildren()
@@ -80,7 +80,7 @@ describe('AwsExplorer', function () {
         const awsContext = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
-        const fakeContext = new FakeExtensionContext()
+        const fakeContext = await FakeExtensionContext.create()
         const awsExplorer = new AwsExplorer(fakeContext, awsContext, regionProvider)
 
         const refreshStub = sandbox.stub(awsExplorer, 'refresh')

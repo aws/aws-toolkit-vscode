@@ -14,6 +14,7 @@ import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 
 import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'
 import globals from '../../../shared/extensionGlobals'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
@@ -204,17 +205,6 @@ const mockRange: vscode.Range = {
     with: sinon.spy(),
 }
 
-const mockExtensionContext: vscode.ExtensionContext = {
-    extensionPath: '',
-    globalState: mockGlobalStorage,
-    globalStoragePath: '',
-    logPath: '',
-    storagePath: '',
-    subscriptions: [],
-    workspaceState: mockGlobalStorage,
-    asAbsolutePath: sinon.spy(),
-}
-
 describe('StepFunctions VisualizeStateMachine', async function () {
     let mockVsCode: MockVSCode
 
@@ -245,8 +235,12 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     })
 
     // Before each
-    beforeEach(function () {
-        aslVisualizationManager = new AslVisualizationManager(mockExtensionContext)
+    beforeEach(async function () {
+        const fakeExtCtx = await FakeExtensionContext.create()
+        fakeExtCtx.globalState = mockGlobalStorage
+        fakeExtCtx.workspaceState = mockGlobalStorage
+        fakeExtCtx.asAbsolutePath = sinon.spy()
+        aslVisualizationManager = new AslVisualizationManager(fakeExtCtx)
     })
 
     // After each
