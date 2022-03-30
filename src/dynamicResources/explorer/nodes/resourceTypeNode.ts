@@ -146,6 +146,6 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
     }
 
     private static getFriendlyName(typeName: string): string {
-        return typeName.startsWith('AWS::') ? typeName.substr(5) : typeName
+        return typeName.startsWith('AWS::') ? typeName.slice(5) : typeName
     }
 }

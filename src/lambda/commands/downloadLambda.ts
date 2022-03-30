@@ -232,5 +232,5 @@ function computeLambdaRoot(lambdaLocation: string, functionNode: LambdaFunctionN
 
     const lambdaIndex = normalizedLocation.indexOf(`/${lambdaDetails.fileName}`)
 
-    return lambdaIndex > -1 ? normalizedLocation.substr(0, lambdaIndex) : path.dirname(normalizedLocation)
+    return lambdaIndex > -1 ? normalizedLocation.slice(0, lambdaIndex) : path.dirname(normalizedLocation)
 }
