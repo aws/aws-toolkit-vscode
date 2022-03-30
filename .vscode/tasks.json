@@ -49,12 +49,13 @@
         {
             "type": "npm",
             "script": "compile",
-            "problemMatcher": "$tsc",
-            "dependsOn": ["Kill Tasks"]
+            "dependsOn": ["Kill Tasks"],
+            "problemMatcher": "$tsc"
         },
         {
             "type": "npm",
             "script": "clean",
+            "dependsOn": ["Kill Tasks"],
             "problemMatcher": []
         },
         {

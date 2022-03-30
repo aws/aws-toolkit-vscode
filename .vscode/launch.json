@@ -60,12 +60,10 @@
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "env": {
-                "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": "null",
-                "NO_COVERAGE": "true",
-                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
             },
-            "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
@@ -80,12 +78,11 @@
                 "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "env": {
-                "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
-                "NO_COVERAGE": "true",
-                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
+                "TEST_FILE": "${relativeFile}",
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
             },
-            "outFiles": ["${workspaceFolder}/dist/.vscode/*", "${workspaceFolder}/dist/src/test/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
@@ -99,13 +96,11 @@
                 "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
             ],
             "env": {
-                "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": "null",
-                "NO_COVERAGE": "true",
-                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
             },
-            "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
-            "preLaunchTask": "npm: testCompile"
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "preLaunchTask": "${defaultBuildTask}"
         },
         {
             "name": "Integration Tests (current file)",
@@ -118,12 +113,11 @@
                 "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
             ],
             "env": {
-                "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
-                "NO_COVERAGE": "true",
-                "AWS_TOOLKIT_AUTOMATION": "LOCAL_TESTS"
+                "TEST_FILE": "${relativeFile}",
+                "DEVELOPMENT_PATH": "${workspaceFolder}",
+                "AWS_TOOLKIT_AUTOMATION": "local"
             },
-            "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
         }
     ],

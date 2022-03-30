@@ -33,8 +33,8 @@ describe('handleTelemetryNoticeResponse', function () {
         sandbox.restore()
     })
 
-    beforeEach(function () {
-        extensionContext = new FakeExtensionContext()
+    beforeEach(async function () {
+        extensionContext = await FakeExtensionContext.create()
     })
 
     it('does nothing when notice is discarded', async function () {
@@ -171,8 +171,8 @@ describe('hasUserSeenTelemetryNotice', async function () {
         sandbox.restore()
     })
 
-    beforeEach(function () {
-        extensionContext = new FakeExtensionContext()
+    beforeEach(async function () {
+        extensionContext = await FakeExtensionContext.create()
     })
 
     it('is affected by setHasUserSeenTelemetryNotice', async function () {

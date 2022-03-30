@@ -205,9 +205,10 @@ async function promptVsix(
         Test = 3,
     }
 
-    const withMode = ctx.extensionContext as typeof ctx.extensionContext & { readonly extensionMode: ExtensionMode }
     const extPath =
-        withMode.extensionMode === ExtensionMode.Development ? ctx.extensionContext.extensionPath : folders[0].fsPath
+        ctx.extensionContext.extensionMode === ExtensionMode.Development
+            ? ctx.extensionContext.extensionPath
+            : folders[0].fsPath
 
     const packageNew = {
         label: 'Create new VSIX',

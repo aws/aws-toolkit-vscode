@@ -13,15 +13,15 @@ To interact with Amazon Web Services \(AWS\) through the AWS Toolkit for Visual 
 
     > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: >Connect to AWS**\.
     >
-    > ![[AWS Toolkit Command palette, Connect to AWS]](images/aws-toolkit-commandpalette.png)
+    > ![AWS Toolkit Command palette, Connect to AWS](./images/aws-toolkit-commandpalette.png)
 
 2. Choose a profile from the list\.
 
-    ![[AWS Toolkit command palette choose profile window]](images/aws-toolkit-choose-profile.png)
+    ![AWS Toolkit command palette choose profile window](./images/aws-toolkit-choose-profile.png)
 
     If you don't have a credentials profile set up, you are prompted to set one up\. Look for a pop\-up in the lower\-right corner of the editor\. Choose **Yes**, and then follow the setup wizard to enter a profile name, your access key ID, and your secret access key\.
 
-    ![[AWS Toolkit setup profile prompt.]](images/aws-toolkit-cred-prompt.png)
+    ![AWS Toolkit setup profile prompt.](./images/aws-toolkit-cred-prompt.png)
 
     > **Note**
     >
@@ -31,8 +31,8 @@ To interact with Amazon Web Services \(AWS\) through the AWS Toolkit for Visual 
 
     Before adding to the **AWS Explorer**, you see the following\.
 
-    ![[AWS Explorer without Regions]](images/aws-explorer-no-regions.png)
+    ![AWS Explorer without Regions](./images/aws-explorer-no-regions.png)
 
     After adding Regions to the **AWS Explorer**, you see something like the following\.
 
-    ![[AWS Explorer with regions]](images/aws-explorer-with-regions.png)
+    ![AWS Explorer with regions](./images/aws-explorer-with-regions.png)

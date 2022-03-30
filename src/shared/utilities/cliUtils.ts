@@ -225,7 +225,7 @@ async function downloadCliSource(cli: Cli, tempDir: string, timeout: Timeout): P
 }
 
 function getToolkitCliDir(): string {
-    return path.join(globals.context.globalStoragePath, 'tools')
+    return path.join(globals.context.globalStorageUri.fsPath, 'tools')
 }
 
 /**

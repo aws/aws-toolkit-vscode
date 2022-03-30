@@ -17,7 +17,7 @@ import { assertLogsContain } from '../../globalSetup.test'
 describe('localLambdaRunner', async function () {
     let tempDir: string
     before(async function () {
-        await FakeExtensionContext.getNew()
+        await FakeExtensionContext.create()
     })
 
     beforeEach(async function () {

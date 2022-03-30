@@ -46,9 +46,8 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             return
         }
         // Log calls are made with explicit levels to ensure the text is output
-        this.logger.log(this.logger.level, `Setting log level to: ${logLevel}`)
         this.logger.level = logLevel
-        this.logger.log(this.logger.level, `Log level is now: ${this.logger.level}`)
+        this.logger.log(this.logger.level, `Log level: ${this.logger.level}`)
     }
 
     public logLevelEnabled(logLevel: LogLevel): boolean {

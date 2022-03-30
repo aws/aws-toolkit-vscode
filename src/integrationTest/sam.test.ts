@@ -38,12 +38,6 @@ const DEBUG_TIMEOUT: number = 120000
 const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
 
-/**
- * These languages are skipped on our minimum supported version
- * For Go and Python this is because the extensions used do not support our minimum
- */
-const SKIP_LANGUAGES_ON_MIN = ['python', 'go']
-
 /** Go can't handle API tests yet */
 const SKIP_LANGUAGES_ON_API = ['go']
 
@@ -480,10 +474,6 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
-                    if (vscode.version.startsWith('1.44') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
-                        this.skip()
-                    }
-
                     const codeLenses = await testUtils.getAddConfigCodeLens(
                         samAppCodeUri,
                         CODELENS_TIMEOUT,
@@ -527,10 +517,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=api: invokes and attaches on debug request (F5)', async function () {
-                    if (
-                        (vscode.version.startsWith('1.44') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) ||
-                        SKIP_LANGUAGES_ON_API.includes(scenario.language)
-                    ) {
+                    if (SKIP_LANGUAGES_ON_API.includes(scenario.language)) {
                         this.skip()
                     }
 
@@ -545,10 +532,6 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('target=template: invokes and attaches on debug request (F5)', async function () {
-                    if (vscode.version.startsWith('1.44') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
-                        this.skip()
-                    }
-
                     setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
                     await testTarget('template')
                 })
