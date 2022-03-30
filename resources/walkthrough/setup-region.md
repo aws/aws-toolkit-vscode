@@ -8,11 +8,11 @@ When you set up your credentials, the AWS Toolkit for Visual Studio Code automat
 
     > This command can also be accessed through the [Command Palette](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html#command-locations) by choosing **AWS: Show Region in the Explorer**\.
     >
-    > ![[AWS Toolkit Command Palette showing Regions.]](images/aws-toolkit-show-regions.png)
+    > ![AWS Toolkit Command Palette showing Regions.](./images/aws-toolkit-show-regions.png)
 
 2. Choose the Region that you want to add to the **AWS Explorer**\.
 
-    ![[AWS Regions menu.]](images/aws-toolkit-select-region.png)
+    ![AWS Regions menu.](./images/aws-toolkit-select-region.png)
 
     > **Note**
     >
@@ -20,10 +20,10 @@ When you set up your credentials, the AWS Toolkit for Visual Studio Code automat
 
 3. Verify that the Region now appears in the **AWS Explorer**\.
 
-    ![[AWS Explorer Regions list.]](images/aws-toolkit-region-added.png)
+    ![AWS Explorer Regions list.](./images/aws-toolkit-region-added.png)
 
 ## Hide a Region from the AWS Explorer
 
 You can hide a Region by right clicking it in the AWS Explorer and selecting **Hide Region from the Explorer**.
 
-![[AWS ALL Regions menu.]](images/aws-toolkit-region-context-menu.png)
+![AWS ALL Regions menu.](./images/aws-toolkit-region-context-menu.png)

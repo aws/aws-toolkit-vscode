@@ -1,0 +1,14 @@
+{
+	"date": "2022-03-25",
+	"version": "1.37.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM run/debug: slow debugger attachment for API configurations now shows a cancellable notification instead of automatically failing"
+		},
+		{
+			"type": "Feature",
+			"description": "\"Adding Go (Golang) as a supported language for code binding generation through the EventBridge Schemas service\""
+		}
+	]
+}

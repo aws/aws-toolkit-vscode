@@ -118,7 +118,7 @@ describe('Connect Script', function () {
     }
 
     beforeEach(async function () {
-        context = new FakeExtensionContext()
+        context = await FakeExtensionContext.create()
         context.globalStoragePath = await makeTemporaryToolkitFolder()
     })
 

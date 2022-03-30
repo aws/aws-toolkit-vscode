@@ -276,25 +276,20 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 
 /**
  * Shows a message with a link to the quickstart page.
- * In cloud9 and MDEs, directly opens quickstart instead
  */
-async function showOrPromptQuickstart(): Promise<void> {
-    if (isCloud9() || getMdeEnvArn() !== undefined) {
+async function promptQuickstart(): Promise<void> {
+    const view = localize('AWS.command.quickStart', 'View Quick Start')
+    const prompt = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.message.prompt.quickStart.toastMessage',
+            'You are now using {0} Toolkit {1}',
+            getIdeProperties().company,
+            extensionVersion
+        ),
+        view
+    )
+    if (prompt === view) {
         vscode.commands.executeCommand('aws.quickStart')
-    } else {
-        const view = localize('AWS.command.quickStart', 'View Quick Start')
-        const prompt = await vscode.window.showInformationMessage(
-            localize(
-                'AWS.message.prompt.quickStart.toastMessage',
-                'You are now using {0} Toolkit version {1}',
-                getIdeProperties().company,
-                extensionVersion
-            ),
-            view
-        )
-        if (prompt === view) {
-            vscode.commands.executeCommand('aws.quickStart')
-        }
     }
 }
 
@@ -327,8 +322,9 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
-            // the welcome toast should be nonblocking.
-            showOrPromptQuickstart()
+            if (!isCloud9()) {
+                promptQuickstart()
+            }
         }
     } catch (err) {
         // swallow error and don't block extension load

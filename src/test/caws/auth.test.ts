@@ -20,8 +20,8 @@ describe('CawsAuthenticationProvider', function () {
         return data
     }
 
-    beforeEach(function () {
-        const ctx = new FakeExtensionContext()
+    beforeEach(async function () {
+        const ctx = await FakeExtensionContext.create()
         authProvider = new CawsAuthenticationProvider(new CawsAuthStorage(ctx.globalState, ctx.secrets), getUser)
         users = {
             cookie: { id: '123', name: 'foo?' },
