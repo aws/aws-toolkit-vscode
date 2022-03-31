@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fixed issue with API Gateway 'Invoke on AWS' resource names always showing 'resource.path'"
+}

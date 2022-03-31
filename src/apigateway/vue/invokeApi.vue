@@ -9,16 +9,12 @@
         <select v-model="selectedApiResource" v-on:change="setApiResource">
             <option disabled value="">Select a resource</option>
             <option
-                v-for="resource in Object.keys(initialData.Resources)"
-                :key="initialData.Resources[resource].id"
-                :disabled="!initialData.Resources[resource].resourceMethods"
-                :value="initialData.Resources[resource].id"
+                v-for="resource in initialData.Resources"
+                :key="resource.id"
+                :disabled="!resource.resourceMethods"
+                :value="resource.id"
             >
-                {{
-                    `resource.path${
-                        initialData.Resources[resource].resourceMethods === undefined ? ' -- No methods' : ''
-                    }`
-                }}
+                {{ `${resource.path}${resource.resourceMethods === undefined ? ' -- No methods' : ''}` }}
             </option>
         </select>
         <h3>Select a method:</h3>
