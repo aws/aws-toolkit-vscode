@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import {
     AwsSamDebuggerConfiguration,
-    AWS_SAM_DEBUG_TARGET_TYPES,
     CodeTargetProperties,
     TemplateTargetProperties,
 } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -139,50 +138,6 @@ export function getCodeRoot(
     }
 }
 
-/**
- * Gets the lambda handler name specified in the given config.
- */
-export function getHandlerName(
-    folder: vscode.WorkspaceFolder | undefined,
-    config: AwsSamDebuggerConfiguration
-): string {
-    switch (config.invokeTarget.target) {
-        case 'code': {
-            const codeInvoke = config.invokeTarget as CodeTargetProperties
-            return codeInvoke.lambdaHandler
-        }
-        case 'api':
-        case 'template': {
-            const template = getTemplate(folder, config)
-            if (!template) {
-                return ''
-            }
-            const templateResource = getTemplateResource(folder, config)
-            if (CloudFormation.isImageLambdaResource(templateResource?.Properties)) {
-                return config.invokeTarget.logicalId
-            }
-
-            const propertyValue = CloudFormation.resolvePropertyWithOverrides(
-                templateResource?.Properties?.Handler,
-                template,
-                config.sam?.template?.parameters
-            )
-            return propertyValue ? propertyValue.toString() : ''
-        }
-        default: {
-            // Should never happen.
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.sam.debugger.invalidTarget',
-                    'Debug Configuration has an unsupported target type. Supported types: {0}',
-                    AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
-                )
-            )
-            return ''
-        }
-    }
-}
-
 /** Gets a template object from the given config. */
 export function getTemplate(
     folder: vscode.WorkspaceFolder | undefined,
@@ -213,14 +168,17 @@ export function getTemplateResource(
     if (!cfnTemplate) {
         throw Error(`template not found (not registered?): ${templateInvoke.templatePath}`)
     }
-    if (!cfnTemplate?.Resources) {
+    const res = cfnTemplate.Resources
+    if (!res) {
         throw Error(`no Resources in template: ${templateInvoke.templatePath}`)
     }
-    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![templateInvoke.logicalId!]
+    const templateResource: CloudFormation.Resource | undefined =
+        config.invokeTarget.target === 'api'
+            ? res[CloudFormation.getResourceByApiPath(res, config.api?.path ?? '')]
+            : res[templateInvoke.logicalId!]
     if (!templateResource) {
         throw Error(
-            `template Resources object does not contain key '${templateInvoke.logicalId}':` +
-                ` ${JSON.stringify(cfnTemplate?.Resources)}`
+            `template Resources object does not contain key '${templateInvoke.logicalId}':` + ` ${JSON.stringify(res)}`
         )
     }
     return templateResource

@@ -287,13 +287,57 @@ describe('CloudFormation', function () {
         }
     })
 
-    describe('getResourceFromTemplateResources', async function () {
+    describe('getResourceByApiPath()', async function () {
+        it('gets CFN resources by API path', async () => {
+            const boilerplate = `
+                    Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+                    Properties:
+                        Handler: handler
+                        CodeUri: codeuri
+                        Runtime: runtime
+                        Events:
+                            Event1:
+                              Type: Api
+                              Properties:
+                                Path: /foo/bar1
+                                Method: post
+                            Event2:
+                              Type: Api
+                              Properties:
+                                Path: {path}
+                                Method: get
+                            Event3:
+                              Type: Api
+                              Properties:
+                                Path: /foo/bar2
+                                Method: get`
+            const input = `
+            Resources:
+                TestResource1:
+                    ${boilerplate.trim().replace('{path}', '/hello1')}
+                TestResource2:
+                    ${boilerplate.trim().replace('{path}', '/hello2')}
+                TestResource3:
+                    ${boilerplate.trim().replace('{path}', '/hello3')}
+                TestResource4:
+                    ${boilerplate.trim().replace('{path}', '/hello1')}`
+
+            const template = await CloudFormation.loadStr(input)
+            assert(template.Resources)
+            assert.strictEqual('TestResource2', CloudFormation.getResourceByApiPath(template.Resources, '/hello2'))
+            assert.strictEqual('TestResource3', CloudFormation.getResourceByApiPath(template.Resources, '/hello3'))
+            // Duplicated path "/hello1" is resolved by SAM as "last one wins".
+            assert.strictEqual('TestResource4', CloudFormation.getResourceByApiPath(template.Resources, '/hello1'))
+        })
+    })
+
+    describe('getResourceByHandler', async function () {
         for (const scenario of templateWithExistingHandlerScenarios) {
             it(`should retrieve resource for ${scenario.title}`, async () => {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
                 const template = await CloudFormation.load(templatePath)
 
-                const resource = await CloudFormation.getResourceFromTemplateResources({
+                const resource = await CloudFormation.getResourceByHandler({
                     templateResources: template.Resources,
                     handlerName: scenario.handlerName,
                 })
@@ -316,7 +360,7 @@ describe('CloudFormation', function () {
                 const template = await CloudFormation.load(templatePath)
 
                 await assert.rejects(
-                    CloudFormation.getResourceFromTemplateResources({
+                    CloudFormation.getResourceByHandler({
                         templateResources: template.Resources,
                         handlerName: scenario.handlerName,
                     })

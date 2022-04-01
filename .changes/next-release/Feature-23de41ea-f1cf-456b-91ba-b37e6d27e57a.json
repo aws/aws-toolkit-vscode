@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM local API debugging (`target=api`) no longer requires `logicalId` property in the launch config"
+}

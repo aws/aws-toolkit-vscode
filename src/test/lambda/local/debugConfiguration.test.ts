@@ -47,7 +47,6 @@ describe('makeCoreCLRDebugConfiguration', function () {
             request: 'attach',
             // cfnTemplate?: CloudFormation.Template
             runtime: 'fakedotnet',
-            handlerName: 'fakehandlername',
             noDebug: false,
             apiPort: 4242,
             debugPort: 4243,
@@ -202,7 +201,6 @@ describe('isImageLambdaConfig', function () {
             request: 'launch',
             type: 'launch',
             runtime: 'fakedotnet',
-            handlerName: 'fakehandlername',
             envFile: '/fake/build/dir/env-vars.json',
             eventPayloadFile: '/fake/build/dir/event.json',
             documentUri: vscode.Uri.parse('/fake/path/foo.txt'),

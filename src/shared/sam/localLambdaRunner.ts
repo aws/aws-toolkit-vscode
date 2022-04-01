@@ -67,7 +67,7 @@ function getEnvironmentVariables(
 /**
  * Decides the resource name for the generated template.yaml.
  */
-function makeResourceName(config: SamLaunchRequestArgs): string {
+async function makeResourceName(config: SamLaunchRequestArgs): Promise<string> {
     if (config.invokeTarget.target === 'code') {
         // CodeUri may be ".", we need a name. #1685
         const fullPath = tryGetAbsolutePath(config.workspaceFolder, config.invokeTarget.projectRoot)
@@ -75,9 +75,20 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
         return logicalId === ''
             ? 'resource1' // projectRoot has only non-alphanumeric chars :(
             : logicalId
-    } else {
-        return config.invokeTarget.logicalId
     }
+
+    if (config.invokeTarget.target === 'api') {
+        const template = await CloudFormation.load(config.templatePath)
+        if (!template.Resources) {
+            throw Error(`failed to read SAM template: ${config.templatePath}`)
+        }
+        if (!config.api?.path) {
+            throw Error()
+        }
+        return CloudFormation.getResourceByApiPath(template.Resources, config.api?.path)
+    }
+
+    return config.invokeTarget.logicalId
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
@@ -93,7 +104,7 @@ export async function makeInputTemplate(
 ): Promise<string> {
     let newTemplate: SamTemplateGenerator
     const inputTemplatePath: string = path.join(config.baseBuildDir!, 'app___vsctk___template.yaml')
-    const resourceName = makeResourceName(config)
+    const resourceName = await makeResourceName(config)
 
     // code type - generate ephemeral SAM template
     newTemplate = new SamTemplateGenerator()
@@ -271,8 +282,9 @@ async function invokeLambdaHandler(
         return true
     } else {
         // 'target=code' or 'target=template'
+        const resourceName = await makeResourceName(config)
         const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
-            templateResourceName: makeResourceName(config),
+            templateResourceName: resourceName,
             templatePath: config.templatePath,
             eventPath: config.eventPayloadFile,
             environmentVariablePath: config.envFile,
@@ -345,14 +357,16 @@ export async function runLambdaFunction(
     }
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.outputChannel.show(true)
+    const target = config.invokeTarget.target
+    const msg =
+        target === 'api'
+            ? `API "${config.api?.path}"`
+            : target === 'code'
+            ? `Lambda "${config.invokeTarget.lambdaHandler}"`
+            : `Lambda "${config.invokeTarget.logicalId}"`
     if (!config.noDebug) {
-        const msg =
-            (config.invokeTarget.target === 'api' ? `API "${config.api?.path}", ` : '') +
-            `Lambda "${config.handlerName}"`
-        getLogger('channel').info(localize('AWS.output.sam.local.startDebug', 'Preparing to debug locally: {0}', msg))
-    } else {
         getLogger('channel').info(
-            localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName)
+            localize('AWS.output.sam.local.startDebug', 'Preparing to run/debug locally: {0}', msg)
         )
     }
 
@@ -689,7 +703,8 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     // env-vars.json (NB: effectively ignored for the `target=code` case).
     const configEnv = config.lambda?.environmentVariables ?? {}
     if (Object.keys(configEnv).length !== 0) {
-        const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), configEnv))
+        const resourceName = await makeResourceName(config)
+        const env = JSON.stringify(getEnvironmentVariables(resourceName, configEnv))
         config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
         await writeFile(config.envFile, env)
     }

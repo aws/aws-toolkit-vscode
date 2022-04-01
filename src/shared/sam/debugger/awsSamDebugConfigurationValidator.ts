@@ -122,38 +122,68 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         }
 
         const resources = cfnTemplate.Resources
-        if (!templateTarget.logicalId) {
+
+        if (!resources) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.missingField',
                     'Missing required field "{0}" in debug config',
-                    'logicalId'
+                    'resources'
                 ),
             }
         }
 
-        if (!resources || !Object.keys(resources).includes(templateTarget.logicalId)) {
-            return {
-                isValid: false,
-                message: localize(
-                    'AWS.sam.debugger.missingResource',
-                    'Cannot find the template resource "{0}" in template file: {1}',
-                    templateTarget.logicalId,
-                    templateTarget.templatePath
-                ),
+        const isApi = config.invokeTarget.target === 'api'
+        const logicalId: string = isApi
+            ? CloudFormation.getResourceByApiPath(resources, config.api?.path ?? '')
+            : templateTarget.logicalId
+
+        if (isApi) {
+            if (!logicalId) {
+                return {
+                    isValid: false,
+                    message: localize(
+                        'AWS.sam.debugger.missingResource',
+                        'Cannot find a resource with API path "{0}" in template file: {1}',
+                        config.api?.path,
+                        templateTarget.templatePath
+                    ),
+                }
+            }
+        } else {
+            if (!logicalId) {
+                return {
+                    isValid: false,
+                    message: localize(
+                        'AWS.sam.debugger.missingField',
+                        'Missing required field "{0}" in debug config',
+                        'logicalId'
+                    ),
+                }
+            }
+            if (!resources || !Object.keys(resources).includes(logicalId)) {
+                return {
+                    isValid: false,
+                    message: localize(
+                        'AWS.sam.debugger.missingResource',
+                        'Cannot find resource "{0}" in template file: {1}',
+                        logicalId,
+                        templateTarget.templatePath
+                    ),
+                }
             }
         }
 
-        const resource = resources[templateTarget.logicalId]
+        const resource = resources[logicalId]
 
         if (resource?.Type !== CloudFormation.SERVERLESS_FUNCTION_TYPE) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.resourceNotAFunction',
-                    'Template Resource {0} in Template file {1} needs to be of type {2} or {3}',
-                    templateTarget.logicalId,
+                    'Resource {0} in template "{1}" must be of type {2} or {3}',
+                    logicalId,
                     templateTarget.templatePath,
                     CloudFormation.SERVERLESS_FUNCTION_TYPE,
                     CloudFormation.LAMBDA_FUNCTION_TYPE
@@ -168,8 +198,8 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                     isValid: false,
                     message: localize(
                         'AWS.sam.debugger.missingSamMetadata',
-                        'The Metadata section for Template Resource {0} in Template file {1} is not defined',
-                        templateTarget.logicalId,
+                        'Missing Metadata section for resource "{0}" in template: {1}',
+                        logicalId,
                         templateTarget.templatePath
                     ),
                 }
@@ -195,8 +225,8 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                     isValid: false,
                     message: localize(
                         'AWS.sam.debugger.unsupportedRuntime',
-                        'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
-                        templateTarget.logicalId,
+                        'Missing or unknown Runtime for resource "{0}" in template: {1}',
+                        logicalId,
                         templateTarget.templatePath
                     ),
                 }
@@ -230,8 +260,8 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         return { isValid: true }
     }
 
-    private validateApiConfig(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
-        if (!debugConfiguration.api) {
+    private validateApiConfig(config: AwsSamDebuggerConfiguration): ValidationResult {
+        if (!config.api) {
             return {
                 isValid: false,
                 message: localize(
@@ -240,7 +270,18 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                     'api'
                 ),
             }
-        } else if (!debugConfiguration.api.path.startsWith('/')) {
+        }
+        if (!config.api.path) {
+            return {
+                isValid: false,
+                message: localize(
+                    'AWS.sam.debugger.missingField',
+                    'Missing required field "{0}" in debug config',
+                    'api.path'
+                ),
+            }
+        }
+        if (!config.api.path.startsWith('/')) {
             return {
                 isValid: false,
                 message: localize('AWS.sam.debugger.missingSlash', "Path must start with a '/'"),

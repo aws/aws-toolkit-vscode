@@ -365,18 +365,19 @@ export namespace CloudFormation {
         [key: string]: Resource | undefined
     }
 
+    export async function loadStr(yamlStr: string): Promise<Template> {
+        const template = yaml.load(yamlStr, { schema: schema as any }) as Template
+        validateTemplate(template)
+        return template
+    }
+
     export async function load(filename: string): Promise<Template> {
         if (!(await SystemUtilities.fileExists(filename))) {
             throw new Error(`Template file not found: ${filename}`)
         }
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
-        const template = yaml.load(templateAsYaml, {
-            schema: schema as any,
-        }) as Template
-        validateTemplate(template)
-
-        return template
+        return await loadStr(templateAsYaml)
     }
 
     export async function save(template: Template, filename: string): Promise<void> {
@@ -461,25 +462,32 @@ export namespace CloudFormation {
     ): Promise<Resource> {
         const template = await context.loadTemplate(templatePath)
 
-        return getResourceFromTemplateResources({
+        return getResourceByHandler({
             templateResources: template.Resources,
             handlerName,
         })
     }
 
-    export async function getResourceFromTemplateResources(params: {
+    /**
+     * Gets the resource with a `Handler` field matching the given handler name.
+     */
+    export async function getResourceByHandler(params: {
         templateResources?: TemplateResources
         handlerName: string
     }): Promise<Resource> {
         const resources = params.templateResources || {}
 
         const matches = Object.keys(resources)
-            .filter(key =>
-                matchesHandler({
-                    resource: resources[key],
-                    handlerName: params.handlerName,
-                })
-            )
+            .filter(key => {
+                const resource = resources[key]
+                const handlerName = params.handlerName
+                return (
+                    resource &&
+                    resource.Type === SERVERLESS_FUNCTION_TYPE &&
+                    isZipLambdaResource(resource.Properties) &&
+                    resource.Properties.Handler === handlerName
+                )
+            })
             .map(key => resources[key]!)
 
         if (matches.length < 1) {
@@ -494,18 +502,47 @@ export namespace CloudFormation {
         return matches[0]
     }
 
-    function matchesHandler({ resource, handlerName }: { resource?: Resource; handlerName: string }) {
-        return (
-            resource &&
-            resource.Type === SERVERLESS_FUNCTION_TYPE &&
-            isZipLambdaResource(resource.Properties) &&
-            // TODO: `resource.Properties.Handler` is relative to `CodeUri`, but
-            //       `handlerName` is relative to the directory containing the source
-            //       file. To fix, update lambda handler candidate searches for
-            //       interpreted languages to return a handler name relative to the
-            //       `CodeUri`, rather than to the directory containing the source file.
-            resource.Properties.Handler === handlerName
-        )
+    /**
+     * Gets the resource with a `Events.*.Path` field matching the given API path.
+     *
+     * Duplicate API paths are resolved as "last wins", which is compatible with SAM.
+     *
+     * Example (path "/hello" matches "HelloWorldFunction"):
+     *
+     *     HelloWorldFunction:
+     *       Type: AWS::Serverless::Function
+     *       Properties:
+     *         PackageType: Image
+     *         Events:
+     *           HelloWorld:
+     *             Type: Api
+     *             Properties:
+     *               Path: /hello
+     *               Method: get
+     */
+    export function getResourceByApiPath(resources: TemplateResources, apiPath: string): string {
+        const found = Object.keys(resources).filter(key => {
+            const res = resources[key]
+            if (!res || !(res.Type === SERVERLESS_FUNCTION_TYPE || res.Type === LAMBDA_FUNCTION_TYPE)) {
+                return false
+            }
+            const evs = res?.Properties?.Events
+            if (!evs) {
+                return false
+            }
+            const apis = Object.keys(evs).filter(e => {
+                return evs[e].Properties?.Path === apiPath
+            })
+            // // Found a matching path.
+            return apis.length > 0
+        })
+
+        if (found.length === 0) {
+            return ''
+        }
+
+        // Return _last_ match. SAM resolves duplicate paths as "last wins".
+        return found[found.length - 1]
     }
 
     /**
