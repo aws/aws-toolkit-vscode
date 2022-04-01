@@ -12,10 +12,9 @@ import {
 } from '../credentials/authentication'
 import { createClient } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 
 async function verifyCookie(cookie: string): Promise<{ id: string; name: string }> {
-    const client = await createClient(new DefaultSettingsConfiguration())
+    const client = await createClient()
     await client.setCredentials(cookie)
 
     const user = await client.verifySession()

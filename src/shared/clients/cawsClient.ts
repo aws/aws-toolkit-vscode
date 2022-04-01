@@ -8,7 +8,6 @@ import * as AWS from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as caws from '../../../types/clientcodeaws'
 import * as logger from '../logger/logger'
-import { SettingsConfiguration } from '../settingsConfiguration'
 import apiConfig = require('../../../types/REMOVED.json')
 import globals from '../extensionGlobals'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
@@ -21,10 +20,13 @@ import { pageableToCollection } from '../utilities/collectionUtils'
 
 const localize = nls.loadMessageBundle()
 
-export const cawsRegion = 'us-east-1' // Try "us-west-2" for beta/integ/gamma.
+// XXX: remove signing from the CAWS model until Bearer token auth is added
+delete (apiConfig.metadata as Partial<typeof apiConfig['metadata']>)['signatureVersion']
+
+export const cawsRegion = 'us-west-2' // Try "us-west-2" for beta/integ/gamma, "us-east-1" otherwise
 export const cawsEndpoint = 'https://public.api-gamma.REMOVED.codes' // gamma web: https://integ.stage.REMOVED.codes/
 export const cawsEndpointGql = 'https://public.api-gamma.REMOVED.codes/graphql'
-export const cawsHostname = 'integ.stage.REMOVED.codes' // 'REMOVED.execute-api.us-east-1.amazonaws.cominteg.codedemo.REMOVED'
+export const cawsHostname = 'integ.stage.REMOVED.codes'
 // export const cawsGitHostname = `git.service.${cawsHostname}` // prod endpoint
 export const cawsGitHostname = 'git.gamma.source.caws.REMOVED' // gamma
 export const cawsHelpUrl = `https://${cawsHostname}/help`
@@ -41,7 +43,7 @@ export interface CawsDevEnv extends caws.DevelopmentWorkspaceSummary {
 }
 /** CAWS-MDE developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspaceOutput {}
+export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspaceResponse {}
 
 export interface CawsOrg extends caws.OrganizationSummary {
     readonly type: 'org'
@@ -65,24 +67,16 @@ export type CawsResource = CawsOrg | CawsProject | CawsRepo | CawsDevEnv
 
 async function createCawsClient(
     authCookie: string | undefined,
-    apiKey: string,
     regionCode: string = cawsRegion,
     endpoint: string = cawsEndpoint
 ): Promise<caws> {
     const c = (await globals.sdkClientBuilder.createAwsService(AWS.Service, {
-        // apiConfig is internal and not in the TS declaration file
         apiConfig: apiConfig,
         region: regionCode,
-        // XXX: remove when Bearer token auth is added
-        // The SDK has logic to automatically throw if no credentials are set
-        // despite the service not requiring credentials.
-        credentials: { accessKeyId: 'xxx', secretAccessKey: 'xxx' },
         correctClockSkew: true,
         endpoint: endpoint,
     } as ServiceConfigurationOptions)) as caws
     c.setupRequestListeners = r => {
-        r.httpRequest.headers['x-api-key'] = apiKey
-        // r.httpRequest.headers['cookie'] = authCookie
         if (authCookie) {
             // TODO: remove this after CAWS backend implements full authentication story.
             r.httpRequest.headers['cookie'] = authCookie
@@ -111,13 +105,12 @@ export type CawsClientFactory = () => Promise<CawsClient>
  * Factory to create a new `CawsClient`. Call `onCredentialsChanged()` before making requests.
  */
 export async function createClient(
-    settings: SettingsConfiguration,
     regionCode: string = cawsRegion,
     endpoint: string = cawsEndpoint,
     authCookie?: string
 ): Promise<CawsClient> {
-    const sdkClient = await createCawsClient(authCookie, 'xxx', regionCode, endpoint)
-    const c = new CawsClientInternal(settings, regionCode, endpoint, sdkClient, authCookie)
+    const sdkClient = await createCawsClient(authCookie, regionCode, endpoint)
+    const c = new CawsClientInternal(regionCode, endpoint, sdkClient, authCookie)
     return c
 }
 
@@ -125,17 +118,14 @@ class CawsClientInternal {
     private userId: string | undefined
     private username: string | undefined
     private readonly log: logger.Logger
-    private apiKey: string
 
     public constructor(
-        private settings: SettingsConfiguration,
         private readonly regionCode: string,
         private readonly endpoint: string,
         private sdkClient: caws,
         private authCookie?: string
     ) {
         this.log = logger.getLogger()
-        this.apiKey = this.settings.readDevSetting('aws.dev.caws.apiKey', 'string', true) ?? ''
     }
 
     public get connected(): boolean {
@@ -152,7 +142,7 @@ class CawsClientInternal {
     public async setCredentials(authCookie: string, userId?: string) {
         this.authCookie = authCookie
         this.userId = userId
-        this.sdkClient = await createCawsClient(authCookie, this.apiKey, this.regionCode, this.endpoint)
+        this.sdkClient = await createCawsClient(authCookie, this.regionCode, this.endpoint)
     }
 
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
@@ -304,7 +294,7 @@ class CawsClientInternal {
      */
     public listDevEnvs(proj: CawsProject): AsyncCollection<CawsDevEnv[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
-        const requester = async (request: caws.ListDevelopmentWorkspaceInput) =>
+        const requester = async (request: caws.ListDevelopmentWorkspaceRequest) =>
             this.call(this.sdkClient.listDevelopmentWorkspace(request), true, { items: [] })
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
 
@@ -389,7 +379,7 @@ class CawsClientInternal {
     }
 
     /** CAWS-MDE */
-    public async createDevEnv(args: caws.CreateDevelopmentWorkspaceInput): Promise<CawsDevEnv> {
+    public async createDevEnv(args: caws.CreateDevelopmentWorkspaceRequest): Promise<CawsDevEnv> {
         if (!args.ideRuntimes || args.ideRuntimes.length === 0) {
             throw Error('missing ideRuntimes')
         }
@@ -416,16 +406,16 @@ class CawsClientInternal {
 
     /** CAWS-MDE */
     public async startDevEnv(
-        args: caws.StartDevelopmentWorkspaceInput
-    ): Promise<caws.StartDevelopmentWorkspaceOutput | undefined> {
+        args: caws.StartDevelopmentWorkspaceRequest
+    ): Promise<caws.StartDevelopmentWorkspaceResponse | undefined> {
         const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args), false)
         return r
     }
 
     /** CAWS-MDE */
     public async startDevEnvSession(
-        args: caws.StartSessionDevelopmentWorkspaceInput
-    ): Promise<caws.StartSessionDevelopmentWorkspaceOutput & { sessionId: string }> {
+        args: caws.StartSessionDevelopmentWorkspaceRequest
+    ): Promise<caws.StartSessionDevelopmentWorkspaceResponse & { sessionId: string }> {
         const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args), false)
         if (!r.sessionId) {
             throw new TypeError('Received falsy CAWS workspace "sessionId"')
@@ -439,7 +429,7 @@ class CawsClientInternal {
     }
 
     /** CAWS-MDE */
-    public async getDevEnv(args: caws.GetDevelopmentWorkspaceInput): Promise<CawsDevEnv | undefined> {
+    public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<CawsDevEnv | undefined> {
         const a = { ...args }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
@@ -460,8 +450,8 @@ class CawsClientInternal {
 
     /** CAWS-MDE */
     public async deleteDevEnv(
-        args: caws.DeleteDevelopmentWorkspaceInput
-    ): Promise<caws.DeleteDevelopmentWorkspaceOutput | undefined> {
+        args: caws.DeleteDevelopmentWorkspaceRequest
+    ): Promise<caws.DeleteDevelopmentWorkspaceResponse | undefined> {
         const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
         return r
     }
@@ -476,7 +466,7 @@ class CawsClientInternal {
      * @returns the environment on success, undefined otherwise
      */
     public async startEnvironmentWithProgress(
-        args: caws.StartDevelopmentWorkspaceInput,
+        args: caws.StartDevelopmentWorkspaceRequest,
         status: string,
         timeout: Timeout = new Timeout(MDE_START_TIMEOUT)
     ): Promise<CawsDevEnv | undefined> {

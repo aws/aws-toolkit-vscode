@@ -22,7 +22,6 @@ export type AwsDevSetting =
     | 'aws.dev.forceInstallTools'
     | 'aws.dev.telemetryEndpoint'
     | 'aws.dev.telemetryUserPool'
-    | 'aws.dev.caws.apiKey'
     | 'aws.dev.caws.betaEndpoint'
     | 'aws.dev.mde.betaEndpoint'
     | 'aws.dev.mde.emailFilter'

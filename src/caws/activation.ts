@@ -19,21 +19,18 @@ import {
     TryCommandDecorator,
 } from './commands'
 import * as uriHandlers from './uriHandlers'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { CawsClient, createClient } from '../shared/clients/cawsClient'
 import { GitExtension } from '../shared/extensions/git'
 import { CawsAuthenticationProvider } from './auth'
 import { initStatusbar } from './cawsStatusbar'
 
 export function createClientFactory(authProvider: CawsAuthenticationProvider): () => Promise<CawsClient> {
-    const settings = new DefaultSettingsConfiguration()
-
     return async () => {
         // Assumption: the current auth provider only supports being logged into a single account at a time
         // The VSC API can support multiple sessions, though we're probably a long way off from that
         // TODO: just hide the full API behind something a bit lighter
         const creds = authProvider.listSessions()[0]
-        const client = await createClient(settings)
+        const client = await createClient()
 
         if (creds) {
             await client.setCredentials(creds.accessDetails, creds.accountDetails.id)
