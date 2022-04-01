@@ -2869,6 +2869,54 @@
                 "key": "alt+c",
                 "mac": "alt+c",
                 "when": "editorTextFocus"
+            },
+            {
+                "command": "aws.consolas.nextCodeSuggestion",
+                "key": "right",
+                "mac": "right",
+                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
+            },
+            {
+                "command": "aws.consolas.previousCodeSuggestion",
+                "key": "left",
+                "mac": "left",
+                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
+            },
+            {
+                "command": "aws.consolas.rejectCodeSuggestion",
+                "key": "escape",
+                "mac": "escape",
+                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
+            },
+            {
+                "command": "aws.consolas.rejectCodeSuggestion",
+                "key": "backspace",
+                "mac": "backspace",
+                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
+            },
+            {
+                "command": "aws.consolas.rejectCodeSuggestion",
+                "key": "up",
+                "mac": "up",
+                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
+            },
+            {
+                "command": "aws.consolas.rejectCodeSuggestion",
+                "key": "down",
+                "mac": "down",
+                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
+            },
+            {
+                "command": "aws.consolas.rejectCodeSuggestion",
+                "key": "enter",
+                "mac": "enter",
+                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
+            },
+            {
+                "command": "aws.consolas.acceptCodeSuggestion",
+                "key": "tab",
+                "mac": "tab",
+                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
             }
         ],
         "grammars": [

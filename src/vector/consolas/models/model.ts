@@ -41,11 +41,16 @@ interface InvocationContext {
      * Invocation start position
      */
     startPos: vscode.Position
+    /**
+     * Flag indicates inline editor menu is active or not
+     */
+    isInlineActive: boolean
 }
 
 export const invocationContext: InvocationContext = {
     isActive: false,
     isPendingResponse: false,
+    isInlineActive: false,
     /**
      * Initialize lastInvocationTime (ms) by performance.now() - "duration threshold" x 1000 ms
      */
@@ -125,4 +130,14 @@ export interface OnRecommendationAcceptanceEntry {
     readonly triggerType: telemetry.ConsolasTriggerType
     readonly completionType: telemetry.ConsolasCompletionType
     readonly language: telemetry.ConsolasLanguage
+}
+interface InlineCompletion {
+    items: string[]
+    origin: string[]
+    position: number
+}
+export const inlineCompletion: InlineCompletion = {
+    items: [],
+    origin: [],
+    position: 0,
 }

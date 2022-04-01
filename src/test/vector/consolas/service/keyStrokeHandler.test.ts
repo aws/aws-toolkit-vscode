@@ -288,27 +288,6 @@ describe('keyStrokeHandler', function () {
             assert.strictEqual(automatedTriggerContext.keyStrokeCount, 0)
         })
 
-        it('should executeCommand editor.action.triggerSuggest when recommendation matches current code prefix', async function () {
-            const mockEditor = createMockTextEditor()
-            const cmdSpy = sinon.spy(vscode.commands, 'executeCommand')
-            invocationContext.startPos = new vscode.Position(1, 0)
-            const getRecommendationStub = sinon
-                .stub(KeyStrokeHandler, 'getRecommendations')
-                .resolves([
-                    { content: 'import math\ndef two_sum(nums, target):\n' },
-                    { content: 'def two_sum(nums, target):\n for i in nums' },
-                ])
-            await KeyStrokeHandler.invokeAutomatedTrigger(
-                'Enter',
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn,
-                getRecommendationStub
-            )
-            assert.ok(cmdSpy.calledWith('editor.action.triggerSuggest'))
-        })
-
         it('should not executeCommand editor.action.triggerSuggest when recommendation does not match current code prefix', async function () {
             const mockEditor = createMockTextEditor()
             const getRecommendationStub = sinon.stub(KeyStrokeHandler, 'getRecommendations')

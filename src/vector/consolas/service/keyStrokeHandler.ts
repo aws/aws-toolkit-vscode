@@ -24,6 +24,13 @@ import { UnsupportedLanguagesCache } from '../util/unsupportedLanguagesCache'
 import { showTimedMessage } from '../../../shared/utilities/messages'
 import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
 import globals from '../../../shared/extensionGlobals'
+import {
+    showFirstRecommendation,
+    setRange,
+    setTypeAheadRecommendations,
+    rejectRecommendation,
+    getRange,
+} from '../views/recommendationSelectionProvider'
 
 //if this is browser it uses browser and if it's node then it uses nodes
 //TODO remove when node version >= 16
@@ -102,11 +109,14 @@ function getChangedText(
         return ''
     }
 
+    if (invocationContext.isInlineActive) {
+        return ''
+    }
     /**
      * Pause automated trigger when typed input matches recommendation prefix
      */
-    const isMatchedPrefix = checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
-    if (invocationContext.isActive && isMatchedPrefix.length > 0) {
+    //const isMatchedPrefix = checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(false, editor)
+    if (invocationContext.isActive && checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(false, editor)) {
         return ''
     }
 
@@ -156,9 +166,15 @@ export async function invokeAutomatedTrigger(
         /**
          * Swallow "no recommendations case" for automated trigger
          */
+
+        /**
+         * Turned off the below code to make sure the first recommendation is not called
+         * when typeahead is there as earlier it was handled by completion provider.
+         * We have to add the telemetry for this in a different way.
+         **/
         const isMatchedPrefix = checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
         if (isMatchedPrefix.length > 0) {
-            vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+            showFirstRecommendation(editor).then(() => {
                 invocationContext.isActive = true
             })
         }
@@ -293,6 +309,7 @@ export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
     newConsolasRequest: boolean,
     editor: vscode.TextEditor | undefined
 ): boolean[] {
+    let matched = false
     let typedPrefix = ''
     if (newConsolasRequest) {
         telemetryContext.isPrefixMatched = []
@@ -304,11 +321,21 @@ export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
 
     if (invocationContext.startPos.line !== editor.selection.active.line) {
         return []
+    
     }
-    typedPrefix = editor.document.getText(new vscode.Range(invocationContext.startPos, editor.selection.active))
+    typedPrefix = editor.document.getText(
+            new vscode.Range(
+                invocationContext.startPos.line,
+                invocationContext.startPos.character,
+                editor.selection.active.line,
+                editor.selection.active.character + 1
+            )
+        )
 
     recommendations.response.forEach(recommendation => {
         if (recommendation.content.startsWith(typedPrefix)) {
+            matched = true
+
             /**
              * TODO: seems like VScode has native prefix matching for completion items
              * if this behavior is changed, then we need to update the string manually
@@ -324,6 +351,21 @@ export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
             }
         }
     })
+    if (!newConsolasRequest && typedPrefix.length) {
+        if (matched) setTypeAheadRecommendations(typedPrefix, editor)
+        else {
+            if (editor) {
+                const range = getRange()
+                // Persist last character in editor if rejected by mismatched character
+                const currentPosition = new vscode.Position(
+                    editor.selection.active.line,
+                    editor.selection.active.character + 1
+                )
+                setRange(new vscode.Range(currentPosition, range.end))
+                rejectRecommendation(editor)
+            }
+        }
+    }
 
     return telemetryContext.isPrefixMatched
 }

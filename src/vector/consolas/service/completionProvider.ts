@@ -3,56 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { ConsolasConstants } from '../models/constants'
-import { recommendations, telemetryContext } from '../models/model'
-import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
-import { RecommendationDetail } from '../client/consolas'
+import { recommendations } from '../models/model'
 
-export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
-    const completionItems: vscode.CompletionItem[] = []
-    recommendations.response.forEach((recommendation, index) => {
+export async function getCompletionItems() {
+    const completionItems: string[] = []
+    recommendations.response.forEach(async (recommendation, index) => {
         if (recommendation.content.length > 0) {
-            completionItems.push(getCompletionItem(document, position, recommendation, index))
+            completionItems.push(recommendation.content)
         }
     })
     return completionItems
-}
-
-export function getCompletionItem(
-    document: vscode.TextDocument,
-    position: vscode.Position,
-    recommendationDetail: RecommendationDetail,
-    recommendationIndex: number
-) {
-    const line = position.line
-    const recommendation = recommendationDetail.content
-    const completionItem = new vscode.CompletionItem(recommendation)
-    completionItem.insertText = new vscode.SnippetString(recommendation)
-    completionItem.documentation = new vscode.MarkdownString().appendCodeblock(recommendation, document.languageId)
-    completionItem.kind = vscode.CompletionItemKind.Method
-    completionItem.detail = ConsolasConstants.COMPLETION_DETAIL
-    completionItem.keepWhitespace = true
-    completionItem.label = getLabel(recommendation)
-    completionItem.preselect = true
-    completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
-    let languageId = document.languageId
-    languageId = languageId === ConsolasConstants.TYPESCRIPT ? ConsolasConstants.JAVASCRIPT : languageId
-    const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
-    completionItem.command = {
-        command: 'aws.consolas.accept',
-        title: 'On acceptance',
-        arguments: [
-            line,
-            recommendationIndex,
-            recommendation,
-            recommendations.requestId,
-            telemetryContext.triggerType,
-            telemetryContext.completionType,
-            languageContext.language,
-        ],
-    }
-    return completionItem
 }
 
 export function getLabel(recommendation: string): string {

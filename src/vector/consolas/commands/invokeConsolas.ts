@@ -9,6 +9,7 @@ import { recommendations, invocationContext, automatedTriggerContext } from '../
 import { onRejection } from './onRejection'
 import { showTimedMessage } from '../../../shared/utilities/messages'
 import { DefaultConsolasClient } from '../client/consolas'
+import { showFirstRecommendation } from '../views/recommendationSelectionProvider'
 
 export async function invokeConsolas(
     editor: vscode.TextEditor,
@@ -63,7 +64,7 @@ export async function invokeConsolas(
         KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(!invocationContext.isActive, editor)
         if (KeyStrokeHandler.isValidResponse(recommendations.response)) {
             automatedTriggerContext.keyStrokeCount = 0
-            vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+            showFirstRecommendation(editor).then(() => {
                 invocationContext.isActive = true
             })
         } else {

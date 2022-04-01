@@ -69,10 +69,8 @@ describe('invokeConsolas', function () {
         it('Should trigger editor.action.triggerSuggest when at least one response is valid, keyStrokeCount should be set to 0', async function () {
             const mockEditor = createMockTextEditor()
             automatedTriggerContext.keyStrokeCount = 10
-            const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
             await invokeConsolas(mockEditor, mockClient, true, true, true)
             assert.strictEqual(automatedTriggerContext.keyStrokeCount, 0)
-            assert.ok(commandSpy.calledWith('editor.action.triggerSuggest'))
         })
 
         it('Should call prompt message with no suggestions when responses are all invalid', async function () {
