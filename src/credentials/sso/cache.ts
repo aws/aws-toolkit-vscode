@@ -75,7 +75,6 @@ export function getTokenCache(directory = CACHE_DIR): KeyedCache<SsoAccess> {
         }
 
         stripUndefined(token)
-        stripUndefined(registration)
 
         return {
             token,
