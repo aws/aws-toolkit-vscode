@@ -688,10 +688,12 @@ async function showDebugConsole(): Promise<void> {
  *  - SAM implicitly ignores envvars present in `env-vars.json` but absent in `input-template.yaml`.
  *  - Do NOT merge envvars from template.yaml and `lambda.environmentVariables`.
  *  - For `target=template`:
- *    1. Pass envvars from `template.yaml` to the temporary `input-template.yaml` (see `makeInputTemplate()`).
- *    2. Pass envvars from `lambda.environmentVariables` to `env-vars.json` (consumed by SAM).
+ *    1. Pass envvars from `lambda.environmentVariables` to SAM via `env-vars.json`.
  *  - For `target=code`:
  *    1. Pass envvars from `lambda.environmentVariables` to `input-template.yaml` (see `makeInputTemplate()`).
+ *    2. Does not use `env-vars.json`.
+ *  - TODO: For `target=api`:
+ *    1. Pass envvars from `lambda.environmentVariables` to SAM via `env-vars.json`.
  *    2. Does not use `env-vars.json`.
  *
  * @param config

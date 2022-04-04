@@ -261,25 +261,21 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     }
 
     private validateApiConfig(config: AwsSamDebuggerConfiguration): ValidationResult {
-        if (!config.api) {
-            return {
-                isValid: false,
-                message: localize(
-                    'AWS.sam.debugger.missingField',
-                    'Missing required field "{0}" in debug config',
-                    'api'
-                ),
+        const requiredFields: { [k: string]: any } = { api: config.api, 'api.path': config.api?.path }
+        for (const field of Object.keys(requiredFields)) {
+            if (!requiredFields[field]) {
+                return {
+                    isValid: false,
+                    message: localize(
+                        'AWS.sam.debugger.missingField',
+                        'Missing required field "{0}" in debug config',
+                        field
+                    ),
+                }
             }
         }
-        if (!config.api.path) {
-            return {
-                isValid: false,
-                message: localize(
-                    'AWS.sam.debugger.missingField',
-                    'Missing required field "{0}" in debug config',
-                    'api.path'
-                ),
-            }
+        if (!config.api) {
+            throw Error() // cannot happen
         }
         if (!config.api.path.startsWith('/')) {
             return {
