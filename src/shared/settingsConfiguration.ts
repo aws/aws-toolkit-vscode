@@ -21,6 +21,7 @@ export type AwsDevSetting =
     | 'aws.dev.forceInstallTools'
     | 'aws.dev.telemetryEndpoint'
     | 'aws.dev.telemetryUserPool'
+    | 'aws.dev.endpoints'
 
 type JSPrimitiveTypeName =
     | 'undefined'
@@ -232,4 +233,19 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         }
         return val
     }
+}
+
+// Not intended to be consistent across different AWS SDK versions.
+// Always makes the input lowercase before reading the settings.
+// Do not try to use any of the logic for anything more than Toolkit developer stuff.
+export function readEndpoint(service: string | (new (...args: any[]) => unknown)): string | undefined {
+    const name = typeof service === 'string' ? service : service.name || (service as any).serviceIdentifier
+    const settings = new DefaultSettingsConfiguration('')
+    const endpoints = settings.readDevSetting<{ [name: string]: string | undefined }>(
+        'aws.dev.endpoints',
+        'object',
+        true
+    )
+
+    return endpoints?.[name.toLowerCase()]
 }

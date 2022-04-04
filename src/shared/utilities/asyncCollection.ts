@@ -15,6 +15,7 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     map<U>(fn: (obj: T) => U): AsyncCollection<U>
     /** Filters out results which will _not_ be passed on to further transformations. */
     filter<U extends T>(predicate: Predicate<T, U>): AsyncCollection<U>
+    filter<U extends T>(predicate: (item: T) => boolean): AsyncCollection<U>
     /** Uses only the first 'count' number of values returned by the generator. */
     take(count: number): AsyncCollection<T>
     /** Converts the collection to a Promise, resolving to an array of all values returned by the generator. */
@@ -158,7 +159,7 @@ async function promise<T>(iterable: AsyncIterable<T>): Promise<T[]> {
     return result
 }
 
-type Predicate<T, U extends T> = ((item: T) => item is U) | ((item: T) => boolean)
+type Predicate<T, U extends T> = (item: T) => item is U
 
 function addToMap<T, U extends string>(map: Map<string, T>, selector: KeySelector<T, U> | StringProperty<T>, item: T) {
     const key = typeof selector === 'function' ? selector(item) : item[selector]

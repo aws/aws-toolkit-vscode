@@ -3,12 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const getPropAs = <T>(obj: any, key: string) => {
-    return (
-        obj as any as {
-            [key: string]: T
-        }
-    )[key]
+export function getMissingProps<T>(obj: T, ...props: (keyof T)[]): typeof props {
+    return props.filter(prop => obj[prop] === undefined)
+}
+
+export function hasProps<T, K extends keyof T>(obj: T, ...props: K[]): obj is RequiredProps<T, K> {
+    return getMissingProps(obj, ...props).length === 0
+}
+
+export function hasStringProps<T, K extends PropertyKey>(obj: T, ...props: K[]): obj is T & { [P in K]: string } {
+    return props.filter(prop => typeof (obj as unknown as Record<K, unknown>)[prop] !== 'string').length === 0
+}
+
+export function assertHasProps<T, K extends keyof T>(obj: T, ...props: K[]): asserts obj is RequiredProps<T, K> {
+    const missing = getMissingProps(obj, ...props)
+    if (missing.length > 0) {
+        throw new TypeError(`Object was missing properties: ${missing.join(', ')}`)
+    }
+}
+
+export function selectFrom<T, K extends keyof T>(obj: T, ...props: K[]): { [P in K]: T[P] } {
+    return props.map(p => [p, obj[p]] as const).reduce((a, [k, v]) => ((a[k] = v), a), {} as { [P in K]: T[P] })
+}
+
+export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
+    return obj !== undefined && (typeof obj !== 'object' || !!obj)
 }
 
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
@@ -52,3 +71,6 @@ export type AccumulableKeys<T> = NonNullable<
 
 /** Similar to the nullish coalescing operator, but for types that can never occur */
 export type Coalesce<T, U> = [T] extends [never] ? U : T
+
+/** Makes all keys `K` of `T` non-nullable */
+export type RequiredProps<T, K extends keyof T> = T & { [P in K]-?: NonNullable<T[P]> }

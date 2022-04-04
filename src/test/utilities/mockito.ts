@@ -7,8 +7,8 @@ import * as mockito from 'ts-mockito'
 import { Mocker } from 'ts-mockito/lib/Mock'
 
 // Workaround https://github.com/NagRock/ts-mockito/issues/163
-export function mock<T>(): T {
-    const mocker = new Mocker(undefined)
+export function mock<T>(clazz?: new (...args: any[]) => T): T {
+    const mocker = new Mocker(clazz)
     mocker['excludedPropertyNames'] += 'then'
 
     return mocker.getMock()

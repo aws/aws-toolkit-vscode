@@ -52,7 +52,7 @@ export async function loginWithMostRecentCredentials(
         // 'provider' may be undefined if the last-used credentials no longer exists.
         if (!provider) {
             getLogger().warn('autoconnect: getCredentialsProvider() lookup failed for profile: %O', asString(creds))
-        } else if (provider.canAutoConnect()) {
+        } else if (await provider.canAutoConnect()) {
             if (!(await loginManager.login({ passive: true, providerId: creds }))) {
                 getLogger().warn('autoconnect: failed to connect: "%s"', asString(creds))
                 return false
