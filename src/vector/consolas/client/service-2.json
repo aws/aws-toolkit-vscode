@@ -1,0 +1,264 @@
+{
+    "version": "2.0",
+    "metadata": {
+        "apiVersion": "2021-10-01",
+        "endpointPrefix": "awsvectorconsolasruntimeservice",
+        "jsonVersion": "1.0",
+        "protocol": "json",
+        "serviceFullName": "AWS Vector Consolas Service and Client Sdks",
+        "serviceId": "Consolas",
+        "signatureVersion": "v4",
+        "signingName": "consolas",
+        "targetPrefix": "AWSVectorConsolasRuntimeService",
+        "uid": "consolas-2021-10-01"
+    },
+    "operations": {
+        "GenerateRecommendations": {
+            "name": "GenerateRecommendations",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GenerateRecommendationsRequest"
+            },
+            "output": {
+                "shape": "GenerateRecommendationsResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                },
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ],
+            "documentation": "<p>Generate recommendations according to the file context and return to the user</p>"
+        }
+    },
+    "shapes": {
+        "AccessDeniedException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception is thrown when the user does not have sufficient access to perform this action.</p>",
+            "exception": true
+        },
+        "Attribution": {
+            "type": "structure",
+            "members": {
+                "licenseName": {
+                    "shape": "AttributionLicenseNameString"
+                },
+                "message": {
+                    "shape": "AttributionMessageString"
+                },
+                "source": {
+                    "shape": "AttributionSourceString"
+                }
+            }
+        },
+        "AttributionLicenseNameString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "AttributionMessageString": {
+            "type": "string",
+            "max": 5120,
+            "min": 1
+        },
+        "AttributionSourceString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "AttributionsList": {
+            "type": "list",
+            "member": {
+                "shape": "Attribution"
+            },
+            "max": 10,
+            "min": 0
+        },
+        "ContextInfo": {
+            "type": "structure",
+            "required": ["filename", "programmingLanguage"],
+            "members": {
+                "filename": {
+                    "shape": "ContextInfoFilenameString"
+                },
+                "naturalLanguageCode": {
+                    "shape": "ContextInfoNaturalLanguageCodeString"
+                },
+                "programmingLanguage": {
+                    "shape": "ProgrammingLanguage"
+                }
+            }
+        },
+        "ContextInfoFilenameString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "ContextInfoNaturalLanguageCodeString": {
+            "type": "string",
+            "max": 5,
+            "min": 2,
+            "pattern": "[a-zA-Z]{2}(-[a-zA-Z]{2})?"
+        },
+        "FileContext": {
+            "type": "structure",
+            "required": ["leftFileContent", "rightFileContent"],
+            "members": {
+                "leftFileContent": {
+                    "shape": "FileContextLeftFileContentString"
+                },
+                "rightFileContent": {
+                    "shape": "FileContextRightFileContentString"
+                }
+            }
+        },
+        "FileContextLeftFileContentString": {
+            "type": "string",
+            "max": 5120,
+            "min": 0
+        },
+        "FileContextRightFileContentString": {
+            "type": "string",
+            "max": 5120,
+            "min": 0
+        },
+        "GenerateRecommendationsRequest": {
+            "type": "structure",
+            "required": ["contextInfo", "fileContext"],
+            "members": {
+                "contextInfo": {
+                    "shape": "ContextInfo"
+                },
+                "fileContext": {
+                    "shape": "FileContext"
+                },
+                "maxRecommendations": {
+                    "shape": "GenerateRecommendationsRequestMaxRecommendationsInteger"
+                }
+            }
+        },
+        "GenerateRecommendationsRequestMaxRecommendationsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 10,
+            "min": 1
+        },
+        "GenerateRecommendationsResponse": {
+            "type": "structure",
+            "members": {
+                "recommendations": {
+                    "shape": "RecommendationsList"
+                }
+            }
+        },
+        "InternalServerException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception is thrown when unexpected error occurred during processing of request.</p>",
+            "exception": true,
+            "fault": true,
+            "retryable": {
+                "throttling": false
+            }
+        },
+        "ProgrammingLanguage": {
+            "type": "structure",
+            "required": ["languageName"],
+            "members": {
+                "languageName": {
+                    "shape": "ProgrammingLanguageLanguageNameString"
+                },
+                "runtimeVersion": {
+                    "shape": "ProgrammingLanguageRuntimeVersionString"
+                }
+            }
+        },
+        "ProgrammingLanguageLanguageNameString": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "pattern": "[ -~]+"
+        },
+        "ProgrammingLanguageRuntimeVersionString": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "RecommendationDetail": {
+            "type": "structure",
+            "required": ["content"],
+            "members": {
+                "attributions": {
+                    "shape": "AttributionsList"
+                },
+                "content": {
+                    "shape": "RecommendationDetailContentString"
+                }
+            }
+        },
+        "RecommendationDetailContentString": {
+            "type": "string",
+            "max": 5120,
+            "min": 1
+        },
+        "RecommendationsList": {
+            "type": "list",
+            "member": {
+                "shape": "RecommendationDetail"
+            },
+            "max": 10,
+            "min": 0
+        },
+        "String": {
+            "type": "string"
+        },
+        "ThrottlingException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception is thrown when request was denied due to request throttling.</p>",
+            "exception": true,
+            "retryable": {
+                "throttling": false
+            }
+        },
+        "ValidationException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception is thrown when the input fails to satisfy the constraints specified by the service.</p>",
+            "exception": true
+        }
+    },
+    "documentation": "<p>Provides Consolas suggestion.</p>"
+}

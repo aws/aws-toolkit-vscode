@@ -49,6 +49,7 @@ import { activate as activateSam } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
+import { activate as activateVector, shutdown as consolasShutdown } from './vector/consolas/activation'
 import {
     recordAwsCreateCredentials,
     recordAwsHelp,
@@ -243,6 +244,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(extContext)
 
+        await activateVector(extContext)
+
         await activateEcr(context)
 
         await activateCloudWatchLogs(context, toolkitSettings)
@@ -285,6 +288,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
+    await consolasShutdown()
     await globals.telemetry.shutdown()
     await globals.resourceManager.dispose()
 }

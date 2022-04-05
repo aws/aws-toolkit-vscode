@@ -18,9 +18,14 @@ export type SettingsConfiguration = ClassToInterfaceType<DefaultSettingsConfigur
 
 export type AwsDevSetting =
     | 'aws.forceCloud9'
+    | 'aws.dev.forceTelemetry'
+    | 'aws.dev.vectorEndpoint'
+    | 'aws.dev.consolasTelemetryLogging'
     | 'aws.dev.forceInstallTools'
     | 'aws.dev.telemetryEndpoint'
     | 'aws.dev.telemetryUserPool'
+    | 'aws.dev.telemetryEndpoint'
+    | 'aws.dev.forceInstallTools'
 
 type JSPrimitiveTypeName =
     | 'undefined'
@@ -40,7 +45,6 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     ) {}
     public readSetting<T>(settingKey: string): T | undefined
     public readSetting<T>(settingKey: string, defaultValue: T): T
-
     /**
      * Reads a vscode setting.
      *
@@ -141,6 +145,32 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     }
 
     /**
+     * Sets a experiments settings.
+     * @param pluginName Name of roperty to be enabled
+     */
+    public async enabledExperiments(pluginName: string): Promise<void> {
+        const settings = await this.getExperimentsSetting(pluginName)
+        if (settings === undefined || settings[pluginName]) {
+            return
+        }
+        settings[pluginName] = true
+        await this.writeSetting('experiments', settings, vscode.ConfigurationTarget.Global)
+    }
+
+    /**
+     * Sets a experiments settings
+     * @param pluginName Name of property to be disabled
+     */
+    public async disabledExperiments(pluginName: string): Promise<void> {
+        const settings = await this.getExperimentsSetting(pluginName)
+        if (settings === undefined) {
+            return
+        }
+        settings[pluginName] = false
+        await this.writeSetting('experiments', settings, vscode.ConfigurationTarget.Global)
+    }
+
+    /**
      * Returns true if a prompt is enabled, else false.
      * @param promptName Prompt id
      * @returns False when prompt has been suppressed
@@ -199,12 +229,64 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     }
 
     /**
+     * Gets an 'aws.experiments' for prompt `promptName`. Resets to a
+     * default value if the user setting has an invalid type.
+     *
+     * @param promptName
+     * @returns settings object
+     */
+    public async getExperimentsSetting(promptName: string): Promise<{ [prompt: string]: boolean } | undefined> {
+        this.validateExperimentsSetting(promptName)
+
+        try {
+            const setting = this.readSetting<{ [prompt: string]: boolean }>('experiments')
+            if (setting === undefined) {
+                return undefined
+            }
+
+            if (typeof setting !== 'object') {
+                this.log.warn('Setting "aws.experiments" has an unexpected type. Resetting to default.')
+                // writing this setting to an empty object reverts the setting to its default
+                await this.writeSetting('experiments', {}, vscode.ConfigurationTarget.Global)
+                return undefined
+            }
+
+            if (!(promptName in setting)) {
+                this.log.error(`Prompt not found in "aws.experiments": ${promptName}`)
+                return undefined
+            }
+
+            if (typeof setting[promptName] !== 'boolean') {
+                this.log.warn(
+                    `Value for prompts in "aws.experiments" must be type boolean. Resetting prompt: ${promptName}`
+                )
+                setting[promptName] = false
+                await this.writeSetting('experiments', setting, vscode.ConfigurationTarget.Global)
+                return setting
+            }
+
+            return setting
+        } catch (e) {
+            this.log.error('Failed to get the setting: experiments', e)
+        }
+    }
+    /**
      * Throws an error if `name` is not a valid 'aws.suppressPrompts' setting.
      */
     private validatePromptSetting(name: string): void {
         const m = packageJson.contributes.configuration.properties['aws.suppressPrompts'].properties
         if (!(m as any)[name]) {
             throw Error(`config: unknown aws.suppressPrompts item: "${name}"`)
+        }
+    }
+
+    /**
+     * Throws an error if `name` is not a valid 'aws.suppressPrompts' setting.
+     */
+    private validateExperimentsSetting(name: string): void {
+        const m: any = packageJson.contributes.configuration.properties['aws.experiments'].properties
+        if (!m[name]) {
+            throw Error(`config: unknown aws.experiments item: "${name}"`)
         }
     }
 

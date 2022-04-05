@@ -1,0 +1,55 @@
+/*!
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
+import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { ConsolasIntroductionNode } from './consolasIntroductionNode'
+import { ConsolasPauseAutoSuggestionsNode } from './consolasPauseAutoSuggestionsNode'
+import { ConsolasEnableCodeSuggestionsNode } from './consolasEnableCodeSuggestionsNode'
+import { ConsolasResumeAutoSuggestionsNode } from './consolasResumeAutoSuggestionsNode'
+import globals from '../../../shared/extensionGlobals'
+import { ConsolasConstants } from '../models/constants'
+
+/**
+ * An AWS Explorer node representing Consolas.
+ *
+ * Contains consolas code suggestions feature.
+ */
+export class ConsolasNode extends AWSTreeNodeBase {
+    public constructor(private readonly regionCode: string) {
+        super('Consolas(Preview)', vscode.TreeItemCollapsibleState.Collapsed)
+        vscode.commands.executeCommand(
+            'setContext',
+            ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY,
+            globals.context.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY)
+        )
+        this.contextValue = 'awsConsolasNode'
+    }
+
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        return await makeChildrenNodes({
+            getChildNodes: async () => {
+                if (globals.context.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY)) {
+                    if (globals.context.globalState.get<boolean>(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY)) {
+                        return [new ConsolasPauseAutoSuggestionsNode(this.regionCode, this)]
+                    }
+                    return [new ConsolasResumeAutoSuggestionsNode(this.regionCode, this)]
+                } else {
+                    return [
+                        new ConsolasIntroductionNode(this.regionCode, this),
+                        new ConsolasEnableCodeSuggestionsNode(this.regionCode, this),
+                    ]
+                }
+            },
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
+            getNoChildrenPlaceholderNode: async () =>
+                new PlaceholderNode(this, localize('AWS.consolasNode', '[No Consolas node found]')),
+        })
+    }
+}

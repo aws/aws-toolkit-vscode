@@ -30,6 +30,19 @@ export function initializeIconPaths(context: vscode.ExtensionContext) {
     globals.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/gear.svg')
     globals.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/gear.svg')
 
+    globals.iconPaths.dark.run = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/run.svg')
+    globals.iconPaths.light.run = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/run.svg')
+
+    globals.iconPaths.dark.question = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/dark/question.svg'
+    )
+    globals.iconPaths.light.question = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/light/question.svg'
+    )
+
+    globals.iconPaths.dark.pause = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/pause.svg')
+    globals.iconPaths.light.pause = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/pause.svg')
+
     globals.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
     globals.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
 

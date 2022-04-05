@@ -135,4 +135,7 @@ export interface IconPaths {
     sync: string
     syncIgnore: string
     refresh: string
+    run: string
+    pause: string
+    question: string
 }

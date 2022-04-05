@@ -22,6 +22,72 @@
             "type": "string",
             "description": "SAM Application architecture",
             "allowedValues": ["x86_64", "arm64"]
+        },
+        {
+            "name": "consolasRequestId",
+            "type": "string",
+            "description": "The ID of the request to Consolas service"
+        },
+        {
+            "name": "consolasLineNumber",
+            "type": "int",
+            "description": "The line number of the cursor when the event happens"
+        },
+        {
+            "name": "consolasCursorOffset",
+            "type": "int",
+            "description": "cursor location offset in the editor when invoking Consolas for recommendation"
+        },
+        {
+            "name": "consolasLanguage",
+            "type": "string",
+            "description": "Programming language of the Consolas recommendation",
+            "allowedValues": ["java", "python", "javascript", "plaintext"]
+        },
+        {
+            "name": "consolasRuntime",
+            "type": "string",
+            "allowedValues": ["java8", "java11", "java16", "python2", "python3", "javascript", "unknown"],
+            "description": "the pre-defined set of values for runtime version of the language of Consolas recommendation"
+        },
+        {
+            "name": "consolasRuntimeSource",
+            "type": "string",
+            "description": "the original (free-text) of the runtime version of the language of Consolas recomendation"
+        },
+        {
+            "name": "consolasTriggerType",
+            "type": "string",
+            "description": "The type of the user trigger to send request to Consolas service",
+            "allowedValues": ["OnDemand", "AutoTrigger"]
+        },
+        {
+            "name": "consolasAutomatedtriggerType",
+            "type": "string",
+            "description": "The type of the Automated trigger to send request to Consolas service",
+            "allowedValues": ["KeyStrokeCount", "SpecialCharacters", "Enter"]
+        },
+        {
+            "name": "consolasSuggestionState",
+            "type": "string",
+            "description": "User decision of each of the suggestion returned from Consolas",
+            "allowedValues": ["Accept", "Reject", "Discard", "Ignore"]
+        },
+        {
+            "name": "consolasModificationPercentage",
+            "type": "double",
+            "description": "The percentage of user modifications on the suggested code"
+        },
+        {
+            "name": "consolasSuggestionIndex",
+            "type": "int",
+            "description": "The index for each suggestion, respectively, in the list of suggestions returned from service invocation."
+        },
+        {
+            "name": "consolasCompletionType",
+            "type": "string",
+            "description": "Completion Type of the inference results returned from Consolas model layer",
+            "allowedValues": ["Line", "Block"]
         }
     ],
     "metrics": [
@@ -175,6 +241,114 @@
                 { "type": "attempts" },
                 { "type": "duration" },
                 { "type": "architecture", "required": false }
+            ]
+        },
+        {
+            "name": "consolas_serviceInvocation",
+            "description": "Client side invocation of the Consolas service for suggestion",
+            "metadata": [
+                {
+                    "type": "consolasRequestId",
+                    "required": false
+                },
+                {
+                    "type": "consolasTriggerType"
+                },
+                {
+                    "type": "consolasAutomatedtriggerType",
+                    "required": false
+                },
+                {
+                    "type": "consolasCompletionType",
+                    "required": false
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "consolasLineNumber"
+                },
+                {
+                    "type": "consolasCursorOffset"
+                },
+                {
+                    "type": "consolasLanguage"
+                },
+                {
+                    "type": "consolasRuntime",
+                    "required": false
+                },
+                {
+                    "type": "consolasRuntimeSource",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "consolas_userDecision",
+            "description": "User acceptance or rejection of each suggestion returned by the Consolas service request",
+            "metadata": [
+                {
+                    "type": "consolasRequestId"
+                },
+                {
+                    "type": "consolasTriggerType"
+                },
+                {
+                    "type": "consolasSuggestionIndex"
+                },
+                {
+                    "type": "consolasSuggestionState"
+                },
+                {
+                    "type": "consolasCompletionType"
+                },
+                {
+                    "type": "consolasLanguage"
+                },
+                {
+                    "type": "consolasRuntime",
+                    "required": false
+                },
+                {
+                    "type": "consolasRuntimeSource",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "consolas_userModification",
+            "description": "Percentage of user modifications for the selected suggestion until a fixed period of time",
+            "metadata": [
+                {
+                    "type": "consolasRequestId"
+                },
+                {
+                    "type": "consolasTriggerType"
+                },
+                {
+                    "type": "consolasSuggestionIndex"
+                },
+                {
+                    "type": "consolasModificationPercentage"
+                },
+                {
+                    "type": "consolasCompletionType"
+                },
+                {
+                    "type": "consolasLanguage"
+                },
+                {
+                    "type": "consolasRuntime",
+                    "required": false
+                },
+                {
+                    "type": "consolasRuntimeSource",
+                    "required": false
+                }
             ]
         }
     ]

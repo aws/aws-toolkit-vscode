@@ -2,6 +2,7 @@ node_modules/**
 third-party
 **/*.json
 src/shared/telemetry/clienttelemetry.d.ts
+src/vector/consolas/client/consolasclient.d.ts
 **/*.gen.ts
 src/testFixtures/workspaceFolder/ts-plain-sam-app/
 dist/**

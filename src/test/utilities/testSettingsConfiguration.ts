@@ -16,6 +16,11 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
         this._data[p] = false
     }
 
+    public async controlConsolasSettings(
+        manualTriggerStatus: boolean,
+        automatedTriggerStatus: boolean
+    ): Promise<void> {}
+
     public async isPromptEnabled(promptName: string): Promise<boolean> {
         const p = `aws.suppressPrompt.${promptName}`
         return (this._data[p] ?? true) === true
@@ -44,5 +49,11 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
 
     public readDevSetting<T>(key: AwsDevSetting, type: string = 'string', silent: boolean = false): T | undefined {
         return this._data[key] as T
+    }
+
+    public async disabledExperiments(pluginName: string): Promise<void> {}
+    public async enabledExperiments(pluginName: string): Promise<void> {}
+    public async getExperimentsSetting(promptName: string): Promise<{ [prompt: string]: boolean } | undefined> {
+        return {}
     }
 }

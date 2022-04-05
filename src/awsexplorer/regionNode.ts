@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TreeItemCollapsibleState } from 'vscode'
+import { TreeItemCollapsibleState, workspace } from 'vscode'
 import { ApiGatewayNode } from '../apigateway/explorer/apiGatewayNodes'
 import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
@@ -23,7 +23,9 @@ import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
+import { ConsolasNode } from '../vector/consolas/explorer/consolasNode'
 import globals from '../shared/extensionGlobals'
+import { ConsolasConstants } from '../vector/consolas/models/constants'
 
 /**
  * An AWS Explorer node representing a region.
@@ -32,14 +34,23 @@ import globals from '../shared/extensionGlobals'
  */
 export class RegionNode extends AWSTreeNodeBase {
     private region: Region
+    private consolasNode: ConsolasNode
     private readonly childNodes: AWSTreeNodeBase[] = []
 
     public get regionCode(): string {
         return this.region.id
     }
-
     public get regionName(): string {
         return this.region.name
+    }
+
+    public get isConsolasNodeExistInChildNodes(): boolean {
+        for (const node of this.childNodes) {
+            if (node instanceof ConsolasNode) {
+                return true
+            }
+        }
+        return false
     }
 
     public constructor(region: Region, regionProvider: RegionProvider) {
@@ -90,8 +101,8 @@ export class RegionNode extends AWSTreeNodeBase {
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
-
         this.childNodes.push(new ResourcesNode(this.regionCode))
+        this.consolasNode = new ConsolasNode(this.regionCode)
     }
 
     private tryClearChildren(): void {
@@ -104,9 +115,21 @@ export class RegionNode extends AWSTreeNodeBase {
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         this.tryClearChildren()
+        if (this.shouldShowConsolas()) {
+            const nodes = [...this.childNodes, this.consolasNode]
+
+            nodes.sort((a, b) => {
+                // Always sort `ResourcesNode` at the bottom
+                return a instanceof ResourcesNode
+                    ? 1
+                    : b instanceof ResourcesNode
+                    ? -1
+                    : (a.label ?? '').localeCompare(b.label ?? '')
+            })
+            return nodes
+        }
         return this.childNodes
     }
-
     public update(region: Region): void {
         this.region = region
         this.label = this.regionName
@@ -121,5 +144,9 @@ export class RegionNode extends AWSTreeNodeBase {
         if (regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
             this.childNodes.push(childNodeProducer())
         }
+    }
+
+    private shouldShowConsolas(): boolean {
+        return workspace.getConfiguration('aws.experiments').get(ConsolasConstants.CONSOLAS_PREVIEW) || false
     }
 }
