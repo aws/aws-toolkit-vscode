@@ -1646,26 +1646,6 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.consolas.auto.enable",
-                "title": "%AWS.command.consolas.auto.enable.title%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.consolas.auto.disable",
-                "title": "%AWS.command.consolas.auto.disable.title%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.consolas.manual.enable",
-                "title": "%AWS.command.consolas.manual.enable.title%",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.consolas.manual.disable",
-                "title": "%AWS.command.consolas.manual.disable.title%",
-                "category": "%AWS.title%"
-            },
-            {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
                 "category": "%AWS.title%",

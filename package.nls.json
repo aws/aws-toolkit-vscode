@@ -670,9 +670,5 @@
     "AWS.walkthrough.gettingStarted.connect": "Connect to AWS",
     "AWS.walkthrough.gettingStarted.changeRegions": "Change AWS Regions",
     "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain",
-    "AWS.command.consolas.title": "Consolas Invoke Service",
-    "AWS.command.consolas.auto.enable.title": "Consolas Enable Automated Trigger",
-    "AWS.command.consolas.auto.disable.title": "Consolas Disable Automated Trigger",
-    "AWS.command.consolas.manual.enable.title": "Consolas Enable Manual Trigger",
-    "AWS.command.consolas.manual.disable.title": "Consolas Disable Manual Trigger"
+    "AWS.command.consolas.title": "Consolas Invoke Service"
 }
