@@ -39,6 +39,10 @@ intellijToolkit {
     ideFlavor.set(IdeFlavor.RD)
 }
 
+intellij {
+    type.set("RD")
+}
+
 sourceSets {
     main {
         java.srcDirs("$buildDir/generated-src")

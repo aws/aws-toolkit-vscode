@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.aws.toolkits.jetbrains.go.VgoCompatShims;
 
 public class VgoTestUtil {
     private static final String GOPATH = getGoTestDataPath("vgo/src/test/testData/mockGoPath").getAbsolutePath();
@@ -103,7 +104,7 @@ public class VgoTestUtil {
                                             @NotNull Map<String, VgoDependency> dependencies) {
         String goModPath = modulePath != null ? FileUtil.join(modulePath, VgoUtil.GO_MOD) : VgoUtil.GO_MOD;
         PsiFile file = fixture.addFileToProject(goModPath, "module \"" + importPath + "\"");
-        return new VgoModule(file.getVirtualFile().getParent(), importPath, dependencies);
+        return VgoCompatShims.newVgoModule(file.getVirtualFile().getParent(), importPath, null, dependencies);
     }
 
     public static void setupVgoIntegration(@NotNull CodeInsightTestFixture fixture, @NotNull List<VgoModule> modules) {

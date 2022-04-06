@@ -58,6 +58,6 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
         assertThat(iconModel).isNotNull
         val ideaIconSecond = iconModel?.let { completionItemToIcon(project, iconModel) as? IconLoader.CachedImageIcon }
         assertThat(ideaIconSecond).isNotNull
-        assertThat(ideaIconSecond?.originalPath).isEqualTo(expectedPath.trimStart('/'))
+        assertThat(ideaIconSecond?.url?.path).endsWith(expectedPath.trimStart('/'))
     }
 }

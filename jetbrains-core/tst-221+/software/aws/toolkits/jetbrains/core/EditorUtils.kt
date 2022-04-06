@@ -17,5 +17,5 @@ fun <T : EditorNotificationProvider, U : EditorNotificationPanel> getEditorNotif
     NonBlockingReadActionImpl.waitForAsyncTaskCompletion()
 
     @Suppress("UNCHECKED_CAST")
-    return EditorNotificationsImpl.getNotificationPanels(editor)?.get(provider) as? U
+    return EditorNotificationsImpl.getNotificationPanels(editor)[provider] as? U
 }
