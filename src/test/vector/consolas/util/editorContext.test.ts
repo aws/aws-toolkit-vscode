@@ -60,8 +60,7 @@ describe('editorContext', function () {
     describe('getProgrammingLanguage', function () {
         it('Should return expected programming language and set invocationContext.language', function () {
             const editor = createMockTextEditor('', 'test.py', 'python', 1, 17)
-            runtimeLanguageContext.languageContexts['python'].runtimeLanguageSource = '2.7'
-
+            runtimeLanguageContext.setRuntimeLanguageContext('python', 'python2', '2.7')
             const actual = EditorContext.getProgrammingLanguage(editor)
             const expected: consolasClient.ConsolasProgLang = {
                 languageName: 'python',
@@ -71,7 +70,7 @@ describe('editorContext', function () {
         })
 
         it('Should return expected programming language and set invocationContext.language when editor is undefined', function () {
-            runtimeLanguageContext.languageContexts['python'].runtimeLanguageSource = '2.7'
+            runtimeLanguageContext.setRuntimeLanguageContext('python', 'python2', '2.7')
             const actual = EditorContext.getProgrammingLanguage(undefined)
             const expected: consolasClient.ConsolasProgLang = {
                 languageName: '',

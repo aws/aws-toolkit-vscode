@@ -14,9 +14,11 @@ export type ConsolasProgLang = Readonly<ConsolasClient.ProgrammingLanguage>
 export type ConsolasContextInfo = Readonly<ConsolasClient.ContextInfo>
 export type ConsolasFileContext = Readonly<ConsolasClient.FileContext>
 export type ConsolasGenerateRecommendationsReq = Readonly<ConsolasClient.GenerateRecommendationsRequest>
-
+export type RecommendationsList = ConsolasClient.RecommendationsList
+export type GenerateRecommendationsResponse = ConsolasClient.GenerateRecommendationsResponse
+export type RecommendationDetail = ConsolasClient.RecommendationDetail
 export class DefaultConsolasClient {
-    public async createSdkClient(): Promise<ConsolasClient> {
+    private async createSdkClient(): Promise<ConsolasClient> {
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
@@ -28,5 +30,11 @@ export class DefaultConsolasClient {
             undefined,
             false
         )) as ConsolasClient
+    }
+
+    public async generateRecommendations(
+        request: ConsolasClient.GenerateRecommendationsRequest
+    ): Promise<ConsolasClient.GenerateRecommendationsResponse> {
+        return (await this.createSdkClient()).generateRecommendations(request).promise()
     }
 }

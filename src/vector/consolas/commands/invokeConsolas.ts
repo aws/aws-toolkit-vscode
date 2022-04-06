@@ -8,11 +8,11 @@ import * as KeyStrokeHandler from '../service/keyStrokeHandler'
 import { recommendations, invocationContext, automatedTriggerContext } from '../models/model'
 import { onRejection } from './onRejection'
 import { PromptHelper } from '../util/promptHelper'
-import * as ConsolasClient from '../client/consolasclient'
+import { DefaultConsolasClient } from '../client/consolas'
 
 export async function invokeConsolas(
     editor: vscode.TextEditor,
-    client: ConsolasClient,
+    client: DefaultConsolasClient,
     isShowMethodsOn: boolean,
     isManualTriggerEnabled: boolean,
     isAutomatedTriggerEnabled: boolean

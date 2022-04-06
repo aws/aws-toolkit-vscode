@@ -4,7 +4,7 @@
  */
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
-import { RecommendationsList } from '../client/consolasclient'
+import { RecommendationsList } from '../client/consolas'
 import { ConsolasConstants } from './constants'
 
 //if this is browser it uses browser and if it's node then it uses nodes

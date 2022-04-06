@@ -8,19 +8,10 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { SemVer } from 'semver'
 import { resetConsolasGlobalVariables } from '../testUtil'
-import { runtimeLanguageContext } from '../../../../vector/consolas/util/runtimeLanguageContext'
-import { LanguageContext } from '../../../../vector/consolas/util/runtimeLanguageContext'
+import { RuntimeLanguageContext } from '../../../../vector/consolas/util/runtimeLanguageContext'
 
 describe('runtimeLanguageContext', function () {
-    // let originalSettingValue: any
-    // let settings: vscode.WorkspaceConfiguration
-
-    // beforeEach(async function () {
-    //     settings = vscode.workspace.getConfiguration('python')
-    //     originalSettingValue = settings.get('defaultInterpreterPath')
-    // })
-
-    const languageContext = new LanguageContext()
+    const languageContext = new RuntimeLanguageContext()
     describe('getRuntimeLanguage', function () {
         const cases: [languageId: string, version: string, expected: string][] = [
             ['python', '3.7.6', 'python3'],
@@ -56,24 +47,24 @@ describe('runtimeLanguageContext', function () {
         it('set python', async function () {
             const fakeConfig: vscode.WorkspaceConfiguration = {
                 get: function (section: string): string | undefined {
-                    return '~/3.0.0'
+                    return '~/path/python3.6'
                 },
                 has: sinon.spy(),
                 inspect: sinon.spy(),
                 update: sinon.spy(),
             }
             await languageContext.initLanguageContext('python', fakeConfig)
-            assert.deepStrictEqual(runtimeLanguageContext.languageContexts['python'], {
+            assert.deepStrictEqual(languageContext.getLanguageContext('python'), {
                 language: 'python',
-                runtimeLanguage: 'python2',
-                runtimeLanguageSource: '2.7.16',
+                runtimeLanguage: 'python3',
+                runtimeLanguageSource: '3.0.0',
             })
         })
 
         it('set java', async function () {
             sinon.stub(languageContext, 'getLanguageVersionNumber').resolves(new SemVer('11.0.13'))
             await languageContext.initLanguageContext('java')
-            assert.deepStrictEqual(runtimeLanguageContext.languageContexts['java'], {
+            assert.deepStrictEqual(languageContext.getLanguageContext('java'), {
                 language: 'java',
                 runtimeLanguage: 'java11',
                 runtimeLanguageSource: '11.0.13',
@@ -83,7 +74,7 @@ describe('runtimeLanguageContext', function () {
         it('set javascript', async function () {
             sinon.stub(languageContext, 'getLanguageVersionNumber').resolves(new SemVer('12.22.9'))
             await languageContext.initLanguageContext('javascript')
-            assert.deepStrictEqual(runtimeLanguageContext.languageContexts['javascript'], {
+            assert.deepStrictEqual(languageContext.getLanguageContext('javascript'), {
                 language: 'javascript',
                 runtimeLanguage: 'javascript',
                 runtimeLanguageSource: '12.22.9',
@@ -104,12 +95,12 @@ describe('runtimeLanguageContext', function () {
         const cases: [languageId: string | undefined, expected: string][] = [
             [undefined, 'plaintext'],
             ['typescript', 'javascript'],
-            ['go', 'plaintext'],
+            ['go', 'go'],
             ['java', 'java'],
             ['javascript', 'javascript'],
             ['python', 'python'],
-            ['c', 'plaintext'],
-            ['COBOL', 'plaintext'],
+            ['c', 'c'],
+            ['COBOL', 'COBOL'],
         ]
 
         beforeEach(function () {

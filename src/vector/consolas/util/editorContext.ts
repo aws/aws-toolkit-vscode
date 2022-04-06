@@ -54,10 +54,10 @@ export function getProgrammingLanguage(editor: vscode.TextEditor | undefined): c
     }
     if (editor !== undefined) {
         const languageId = editor?.document?.languageId
-        const langContext = runtimeLanguageContext.languageContexts[languageId]
+        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         programmingLanguage = {
-            languageName: langContext.language,
-            runtimeVersion: langContext.runtimeLanguageSource,
+            languageName: languageContext.language,
+            runtimeVersion: languageContext.runtimeLanguageSource,
         }
     }
     return programmingLanguage

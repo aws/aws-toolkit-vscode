@@ -55,7 +55,7 @@ export async function onAcceptance(
                 invocationContext.isActive = false
             })
         }
-        const languageContext = runtimeLanguageContext.languageContexts[languageId]
+        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         ConsolasTracker.getTracker().enqueue({
             time: new Date(),
             fileUrl: acceptanceEntry.editor.document.uri,

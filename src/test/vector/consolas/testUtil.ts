@@ -35,28 +35,9 @@ export function resetConsolasGlobalVariables() {
     telemetryContext.ConsolasAutomatedtriggerType = 'KeyStrokeCount'
     telemetryContext.completionType = 'Line'
     telemetryContext.cursorOffset = 0
-    runtimeLanguageContext.languageContexts = {
-        plaintext: {
-            language: 'plaintext',
-            runtimeLanguage: 'unknown',
-            runtimeLanguageSource: '',
-        },
-        python: {
-            language: 'python',
-            runtimeLanguage: 'python2',
-            runtimeLanguageSource: '2.7.16',
-        },
-        javascript: {
-            language: 'javascript',
-            runtimeLanguage: 'javascript',
-            runtimeLanguageSource: '12.22.9',
-        },
-        java: {
-            language: 'java',
-            runtimeLanguage: 'java11',
-            runtimeLanguageSource: '11.0.13',
-        },
-    }
+    runtimeLanguageContext.setRuntimeLanguageContext('python', 'python2', '2.7.16')
+    runtimeLanguageContext.setRuntimeLanguageContext('java', 'java11', '11.0.13')
+    runtimeLanguageContext.setRuntimeLanguageContext('javascript', 'javascript', '12.22.9')
 }
 
 export function createMockDocument(

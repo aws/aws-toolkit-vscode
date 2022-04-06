@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ConsolasConstants } from '../models/constants'
 import { recommendations, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
-import { RecommendationDetail } from '../client/consolasclient'
+import { RecommendationDetail } from '../client/consolas'
 
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
@@ -38,7 +38,7 @@ export function getCompletionItem(
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     let languageId = document.languageId
     languageId = languageId === ConsolasConstants.TYPESCRIPT ? ConsolasConstants.JAVASCRIPT : languageId
-    const languageContext = runtimeLanguageContext.languageContexts[languageId]
+    const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
     completionItem.command = {
         command: 'aws.consolas.accept',
         title: 'On acceptance',

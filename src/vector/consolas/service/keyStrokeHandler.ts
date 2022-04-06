@@ -6,16 +6,19 @@
 import * as vscode from 'vscode'
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { extensionVersion } from '../../../shared/vscode/env'
-import { RecommendationsList } from '../client/consolasclient'
+import {
+    RecommendationsList,
+    GenerateRecommendationsResponse,
+    DefaultConsolasClient,
+    ConsolasGenerateRecommendationsReq,
+} from '../client/consolas'
 import * as EditorContext from '../util/editorContext'
-import * as consolasClient from '../client/consolas'
 import { ConsolasConstants } from '../models/constants'
 import { recommendations, invocationContext, automatedTriggerContext, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { onRejection } from '../commands/onRejection'
 import { AWSError } from 'aws-sdk'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import * as ConsolasClient from '../client/consolasclient'
 import { getLogger } from '../../../shared/logger'
 import { UnsupportedLanguagesCache } from '../util/unsupportedLanguagesCache'
 import { PromptHelper } from '../util/promptHelper'
@@ -28,7 +31,7 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 export async function processKeyStroke(
     event: vscode.TextDocumentChangeEvent,
     editor: vscode.TextEditor,
-    client: ConsolasClient,
+    client: DefaultConsolasClient,
     isManualTriggerEnabled: boolean,
     isAutomatedTriggerEnabled: boolean
 ): Promise<void> {
@@ -125,7 +128,7 @@ function getChangedText(
 export async function invokeAutomatedTrigger(
     autoTriggerType: telemetry.ConsolasAutomatedtriggerType,
     editor: vscode.TextEditor,
-    client: ConsolasClient,
+    client: DefaultConsolasClient,
     isManualTriggerEnabled: boolean,
     isAutomatedTriggerEnabled: boolean,
     overrideGetRecommendations = getRecommendations
@@ -157,11 +160,12 @@ export async function invokeAutomatedTrigger(
 }
 
 export async function getRecommendations(
-    client: ConsolasClient,
+    client: DefaultConsolasClient,
     editor: vscode.TextEditor,
     triggerType: telemetry.ConsolasTriggerType,
     isManualTriggerOn: boolean,
-    autoTriggerType?: telemetry.ConsolasAutomatedtriggerType
+    autoTriggerType?: telemetry.ConsolasAutomatedtriggerType,
+    overrideGetServiceResponse = getServiceResponse
 ): Promise<RecommendationsList> {
     /**
      * Record user decision on previous recommendations before getting new ones
@@ -175,7 +179,6 @@ export async function getRecommendations(
     let startTime = 0
     let latency = 0
     const req = EditorContext.buildRequest(editor as vscode.TextEditor)
-
     try {
         startTime = performance.now()
         invocationContext.lastInvocationTime = startTime
@@ -184,7 +187,7 @@ export async function getRecommendations(
          */
 
         if (EditorContext.validateRequest(req)) {
-            const resp = await getServiceResponse(client, req, triggerType, isManualTriggerOn)
+            const resp = await overrideGetServiceResponse(client, req, triggerType, isManualTriggerOn)
             latency = startTime !== 0 ? performance.now() - startTime : 0
             recommendation = (resp && resp.recommendations) || []
             getLogger().info('Consolas Recommendations : ', recommendation)
@@ -228,7 +231,7 @@ export async function getRecommendations(
     } finally {
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
         const languageId = editor?.document?.languageId
-        const languageContext = runtimeLanguageContext.languageContexts[languageId]
+        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         getLogger().verbose(
             `Request ID: ${requestId}, timestamp(epoch): ${Date.now()}, timezone: ${timezone}, datetime: ${new Date().toLocaleString(
                 [],
@@ -336,8 +339,8 @@ export function isValidResponse(response: RecommendationsList): boolean {
     )
 }
 export async function getServiceResponse(
-    client: ConsolasClient,
-    req: consolasClient.ConsolasGenerateRecommendationsReq,
+    client: DefaultConsolasClient,
+    req: ConsolasGenerateRecommendationsReq,
     triggerType: telemetry.ConsolasTriggerType,
     isManualTriggerOn: boolean
 ): Promise<any> {
@@ -350,22 +353,16 @@ export async function getServiceResponse(
                 cancellable: false,
             },
             async () => {
-                const consolasPromise = client
-                    .generateRecommendations(req)
-                    .promise()
-                    .finally(() => {
-                        invocationContext.isPendingResponse = false
-                    })
+                const consolasPromise = client.generateRecommendations(req).finally(() => {
+                    invocationContext.isPendingResponse = false
+                })
                 return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.PROMISE_TIMEOUT_LIMIT * 1000)
             }
         )
     } else {
-        return client
-            .generateRecommendations(req)
-            .promise()
-            .then(result => {
-                return result
-            })
+        return client.generateRecommendations(req).then(result => {
+            return result
+        })
     }
 }
 
@@ -375,7 +372,7 @@ export async function getServiceResponse(
  * @param {number} timeLimit Time limit to attempt function in milliseconds
  * @returns {Promise<T> | undefined} Resolved promise for async function call, or an error if time limit reached
  */
-export async function asyncCallWithTimeout<T extends ConsolasClient.GenerateRecommendationsResponse>(
+export async function asyncCallWithTimeout<T extends GenerateRecommendationsResponse>(
     asyncPromise: Promise<T>,
     timeLimit: number
 ): Promise<T> {

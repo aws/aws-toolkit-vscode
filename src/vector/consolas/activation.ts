@@ -20,7 +20,7 @@ import { TextEditorSelectionChangeKind } from 'vscode'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { ConsolasTracker } from './tracker/consolasTracker'
 import * as consolasClient from './client/consolas'
-import { LanguageContext } from './util/runtimeLanguageContext'
+import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { OpenConsolasSettings } from './commands/openConsolasSettings'
 import { getLogger } from '../../shared/logger'
 
@@ -28,9 +28,8 @@ export async function activate(context: ExtContext): Promise<void> {
     /**
      * Enable essential intellisense default settings
      */
-    const languageContext = new LanguageContext()
-    await languageContext.initLanguageRuntimeContexts()
     await enableDefaultConfig()
+    await runtimeLanguageContext.initLanguageRuntimeContexts()
     /**
      * Service control
      */
@@ -40,7 +39,7 @@ export async function activate(context: ExtContext): Promise<void> {
     const isAutomatedTriggerEnabled: boolean =
         context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY) || false
 
-    const client = await new consolasClient.DefaultConsolasClient().createSdkClient()
+    const client = new consolasClient.DefaultConsolasClient()
     context.extensionContext.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
             if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
@@ -150,7 +149,7 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.workspace.onDidChangeTextDocument(e => {
             if (
                 e.document === vscode.window.activeTextEditor?.document &&
-                languageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
+                runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
                 e.contentChanges.length != 0
             ) {
                 const isAutoTriggerOn: boolean =
@@ -275,8 +274,13 @@ export async function shutdown() {
 
 export async function enableDefaultConfig() {
     const editorSettings = vscode.workspace.getConfiguration('editor')
-    await editorSettings.update('suggest.showMethods', true, vscode.ConfigurationTarget.Global)
-    await editorSettings.update('suggest.preview', true, vscode.ConfigurationTarget.Global)
-    await editorSettings.update('acceptSuggestionOnEnter', 'on', vscode.ConfigurationTarget.Global)
-    await editorSettings.update('snippetSuggestions', 'top', vscode.ConfigurationTarget.Global)
+    try {
+        await editorSettings.update('suggest.showMethods', true, vscode.ConfigurationTarget.Global)
+        // suggest.preview is available in vsc 1.57+
+        await editorSettings.update('suggest.preview', true, vscode.ConfigurationTarget.Global)
+        await editorSettings.update('acceptSuggestionOnEnter', 'on', vscode.ConfigurationTarget.Global)
+        await editorSettings.update('snippetSuggestions', 'top', vscode.ConfigurationTarget.Global)
+    } catch (error) {
+        getLogger().error('consolas: Failed to update user settings', error)
+    }
 }

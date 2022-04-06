@@ -10,7 +10,7 @@ import { ConsolasLanguage, ConsolasRuntime } from '../../../shared/telemetry/tel
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { ConsolasConstants } from '../models/constants'
 
-interface RuntimeLanguageContext {
+interface RuntimeLanguageContextData {
     /**
      * collection of all language runtime versions
      */
@@ -33,17 +33,17 @@ interface RuntimeLanguageContext {
     }
 }
 
-export const runtimeLanguageContext: RuntimeLanguageContext = {
-    languageContexts: {
-        ['plaintext']: {
-            language: 'plaintext',
-            runtimeLanguage: 'unknown',
-            runtimeLanguageSource: '',
+export class RuntimeLanguageContext {
+    private runtimeLanguageContext: RuntimeLanguageContextData = {
+        languageContexts: {
+            ['plaintext']: {
+                language: 'plaintext',
+                runtimeLanguage: 'unknown',
+                runtimeLanguageSource: '',
+            },
         },
-    },
-}
+    }
 
-export class LanguageContext {
     public getRuntimeLanguage(language: string, version: string): ConsolasRuntime {
         const versionNumber = version ? version.split('.')[0].match(/\d+/)![0] : ''
         switch (language) {
@@ -69,6 +69,7 @@ export class LanguageContext {
                 return 'unknown'
         }
     }
+
     public async getLanguageVersionNumber(cmd: string, args: [string]): Promise<SemVer | undefined> {
         try {
             const { stdout, stderr } = await new ChildProcess(cmd, args).run()
@@ -85,11 +86,9 @@ export class LanguageContext {
         let runtimeVersion: any
         let version = ''
         const languageName = this.convertLanguage(languageId)
-        if (languageName in runtimeLanguageContext.languageContexts) return
+        if (languageName in this.runtimeLanguageContext.languageContexts) return
         if (languageId === ConsolasConstants.PYTHON) {
-            const configValue = workspace
-                .getConfiguration(ConsolasConstants.PYTHON)
-                .get<string>('defaultInterpreterPath')
+            const configValue = config?.get<string>('defaultInterpreterPath')
             const pythonPath = configValue ? configValue.split('/') : []
             const pythonVersion = pythonPath.length > 0 ? pythonPath[pythonPath.length - 1].match(/\d/) : undefined
             if (pythonVersion != undefined && pythonVersion.length > 0) {
@@ -107,24 +106,33 @@ export class LanguageContext {
             version = runtimeVersion ? runtimeVersion?.version : 'unknown'
         }
 
-        runtimeLanguageContext.languageContexts[languageName] = {
+        this.runtimeLanguageContext.languageContexts[languageName] = {
             language: languageName as ConsolasLanguage,
             runtimeLanguage: this.getRuntimeLanguage(languageId, version),
             runtimeLanguageSource: version,
         }
     }
+
+    public setRuntimeLanguageContext(languageName: string, runtimeLanguage: string, version: string) {
+        this.runtimeLanguageContext.languageContexts[languageName] = {
+            language: languageName as ConsolasLanguage,
+            runtimeLanguage: runtimeLanguage as ConsolasRuntime,
+            runtimeLanguageSource: version,
+        }
+    }
+
     public async initLanguageRuntimeContexts() {
         await Promise.all([
-            this.initLanguageContext(ConsolasConstants.PYTHON),
+            this.initLanguageContext(ConsolasConstants.PYTHON, workspace.getConfiguration(ConsolasConstants.PYTHON)),
             this.initLanguageContext(ConsolasConstants.JAVA),
             this.initLanguageContext(ConsolasConstants.JAVASCRIPT),
         ])
     }
 
-    public getlanguageContextInfo(languageId?: string) {
+    public getLanguageContext(languageId?: string) {
         const languageName = this.convertLanguage(languageId)
-        if (languageName in runtimeLanguageContext.languageContexts) {
-            return runtimeLanguageContext.languageContexts[languageName]
+        if (languageName in this.runtimeLanguageContext.languageContexts) {
+            return this.runtimeLanguageContext.languageContexts[languageName]
         }
         return {
             language: languageName as ConsolasLanguage,
@@ -132,15 +140,18 @@ export class LanguageContext {
             runtimeLanguageSource: 'unknown',
         }
     }
+
     public convertLanguage(languageId?: string) {
         /**
          * Notice: convert typescript language id to "javascript"
          */
         languageId = languageId === ConsolasConstants.TYPESCRIPT ? ConsolasConstants.JAVASCRIPT : languageId
-        if (!languageId || !ConsolasConstants.SUPPORTED_LANGUAGES.includes(languageId)) {
+        if (!languageId) {
             return 'plaintext'
         }
 
         return languageId
     }
 }
+
+export const runtimeLanguageContext = new RuntimeLanguageContext()

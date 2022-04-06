@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as ConsolasClient from '../../../../vector/consolas/client/consolasclient'
 import * as consolasSDkClient from '../../../../vector/consolas/client/consolas'
 import { AWSError } from 'aws-sdk'
 import { assertTelemetryCurried } from '../../../testUtil'
@@ -32,16 +31,17 @@ describe('keyStrokeHandler', function () {
     })
     describe('processKeyStroke', async function () {
         let invokeSpy: sinon.SinonStub
+        let mockClient: consolasSDkClient.DefaultConsolasClient
         beforeEach(function () {
             invokeSpy = sinon.stub(KeyStrokeHandler, 'invokeAutomatedTrigger')
             sinon.spy(KeyStrokeHandler, 'getRecommendations')
+            mockClient = new consolasSDkClient.DefaultConsolasClient()
         })
         afterEach(function () {
             sinon.restore()
         })
 
         it('Whatever the input is, should skip when automatic trigger is turned off, should not call invokeAutomatedTrigger', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -60,7 +60,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not call invokeAutomatedTrigger when changed text matches active recommendation prefix', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -81,7 +80,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not call invokeAutomatedTrigger when changed text across multiple lines', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -99,7 +97,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not call invokeAutomatedTrigger when doing delete or undo (empty changed text)', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -117,7 +114,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not call invokeAutomatedTrigger if previous text input is within 2 seconds \n', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -136,7 +132,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger with Enter when inputing \n', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -155,7 +150,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger with SpecialCharacter when inputing {', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -174,7 +168,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger with SpecialCharacter when inputing spaces equivalent to \t', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -194,7 +187,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not call invokeAutomatedTrigger with SpecialCharacter when inputing spaces not equivalent to \t', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -213,7 +205,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should call invokeAutomatedTrigger with arg KeyStrokeCount when invocationContext.keyStrokeCount reaches threshold', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -233,7 +224,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not call invokeAutomatedTrigger when user input is not special character and invocationContext.keyStrokeCount does not reach threshold, should increase invocationContext.keyStrokeCount by 1', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
@@ -254,15 +244,16 @@ describe('keyStrokeHandler', function () {
     })
 
     describe('invokeAutomatedTrigger', function () {
-        before(function () {
+        let mockClient: consolasSDkClient.DefaultConsolasClient
+        beforeEach(function () {
             sinon.restore()
+            mockClient = new consolasSDkClient.DefaultConsolasClient()
         })
         afterEach(function () {
             sinon.restore()
         })
 
         it('should call getRecommendations and assigns recommendations.response with its response', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const getRecommendationsStub = sinon
                 .stub(KeyStrokeHandler, 'getRecommendations')
@@ -283,22 +274,21 @@ describe('keyStrokeHandler', function () {
         })
 
         it('should reset invocationContext.keyStrokeCount to 0', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             automatedTriggerContext.keyStrokeCount = 10
-            sinon.stub(KeyStrokeHandler, 'getRecommendations')
+            const getRecommendationsStub = sinon.stub(KeyStrokeHandler, 'getRecommendations')
             await KeyStrokeHandler.invokeAutomatedTrigger(
                 'Enter',
                 mockEditor,
                 mockClient,
                 isManualTriggerOn,
-                isAutomatedTriggerOn
+                isAutomatedTriggerOn,
+                getRecommendationsStub
             )
             assert.strictEqual(automatedTriggerContext.keyStrokeCount, 0)
         })
 
         it('should executeCommand editor.action.triggerSuggest when recommendation matches current code prefix', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const cmdSpy = sinon.spy(vscode.commands, 'executeCommand')
             invocationContext.startPos = new vscode.Position(1, 0)
@@ -320,7 +310,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('should not executeCommand editor.action.triggerSuggest when recommendation does not match current code prefix', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEditor = createMockTextEditor()
             const getRecommendationStub = sinon.stub(KeyStrokeHandler, 'getRecommendations')
             const cmdSpy = sinon.spy(vscode.commands, 'executeCommand')
@@ -337,12 +326,12 @@ describe('keyStrokeHandler', function () {
     })
 
     describe('checkPrefixMatchSuggestionAndUpdatePrefixMatchArray', function () {
+        let mockClient: consolasSDkClient.DefaultConsolasClient
         afterEach(function () {
             sinon.restore()
         })
         const mockEditor = createMockTextEditor()
         it('should return false if text editor is undefined', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -359,7 +348,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('should return false if recommendation is invalid', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -376,7 +364,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('should return false if invocation line is different than active editor cursor line', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -394,7 +381,6 @@ describe('keyStrokeHandler', function () {
         })
 
         it('should return false if no recommendation matches editor prefix', async function () {
-            const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -426,11 +412,18 @@ describe('keyStrokeHandler', function () {
     })
 
     describe('getRecommendations', async function () {
+        let mockClient: consolasSDkClient.DefaultConsolasClient
+        const mockEditor = createMockTextEditor()
+
+        beforeEach(function () {
+            sinon.restore()
+            resetConsolasGlobalVariables()
+        })
+
         afterEach(function () {
             sinon.restore()
         })
-        const mockClient: ConsolasClient = await new consolasSDkClient.DefaultConsolasClient().createSdkClient()
-        const mockEditor = createMockTextEditor()
+
         it('should assign correct recommendations and invocationContext given input', async function () {
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
@@ -438,13 +431,14 @@ describe('keyStrokeHandler', function () {
                     requestId: 'test_request',
                 },
             }
-            sinon.stub(KeyStrokeHandler, 'getServiceResponse').resolves(mockServerResult)
+            const getServiceResponseStub = sinon.stub(KeyStrokeHandler, 'getServiceResponse').resolves(mockServerResult)
             const actual = await KeyStrokeHandler.getRecommendations(
                 mockClient,
                 mockEditor,
                 'AutoTrigger',
                 isManualTriggerOn,
-                'Enter'
+                'Enter',
+                getServiceResponseStub
             )
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
@@ -457,8 +451,15 @@ describe('keyStrokeHandler', function () {
                     requestId: 'test_request',
                 },
             }
-            sinon.stub(KeyStrokeHandler, 'getServiceResponse').resolves(mockServerResult)
-            await KeyStrokeHandler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', isManualTriggerOn, 'Enter')
+            const getServiceResponseStub = sinon.stub(KeyStrokeHandler, 'getServiceResponse').resolves(mockServerResult)
+            await KeyStrokeHandler.getRecommendations(
+                mockClient,
+                mockEditor,
+                'AutoTrigger',
+                isManualTriggerOn,
+                'Enter',
+                getServiceResponseStub
+            )
             assert.strictEqual(recommendations.requestId, 'test_request')
             assert.strictEqual(telemetryContext.triggerType, 'AutoTrigger')
         })
@@ -470,11 +471,18 @@ describe('keyStrokeHandler', function () {
                     requestId: 'test_request',
                 },
             }
-            sinon.stub(KeyStrokeHandler, 'getServiceResponse').resolves(mockServerResult)
+            const getServiceResponseStub = sinon.stub(KeyStrokeHandler, 'getServiceResponse').resolves(mockServerResult)
             sinon.stub(performance, 'now').returns(0.0)
             invocationContext.startPos = new vscode.Position(1, 0)
             telemetryContext.cursorOffset = 2
-            await KeyStrokeHandler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', isManualTriggerOn, 'Enter')
+            await KeyStrokeHandler.getRecommendations(
+                mockClient,
+                mockEditor,
+                'AutoTrigger',
+                isManualTriggerOn,
+                'Enter',
+                getServiceResponseStub
+            )
             const assertTelemetry = assertTelemetryCurried('consolas_serviceInvocation')
             assertTelemetry({
                 consolasRequestId: 'test_request',
@@ -501,10 +509,17 @@ describe('keyStrokeHandler', function () {
                 name: 'ValidationException',
                 time: new Date(),
             }
-            sinon.stub(KeyStrokeHandler, 'getServiceResponse').throws(awsError)
+            const getServiceResponseStub = sinon.stub(KeyStrokeHandler, 'getServiceResponse').throws(awsError)
             const mockEditor = createMockTextEditor('#include <stdio.h>\n', 'test.c', 'c')
             assert.ok(!UnsupportedLanguagesCache.isUnsupportedProgrammingLanguage('c'))
-            await KeyStrokeHandler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', isManualTriggerOn, 'Enter')
+            await KeyStrokeHandler.getRecommendations(
+                mockClient,
+                mockEditor,
+                'AutoTrigger',
+                isManualTriggerOn,
+                'Enter',
+                getServiceResponseStub
+            )
             assert.ok(UnsupportedLanguagesCache.isUnsupportedProgrammingLanguage('c'))
         })
     })

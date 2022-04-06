@@ -16,7 +16,7 @@ export class TelemetryHelper {
      * @param languageId the language ID of the current document in current active editor
      */
     public static async recordUserDecisionTelemetry(acceptIndex: number, languageId: string | undefined) {
-        const languageContext = runtimeLanguageContext.languageContexts[languageId as string]
+        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         // emit user decision telemetry
         recommendations.response.forEach((_elem, i) => {
             telemetry.recordConsolasUserDecision({
