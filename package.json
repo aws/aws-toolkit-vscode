@@ -1092,6 +1092,11 @@
                     "group": "3_lambda@1"
                 },
                 {
+                    "command": "aws.launchConfigForm",
+                    "when": "view == aws.explorer",
+                    "group": "3_lambda@1"
+                },
+                {
                     "command": "aws.deploySamApplication",
                     "when": "view == aws.explorer",
                     "group": "3_lambda@2"
@@ -1123,6 +1128,11 @@
                 },
                 {
                     "command": "aws.aboutToolkit",
+                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
+                    "group": "z_about@1"
+                },
+                {
+                    "command": "aws.viewLogs",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
                 },
@@ -1222,6 +1232,11 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.launchConfigForm",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
                     "group": "1@1"
                 },
