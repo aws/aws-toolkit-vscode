@@ -205,6 +205,8 @@
     "AWS.command.renderStateMachineGraph": "Render graph",
     "AWS.command.copyArn": "Copy ARN",
     "AWS.command.copyName": "Copy Name",
+    "AWS.command.listCommands": "Show AWS Commands...",
+    "AWS.command.listCommands.cn": "Show Amazon Commands...",
     "AWS.command.downloadStateMachineDefinition": "Download Definition...",
     "AWS.command.searchSchemaPerRegistry": "Search Schemas in Registry",
     "AWS.command.submitFeedback": "Send Feedback...",
