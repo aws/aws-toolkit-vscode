@@ -281,6 +281,8 @@ tasks.test {
     useTestNG()
     environment("LOCAL_ENV_RUN", true)
     maxHeapSize = "1024m"
+
+    outputs.cacheIf { false }
 }
 
 tasks.integrationTest {
@@ -291,11 +293,4 @@ tasks.integrationTest {
     // test detection is broken for tests inheriting from JB test framework: https://youtrack.jetbrains.com/issue/IDEA-278926
     setScanForTestClasses(false)
     include("**/*Test.class")
-
-    ciOnly {
-        // disable retries so that logs aren't overwritten
-        retry {
-            maxRetries.set(0)
-        }
-    }
 }
