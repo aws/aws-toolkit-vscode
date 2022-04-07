@@ -40,7 +40,7 @@ const localize = nls.loadMessageBundle()
 
 const VueWebview = compileVueWebview({
     id: 'createLambda',
-    title: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
+    title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
     webviewJs: 'lambdaConfigEditorVue.js',
     commands: {
         getRuntimes: () => samLambdaCreatableRuntimes().toArray().sort(),
