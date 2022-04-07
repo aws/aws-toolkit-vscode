@@ -89,6 +89,7 @@ export type OptionsToProtocol<O> = O extends WebviewCompileOptions<infer C, infe
     ? {
           submit: (result: S) => Promise<void> | void | never
           init: () => Promise<P | undefined> | P | undefined
+          getCompanyName: () => Promise<string>
       } & C &
           E
     : never
