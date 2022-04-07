@@ -115,20 +115,22 @@ export class RegionNode extends AWSTreeNodeBase {
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         this.tryClearChildren()
+        let nodes = this.childNodes
         if (this.shouldShowConsolas()) {
-            const nodes = [...this.childNodes, this.consolasNode]
-
-            nodes.sort((a, b) => {
-                // Always sort `ResourcesNode` at the bottom
-                return a instanceof ResourcesNode
-                    ? 1
-                    : b instanceof ResourcesNode
-                    ? -1
-                    : (a.label ?? '').localeCompare(b.label ?? '')
-            })
-            return nodes
+            nodes = [...this.childNodes, this.consolasNode]
         }
-        return this.childNodes
+        return this.sortNodes(nodes)
+    }
+
+    private sortNodes(nodes: AWSTreeNodeBase[]) {
+        return nodes.sort((a, b) => {
+            // Always sort `ResourcesNode` at the bottom
+            return a instanceof ResourcesNode
+                ? 1
+                : b instanceof ResourcesNode
+                ? -1
+                : (a.label ?? '').localeCompare(b.label ?? '')
+        })
     }
     public update(region: Region): void {
         this.region = region

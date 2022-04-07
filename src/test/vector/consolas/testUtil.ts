@@ -14,7 +14,7 @@ import {
     telemetryContext,
 } from '../../../vector/consolas/models/model'
 import { ConsolasConstants } from '../../../vector/consolas/models/constants'
-import { MockDocument } from './mockDocument'
+import { MockDocument } from '../../fake/fakeDocument'
 import { getLogger } from '../../../shared/logger'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 

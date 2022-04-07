@@ -21,8 +21,7 @@ import { AWSError } from 'aws-sdk'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../../shared/logger'
 import { UnsupportedLanguagesCache } from '../util/unsupportedLanguagesCache'
-import { PromptHelper } from '../util/promptHelper'
-import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { showTimedMessage } from '../../../shared/utilities/messages'
 
 //if this is browser it uses browser and if it's node then it uses nodes
 //TODO remove when node version >= 16
@@ -222,10 +221,7 @@ export async function getRecommendations(
             UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage(languageName)
             // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
             languageName = `${languageName.charAt(0).toUpperCase()}${languageName.slice(1)}`
-            PromptHelper.promptMessage(
-                `Programming language ${languageName} is currently not supported by Consolas`,
-                2000
-            )
+            showTimedMessage(`Programming language ${languageName} is currently not supported by Consolas`, 2000)
         }
         requestId = awsError.requestId || ''
     } finally {
@@ -252,12 +248,6 @@ export async function getRecommendations(
             getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
         })
 
-        const settings = new DefaultSettingsConfiguration('aws')
-        if (settings.readDevSetting<boolean>('aws.dev.consolasTelemetryLogging', 'boolean', true)) {
-            getLogger().verbose(
-                `Consolas Telemetry Event: RequestID: ${requestId}, TriggerType: ${triggerType}, AutoTriggerType: ${autoTriggerType}, CompletionType: ${completionType}, Result: ${invocationResult}, Latency: ${latency}, LineAtInvocation: ${invocationContext.startPos.line}, cursorOffset: ${telemetryContext.cursorOffset}, language: ${languageContext.language}, language runtime: ${languageContext.runtimeLanguage}, language runtime source: ${languageContext.runtimeLanguageSource}`
-            )
-        }
         /**
          * TODO: fill in runtime fields after solution is found to access runtime in vscode
          */

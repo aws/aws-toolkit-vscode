@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import * as consolasSDkClient from '../../../../vector/consolas/client/consolas'
 import { resetConsolasGlobalVariables, createMockTextEditor } from '../testUtil'
 import { invocationContext, automatedTriggerContext } from '../../../../vector/consolas/models/model'
-import { PromptHelper } from '../../../../vector/consolas/util/promptHelper'
+import * as messages from '../../../../shared/utilities/messages'
 import { invokeConsolas } from '../../../../vector/consolas/commands/invokeConsolas'
 import * as KeyStrokeHandler from '../../../../vector/consolas/service/keyStrokeHandler'
 
@@ -21,7 +21,7 @@ describe('invokeConsolas', function () {
 
         beforeEach(function () {
             resetConsolasGlobalVariables()
-            promptMessageSpy = sinon.spy(PromptHelper, 'promptMessage')
+            promptMessageSpy = sinon.spy(messages, 'showTimedMessage')
             getRecommendationStub = sinon
                 .stub(KeyStrokeHandler, 'getRecommendations')
                 .resolves([{ content: "print('Hello World!')" }, { content: "print('Hello!')" }])
@@ -31,7 +31,7 @@ describe('invokeConsolas', function () {
             sinon.restore()
         })
 
-        it('Should call promptMessage if Consolas (Manual Trigger) turned off, should not call getRecommendations', async function () {
+        it('Should call showTimedMessage if Consolas (Manual Trigger) turned off, should not call getRecommendations', async function () {
             const isManualTriggerEnabled = false
             const isAutoTriggerEnabled = false
             const mockEditor = createMockTextEditor()

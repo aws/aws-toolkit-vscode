@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as KeyStrokeHandler from '../service/keyStrokeHandler'
 import { recommendations, invocationContext, automatedTriggerContext } from '../models/model'
 import { onRejection } from './onRejection'
-import { PromptHelper } from '../util/promptHelper'
+import { showTimedMessage } from '../../../shared/utilities/messages'
 import { DefaultConsolasClient } from '../client/consolas'
 
 export async function invokeConsolas(
@@ -21,7 +21,7 @@ export async function invokeConsolas(
      * Show prompt when manual trigger is turned off
      */
     if (!isManualTriggerEnabled) {
-        PromptHelper.promptMessage('Consolas (Manual Trigger) turned off', 2000)
+        showTimedMessage('Consolas (Manual Trigger) turned off', 2000)
         return
     }
     /**
@@ -67,7 +67,7 @@ export async function invokeConsolas(
                 invocationContext.isActive = true
             })
         } else {
-            PromptHelper.promptMessage('No suggestions from Consolas', 2000)
+            showTimedMessage('No suggestions from Consolas', 2000)
         }
     }
 }

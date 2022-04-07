@@ -16,11 +16,6 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
         this._data[p] = false
     }
 
-    public async controlConsolasSettings(
-        manualTriggerStatus: boolean,
-        automatedTriggerStatus: boolean
-    ): Promise<void> {}
-
     public async isPromptEnabled(promptName: string): Promise<boolean> {
         const p = `aws.suppressPrompt.${promptName}`
         return (this._data[p] ?? true) === true

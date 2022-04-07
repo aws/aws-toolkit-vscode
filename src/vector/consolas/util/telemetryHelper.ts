@@ -5,8 +5,6 @@
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { recommendations, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
-import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
-import { getLogger } from '../../../shared/logger'
 
 export class TelemetryHelper {
     /**
@@ -23,23 +21,12 @@ export class TelemetryHelper {
                 consolasRequestId: recommendations.requestId,
                 consolasTriggerType: telemetryContext.triggerType,
                 consolasSuggestionIndex: i,
-                consolasSuggestionState: this.recordSuggestionState(telemetryContext.isPrefixMatched, i, acceptIndex),
+                consolasSuggestionState: this.getSuggestionState(telemetryContext.isPrefixMatched, i, acceptIndex),
                 consolasCompletionType: telemetryContext.completionType,
                 consolasLanguage: languageContext.language,
                 consolasRuntime: languageContext.runtimeLanguage,
                 consolasRuntimeSource: languageContext.runtimeLanguageSource,
             })
-
-            this.telemetryLogging(
-                recommendations.requestId,
-                telemetryContext.triggerType,
-                i,
-                this.recordSuggestionState(telemetryContext.isPrefixMatched, i, acceptIndex),
-                telemetryContext.completionType,
-                languageContext.language,
-                languageContext.runtimeLanguage,
-                languageContext.runtimeLanguageSource
-            )
         })
 
         /**
@@ -48,26 +35,7 @@ export class TelemetryHelper {
         recommendations.response = []
     }
 
-    private static async telemetryLogging(
-        requestId: string,
-        triggerType: telemetry.ConsolasTriggerType,
-        index: number,
-        suggestionState: telemetry.ConsolasSuggestionState,
-        completionType: telemetry.ConsolasCompletionType,
-        language: string,
-        languageRuntime: telemetry.ConsolasRuntime,
-        languageRuntimeSource: string
-    ) {
-        const settings = new DefaultSettingsConfiguration('aws')
-        if (settings.readDevSetting<boolean>('aws.dev.consolasTelemetryLogging', 'boolean', true)) {
-            getLogger().verbose(
-                `Consolas Telemetry UserDecision Event: RequestID: ${requestId}, TriggerType: ${triggerType}, CompletionType: ${completionType}, Index: ${index}, SuggestionState: ${suggestionState}, Language: ${language}, Language Runtime: ${languageRuntime}, Language Runtime Source: ${languageRuntimeSource}`
-            )
-            getLogger().verbose('------------------------------------------------------------------------------')
-        }
-    }
-
-    public static recordSuggestionState(
+    public static getSuggestionState(
         isPrefixMatched: boolean[],
         i: number,
         acceptIndex: number

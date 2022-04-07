@@ -37,8 +37,6 @@
     "activationEvents": [
         "onStartupFinished",
         "onDebugResolve:aws-sam",
-        "onCommand:aws.consolas.accept",
-        "onCommand:aws.consolas",
         "onCommand:aws.login",
         "onCommand:aws.credential.profile.create",
         "onCommand:aws.logout",
@@ -86,7 +84,9 @@
         "onCommand:aws.cloudFormation.newTemplate",
         "onCommand:aws.sam.newTemplate",
         "onFileSystem:s3",
-        "onFileSystem:s3-readonly"
+        "onFileSystem:s3-readonly",
+        "onCommand:aws.consolas.accept",
+        "onCommand:aws.consolas"
     ],
     "main": "./dist/src/main",
     "contributes": {
@@ -931,6 +931,42 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.cdk.help",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.apprunner.startDeployment",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.createService",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.pauseService",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.resumeService",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.copyServiceUrl",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.open",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.deleteService",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.createServiceFromEcr",
+                    "when": "false"
+                },
+                {
                     "command": "aws.resources.copyIdentifier",
                     "when": "false"
                 },
@@ -940,6 +976,10 @@
                 },
                 {
                     "command": "aws.resources.createResource",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.resources.deleteResource",
                     "when": "false"
                 },
                 {
@@ -980,46 +1020,6 @@
                 },
                 {
                     "command": "aws.renderStateMachineGraph",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.resources.deleteResource",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.cdk.help",
-                    "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.apprunner.startDeployment",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.apprunner.createService",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.apprunner.pauseService",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.apprunner.resumeService",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.apprunner.copyServiceUrl",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.apprunner.open",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.apprunner.deleteService",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.apprunner.createServiceFromEcr",
                     "when": "false"
                 }
             ],
@@ -1518,16 +1518,6 @@
                     "when": "view == aws.explorer && viewItem =~ /^(awsEcsContainerNodeExec)(.*)$/"
                 },
                 {
-                    "command": "aws.consolas.configure",
-                    "when": "view == aws.explorer && viewItem == awsConsolasNode && !isCloud9",
-                    "group": "inline@2"
-                },
-                {
-                    "command": "aws.consolas.introduction",
-                    "when": "view == aws.explorer && viewItem == awsConsolasNode && !isCloud9 && CONSOLAS_TERMS_ACCEPTED",
-                    "group": "inline@1"
-                },
-                {
                     "command": "aws.ecs.enableEcsExec",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsEcsServiceNode.DISABLED"
@@ -1636,15 +1626,20 @@
                     "command": "aws.sam.newTemplate",
                     "group": "0@2",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
+                },
+                {
+                    "command": "aws.consolas.configure",
+                    "when": "view == aws.explorer && viewItem == awsConsolasNode && !isCloud9",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "aws.consolas.introduction",
+                    "when": "view == aws.explorer && viewItem == awsConsolasNode && !isCloud9 && CONSOLAS_TERMS_ACCEPTED",
+                    "group": "inline@1"
                 }
             ]
         },
         "commands": [
-            {
-                "command": "aws.consolas",
-                "title": "%AWS.command.consolas.title%",
-                "category": "%AWS.title%"
-            },
             {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
@@ -2659,28 +2654,6 @@
                 }
             },
             {
-                "command": "aws.consolas.configure",
-                "title": "%AWS.command.consolas.configure%",
-                "category": "%AWS.title%",
-                "icon": "$(gear)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.consolas.introduction",
-                "title": "%AWS.command.consolas.introduction%",
-                "category": "%AWS.title%",
-                "icon": "$(question)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.apprunner.createService",
                 "title": "%AWS.command.apprunner.createService%",
                 "category": "%AWS.title%",
@@ -2784,6 +2757,33 @@
                 "command": "aws.sam.newTemplate",
                 "title": "%AWS.command.sam.newTemplate%",
                 "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.consolas",
+                "title": "%AWS.command.consolas.title%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.consolas.configure",
+                "title": "%AWS.command.consolas.configure%",
+                "category": "%AWS.title%",
+                "icon": "$(gear)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.consolas.introduction",
+                "title": "%AWS.command.consolas.introduction%",
+                "category": "%AWS.title%",
+                "icon": "$(question)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

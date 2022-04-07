@@ -9,6 +9,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import globals from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { sleep } from './promiseUtilities'
 import { Timeout } from './timeoutUtils'
 
 export function makeFailedWriteMessage(filename: string): string {
@@ -130,4 +131,25 @@ export async function showMessageWithCancel(
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout, window)
+}
+
+/**
+ * Shows a "spinner" / progress message for `duration` milliseconds.
+ *
+ * @param message Message to display
+ * @param duration Timeout duration (milliseconds)
+ *
+ * @returns prompts message to user on with progress
+ */
+export async function showTimedMessage(message: string, duration: number) {
+    vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: message,
+            cancellable: false,
+        },
+        async () => {
+            await sleep(duration)
+        }
+    )
 }

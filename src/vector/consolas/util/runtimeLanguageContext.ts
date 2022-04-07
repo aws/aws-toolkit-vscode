@@ -71,15 +71,18 @@ export class RuntimeLanguageContext {
     }
 
     public async getLanguageVersionNumber(cmd: string, args: [string]): Promise<SemVer | undefined> {
-        try {
-            const { stdout, stderr } = await new ChildProcess(cmd, args).run()
-            const version = stdout || stderr
-            const match = version.trim().match(/[0-9]+.[0-9]+.[0-9]+/g)
-            return semverParse(match![0]) as SemVer
-        } catch (err) {
-            getLogger().error('Failed to get Langauge Runtime Version: %d\n%s', err)
+        const { stdout, stderr, exitCode } = await new ChildProcess(cmd, args).run()
+        if (exitCode !== 0) {
+            getLogger().error(
+                'getLanguageVersionNumber: failed to get Langauge Runtime Version: %d\n%s',
+                exitCode,
+                stderr
+            )
             return
         }
+        const version = stdout || stderr
+        const match = version.trim().match(/[0-9]+.[0-9]+.[0-9]+/g)
+        return semverParse(match![0]) as SemVer
     }
 
     public async initLanguageContext(languageId: string, config?: vscode.WorkspaceConfiguration) {
