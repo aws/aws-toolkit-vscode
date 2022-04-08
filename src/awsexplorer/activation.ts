@@ -12,16 +12,10 @@ import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 
-import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
-import {
-    recordAwsHideRegion,
-    recordAwsRefreshExplorer,
-    recordAwsShowRegion,
-    recordVscodeActiveRegions,
-} from '../shared/telemetry/telemetry'
+import { recordAwsRefreshExplorer, recordAwsShowRegion, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
@@ -33,7 +27,6 @@ import { copyArnCommand } from './commands/copyArn'
 import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
-import { RegionNode } from './regionNode'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 
@@ -103,17 +96,6 @@ async function registerAwsExplorerCommands(
                 await globals.awsContextCommands.onCommandShowRegion()
             } finally {
                 recordAwsShowRegion()
-                recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
-            }
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
-            try {
-                await globals.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-            } finally {
-                recordAwsHideRegion()
                 recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
             }
         })
