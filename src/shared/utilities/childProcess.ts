@@ -118,7 +118,7 @@ export class ChildProcess {
         const debugDetail = this.log.logLevelEnabled('debug')
             ? ` (running processes: ${ChildProcess.runningProcesses.size})`
             : ''
-        this.log.info(`Running: ${this.toString(this.options.logging === 'noparams')}${debugDetail}`)
+        this.log.info(`Command: ${this.toString(this.options.logging === 'noparams')}${debugDetail}`)
 
         const cleanup = () => {
             this.childProcess?.stdout?.removeAllListeners()
