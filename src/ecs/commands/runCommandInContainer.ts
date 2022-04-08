@@ -94,7 +94,7 @@ export async function runCommandInContainer(
         showOutputMessage(
             `${moment().format(INSIGHTS_TIMESTAMP_FORMAT)}:  Container: "${node.containerName}" Task ID: "${
                 response.task
-            }"  Running command: "${response.command}"`,
+            }" Command: "${response.command}"`,
             outputChannel
         )
 
