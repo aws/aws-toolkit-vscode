@@ -68,14 +68,15 @@ export class LoginManager {
             telemetryResult = 'Succeeded'
             return true
         } catch (err) {
+            const credentialsId = asString(args.providerId)
             if (!CancellationError.isUserCancelled(err)) {
-                const msg = `login: failed to connect with "${asString(args.providerId)}": ${(err as Error).message}`
+                const msg = `login: failed to connect with "${credentialsId}": ${(err as Error).message}`
                 if (!args.passive) {
-                    notifyUserInvalidCredentials(args.providerId)
+                    notifyUserInvalidCredentials(credentialsId)
                     getLogger().error(msg)
                 }
             } else {
-                getLogger().info(`login: cancelled credentials request from "${asString(args.providerId)}"`)
+                getLogger().info(`login: cancelled credentials request from "${credentialsId}"`)
             }
 
             await this.logout()
