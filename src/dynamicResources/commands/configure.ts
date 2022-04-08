@@ -8,6 +8,11 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { recordDynamicresourceSelectResources } from '../../shared/telemetry/telemetry'
 import { memoizedGetResourceTypes } from '../model/resources'
 
+/**
+ * Shows a picker menu and stores the selected Resources in user settings.
+ *
+ * @returns true if the user accepted the picker, false if they canceled it
+ */
 export async function configureResources(): Promise<boolean> {
     const window = vscode.window
     const configuration = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
