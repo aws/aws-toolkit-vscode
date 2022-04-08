@@ -156,16 +156,14 @@ export async function activate(context: vscode.ExtensionContext) {
             credentialsStore,
         }
 
-        // Used as a command for decoration-only codelenses.
-        context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))
-
         context.subscriptions.push(
-            vscode.commands.registerCommand('aws.login', async () => await globals.awsContextCommands.onCommandLogin())
-        )
-        context.subscriptions.push(
-            vscode.commands.registerCommand(
-                'aws.logout',
-                async () => await globals.awsContextCommands.onCommandLogout()
+            // No-op command used for decoration-only codelenses.
+            vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
+            vscode.commands.registerCommand('aws.login', () => globals.awsContextCommands.onCommandLogin()),
+            vscode.commands.registerCommand('aws.logout', () => globals.awsContextCommands.onCommandLogout()),
+            // "Show AWS Commands..."
+            vscode.commands.registerCommand('aws.listCommands', () =>
+                vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
             )
         )
 
