@@ -122,15 +122,16 @@ export class DefaultAwsContext implements AwsContext {
         return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
     }
 
-    // async so that we could *potentially* support other ways of obtaining
-    // region in future - for example from instance metadata if the
-    // user was running Code on an EC2 instance.
     public async getExplorerRegions(): Promise<string[]> {
+        // (1a63f2a5fe05) "async to potentially support other ways of obtaining regions, e.g. from EC2 IMDS."
         return this.explorerRegions
     }
 
-    // adds one or more regions into the preferred set, persisting the set afterwards as a
-    // comma-separated string.
+    /**
+     * Adds a region(s) into the "preferred set", persisted as a comma-separated string.
+     *
+     * @param regions List of region ids (like `["us-west-2"]`)
+     */
     public async addExplorerRegion(...regions: string[]): Promise<void> {
         regions.forEach(r => {
             const index = this.explorerRegions.findIndex(regionToProcess => regionToProcess === r)
@@ -141,8 +142,11 @@ export class DefaultAwsContext implements AwsContext {
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
     }
 
-    // removes one or more regions from the user's preferred set, persisting the set afterwards as a
-    // comma-separated string.
+    /**
+     * Removes a region(s) from the user's "preferred set".
+     *
+     * @param regions List of region ids (like `["us-west-2"]`)
+     */
     public async removeExplorerRegion(...regions: string[]): Promise<void> {
         regions.forEach(r => {
             const index = this.explorerRegions.findIndex(explorerRegion => explorerRegion === r)
