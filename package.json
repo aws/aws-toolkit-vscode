@@ -731,6 +731,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.listCommands",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -1082,6 +1086,11 @@
                     "command": "aws.login",
                     "when": "view == aws.explorer",
                     "group": "1_account@1"
+                },
+                {
+                    "command": "aws.listCommands",
+                    "when": "view == aws.explorer",
+                    "group": "1_account@2"
                 },
                 {
                     "command": "aws.showRegion",
@@ -2264,6 +2273,17 @@
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.listCommands",
+                "title": "%AWS.command.listCommands%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.listCommands.cn%",
                         "category": "%AWS.title.cn%"
                     }
                 }
