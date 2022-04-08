@@ -446,7 +446,6 @@
     "AWS.placeHolder.inputSecretKey": "Input the {0} Secret Key",
     "AWS.placeHolder.newProfileName": "Choose a unique name for the new profile",
     "AWS.placeHolder.selectProfile": "Select a credential profile",
-    "AWS.running.command": "Running command: {0}",
     "AWS.apig.portUnavailable": "Port is unavailable: {0}",
     "AWS.apig.copyUrlNoStages": "Failed to copy URL because '{0}' has no stages",
     "AWS.apig.loadingStages": "Loading stage list for API: {0}",
