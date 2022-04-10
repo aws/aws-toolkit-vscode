@@ -2974,7 +2974,7 @@
         "sinon": "^12.0.1",
         "source-map-support": "^0.5.21",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^10.4.0",
+        "ts-node": "^10.7.0",
         "umd-compat-loader": "^2.1.2",
         "vsce": "^2.6.3",
         "vscode-nls-dev": "^3.3.1",
