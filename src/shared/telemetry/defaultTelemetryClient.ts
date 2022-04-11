@@ -14,8 +14,8 @@ import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 import globals from '../extensionGlobals'
+import { DevSettings } from '../settingsConfiguration'
 
 interface TelemetryConfiguration {
     readonly endpoint: string
@@ -28,13 +28,11 @@ export class DefaultTelemetryClient implements TelemetryClient {
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
     private static initializeConfig(): TelemetryConfiguration {
-        const settings = new DefaultSettingsConfiguration()
-        const identityPool = settings.readDevSetting<string>('aws.dev.telemetryUserPool', 'string', true)
-        const endpoint = settings.readDevSetting<string>('aws.dev.telemetryEndpoint', 'string', true)
+        const settings = DevSettings.instance
 
         return {
-            endpoint: endpoint ?? this.DEFAULT_TELEMETRY_ENDPOINT,
-            identityPool: identityPool ?? this.DEFAULT_IDENTITY_POOL,
+            endpoint: settings.get('telemetryEndpoint', this.DEFAULT_TELEMETRY_ENDPOINT),
+            identityPool: settings.get('telemetryUserPool', this.DEFAULT_IDENTITY_POOL),
         }
     }
 
