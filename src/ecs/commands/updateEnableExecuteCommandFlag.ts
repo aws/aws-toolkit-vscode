@@ -5,8 +5,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { extensionSettingsPrefix } from '../../shared/constants'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { PromptSettings } from '../../shared/settingsConfiguration'
 import { recordEcsDisableExecuteCommand, recordEcsEnableExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
@@ -22,7 +21,7 @@ export async function updateEnableExecuteCommandFlag(
     enable: boolean,
     window = Window.vscode(),
     commands = Commands.vscode(),
-    settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    settings = new PromptSettings()
 ): Promise<void> {
     const yes = localize('AWS.generic.response.yes', 'Yes')
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
