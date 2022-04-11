@@ -21,10 +21,9 @@ import { createTestWindow, TestWindow } from '../../shared/vscode/window'
 import { anything, instance, mock, when, resetCalls, verify } from '../../utilities/mockito'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 import { join } from 'path'
 import { assertTextEditorContains, closeAllEditors } from '../../testUtil'
+import { PromptSettings } from '../../../shared/settingsConfiguration'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -142,21 +141,19 @@ describe('FileViewerManager', function () {
     let testWindow: TestWindow
     let workspace: typeof vscode.workspace
     let commands: typeof vscode.commands
-    let settings: SettingsConfiguration
 
     beforeEach(function () {
         s3 = mock()
         fs = new VirualFileSystem()
         workspace = mock()
         commands = mock()
-        settings = new TestSettingsConfiguration()
         const window = (testWindow = createTestWindow())
 
         fileViewerManager = new S3FileViewerManager(
             () => instance(s3),
             fs,
             window,
-            settings,
+            new PromptSettings(),
             instance(commands),
             instance(workspace)
         )
