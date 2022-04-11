@@ -148,7 +148,11 @@ export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
     }
 
     public async getSamCliInfo(): Promise<SamCliInfoResponse> {
-        const samCliInfo = new SamCliInfoInvocation({ preloadedConfig: this.config })
+        const samPath = await this.samCliLocation()
+        if (!samPath) {
+            throw new Error('Unable to get SAM CLI info without an executable path')
+        }
+        const samCliInfo = new SamCliInfoInvocation(samPath)
 
         return await samCliInfo.execute()
     }
