@@ -4,10 +4,10 @@
  */
 
 import * as _path from 'path'
-import { DefaultSettingsConfiguration } from '../settingsConfiguration'
+import { SettingsConfiguration } from '../settingsConfiguration'
 
 const DEFAULT_TAB_SIZE = 4
 
 export function getTabSizeSetting(): number {
-    return new DefaultSettingsConfiguration('editor').readSetting<number>('tabSize') || DEFAULT_TAB_SIZE
+    return new SettingsConfiguration().getSection('editor').get('tabSize', DEFAULT_TAB_SIZE)
 }
