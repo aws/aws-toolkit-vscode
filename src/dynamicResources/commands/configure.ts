@@ -14,6 +14,11 @@ export class ResourcesConfiguration extends fromPackage('aws.resources', {
     enabledResources: ArrayConstructor(String),
 }) {}
 
+/**
+ * Shows a picker menu and stores the selected Resources in user settings.
+ *
+ * @returns true if the user accepted the picker, false if they canceled it
+ */
 export async function configureResources(config = new ResourcesConfiguration()): Promise<boolean> {
     const window = vscode.window
     const enabledResources = config.get('enabledResources', [])

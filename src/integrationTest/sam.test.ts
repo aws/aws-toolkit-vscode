@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
+import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as vscodeUtils from '../../src/shared/utilities/vsCodeUtils'
 import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
@@ -49,6 +50,8 @@ interface TestScenario {
     debugSessionType: string
     language: Language
     dependencyManager: DependencyManager
+    /** Minimum vscode version required by the relevant third-party extension. */
+    vscodeMinimum: string
 }
 
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
@@ -62,6 +65,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'nodejs14.x',
@@ -70,6 +74,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'python3.6',
@@ -78,6 +83,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'python3.7',
@@ -86,6 +92,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'python3.8',
@@ -94,6 +101,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
+        vscodeMinimum: '1.50.0',
     },
     // TODO: Add Python3.9 support to integration test hosts
     // {
@@ -111,6 +119,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'java',
         language: 'java',
         dependencyManager: 'gradle',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'java8.al2',
@@ -119,6 +128,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'java',
         language: 'java',
         dependencyManager: 'maven',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'java11',
@@ -127,6 +137,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'java',
         language: 'java',
         dependencyManager: 'gradle',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'go1.x',
@@ -135,6 +146,8 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'delve',
         language: 'go',
         dependencyManager: 'mod',
+        // https://github.com/golang/vscode-go/blob/master/package.json
+        vscodeMinimum: '1.59.0',
     },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
@@ -147,6 +160,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'nodejs14.x',
@@ -156,6 +170,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'pwa-node',
         language: 'javascript',
         dependencyManager: 'npm',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'python3.6',
@@ -165,6 +180,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'python3.7',
@@ -174,6 +190,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'python3.8',
@@ -183,6 +200,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
+        vscodeMinimum: '1.50.0',
     },
     // TODO: Add Python3.9 support to integration test hosts
     // {
@@ -202,6 +220,8 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'delve',
         language: 'go',
         dependencyManager: 'mod',
+        // https://github.com/golang/vscode-go/blob/master/package.json
+        vscodeMinimum: '1.59.0',
     },
     {
         runtime: 'java8',
@@ -211,6 +231,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'java',
         language: 'java',
         dependencyManager: 'maven',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'java8.al2',
@@ -220,6 +241,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'java',
         language: 'java',
         dependencyManager: 'gradle',
+        vscodeMinimum: '1.50.0',
     },
     {
         runtime: 'java11',
@@ -229,6 +251,7 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'java',
         language: 'java',
         dependencyManager: 'maven',
+        vscodeMinimum: '1.50.0',
     },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
@@ -377,7 +400,7 @@ describe('SAM Integration Tests', async function () {
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
         const scenario = scenarios[scenarioIndex]
 
-        describe(`SAM Application Runtime: ${scenario.displayName}`, async function () {
+        describe(`SAM runtime: ${scenario.displayName}`, async function () {
             let runtimeTestRoot: string
 
             before(async function () {
@@ -474,6 +497,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
+                    if (semver.lt(vscode.version, scenario.vscodeMinimum)) {
+                        this.skip()
+                    }
+
                     const codeLenses = await testUtils.getAddConfigCodeLens(
                         samAppCodeUri,
                         CODELENS_TIMEOUT,

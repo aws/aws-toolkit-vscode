@@ -43,7 +43,6 @@
         "onCommand:aws.createIssueOnGitHub",
         "onCommand:aws.submitFeedback",
         "onCommand:aws.showRegion",
-        "onCommand:aws.hideRegion",
         "onView:aws.explorer",
         "onCommand:aws.deploySamApplication",
         "onCommand:aws.samcli.detect",
@@ -721,6 +720,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.listCommands",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -1076,12 +1079,12 @@
                 {
                     "command": "aws.showRegion",
                     "when": "view == aws.explorer",
-                    "group": "2_region@1"
+                    "group": "1_account@2"
                 },
                 {
-                    "command": "aws.hideRegion",
+                    "command": "aws.listCommands",
                     "when": "view == aws.explorer",
-                    "group": "2_region@2"
+                    "group": "1_account@3"
                 },
                 {
                     "command": "aws.lambda.createNewSamApp",
@@ -1089,9 +1092,14 @@
                     "group": "3_lambda@1"
                 },
                 {
-                    "command": "aws.deploySamApplication",
+                    "command": "aws.launchConfigForm",
                     "when": "view == aws.explorer",
                     "group": "3_lambda@2"
+                },
+                {
+                    "command": "aws.deploySamApplication",
+                    "when": "view == aws.explorer",
+                    "group": "3_lambda@3"
                 },
                 {
                     "command": "aws.quickStart",
@@ -1120,6 +1128,11 @@
                 },
                 {
                     "command": "aws.aboutToolkit",
+                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
+                    "group": "z_about@1"
+                },
+                {
+                    "command": "aws.viewLogs",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
                 },
@@ -1213,14 +1226,24 @@
                     "group": "inline@2"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
-                    "when": "view == aws.explorer && viewItem == awsLambdaNode",
+                    "command": "aws.showRegion",
+                    "when": "view == aws.explorer && viewItem == awsRegionNode",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.lambda.createNewSamApp",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.launchConfigForm",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.deploySamApplication",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
-                    "group": "1@1"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -1471,11 +1494,6 @@
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
                     "group": "1@1"
-                },
-                {
-                    "command": "aws.hideRegion",
-                    "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsRegionNode"
                 },
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
@@ -1769,16 +1787,6 @@
             {
                 "command": "aws.showRegion",
                 "title": "%AWS.command.showRegion%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.hideRegion",
-                "title": "%AWS.command.hideRegion%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2229,6 +2237,17 @@
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.listCommands",
+                "title": "%AWS.command.listCommands%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.listCommands.cn%",
                         "category": "%AWS.title.cn%"
                     }
                 }
@@ -2862,8 +2881,7 @@
                             "markdown": "resources/walkthrough/setup-region.md"
                         },
                         "completionEvents": [
-                            "onCommand:aws.showRegion",
-                            "onCommand:aws.hideRegion"
+                            "onCommand:aws.showRegion"
                         ]
                     },
                     {
@@ -2953,7 +2971,7 @@
         "sinon": "^12.0.1",
         "source-map-support": "^0.5.21",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^10.4.0",
+        "ts-node": "^10.7.0",
         "umd-compat-loader": "^2.1.2",
         "vsce": "^2.6.3",
         "vscode-nls-dev": "^3.3.1",
