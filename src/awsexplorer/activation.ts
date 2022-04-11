@@ -15,7 +15,6 @@ import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import {
     recordAwsHideRegion,
     recordAwsRefreshExplorer,
@@ -42,6 +41,7 @@ let didTryAutoConnect = false
 import * as nls from 'vscode-nls'
 import globals from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
+import { CredentialsSettings } from '../credentials/credentialsUtilities'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -82,9 +82,8 @@ async function tryAutoConnect(awsContext: AwsContext) {
         if (!didTryAutoConnect && !(await awsContext.getCredentials())) {
             getLogger().debug('credentials: attempting autoconnect...')
             didTryAutoConnect = true
-            const toolkitSettings = new DefaultSettingsConfiguration()
             const loginManager = new LoginManager(awsContext, new CredentialsStore())
-            await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+            await loginWithMostRecentCredentials(new CredentialsSettings(), loginManager)
         }
     } catch (err) {
         getLogger().error('credentials: failed to auto-connect: %O', err)

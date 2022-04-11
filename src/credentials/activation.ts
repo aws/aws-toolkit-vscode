@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
-import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
 import { asString, CredentialsId, fromString } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -17,21 +16,18 @@ import { getIdeProperties } from '../shared/extensionUtilities'
 import * as nls from 'vscode-nls'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger/logger'
+import { CredentialsSettings } from './credentialsUtilities'
+import { SettingsConfiguration } from '../shared/settingsConfiguration'
 const localize = nls.loadMessageBundle()
 
-export interface CredentialsInitializeParameters {
-    extensionContext: vscode.ExtensionContext
-    awsContext: AwsContext
-    settingsConfiguration: SettingsConfiguration
-}
-
-export async function initialize(parameters: CredentialsInitializeParameters): Promise<void> {
-    updateMruWhenAwsContextChanges(parameters.awsContext, parameters.extensionContext)
-    updateConfigurationWhenAwsContextChanges(
-        parameters.settingsConfiguration,
-        parameters.awsContext,
-        parameters.extensionContext
-    )
+export async function initialize(
+    extensionContext: vscode.ExtensionContext,
+    awsContext: AwsContext,
+    settings: SettingsConfiguration
+): Promise<void> {
+    const credentialSettings = new CredentialsSettings(settings)
+    updateMruWhenAwsContextChanges(awsContext, extensionContext)
+    updateConfigurationWhenAwsContextChanges(credentialSettings, awsContext, extensionContext)
 }
 
 /**
@@ -40,12 +36,12 @@ export async function initialize(parameters: CredentialsInitializeParameters): P
  * container-like environments).
  */
 export async function loginWithMostRecentCredentials(
-    toolkitSettings: SettingsConfiguration,
+    settings: CredentialsSettings,
     loginManager: LoginManager
 ): Promise<void> {
     const defaultName = 'profile:default'
     const manager = CredentialsProviderManager.getInstance()
-    const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
+    const previousCredentialsId = settings.get('profile', '')
 
     async function tryConnect(creds: CredentialsId, popup: boolean): Promise<boolean> {
         const provider = await manager.getCredentialsProvider(creds)
@@ -141,17 +137,17 @@ function updateMruWhenAwsContextChanges(awsContext: AwsContext, extensionContext
  * Saves the active credentials to VS Code Settings whenever they change.
  */
 function updateConfigurationWhenAwsContextChanges(
-    settingsConfiguration: SettingsConfiguration,
+    settings: CredentialsSettings,
     awsContext: AwsContext,
     extensionContext: vscode.ExtensionContext
 ) {
     extensionContext.subscriptions.push(
         awsContext.onDidChangeContext(async awsContextChangedEvent => {
-            await settingsConfiguration.writeSetting(
-                profileSettingKey,
-                awsContextChangedEvent.profileName,
-                vscode.ConfigurationTarget.Global
-            )
+            if (awsContextChangedEvent.profileName) {
+                await settings.update(profileSettingKey, awsContextChangedEvent.profileName)
+            } else {
+                await settings.delete(profileSettingKey)
+            }
         })
     )
 }
