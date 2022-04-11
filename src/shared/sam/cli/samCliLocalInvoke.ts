@@ -11,9 +11,9 @@ import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
-import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
+import { SamCliConfig } from './samCliConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -208,19 +208,16 @@ export interface SamCliLocalInvokeInvocationArguments {
  * Yet another `sam` CLI wrapper.
  */
 export class SamCliLocalInvokeInvocation {
-    private readonly invokerContext: SamCliProcessInvokerContext
+    private readonly config = new SamCliConfig()
 
     public constructor(private readonly args: SamCliLocalInvokeInvocationArguments) {
         this.args.skipPullImage = !!this.args.skipPullImage
-
-        // Enterprise!
-        this.invokerContext = new DefaultSamCliProcessInvokerContext()
     }
 
     public async execute(timeout?: Timeout): Promise<void> {
         await this.validate()
 
-        const sam = await this.invokerContext.cliConfig.getOrDetectSamCli()
+        const sam = await this.config.getOrDetectSamCli()
         if (!sam.path) {
             getLogger().warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {

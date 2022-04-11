@@ -15,7 +15,6 @@ import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { getLogger } from '../logger'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { Timeout } from '../utilities/timeoutUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
@@ -27,10 +26,7 @@ import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
-import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerContext'
-import { DefaultSamCliConfiguration } from './cli/samCliConfiguration'
-import { extensionSettingsPrefix } from '../constants'
-import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
+import { SamCliConfig } from './cli/samCliConfiguration'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
@@ -81,7 +77,6 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
-const SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS: number = 90000
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -129,12 +124,7 @@ async function buildLambdaHandler(
     env: NodeJS.ProcessEnv,
     config: SamLaunchRequestArgs
 ): Promise<boolean> {
-    const processInvoker = new DefaultSamCliProcessInvoker({
-        preloadedConfig: new DefaultSamCliConfiguration(
-            new DefaultSettingsConfiguration(extensionSettingsPrefix),
-            new DefaultSamCliLocationProvider()
-        ),
-    })
+    const processInvoker = new DefaultSamCliProcessInvoker({ preloadedConfig: new SamCliConfig() })
 
     getLogger('channel').info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
@@ -197,8 +187,7 @@ async function invokeLambdaHandler(
 
     if (config.invokeTarget.target === 'api') {
         // sam local start-api ...
-        const samCliContext = new DefaultSamCliProcessInvokerContext()
-        const sam = await samCliContext.cliConfig.getOrDetectSamCli()
+        const sam = await new SamCliConfig().getOrDetectSamCli()
         if (!sam.path) {
             getLogger().warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {
@@ -361,7 +350,7 @@ export async function runLambdaFunction(
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
-    const timer = createLambdaTimer(ctx.settings)
+    const timer = new Timeout(new SamCliConfig().getLocalInvokeTimeout())
 
     if (!(await buildLambdaHandler(timer, envVars, config))) {
         return config
@@ -644,12 +633,6 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
         default:
             throw new Error('localLambdaRunner can not determine if runtime requires a relative path.')
     }
-}
-
-function createLambdaTimer(configuration: SettingsConfiguration): Timeout {
-    const timelimit = configuration.readSetting<number>('samcli.lambda.timeout', SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS)
-
-    return new Timeout(timelimit)
 }
 
 /**

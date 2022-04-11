@@ -4,7 +4,7 @@
  */
 
 import { getLogger, Logger } from '../../logger'
-import { SamCliConfiguration } from './samCliConfiguration'
+import { SamCliConfig } from './samCliConfiguration'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
@@ -19,7 +19,7 @@ export class SamCliInfoInvocation {
     private readonly invoker: SamCliProcessInvoker
     public constructor(params: {
         invoker?: SamCliProcessInvoker
-        preloadedConfig?: SamCliConfiguration
+        preloadedConfig?: SamCliConfig
         locationProvider?: { getLocation(): Promise<string | undefined> }
     }) {
         if (

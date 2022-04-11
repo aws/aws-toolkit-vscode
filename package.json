@@ -127,10 +127,10 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
-                "aws.samcli.lambda.timeout": {
+                "aws.samcli.lambdaTimeout": {
                     "type": "number",
                     "default": 90000,
-                    "markdownDescription": "%AWS.configuration.description.samcli.lambda.timeout%"
+                    "markdownDescription": "%AWS.configuration.description.samcli.lambdaTimeout%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -188,12 +188,12 @@
                     "description": "%AWS.cloudWatchLogs.limit.desc%",
                     "maximum": 10000
                 },
-                "aws.manuallySelectedBuckets": {
+                "aws.samcli.manuallySelectedBuckets": {
                     "type": "object",
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
                     "default": []
                 },
-                "aws.sam.enableCodeLenses": {
+                "aws.samcli.enableCodeLenses": {
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
@@ -201,16 +201,13 @@
                 "aws.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
-                    "default": {
-                        "apprunnerNotifyPricing": false,
-                        "ecsRunCommand": false,
-                        "ecsRunCommandDisable": false,
-                        "ecsRunCommandEnable": false,
-                        "yamlExtPrompt": false,
-                        "fileViewerEdit": false
-                    },
+                    "default": {},
                     "properties": {
                         "apprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "apprunnerNotifyPause": {
                             "type": "boolean",
                             "default": false
                         },

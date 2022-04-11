@@ -3,85 +3,151 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { SettingsConfiguration } from '../../settingsConfiguration'
+import { getLogger } from '../../logger'
+import { fromPackage, migrateSetting, SettingsConfiguration } from '../../settingsConfiguration'
+import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
+import { once } from '../../utilities/functionUtils'
+import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
+import { DefaultSamCliLocationProvider, SamCliLocationProvider } from './samCliLocator'
 
-export interface SamCliConfiguration {
-    /** Gets the current SAM CLI location from the VSCode settings store. */
-    getSamCliLocation(): string | undefined
+// TODO(sijaden): remove after a few releases
+async function migrateLegacySettings() {
+    await migrateSetting(
+        {
+            key: 'aws.manuallySelectedBuckets',
+            type: SavedBuckets,
+        },
+        {
+            key: 'aws.samcli.manuallySelectedBuckets',
+            type: SavedBuckets,
+        }
+    )
 
-    /** Sets the SAM CLI location in the VSCode settings store. */
-    setSamCliLocation(location: string | undefined): Promise<void>
+    await migrateSetting(
+        {
+            key: 'aws.sam.enableCodeLenses',
+            type: Boolean,
+        },
+        {
+            key: 'aws.samcli.enableCodeLenses',
+            type: Boolean,
+        }
+    )
 
-    /**
-     * Initializes this SamCliConfiguration object from the VSCode user settings,
-     * or tries to auto-detect `sam` in the environment.
-     *
-     * @returns true if auto-detection failed; false if auto-detection succeeded or was not attempted.
-     */
-    initialize(): Promise<void>
+    await migrateSetting(
+        {
+            key: 'aws.samcli.lambda.timeout',
+            type: Number,
+        },
+        {
+            key: 'aws.samcli.lambdaTimeout',
+            type: Number,
+        }
+    )
+}
+
+const migrate = once(migrateLegacySettings)
+
+const LOCAL_TIMEOUT_DEFAULT_MILLIS: number = 90000
+interface SavedBuckets {
+    [profile: string]: { [region: string]: string }
+}
+
+function SavedBuckets(value: unknown): SavedBuckets {
+    // Legacy code used to save data as strings
+    const buckets = typeof value === 'string' ? JSON.parse(value) : value
+
+    if (typeof buckets !== 'object' || !buckets) {
+        throw new TypeError('Value was not a non-null object')
+    }
+
+    const result = toRecord(keys(buckets), k => {
+        const v = buckets[k]
+
+        if (typeof v !== 'object' || !v) {
+            getLogger().warn(`Settings: removed invalid key "${k}" from saved buckets`)
+            return undefined
+        }
+
+        return toRecord(keys(v), p => {
+            const bucket = v[p]
+
+            if (typeof bucket !== 'string') {
+                getLogger().warn(`Settings: removed invalid key "${k}.${p}" from saved buckets`)
+                return undefined
+            }
+
+            return bucket
+        })
+    })
+
+    stripUndefined(result)
+
+    return result as SavedBuckets
+}
+
+const description = {
+    location: String,
+    lambdaTimeout: Number,
+    enableCodeLenses: Boolean,
+    manuallySelectedBuckets: SavedBuckets,
+}
+
+export class SamCliConfig extends fromPackage('aws.samcli', description) {
+    public constructor(
+        private readonly locationProvider: SamCliLocationProvider = new DefaultSamCliLocationProvider(),
+        settings: ClassToInterfaceType<SettingsConfiguration> = new SettingsConfiguration()
+    ) {
+        super(settings)
+        migrate()
+    }
+
+    public async detectLocation(): Promise<string | undefined> {
+        return this.locationProvider.getLocation()
+    }
 
     /**
      * Gets location of `sam` from user config, or tries to find `sam` on the
      * system if the user config is invalid.
      *
-     * @returns empty string if `sam` was not found on the system
+     * @returns `undefined` if `sam` was not found on the system
      */
-    getOrDetectSamCli(): Promise<{ path: string; autoDetected: boolean }>
-}
+    public async getOrDetectSamCli(): Promise<{ path: string | undefined; autoDetected: boolean }> {
+        const fromConfig = this.get('location', '')
 
-export class DefaultSamCliConfiguration implements SamCliConfiguration {
-    public static readonly CONFIGURATION_KEY_SAMCLI_LOCATION: string = 'samcli.location'
-    private readonly _configuration: SettingsConfiguration
-    private readonly _samCliLocationProvider: { getLocation(): Promise<string | undefined> }
-
-    public constructor(
-        configuration: SettingsConfiguration,
-        samCliLocationProvider: { getLocation(): Promise<string | undefined> }
-    ) {
-        this._configuration = configuration
-        this._samCliLocationProvider = samCliLocationProvider
-    }
-
-    public getSamCliLocation(): string | undefined {
-        return this._configuration.readSetting<string>(DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION)
-    }
-
-    public async setSamCliLocation(location: string | undefined): Promise<void> {
-        await this._configuration.writeSetting(
-            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
-            location,
-            vscode.ConfigurationTarget.Global
-        )
-    }
-
-    /**
-     * Gets the `samcli.location` setting if set by the user, else searches for
-     * `sam` on the system and returns the result.
-     *
-     * Returns `autoDetected=true` if auto-detection was _attempted_. If `sam`
-     * was not found on the system then `path=""`.
-     */
-    public async getOrDetectSamCli(): Promise<{ path: string; autoDetected: boolean }> {
-        const fromConfig =
-            this._configuration.readSetting<string>(DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION) ?? ''
-        // Respect user setting, do not validate it. fileExists() does not
-        // understand WSL paths, for example.  https://github.com/aws/aws-toolkit-vscode/issues/1300
         if (fromConfig) {
             return { path: fromConfig, autoDetected: false }
         }
-        const fromSearch = (await this._samCliLocationProvider.getLocation()) ?? ''
+
+        const fromSearch = await this.detectLocation()
         return { path: fromSearch, autoDetected: true }
     }
 
-    // TODO: remove this, it's only used by tests. Maybe the tests can call
-    // detectSamCli() instead, or likely the tests need to be revisited entirely.
-    public async initialize(): Promise<void> {
-        const samPath = await this.getOrDetectSamCli()
-        if (!samPath.autoDetected) {
-            return
+    public getSavedBuckets(): SavedBuckets | undefined {
+        try {
+            return this.get('manuallySelectedBuckets')
+        } catch (error) {
+            this.delete('manuallySelectedBuckets')
         }
+    }
 
-        await this.setSamCliLocation(samPath.path)
+    /**
+     * Writes a single new saved bucket to the stored buckets setting, combining previous saved data
+     * if it exists. One saved bucket is limited per region per profile.
+     */
+    public async updateSavedBuckets(profile: string, region: string, bucket: string): Promise<boolean> {
+        const oldBuckets = this.getSavedBuckets()
+
+        return this.update('manuallySelectedBuckets', {
+            ...oldBuckets,
+            [profile]: {
+                ...(oldBuckets?.[profile] ?? {}),
+                [region]: bucket,
+            },
+        })
+    }
+
+    public getLocalInvokeTimeout(): number {
+        return this.get('lambdaTimeout', LOCAL_TIMEOUT_DEFAULT_MILLIS)
     }
 }
