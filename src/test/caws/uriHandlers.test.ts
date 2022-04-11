@@ -101,6 +101,7 @@ describe('CAWS handlers', function () {
                 lastUpdatedTime: new Date(),
                 name: 'somefoo',
                 repositories: [],
+                status: '',
             }
 
             when(client.getDevEnv(anything())).thenResolve(fullEnv)

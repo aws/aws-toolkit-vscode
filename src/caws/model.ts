@@ -21,6 +21,7 @@ export function createCawsSessionProvider(
                 projectName: env.project.name,
                 organizationName: env.org.name,
                 developmentWorkspaceId: env.developmentWorkspaceId,
+                sessionConfiguration: { sessionType: 'SSH' },
             })
 
             return {
