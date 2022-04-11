@@ -14,7 +14,10 @@ import { CompositeResourceFetcher } from './resourcefetcher/compositeResourceFet
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from './resourcefetcher/resourcefetcher'
+import { SettingsConfiguration } from './settingsConfiguration'
+import { once } from './utilities/functionUtils'
 import { normalizeSeparator } from './utilities/pathUtils'
+import { ArrayConstructor } from './utilities/typeConstructors'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
@@ -64,7 +67,6 @@ export class SchemaService {
 
     public async start(): Promise<void> {
         getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
-        await cleanResourceMappings()
         await this.startTimer()
     }
 
@@ -200,16 +202,8 @@ export async function getRemoteOrCachedFile(params: {
  * Lifted near-verbatim from the cfn-lint VSCode extension.
  * https://github.com/aws-cloudformation/cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/extension.ts#L56
  */
-async function addCustomTags(): Promise<void> {
+async function addCustomTags(config = new SettingsConfiguration()): Promise<void> {
     const settingName = 'yaml.customTags'
-    const currentTags = vscode.workspace.getConfiguration().get<string[]>(settingName) ?? []
-    if (!Array.isArray(currentTags)) {
-        getLogger().error(
-            'setting "%s" is not an array. SAM/CFN intrinsic functions will not be recognized.',
-            settingName
-        )
-        return
-    }
     const cloudFormationTags = [
         '!And',
         '!And sequence',
@@ -239,16 +233,22 @@ async function addCustomTags(): Promise<void> {
         '!Split',
         '!Split sequence',
     ]
-    const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
-    if (missingTags.length > 0) {
-        const updateTags = currentTags.concat(missingTags)
-        try {
-            await vscode.workspace
-                .getConfiguration()
-                .update('yaml.customTags', updateTags, vscode.ConfigurationTarget.Global)
-        } catch (err) {
-            getLogger().warn('schemas: failed to add CFN YAML tags: %s', (err as Error).message)
+
+    try {
+        const currentTags = config.getSetting(
+            settingName,
+            ArrayConstructor(v => v),
+            []
+        )
+        const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
+
+        if (missingTags.length > 0) {
+            const updateTags = currentTags.concat(missingTags)
+
+            await config.updateSetting(settingName, updateTags)
         }
+    } catch (error) {
+        getLogger().error('schemas: failed to update setting "%s": %O', settingName, error)
     }
 }
 
@@ -281,16 +281,24 @@ export class YamlSchemaHandler implements SchemaHandler {
  * Registers JSON schema mappings with the built-in VSCode JSON schema language server
  */
 export class JsonSchemaHandler implements SchemaHandler {
-    public constructor(private config?: vscode.WorkspaceConfiguration) {}
+    private readonly clean = once(() => this.cleanResourceMappings())
+
+    public constructor(private readonly config = new SettingsConfiguration()) {}
 
     async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
-        let settings = getJsonSettings(this.config)
+        await this.clean()
+
+        let settings = this.getJsonSettings()
 
         if (mapping.schema) {
             const uri = resolveSchema(mapping.schema, schemas).toString()
             const existing = settings.find(schema => schema.url === uri)
             if (existing) {
-                existing.fileMatch?.push(mapping.path)
+                if (!existing.fileMatch) {
+                    getLogger().debug(`JsonSchemaHandler: skipped setting schema '${uri}'`)
+                } else {
+                    existing.fileMatch.push(mapping.path)
+                }
             } else {
                 settings.push({
                     fileMatch: [mapping.path],
@@ -301,7 +309,20 @@ export class JsonSchemaHandler implements SchemaHandler {
             settings = filterJsonSettings(settings, file => file !== mapping.path)
         }
 
-        await setJsonSettings(settings, this.config)
+        await this.config.updateSetting('json.schemas', settings)
+    }
+
+    /**
+     * Attempts to find and remove orphaned resource mappings for AWS Resource documents
+     */
+    private async cleanResourceMappings(): Promise<void> {
+        getLogger().debug(`JsonSchemaHandler: cleaning stale schemas`)
+        const settings = filterJsonSettings(this.getJsonSettings(), file => !file.endsWith('.awsResource.json'))
+        await this.config.updateSetting('json.schemas', settings)
+    }
+
+    private getJsonSettings(): JSONSchemaSettings[] {
+        return this.config.getSetting('json.schemas', ArrayConstructor(Object), [])
     }
 }
 
@@ -310,30 +331,6 @@ function resolveSchema(schema: string | vscode.Uri, schemas: Schemas): vscode.Ur
         return schema
     }
     return schemas[schema]
-}
-
-/**
- * Attempts to find and remove orphaned resource mappings for AWS Resource documents
- */
-export async function cleanResourceMappings(config?: vscode.WorkspaceConfiguration): Promise<void> {
-    let settings = getJsonSettings(config)
-    settings = filterJsonSettings(settings, file => !file.endsWith('.awsResource.json'))
-    await setJsonSettings(settings, config)
-}
-
-function getJsonSettings(workspaceConfig?: vscode.WorkspaceConfiguration): JSONSchemaSettings[] {
-    const config = workspaceConfig ?? vscode.workspace.getConfiguration('json')
-    return config.get('schemas') ?? []
-}
-
-// TODO: we should be using a shared settings class for error handling, not accessing the API directly
-async function setJsonSettings(settings: JSONSchemaSettings[], workspaceConfig?: vscode.WorkspaceConfiguration) {
-    const config = workspaceConfig ?? vscode.workspace.getConfiguration('json')
-    try {
-        await config.update('schemas', settings, vscode.ConfigurationTarget.Global)
-    } catch (err) {
-        getLogger().warn('schemas: failed to update JSON schemas: %s', (err as Error).message)
-    }
 }
 
 function filterJsonSettings(settings: JSONSchemaSettings[], predicate: (fileName: string) => boolean) {

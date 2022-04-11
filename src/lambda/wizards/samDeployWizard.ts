@@ -38,17 +38,13 @@ import { ExtContext } from '../../shared/extensions'
 import { validateBucketName } from '../../s3/util'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
+import { SamCliConfig } from '../../shared/sam/cli/samCliConfiguration'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
-export const CHOSEN_BUCKET_KEY = 'manuallySelectedBuckets'
-
-export interface SavedBuckets {
-    [profile: string]: { [region: string]: string }
-}
+export const CHOSEN_BUCKET_KEY = 'aws.samcli.manuallySelectedBuckets'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -194,47 +190,6 @@ function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): strin
     }
 
     return responses[0].label
-}
-
-/**
- * The toolkit used to store saved buckets as a stringified JSON object. To ensure compatability,
- * we need to check for this and convert them into objects.
- */
-export function readSavedBuckets(settings: SettingsConfiguration): SavedBuckets | undefined {
-    try {
-        const buckets = settings.readSetting<SavedBuckets | string | undefined>(CHOSEN_BUCKET_KEY)
-        return typeof buckets === 'string' ? JSON.parse(buckets) : buckets
-    } catch (e) {
-        // If we fail to read settings then remove the bad data completely
-        getLogger().error('Recent bucket JSON not parseable. Rewriting recent buckets from scratch...', e)
-        settings.writeSetting(CHOSEN_BUCKET_KEY, {}, vscode.ConfigurationTarget.Global)
-        return undefined
-    }
-}
-
-/**
- * Writes a single new saved bucket to the stored buckets setting, combining previous saved data
- * if it exists. One saved bucket is limited per region per profile.
- */
-export function writeSavedBucket(
-    settings: SettingsConfiguration,
-    profile: string,
-    region: string,
-    bucket: string
-): void {
-    const oldBuckets = readSavedBuckets(settings)
-
-    settings.writeSetting(
-        CHOSEN_BUCKET_KEY,
-        {
-            ...oldBuckets,
-            [profile]: {
-                ...(oldBuckets && oldBuckets[profile] ? oldBuckets[profile] : {}),
-                [region]: bucket,
-            },
-        } as SavedBuckets,
-        vscode.ConfigurationTarget.Global
-    )
 }
 
 export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
@@ -498,7 +453,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         // This will background load the S3 buckets and load them all (in one chunk) when the operation completes.
         // Not awaiting lets us display a "loading" quick pick for immediate feedback.
         // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
-        populateS3QuickPick(quickPick, selectedRegion, this.extContext.settings, messages, profile, accountId)
+        populateS3QuickPick(quickPick, selectedRegion, new SamCliConfig(), messages, profile, accountId)
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
@@ -1014,7 +969,7 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
 async function populateS3QuickPick(
     quickPick: vscode.QuickPick<vscode.QuickPickItem>,
     selectedRegion: string,
-    settings: SettingsConfiguration,
+    settings: SamCliConfig,
     messages: { noBuckets: string; bucketError: string },
     profile?: string,
     accountId?: string
@@ -1026,7 +981,7 @@ async function populateS3QuickPick(
 
         let recent: string = ''
         try {
-            const existingBuckets = readSavedBuckets(settings)
+            const existingBuckets = settings.getSavedBuckets()
             if (existingBuckets && profile && existingBuckets[profile] && existingBuckets[profile][selectedRegion]) {
                 recent = existingBuckets[profile][selectedRegion]
                 baseItems.push({

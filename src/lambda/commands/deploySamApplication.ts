@@ -15,15 +15,15 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesy
 import { checklogs } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
+import { SamCliConfig } from '../../shared/sam/cli/samCliConfiguration'
 import { getSamCliContext, SamCliContext, getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { SamDeployWizardResponse, writeSavedBucket } from '../wizards/samDeployWizard'
+import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
@@ -58,7 +58,7 @@ export async function deploySamApplication(
         window = getDefaultWindowFunctions(),
     }: {
         awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
-        settings: SettingsConfiguration
+        settings: SamCliConfig
         window?: WindowFunctions
     }
 ): Promise<void> {
@@ -118,7 +118,7 @@ export async function deploySamApplication(
         // successful deploy: retain S3 bucket for quick future access
         const profile = awsContext.getCredentialProfileName()
         if (profile) {
-            writeSavedBucket(settings, profile, deployWizardResponse.region, deployWizardResponse.s3Bucket)
+            await settings.updateSavedBuckets(profile, deployWizardResponse.region, deployWizardResponse.s3Bucket)
         } else {
             getLogger().warn('Profile not provided; cannot write recent buckets.')
         }
