@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
+import { CloudWatchLogsSettings } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
 import { saveCurrentLogStreamContent } from './commands/saveCurrentLogStreamContent'
@@ -16,7 +17,8 @@ import { LogGroupNode } from './explorer/logGroupNode'
 import { LogStreamRegistry } from './registry/logStreamRegistry'
 
 export async function activate(context: vscode.ExtensionContext, configuration: SettingsConfiguration): Promise<void> {
-    const registry = new LogStreamRegistry(configuration)
+    const settings = new CloudWatchLogsSettings(configuration)
+    const registry = new LogStreamRegistry(settings)
 
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider(
@@ -52,7 +54,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                 registry: LogStreamRegistry,
                 headOrTail: 'head' | 'tail',
                 onDidChangeCodeLensEvent: vscode.EventEmitter<void>
-            ) => addLogEvents(document, registry, headOrTail, onDidChangeCodeLensEvent, configuration)
+            ) => addLogEvents(document, registry, headOrTail, onDidChangeCodeLensEvent)
         )
     )
     context.subscriptions.push(
