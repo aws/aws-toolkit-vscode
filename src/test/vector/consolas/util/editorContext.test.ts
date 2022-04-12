@@ -26,7 +26,7 @@ describe('editorContext', function () {
 
         it('Should return expected context within max char limit', function () {
             const editor = createMockTextEditor(
-                'import math\ndef ' + 'a'.repeat(6000) + 'two_sum(nums, target):\n',
+                'import math\ndef ' + 'a'.repeat(25700) + 'two_sum(nums, target):\n',
                 'test.py',
                 'python',
                 1,
@@ -35,7 +35,7 @@ describe('editorContext', function () {
             const actual = EditorContext.extractContextForConsolas(editor)
             const expected: consolasClient.ConsolasFileContext = {
                 leftFileContent: 'import math\ndef aaaaaaaaaaaaa',
-                rightFileContent: 'a'.repeat(5120),
+                rightFileContent: 'a'.repeat(25600),
             }
             assert.deepStrictEqual(actual, expected)
         })
@@ -113,10 +113,10 @@ describe('editorContext', function () {
 
         it('Should return false if request left or right context exceeds max length', function () {
             const req = createMockClientRequest()
-            req.fileContext.leftFileContent = 'a'.repeat(6000)
+            req.fileContext.leftFileContent = 'a'.repeat(256000)
             assert.ok(!EditorContext.validateRequest(req))
             req.fileContext.leftFileContent = 'a'
-            req.fileContext.rightFileContent = 'a'.repeat(6000)
+            req.fileContext.rightFileContent = 'a'.repeat(256000)
             assert.ok(!EditorContext.validateRequest(req))
         })
 

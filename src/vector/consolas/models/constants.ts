@@ -25,7 +25,7 @@ export const ConsolasConstants = {
     /**
      * EditorCon context
      */
-    CHARACTERS_LIMIT: 5120,
+    CHARACTERS_LIMIT: 25600,
     FILENAME_CHARS_LIMIT: 1024,
     NATURAL_LANGUAGE: 'en-US',
     MAX_RECOMMENDATIONS: 10,
