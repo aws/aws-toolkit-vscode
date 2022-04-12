@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Settings, SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { ResetableMemento, Settings } from '../../shared/settings'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 import { cast, TypeConstructor } from '../../shared/utilities/typeConstructors'
 
@@ -36,19 +36,19 @@ function get<T extends Record<string, any>, K extends PropertyKey[], P extends O
 /**
  * Test utility class with an in-memory Settings Configuration key-value storage
  */
-export class TestSettingsConfiguration implements ClassToInterfaceType<SettingsConfiguration> {
+export class TestSettings implements ClassToInterfaceType<Settings> {
     private readonly data: { [key: string]: any } = {}
     private readonly onDidChangeEmitter = new vscode.EventEmitter<string>()
 
-    public getSetting(key: string): unknown
-    public getSetting<T>(key: string, type: TypeConstructor<T>): T | undefined
-    public getSetting<T>(key: string, type: TypeConstructor<T>, defaultValue: T): T
-    public getSetting<T>(key: string, type?: TypeConstructor<T>, defaultValue?: T): T | undefined {
+    public get(key: string): unknown
+    public get<T>(key: string, type: TypeConstructor<T>): T | undefined
+    public get<T>(key: string, type: TypeConstructor<T>, defaultValue: T): T
+    public get<T>(key: string, type?: TypeConstructor<T>, defaultValue?: T): T | undefined {
         const value = (get(this.data, key.split('.')) as T) ?? defaultValue
         return !type || value === undefined ? value : cast(value, type)
     }
 
-    public async updateSetting(key: string, value: unknown): Promise<boolean> {
+    public async update(key: string, value: unknown): Promise<boolean> {
         const parts = key.split('.')
 
         let obj = this.data
@@ -62,32 +62,29 @@ export class TestSettingsConfiguration implements ClassToInterfaceType<SettingsC
         return true
     }
 
-    public getSection(section: string, scope?: vscode.ConfigurationScope): Settings {
+    public getSection(section: string, scope?: vscode.ConfigurationScope): ResetableMemento {
         return {
+            get: (key, defaultValue?) => this.get(`${section}.${key}`) ?? defaultValue,
             reset: async () => {
                 delete this.data[section]
             },
-            get: (key, defaultValue?) => this.getSetting(`${section}.${key}`) ?? defaultValue,
             update: async (key, value) => {
-                this.updateSetting(`${section}.${key}`, value)
+                this.update(`${section}.${key}`, value)
             },
         }
     }
 
-    public createScopedEmitter(
+    public onDidChangeSection(
         section: string,
-        scope?: vscode.ConfigurationScope
-    ): [emitter: vscode.EventEmitter<vscode.ConfigurationChangeEvent>, listener: vscode.Disposable] {
-        const emitter = new vscode.EventEmitter<vscode.ConfigurationChangeEvent>()
-        const listener = this.onDidChangeEmitter.event(prop => {
+        listener: (event: vscode.ConfigurationChangeEvent) => unknown
+    ): vscode.Disposable {
+        return this.onDidChangeEmitter.event(prop => {
             if (prop.startsWith(section)) {
                 const remainder = prop.replace(section, '').replace(/^\./, '')
-                emitter.fire({ affectsConfiguration: key => remainder.startsWith(key) })
+                listener({ affectsConfiguration: key => remainder.startsWith(key) })
             } else if (section.startsWith(prop)) {
-                emitter.fire({ affectsConfiguration: key => key.startsWith(section) })
+                listener({ affectsConfiguration: key => key.startsWith(section) })
             }
         })
-
-        return [emitter, listener]
     }
 }

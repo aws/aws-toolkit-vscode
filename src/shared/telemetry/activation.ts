@@ -13,12 +13,11 @@ import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './defaultTelemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { fromPackageJson, SettingsConfiguration } from '../settingsConfiguration'
+import { fromExtensionManifest, openSettings, Settings } from '../settings'
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
 const TELEMETRY_SETTING_DEFAULT = true
-const TELEMETRY_KEY = 'telemetry'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'View Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -35,11 +34,7 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2
 /**
  * Sets up the Metrics system and initializes globals.telemetry
  */
-export async function activate(
-    extensionContext: vscode.ExtensionContext,
-    awsContext: AwsContext,
-    settings: SettingsConfiguration
-) {
+export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
     globals.telemetry = new DefaultTelemetryService(extensionContext, awsContext, getComputeRegion())
 
     const config = new TelemetryConfig(settings)
@@ -47,7 +42,7 @@ export async function activate(
 
     extensionContext.subscriptions.push(
         config.onDidChange(event => {
-            if (event.key === TELEMETRY_KEY) {
+            if (event.key === 'telemetry') {
                 globals.telemetry.telemetryEnabled = config.isEnabled()
             }
         })
@@ -55,7 +50,7 @@ export async function activate(
 
     // Prompt user about telemetry if they haven't been
     if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
-        showTelemetryNotice(extensionContext)
+        showTelemetryNotice(extensionContext, config)
     }
 }
 
@@ -74,10 +69,10 @@ export function convertLegacy(value: unknown): boolean {
     }
 }
 
-export class TelemetryConfig extends fromPackageJson('aws', { telemetry: convertLegacy }) {
+export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: convertLegacy }) {
     public isEnabled(): boolean {
         try {
-            return this.get(TELEMETRY_KEY, TELEMETRY_SETTING_DEFAULT)
+            return this.get('telemetry', TELEMETRY_SETTING_DEFAULT)
         } catch (error) {
             vscode.window.showErrorMessage(
                 localize(
@@ -106,7 +101,7 @@ export async function setHasUserSeenTelemetryNotice(extensionContext: vscode.Ext
  * Prompts user to Enable/Disable/Defer on Telemetry, then
  * handles the response appropriately.
  */
-function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
+function showTelemetryNotice(extensionContext: vscode.ExtensionContext, config: TelemetryConfig) {
     getLogger().verbose('Showing telemetry notice')
 
     const telemetryNoticeText: string = localize(
@@ -138,7 +133,7 @@ export async function handleTelemetryNoticeResponse(
         // noticeResponseOk is a no-op
 
         if (response === noticeResponseViewSettings) {
-            vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.${TELEMETRY_KEY}`)
+            openSettings('aws.telemetry')
         }
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)

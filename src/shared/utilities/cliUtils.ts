@@ -20,7 +20,7 @@ import { Window } from '../vscode/window'
 import * as nls from 'vscode-nls'
 import { Timeout, CancellationError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
-import { DevSettings } from '../settingsConfiguration'
+import { DevSettings } from '../settings'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')

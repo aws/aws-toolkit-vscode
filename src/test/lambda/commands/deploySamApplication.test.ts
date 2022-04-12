@@ -23,8 +23,8 @@ import {
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import { Settings } from '../../../shared/settings'
 import { SamCliSettings } from '../../../shared/sam/cli/samCliSettings'
 
 describe('deploySamApplication', async function () {
@@ -115,7 +115,7 @@ describe('deploySamApplication', async function () {
         getCredentials: async () => testCredentials,
         getCredentialProfileName: () => profile,
     }
-    let settings: SettingsConfiguration
+    let settings: Settings
     let config: SamCliSettings
 
     let samDeployWizardResponse: SamDeployWizardResponse | undefined
@@ -127,7 +127,7 @@ describe('deploySamApplication', async function () {
 
     let tempToolkitFolder: string
     beforeEach(async function () {
-        settings = new TestSettingsConfiguration() as any
+        settings = new TestSettings() as any
         config = new SamCliSettings({ getLocation: async () => '' }, settings)
         profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
@@ -186,7 +186,7 @@ describe('deploySamApplication', async function () {
                 region3: 'mybucket4',
             },
         }
-        await settings.updateSetting('aws.samcli.manuallySelectedBuckets', JSON.stringify(testSavedBuckets))
+        await settings.update('aws.samcli.manuallySelectedBuckets', JSON.stringify(testSavedBuckets))
 
         await deploySamApplication(
             {
@@ -206,7 +206,7 @@ describe('deploySamApplication', async function () {
     })
 
     it('handles malformed stored buckets', async () => {
-        await settings.updateSetting('aws.samcli.manuallySelectedBuckets', 'ilovebuckets')
+        await settings.update('aws.samcli.manuallySelectedBuckets', 'ilovebuckets')
 
         await deploySamApplication(
             {

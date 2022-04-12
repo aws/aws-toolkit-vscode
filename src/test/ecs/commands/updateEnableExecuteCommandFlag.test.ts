@@ -15,8 +15,8 @@ import {
 } from '../../../ecs/commands/updateEnableExecuteCommandFlag'
 import { Commands } from '../../../shared/vscode/commands'
 import { Window } from '../../../shared/vscode/window'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
-import { PromptSettings } from '../../../shared/settingsConfiguration'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
+import { PromptSettings } from '../../../shared/settings'
 
 describe('updateEnableExecuteCommandFlag', async function () {
     let sandbox: sinon.SinonSandbox
@@ -27,7 +27,7 @@ describe('updateEnableExecuteCommandFlag', async function () {
     const parent = { clearChildren: () => {} } as EcsClusterNode
     const ecs: EcsClient = new DefaultEcsClient('fakeRegion')
     const commands = Commands.vscode()
-    const settings = new PromptSettings(new TestSettingsConfiguration())
+    const settings = new PromptSettings(new TestSettings())
 
     before(async function () {
         await settings.disablePrompt(EcsRunCommandPrompt.Enable)

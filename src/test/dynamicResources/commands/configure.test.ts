@@ -6,15 +6,15 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { configureResources, ResourcesConfiguration } from '../../../dynamicResources/commands/configure'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { configureResources, ResourcesSettings } from '../../../dynamicResources/commands/configure'
+import { Settings } from '../../../shared/settings'
 
 describe('configureCommand', function () {
-    let settings: ResourcesConfiguration
+    let settings: ResourcesSettings
 
     beforeEach(async function () {
-        const workspaceSettings = new SettingsConfiguration(vscode.ConfigurationTarget.Workspace)
-        settings = new ResourcesConfiguration(workspaceSettings)
+        const workspaceSettings = new Settings(vscode.ConfigurationTarget.Workspace)
+        settings = new ResourcesSettings(workspaceSettings)
         await settings.reset()
     })
 

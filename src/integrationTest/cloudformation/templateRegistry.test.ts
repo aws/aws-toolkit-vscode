@@ -9,7 +9,7 @@ import * as fs from 'fs-extra'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
-import { sleep } from '../../shared/utilities/promiseUtilities'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:

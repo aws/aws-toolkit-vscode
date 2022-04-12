@@ -17,7 +17,7 @@ import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import globals from '../../../shared/extensionGlobals'
-import { ResourcesConfiguration } from '../../commands/configure'
+import { ResourcesSettings } from '../../commands/configure'
 
 const localize = nls.loadMessageBundle()
 
@@ -32,7 +32,7 @@ export class ResourcesNode extends AWSTreeNodeBase {
         private readonly cloudControl: CloudControlClient = globals.toolkitClientBuilder.createCloudControlClient(
             region
         ),
-        private readonly settings = new ResourcesConfiguration()
+        private readonly settings = new ResourcesSettings()
     ) {
         super(localize('AWS.explorerNode.resources.label', 'Resources'), vscode.TreeItemCollapsibleState.Collapsed)
         this.resourceTypeNodes = new Map<string, ResourceTypeNode>()

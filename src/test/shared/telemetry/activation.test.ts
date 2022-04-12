@@ -18,7 +18,7 @@ import {
     TelemetryConfig,
     convertLegacy,
 } from '../../../shared/telemetry/activation'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { Settings } from '../../../shared/settings'
 
 describe('handleTelemetryNoticeResponse', function () {
     let extensionContext: vscode.ExtensionContext
@@ -74,7 +74,7 @@ describe('Telemetry on activation', function () {
     const SETTING_KEY = 'aws.telemetry'
 
     const target = vscode.ConfigurationTarget.Workspace
-    const settings = new SettingsConfiguration(target)
+    const settings = new Settings(target)
 
     let sut: TelemetryConfig
 
@@ -136,7 +136,7 @@ describe('Telemetry on activation', function () {
     describe('isTelemetryEnabled', function () {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
-                await settings.updateSetting(SETTING_KEY, scenario.initialSettingValue)
+                await settings.update(SETTING_KEY, scenario.initialSettingValue)
 
                 assert.strictEqual(sut.isEnabled(), scenario.expectedIsEnabledValue)
             })

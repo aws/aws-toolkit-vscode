@@ -20,7 +20,7 @@ import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { PromptSettings } from '../../shared/settingsConfiguration'
+import { PromptSettings } from '../../shared/settings'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
 const REQUIRED_SSM_PERMISSIONS = [
@@ -34,7 +34,7 @@ export async function runCommandInContainer(
     node: EcsContainerNode,
     window = Window.vscode(),
     outputChannel = globals.outputChannel,
-    settings = new PromptSettings()
+    settings = PromptSettings.instance
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
     let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'

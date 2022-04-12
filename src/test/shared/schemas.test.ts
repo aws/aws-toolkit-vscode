@@ -17,12 +17,12 @@ import {
     YamlSchemaHandler,
 } from '../../shared/schemas'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { Settings } from '../../shared/settings'
 
 describe('SchemaService', function () {
     let service: SchemaService
     let fakeExtensionContext: ExtensionContext
-    let config: SettingsConfiguration
+    let config: Settings
     let fakeYamlExtension: YamlExtension
     const cfnSchema = vscode.Uri.file('cfn')
     const samSchema = vscode.Uri.file('sam')
@@ -30,7 +30,7 @@ describe('SchemaService', function () {
     beforeEach(async function () {
         fakeExtensionContext = await FakeExtensionContext.create()
         fakeYamlExtension = mock()
-        config = new SettingsConfiguration(vscode.ConfigurationTarget.Workspace)
+        config = new Settings(vscode.ConfigurationTarget.Workspace)
 
         service = new SchemaService(fakeExtensionContext, {
             schemas: {
@@ -78,7 +78,7 @@ describe('SchemaService', function () {
         })
         await service.processUpdates()
 
-        const mappings = config.getSetting('json.schemas')
+        const mappings = config.get('json.schemas')
         assert.ok(Array.isArray(mappings))
 
         const added = mappings.find((s: JSONSchemaSettings) => s.url === cfnSchema.toString())
@@ -96,7 +96,7 @@ describe('SchemaService', function () {
         })
         await service.processUpdates()
 
-        const mappings = config.getSetting('json.schemas')
+        const mappings = config.get('json.schemas')
         assert.ok(Array.isArray(mappings))
 
         const added = mappings.find((s: JSONSchemaSettings) => s.url === cfnSchema.toString())

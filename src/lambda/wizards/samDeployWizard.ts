@@ -962,7 +962,7 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
  * Operation is not paginated as S3 does not offer paginated listing of regionalized buckets.
  * @param quickPick Quick pick to modify the items and busy/enabled state of.
  * @param selectedRegion AWS region to display buckets for
- * @param settings SettingsConfiguration object to get stored settings
+ * @param settings Settings object to get stored settings
  * @param messages Messages to denote no available buckets and errors.
  */
 async function populateS3QuickPick(

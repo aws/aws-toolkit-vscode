@@ -17,7 +17,7 @@ import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { ToolkitError } from '../shared/toolkitError'
 import { Result, recordS3DownloadObject, recordS3UploadObject } from '../shared/telemetry/telemetry'
-import { PromptSettings } from '../shared/settingsConfiguration'
+import { PromptSettings } from '../shared/settings'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
@@ -130,7 +130,7 @@ export class S3FileViewerManager {
         private readonly clientFactory: S3ClientFactory,
         private readonly fs: VirualFileSystem,
         private readonly window: typeof vscode.window = vscode.window,
-        private readonly settings = new PromptSettings(),
+        private readonly settings = PromptSettings.instance,
         private readonly commands: typeof vscode.commands = vscode.commands,
         private readonly workspace: typeof vscode.workspace = vscode.workspace
     ) {

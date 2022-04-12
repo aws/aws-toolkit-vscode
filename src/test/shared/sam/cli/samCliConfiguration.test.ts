@@ -8,15 +8,15 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
-import { TestSettingsConfiguration } from '../../../utilities/testSettingsConfiguration'
+import { TestSettings } from '../../../utilities/testSettingsConfiguration'
 
 describe('samCliConfiguration', function () {
     let tempFolder: string
-    let settingsConfiguration: TestSettingsConfiguration
+    let settingsConfiguration: TestSettings
 
     beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
-        settingsConfiguration = new TestSettingsConfiguration()
+        settingsConfiguration = new TestSettings()
     })
 
     afterEach(async function () {

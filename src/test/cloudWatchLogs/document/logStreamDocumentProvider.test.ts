@@ -8,14 +8,14 @@ import * as vscode from 'vscode'
 import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
 import { LogStreamRegistry, CloudWatchLogStreamData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { Settings } from '../../../shared/settings'
 
 describe('LogStreamDocumentProvider', function () {
     let registry: LogStreamRegistry
     let map: Map<string, CloudWatchLogStreamData>
     let provider: LogStreamDocumentProvider
 
-    const config = new SettingsConfiguration(vscode.ConfigurationTarget.Workspace)
+    const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
     const registeredUri = vscode.Uri.parse('has:This')
     // TODO: Make this less flaky when we add manual timestamp controls.

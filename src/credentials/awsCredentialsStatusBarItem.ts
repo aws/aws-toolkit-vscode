@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
-import { DevSettings } from '../shared/settingsConfiguration'
+import { DevSettings } from '../shared/settings'
 
 const STATUSBAR_PRIORITY = 1
 const STATUSBAR_CONNECTED_MSG = localize('AWS.credentials.statusbar.connected', '(connected)')

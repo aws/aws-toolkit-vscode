@@ -7,10 +7,10 @@ import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { recordDynamicresourceSelectResources } from '../../shared/telemetry/telemetry'
 import { memoizedGetResourceTypes } from '../model/resources'
-import { fromPackageJson } from '../../shared/settingsConfiguration'
+import { fromExtensionManifest } from '../../shared/settings'
 import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
 
-export class ResourcesConfiguration extends fromPackageJson('aws.resources', {
+export class ResourcesSettings extends fromExtensionManifest('aws.resources', {
     enabledResources: ArrayConstructor(String),
 }) {}
 
@@ -19,9 +19,9 @@ export class ResourcesConfiguration extends fromPackageJson('aws.resources', {
  *
  * @returns true if the user accepted the picker, false if they canceled it
  */
-export async function configureResources(config = new ResourcesConfiguration()): Promise<boolean> {
+export async function configureResources(settings = new ResourcesSettings()): Promise<boolean> {
     const window = vscode.window
-    const enabledResources = config.get('enabledResources', [])
+    const enabledResources = settings.get('enabledResources', [])
 
     const quickPickItems: vscode.QuickPickItem[] = []
     const resourceTypes = memoizedGetResourceTypes().keys()
@@ -38,7 +38,7 @@ export async function configureResources(config = new ResourcesConfiguration()):
     })
 
     if (result) {
-        await config.update(
+        await settings.update(
             'enabledResources',
             result.map(res => res.label)
         )

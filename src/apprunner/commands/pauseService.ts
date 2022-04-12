@@ -11,13 +11,13 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import * as localizedText from '../../shared/localizedText'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { AppRunnerServiceNode } from '../explorer/apprunnerServiceNode'
-import { PromptSettings } from '../../shared/settingsConfiguration'
+import { PromptSettings } from '../../shared/settings'
 
 export async function pauseService(node: AppRunnerServiceNode): Promise<void> {
     let telemetryResult: telemetry.Result = 'Failed'
 
     try {
-        const prompts = new PromptSettings()
+        const prompts = PromptSettings.instance
         const shouldNotify = await prompts.isPromptEnabled('apprunnerNotifyPause')
         const notifyPrompt = localize(
             'aws.apprunner.pauseService.notify',

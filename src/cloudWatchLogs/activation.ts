@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
-import { SettingsConfiguration } from '../shared/settingsConfiguration'
+import { Settings } from '../shared/settings'
 import { CloudWatchLogsSettings } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
@@ -16,7 +16,7 @@ import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
 import { LogStreamRegistry } from './registry/logStreamRegistry'
 
-export async function activate(context: vscode.ExtensionContext, configuration: SettingsConfiguration): Promise<void> {
+export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
     const registry = new LogStreamRegistry(settings)
 

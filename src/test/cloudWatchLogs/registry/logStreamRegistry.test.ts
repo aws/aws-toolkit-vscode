@@ -9,14 +9,14 @@ import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogStreamData, LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
     let map: Map<string, CloudWatchLogStreamData>
 
-    const config = new SettingsConfiguration(vscode.ConfigurationTarget.Workspace)
+    const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
     const stream: CloudWatchLogStreamData = {
         data: [

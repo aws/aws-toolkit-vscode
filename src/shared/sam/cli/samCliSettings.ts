@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../logger'
-import { fromPackageJson, migrateSetting, SettingsConfiguration } from '../../settingsConfiguration'
+import { fromExtensionManifest, migrateSetting, Settings } from '../../settings'
 import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
 import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
 import { DefaultSamCliLocationProvider, SamCliLocationProvider } from './samCliLocator'
@@ -90,10 +90,10 @@ const description = {
     manuallySelectedBuckets: SavedBuckets,
 }
 
-export class SamCliSettings extends fromPackageJson('aws.samcli', description) {
+export class SamCliSettings extends fromExtensionManifest('aws.samcli', description) {
     public constructor(
         private readonly locationProvider: SamCliLocationProvider = new DefaultSamCliLocationProvider(),
-        settings: ClassToInterfaceType<SettingsConfiguration> = new SettingsConfiguration()
+        settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super(settings)
     }

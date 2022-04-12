@@ -23,7 +23,7 @@ import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { join } from 'path'
 import { assertTextEditorContains, closeAllEditors } from '../../testUtil'
-import { PromptSettings } from '../../../shared/settingsConfiguration'
+import { PromptSettings } from '../../../shared/settings'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',

@@ -16,7 +16,7 @@ import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion } from './vscode/env'
 import globals from './extensionGlobals'
-import { DevSettings } from './settingsConfiguration'
+import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
 

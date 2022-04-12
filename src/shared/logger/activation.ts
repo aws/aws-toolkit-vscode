@@ -17,7 +17,7 @@ import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import globals from '../extensionGlobals'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
-import { SettingsConfiguration } from '../settingsConfiguration'
+import { Settings } from '../settings'
 
 const localize = nls.loadMessageBundle()
 
@@ -135,7 +135,7 @@ export function makeLogger(
 }
 
 function getLogLevel(): LogLevel {
-    const configuration = new SettingsConfiguration().getSection(extensionSettingsPrefix)
+    const configuration = Settings.instance.getSection(extensionSettingsPrefix)
 
     return configuration.get('logLevel', DEFAULT_LOG_LEVEL)
 }

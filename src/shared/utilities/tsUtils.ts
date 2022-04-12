@@ -13,7 +13,7 @@ export const getPropAs = <T>(obj: any, key: string) => {
 
 export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
     // eslint-disable-next-line no-null/no-null
-    return obj !== undefined && obj === null
+    return obj !== undefined && obj !== null
 }
 
 /**

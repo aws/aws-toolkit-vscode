@@ -12,12 +12,15 @@ import { isNonNullable } from './tsUtils'
  * Implementations must not assume anything about the input other than that they may
  * receive at least a single parameter.
  */
-export type TypeConstructor<T = any> = ((value: unknown) => T) | ConstructableType<T>
+export type TypeConstructor<T = any> = Assertion<T> | Transform<T>
 
-interface NamedTypeConstructor<T = any> {
-    readonly type: string
-    (value: unknown): T
-}
+type Transform<T> = { (value: unknown): T }
+type Assertion<T> = { (value: unknown): asserts value is T }
+
+/**
+ * A function with a `typeName` field. Useful for logging/debugging purposes.
+ */
+type NamedTypeConstructor<T = any> = { readonly typeName: string } & TypeConstructor<T>
 
 /**
  * Simple structure to represent objects where each field may map to its own type.
@@ -45,63 +48,72 @@ export type FromDescriptor<T extends TypeDescriptor> = {
     [P in keyof T]: T[P] extends TypeConstructor<infer U> ? U : never
 }
 
-/**
- * Special symbol to represent a type constructor. This prevents having to use traps to check for [[Construct]]
- */
-export const typeConstructor = Symbol('A constructor function used to create or validate an object against the type.')
-
-type ConstructableType<T = any> = {
-    // TODO: remove the `new` overloads and just manually map primitive constructors to their types
-    new (value: unknown): T
-    new (value: unknown): { valueOf(): T }
-    [typeConstructor](value: unknown): T
-}
-
-function isConstructableType(obj: any): obj is ConstructableType {
-    return Object.prototype.hasOwnProperty.call(obj, typeConstructor)
-}
-
+// `Symbol` and `BigInt` are included here, though in-practice
 const primitives = [Number, String, Boolean, Object, Symbol, BigInt]
-function checkPrimitiveType<T>(v: any, ctor: TypeConstructor<T>): boolean {
-    if (typeof v === 'object' || !ctor.name || !primitives.find(p => p === ctor)) {
-        return true
-    }
-    return typeof v === ctor.name.toLowerCase()
+function isPrimitiveConstructor(type: unknown): type is typeof primitives[number] {
+    return !!primitives.find(p => p === type)
 }
 
-// This type cast is stricter than Javascript's default type casting
-// For example, primitive to primtive type casts would cause an error with this function
-export function cast<T>(val: any, type: TypeConstructor<T>): T {
-    const actualType = typeof val
-    const typeName = type.name?.toLowerCase()
+function isNamedTypeConstructor(obj: unknown): obj is NamedTypeConstructor {
+    return typeof obj === 'function' && Object.prototype.hasOwnProperty.call(obj, 'typeName')
+}
 
-    if (!checkPrimitiveType(val, type)) {
-        throw new TypeError(`Unexpected type cast: got ${actualType}, expected ${typeName}`)
+const isMangled = isNamedTypeConstructor.name !== 'isNamedTypeConstructor'
+
+// For debug/logging purposes only. The 'name' is not intended to be a unique identifier.
+export function getTypeName(type: TypeConstructor): string {
+    const fallback = isPrimitiveConstructor(type) || !isMangled ? type.name : '[Omitted]'
+    const typeName = isNamedTypeConstructor(type) ? type.typeName : fallback
+
+    return typeName || '[Anonymous Type]'
+}
+
+export function addTypeName<F extends (input: unknown) => unknown>(name: string, fn: F) {
+    return Object.assign(fn, { typeName: name })
+}
+
+/**
+ * A utility function to validate or transform an unknown input into a known shape.
+ *
+ * This **will throw** in the following scenarios:
+ *   - `type` is a {@link primitives "primitive" constructor} and `input` is a different primitive type
+ *   - `input` is rejected by the `type` function
+ *
+ * Callers must not assume that `input` can be used freely after a call; `cast` makes no guarantees about
+ * the mutability of `input`, nor does it guarantee that the output is a reference to `input`.
+ *
+ */
+export function cast<T>(input: any, type: TypeConstructor<T>): T {
+    const actualType = typeof input
+    const typeName = getTypeName(type)
+
+    if (isPrimitiveConstructor(type) && typeof input !== type.name.toLowerCase()) {
+        throw new TypeError(`Unexpected type cast: got ${actualType}, expected primitive ${typeName}`)
     }
-
-    const formattedName = type.name ? `"${type.name}"` : '[Anonymous Type]'
 
     try {
-        return !isConstructableType(type) ? type(val) : new type(val)
-    } catch (err) {
-        throw new TypeError(`Failed to cast type "${typeof val}" to ${formattedName}`)
+        return type(input) ?? input
+    } catch (error) {
+        throw new TypeError(`Failed to cast type "${typeof input}" to ${typeName}: ${error}`)
     }
 }
 
-// Don't really want to overload the standard `Array` constructor here even though everything
-// else in this module omits the "Constructor" suffix
+// Don't really want to overload the standard `Array` constructor here even though every other
+// type function exported from this module omits the "Constructor" suffix
 export function ArrayConstructor<T>(type: TypeConstructor<T>): TypeConstructor<Array<T>> {
-    return value => {
+    return addTypeName(`Array<${getTypeName(type)}>`, value => {
         if (!Array.isArray(value)) {
             throw new TypeError('Value is not an array')
         }
 
         return value.map(element => cast(element, type))
-    }
+    })
 }
 
-function OptionalConstructor<T>(ctor: TypeConstructor<T>): TypeConstructor<T | undefined> {
-    return input => (isNonNullable(input) ? cast(input, ctor) : undefined)
+function OptionalConstructor<T>(type: TypeConstructor<T>): TypeConstructor<T | undefined> {
+    return addTypeName(`Optional<${getTypeName(type)}>`, input =>
+        isNonNullable(input) ? cast(input, type) : undefined
+    )
 }
 
 export type Optional<T> = TypeConstructor<T | undefined>
@@ -109,4 +121,4 @@ export const Optional = OptionalConstructor
 
 // Aliasing to distinguish from the concrete implementation the "primitive" object
 export type Any = any
-export const Any: TypeConstructor<any> = value => value
+export const Any: TypeConstructor<any> = addTypeName('Any', value => value)

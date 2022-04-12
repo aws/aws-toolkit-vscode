@@ -15,7 +15,7 @@ import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import globals from '../extensionGlobals'
-import { DevSettings } from '../settingsConfiguration'
+import { DevSettings } from '../settings'
 
 interface TelemetryConfiguration {
     readonly endpoint: string

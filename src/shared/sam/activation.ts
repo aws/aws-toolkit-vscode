@@ -35,7 +35,7 @@ import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
-import { PromptSettings } from '../settingsConfiguration'
+import { PromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
 
@@ -247,7 +247,7 @@ async function activateCodeLensProviders(
  * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
  */
 async function createYamlExtensionPrompt(): Promise<void> {
-    const settings = new PromptSettings()
+    const settings = PromptSettings.instance
 
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
@@ -311,7 +311,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         for (const prompt of disposables) {
             prompt.dispose()
         }
-        const settings = new PromptSettings()
+        const settings = PromptSettings.instance
 
         const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
         const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')

@@ -13,14 +13,14 @@ import { asyncGenerator } from '../../utilities/collectionUtils'
 import { mock, instance, when } from 'ts-mockito'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
-import { ResourcesConfiguration } from '../../../dynamicResources/commands/configure'
+import { Settings } from '../../../shared/settings'
+import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
 
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
 describe('ResourcesNode', function () {
-    let settings: ResourcesConfiguration
+    let settings: ResourcesSettings
 
     let testNode: ResourcesNode
     let mockCloudFormation: CloudFormationClient
@@ -33,8 +33,8 @@ describe('ResourcesNode', function () {
     })
 
     beforeEach(async function () {
-        const workspaceSettings = new SettingsConfiguration(vscode.ConfigurationTarget.Workspace)
-        settings = new ResourcesConfiguration(workspaceSettings)
+        const workspaceSettings = new Settings(vscode.ConfigurationTarget.Workspace)
+        settings = new ResourcesSettings(workspaceSettings)
         await settings.reset()
     })
 

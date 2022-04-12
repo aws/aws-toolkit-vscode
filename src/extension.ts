@@ -62,7 +62,7 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
-import { SettingsConfiguration } from './shared/settingsConfiguration'
+import { Settings } from './shared/settings'
 
 let localize: nls.LocalizeFunc
 
@@ -110,7 +110,7 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
 
-        const settings = new SettingsConfiguration()
+        const settings = Settings.instance
 
         await initializeCredentials(context, awsContext, settings)
 

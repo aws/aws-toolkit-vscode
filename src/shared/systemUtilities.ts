@@ -12,7 +12,7 @@ import { ChildProcess } from './utilities/childProcess'
 import { getLogger } from './logger/logger'
 import { GitExtension } from './extensions/git'
 import { isCloud9 } from './extensionUtilities'
-import { SettingsConfiguration } from './settingsConfiguration'
+import { Settings } from './settings'
 
 export class SystemUtilities {
     /** Full path to VSCode CLI. */
@@ -141,8 +141,7 @@ export class SystemUtilities {
             return SystemUtilities.sshPath
         }
 
-        const settings = new SettingsConfiguration().getSection('remote.ssh')
-        const sshSettingPath = settings.get('path', '')
+        const sshSettingPath = Settings.instance.get('remote.ssh.path', String, '')
         const paths = [
             sshSettingPath,
             'ssh', // Try $PATH _before_ falling back to common paths.

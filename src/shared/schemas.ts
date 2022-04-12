@@ -14,7 +14,7 @@ import { CompositeResourceFetcher } from './resourcefetcher/compositeResourceFet
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from './resourcefetcher/resourcefetcher'
-import { SettingsConfiguration } from './settingsConfiguration'
+import { Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { normalizeSeparator } from './utilities/pathUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
@@ -202,7 +202,7 @@ export async function getRemoteOrCachedFile(params: {
  * Lifted near-verbatim from the cfn-lint VSCode extension.
  * https://github.com/aws-cloudformation/cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/extension.ts#L56
  */
-async function addCustomTags(config = new SettingsConfiguration()): Promise<void> {
+async function addCustomTags(config = Settings.instance): Promise<void> {
     const settingName = 'yaml.customTags'
     const cloudFormationTags = [
         '!And',
@@ -235,13 +235,13 @@ async function addCustomTags(config = new SettingsConfiguration()): Promise<void
     ]
 
     try {
-        const currentTags = config.getSetting(settingName, ArrayConstructor(Any), [])
+        const currentTags = config.get(settingName, ArrayConstructor(Any), [])
         const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
 
         if (missingTags.length > 0) {
             const updateTags = currentTags.concat(missingTags)
 
-            await config.updateSetting(settingName, updateTags)
+            await config.update(settingName, updateTags)
         }
     } catch (error) {
         getLogger().error('schemas: failed to update setting "%s": %O', settingName, error)
@@ -279,7 +279,7 @@ export class YamlSchemaHandler implements SchemaHandler {
 export class JsonSchemaHandler implements SchemaHandler {
     private readonly clean = once(() => this.cleanResourceMappings())
 
-    public constructor(private readonly config = new SettingsConfiguration()) {}
+    public constructor(private readonly config = Settings.instance) {}
 
     async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
         await this.clean()
@@ -306,7 +306,7 @@ export class JsonSchemaHandler implements SchemaHandler {
             settings = filterJsonSettings(settings, file => file !== mapping.path)
         }
 
-        await this.config.updateSetting('json.schemas', settings)
+        await this.config.update('json.schemas', settings)
     }
 
     /**
@@ -318,14 +318,14 @@ export class JsonSchemaHandler implements SchemaHandler {
         // In the unlikely scenario of an error, we don't want to bubble it up
         try {
             const settings = filterJsonSettings(this.getJsonSettings(), file => !file.endsWith('.awsResource.json'))
-            await this.config.updateSetting('json.schemas', settings)
+            await this.config.update('json.schemas', settings)
         } catch (error) {
             getLogger().warn(`JsonSchemaHandler: failed to clean stale schemas: ${error}`)
         }
     }
 
     private getJsonSettings(): JSONSchemaSettings[] {
-        return this.config.getSetting('json.schemas', ArrayConstructor(Object), [])
+        return this.config.get('json.schemas', ArrayConstructor(Object), [])
     }
 }
 

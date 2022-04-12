@@ -19,7 +19,7 @@ import {
 } from 'amazon-states-language-service'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import globals from '../shared/extensionGlobals'
-import { fromPackageJson } from '../shared/settingsConfiguration'
+import { fromExtensionManifest } from '../shared/settings'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -207,4 +207,4 @@ const descriptor = {
     ['format.enable']: Boolean,
 }
 
-export class StepFunctionsSettings extends fromPackageJson('aws.stepfunctions.asl', descriptor) {}
+export class StepFunctionsSettings extends fromExtensionManifest('aws.stepfunctions.asl', descriptor) {}

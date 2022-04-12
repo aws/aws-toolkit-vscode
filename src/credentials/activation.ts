@@ -17,13 +17,13 @@ import * as nls from 'vscode-nls'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger/logger'
 import { CredentialsSettings } from './credentialsUtilities'
-import { SettingsConfiguration } from '../shared/settingsConfiguration'
+import { Settings } from '../shared/settings'
 const localize = nls.loadMessageBundle()
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
-    settings: SettingsConfiguration
+    settings: Settings
 ): Promise<void> {
     const credentialSettings = new CredentialsSettings(settings)
     updateMruWhenAwsContextChanges(awsContext, extensionContext)
