@@ -50,7 +50,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ...(await activateCodeLensProviders(ctx, config, ctx.outputChannel, ctx.telemetryService))
     )
 
-    await registerServerlessCommands(ctx)
+    await registerServerlessCommands(ctx, config)
 
     ctx.extensionContext.subscriptions.push(
         vscode.debug.registerDebugConfigurationProvider(AWS_SAM_DEBUG_TYPE, new SamDebugConfigProvider(ctx))
@@ -82,7 +82,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     }
 }
 
-async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
+async function registerServerlessCommands(ctx: ExtContext, settings: SamCliConfig): Promise<void> {
     lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.samcli.detect', () =>
@@ -111,7 +111,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
                 },
                 {
                     awsContext: ctx.awsContext,
-                    settings: new SamCliConfig(),
+                    settings,
                 }
             )
         })

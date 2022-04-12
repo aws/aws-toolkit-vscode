@@ -122,9 +122,10 @@ export async function makeInputTemplate(
 async function buildLambdaHandler(
     timer: Timeout,
     env: NodeJS.ProcessEnv,
-    config: SamLaunchRequestArgs
+    config: SamLaunchRequestArgs,
+    settings: SamCliConfig
 ): Promise<boolean> {
-    const processInvoker = new DefaultSamCliProcessInvoker({ preloadedConfig: new SamCliConfig() })
+    const processInvoker = new DefaultSamCliProcessInvoker({ preloadedConfig: settings })
 
     getLogger('channel').info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
@@ -178,7 +179,8 @@ async function buildLambdaHandler(
 async function invokeLambdaHandler(
     timer: Timeout,
     env: NodeJS.ProcessEnv,
-    config: SamLaunchRequestArgs
+    config: SamLaunchRequestArgs,
+    settings: SamCliConfig
 ): Promise<boolean> {
     getLogger('channel').info(localize('AWS.output.starting.sam.app.locally', 'Starting SAM application locally'))
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
@@ -187,7 +189,7 @@ async function invokeLambdaHandler(
 
     if (config.invokeTarget.target === 'api') {
         // sam local start-api ...
-        const sam = await new SamCliConfig().getOrDetectSamCli()
+        const sam = await settings.getOrDetectSamCli()
         if (!sam.path) {
             getLogger().warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {
@@ -350,16 +352,17 @@ export async function runLambdaFunction(
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
-    const timer = new Timeout(new SamCliConfig().getLocalInvokeTimeout())
+    const settings = new SamCliConfig()
+    const timer = new Timeout(settings.getLocalInvokeTimeout())
 
-    if (!(await buildLambdaHandler(timer, envVars, config))) {
+    if (!(await buildLambdaHandler(timer, envVars, config, settings))) {
         return config
     }
 
     await onAfterBuild()
     timer.refresh()
 
-    if (!(await invokeLambdaHandler(timer, envVars, config))) {
+    if (!(await invokeLambdaHandler(timer, envVars, config, settings))) {
         return config
     }
 
