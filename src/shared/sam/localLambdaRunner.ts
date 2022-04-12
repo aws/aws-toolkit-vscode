@@ -30,7 +30,7 @@ import { SamCliSettings } from './cli/samCliSettings'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
-import { sleep } from '../utilities/promiseUtilities'
+import { sleep } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { showMessageWithCancel } from '../utilities/messages'
 
