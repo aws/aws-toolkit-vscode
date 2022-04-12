@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
-import { fromPackage } from '../shared/settingsConfiguration'
+import { fromPackageJson } from '../shared/settingsConfiguration'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
 // The following functions are used to structure and destructure relevant information to/from a URI.
@@ -40,4 +40,4 @@ export function convertLogGroupInfoToUri(groupName: string, streamName: string, 
     return vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${streamName}:${regionName}`)
 }
 
-export class CloudWatchLogsSettings extends fromPackage('aws.cloudWatchLogs', { limit: Number }) {}
+export class CloudWatchLogsSettings extends fromPackageJson('aws.cloudWatchLogs', { limit: Number }) {}

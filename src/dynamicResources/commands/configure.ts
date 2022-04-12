@@ -7,10 +7,10 @@ import * as vscode from 'vscode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { recordDynamicresourceSelectResources } from '../../shared/telemetry/telemetry'
 import { memoizedGetResourceTypes } from '../model/resources'
-import { fromPackage } from '../../shared/settingsConfiguration'
+import { fromPackageJson } from '../../shared/settingsConfiguration'
 import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
 
-export class ResourcesConfiguration extends fromPackage('aws.resources', {
+export class ResourcesConfiguration extends fromPackageJson('aws.resources', {
     enabledResources: ArrayConstructor(String),
 }) {}
 

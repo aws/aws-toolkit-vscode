@@ -15,7 +15,7 @@ import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesy
 import { checklogs } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
-import { SamCliConfig } from '../../shared/sam/cli/samCliConfiguration'
+import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getSamCliContext, SamCliContext, getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
@@ -58,7 +58,7 @@ export async function deploySamApplication(
         window = getDefaultWindowFunctions(),
     }: {
         awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
-        settings: SamCliConfig
+        settings: SamCliSettings
         window?: WindowFunctions
     }
 ): Promise<void> {

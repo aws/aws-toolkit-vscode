@@ -4,14 +4,13 @@
  */
 
 import { getLogger } from '../../logger'
-import { fromPackage, migrateSetting, SettingsConfiguration } from '../../settingsConfiguration'
+import { fromPackageJson, migrateSetting, SettingsConfiguration } from '../../settingsConfiguration'
 import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
-import { once } from '../../utilities/functionUtils'
 import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
 import { DefaultSamCliLocationProvider, SamCliLocationProvider } from './samCliLocator'
 
 // TODO(sijaden): remove after a few releases
-async function migrateLegacySettings() {
+export async function migrateLegacySettings() {
     await migrateSetting(
         {
             key: 'aws.manuallySelectedBuckets',
@@ -45,8 +44,6 @@ async function migrateLegacySettings() {
         }
     )
 }
-
-const migrate = once(migrateLegacySettings)
 
 const LOCAL_TIMEOUT_DEFAULT_MILLIS: number = 90000
 interface SavedBuckets {
@@ -93,13 +90,12 @@ const description = {
     manuallySelectedBuckets: SavedBuckets,
 }
 
-export class SamCliConfig extends fromPackage('aws.samcli', description) {
+export class SamCliSettings extends fromPackageJson('aws.samcli', description) {
     public constructor(
         private readonly locationProvider: SamCliLocationProvider = new DefaultSamCliLocationProvider(),
         settings: ClassToInterfaceType<SettingsConfiguration> = new SettingsConfiguration()
     ) {
         super(settings)
-        migrate()
     }
 
     public async detectLocation(): Promise<string | undefined> {
@@ -110,7 +106,7 @@ export class SamCliConfig extends fromPackage('aws.samcli', description) {
      * Gets location of `sam` from user config, or tries to find `sam` on the
      * system if the user config is invalid.
      *
-     * @returns `undefined` if `sam` was not found on the system
+     * @returns `autoDetected=true` if auto-detection was _attempted_.
      */
     public async getOrDetectSamCli(): Promise<{ path: string | undefined; autoDetected: boolean }> {
         const fromConfig = this.get('location', '')

@@ -9,10 +9,15 @@ import { isNonNullable } from './tsUtils'
  * A 'type constructor' is any function that resolves to the given type.
  *
  * This function should throw if the input cannot be converted into the desired type.
- * Implementors must not assume anything about the input other than that they may receive
- * at least a single parameter.
+ * Implementations must not assume anything about the input other than that they may
+ * receive at least a single parameter.
  */
-export type TypeConstructor<T = any> = ((value?: unknown) => T) | ConstructableType<T>
+export type TypeConstructor<T = any> = ((value: unknown) => T) | ConstructableType<T>
+
+interface NamedTypeConstructor<T = any> {
+    readonly type: string
+    (value: unknown): T
+}
 
 /**
  * Simple structure to represent objects where each field may map to its own type.
@@ -47,9 +52,9 @@ export const typeConstructor = Symbol('A constructor function used to create or 
 
 type ConstructableType<T = any> = {
     // TODO: remove the `new` overloads and just manually map primitive constructors to their types
-    new (value?: unknown): T
-    new (value?: unknown): { valueOf(): T }
-    [typeConstructor](value?: unknown): T
+    new (value: unknown): T
+    new (value: unknown): { valueOf(): T }
+    [typeConstructor](value: unknown): T
 }
 
 function isConstructableType(obj: any): obj is ConstructableType {
@@ -74,15 +79,17 @@ export function cast<T>(val: any, type: TypeConstructor<T>): T {
         throw new TypeError(`Unexpected type cast: got ${actualType}, expected ${typeName}`)
     }
 
-    const constructorName = type.name ? `"${type.name}"` : '[Anonymous Function]'
+    const formattedName = type.name ? `"${type.name}"` : '[Anonymous Type]'
 
     try {
         return !isConstructableType(type) ? type(val) : new type(val)
     } catch (err) {
-        throw new TypeError(`Failed to cast type "${typeof val}" to ${constructorName}`)
+        throw new TypeError(`Failed to cast type "${typeof val}" to ${formattedName}`)
     }
 }
 
+// Don't really want to overload the standard `Array` constructor here even though everything
+// else in this module omits the "Constructor" suffix
 export function ArrayConstructor<T>(type: TypeConstructor<T>): TypeConstructor<Array<T>> {
     return value => {
         if (!Array.isArray(value)) {
@@ -99,3 +106,7 @@ function OptionalConstructor<T>(ctor: TypeConstructor<T>): TypeConstructor<T | u
 
 export type Optional<T> = TypeConstructor<T | undefined>
 export const Optional = OptionalConstructor
+
+// Aliasing to distinguish from the concrete implementation the "primitive" object
+export type Any = any
+export const Any: TypeConstructor<any> = value => value

@@ -17,7 +17,7 @@ import { ResourceFetcher } from './resourcefetcher/resourcefetcher'
 import { SettingsConfiguration } from './settingsConfiguration'
 import { once } from './utilities/functionUtils'
 import { normalizeSeparator } from './utilities/pathUtils'
-import { ArrayConstructor } from './utilities/typeConstructors'
+import { Any, ArrayConstructor } from './utilities/typeConstructors'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
@@ -235,11 +235,7 @@ async function addCustomTags(config = new SettingsConfiguration()): Promise<void
     ]
 
     try {
-        const currentTags = config.getSetting(
-            settingName,
-            ArrayConstructor(v => v),
-            []
-        )
+        const currentTags = config.getSetting(settingName, ArrayConstructor(Any), [])
         const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
 
         if (missingTags.length > 0) {
@@ -293,6 +289,7 @@ export class JsonSchemaHandler implements SchemaHandler {
         if (mapping.schema) {
             const uri = resolveSchema(mapping.schema, schemas).toString()
             const existing = settings.find(schema => schema.url === uri)
+
             if (existing) {
                 if (!existing.fileMatch) {
                     getLogger().debug(`JsonSchemaHandler: skipped setting schema '${uri}'`)
@@ -317,8 +314,14 @@ export class JsonSchemaHandler implements SchemaHandler {
      */
     private async cleanResourceMappings(): Promise<void> {
         getLogger().debug(`JsonSchemaHandler: cleaning stale schemas`)
-        const settings = filterJsonSettings(this.getJsonSettings(), file => !file.endsWith('.awsResource.json'))
-        await this.config.updateSetting('json.schemas', settings)
+
+        // In the unlikely scenario of an error, we don't want to bubble it up
+        try {
+            const settings = filterJsonSettings(this.getJsonSettings(), file => !file.endsWith('.awsResource.json'))
+            await this.config.updateSetting('json.schemas', settings)
+        } catch (error) {
+            getLogger().warn(`JsonSchemaHandler: failed to clean stale schemas: ${error}`)
+        }
     }
 
     private getJsonSettings(): JSONSchemaSettings[] {
@@ -336,7 +339,9 @@ function resolveSchema(schema: string | vscode.Uri, schemas: Schemas): vscode.Ur
 function filterJsonSettings(settings: JSONSchemaSettings[], predicate: (fileName: string) => boolean) {
     return settings.filter(schema => {
         schema.fileMatch = schema.fileMatch?.filter(file => predicate(file))
-        return schema.fileMatch && schema.fileMatch.length > 0
+
+        // Assumption: `fileMatch` was not empty beforehand
+        return schema.fileMatch === undefined || schema.fileMatch.length > 0
     })
 }
 

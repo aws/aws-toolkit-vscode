@@ -24,7 +24,7 @@ import * as tsCodelens from './typescriptCodeLensProvider'
 import * as goCodelens from './goCodeLensProvider'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties } from '../extensionUtilities'
-import { SamCliConfig } from '../sam/cli/samCliConfiguration'
+import { SamCliSettings } from '../sam/cli/samCliSettings'
 
 export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java' | 'typescript'
 
@@ -303,7 +303,7 @@ export interface OverridableCodeLensProvider extends vscode.CodeLensProvider {
     ) => Promise<vscode.CodeLens[]>
 }
 
-export async function makePythonCodeLensProvider(configuration: SamCliConfig): Promise<OverridableCodeLensProvider> {
+export async function makePythonCodeLensProvider(configuration: SamCliSettings): Promise<OverridableCodeLensProvider> {
     return {
         // CodeLensProvider
         provideCodeLenses: async (
@@ -331,7 +331,7 @@ export async function makePythonCodeLensProvider(configuration: SamCliConfig): P
     }
 }
 
-export async function makeCSharpCodeLensProvider(configuration: SamCliConfig): Promise<OverridableCodeLensProvider> {
+export async function makeCSharpCodeLensProvider(configuration: SamCliSettings): Promise<OverridableCodeLensProvider> {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
@@ -352,7 +352,7 @@ export async function makeCSharpCodeLensProvider(configuration: SamCliConfig): P
     }
 }
 
-export function makeTypescriptCodeLensProvider(configuration: SamCliConfig): OverridableCodeLensProvider {
+export function makeTypescriptCodeLensProvider(configuration: SamCliSettings): OverridableCodeLensProvider {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
@@ -373,7 +373,7 @@ export function makeTypescriptCodeLensProvider(configuration: SamCliConfig): Ove
     }
 }
 
-export async function makeGoCodeLensProvider(configuration: SamCliConfig): Promise<OverridableCodeLensProvider> {
+export async function makeGoCodeLensProvider(configuration: SamCliSettings): Promise<OverridableCodeLensProvider> {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
@@ -394,7 +394,7 @@ export async function makeGoCodeLensProvider(configuration: SamCliConfig): Promi
     }
 }
 
-export async function makeJavaCodeLensProvider(configuration: SamCliConfig): Promise<OverridableCodeLensProvider> {
+export async function makeJavaCodeLensProvider(configuration: SamCliSettings): Promise<OverridableCodeLensProvider> {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,

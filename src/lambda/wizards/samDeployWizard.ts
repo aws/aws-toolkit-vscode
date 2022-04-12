@@ -40,11 +40,10 @@ import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
-import { SamCliConfig } from '../../shared/sam/cli/samCliConfiguration'
+import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
-export const CHOSEN_BUCKET_KEY = 'aws.samcli.manuallySelectedBuckets'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -453,7 +452,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         // This will background load the S3 buckets and load them all (in one chunk) when the operation completes.
         // Not awaiting lets us display a "loading" quick pick for immediate feedback.
         // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
-        populateS3QuickPick(quickPick, selectedRegion, new SamCliConfig(), messages, profile, accountId)
+        populateS3QuickPick(quickPick, selectedRegion, new SamCliSettings(), messages, profile, accountId)
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
@@ -969,7 +968,7 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
 async function populateS3QuickPick(
     quickPick: vscode.QuickPick<vscode.QuickPickItem>,
     selectedRegion: string,
-    settings: SamCliConfig,
+    settings: SamCliSettings,
     messages: { noBuckets: string; bucketError: string },
     profile?: string,
     accountId?: string

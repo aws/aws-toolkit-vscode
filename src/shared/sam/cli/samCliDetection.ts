@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { recordSamDetect } from '../../../shared/telemetry/telemetry'
 import { samAboutInstallUrl } from '../../constants'
-import { SamCliConfig } from './samCliConfiguration'
+import { SamCliSettings } from './samCliSettings'
 
 const localize = nls.loadMessageBundle()
 
@@ -25,14 +25,14 @@ const settingsUpdated = localize('AWS.samcli.detect.settings.updated', 'Settings
  * message (except if SAM was not found)
  */
 export async function detectSamCli(args: { passive: boolean; showMessage: boolean | undefined }): Promise<void> {
-    const samCliConfig = new SamCliConfig()
+    const config = new SamCliSettings()
 
     if (!args.passive) {
         // Force getOrDetectSamCli() to search for SAM CLI.
-        await samCliConfig.delete('location')
+        await config.delete('location')
     }
 
-    const sam = await samCliConfig.getOrDetectSamCli()
+    const sam = await config.getOrDetectSamCli()
     const notFound = sam.path === ''
 
     // Update the user setting.
@@ -42,12 +42,12 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
     // setting based on its local environment, but the user settings are
     // shared across VSCode instances...
     if (!args.passive && sam.autoDetected && sam.path) {
-        await samCliConfig.update('location', sam.path)
+        await config.update('location', sam.path)
     }
 
     if (args.showMessage !== false || notFound) {
         if (notFound) {
-            notifyUserSamCliNotDetected(samCliConfig)
+            notifyUserSamCliNotDetected(config)
         } else if (args.showMessage === true) {
             vscode.window.showInformationMessage(getSettingsUpdatedMessage(sam.path ?? '?'))
         }
@@ -58,7 +58,7 @@ export async function detectSamCli(args: { passive: boolean; showMessage: boolea
     }
 }
 
-function notifyUserSamCliNotDetected(samCliConfig: SamCliConfig): void {
+function notifyUserSamCliNotDetected(SamCliSettings: SamCliSettings): void {
     // inform the user, but don't wait for this to complete
     vscode.window
         .showErrorMessage(
@@ -82,7 +82,7 @@ function notifyUserSamCliNotDetected(samCliConfig: SamCliConfig): void {
 
                 if (!!location && location.length === 1) {
                     const path: string = location[0].fsPath
-                    await samCliConfig.update('location', path)
+                    await SamCliSettings.update('location', path)
                     vscode.window.showInformationMessage(getSettingsUpdatedMessage(path))
                 }
             }

@@ -6,7 +6,7 @@
 import { stat } from 'fs-extra'
 import * as semver from 'semver'
 import { ClassToInterfaceType } from '../../utilities/tsUtils'
-import { SamCliConfig } from './samCliConfiguration'
+import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 
 export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.47.0'
@@ -128,7 +128,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
 }
 
 export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
-    public constructor(private readonly config: SamCliConfig) {}
+    public constructor(private readonly config: SamCliSettings) {}
 
     public async samCliLocation(): Promise<string | undefined> {
         return (await this.config.getOrDetectSamCli()).path

@@ -12,15 +12,14 @@ import { toRecord } from './utilities/collectionUtils'
 import { isAutomation } from './vscode/env'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
-type ScopedEmitter = vscode.EventEmitter<vscode.ConfigurationChangeEvent>
 
 /**
- * A class for manpilulating settings shared by all extensions.
+ * A class for manipulating VS Code user settings (from all extensions).
  *
  * This is distinct from {@link TypedSettings} which is "scoped" to a specific subset of
  * settings. Use this class when very simple reading/writing to settings is needed.
  *
- * When additional logic is needed, prefer {@link fromPackage} for better encapsulation.
+ * When additional logic is needed, prefer {@link fromPackageJson} for better encapsulation.
  */
 export class SettingsConfiguration {
     public constructor(
@@ -50,6 +49,10 @@ export class SettingsConfiguration {
      * Settings can only be written to so long as a extension contributes the specified key
      * in their `package.json`. If no contribution exists, then the write will fail, causing
      * this method to return false.
+     *
+     * Writing to settings may fail if the user does not have write permissions, or if some
+     * requirement is not met. For example, the `vscode.ConfigurationTarget.Workspace` target
+     * requires a workspace.
      */
     public async updateSetting(key: string, value: unknown): Promise<boolean> {
         try {
@@ -64,9 +67,19 @@ export class SettingsConfiguration {
     }
 
     /**
-     * Returns a "slice" of the settings configuration.
+     * Returns a partition of the settings configuration.
      *
-     * The returned {@link Settings} interface operates against the provided section/scope.
+     * The returned {@link Settings} interface is limited to the provided section/scope.
+     * This is useful for limiting how much state is exposed in modularized code.
+     *
+     * Example:
+     * ```ts
+     * const section = settings.getSection('aws.samcli')
+     * const samCliLocation = section.get('location')
+     *
+     * // Reset all settings under `aws.samcli`
+     * await section.reset()
+     * ```
      */
     public getSection(section: string, scope?: vscode.ConfigurationScope): Settings {
         const parts = section.split('.')
@@ -113,8 +126,8 @@ export class SettingsConfiguration {
     public createScopedEmitter(
         section: string,
         scope?: vscode.ConfigurationScope
-    ): [emitter: ScopedEmitter, listener: vscode.Disposable] {
-        const emitter: ScopedEmitter = new vscode.EventEmitter()
+    ): [emitter: vscode.EventEmitter<vscode.ConfigurationChangeEvent>, listener: vscode.Disposable] {
+        const emitter = new vscode.EventEmitter<vscode.ConfigurationChangeEvent>()
         const toRelative = (sub: string) => (section ? [section, sub] : [sub]).join('.')
 
         const listener = this.workspace.onDidChangeConfiguration(e => {
@@ -132,7 +145,7 @@ export class SettingsConfiguration {
      * Defines a new set of configurables from the specified section.
      *
      * Only use this for creating 'virtual' settings that don't exist within `package.json`.
-     * Prefer {@link fromPackage} for most use-cases.
+     * Prefer {@link fromPackageJson} for most use-cases.
      */
     public static define<T extends TypeDescriptor>(section: string, descriptor?: T) {
         return createSettingsClass(section, descriptor)
@@ -164,6 +177,13 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
         }
 
         private registerChangedEvent(props: [keyof Inner & string]): vscode.Disposable {
+            // For a setting `aws.foo.bar`:
+            //   - the "section" is `aws.foo`
+            //   - the "key" is `bar`
+            //
+            // `sectionEmitter` will only fire when something under `aws.foo` changes
+            // When `sectionEmitter` fires, we check if any properties we care about
+            // have changed, firing a new event that narrows the scope to a single key
             const [sectionEmitter, listener] = this.settings.createScopedEmitter(section)
             const sectionListener = sectionEmitter.event(event => {
                 for (const key of props.filter(p => event.affectsConfiguration(p))) {
@@ -332,7 +352,7 @@ type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: S
  * ### Examples
  * #### Pass-through:
  * ```
- * export class CloudWatchLogsSettings extends fromPackage('aws.cloudWatchLogs', { limit: Number }) {}
+ * export class CloudWatchLogsSettings extends fromPackageJson('aws.cloudWatchLogs', { limit: Number }) {}
  *
  * const settings = new CloudWatchLogsSettings()
  * const limit = settings.get('limit', 1000)
@@ -340,10 +360,10 @@ type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: S
  *
  * #### Extending:
  * ```
- * export class TelemetryConfig extends fromPackage('aws', { telemetry: Boolean }) {
+ * export class TelemetryConfig extends fromPackageJson('aws', { telemetry: Boolean }) {
  *     public isEnabled(): boolean {
  *         try {
- *             return this.get(TELEMETRY_KEY, TELEMETRY_SETTING_DEFAULT)
+ *             return this.get('telemetry', TELEMETRY_SETTING_DEFAULT)
  *         } catch (error) {
  *              vscode.window.showErrorMessage(
  *                  localize(
@@ -363,7 +383,7 @@ type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: S
  *
  * @returns A class that can be used as-is or inherited from
  */
-export function fromPackage<T extends TypeDescriptor & Partial<Sections[K]>, K extends keyof Sections>(
+export function fromPackageJson<T extends TypeDescriptor & Partial<Sections[K]>, K extends keyof Sections>(
     section: K,
     descriptor: T
 ) {
@@ -371,7 +391,7 @@ export function fromPackage<T extends TypeDescriptor & Partial<Sections[K]>, K e
     // Runtime validation is required to ensure things are correct.
     //
     // Assumptions:
-    // - `fromPackage` is called exclusively on module load
+    // - `fromPackageJson` is called exclusively on module load
     // - The extension loads all modules before activating
     //
     // As long as the above holds true, throwing an error here will always be caught by CI
@@ -381,7 +401,7 @@ export function fromPackage<T extends TypeDescriptor & Partial<Sections[K]>, K e
 
     if (missing.length > 0) {
         const message = `The following configuration keys were missing from package.json: ${missing.join(', ')}`
-        getLogger().error(`Settings (fromPackage): missing fields:\n${missing.map(k => `\t${k}`).join('\n')}`)
+        getLogger().error(`Settings (fromPackageJson): missing fields:\n${missing.map(k => `\t${k}`).join('\n')}`)
 
         throw new Error(message)
     }
@@ -450,8 +470,8 @@ type ExperimentName = keyof typeof experiments
  *   // Rest of the feature
  * }
  *
- * settings.onDidChange(name => {
- *    if (name === 'myExperimentalFeature') {
+ * settings.onDidChange(({ key }) => {
+ *    if (key === 'myExperimentalFeature') {
  *        // Refresh trees, webviews, etc.
  *    }
  * })
@@ -581,6 +601,8 @@ export async function migrateSetting<T extends SettingDescriptor, U extends Sett
 
     try {
         const oldVal = cast(config.get(from.key), from.type)
+        // TODO: this is not technically incorrect, but it is redundant
+        // better way would be to allow optional param `(value: FromConstructor<T['type']>) => U`
         const newVal = cast(oldVal, to.type)
 
         await config.update(to.key, newVal, vscode.ConfigurationTarget.Global)

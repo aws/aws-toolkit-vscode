@@ -13,7 +13,7 @@ import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
 import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
-import { SamCliConfig } from './samCliConfiguration'
+import { SamCliSettings } from './samCliSettings'
 
 const localize = nls.loadMessageBundle()
 
@@ -208,7 +208,7 @@ export interface SamCliLocalInvokeInvocationArguments {
  * Yet another `sam` CLI wrapper.
  */
 export class SamCliLocalInvokeInvocation {
-    private readonly config = new SamCliConfig()
+    private readonly config = new SamCliSettings()
 
     public constructor(private readonly args: SamCliLocalInvokeInvocationArguments) {
         this.args.skipPullImage = !!this.args.skipPullImage

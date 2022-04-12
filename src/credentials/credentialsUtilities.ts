@@ -16,7 +16,7 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import { CredentialsId, asString } from './providers/credentials'
 import { waitTimeout, Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
-import { fromPackage } from '../shared/settingsConfiguration'
+import { fromPackageJson } from '../shared/settingsConfiguration'
 
 const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
 const CREDENTIALS_PROGRESS_DELAY = 1000
@@ -102,4 +102,4 @@ export async function resolveProviderWithCancel(
     })
 }
 
-export class CredentialsSettings extends fromPackage('aws', { profile: String }) {}
+export class CredentialsSettings extends fromPackageJson('aws', { profile: String }) {}

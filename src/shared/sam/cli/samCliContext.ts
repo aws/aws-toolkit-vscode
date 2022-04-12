@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SamCliConfig } from './samCliConfiguration'
+import { SamCliSettings } from './samCliSettings'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
@@ -34,7 +34,7 @@ export async function getSamCliVersion(context: SamCliContext): Promise<string> 
 }
 
 function makeSamCliContext(): SamCliContext {
-    const samCliConfiguration = new SamCliConfig(new DefaultSamCliLocationProvider())
+    const samCliConfiguration = new SamCliSettings(new DefaultSamCliLocationProvider())
     const invoker = new DefaultSamCliProcessInvoker({ preloadedConfig: samCliConfiguration })
 
     const validatorContext = new DefaultSamCliValidatorContext(samCliConfiguration)

@@ -12,7 +12,7 @@ import {
 } from './samCliInvokerUtils'
 
 import * as nls from 'vscode-nls'
-import { SamCliConfig } from './samCliConfiguration'
+import { SamCliSettings } from './samCliSettings'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -22,9 +22,9 @@ const localize = nls.loadMessageBundle()
  */
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     private childProcess?: ChildProcess
-    private readonly context: SamCliConfig
+    private readonly context: SamCliSettings
     public constructor(params: {
-        preloadedConfig?: SamCliConfig
+        preloadedConfig?: SamCliSettings
         locationProvider?: { getLocation(): Promise<string | undefined> }
     }) {
         if (params.preloadedConfig && params.locationProvider) {
@@ -33,7 +33,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         if (params.preloadedConfig) {
             this.context = params.preloadedConfig
         } else if (params.locationProvider) {
-            this.context = new SamCliConfig(params.locationProvider)
+            this.context = new SamCliSettings(params.locationProvider)
         } else {
             throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
         }

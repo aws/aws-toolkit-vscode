@@ -13,7 +13,7 @@ import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './defaultTelemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { fromPackage, SettingsConfiguration } from '../settingsConfiguration'
+import { fromPackageJson, SettingsConfiguration } from '../settingsConfiguration'
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
@@ -74,7 +74,7 @@ export function convertLegacy(value: unknown): boolean {
     }
 }
 
-export class TelemetryConfig extends fromPackage('aws', { telemetry: convertLegacy }) {
+export class TelemetryConfig extends fromPackageJson('aws', { telemetry: convertLegacy }) {
     public isEnabled(): boolean {
         try {
             return this.get(TELEMETRY_KEY, TELEMETRY_SETTING_DEFAULT)

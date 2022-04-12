@@ -26,7 +26,7 @@ import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
-import { SamCliConfig } from './cli/samCliConfiguration'
+import { SamCliSettings } from './cli/samCliSettings'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
@@ -123,7 +123,7 @@ async function buildLambdaHandler(
     timer: Timeout,
     env: NodeJS.ProcessEnv,
     config: SamLaunchRequestArgs,
-    settings: SamCliConfig
+    settings: SamCliSettings
 ): Promise<boolean> {
     const processInvoker = new DefaultSamCliProcessInvoker({ preloadedConfig: settings })
 
@@ -180,7 +180,7 @@ async function invokeLambdaHandler(
     timer: Timeout,
     env: NodeJS.ProcessEnv,
     config: SamLaunchRequestArgs,
-    settings: SamCliConfig
+    settings: SamCliSettings
 ): Promise<boolean> {
     getLogger('channel').info(localize('AWS.output.starting.sam.app.locally', 'Starting SAM application locally'))
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
@@ -352,7 +352,7 @@ export async function runLambdaFunction(
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
-    const settings = new SamCliConfig()
+    const settings = new SamCliSettings()
     const timer = new Timeout(settings.getLocalInvokeTimeout())
 
     if (!(await buildLambdaHandler(timer, envVars, config, settings))) {

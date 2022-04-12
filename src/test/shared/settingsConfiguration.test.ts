@@ -9,7 +9,7 @@ import * as env from '../../shared/vscode/env'
 import {
     DevSettings,
     Experiments,
-    fromPackage,
+    fromPackageJson,
     PromptSettings,
     SettingsConfiguration,
 } from '../../shared/settingsConfiguration'
@@ -95,8 +95,8 @@ describe('SettingsConfiguration', function () {
         })
     })
 
-    describe('fromPackage', function () {
-        const ProfileSettings = fromPackage('aws', { profile: String })
+    describe('fromPackageJson', function () {
+        const ProfileSettings = fromPackageJson('aws', { profile: String })
         let settings: TestSettingsConfiguration
         let instance: InstanceType<typeof ProfileSettings>
 
@@ -106,7 +106,7 @@ describe('SettingsConfiguration', function () {
         })
 
         it('throws if the setting does not exist', function () {
-            assert.throws(() => fromPackage('aws', { foo: Boolean }))
+            assert.throws(() => fromPackageJson('aws', { foo: Boolean }))
         })
 
         it('throws when the types do not match', function () {
@@ -225,7 +225,7 @@ describe('PromptSetting', function () {
         })
     })
 
-    describe('getSuppressPromptSetting, isPromptEnabled', async function () {
+    describe('isPromptEnabled', async function () {
         const promptName = 'apprunnerNotifyPricing'
 
         const scenarios = [

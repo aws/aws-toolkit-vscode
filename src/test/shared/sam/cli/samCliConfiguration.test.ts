@@ -7,10 +7,10 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
-import { SamCliConfig } from '../../../../shared/sam/cli/samCliConfiguration'
+import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
 import { TestSettingsConfiguration } from '../../../utilities/testSettingsConfiguration'
 
-describe('SamCliConfiguration', function () {
+describe('samCliConfiguration', function () {
     let tempFolder: string
     let settingsConfiguration: TestSettingsConfiguration
 
@@ -27,16 +27,16 @@ describe('SamCliConfiguration', function () {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
         createSampleFile(fakeCliLocation)
-        const samCliConfig = new SamCliConfig({} as any, settingsConfiguration)
-        await samCliConfig.update('location', fakeCliLocation)
+        const config = new SamCliSettings({} as any, settingsConfiguration)
+        await config.update('location', fakeCliLocation)
 
-        assert.strictEqual(await samCliConfig.getOrDetectSamCli().then(r => r.path), fakeCliLocation)
+        assert.strictEqual(await config.getOrDetectSamCli().then(r => r.path), fakeCliLocation)
     })
 
     it('calls location provider when config not set', async function () {
         let timesCalled: number = 0
 
-        const samCliConfig = new SamCliConfig(
+        const config = new SamCliSettings(
             {
                 getLocation: async (): Promise<string | undefined> => {
                     timesCalled++
@@ -47,7 +47,7 @@ describe('SamCliConfiguration', function () {
             settingsConfiguration
         )
 
-        await samCliConfig.getOrDetectSamCli()
+        await config.getOrDetectSamCli()
 
         assert.strictEqual(timesCalled, 1)
     })
@@ -55,7 +55,7 @@ describe('SamCliConfiguration', function () {
     it('location provider detects a file', async function () {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
-        const samCliConfig = new SamCliConfig(
+        const config = new SamCliSettings(
             {
                 getLocation: async (): Promise<string | undefined> => {
                     return Promise.resolve(fakeCliLocation)
@@ -64,12 +64,12 @@ describe('SamCliConfiguration', function () {
             settingsConfiguration
         )
 
-        assert.strictEqual(samCliConfig.get('location', ''), '')
-        assert.strictEqual(await samCliConfig.getOrDetectSamCli().then(r => r.path), fakeCliLocation)
+        assert.strictEqual(config.get('location', ''), '')
+        assert.strictEqual(await config.getOrDetectSamCli().then(r => r.path), fakeCliLocation)
     })
 
     it('location provider does not detect a file', async function () {
-        const samCliConfig = new SamCliConfig(
+        const config = new SamCliSettings(
             {
                 getLocation: async (): Promise<string | undefined> => {
                     return Promise.resolve(undefined)
@@ -78,7 +78,7 @@ describe('SamCliConfiguration', function () {
             settingsConfiguration
         )
 
-        assert.strictEqual(await samCliConfig.getOrDetectSamCli().then(r => r.path), undefined)
+        assert.strictEqual(await config.getOrDetectSamCli().then(r => r.path), undefined)
     })
 
     function createSampleFile(filename: string): void {

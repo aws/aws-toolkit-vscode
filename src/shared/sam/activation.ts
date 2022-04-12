@@ -3,8 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import globals from '../extensionGlobals'
+
+import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
@@ -31,11 +35,9 @@ import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
-import globals from '../extensionGlobals'
 import { PromptSettings } from '../settingsConfiguration'
 import { shared } from '../utilities/functionUtils'
-import { SamCliConfig } from './cli/samCliConfiguration'
-const localize = nls.loadMessageBundle()
+import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -44,7 +46,8 @@ const sharedDetectSamCli = shared(detectSamCli)
  */
 export async function activate(ctx: ExtContext): Promise<void> {
     await createYamlExtensionPrompt()
-    const config = new SamCliConfig()
+    await migrateLegacySettings()
+    const config = new SamCliSettings()
 
     ctx.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(ctx, config, ctx.outputChannel, ctx.telemetryService))
@@ -82,7 +85,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     }
 }
 
-async function registerServerlessCommands(ctx: ExtContext, settings: SamCliConfig): Promise<void> {
+async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
     lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.samcli.detect', () =>
@@ -146,7 +149,7 @@ async function activateCodeLensRegistry(context: ExtContext) {
 
 async function activateCodeLensProviders(
     context: ExtContext,
-    configuration: SamCliConfig,
+    configuration: SamCliSettings,
     toolkitOutputChannel: vscode.OutputChannel,
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
