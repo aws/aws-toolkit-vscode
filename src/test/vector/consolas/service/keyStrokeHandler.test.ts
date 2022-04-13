@@ -496,6 +496,7 @@ describe('keyStrokeHandler', function () {
                 consolasLanguage: 'python',
                 consolasRuntime: 'python2',
                 consolasRuntimeSource: '2.7.16',
+                reason: '',
             })
         })
 

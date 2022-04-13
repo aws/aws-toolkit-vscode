@@ -174,6 +174,7 @@ export async function getRecommendations(
     let recommendation: RecommendationsList = []
     let invocationResult: telemetry.Result = 'Failed'
     let requestId = ''
+    let reason = ''
     let completionType: telemetry.ConsolasCompletionType = 'Line'
     let startTime = 0
     let latency = 0
@@ -224,6 +225,7 @@ export async function getRecommendations(
             showTimedMessage(`Programming language ${languageName} is currently not supported by Consolas`, 2000)
         }
         requestId = awsError.requestId || ''
+        reason = `Consolas Invocation Exception: ${awsError?.code ?? awsError?.name ?? 'unknown'}`
     } finally {
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
         const languageId = editor?.document?.languageId
@@ -263,6 +265,7 @@ export async function getRecommendations(
             consolasLanguage: languageContext.language,
             consolasRuntime: languageContext.runtimeLanguage,
             consolasRuntimeSource: languageContext.runtimeLanguageSource,
+            reason: reason,
         })
         recommendations.requestId = requestId
     }

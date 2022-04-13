@@ -21,7 +21,6 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import { ConsolasTracker } from './tracker/consolasTracker'
 import * as consolasClient from './client/consolas'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
-import { OpenConsolasSettings } from './commands/openConsolasSettings'
 import { getLogger } from '../../shared/logger'
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -101,7 +100,7 @@ export async function activate(context: ExtContext): Promise<void> {
     )
     context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.consolas.configure', async () => {
-            await OpenConsolasSettings()
+            await vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.experiments`)
         }),
         vscode.commands.registerCommand('aws.consolas.introduction', async () => {
             vscode.env.openExternal(vscode.Uri.parse(ConsolasConstants.CONSOLAS_LEARN_MORE_URI))

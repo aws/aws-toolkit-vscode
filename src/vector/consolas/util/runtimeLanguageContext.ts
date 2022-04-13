@@ -45,7 +45,7 @@ export class RuntimeLanguageContext {
     }
 
     public getRuntimeLanguage(language: string, version: string): ConsolasRuntime {
-        const versionNumber = version ? version.split('.')[0].match(/\d+/)![0] : ''
+        const versionNumber = version.split('.')[0]?.match(/\d+/)?.[0] ?? ''
         switch (language) {
             case ConsolasConstants.PYTHON:
                 switch (versionNumber) {
@@ -73,22 +73,26 @@ export class RuntimeLanguageContext {
     public async getLanguageVersionNumber(cmd: string, args: [string]): Promise<SemVer | undefined> {
         const { stdout, stderr, exitCode } = await new ChildProcess(cmd, args).run()
         if (exitCode !== 0) {
-            getLogger().error(
-                'getLanguageVersionNumber: failed to get Langauge Runtime Version: %d\n%s',
-                exitCode,
-                stderr
-            )
+            getLogger().verbose('getLanguageVersionNumber: failed to get Langauge Runtime Version: %s', stderr)
             return
         }
         const version = stdout || stderr
         const match = version.trim().match(/[0-9]+.[0-9]+.[0-9]+/g)
-        return semverParse(match![0]) as SemVer
+        if (match?.[0] === undefined) {
+            return
+        }
+        const parsed = semverParse(match[0])
+        if (!parsed) {
+            return
+        }
+        return parsed
     }
 
     public async initLanguageContext(languageId: string, config?: vscode.WorkspaceConfiguration) {
         let runtimeVersion: any
         let version = ''
         const languageName = this.convertLanguage(languageId)
+        const cmdArg = process.platform === 'win32' ? '-version' : '--version'
         if (languageName in this.runtimeLanguageContext.languageContexts) return
         if (languageId === ConsolasConstants.PYTHON) {
             const configValue = config?.get<string>('defaultInterpreterPath')
@@ -102,7 +106,7 @@ export class RuntimeLanguageContext {
             }
             version = runtimeVersion
         } else if (languageId === ConsolasConstants.JAVA) {
-            runtimeVersion = await this.getLanguageVersionNumber('java', ['--version'])
+            runtimeVersion = await this.getLanguageVersionNumber('java', [cmdArg])
             version = runtimeVersion ? runtimeVersion?.version : 'unknown'
         } else if (languageId === ConsolasConstants.JAVASCRIPT) {
             runtimeVersion = await this.getLanguageVersionNumber('node', ['--version'])

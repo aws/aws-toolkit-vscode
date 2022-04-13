@@ -284,6 +284,10 @@
                 {
                     "type": "consolasRuntimeSource",
                     "required": false
+                },
+                {
+                    "type": "reason",
+                    "required": false
                 }
             ]
         },
