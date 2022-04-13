@@ -6,7 +6,7 @@
 import { getCodeRoot, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../../extensions'
-import { sleep } from '../../utilities/promiseUtilities'
+import { sleep } from '../../utilities/timeoutUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'

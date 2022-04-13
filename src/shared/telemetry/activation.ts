@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { AwsContext } from '../awsContext'
-import { SettingsConfiguration } from '../settingsConfiguration'
-import { DefaultTelemetryService } from './defaultTelemetryService'
-import { getLogger } from '../logger'
-import { TelemetryService } from './telemetryService'
+import globals from '../extensionGlobals'
 
 import * as nls from 'vscode-nls'
-import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
-import globals from '../extensionGlobals'
 const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
+import { AwsContext } from '../awsContext'
+import { DefaultTelemetryService } from './defaultTelemetryService'
+import { getLogger } from '../logger'
+import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { fromExtensionManifest, openSettings, Settings } from '../settings'
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
@@ -22,8 +22,8 @@ const TELEMETRY_SETTING_DEFAULT = true
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'View Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
 
-const AWS_TELEMETRY_KEY = 'telemetry'
 export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionAck'
+
 // Telemetry Notice Versions
 // Versioning the users' notice acknowledgement is forward looking, and allows us to better
 // track scenarios when we may need to re-prompt the user about telemetry.
@@ -34,98 +34,55 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2
 /**
  * Sets up the Metrics system and initializes globals.telemetry
  */
-export async function activate(activateArguments: {
-    extensionContext: vscode.ExtensionContext
-    awsContext: AwsContext
-    toolkitSettings: SettingsConfiguration
-}) {
-    globals.telemetry = new DefaultTelemetryService(
-        activateArguments.extensionContext,
-        activateArguments.awsContext,
-        getComputeRegion()
+export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
+    globals.telemetry = new DefaultTelemetryService(extensionContext, awsContext, getComputeRegion())
+
+    const config = new TelemetryConfig(settings)
+    globals.telemetry.telemetryEnabled = config.isEnabled()
+
+    extensionContext.subscriptions.push(
+        config.onDidChange(event => {
+            if (event.key === 'telemetry') {
+                globals.telemetry.telemetryEnabled = config.isEnabled()
+            }
+        })
     )
-
-    // Convert setting to boolean if it is not already
-    await sanitizeTelemetrySetting(activateArguments.toolkitSettings)
-
-    // Configure telemetry based on settings, and default to enabled
-    applyTelemetryEnabledState(globals.telemetry, activateArguments.toolkitSettings)
 
     // Prompt user about telemetry if they haven't been
-    if (!isCloud9() && !hasUserSeenTelemetryNotice(activateArguments.extensionContext)) {
-        showTelemetryNotice(activateArguments.extensionContext)
+    if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
+        showTelemetryNotice(extensionContext, config)
     }
-
-    // When there are configuration changes, update the telemetry service appropriately
-    vscode.workspace.onDidChangeConfiguration(
-        async event => {
-            if (
-                event.affectsConfiguration('telemetry.enableTelemetry') ||
-                event.affectsConfiguration('aws.telemetry')
-            ) {
-                if (!globals.telemetry) {
-                    getLogger().warn(
-                        'Telemetry configuration changed, but telemetry is undefined. This can happen during testing. #1071'
-                    )
-                    return
-                }
-
-                validateTelemetrySettingType(activateArguments.toolkitSettings)
-                applyTelemetryEnabledState(globals.telemetry, activateArguments.toolkitSettings)
-            }
-        },
-        undefined,
-        activateArguments.extensionContext.subscriptions
-    )
 }
 
-/*
- * Formats the AWS telemetry setting to a boolean: false if setting value was 'Disable' or false, true for everything else
- */
-export async function sanitizeTelemetrySetting(toolkitSettings: SettingsConfiguration): Promise<void> {
-    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
-
+export function convertLegacy(value: unknown): boolean {
     if (typeof value === 'boolean') {
-        return
+        return value
     }
 
     // Set telemetry value to boolean if the current value matches the legacy value
     if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
-        await toolkitSettings.writeSetting<any>(AWS_TELEMETRY_KEY, false, vscode.ConfigurationTarget.Global)
-    } else if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE) {
-        await toolkitSettings.writeSetting<any>(AWS_TELEMETRY_KEY, true, vscode.ConfigurationTarget.Global)
-    }
-}
-
-export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): boolean {
-    // Setting used to be an enum, but is now a boolean.
-    // We don't have api-based strong type support, so we have to process this value manually.
-    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
-
-    // Handle original opt-out value (setting used to be a tri-state string value)
-    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
         return false
-    }
-
-    if (typeof value === 'boolean') {
-        return value
+    } else if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE) {
+        return true
     } else {
-        return TELEMETRY_SETTING_DEFAULT
+        throw new TypeError(`Unknown telemetry setting: ${value}`)
     }
 }
 
-function validateTelemetrySettingType(toolkitSettings: SettingsConfiguration): void {
-    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
-    if (typeof value !== 'boolean') {
-        getLogger().error('In settings.json, aws.telemetry value must be a boolean')
-        vscode.window.showErrorMessage(
-            localize('AWS.message.error.settings.telemetry.invalid_type', 'The aws.telemetry value must be a boolean')
-        )
+export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: convertLegacy }) {
+    public isEnabled(): boolean {
+        try {
+            return this.get('telemetry', TELEMETRY_SETTING_DEFAULT)
+        } catch (error) {
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.message.error.settings.telemetry.invalid_type',
+                    'The aws.telemetry value must be a boolean'
+                )
+            )
+            return TELEMETRY_SETTING_DEFAULT
+        }
     }
-}
-
-function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings: SettingsConfiguration) {
-    telemetry.telemetryEnabled = isTelemetryEnabled(toolkitSettings)
 }
 
 export function hasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): boolean {
@@ -144,7 +101,7 @@ export async function setHasUserSeenTelemetryNotice(extensionContext: vscode.Ext
  * Prompts user to Enable/Disable/Defer on Telemetry, then
  * handles the response appropriately.
  */
-function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
+function showTelemetryNotice(extensionContext: vscode.ExtensionContext, config: TelemetryConfig) {
     getLogger().verbose('Showing telemetry notice')
 
     const telemetryNoticeText: string = localize(
@@ -176,7 +133,7 @@ export async function handleTelemetryNoticeResponse(
         // noticeResponseOk is a no-op
 
         if (response === noticeResponseViewSettings) {
-            vscode.commands.executeCommand('workbench.action.openSettings')
+            openSettings('aws.telemetry')
         }
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)

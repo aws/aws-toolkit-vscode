@@ -6,6 +6,8 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import globals from '../shared/extensionGlobals'
+
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { credentialHelpUrl } from '../shared/constants'
@@ -14,7 +16,7 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import { CredentialsId, asString } from './providers/credentials'
 import { waitTimeout, Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
-import globals from '../shared/extensionGlobals'
+import { fromExtensionManifest } from '../shared/settings'
 
 const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
 const CREDENTIALS_PROGRESS_DELAY = 1000
@@ -99,3 +101,5 @@ export async function resolveProviderWithCancel(
         },
     })
 }
+
+export class CredentialsSettings extends fromExtensionManifest('aws', { profile: String }) {}

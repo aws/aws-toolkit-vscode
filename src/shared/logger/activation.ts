@@ -10,7 +10,6 @@ import * as nls from 'vscode-nls'
 import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
 import { extensionSettingsPrefix } from '../constants'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
 import { LOG_OUTPUT_CHANNEL } from './outputChannel'
@@ -18,6 +17,7 @@ import { WinstonToolkitLogger } from './winstonToolkitLogger'
 import globals from '../extensionGlobals'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
+import { Settings } from '../settings'
 
 const localize = nls.loadMessageBundle()
 
@@ -135,9 +135,9 @@ export function makeLogger(
 }
 
 function getLogLevel(): LogLevel {
-    const configuration: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    const configuration = Settings.instance.getSection(extensionSettingsPrefix)
 
-    return configuration.readSetting<LogLevel>('logLevel', DEFAULT_LOG_LEVEL)
+    return configuration.get('logLevel', DEFAULT_LOG_LEVEL)
 }
 
 function getLogPath(): string {

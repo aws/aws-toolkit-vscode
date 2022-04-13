@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 import { installFakeClock, tickPromise } from '../../../test/testUtil'
-import { sleep } from '../../../shared/utilities/promiseUtilities'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
 
 describe('timeoutUtils', async function () {
     let clock: FakeTimers.InstalledClock

@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
+import { DevSettings } from '../shared/settings'
 
 const STATUSBAR_PRIORITY = 1
 const STATUSBAR_CONNECTED_MSG = localize('AWS.credentials.statusbar.connected', '(connected)')
@@ -29,18 +30,35 @@ export async function initializeAwsCredentialsStatusBarItem(
 
     context.subscriptions.push(statusBarItem)
 
+    const devSettings = DevSettings.instance
+    handleDevSettings(devSettings, statusBarItem)
+
     context.subscriptions.push(
         awsContext.onDidChangeContext(async (ev: ContextChangeEventsArgs) => {
-            updateCredentialsStatusBarItem(statusBarItem, ev.profileName, ev.developerMode)
-        })
+            updateCredentialsStatusBarItem(statusBarItem, ev.profileName)
+            handleDevSettings(devSettings, statusBarItem)
+        }),
+        devSettings.onDidChangeActiveSettings(() => handleDevSettings(devSettings, statusBarItem))
     )
+}
+
+function handleDevSettings(devSettings: DevSettings, statusBarItem: vscode.StatusBarItem) {
+    const developerMode = Object.keys(devSettings.activeSettings)
+
+    if (developerMode.length > 0) {
+        ;(statusBarItem as any).backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
+
+        const devSettingsStr = developerMode.join('  \n')
+        statusBarItem.tooltip = `Toolkit developer settings:\n${devSettingsStr}`
+    } else {
+        ;(statusBarItem as any).backgroundColor = undefined
+    }
 }
 
 // Resolves when the status bar reaches its final state
 export async function updateCredentialsStatusBarItem(
     statusBarItem: vscode.StatusBarItem,
-    credentialsId?: string,
-    developerMode?: Set<string>
+    credentialsId?: string
 ): Promise<void> {
     globals.clock.clearTimeout(timeoutID)
     const connectedMsg = localize(
@@ -55,15 +73,7 @@ export async function updateCredentialsStatusBarItem(
         getIdeProperties().company
     )
 
-    if (developerMode && developerMode.size > 0) {
-        ;(statusBarItem as any).backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
-
-        const devSettingsStr = Array.from(developerMode).join('  \n')
-        statusBarItem.tooltip = `Toolkit developer settings:\n${devSettingsStr}`
-    } else {
-        ;(statusBarItem as any).backgroundColor = undefined
-        statusBarItem.tooltip = credentialsId ? connectedMsg : disconnectedMsg
-    }
+    statusBarItem.tooltip = credentialsId ? connectedMsg : disconnectedMsg
 
     // Shows "connected" message briefly.
     let delay = 0

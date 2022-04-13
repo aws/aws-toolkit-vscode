@@ -14,7 +14,6 @@ import {
     addSamDebugConfiguration,
     AddSamDebugConfigurationInput,
 } from '../sam/debugger/commands/addSamDebugConfiguration'
-import { SettingsConfiguration } from '../settingsConfiguration'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
 import { activateExtension, localize } from '../utilities/vsCodeUtils'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
@@ -25,10 +24,9 @@ import * as tsCodelens from './typescriptCodeLensProvider'
 import * as goCodelens from './goCodeLensProvider'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties } from '../extensionUtilities'
+import { SamCliSettings } from '../sam/cli/samCliSettings'
 
 export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java' | 'typescript'
-
-export const STATE_NAME_ENABLE_CODELENSES = 'sam.enableCodeLenses'
 
 export async function makeCodeLenses({
     document,
@@ -305,9 +303,7 @@ export interface OverridableCodeLensProvider extends vscode.CodeLensProvider {
     ) => Promise<vscode.CodeLens[]>
 }
 
-export async function makePythonCodeLensProvider(
-    configuration: SettingsConfiguration
-): Promise<OverridableCodeLensProvider> {
+export async function makePythonCodeLensProvider(configuration: SamCliSettings): Promise<OverridableCodeLensProvider> {
     return {
         // CodeLensProvider
         provideCodeLenses: async (
@@ -315,7 +311,7 @@ export async function makePythonCodeLensProvider(
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
                 return []
             }
             // Try to activate the Python Extension before requesting symbols from a python file
@@ -335,16 +331,14 @@ export async function makePythonCodeLensProvider(
     }
 }
 
-export async function makeCSharpCodeLensProvider(
-    configuration: SettingsConfiguration
-): Promise<OverridableCodeLensProvider> {
+export async function makeCSharpCodeLensProvider(configuration: SamCliSettings): Promise<OverridableCodeLensProvider> {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
                 return []
             }
             const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
@@ -358,14 +352,14 @@ export async function makeCSharpCodeLensProvider(
     }
 }
 
-export function makeTypescriptCodeLensProvider(configuration: SettingsConfiguration): OverridableCodeLensProvider {
+export function makeTypescriptCodeLensProvider(configuration: SamCliSettings): OverridableCodeLensProvider {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
                 return []
             }
             const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
@@ -379,16 +373,14 @@ export function makeTypescriptCodeLensProvider(configuration: SettingsConfigurat
     }
 }
 
-export async function makeGoCodeLensProvider(
-    configuration: SettingsConfiguration
-): Promise<OverridableCodeLensProvider> {
+export async function makeGoCodeLensProvider(configuration: SamCliSettings): Promise<OverridableCodeLensProvider> {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
                 return []
             }
             const handlers = await goCodelens.getLambdaHandlerCandidates(document)
@@ -402,16 +394,14 @@ export async function makeGoCodeLensProvider(
     }
 }
 
-export async function makeJavaCodeLensProvider(
-    configuration: SettingsConfiguration
-): Promise<OverridableCodeLensProvider> {
+export async function makeJavaCodeLensProvider(configuration: SamCliSettings): Promise<OverridableCodeLensProvider> {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
                 return []
             }
             // Try to activate the Java Extension before requesting symbols from a java file

@@ -13,11 +13,11 @@ import { localize } from '../shared/utilities/vsCodeUtils'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../shared/settingsConfiguration'
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { ToolkitError } from '../shared/toolkitError'
 import { Result, recordS3DownloadObject, recordS3UploadObject } from '../shared/telemetry/telemetry'
+import { PromptSettings } from '../shared/settings'
 
 export const S3_EDIT_SCHEME = 's3'
 export const S3_READ_SCHEME = 's3-readonly'
@@ -130,7 +130,7 @@ export class S3FileViewerManager {
         private readonly clientFactory: S3ClientFactory,
         private readonly fs: VirualFileSystem,
         private readonly window: typeof vscode.window = vscode.window,
-        private readonly settings: SettingsConfiguration = new DefaultSettingsConfiguration(),
+        private readonly settings = PromptSettings.instance,
         private readonly commands: typeof vscode.commands = vscode.commands,
         private readonly workspace: typeof vscode.workspace = vscode.workspace
     ) {

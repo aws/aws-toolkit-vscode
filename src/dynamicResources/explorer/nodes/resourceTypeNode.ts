@@ -108,8 +108,6 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
     }
 
     private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<ResourceNode>> {
-        getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
-
         let newResources: ResourceNode[]
         let nextToken: string | undefined
 
