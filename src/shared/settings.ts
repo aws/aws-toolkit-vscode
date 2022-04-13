@@ -168,13 +168,14 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
     const isMangled = Settings.name !== 'Settings'
     function makeLogger(name = 'Settings') {
         const prefix = `${isMangled ? 'Settings' : name} (${section})`
-        return (message: string) => getLogger().verbose(`${prefix}: ${message}`)
+        return (message: string) => getLogger().debug(`${prefix}: ${message}`)
     }
 
     return class AnonymousSettings implements TypedSettings<Inner> {
         private readonly config = this.settings.getSection(section)
         private readonly onDidChangeEmitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
         private readonly disposables: vscode.Disposable[] = []
+        // TODO(sijaden): add metadata prop to `Logger` so we don't need to make one-off log functions
         protected readonly log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name)
 
         public constructor(private readonly settings: ClassToInterfaceType<Settings> = Settings.instance) {
@@ -251,6 +252,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
             return this.settings.onDidChangeSection(section, event => {
                 for (const key of props.filter(p => event.affectsConfiguration(p))) {
+                    this.log(`key "${key}" changed`)
                     this.onDidChangeEmitter.fire({ key })
                 }
             })

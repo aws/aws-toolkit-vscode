@@ -9,7 +9,7 @@ import * as fs from 'fs-extra'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
-import { sleep } from '../../shared/utilities/timeoutUtils'
+import { sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
@@ -100,8 +100,10 @@ describe('CloudFormation Template Registry', async function () {
 })
 
 async function registryHasTargetNumberOfFiles(registry: CloudFormationTemplateRegistry, target: number) {
-    while (registry.registeredItems.length !== target) {
-        await sleep(20)
+    if (!(await waitUntil(async () => registry.registeredItems.length === target, { timeout: 30000 }))) {
+        throw new Error(
+            `Timed out waiting for registry to populate. Actual item count: ${registry.registeredItems.length}. Expected item count: ${target}.`
+        )
     }
 }
 
