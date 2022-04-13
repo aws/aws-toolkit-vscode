@@ -13,6 +13,7 @@ import com.intellij.openapi.externalSystem.util.ExternalSystemUtil
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.plugins.gradle.util.GradleConstants
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito
@@ -36,6 +37,7 @@ import software.aws.toolkits.jetbrains.utils.setUpGradleProject
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 
+@Ignore
 class JavaDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDefinitionWithJava") {
     @JvmField
     @Rule

@@ -7,6 +7,7 @@ import com.intellij.execution.configurations.RuntimeConfigurationWarning
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
@@ -28,6 +29,7 @@ import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
 
 // We use the corretto image for Python too, that is why we use the Java Task Def
+@Ignore
 class PythonDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDefinitionWithJava") {
     @JvmField
     @Rule
