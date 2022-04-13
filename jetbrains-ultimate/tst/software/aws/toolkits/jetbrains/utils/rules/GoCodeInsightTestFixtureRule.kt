@@ -6,8 +6,6 @@ package software.aws.toolkits.jetbrains.utils.rules
 import com.goide.GoConstants
 import com.goide.project.GoModuleSettings
 import com.goide.psi.GoFile
-import com.goide.sdk.GoSdk
-import com.goide.sdk.GoSdkImpl
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.Disposable
@@ -151,5 +149,3 @@ private fun GeneralCommandLine.runAndValidateCommand() {
     val output = ExecUtil.execAndGetOutput(this)
     check(output.exitCode == 0) { "${this.commandLineString} failed!\n ${output.stderr}" }
 }
-
-fun createMockSdk(root: String, version: String): GoSdk = GoSdkImpl(root, version, null)

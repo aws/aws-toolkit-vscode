@@ -4,13 +4,15 @@
 package software.aws.toolkits.jetbrains.services.lambda.go
 
 import com.goide.sdk.GoSdkService
-import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.testFramework.replaceService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.whenever
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.utils.rules.GoCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.utils.rules.createMockSdk
 
 class GoRuntimeGroupTest {
     @Rule
@@ -21,10 +23,10 @@ class GoRuntimeGroupTest {
 
     @Test
     fun runtimeForSdk() {
-        val sdk = createMockSdk(projectRule.module.moduleFilePath, "1.0.0")
-        runInEdtAndWait {
-            GoSdkService.getInstance(projectRule.project).setSdk(sdk)
-        }
+        val goSdkService = spy(GoSdkService.getInstance(projectRule.project))
+        whenever(goSdkService.isGoModule(any())).thenReturn(true)
+        projectRule.project.replaceService(GoSdkService::class.java, goSdkService, projectRule.fixture.projectDisposable)
+
         val module = projectRule.module
         val runtime = sut.determineRuntime(module)
         assertThat(runtime).isEqualTo(LambdaRuntime.GO1_X)
