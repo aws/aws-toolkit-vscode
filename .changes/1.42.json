@@ -1,0 +1,8 @@
+{
+  "date" : "2022-04-13",
+  "version" : "1.42",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for 2022.1"
+  } ]
+}

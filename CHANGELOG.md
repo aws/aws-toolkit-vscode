@@ -1,3 +1,6 @@
+# _1.42_ (2022-04-13)
+- **(Feature)** Add support for 2022.1
+
 # _1.41_ (2022-03-25)
 - **(Feature)** Adding Go (Golang) as a supported language for code binding generation through the EventBridge Schemas service
 
