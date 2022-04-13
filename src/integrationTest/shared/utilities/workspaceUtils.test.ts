@@ -9,8 +9,8 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { findParentProjectFile, getWorkspaceRelativePath } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
-import { CodelensRootRegistry } from '../../../shared/sam/codelensRootRegistry'
 import globals from '../../../shared/extensionGlobals'
+import { CodelensRootRegistry } from '../../../shared/fs/codelensRootRegistry'
 
 describe('findParentProjectFile', async function () {
     const workspaceDir = getTestWorkspaceFolder()

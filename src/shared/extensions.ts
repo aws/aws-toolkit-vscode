@@ -9,6 +9,8 @@ import { RegionProvider } from './regions/regionProvider'
 import { TelemetryService } from './telemetry/telemetryService'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { SamCliContext } from './sam/cli/samCliContext'
+import { UriHandler } from './vscode/uriHandler'
+import { CawsAuthenticationProvider } from '../caws/auth'
 
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
@@ -33,7 +35,9 @@ export interface ExtContext {
     outputChannel: vscode.OutputChannel
     telemetryService: TelemetryService
     credentialsStore: CredentialsStore
+    uriHandler: UriHandler
     invokeOutputChannel: vscode.OutputChannel
+    cawsAuthProvider: CawsAuthenticationProvider
 }
 
 /**

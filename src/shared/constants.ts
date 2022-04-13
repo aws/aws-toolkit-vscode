@@ -8,6 +8,7 @@ import { isCloud9 } from './extensionUtilities'
 export const extensionSettingsPrefix = 'aws'
 export const regionSettingKey = 'region'
 export const profileSettingKey = 'profile'
+export const productName: string = 'aws-toolkit-vscode'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
