@@ -11,7 +11,7 @@ import { GitExtension, Repository } from '../../../shared/extensions/git'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { realpath } from 'fs-extra'
 import { execFileSync } from 'child_process'
-import { sleep } from '../../../shared/utilities/promiseUtilities'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { getMinVsCodeVersion } from '../../../../scripts/test/launchTestUtilities' // TODO: don't use stuff from 'scripts'
 

@@ -20,13 +20,7 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/toolkitClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
-import {
-    documentationUrl,
-    endpointsFileUrl,
-    extensionSettingsPrefix,
-    githubCreateIssueUrl,
-    githubUrl,
-} from './shared/constants'
+import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
@@ -46,7 +40,6 @@ import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetche
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateEcr } from './ecr/activation'
 import { activate as activateSam } from './shared/sam/activation'
-import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as telemetry from './shared/telemetry/telemetry'
@@ -69,6 +62,7 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
+import { Settings } from './shared/settings'
 
 let localize: nls.LocalizeFunc
 
@@ -91,8 +85,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
         initializeCredentialsProviderManager()
-
-        const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
         const endpointsProvider = makeEndpointsProvider()
 
@@ -118,17 +110,11 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
 
-        await initializeCredentials({
-            extensionContext: context,
-            awsContext: awsContext,
-            settingsConfiguration: toolkitSettings,
-        })
+        const settings = Settings.instance
 
-        await activateTelemetry({
-            extensionContext: context,
-            awsContext: awsContext,
-            toolkitSettings: toolkitSettings,
-        })
+        await initializeCredentials(context, awsContext, settings)
+
+        await activateTelemetry(context, awsContext, settings)
         await globals.telemetry.start()
         await globals.schemaService.start()
 
@@ -137,7 +123,6 @@ export async function activate(context: vscode.ExtensionContext) {
             awsContext: awsContext,
             samCliContext: getSamCliContext,
             regionProvider: regionProvider,
-            settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
             invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
@@ -231,7 +216,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateEcr(context)
 
-        await activateCloudWatchLogs(context, toolkitSettings)
+        await activateCloudWatchLogs(context, settings)
 
         await activateDynamicResources(context)
 

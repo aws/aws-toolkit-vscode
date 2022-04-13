@@ -68,6 +68,16 @@ export function toMap<TKey, TValue>(
     return result
 }
 
+export function toRecord<T, K extends PropertyKey>(keys: K[], fn: (key: K) => T): { [P in K]: T } {
+    const result = {} as Record<K, T>
+
+    for (const key of keys) {
+        result[key] = fn(key)
+    }
+
+    return result
+}
+
 export async function toMapAsync<TKey, TValue>(
     items: AsyncIterable<TValue>,
     keySelector: (item: TValue) => TKey | undefined

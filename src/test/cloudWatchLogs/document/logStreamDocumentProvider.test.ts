@@ -5,17 +5,17 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
 import { LogStreamRegistry, CloudWatchLogStreamData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
+import { Settings } from '../../../shared/settings'
 
 describe('LogStreamDocumentProvider', function () {
     let registry: LogStreamRegistry
     let map: Map<string, CloudWatchLogStreamData>
     let provider: LogStreamDocumentProvider
 
-    const config = new TestSettingsConfiguration()
-    config.writeSetting('cloudWatchLogs.limit', 1000)
+    const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
     const registeredUri = vscode.Uri.parse('has:This')
     // TODO: Make this less flaky when we add manual timestamp controls.
@@ -32,7 +32,7 @@ describe('LogStreamDocumentProvider', function () {
     beforeEach(function () {
         map = new Map<string, CloudWatchLogStreamData>()
         map.set(registeredUri.path, stream)
-        registry = new LogStreamRegistry(config, map)
+        registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
         provider = new LogStreamDocumentProvider(registry)
     })
 

@@ -17,6 +17,7 @@ import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import globals from '../../../shared/extensionGlobals'
+import { ResourcesSettings } from '../../commands/configure'
 
 const localize = nls.loadMessageBundle()
 
@@ -30,7 +31,8 @@ export class ResourcesNode extends AWSTreeNodeBase {
         ),
         private readonly cloudControl: CloudControlClient = globals.toolkitClientBuilder.createCloudControlClient(
             region
-        )
+        ),
+        private readonly settings = new ResourcesSettings()
     ) {
         super(localize('AWS.explorerNode.resources.label', 'Resources'), vscode.TreeItemCollapsibleState.Collapsed)
         this.resourceTypeNodes = new Map<string, ResourceTypeNode>()
@@ -62,24 +64,22 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const resourceTypes = memoizedGetResourceTypes()
-        const configuredResources = vscode.workspace.getConfiguration('aws').get<string[]>('resources.enabledResources')
-        const enabledResources = configuredResources?.length || !isCloud9() ? configuredResources : resourceTypes.keys()
+        const defaultResources = isCloud9() ? Array.from(resourceTypes.keys()) : []
+        const enabledResources = this.settings.get('enabledResources', defaultResources)
 
-        if (enabledResources) {
-            const availableTypes: Map<string, CloudFormation.TypeSummary> = toMap(
-                await toArrayAsync(this.cloudFormation.listTypes()),
-                type => type.TypeName
-            )
-            updateInPlace(
-                this.resourceTypeNodes,
-                enabledResources,
-                key => this.resourceTypeNodes.get(key)!.clearChildren(),
-                key => {
-                    const metadata = resourceTypes.get(key) ?? ({} as ResourceTypeMetadata)
-                    metadata.available = availableTypes.has(key)
-                    return new ResourceTypeNode(this, key, this.cloudControl, metadata)
-                }
-            )
-        }
+        const availableTypes: Map<string, CloudFormation.TypeSummary> = toMap(
+            await toArrayAsync(this.cloudFormation.listTypes()),
+            type => type.TypeName
+        )
+        updateInPlace(
+            this.resourceTypeNodes,
+            enabledResources,
+            key => this.resourceTypeNodes.get(key)!.clearChildren(),
+            key => {
+                const metadata = resourceTypes.get(key) ?? ({} as ResourceTypeMetadata)
+                metadata.available = availableTypes.has(key)
+                return new ResourceTypeNode(this, key, this.cloudControl, metadata)
+            }
+        )
     }
 }

@@ -20,7 +20,6 @@ export interface AwsContextCredentials {
 export interface ContextChangeEventsArgs {
     readonly profileName?: string
     readonly accountId?: string
-    readonly developerMode: Set<string>
 }
 
 // Represents a credential profile and zero or more regions.
@@ -46,7 +45,6 @@ export class DefaultAwsContext implements AwsContext {
     private readonly explorerRegions: string[]
 
     private currentCredentials: AwsContextCredentials | undefined
-    private developerMode = new Set<string>()
 
     public constructor(private context: vscode.ExtensionContext) {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
@@ -69,27 +67,6 @@ export class DefaultAwsContext implements AwsContext {
             return
         }
         this.currentCredentials = credentials
-        this.emitEvent()
-    }
-
-    /**
-     * Sets "developer mode" when a Toolkit developer setting is active.
-     *
-     * @param enable  Set "developer mode" as enabled or disabled
-     * @param settingName  Name of the detected setting, or undefined for `enable=false`.
-     */
-    public async setDeveloperMode(enable: boolean, settingName: string | undefined): Promise<void> {
-        const enabled = this.developerMode.size > 0
-        if (enable === enabled && (!enable || this.developerMode.has(settingName ?? '?'))) {
-            // Do nothing. Besides performance, this avoids infinite loops.
-            return
-        }
-
-        if (!enable) {
-            this.developerMode.clear()
-        } else {
-            this.developerMode.add(settingName ?? '?')
-        }
         this.emitEvent()
     }
 
@@ -163,7 +140,6 @@ export class DefaultAwsContext implements AwsContext {
         this._onDidChangeContext.fire({
             profileName: this.currentCredentials?.credentialsId,
             accountId: this.currentCredentials?.accountId,
-            developerMode: this.developerMode,
         })
     }
 }
