@@ -32,6 +32,7 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { createClientFactory } from '../caws/activation'
 import { createCommandDecorator } from '../caws/commands'
 import { showViewLogsMessage } from '../shared/utilities/messages'
+import { DevSettings } from '../shared/settings'
 
 const menuOptions = {
     installVsix: {
@@ -51,14 +52,19 @@ function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, 
 }
 
 export function activate(ctx: ExtContext): void {
-    async function updateMode(enablement: boolean) {
+    const devSettings = DevSettings.instance
+
+    async function updateMode() {
+        const enablement = Object.keys(devSettings.activeSettings).length > 0
         await vscode.commands.executeCommand('setContext', 'aws.isDevMode', enablement)
     }
 
     ctx.extensionContext.subscriptions.push(
-        ctx.awsContext.onDidChangeContext(e => updateMode(e.developerMode.size > 0)),
+        devSettings.onDidChangeActiveSettings(updateMode),
         vscode.commands.registerCommand('aws.dev.openMenu', () => openMenu(ctx, menuOptions))
     )
+
+    updateMode()
 }
 
 async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {

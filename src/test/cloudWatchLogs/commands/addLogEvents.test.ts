@@ -10,17 +10,14 @@ import * as vscode from 'vscode'
 import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 import { installFakeClock } from '../../testUtil'
 
 describe('addLogEvents', async function () {
     let sandbox: sinon.SinonSandbox
     let clock: FakeTimers.InstalledClock
-    const config = new TestSettingsConfiguration()
 
     before(function () {
         clock = installFakeClock()
-        config.writeSetting('cloudWatchLogs.limit', 1000)
     })
 
     beforeEach(function () {
@@ -68,7 +65,7 @@ describe('addLogEvents', async function () {
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
-        await addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
+        await addLogEvents(document, fakeRegistry, 'head', fakeEvent)
 
         sandbox.assert.calledTwice(setBusyStatus)
         sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)
@@ -125,11 +122,11 @@ describe('addLogEvents', async function () {
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
+        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
 
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
+        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
 
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
+        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
 
         new Promise<void>(resolve => {
             clock.setTimeout(() => {

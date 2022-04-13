@@ -11,12 +11,12 @@ import * as nls from 'vscode-nls'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
-import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion, getMdeEnvArn } from './vscode/env'
 import globals from './extensionGlobals'
+import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
 
@@ -36,11 +36,11 @@ export enum IDE {
 let computeRegion: string | undefined = NOT_INITIALIZED
 
 export function getIdeType(): IDE {
-    const settings = new DefaultSettingsConfiguration('aws')
+    const settings = DevSettings.instance
     if (
         vscode.env.appName === CLOUD9_APPNAME ||
         vscode.env.appName === CLOUD9_CN_APPNAME ||
-        !!settings.readDevSetting<boolean>('aws.forceCloud9', 'boolean', true)
+        settings.get('forceCloud9', false)
     ) {
         return IDE.cloud9
     }

@@ -13,13 +13,13 @@ import { CreateEnvironmentRequest, GetEnvironmentMetadataResponse } from '../../
 import { getRegistryDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import { DefaultMdeEnvironmentClient, GetStatusResponse } from '../../../shared/clients/mdeEnvironmentClient'
-import { sleep } from '../../../shared/utilities/promiseUtilities'
 import { compare } from 'fast-json-patch'
 import { mdeConnectCommand, mdeDeleteCommand, tryRestart } from '../../mdeCommands'
 import { getLogger } from '../../../shared/logger/logger'
 import { parse } from '@aws-sdk/util-arn-parser'
 import globals from '../../../shared/extensionGlobals'
 import { checkUnsavedChanges } from '../../../shared/utilities/workspaceUtils'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 export interface DefinitionTemplate {

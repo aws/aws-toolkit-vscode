@@ -5,7 +5,8 @@
 
 import { stat } from 'fs-extra'
 import * as semver from 'semver'
-import { SamCliConfiguration } from './samCliConfiguration'
+import { ClassToInterfaceType } from '../../utilities/tsUtils'
+import { SamCliSettings } from './samCliSettings'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 
 export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.47.0'
@@ -57,11 +58,7 @@ export interface SamCliValidator {
     getVersionValidatorResult(): Promise<SamCliVersionValidatorResult>
 }
 
-export interface SamCliValidatorContext {
-    samCliLocation(): Promise<string>
-    getSamCliExecutableId(): Promise<string>
-    getSamCliInfo(): Promise<SamCliInfoResponse>
-}
+export type SamCliValidatorContext = ClassToInterfaceType<DefaultSamCliValidatorContext>
 
 export class DefaultSamCliValidator implements SamCliValidator {
     private cachedSamInfoResponse?: SamCliInfoResponse
@@ -131,26 +128,31 @@ export class DefaultSamCliValidator implements SamCliValidator {
 }
 
 export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
-    public constructor(private readonly samCliConfiguration: SamCliConfiguration) {}
+    public constructor(private readonly config: SamCliSettings) {}
 
-    public async samCliLocation(): Promise<string> {
-        return (await this.samCliConfiguration.getOrDetectSamCli()).path
+    public async samCliLocation(): Promise<string | undefined> {
+        return (await this.config.getOrDetectSamCli()).path
     }
 
     public async getSamCliExecutableId(): Promise<string> {
         // Function should never get called if there is no SAM CLI
-        if (!(await this.samCliLocation())) {
+        const location = await this.samCliLocation()
+        if (!location) {
             throw new Error('SAM CLI does not exist')
         }
 
         // The modification timestamp of SAM CLI is used as the "distinct executable id"
-        const stats = await stat(await this.samCliLocation())
+        const stats = await stat(location)
 
         return stats.mtime.valueOf().toString()
     }
 
     public async getSamCliInfo(): Promise<SamCliInfoResponse> {
-        const samCliInfo = new SamCliInfoInvocation({ preloadedConfig: this.samCliConfiguration })
+        const samPath = await this.samCliLocation()
+        if (!samPath) {
+            throw new Error('Unable to get SAM CLI info without an executable path')
+        }
+        const samCliInfo = new SamCliInfoInvocation(samPath)
 
         return await samCliInfo.execute()
     }

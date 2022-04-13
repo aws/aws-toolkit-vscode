@@ -8,7 +8,7 @@ import { SsoClientRegistration } from './ssoClientRegistration'
 import { openSsoPortalLink, SsoAccessToken } from './sso'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
-import { sleep } from '../../shared/utilities/promiseUtilities'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 import globals from '../../shared/extensionGlobals'
 import { productName } from '../../shared/constants'
 

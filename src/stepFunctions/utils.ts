@@ -19,6 +19,7 @@ import {
 } from 'amazon-states-language-service'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import globals from '../shared/extensionGlobals'
+import { fromExtensionManifest } from '../shared/settings'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -200,3 +201,10 @@ export async function isDocumentValid(text: string, textDocument?: vscode.TextDo
 
     return isValid
 }
+
+const descriptor = {
+    maxItemsComputed: (v: unknown) => Math.trunc(Math.max(0, Number(v))),
+    ['format.enable']: Boolean,
+}
+
+export class StepFunctionsSettings extends fromExtensionManifest('aws.stepfunctions.asl', descriptor) {}

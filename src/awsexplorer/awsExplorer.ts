@@ -34,7 +34,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
     private readonly ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(
         undefined,
-        localize('AWS.explorerNode.addRegion', 'Add a region to {0} Explorer...', getIdeProperties().company),
+        localize('AWS.explorerNode.addRegion', 'Add regions to {0} Explorer...', getIdeProperties().company),
         'aws.showRegion',
         undefined,
         localize(

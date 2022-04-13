@@ -14,7 +14,7 @@ import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { updateInPlace } from '../shared/utilities/collectionUtils'
 import { VSCODE_MDE_TAGS } from './constants'
 import { getEmailHash, makeLabelsString, MDE_STATUS_PRIORITY } from './mdeModel'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
+import { DevSettings } from '../shared/settings'
 
 const localize = nls.loadMessageBundle()
 
@@ -51,9 +51,8 @@ export class MdeRootNode extends AWSTreeNodeBase {
     public async updateChildren(): Promise<void> {
         const envs = await this.generateCurrentEnvs()
         let keys = [...envs.keys()]
-        const settings = new DefaultSettingsConfiguration('aws')
         // TODO: Enable this or other filters?
-        if (settings.readDevSetting<boolean>('aws.dev.mde.emailFilter', 'boolean', true)) {
+        if (DevSettings.instance.get('mdeEmailFilter', true)) {
             const emailHash = await getEmailHash()
             if (emailHash) {
                 keys = keys.filter(key => {

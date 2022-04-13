@@ -3,8 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import globals from '../extensionGlobals'
+
+import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
@@ -23,34 +27,33 @@ import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { PromiseSharer } from '../utilities/promiseUtilities'
 import { NoopWatcher } from '../fs/watchedFiles'
-import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
 import { CodelensRootRegistry } from '../fs/codelensRootRegistry'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
-import { extensionSettingsPrefix } from '../constants'
-import globals from '../extensionGlobals'
-const localize = nls.loadMessageBundle()
+import { PromptSettings } from '../settings'
+import { shared } from '../utilities/functionUtils'
+import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
+
+const sharedDetectSamCli = shared(detectSamCli)
 
 /**
  * Activate SAM-related functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
-    initializeSamCliContext({ settingsConfiguration: ctx.settings })
-
     await createYamlExtensionPrompt()
+    await migrateLegacySettings()
+    const config = new SamCliSettings()
 
     ctx.extensionContext.subscriptions.push(
-        ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
+        ...(await activateCodeLensProviders(ctx, config, ctx.outputChannel, ctx.telemetryService))
     )
 
-    await registerServerlessCommands(ctx)
+    await registerServerlessCommands(ctx, config)
 
     ctx.extensionContext.subscriptions.push(
         vscode.debug.registerDebugConfigurationProvider(AWS_SAM_DEBUG_TYPE, new SamDebugConfigProvider(ctx))
@@ -68,30 +71,25 @@ export async function activate(ctx: ExtContext): Promise<void> {
         )
     )
 
-    ctx.extensionContext.subscriptions.push(
-        vscode.workspace.onDidChangeConfiguration(configurationChangeEvent => {
-            if (configurationChangeEvent.affectsConfiguration('aws.samcli.location')) {
-                // This only shows a message (passive=true), does not set anything.
-                detectSamCli({ passive: true, showMessage: true })
-            }
-        })
-    )
+    config.onDidChange(event => {
+        if (event.key === 'location') {
+            // This only shows a message (passive=true), does not set anything.
+            sharedDetectSamCli({ passive: true, showMessage: true })
+        }
+    })
+
+    ctx.extensionContext.subscriptions.push(config)
 
     if (globals.didReload) {
         await resumeCreateNewSamApp(ctx)
     }
 }
 
-async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
+async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
     lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.samcli.detect',
-            async () =>
-                await PromiseSharer.getExistingPromiseOrCreate(
-                    'samcli.detect',
-                    async () => await detectSamCli({ passive: false, showMessage: true })
-                )
+        vscode.commands.registerCommand('aws.samcli.detect', () =>
+            sharedDetectSamCli({ passive: false, showMessage: true })
         ),
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
             await createNewSamApplication(ctx)
@@ -116,7 +114,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
                 },
                 {
                     awsContext: ctx.awsContext,
-                    settings: ctx.settings,
+                    settings,
                 }
             )
         })
@@ -151,7 +149,7 @@ async function activateCodeLensRegistry(context: ExtContext) {
 
 async function activateCodeLensProviders(
     context: ExtContext,
-    configuration: SettingsConfiguration,
+    configuration: SamCliSettings,
     toolkitOutputChannel: vscode.OutputChannel,
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
@@ -200,12 +198,8 @@ async function activateCodeLensProviders(
 
     disposables.push(
         vscode.commands.registerCommand('aws.toggleSamCodeLenses', () => {
-            const toggled = !configuration.readSetting<boolean>(codelensUtils.STATE_NAME_ENABLE_CODELENSES)
-            configuration.writeSetting(
-                codelensUtils.STATE_NAME_ENABLE_CODELENSES,
-                toggled,
-                vscode.ConfigurationTarget.Global
-            )
+            const toggled = !configuration.get('enableCodeLenses', false)
+            configuration.update('enableCodeLenses', toggled)
         })
     )
 
@@ -253,12 +247,12 @@ async function activateCodeLensProviders(
  * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
  */
 async function createYamlExtensionPrompt(): Promise<void> {
-    const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    const settings = PromptSettings.instance
 
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
     if (
-        (await settingsConfig.isPromptEnabled('yamlExtPrompt')) &&
+        (await settings.isPromptEnabled('yamlExtPrompt')) &&
         getIdeType() === IDE.vscode &&
         !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
     ) {
@@ -317,7 +311,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         for (const prompt of disposables) {
             prompt.dispose()
         }
-        const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+        const settings = PromptSettings.instance
 
         const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
         const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
@@ -351,7 +345,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
                 }
                 break
             case permanentlySuppress:
-                settingsConfig.disablePrompt('yamlExtPrompt')
+                settings.disablePrompt('yamlExtPrompt')
         }
     }
 }

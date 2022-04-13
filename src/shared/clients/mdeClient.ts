@@ -7,13 +7,13 @@ import * as AWS from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as mde from '../../../types/clientmde'
 import apiConfig = require('../../../types/REMOVED.normal.json')
-import * as settings from '../../shared/settingsConfiguration'
 import * as logger from '../logger/logger'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import * as nls from 'vscode-nls'
 import { Window } from '../vscode/window'
 import globals from '../extensionGlobals'
+import { DevSettings } from '../settings'
 
 const localize = nls.loadMessageBundle()
 
@@ -21,13 +21,7 @@ export const MDE_START_TIMEOUT = 240000
 
 export const MDE_REGION = 'us-west-2'
 export function mdeEndpoint(): string {
-    const s = new settings.DefaultSettingsConfiguration()
-    try {
-        return s.readDevSetting('aws.dev.mde.betaEndpoint')
-    } catch (err) {
-        // XXX: hardcode this for Cloud9/Hightide testing.
-        return 'https://gamma.moontide.us-west-2.amazonaws.com/'
-    }
+    return DevSettings.instance.get('mdeBetaEndpoint', 'https://gamma.moontide.us-west-2.amazonaws.com/')
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../extensionGlobals'
+
 import * as admZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as path from 'path'
@@ -18,9 +20,7 @@ import { Window } from '../vscode/window'
 import * as nls from 'vscode-nls'
 import { Timeout, CancellationError } from './timeoutUtils'
 import { showMessageWithCancel } from './messages'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
-import { extensionSettingsPrefix } from '../constants'
-import globals from '../extensionGlobals'
+import { DevSettings } from '../settings'
 const localize = nls.loadMessageBundle()
 
 const msgDownloading = localize('AWS.installProgress.downloading', 'downloading...')
@@ -323,12 +323,9 @@ async function installSsmCli(
 export async function getOrInstallCli(
     cli: AwsClis,
     confirm: boolean,
-    window: Window = Window.vscode(),
-    settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-): Promise<string | never> {
-    const forceInstall = settings.readDevSetting<boolean>('aws.dev.forceInstallTools', 'boolean', true)
-
-    if (forceInstall) {
+    window: Window = Window.vscode()
+): Promise<string> {
+    if (DevSettings.instance.get('forceInstallTools', false)) {
         return installCli(cli, confirm, window)
     } else {
         return (await getCliCommand(AWS_CLIS[cli])) ?? installCli(cli, confirm, window)

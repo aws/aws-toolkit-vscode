@@ -8,7 +8,7 @@ import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { MdeClient } from './clients/mdeClient'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
-import { AWSContextCommands } from './awsContextCommands'
+import { AwsContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { RegionProvider } from './regions/regionProvider'
 import { CloudFormationTemplateRegistry } from './fs/templateRegistry'
@@ -63,7 +63,7 @@ interface ToolkitGlobals {
     readonly window: Window
     // TODO: make the rest of these readonly
     outputChannel: OutputChannel
-    awsContextCommands: AWSContextCommands
+    awsContextCommands: AwsContextCommands
     awsContext: AwsContext
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder

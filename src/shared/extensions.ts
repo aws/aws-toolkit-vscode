@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { AwsContext } from './awsContext'
 import { RegionProvider } from './regions/regionProvider'
-import { SettingsConfiguration } from './settingsConfiguration'
 import { TelemetryService } from './telemetry/telemetryService'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { SamCliContext } from './sam/cli/samCliContext'
@@ -33,7 +32,6 @@ export interface ExtContext {
     awsContext: AwsContext
     samCliContext: () => SamCliContext
     regionProvider: RegionProvider
-    settings: SettingsConfiguration
     outputChannel: vscode.OutputChannel
     telemetryService: TelemetryService
     credentialsStore: CredentialsStore

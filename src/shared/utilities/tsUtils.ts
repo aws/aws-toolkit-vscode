@@ -12,7 +12,15 @@ export const getPropAs = <T>(obj: any, key: string) => {
 }
 
 export function isNonNullable<T>(obj: T): obj is NonNullable<T> {
-    return !!obj
+    // eslint-disable-next-line no-null/no-null
+    return obj !== undefined && obj !== null
+}
+
+/**
+ * Stricter form of {@link Object.keys} that gives slightly better types for object literals.
+ */
+export function keys<T extends Record<string, any>>(obj: T): [keyof T & string] {
+    return Object.keys(obj) as [keyof T & string]
 }
 
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
