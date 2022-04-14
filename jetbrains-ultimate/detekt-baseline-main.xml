@@ -1,7 +1,0 @@
-<?xml version="1.0" ?>
-<SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
-  <CurrentIssues>
-    <ID>NoNameShadowing:AwsAuthWidget.kt$AwsAuthWidget${ regionSelector.selectedRegion = it }</ID>
-  </CurrentIssues>
-</SmellBaseline>
