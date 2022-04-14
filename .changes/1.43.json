@@ -1,0 +1,8 @@
+{
+  "date" : "2022-04-14",
+  "version" : "1.43",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix regression in DataGrip 2022.1 caused by new APIs in the platform (#3125)"
+  } ]
+}

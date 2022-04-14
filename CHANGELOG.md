@@ -1,3 +1,6 @@
+# _1.43_ (2022-04-14)
+- **(Bug Fix)** Fix regression in DataGrip 2022.1 caused by new APIs in the platform ([#3125](https://github.com/aws/aws-toolkit-jetbrains/issues/3125))
+
 # _1.42_ (2022-04-13)
 - **(Feature)** Add support for 2022.1
 
