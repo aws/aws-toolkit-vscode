@@ -208,7 +208,7 @@ export interface SamCliLocalInvokeInvocationArguments {
  * Yet another `sam` CLI wrapper.
  */
 export class SamCliLocalInvokeInvocation {
-    private readonly config = new SamCliSettings()
+    private readonly config = SamCliSettings.instance
 
     public constructor(private readonly args: SamCliLocalInvokeInvocationArguments) {
         this.args.skipPullImage = !!this.args.skipPullImage
