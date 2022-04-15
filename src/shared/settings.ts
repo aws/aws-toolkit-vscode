@@ -515,6 +515,7 @@ export class Experiments extends Settings.define(
 
 const DEV_SETTINGS = {
     forceCloud9: Boolean,
+    forceDevMode: Boolean,
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
@@ -559,7 +560,7 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
 
     public readonly onDidChangeActiveSettings = this.onDidChangeActiveSettingsEmitter.event
 
-    public get activeSettings() {
+    public get activeSettings(): Readonly<typeof this.trappedSettings> {
         return this.trappedSettings
     }
 
@@ -583,7 +584,10 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
     static #instance: DevSettings
 
     public static get instance() {
-        return (this.#instance ??= new this())
+        const instance = (this.#instance ??= new this())
+        instance.get('forceDevMode', false)
+
+        return instance
     }
 }
 
