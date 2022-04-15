@@ -25,7 +25,7 @@ const settingsUpdated = localize('AWS.samcli.detect.settings.updated', 'Settings
  * message (except if SAM was not found)
  */
 export async function detectSamCli(args: { passive: boolean; showMessage: boolean | undefined }): Promise<void> {
-    const config = new SamCliSettings()
+    const config = SamCliSettings.instance
 
     if (!args.passive) {
         // Force getOrDetectSamCli() to search for SAM CLI.

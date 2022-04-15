@@ -125,7 +125,7 @@ async function buildLambdaHandler(
     config: SamLaunchRequestArgs,
     settings: SamCliSettings
 ): Promise<boolean> {
-    const processInvoker = new DefaultSamCliProcessInvoker({ preloadedConfig: settings })
+    const processInvoker = new DefaultSamCliProcessInvoker(settings)
 
     getLogger('channel').info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
@@ -352,7 +352,7 @@ export async function runLambdaFunction(
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
-    const settings = new SamCliSettings()
+    const settings = SamCliSettings.instance
     const timer = new Timeout(settings.getLocalInvokeTimeout())
 
     if (!(await buildLambdaHandler(timer, envVars, config, settings))) {

@@ -22,22 +22,7 @@ const localize = nls.loadMessageBundle()
  */
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     private childProcess?: ChildProcess
-    private readonly context: SamCliSettings
-    public constructor(params: {
-        preloadedConfig?: SamCliSettings
-        locationProvider?: { getLocation(): Promise<string | undefined> }
-    }) {
-        if (params.preloadedConfig && params.locationProvider) {
-            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
-        }
-        if (params.preloadedConfig) {
-            this.context = params.preloadedConfig
-        } else if (params.locationProvider) {
-            this.context = new SamCliSettings(params.locationProvider)
-        } else {
-            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
-        }
-    }
+    public constructor(private readonly context = SamCliSettings.instance) {}
 
     public stop(): void {
         if (!this.childProcess) {
