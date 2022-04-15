@@ -10,6 +10,7 @@ import { ArrayConstructor, cast, FromDescriptor, TypeConstructor, TypeDescriptor
 import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isAutomation } from './vscode/env'
+import { once } from './utilities/functionUtils'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -173,17 +174,14 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
 
     return class AnonymousSettings implements TypedSettings<Inner> {
         private readonly config = this.settings.getSection(section)
-        private readonly onDidChangeEmitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
         private readonly disposables: vscode.Disposable[] = []
         // TODO(sijaden): add metadata prop to `Logger` so we don't need to make one-off log functions
         protected readonly log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name)
 
-        public constructor(private readonly settings: ClassToInterfaceType<Settings> = Settings.instance) {
-            this.disposables.push(this.onDidChangeEmitter, this.registerChangedEvent(keys(descriptor)))
-        }
+        public constructor(private readonly settings: ClassToInterfaceType<Settings> = Settings.instance) {}
 
         public get onDidChange() {
-            return this.onDidChangeEmitter.event
+            return this.getChangedEmitter().event
         }
 
         public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
@@ -235,7 +233,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
         }
 
         public dispose() {
-            return vscode.Disposable.from(...this.disposables).dispose()
+            return vscode.Disposable.from(this.getChangedEmitter(), ...this.disposables).dispose()
         }
 
         protected getOrThrow<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
@@ -244,19 +242,24 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             return cast<Inner[K]>(value, descriptor[key])
         }
 
-        private registerChangedEvent(props: [keyof Inner & string]): vscode.Disposable {
+        private readonly getChangedEmitter = once(() => {
             // For a setting `aws.foo.bar`:
             //   - the "section" is `aws.foo`
             //   - the "key" is `bar`
             //
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
-            return this.settings.onDidChangeSection(section, event => {
+            const props = keys(descriptor)
+            const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
+            const listener = this.settings.onDidChangeSection(section, event => {
                 for (const key of props.filter(p => event.affectsConfiguration(p))) {
                     this.log(`key "${key}" changed`)
-                    this.onDidChangeEmitter.fire({ key })
+                    emitter.fire({ key })
                 }
             })
-        }
+
+            this.disposables.push(emitter, listener)
+            return emitter
+        })
     }
 }
 
@@ -512,6 +515,7 @@ export class Experiments extends Settings.define(
 
 const DEV_SETTINGS = {
     forceCloud9: Boolean,
+    forceDevMode: Boolean,
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
@@ -558,7 +562,7 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
 
     public readonly onDidChangeActiveSettings = this.onDidChangeActiveSettingsEmitter.event
 
-    public get activeSettings() {
+    public get activeSettings(): Readonly<typeof this.trappedSettings> {
         return this.trappedSettings
     }
 
@@ -582,13 +586,11 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
     static #instance: DevSettings
 
     public static get instance() {
-        return (this.#instance ??= new this())
-    }
-}
+        const instance = (this.#instance ??= new this())
+        instance.get('forceDevMode', false)
 
-interface SettingDescriptor<T = unknown, K extends string = string> {
-    readonly type: TypeConstructor<T>
-    readonly key: K
+        return instance
+    }
 }
 
 /**
@@ -597,7 +599,10 @@ interface SettingDescriptor<T = unknown, K extends string = string> {
  * Currently only used for simple migrations where we are not concerned about maintaining the
  * legacy definition.
  */
-export async function migrateSetting<T extends SettingDescriptor, U extends SettingDescriptor>(from: T, to: U) {
+export async function migrateSetting<T, U = T>(
+    from: { key: string; type: TypeConstructor<T> },
+    to: { key: string; transform?: (value: T) => U }
+) {
     const config = vscode.workspace.getConfiguration()
     const hasLatest = config.inspect(to.key)?.globalValue !== undefined
     const logPrefix = `Settings migration ("${from.key}" -> "${to.key}")`
@@ -608,10 +613,7 @@ export async function migrateSetting<T extends SettingDescriptor, U extends Sett
 
     try {
         const oldVal = cast(config.get(from.key), from.type)
-        // TODO(sijaden): this is technically correct, but it is redundant
-        // better way would be to allow optional param `(value: FromConstructor<T['type']>) => U`
-        // even better would be to make this function an adapter for an existing `TypedSettings`
-        const newVal = cast(oldVal, to.type)
+        const newVal = to.transform?.(oldVal) ?? oldVal
 
         await config.update(to.key, newVal, vscode.ConfigurationTarget.Global)
 

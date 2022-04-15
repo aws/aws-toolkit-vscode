@@ -6,7 +6,6 @@
 import { SamCliSettings } from './samCliSettings'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
-import { DefaultSamCliLocationProvider } from './samCliLocator'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import { DefaultSamCliValidator, DefaultSamCliValidatorContext, SamCliValidator } from './samCliValidator'
 
@@ -34,8 +33,8 @@ export async function getSamCliVersion(context: SamCliContext): Promise<string> 
 }
 
 function makeSamCliContext(): SamCliContext {
-    const samCliConfiguration = new SamCliSettings(new DefaultSamCliLocationProvider())
-    const invoker = new DefaultSamCliProcessInvoker({ preloadedConfig: samCliConfiguration })
+    const samCliConfiguration = SamCliSettings.instance
+    const invoker = new DefaultSamCliProcessInvoker(samCliConfiguration)
 
     const validatorContext = new DefaultSamCliValidatorContext(samCliConfiguration)
     const validator = new DefaultSamCliValidator(validatorContext)

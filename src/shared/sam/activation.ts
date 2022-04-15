@@ -47,7 +47,7 @@ const sharedDetectSamCli = shared(detectSamCli)
 export async function activate(ctx: ExtContext): Promise<void> {
     await createYamlExtensionPrompt()
     await migrateLegacySettings()
-    const config = new SamCliSettings()
+    const config = SamCliSettings.instance
 
     ctx.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(ctx, config, ctx.outputChannel, ctx.telemetryService))

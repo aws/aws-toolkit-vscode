@@ -16,10 +16,7 @@ export async function migrateLegacySettings() {
             key: 'aws.manuallySelectedBuckets',
             type: SavedBuckets,
         },
-        {
-            key: 'aws.samcli.manuallySelectedBuckets',
-            type: SavedBuckets,
-        }
+        { key: 'aws.samcli.manuallySelectedBuckets' }
     )
 
     await migrateSetting(
@@ -27,10 +24,7 @@ export async function migrateLegacySettings() {
             key: 'aws.sam.enableCodeLenses',
             type: Boolean,
         },
-        {
-            key: 'aws.samcli.enableCodeLenses',
-            type: Boolean,
-        }
+        { key: 'aws.samcli.enableCodeLenses' }
     )
 
     await migrateSetting(
@@ -38,10 +32,7 @@ export async function migrateLegacySettings() {
             key: 'aws.samcli.lambda.timeout',
             type: Number,
         },
-        {
-            key: 'aws.samcli.lambdaTimeout',
-            type: Number,
-        }
+        { key: 'aws.samcli.lambdaTimeout' }
     )
 }
 
@@ -145,5 +136,11 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
 
     public getLocalInvokeTimeout(): number {
         return this.get('lambdaTimeout', LOCAL_TIMEOUT_DEFAULT_MILLIS)
+    }
+
+    static #instance: SamCliSettings
+
+    public static get instance() {
+        return (this.#instance ??= new this())
     }
 }
