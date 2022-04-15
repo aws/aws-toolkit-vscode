@@ -452,7 +452,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         // This will background load the S3 buckets and load them all (in one chunk) when the operation completes.
         // Not awaiting lets us display a "loading" quick pick for immediate feedback.
         // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
-        populateS3QuickPick(quickPick, selectedRegion, new SamCliSettings(), messages, profile, accountId)
+        populateS3QuickPick(quickPick, selectedRegion, SamCliSettings.instance, messages, profile, accountId)
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
