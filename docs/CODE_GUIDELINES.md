@@ -206,7 +206,7 @@ that is a net cost.
 
 ## User settings
 
-This codebase offers some some convienent abstractions for manipulating user settings. The implementations and relevant documenation can be found [here](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts).
+This codebase offers some convenient abstractions for manipulating user settings. The implementations and relevant documenation can be found [here](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts).
 
 -   Prefer using shared abstractions when possible. Many cross-cutting concerns, such as logging and validation, are handled automatically.
 
