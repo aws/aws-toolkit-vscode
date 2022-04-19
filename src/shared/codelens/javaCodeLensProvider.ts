@@ -31,9 +31,11 @@ export interface JavaLambdaHandlerComponents {
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
     const rootUri =
-        ((await findParentProjectFile(document.uri, /^.*pom.xml$/)) ??
-            (await findParentProjectFile(document.uri, /^.*build.gradle$/))) ||
-        document.uri
+        (await findParentProjectFile(document.uri, /^.*pom.xml$/)) ??
+        (await findParentProjectFile(document.uri, /^.*build.gradle$/))
+    if (!rootUri) {
+        return []
+    }
 
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', document.uri)) || []
