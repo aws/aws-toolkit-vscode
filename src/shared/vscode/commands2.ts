@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { randomUUID } from 'crypto' // TODO(sijaden): find browser compatible module
 import { capitalize } from '../utilities/textUtilities'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { isNameMangled } from './env'
@@ -209,6 +208,7 @@ interface Deferred<T extends Callback, U extends any[]> {
 class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private disposed?: boolean
     private subscription?: vscode.Disposable
+    private static counter = 0 // Used to generated unique-ish tree item IDs
     public readonly id = this.resource.id
 
     public constructor(private readonly resource: Deferred<T, U>, private readonly commands = vscode.commands) {}
@@ -270,7 +270,7 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
             return new (class extends AWSTreeNodeBase {
                 public constructor() {
                     super(content.label, vscode.TreeItemCollapsibleState.None)
-                    this.id = `${id}-${randomUUID()}`
+                    this.id = `${id}-${(CommandResource.counter += 1)}`
                     this.command = { command: id, arguments: args, title: content.label }
 
                     Object.assign(this, content)
