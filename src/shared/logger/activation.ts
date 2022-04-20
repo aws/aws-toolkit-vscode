@@ -17,6 +17,7 @@ import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
 import { Settings } from '../settings'
 import { Logging } from './commands'
+import { SystemUtilities } from '../systemUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -32,7 +33,7 @@ export async function activate(
     const logOutputChannel = LOG_OUTPUT_CHANNEL
     const logUri = vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
 
-    await vscode.workspace.fs.createDirectory(extensionContext.logUri)
+    await SystemUtilities.createDirectory(extensionContext.logUri)
 
     const mainLogger = makeLogger(
         {
