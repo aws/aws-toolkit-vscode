@@ -151,6 +151,26 @@ export class Commands {
     }
 }
 
+/**
+ * Short-hand for {@link Commands.get}.
+ */
+export const getCommand = Commands.instance.get.bind(Commands.instance)
+
+/**
+ * Short-hand for {@link Commands.register}.
+ */
+export const registerCommand = Commands.instance.register.bind(Commands.instance)
+
+/**
+ * Short-hand for {@link Commands.declare}.
+ */
+export const declareCommand = Commands.instance.declare.bind(Commands.instance)
+
+/**
+ * Short-hand for {@link Commands.from}.
+ */
+export const fromClass = Commands.instance.from.bind(Commands.instance)
+
 type Functions<T> = { [P in keyof T]: T[P] extends Callback ? T[P] : never }
 type FunctionKeys<T> = { [P in keyof T]: T[P] extends Callback ? P : never }[keyof T]
 

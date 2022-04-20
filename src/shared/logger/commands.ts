@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { Logger } from '.'
 import { recordVscodeViewLogs } from '../telemetry/telemetry'
-import { Commands } from '../vscode/commands2'
+import { fromClass } from '../vscode/commands2'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {
     const startPos = editor.document.lineAt(start).range.start
@@ -22,12 +22,10 @@ function clearSelection(editor: vscode.TextEditor): void {
     editor.selection = new vscode.Selection(start, start)
 }
 
-const from = Commands.instance.from.bind(Commands.instance)
-
 export class Logging {
     public static readonly declared = {
-        viewLogs: from(this).declareOpenLogUri('aws.viewLogs'),
-        viewLogsAtMessage: from(this).declareOpenLogId('aws.viewLogsAtMessage'),
+        viewLogs: fromClass(this).declareOpenLogUri('aws.viewLogs'),
+        viewLogsAtMessage: fromClass(this).declareOpenLogId('aws.viewLogsAtMessage'),
     }
 
     public constructor(private readonly defaultLogUri: vscode.Uri, private readonly logger: Logger) {}
