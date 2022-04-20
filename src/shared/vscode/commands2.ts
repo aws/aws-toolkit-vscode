@@ -30,7 +30,7 @@ export interface Command<T extends Callback = Callback> {
      *
      * This includes many UI-related components such as tree nodes or code lenses.
      */
-    readonly build: CommandBuilder<T>
+    build(...args: Parameters<T>): Builder
 
     /**
      * Executes the command.
@@ -38,15 +38,15 @@ export interface Command<T extends Callback = Callback> {
      * Only commands registered via {@link Commands} have certain guarantees such as
      * logging and error-handling.
      */
-    readonly execute: (...parameters: Parameters<T>) => Promise<ReturnType<T> | undefined>
+    execute(...parameters: Parameters<T>): Promise<ReturnType<T> | undefined>
 }
 
 interface RegisteredCommand<T extends Callback = Callback> extends Command<T> {
-    readonly dispose: () => void
+    dispose(): void
 }
 
 interface DeclaredCommand<T extends Callback = Callback, U extends any[] = any> extends Command<T> {
-    readonly register: (...dependencies: U) => RegisteredCommand<T>
+    register(...dependencies: U): RegisteredCommand<T>
 }
 
 /**
@@ -218,7 +218,6 @@ interface Builder {
     asCodeLens(range: vscode.Range, content: PartialCommand): vscode.CodeLens
 }
 
-type CommandBuilder<T extends Callback> = (...args: Parameters<T>) => Builder
 interface Deferred<T extends Callback, U extends any[]> {
     readonly id: string
     readonly name?: string
