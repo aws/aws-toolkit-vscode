@@ -19,15 +19,13 @@ export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
 export const PYTHON_BASE_PATTERN = '**/requirements.txt'
 
 export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
-    const requirementsFile = await findParentProjectFile(uri, /^requirements\.txt$/)
-    if (!requirementsFile) {
-        return []
-    }
+    const rootUri = (await findParentProjectFile(uri, /^requirements\.txt$/)) || uri
+
     const filename = uri.fsPath
     const parsedPath = path.parse(filename)
     // Python handler paths are slash separated and don't include the file extension
     const handlerPath = path
-        .relative(path.parse(requirementsFile.fsPath).dir, path.join(parsedPath.dir, parsedPath.name))
+        .relative(path.parse(rootUri.fsPath).dir, path.join(parsedPath.dir, parsedPath.name))
         .split(path.sep)
         .join('/')
 
@@ -39,7 +37,7 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
         return {
             filename,
             handlerName: `${handlerPath}.${symbol.name}`,
-            manifestUri: requirementsFile,
+            rootUri: rootUri,
             range: symbol.range,
         }
     })
