@@ -89,7 +89,7 @@ export async function makeCodeLenses({
             }
             const codeConfig: AddSamDebugConfigurationInput = {
                 resourceName: handler.handlerName,
-                rootUri: handler.manifestUri,
+                rootUri: handler.rootUri,
                 runtimeFamily,
             }
             lenses.push(

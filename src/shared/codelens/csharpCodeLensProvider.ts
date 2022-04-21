@@ -53,7 +53,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
             return {
                 filename: document.uri.fsPath,
                 handlerName,
-                manifestUri: assemblyUri,
+                rootUri: assemblyUri,
                 range: lambdaHandlerComponents.handlerRange,
             }
         }
