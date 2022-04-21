@@ -28,10 +28,6 @@ export const TYPESCRIPT_ALL_FILES: vscode.DocumentFilter[] = [
 export const JAVASCRIPT_BASE_PATTERN = '**/package.json'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    // let packageJsonFile = await findParentProjectFile(document.uri, /^package\.json$/)
-    // if (!packageJsonFile) {
-    //     packageJsonFile = document.uri
-    // }
     const rootUri = (await findParentProjectFile(document.uri, /^package\.json$/)) || document.uri
 
     const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(
