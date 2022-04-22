@@ -93,7 +93,7 @@ async function* filterGenerator<T, U extends T, R = T>(
             continue
         }
         if (done) {
-            return value as Awaited<U | undefined>
+            return value as unknown as Awaited<U | undefined>
         }
         yield value
     }

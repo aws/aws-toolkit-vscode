@@ -9,11 +9,8 @@ import { hasStringProps } from '../../shared/utilities/tsUtils'
 import { CredentialsId, CredentialsProvider } from './credentials'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { getLogger } from '../../shared/logger/logger'
 import { SsoWizard } from '../wizards/sso'
 import { SsoClient } from '../sso/clients'
-import { SSOServiceException } from '@aws-sdk/client-sso'
-import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 
 export class SsoProvider implements CredentialsProvider {
     public static readonly type = 'sso' as const
@@ -33,23 +30,9 @@ export class SsoProvider implements CredentialsProvider {
             throw new CancellationError('user')
         }
 
-        const provider = SsoAccessTokenProvider.create(response)
-        const client = SsoClient.create(response.region)
+        const client = SsoClient.create(response.region, response.tokenProvider)
 
-        try {
-            return await client.getRoleCredentials(response)
-        } catch (error) {
-            if (
-                error instanceof SSOServiceException &&
-                error.$fault === 'client' &&
-                !(isThrottlingError(error) || isTransientError(error))
-            ) {
-                getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
-                await provider.invalidate()
-            }
-
-            throw error
-        }
+        return client.getRoleCredentials(response)
     }
 
     public async canAutoConnect(): Promise<boolean> {
@@ -60,6 +43,7 @@ export class SsoProvider implements CredentialsProvider {
         const provider = SsoAccessTokenProvider.create({
             startUrl: this.profile['sso_start_url'],
             region: this.profile['sso_region'],
+            scopes: ['sso:account:access'],
         })
 
         return (await provider.getToken()) !== undefined

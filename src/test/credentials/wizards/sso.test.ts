@@ -18,7 +18,7 @@ describe('SSO Wizard', function () {
         tester.startUrl.assertShow(2)
 
         // "hidden" step in the flow that validates the token
-        tester.accessToken.assertShow(3)
+        tester.tokenProvider.assertShow(3)
 
         tester.accountId.assertShow(4)
         tester.roleName.assertShow(5)

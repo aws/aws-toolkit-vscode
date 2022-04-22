@@ -12,6 +12,7 @@ import {
     ListAccountsRequest,
     RoleInfo,
     SSO,
+    SSOServiceException,
 } from '@aws-sdk/client-sso'
 import {
     AuthorizationPendingException,
@@ -32,6 +33,9 @@ import {
     RequiredProps,
     selectFrom,
 } from '../../shared/utilities/tsUtils'
+import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
+import { getLogger } from '../../shared/logger'
+import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 
 const BACKOFF_DELAY_MS = 5000
 
@@ -68,9 +72,12 @@ export class OidcClient {
         const response = await this.client.createToken(request as CreateTokenRequest)
         assertHasProps(response, 'accessToken', 'expiresIn')
 
+        const accessToken = response.accessToken.replace(/^aoa/, '')
+
         return {
-            ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
+            ...selectFrom(response, 'refreshToken', 'tokenType'),
             expiresAt: new this.clock.Date(response.expiresIn * 1000 + this.clock.Date.now()),
+            accessToken,
         }
     }
 
@@ -101,31 +108,33 @@ export class OidcClient {
     }
 }
 
+type OmittedProps = 'accessToken' | 'nextToken'
+
 export class SsoClient {
     public constructor(private readonly client: SSO) {}
 
     public listAccounts(
-        request: Pick<ListAccountsRequest, 'accessToken'>
+        request: Omit<ListAccountsRequest, OmittedProps> = {}
     ): AsyncCollection<RequiredProps<AccountInfo, 'accountId'>[]> {
         const requester = (request: ListAccountsRequest) => this.client.listAccounts(request)
-        const collection = pageableToCollection(requester, request, 'nextToken', 'accountList')
+        const collection = pageableToCollection(requester, this.makeRequest(request), 'nextToken', 'accountList')
 
         return collection.filter(isNonNullable).map(accounts => accounts.map(a => (assertHasProps(a, 'accountId'), a)))
     }
 
     public listAccountRoles(
-        request: Pick<ListAccountRolesRequest, 'accessToken' | 'accountId'>
+        request: Omit<ListAccountRolesRequest, OmittedProps>
     ): AsyncCollection<Required<RoleInfo>[]> {
         const requester = (request: ListAccountRolesRequest) => this.client.listAccountRoles(request)
-        const collection = pageableToCollection(requester, request, 'nextToken', 'roleList')
+        const collection = pageableToCollection(requester, this.makeRequest(request), 'nextToken', 'roleList')
 
         return collection
             .filter(isNonNullable)
             .map(roles => roles.map(r => (assertHasProps(r, 'roleName', 'accountId'), r)))
     }
 
-    public async getRoleCredentials(request: GetRoleCredentialsRequest) {
-        const response = await this.client.getRoleCredentials(request)
+    public async getRoleCredentials(request: Omit<GetRoleCredentialsRequest, OmittedProps>) {
+        const response = await this.client.getRoleCredentials(this.makeRequest(request))
 
         assertHasProps(response, 'roleCredentials')
         assertHasProps(response.roleCredentials, 'accessKeyId', 'secretAccessKey')
@@ -138,7 +147,34 @@ export class SsoClient {
         }
     }
 
-    public static create(region: string) {
-        return new this(new SSO({ region, endpoint: readEndpoint(SSO) }))
+    private makeRequest<T extends Record<any, any>>(request: T): T & { accessToken: string | undefined } {
+        return { ...request, accessToken: undefined }
+    }
+
+    public static create(region: string, provider: SsoAccessTokenProvider) {
+        const client = new SSO({ region, endpoint: readEndpoint(SSO) })
+
+        client.middlewareStack.add(next => async args => {
+            const token = { ...(await provider.getToken()) }
+            assertHasProps(token, 'accessToken') // TODO: make `assertHasProps` handle `undefined`
+            args.input.accessToken = token.accessToken
+
+            try {
+                return await next(args)
+            } catch (error) {
+                if (
+                    error instanceof SSOServiceException &&
+                    error.$fault === 'client' &&
+                    !(isThrottlingError(error) || isTransientError(error))
+                ) {
+                    getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
+                    provider.invalidate()
+                }
+
+                throw error
+            }
+        })
+
+        return new this(client)
     }
 }
