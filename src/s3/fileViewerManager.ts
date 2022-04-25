@@ -10,7 +10,6 @@ import * as S3 from '../shared/clients/s3Client'
 import { getLogger } from '../shared/logger'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { localize } from '../shared/utilities/vsCodeUtils'
-import { parse } from '@aws-sdk/util-arn-parser'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { s3FileViewerHelpUrl } from '../shared/constants'
@@ -362,12 +361,10 @@ export class S3FileViewerManager {
     }
 
     private static fileToUri(file: S3File, mode: TabMode): vscode.Uri {
-        const parts = parse(file.arn)
-        const fileName = path.basename(parts.resource)
-        const fsPath = path.join(file.bucket.region, path.dirname(parts.resource), `[S3] ${fileName}`)
+        const scheme = mode === TabMode.Read ? S3_READ_SCHEME : S3_EDIT_SCHEME
 
-        return vscode.Uri.parse(fsPath).with({
-            scheme: mode === TabMode.Read ? S3_READ_SCHEME : S3_EDIT_SCHEME,
+        return vscode.Uri.parse(`${scheme}:`, true).with({
+            path: ['', file.bucket.region, file.bucket.name, file.key].join('/'),
         })
     }
 }
