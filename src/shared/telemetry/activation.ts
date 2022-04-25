@@ -19,7 +19,7 @@ const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
 const TELEMETRY_SETTING_DEFAULT = true
 
-export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'View Settings')
+export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
 
 export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionAck'
@@ -106,7 +106,7 @@ function showTelemetryNotice(extensionContext: vscode.ExtensionContext, config: 
 
     const telemetryNoticeText: string = localize(
         'AWS.telemetry.notificationMessage',
-        'The {0} Toolkit collects usage metrics by default. These metrics help drive toolkit improvements. This setting can be changed from the IDE settings.',
+        '{0} Toolkit collects anonymous usage metrics to help drive toolkit improvements. This can be changed in the settings.',
         getIdeProperties().company
     )
 
