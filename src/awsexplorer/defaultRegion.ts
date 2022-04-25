@@ -16,9 +16,9 @@ import { PromptSettings } from '../shared/settings'
 
 class RegionMissingUI {
     public static readonly add: string = localizedText.yes
-    public static readonly alwaysAdd: string = localize(
-        'AWS.message.prompt.yesDontAskAgain',
-        "Yes, and don't ask again"
+    public static readonly alwaysIgnore: string = localize(
+        'AWS.message.prompt.noDontAskAgain',
+        "No, and don't ask again"
     )
     public static readonly ignore: string = localizedText.no
 }
@@ -37,14 +37,12 @@ export async function checkExplorerForDefaultRegion(
 
     const shouldPrompt = await PromptSettings.instance.isPromptEnabled('regionAddAutomatically')
     if (!shouldPrompt) {
-        await awsContext.addExplorerRegion(profileRegion)
-        awsExplorer.refresh()
         return
     }
 
     // Prompt: "Add region?"
-    // Choices: "Yes", "Yes, don't ask again", "No"
-    const items = [RegionMissingUI.add, RegionMissingUI.alwaysAdd, RegionMissingUI.ignore].map<vscode.QuickPickItem>(
+    // Choices: "Yes", "No", "No, don't ask again"
+    const items = [RegionMissingUI.add, RegionMissingUI.ignore, RegionMissingUI.alwaysIgnore].map<vscode.QuickPickItem>(
         item => {
             return {
                 label: item,
@@ -75,12 +73,10 @@ export async function checkExplorerForDefaultRegion(
 
     const response = r[0].label
 
-    if (response === RegionMissingUI.add || response === RegionMissingUI.alwaysAdd) {
+    if (response === RegionMissingUI.add) {
         await awsContext.addExplorerRegion(profileRegion)
         awsExplorer.refresh()
-    }
-
-    if (response === RegionMissingUI.alwaysAdd) {
+    } else if (response === RegionMissingUI.alwaysIgnore) {
         PromptSettings.instance.disablePrompt('regionAddAutomatically')
     }
 }
