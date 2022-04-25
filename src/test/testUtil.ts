@@ -236,7 +236,7 @@ export async function assertTextEditorContains(contents: string): Promise<void |
     if (!editor) {
         const actual = vscode.window.activeTextEditor.document
         const documentName = actual.uri.toString(true)
-        const message = `Document "${documentName}" contained ${actual.getText()}, expected: ${contents}`
+        const message = `Document "${documentName}" contained "${actual.getText()}", expected: "${contents}"`
         assert.strictEqual(actual.getText(), contents, message)
     }
 }
