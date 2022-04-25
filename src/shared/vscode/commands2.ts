@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { capitalize } from '../utilities/textUtilities'
+import { toTitleCase } from '../utilities/textUtilities'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { isNameMangled } from './env'
 import { UnknownError } from '../toolkitError'
@@ -85,7 +85,7 @@ export class Commands {
     /**
      * Declares the _intent_ to register a command.
      *
-     * Forward declaration adds one level of mis-direction. This allows for explicit annotation of
+     * Forward declaration adds one level of indirection. This allows for explicit annotation of
      * not just the command signature but also its immediate dependencies.
      */
     public declare<T extends Callback, D extends any[]>(
@@ -120,7 +120,7 @@ export class Commands {
         const result = {} as Record<string, (id: string) => DeclaredCommand>
 
         for (const [k, v] of Object.entries<Callback>(getFunctions(target))) {
-            const mappedKey = `declare${capitalize(k)}`
+            const mappedKey = `declare${toTitleCase(k)}`
             const name = !isNameMangled() ? `${target.name}.${k}` : ''
 
             result[mappedKey] = id => this.declare({ id, name }, (instance: T) => v.bind(instance))
@@ -144,32 +144,31 @@ export class Commands {
         return resource
     }
 
-    static #instance: Commands
+    /**
+     * The default instance of {@link Commands}.
+     */
+    public static readonly instance = new Commands()
 
-    public static get instance(): Commands {
-        return (this.#instance ??= new Commands())
-    }
+    /**
+     * Returns {@link Commands.get} using the default instance.
+     */
+    public static readonly get = this.instance.get.bind(this.instance)
+
+    /**
+     * Returns {@link Commands.register} using the default instance.
+     */
+    public static readonly register = this.instance.register.bind(this.instance)
+
+    /**
+     * Returns {@link Commands.declare} using the default instance.
+     */
+    public static readonly declare = this.instance.declare.bind(this.instance)
+
+    /**
+     * Returns {@link Commands.from} using the default instance.
+     */
+    public static readonly from = this.instance.from.bind(this.instance)
 }
-
-/**
- * Short-hand for {@link Commands.get}.
- */
-export const getCommand = Commands.instance.get.bind(Commands.instance)
-
-/**
- * Short-hand for {@link Commands.register}.
- */
-export const registerCommand = Commands.instance.register.bind(Commands.instance)
-
-/**
- * Short-hand for {@link Commands.declare}.
- */
-export const declareCommand = Commands.instance.declare.bind(Commands.instance)
-
-/**
- * Short-hand for {@link Commands.from}.
- */
-export const fromClass = Commands.instance.from.bind(Commands.instance)
 
 type Functions<T> = { [P in keyof T]: T[P] extends Callback ? T[P] : never }
 type FunctionKeys<T> = { [P in keyof T]: T[P] extends Callback ? P : never }[keyof T]
@@ -224,6 +223,13 @@ interface Deferred<T extends Callback, U extends any[]> {
     readonly factory: CommandFactory<T, U>
 }
 
+/**
+ * Contains the command implementation and properties.
+ *
+ * `CommandResources` are registered on the {@link Commands} singleton. This class does not
+ * differentiate between 'registered' and 'declared' commands; that abstraction is handled
+ * by the singleton.
+ */
 class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private disposed?: boolean
     private subscription?: vscode.Disposable
@@ -310,6 +316,9 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
     const { args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
+
+    // TODO(sijaden): add telemetry instrumentation here
+
     logger.debug(`command: running ${label}${withArgs}`)
 
     try {

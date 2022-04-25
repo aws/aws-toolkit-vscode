@@ -83,6 +83,6 @@ export async function insertTextIntoFile(text: string, filePath: string, line: n
     })
 }
 
-export function capitalize(str: string): string {
+export function toTitleCase(str: string): string {
     return str.charAt(0).toUpperCase().concat(str.slice(1))
 }
