@@ -2850,6 +2850,13 @@
                     "label": "${path}",
                     "separator": "\\"
                 }
+            },
+            {
+                "scheme": "s3*",
+                "formatting": {
+                    "label": "[S3] ${path}",
+                    "separator": "/"
+                }
             }
         ],
         "walkthroughs": [
