@@ -8,44 +8,19 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { extensionSettingsPrefix } from '../shared/constants'
 import * as localizedText from '../shared/localizedText'
 import { createQuickPick, promptUser } from '../shared/ui/picker'
 import { AwsExplorer } from './awsExplorer'
 import { getIdeProperties } from '../shared/extensionUtilities'
+import { PromptSettings } from '../shared/settings'
 
-/**
- * The actions that can be taken when we discover that a profile's default region is not
- * showing in the Explorer.
- *
- * Keep this in sync with the onDefaultRegionMissing configuration defined in package.json.
- */
-enum OnDefaultRegionMissingOperation {
-    /**
-     * Ask the user what they would like to happen
-     */
-    Prompt = 'prompt',
-    /**
-     * Automatically add the region to the Explorer
-     */
-    Add = 'add',
-    /**
-     * Do nothing
-     */
-    Ignore = 'ignore',
-}
-
-class DefaultRegionMissingPromptItems {
+class RegionMissingUI {
     public static readonly add: string = localizedText.yes
     public static readonly alwaysAdd: string = localize(
         'AWS.message.prompt.yesDontAskAgain',
         "Yes, and don't ask again"
     )
     public static readonly ignore: string = localizedText.no
-    public static readonly alwaysIgnore: string = localize(
-        'AWS.message.prompt.defaultRegionHidden.alwaysIgnore',
-        "No, and don't ask again"
-    )
 }
 
 export async function checkExplorerForDefaultRegion(
@@ -60,35 +35,22 @@ export async function checkExplorerForDefaultRegion(
         return
     }
 
-    // Explorer does not contain the default region. See if we should add it.
-    const config = vscode.workspace.getConfiguration(extensionSettingsPrefix)
-
-    const defaultAction = config.get<OnDefaultRegionMissingOperation>(
-        'onDefaultRegionMissing',
-        OnDefaultRegionMissingOperation.Prompt
-    )
-
-    // Bypass prompt if user has requested to suppress it.
-    if (defaultAction === OnDefaultRegionMissingOperation.Add) {
+    const shouldPrompt = await PromptSettings.instance.isPromptEnabled('regionAddAutomatically')
+    if (!shouldPrompt) {
         await awsContext.addExplorerRegion(profileRegion)
         awsExplorer.refresh()
-
-        return
-    } else if (defaultAction === OnDefaultRegionMissingOperation.Ignore) {
         return
     }
 
-    // Ask user what to do
-    const items = [
-        DefaultRegionMissingPromptItems.add,
-        DefaultRegionMissingPromptItems.alwaysAdd,
-        DefaultRegionMissingPromptItems.ignore,
-        DefaultRegionMissingPromptItems.alwaysIgnore,
-    ].map<vscode.QuickPickItem>(item => {
-        return {
-            label: item,
+    // Prompt: "Add region?"
+    // Choices: "Yes", "Yes, don't ask again", "No"
+    const items = [RegionMissingUI.add, RegionMissingUI.alwaysAdd, RegionMissingUI.ignore].map<vscode.QuickPickItem>(
+        item => {
+            return {
+                label: item,
+            }
         }
-    })
+    )
 
     const picker = createQuickPick({
         options: {
@@ -96,7 +58,7 @@ export async function checkExplorerForDefaultRegion(
             ignoreFocusOut: true,
             title: localize(
                 'AWS.message.prompt.defaultRegionHidden',
-                'Default region "{0}" of profile "{1}" is currently hidden. Show it in {2} Explorer?',
+                'Show the default region "{0}" for credentials "{1}" in {2} Explorer?',
                 profileRegion,
                 profileName,
                 getIdeProperties().company
@@ -104,40 +66,21 @@ export async function checkExplorerForDefaultRegion(
         },
         items: items,
     })
-    const response = await promptUser({ picker: picker })
+    const r = await promptUser({ picker: picker })
 
     // User Cancelled
-    if (!response || response.length === 0) {
+    if (!r || r.length === 0) {
         return
     }
 
-    const regionHiddenResponse = response[0].label
+    const response = r[0].label
 
-    if (
-        regionHiddenResponse === DefaultRegionMissingPromptItems.add ||
-        regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd
-    ) {
+    if (response === RegionMissingUI.add || response === RegionMissingUI.alwaysAdd) {
         await awsContext.addExplorerRegion(profileRegion)
         awsExplorer.refresh()
     }
 
-    if (
-        regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd ||
-        regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysIgnore
-    ) {
-        // User does not want to be prompted anymore
-        const action =
-            regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd
-                ? OnDefaultRegionMissingOperation.Add
-                : OnDefaultRegionMissingOperation.Ignore
-        await config.update('onDefaultRegionMissing', action, vscode.ConfigurationTarget.Global)
-        vscode.window.showInformationMessage(
-            localize(
-                'AWS.message.prompt.defaultRegionHidden.suppressed',
-                // prettier-ignore
-                "You will no longer be asked what to do when the current profile's default region is hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
-                'aws.onDefaultRegionMissing'
-            )
-        )
+    if (response === RegionMissingUI.alwaysAdd) {
+        PromptSettings.instance.disablePrompt('regionAddAutomatically')
     }
 }

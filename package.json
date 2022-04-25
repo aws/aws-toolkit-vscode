@@ -101,11 +101,6 @@
                     "default": "",
                     "description": "%AWS.configuration.profileDescription%"
                 },
-                "aws.onDefaultRegionMissing": {
-                    "type": "string",
-                    "default": "prompt",
-                    "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
-                },
                 "aws.iot.maxItemsPerPage": {
                     "type": "number",
                     "default": 100,
@@ -219,6 +214,10 @@
                             "default": false
                         },
                         "ecsRunCommandDisable": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "regionAddAutomatically": {
                             "type": "boolean",
                             "default": false
                         },
