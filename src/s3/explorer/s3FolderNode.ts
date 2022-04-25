@@ -21,7 +21,6 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import { folderIconPath } from '../../shared/utilities/vsCodeUtils'
 import { S3FileNode } from './s3FileNode'
 import { inspect } from 'util'
 import { Workspace } from '../../shared/vscode/workspace'
@@ -41,7 +40,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     ) {
         super(folder.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = folder.path
-        this.iconPath = folderIconPath()
+        this.iconPath = vscode.ThemeIcon.Folder
         this.contextValue = 'awsS3FolderNode'
     }
 

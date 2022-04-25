@@ -380,7 +380,7 @@ function resolveWebviewHtml(params: {
                 img-src ${resolvedParams.cspSource} https: data:;
                 script-src ${resolvedParams.cspSource};
                 style-src ${resolvedParams.cspSource} 'unsafe-inline';
-                font-src 'self' data:;"
+                font-src ${resolvedParams.cspSource} 'self' data:;"
         >
     </head>
     <body>

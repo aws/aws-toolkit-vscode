@@ -61,7 +61,6 @@ import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
-import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
 
 let localize: nls.LocalizeFunc
@@ -71,7 +70,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
     initialize(context, extWindow.Window.vscode())
-    initializeIconPaths(context)
     initializeManifestPaths(context)
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(

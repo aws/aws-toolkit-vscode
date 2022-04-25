@@ -15,7 +15,7 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { EcrTagNode } from './ecrTagNode'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
 export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNode {
     name: string = this.repository.repositoryName
@@ -28,10 +28,7 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
         public readonly repository: EcrRepository
     ) {
         super(repository.repositoryName, vscode.TreeItemCollapsibleState.Collapsed)
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.ecr),
-            light: vscode.Uri.file(globals.iconPaths.light.ecr),
-        }
+        this.iconPath = getIcon('aws-ecr-registry')
         this.contextValue = 'awsEcrRepositoryNode'
         this.regionCode = ecr.regionCode
     }

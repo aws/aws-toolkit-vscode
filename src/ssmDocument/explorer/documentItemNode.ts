@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { SSM } from 'aws-sdk'
 
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
-import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 
 export class DocumentItemNode extends AWSTreeNodeBase {
@@ -20,7 +20,7 @@ export class DocumentItemNode extends AWSTreeNodeBase {
         super('')
         this.update(documentItem)
         this.contextValue = 'awsDocumentItemNode'
-        this.iconPath = fileIconPath()
+        this.iconPath = vscode.ThemeIcon.File
     }
 
     public update(documentItem: SSM.Types.DocumentIdentifier): void {

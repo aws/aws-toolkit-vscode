@@ -1,4 +1,5 @@
 /* Base styling sheet for standard tags and common classes */
+@import url('./icons.css');
 
 /* Radio button */
 input[type='radio'] {
@@ -23,7 +24,7 @@ input:focus:not(:focus-visible) {
 }
 
 /* Checkbox */
-input[type='checkbox']:not(.collapse-button) {
+input[type='checkbox'] {
     -webkit-appearance: none;
     display: inline-block;
     width: 16px;
@@ -37,11 +38,13 @@ input[type='checkbox']:not(.collapse-button) {
     background-repeat: no-repeat;
     margin: 0;
 }
-body.vscode-dark input[type='checkbox']:not(.collapse-button):checked {
-    background-image: url('../../resources/dark/done.svg');
+
+body.vscode-dark input[type='checkbox']:checked {
+    background-image: url('../../resources/icons/vscode/dark/check.svg');
 }
-body.vscode-light input[type='checkbox']:not(.collapse-button):checked {
-    background-image: url('../../resources/light/done.svg');
+
+body.vscode-light input[type='checkbox']:checked {
+    background-image: url('../../resources/icons/vscode/light/check.svg');
 }
 
 /* Placeholder */
@@ -96,6 +99,7 @@ option {
     display: flex;
     align-items: flex-start;
     flex-direction: row;
+    flex-wrap: wrap;
 }
 /* The below selectors apply a tint depending on the theme: light for dark and dark for light */
 /* `backdrop-filter` with a brightness offset of 0.2 would be better here but it causes some slight flickering */

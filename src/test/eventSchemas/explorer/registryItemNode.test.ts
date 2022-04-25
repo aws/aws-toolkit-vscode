@@ -15,7 +15,6 @@ import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import globals from '../../../shared/extensionGlobals'
 
@@ -23,18 +22,12 @@ describe('RegistryItemNode', function () {
     const fakeRegion = 'testRegion'
     let fakeRegistry: Schemas.RegistrySummary
 
-    before(async function () {
-        setupTestIconPaths()
+    before(function () {
         fakeRegistry = {
             RegistryName: 'myRegistry',
             RegistryArn: 'arn:aws:schemas:us-west-2:434418839121:registry/myRegistry',
         }
     })
-
-    after(async function () {
-        clearTestIconPaths()
-    })
-
     class SchemaMockToolkitClientBuilder extends MockToolkitClientBuilder {
         public constructor(schemaClient: SchemaClient) {
             super({ schemaClient })
@@ -47,15 +40,6 @@ describe('RegistryItemNode', function () {
 
         assert.strictEqual(testNode.label, `${fakeRegistry.RegistryName}`)
         assert.strictEqual(testNode.tooltip, `${fakeRegistry.RegistryName}${os.EOL}${fakeRegistry.RegistryArn}`)
-    })
-
-    it('initializes icon', async function () {
-        const testNode: RegistryItemNode = generateTestNode()
-
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.registry, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.registry, 'Unexpected light icon path')
     })
 
     it('returns placeholder node if no children are present', async function () {

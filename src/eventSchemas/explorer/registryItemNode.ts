@@ -20,6 +20,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { SchemaItemNode } from './schemaItemNode'
+import { getIcon } from '../../shared/icons'
 import globals from '../../shared/extensionGlobals'
 
 export class RegistryItemNode extends AWSTreeNodeBase {
@@ -31,10 +32,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         this.update(registryItemOutput)
         this.contextValue = 'awsRegistryItemNode'
         this.schemaNodes = new Map<string, SchemaItemNode>()
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.registry),
-            light: vscode.Uri.file(globals.iconPaths.light.registry),
-        }
+        this.iconPath = getIcon('aws-schemas-registry')
     }
 
     public get registryName(): string {

@@ -39,3 +39,9 @@ export function once<T>(fn: () => T): () => T {
 
     return () => (val ??= fn())
 }
+
+export function memoize<T, U extends P[], P>(fn: (...args: U) => T): (...args: U) => T {
+    const cache: { [key: string]: T | undefined } = {}
+
+    return (...args) => (cache[args.map(String).join(':')] ??= fn(...args))
+}

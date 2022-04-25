@@ -313,8 +313,7 @@ requests just from the model/types.
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
 
-1. Use a separate location in this repo for every repo where images are
-   sourced from, in the form `third-party/resources/from-<BRIEF_REPO_NAME>`.
+1. Use a separate location in this repo for every repo/organization where images are sourced from
 1. Copy the source repo's licence into this destination location's LICENSE.txt file
 1. Create a README.md in the destination location, and type in a copyright attribution:
 
@@ -327,7 +326,7 @@ If you are contribuing visual assets from other open source repos, the source re
     ```
 
 1. Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
-1. Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
+1. Add an entry [here](resources/icons/README.md#third-party) summarizing the new destination location, where the assets were sourced from, and a brief rationale.
 
 [PR #227](https://github.com/aws/aws-toolkit-vscode/pull/227) shows an example.
 

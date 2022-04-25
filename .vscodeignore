@@ -9,11 +9,9 @@ dist/src/integrationTest/**
 dist/src/testFixtures/**
 dist/test/**
 dist/integrationTest/**
-dist/third-party/test/**
 dist/**/*.map
 src/**
 out/**
-third-party/test/**
 webpack.config.js
 .gitignore
 .nycrc.json

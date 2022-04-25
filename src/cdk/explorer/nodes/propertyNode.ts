@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { getIcon } from '../../../shared/icons'
 
 /*
  * Represents a property of a CDK construct. Properties can be simple key-value pairs, Arrays,
@@ -19,10 +19,7 @@ export class PropertyNode extends AWSTreeNodeBase {
     ) {
         super(label, collapsibleState)
         this.contextValue = 'awsCdkPropertyNode'
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.settings),
-            light: vscode.Uri.file(globals.iconPaths.light.settings),
-        }
+        this.iconPath = getIcon('vscode-gear')
     }
 
     public async getChildren(): Promise<PropertyNode[]> {

@@ -13,23 +13,17 @@ import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 describe('SchemaItemNode', function () {
     let fakeSchemaItem: Schemas.SchemaSummary
     const fakeRegistryName = 'testRegistry'
 
-    before(async function () {
-        setupTestIconPaths()
+    before(function () {
         fakeSchemaItem = {
             SchemaName: 'testSchemaName',
             SchemaArn: 'testARN',
         }
-    })
-
-    after(async function () {
-        clearTestIconPaths()
     })
 
     // Validates we tagged the node correctly
@@ -38,15 +32,6 @@ describe('SchemaItemNode', function () {
 
         assert.strictEqual(testNode.label, fakeSchemaItem.SchemaName)
         assert.strictEqual(testNode.tooltip, `${fakeSchemaItem.SchemaName}${os.EOL}${fakeSchemaItem.SchemaArn}`)
-    })
-
-    it('initializes icon', async function () {
-        const testNode = generateTestNode()
-
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.schema, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.schema, 'Unexpected light icon path')
     })
 
     // Validates we don't yield some unexpected value that our command triggers
