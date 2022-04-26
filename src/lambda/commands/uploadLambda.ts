@@ -70,7 +70,8 @@ export async function uploadLambdaCommand(functionNode: LambdaFunctionNode) {
             showViewLogsMessage(`Could not upload lambda: ${err.message}`)
             getLogger().error(`Lambda upload failed: %O`, err.cause ?? err)
         } else {
-            throw err
+            showViewLogsMessage(`Could not upload lambda (unexpected exception)`)
+            getLogger().error(`Lambda upload failed: %O`, err)
         }
     } finally {
         telemetry.recordLambdaUpdateFunctionCode({
