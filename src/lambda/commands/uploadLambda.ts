@@ -53,9 +53,9 @@ export async function uploadLambdaCommand(functionNode: LambdaFunctionNode) {
         configuration: functionNode.configuration,
     }
 
-    const response = await new UploadLambdaWizard(lambda).run()
-
     try {
+        const response = await new UploadLambdaWizard(lambda).run()
+
         if (response?.uploadType === 'zip') {
             await runUploadLambdaZipFile(lambda, response.targetUri)
             result = 'Succeeded'
