@@ -7,9 +7,8 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
@@ -45,7 +44,6 @@ export class ResourcesNode extends AWSTreeNodeBase {
                 await this.updateChildren()
                 return [...this.resourceTypeNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () => {
                 const placeholder = new PlaceholderNode(
                     this,

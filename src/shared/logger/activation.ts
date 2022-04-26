@@ -10,21 +10,18 @@ import * as nls from 'vscode-nls'
 import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
 import { extensionSettingsPrefix } from '../constants'
-import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
 import { LOG_OUTPUT_CHANNEL } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
-import globals from '../extensionGlobals'
 import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
 import { Settings } from '../settings'
+import { Logging } from './commands'
+import { SystemUtilities } from '../systemUtilities'
 
 const localize = nls.loadMessageBundle()
 
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
-
-/** One log per session */
-let logPath: string
 
 /**
  * Activate Logger functionality for the extension.
@@ -34,27 +31,26 @@ export async function activate(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     const logOutputChannel = LOG_OUTPUT_CHANNEL
-    logPath = getLogPath()
+    const logUri = vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
 
-    await fs.ensureDir(path.dirname(logPath))
+    await SystemUtilities.createDirectory(extensionContext.logUri)
 
-    // default logger
-    setLogger(
-        makeLogger(
-            {
-                logPaths: [logPath],
-                outputChannels: [logOutputChannel],
-            },
-            extensionContext.subscriptions
-        )
+    const mainLogger = makeLogger(
+        {
+            logPaths: [logUri.fsPath],
+            outputChannels: [logOutputChannel],
+        },
+        extensionContext.subscriptions
     )
+
+    setLogger(mainLogger)
     getLogger().error(`log level: ${getLogLevel()}`)
 
     // channel logger
     setLogger(
         makeLogger(
             {
-                logPaths: [logPath],
+                logPaths: [logUri.fsPath],
                 outputChannels: [outputChannel, logOutputChannel],
             },
             extensionContext.subscriptions
@@ -75,12 +71,15 @@ export async function activate(
         'debugConsole'
     )
 
-    await registerLoggerCommands(extensionContext)
-    getLogger().debug(`Logging started: ${logPath}`)
+    getLogger().debug(`Logging started: ${logUri}`)
 
-    extensionContext.subscriptions.push(await createLogWatcher(logPath))
+    const commands = new Logging(logUri, mainLogger)
+    extensionContext.subscriptions.push(
+        ...Object.values(Logging.declared).map(c => c.register(commands)),
+        await createLogWatcher(logUri.fsPath)
+    )
 
-    cleanLogFiles(path.dirname(logPath)).catch(err => {
+    cleanLogFiles(path.dirname(logUri.fsPath)).catch(err => {
         getLogger().warn('Failed to clean-up old logs: %s', (err as Error).message)
     })
 }
@@ -140,21 +139,6 @@ function getLogLevel(): LogLevel {
     return configuration.get('logLevel', DEFAULT_LOG_LEVEL)
 }
 
-function getLogPath(): string {
-    if (logPath !== undefined) {
-        return logPath
-    }
-
-    // TODO: use context.logUri ?
-    const logsDir = path.join(globals.context.globalStorageUri.fsPath, 'logs')
-
-    return path.join(logsDir, makeLogFilename())
-}
-
-function getLogUri(): vscode.Uri {
-    return vscode.Uri.file(path.normalize(getLogPath()))
-}
-
 function makeLogFilename(): string {
     const m = moment()
     const date = m.format('YYYYMMDD')
@@ -163,46 +147,6 @@ function makeLogFilename(): string {
     const datetime = `${date}T${time}`
 
     return `aws_toolkit_${datetime}.log`
-}
-
-async function openLogUri(logUri: vscode.Uri): Promise<vscode.TextEditor | undefined> {
-    recordVscodeViewLogs() // Perhaps add additional argument to know which log was viewed?
-    return await vscode.window.showTextDocument(logUri)
-}
-
-async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {
-    context.subscriptions.push(vscode.commands.registerCommand('aws.viewLogs', async () => openLogUri(getLogUri())))
-    context.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.viewLogsAtMessage',
-            async (logID: number = -1, logUri: vscode.Uri = getLogUri()) => {
-                const msg: string | undefined = getLogger().getLogById(logID, logUri)
-                const editor: vscode.TextEditor | undefined = await openLogUri(logUri)
-
-                if (!msg || !editor) {
-                    return
-                }
-
-                // Retrieve where the message starts by counting number of newlines
-                const text: string = editor.document.getText()
-                const lineStart: number = text
-                    .substring(0, text.indexOf(msg))
-                    .split(/\r?\n/)
-                    .filter(x => x).length
-
-                if (lineStart > 0) {
-                    const lineEnd: number = lineStart + msg.split(/\r?\n/).filter(x => x).length
-                    const startPos = editor.document.lineAt(lineStart).range.start
-                    const endPos = editor.document.lineAt(lineEnd - 1).range.end
-                    editor.selection = new vscode.Selection(startPos, endPos)
-                    editor.revealRange(new vscode.Range(startPos, endPos))
-                } else {
-                    // No message found, clear selection
-                    editor.selection = new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(0, 0))
-                }
-            }
-        )
-    )
 }
 
 /**

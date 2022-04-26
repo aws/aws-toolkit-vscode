@@ -64,6 +64,16 @@ export class SystemUtilities {
         )
     }
 
+    public static async createDirectory(file: string | vscode.Uri): Promise<void> {
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+
+        if (isCloud9()) {
+            return fs.ensureDir(uri.fsPath)
+        }
+
+        return vscode.workspace.fs.createDirectory(uri)
+    }
+
     /**
      * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
      * absolute) if it works.

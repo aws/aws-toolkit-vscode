@@ -23,6 +23,10 @@ export function keys<T extends Record<string, any>>(obj: T): [keyof T & string] 
     return Object.keys(obj) as [keyof T & string]
 }
 
+export function isThenable<T>(obj: unknown): obj is Thenable<T> {
+    return isNonNullable(obj) && typeof (obj as Thenable<T>).then === 'function'
+}
+
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
 export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 /**

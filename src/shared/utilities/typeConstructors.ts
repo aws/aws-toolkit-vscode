@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isNameMangled } from '../vscode/env'
 import { isNonNullable } from './tsUtils'
 
 /**
@@ -58,11 +59,9 @@ function isNamedTypeConstructor(obj: unknown): obj is NamedTypeConstructor {
     return typeof obj === 'function' && Object.prototype.hasOwnProperty.call(obj, 'typeName')
 }
 
-const isMangled = isNamedTypeConstructor.name !== 'isNamedTypeConstructor'
-
 // For debug/logging purposes only. The 'name' is not intended to be a unique identifier.
 export function getTypeName(type: TypeConstructor): string {
-    const fallback = isPrimitiveConstructor(type) || !isMangled ? type.name : '[Omitted]'
+    const fallback = isPrimitiveConstructor(type) || !isNameMangled() ? type.name : '[Omitted]'
     const typeName = isNamedTypeConstructor(type) ? type.typeName : fallback
 
     return typeName || '[Anonymous Type]'
