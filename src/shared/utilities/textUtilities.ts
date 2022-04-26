@@ -82,3 +82,7 @@ export async function insertTextIntoFile(text: string, filePath: string, line: n
         }
     })
 }
+
+export function toTitleCase(str: string): string {
+    return str.charAt(0).toUpperCase().concat(str.slice(1))
+}
