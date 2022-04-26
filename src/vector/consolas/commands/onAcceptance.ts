@@ -27,6 +27,10 @@ export async function onAcceptance(
         const start = acceptanceEntry.editor.document.lineAt(acceptanceEntry.line).range.start
         const end = acceptanceEntry.editor.selection.active
         const languageId = acceptanceEntry.editor.document.languageId
+        TelemetryHelper.recordUserDecisionTelemetry(
+            acceptanceEntry.acceptIndex,
+            acceptanceEntry.editor?.document.languageId
+        )
         /**
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
@@ -38,6 +42,7 @@ export async function onAcceptance(
                 end.line
             )
         }
+
         /**
          * Python formatting uses Black but Black does not support the "Format Selection" command,
          * instead we use document format here. For other languages, we use "Format Selection"
@@ -71,10 +76,6 @@ export async function onAcceptance(
             languageRuntimeSource: languageContext.runtimeLanguageSource,
         })
     }
-    TelemetryHelper.recordUserDecisionTelemetry(
-        acceptanceEntry.acceptIndex,
-        acceptanceEntry.editor?.document.languageId
-    )
 
     recommendations.requestId = ''
 }

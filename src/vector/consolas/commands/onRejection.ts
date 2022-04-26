@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../../shared/logger/logger'
 import { recommendations, invocationContext } from '../models/model'
 
 export async function onRejection(isManualTriggerEnabled: boolean, isAutomatedTriggerEnabled: boolean) {
@@ -16,8 +15,5 @@ export async function onRejection(isManualTriggerEnabled: boolean, isAutomatedTr
 
     if (invocationContext.isActive && recommendations.response.length > 0) {
         invocationContext.isActive = false
-        for (const entry of recommendations.response.entries()) {
-            getLogger().info(`Rejected ${entry[0]} recommendation : ${entry[1].content.trim()}`)
-        }
     }
 }
