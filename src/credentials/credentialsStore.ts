@@ -93,14 +93,17 @@ export class CredentialsStore {
     }
 }
 
+/**
+ * Gets credentials, and tries to refresh them if necessary.
+ */
 export async function getCredentialsFromStore(
     credentialsId: CredentialsId,
     credentialsStore: CredentialsStore
-): Promise<AWS.Credentials> {
+): Promise<AWS.Credentials | undefined> {
     const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(credentialsId)
     if (!provider) {
         credentialsStore.invalidateCredentials(credentialsId)
-        throw new Error(`Could not find Credentials Provider for ${asString(credentialsId)}`)
+        return undefined
     }
 
     const cachedCredentials = await credentialsStore.upsertCredentials(credentialsId, provider)
