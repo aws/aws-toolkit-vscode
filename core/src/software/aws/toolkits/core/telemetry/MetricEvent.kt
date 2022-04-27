@@ -75,7 +75,7 @@ data class DefaultMetricEvent internal constructor(
         private var createTime: Instant = Instant.now()
         private var awsAccount: String = METADATA_NA
         private var awsRegion: String = METADATA_NA
-        private var data: MutableCollection<MetricEvent.Datum> = mutableListOf()
+        private val data: MutableCollection<MetricEvent.Datum> = mutableListOf()
 
         override fun createTime(createTime: Instant): MetricEvent.Builder {
             this.createTime = createTime

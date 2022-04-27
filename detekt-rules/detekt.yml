@@ -171,6 +171,9 @@ formatting:
   StringTemplate:
     active: true
     autoCorrect: true
+  Wrapping:
+    active: true
+    autoCorrect: true
 
 naming:
   active: true
@@ -301,4 +304,4 @@ style:
   UnusedPrivateClass:
     active: true
   VarCouldBeVal:
-    active: true
+    active: false
