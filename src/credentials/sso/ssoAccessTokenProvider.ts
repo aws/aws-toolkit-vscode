@@ -93,10 +93,6 @@ export class SsoAccessTokenProvider {
         return access.token
     }
 
-    public async getOrCreateToken(): Promise<SsoToken> {
-        return (await this.getToken()) ?? (await this.createToken())
-    }
-
     private async runFlow() {
         const cacheKey = this.registrationCacheKey()
         const registrationCache = getRegistrationCache()

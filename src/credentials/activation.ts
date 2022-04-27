@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { profileSettingKey } from '../shared/constants'
@@ -12,13 +15,10 @@ import { asString, CredentialsId, fromString } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 import { getIdeProperties } from '../shared/extensionUtilities'
-
-import * as nls from 'vscode-nls'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger/logger'
 import { CredentialsSettings } from './credentialsUtilities'
 import { Settings } from '../shared/settings'
-const localize = nls.loadMessageBundle()
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,

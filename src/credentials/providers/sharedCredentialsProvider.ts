@@ -21,6 +21,7 @@ import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './c
 import { SsoProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getMissingProps, hasProps } from '../../shared/utilities/tsUtils'
+import { DevSettings } from '../../shared/settings'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -50,6 +51,15 @@ function validateProfile(profile: Profile, ...props: string[]): string | undefin
     if (missing.length !== 0) {
         return `missing properties: ${missing.join(', ')}`
     }
+}
+
+function isSsoProfile(profile: Profile): boolean {
+    return (
+        hasProps(profile, SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL) ||
+        hasProps(profile, SHARED_CREDENTIAL_PROPERTIES.SSO_REGION) ||
+        hasProps(profile, SHARED_CREDENTIAL_PROPERTIES.SSO_ROLE_NAME) ||
+        hasProps(profile, SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID)
+    )
 }
 
 /**
@@ -107,17 +117,16 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return this.profile[SHARED_CREDENTIAL_PROPERTIES.REGION]
     }
 
-    public canAutoConnect(): boolean {
+    public async canAutoConnect(): Promise<boolean> {
+        if (isSsoProfile(this.profile)) {
+            return new SsoProvider(this.profileName, this.profile).canAutoConnect()
+        }
+
         return !hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL)
     }
 
     public async isAvailable(): Promise<boolean> {
-        if (
-            hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL) ||
-            hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_REGION) ||
-            hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_ROLE_NAME) ||
-            hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID)
-        ) {
+        if (isSsoProfile(this.profile) && DevSettings.instance.get('enableSsoProvider', false)) {
             // If we don't skip SSO profiles, duplicate entries may show up in the UI.
             // This of course assumes that something else is handling SSO.
             getLogger().debug(`Treating profile "${this.profileName}" as SSO. Skipped in "sharedCredentialsProvider".`)
@@ -153,12 +162,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID,
                 SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY
             )
-        } else if (
-            hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL) ||
-            hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_REGION) ||
-            hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_ROLE_NAME) ||
-            hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID)
-        ) {
+        } else if (isSsoProfile(this.profile)) {
             return validateProfile(
                 this.profile,
                 SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL,
@@ -307,7 +311,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.makeSharedIniFileCredentialsProvider(loadedCreds)
         }
 
-        // Only here to support the very niche use-case of using an SSO profile as a `source_profile`
         if (hasProps(this.profile, SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)) {
             logger.verbose(
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL} - treating as SSO Credentials`

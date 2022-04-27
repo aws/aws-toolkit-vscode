@@ -5,6 +5,7 @@
 
 import * as fs from 'fs-extra'
 import { getLogger, Logger } from '../../shared/logger'
+import { DevSettings } from '../../shared/settings'
 import {
     getConfigFilename,
     getCredentialsFilename,
@@ -68,12 +69,14 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
                 continue
             }
 
-            const provider =
-                profile['sso_start_url'] !== undefined
-                    ? new SsoProvider(profileName, profile)
-                    : new SharedCredentialsProvider(profileName, allCredentialProfiles)
-
-            await this.addProviderIfValid(profileName, provider)
+            if (DevSettings.instance.get('enableSsoProvider', false) && profile['sso_start_url']) {
+                await this.addProviderIfValid(profileName, new SsoProvider(profileName, profile))
+            } else {
+                await this.addProviderIfValid(
+                    profileName,
+                    new SharedCredentialsProvider(profileName, allCredentialProfiles)
+                )
+            }
         }
     }
 
@@ -82,11 +85,9 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         provider: SharedCredentialsProvider | SsoProvider
     ): Promise<void> {
         if (!(await provider.isAvailable())) {
-            if (!(provider instanceof SsoProvider)) {
-                this.logger.warn(
-                    `Shared Credentials Profile ${profileName} is not valid. It will not be used by the toolkit.`
-                )
-            }
+            this.logger.warn(
+                `Shared Credentials Profile ${profileName} is not valid. It will not be used by the toolkit.`
+            )
         } else {
             this.addProvider(provider)
         }

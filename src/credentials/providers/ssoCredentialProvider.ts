@@ -43,7 +43,6 @@ export class SsoProvider implements CredentialsProvider {
         const provider = SsoAccessTokenProvider.create({
             startUrl: this.profile['sso_start_url'],
             region: this.profile['sso_region'],
-            scopes: ['sso:account:access'],
         })
 
         return (await provider.getToken()) !== undefined

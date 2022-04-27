@@ -66,14 +66,19 @@ export async function showViewLogsMessage(
  * @param window the window.
  */
 export async function showConfirmationMessage(
-    { prompt, confirm, cancel }: { prompt: string; confirm: string; cancel: string },
+    { prompt, confirm, cancel, type }: { prompt: string; confirm: string; cancel: string; type?: 'info' | 'warning' },
     window: Window = globals.window
 ): Promise<boolean> {
     const confirmItem: vscode.MessageItem = { title: confirm }
     const cancelItem: vscode.MessageItem = { title: cancel, isCloseAffordance: true }
 
-    const selection = await window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
-    return selection?.title === confirmItem.title
+    if (type === 'info') {
+        const selection = await window.showInformationMessage(prompt, { modal: true }, confirmItem, cancelItem)
+        return selection?.title === confirmItem.title
+    } else {
+        const selection = await window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
+        return selection?.title === confirmItem.title
+    }
 }
 
 /**

@@ -22,10 +22,8 @@ import {
     SSOOIDC,
     StartDeviceAuthorizationRequest,
 } from '@aws-sdk/client-sso-oidc'
-import { readEndpoint } from '../../shared/settingsConfiguration'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
-import { sleep } from '../../shared/utilities/promiseUtilities'
 import {
     assertHasProps,
     hasStringProps,
@@ -36,6 +34,7 @@ import {
 import { isThrottlingError, isTransientError } from '@aws-sdk/service-error-classification'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 const BACKOFF_DELAY_MS = 5000
 
@@ -104,7 +103,7 @@ export class OidcClient {
     }
 
     public static create(region: string) {
-        return new this(new SSOOIDC({ region: region, endpoint: readEndpoint(SSOOIDC) }), globals.clock)
+        return new this(new SSOOIDC({ region: region }), globals.clock)
     }
 }
 
@@ -151,30 +150,35 @@ export class SsoClient {
         return { ...request, accessToken: undefined }
     }
 
+    // TODO(sijaden): remove this. Only used so we don't need to stub the constructor.
     public static create(region: string, provider: SsoAccessTokenProvider) {
-        const client = new SSO({ region, endpoint: readEndpoint(SSO) })
+        const client = new SSO({ region })
 
-        client.middlewareStack.add(next => async args => {
-            const token = { ...(await provider.getToken()) }
-            assertHasProps(token, 'accessToken') // TODO: make `assertHasProps` handle `undefined`
-            args.input.accessToken = token.accessToken
-
-            try {
-                return await next(args)
-            } catch (error) {
-                if (
-                    error instanceof SSOServiceException &&
-                    error.$fault === 'client' &&
-                    !(isThrottlingError(error) || isTransientError(error))
-                ) {
-                    getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
-                    provider.invalidate()
-                }
-
-                throw error
-            }
-        })
-
-        return new this(client)
+        return new this(addTokenMiddleware(client, provider))
     }
+}
+
+export function addTokenMiddleware(client: SSO, provider: SsoAccessTokenProvider): SSO {
+    async function handleError(error: unknown): Promise<never> {
+        if (
+            error instanceof SSOServiceException &&
+            error.$fault === 'client' &&
+            !(isThrottlingError(error) || isTransientError(error))
+        ) {
+            getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
+            await provider.invalidate()
+        }
+
+        throw error
+    }
+
+    client.middlewareStack.add(next => async args => {
+        const token = await provider.getToken()
+        assertHasProps(token, 'accessToken')
+        args.input.accessToken = token.accessToken
+
+        return next(args).catch(handleError)
+    })
+
+    return client
 }

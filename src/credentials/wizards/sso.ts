@@ -6,10 +6,11 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import * as localizedText from '../../shared/localizedText'
 import { SsoClient } from '../sso/clients'
 import { AccountInfo, RoleInfo } from '@aws-sdk/client-sso'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
-import { StepEstimator, Wizard } from '../../shared/wizards/wizard'
+import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { createInputBox } from '../../shared/ui/inputPrompter'
@@ -18,10 +19,11 @@ import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { SsoProfile } from '../sso/model'
 import { ssoCredentialsHelpUrl } from '../../shared/constants'
 import { assertHasProps } from '../../shared/utilities/tsUtils'
+import { showConfirmationMessage } from '../../shared/utilities/messages'
 
 export function createStartUrlPrompter() {
     return createInputBox({
-        title: localize('aws.sso.promptStartUrl.title', 'Enter a start URL'),
+        title: localize('AWS.sso.promptStartUrl.title', 'Enter a start URL'),
         buttons: createCommonButtons(ssoCredentialsHelpUrl),
     })
 }
@@ -40,7 +42,7 @@ export function createAccountPrompter(provider: SsoAccessTokenProvider, region: 
     const items = client.listAccounts({}).map(accounts => accounts.map(toItem))
 
     return createQuickPick(items, {
-        title: localize('aws.sso.promptAccount.title', 'Select an account ({0})', region),
+        title: localize('AWS.sso.promptAccount.title', 'Select an account ({0})', region),
         buttons: createCommonButtons(ssoCredentialsHelpUrl),
     })
 }
@@ -57,7 +59,7 @@ export function createRolePrompter(provider: SsoAccessTokenProvider, region: str
     const items = client.listAccountRoles({ accountId }).map(roles => roles.map(toItem))
 
     return createQuickPick(items, {
-        title: localize('aws.sso.promptRole.title', 'Select a role in {0} ({1})', accountId, region),
+        title: localize('AWS.sso.promptRole.title', 'Select a role in {0} ({1})', accountId, region),
         buttons: createCommonButtons(ssoCredentialsHelpUrl),
     })
 }
@@ -70,7 +72,21 @@ class TokenLoader extends Prompter<SsoAccessTokenProvider> {
 
     protected async promptUser(): Promise<PromptResult<SsoAccessTokenProvider>> {
         const provider = SsoAccessTokenProvider.create(this.profile)
-        await provider.getOrCreateToken()
+
+        if (!(await provider.getToken())) {
+            const canOpen = await showConfirmationMessage({
+                prompt: localize('AWS.sso.confirmOpen.prompt', 'Open {0} to sign-in?', this.profile.startUrl),
+                confirm: localizedText.ok,
+                cancel: localizedText.cancel,
+                type: 'info',
+            })
+
+            if (!canOpen) {
+                return WIZARD_BACK
+            }
+
+            await provider.createToken()
+        }
 
         return provider
     }
