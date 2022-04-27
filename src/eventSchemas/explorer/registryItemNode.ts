@@ -15,9 +15,8 @@ import { listSchemaItems } from '../utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { SchemaItemNode } from './schemaItemNode'
 import globals from '../../shared/extensionGlobals'
@@ -51,7 +50,6 @@ export class RegistryItemNode extends AWSTreeNodeBase {
 
                 return [...this.schemaNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.registry.noSchemas', '[No Registry Schemas]')),
             sort: (nodeA, nodeB) => nodeA.schemaName.localeCompare(nodeB.schemaName),

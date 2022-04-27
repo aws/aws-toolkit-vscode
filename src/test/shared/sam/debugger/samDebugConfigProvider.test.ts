@@ -41,7 +41,7 @@ import {
 import { readFileSync } from 'fs-extra'
 import { CredentialsStore } from '../../../../credentials/credentialsStore'
 import { CredentialsProviderManager } from '../../../../credentials/providers/credentialsProviderManager'
-import { Credentials } from 'aws-sdk'
+import { Credentials } from '@aws-sdk/types'
 import { ExtContext } from '../../../../shared/extensions'
 import { mkdir, remove } from 'fs-extra'
 import { getLogger } from '../../../../shared/logger/logger'
@@ -139,10 +139,20 @@ describe('SamDebugConfigurationProvider', async function () {
     let fakeContext: ExtContext
     let sandbox: sinon.SinonSandbox
     const resourceName = 'myResource'
-    const mockedCredentials = new Credentials('access', 'secret', 'session')
+    const fakeCredentials: Credentials = {
+        accessKeyId: 'fake-access-id',
+        secretAccessKey: 'fake-secret',
+        sessionToken: 'fake-session',
+    }
 
     beforeEach(async function () {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
+        fakeContext.awsContext.setCredentials({
+            accountId: '9888888',
+            credentials: fakeCredentials,
+            credentialsId: 'profile:fake',
+            defaultRegion: 'us-west-2',
+        })
         debugConfigProvider = new SamDebugConfigProvider(fakeContext)
         sandbox = sinon.createSandbox()
 
@@ -538,7 +548,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -689,7 +699,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -843,7 +853,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs14.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -969,7 +979,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -1107,7 +1117,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs14.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -1186,7 +1196,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java11',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
@@ -1288,7 +1298,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java11',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
@@ -1401,7 +1411,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java11',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
@@ -1500,7 +1510,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java11',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
@@ -1596,7 +1606,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const codeRoot = input.invokeTarget.projectRoot
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
@@ -1762,7 +1772,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
@@ -1915,7 +1925,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
@@ -2079,7 +2089,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
@@ -2225,7 +2235,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
@@ -2351,7 +2361,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
@@ -2443,7 +2453,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
@@ -2616,7 +2626,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
@@ -2722,7 +2732,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
@@ -2788,7 +2798,13 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('debugconfig with aws section', async function () {
+        it('debugconfig with "aws" section', async function () {
+            // Simluates credentials in "aws.credentials" launch-config field.
+            const configCredentials: Credentials = {
+                accessKeyId: 'access-from-config',
+                secretAccessKey: 'secret-from-config',
+                sessionToken: 'session-from-config',
+            }
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
 
             const credentialsProvider: CredentialsProvider = {
@@ -2811,7 +2827,7 @@ describe('SamDebugConfigurationProvider', async function () {
             getCredentialsProviderStub.resolves(credentialsProvider)
             const upsertStub = sandbox.stub(mockCredentialsStore, 'upsertCredentials')
             upsertStub.resolves({
-                credentials: mockedCredentials,
+                credentials: configCredentials,
                 credentialsHashCode: 'unimportant',
             })
             const debugConfigProviderMockCredentials = new SamDebugConfigProvider({
@@ -2861,7 +2877,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: mockedCredentials,
+                awsCredentials: configCredentials,
                 ...awsSection,
                 type: AWS_SAM_DEBUG_TYPE,
                 useIkpdb: false,
@@ -2949,7 +2965,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: undefined,
+                awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'go1.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.Go,

@@ -477,15 +477,26 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             // XXX: don't know what URI to choose...
             vscode.Uri.parse(templateInvoke.templatePath!)
 
-        let awsCredentials: Credentials | undefined
-
-        if (config.aws?.credentials) {
-            const credentials = fromString(config.aws.credentials)
+        let awsCredentials = await this.ctx.awsContext.getCredentials()
+        if (!awsCredentials && !config.aws?.credentials) {
+            getLogger().warn('SAM debug: missing AWS credentials (Toolkit is not connected)')
+        } else if (config.aws?.credentials) {
+            // "aws.credentials" defined in the launch-config takes precedence
+            // over Toolkit's current active credentials.
+            let fromStore: Credentials | undefined
             try {
-                awsCredentials = await getCredentialsFromStore(credentials, this.ctx.credentialsStore)
-            } catch (err) {
-                getLogger().error(err as Error)
-                notifyUserInvalidCredentials(credentials)
+                const credentialsId = fromString(config.aws.credentials)
+                fromStore = await getCredentialsFromStore(credentialsId, this.ctx.credentialsStore)
+            } catch {
+                getLogger().error(`SAM debug: fromString('${config.aws.credentials}') failed`)
+            }
+            if (fromStore) {
+                awsCredentials = fromStore
+            } else {
+                getLogger().error(
+                    `SAM debug: invalid "aws.credentials" value in launch config: ${config.aws.credentials}`
+                )
+                notifyUserInvalidCredentials(config.aws.credentials)
                 return undefined
             }
         }

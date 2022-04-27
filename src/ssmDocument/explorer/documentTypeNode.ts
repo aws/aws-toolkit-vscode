@@ -9,9 +9,8 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { amazonRegistryName, RegistryItemNode, sharedRegistryName, userRegistryName } from './registryItemNode'
 
@@ -43,7 +42,6 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
 
                 return [...this.registryNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

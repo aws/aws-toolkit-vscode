@@ -8,10 +8,9 @@ import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLo
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { getLogger } from '../../../shared/logger'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
+import { createErrorItem, makeChildrenNodes } from '../../../shared/treeview/utils'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { ResourcesNode } from './resourcesNode'
 import { ResourceNode } from './resourceNode'
@@ -67,7 +66,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
         let result: Result = 'Succeeded'
         const children = await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
-            getErrorNode: async (error: Error, logID: number) => {
+            getErrorNode: (error: Error) => {
                 if (error.name === 'UnsupportedActionException') {
                     result = 'Cancelled'
                     getLogger().warn(
@@ -76,7 +75,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
                     return new PlaceholderNode(this, `[${UNAVAILABLE_RESOURCE}]`)
                 } else {
                     result = 'Failed'
-                    return new ErrorNode(this, error, logID)
+                    return createErrorItem(error, `Resources: unexpected error: ${error.message}`)
                 }
             },
             getNoChildrenPlaceholderNode: async () =>

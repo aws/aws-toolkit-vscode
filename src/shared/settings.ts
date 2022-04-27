@@ -9,7 +9,7 @@ import { getLogger } from './logger'
 import { ArrayConstructor, cast, FromDescriptor, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
-import { isAutomation } from './vscode/env'
+import { isAutomation, isNameMangled } from './vscode/env'
 import { once } from './utilities/functionUtils'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
@@ -166,9 +166,8 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
     type Inner = FromDescriptor<T>
 
     // Class names are not always stable, especially when bundling
-    const isMangled = Settings.name !== 'Settings'
     function makeLogger(name = 'Settings') {
-        const prefix = `${isMangled ? 'Settings' : name} (${section})`
+        const prefix = `${isNameMangled() ? 'Settings' : name} (${section})`
         return (message: string) => getLogger().debug(`${prefix}: ${message}`)
     }
 

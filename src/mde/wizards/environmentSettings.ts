@@ -13,10 +13,10 @@ import {
     isDataQuickPickItem,
     QuickPickPrompter,
 } from '../../shared/ui/pickerPrompter'
-import { capitalize } from '../../shared/utilities/textUtilities'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { Prompter } from '../../shared/ui/prompter'
 import { applyOperation, compare, deepClone } from 'fast-json-patch'
+import { toTitleCase } from '../../shared/utilities/textUtilities'
 
 export type InstanceType = keyof typeof environmentOptions['instanceType']
 interface InstanceDescription {
@@ -46,7 +46,7 @@ export function getInstanceDescription(type: InstanceType): InstanceDescription 
     const desc = environmentOptions.instanceType[type]
 
     return {
-        name: capitalize(type.split('.').pop()!),
+        name: toTitleCase(type.split('.').pop()!),
         specs: `${desc.vcpus} vCPUs, ${desc.ram.value}${abbreviateUnit(desc.ram.unit)} RAM, 64 GiB ephemeral storage`,
     }
 }
