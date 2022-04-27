@@ -364,6 +364,7 @@ export class GitExtension {
 
                         return execFileAsync(api.git.path, ['cat-file', type, hash], {
                             cwd: tmpDir,
+                            maxBuffer: 1024 * 1024 * 5,
                         }).then(({ stdout }) => stdout)
                     },
                 }))
