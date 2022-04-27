@@ -7,6 +7,9 @@ import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
 
+const ENVIRONMENT_ARN_KEY = '__ENVIRONMENT_ARN'
+const CAWS_WORKSPACE_ARN_KEY = '__DEVELOPMENT_WORKSPACE_ARN'
+
 /**
  * Components associated with {@link module:vscode.env}.
  */
@@ -80,4 +83,12 @@ export { extensionVersion }
  */
 export function isMinimumVersion(): boolean {
     return vscode.version.startsWith(packageJson.engines.vscode.replace(/\^\~/, ''))
+}
+
+export function getMdeEnvArn(): string | undefined {
+    return process.env[ENVIRONMENT_ARN_KEY]
+}
+
+export function getCawsWorkspaceArn(): string | undefined {
+    return process.env[CAWS_WORKSPACE_ARN_KEY]
 }
