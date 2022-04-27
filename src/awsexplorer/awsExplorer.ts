@@ -12,7 +12,7 @@ import { getRegionsForActiveCredentials } from '../shared/regions/regionUtilitie
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { makeChildrenNodes } from '../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../shared/treeview/utils'
 import { intersection, toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
@@ -34,7 +34,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
     private readonly ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(
         undefined,
-        localize('AWS.explorerNode.addRegion', 'Add a region to {0} Explorer...', getIdeProperties().company),
+        localize('AWS.explorerNode.addRegion', 'Add regions to {0} Explorer...', getIdeProperties().company),
         'aws.showRegion',
         undefined,
         localize(
@@ -137,10 +137,6 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                 )
 
                 return [...this.regionNodes.values()]
-            },
-            getErrorNode: async (error: Error, logID: number) => {
-                // Let the calling function handle the error
-                throw error
             },
             getNoChildrenPlaceholderNode: async () => this.ROOT_NODE_ADD_REGION,
             sort: (nodeA, nodeB) => nodeA.regionName.localeCompare(nodeB.regionName),

@@ -19,6 +19,7 @@ import {
     SubmitFromOptions,
     WebviewCompileOptions,
 } from './server'
+import { getIdeProperties } from '../shared/extensionUtilities'
 
 interface WebviewParams {
     /** The entry-point into the webview. */
@@ -168,7 +169,15 @@ export function compileVueWebview<Options extends WebviewCompileOptions>(
                         emitters: this.emitters,
                     })
                     Object.defineProperty(modifiedWebview, 'data', { get: () => this.initialData })
-                    registerWebviewServer(modifiedWebview, { init, submit, ...params.commands, ...this.emitters })
+                    registerWebviewServer(modifiedWebview, {
+                        init,
+                        submit,
+                        ...params.commands,
+                        ...this.emitters,
+                        getCompanyName: async () => {
+                            return getIdeProperties().company
+                        },
+                    })
                 }
             })
         }

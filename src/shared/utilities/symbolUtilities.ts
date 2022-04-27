@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { sleep } from './promiseUtilities'
+import { sleep } from '../utilities/timeoutUtils'
 
 export interface LoadSymbolsContext {
     executeCommand: typeof vscode.commands.executeCommand

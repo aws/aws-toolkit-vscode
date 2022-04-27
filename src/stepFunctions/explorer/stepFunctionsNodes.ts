@@ -13,9 +13,8 @@ import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listStateMachines } from '../../stepFunctions/utils'
 import { Commands } from '../../shared/vscode/commands'
@@ -55,7 +54,6 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
 
                 return [...this.stateMachineNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

@@ -66,7 +66,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
             return {
                 filename,
                 handlerName: basename(dirname(filename)),
-                manifestUri: modFile,
+                rootUri: modFile,
                 range: symbol.range,
             }
         })

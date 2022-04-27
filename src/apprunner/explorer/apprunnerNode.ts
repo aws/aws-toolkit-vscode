@@ -2,11 +2,10 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { AppRunnerServiceNode } from './apprunnerServiceNode'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
@@ -34,7 +33,6 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
                 return [...this.serviceNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

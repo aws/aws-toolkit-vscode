@@ -5,7 +5,6 @@
 
 import globals from '../extensionGlobals'
 import { CancellationToken, EventEmitter, Event } from 'vscode'
-import { sleep } from './promiseUtilities'
 
 export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
 export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
@@ -268,4 +267,15 @@ export async function waitTimeout<T, R = void, B extends boolean = true>(
     }
 
     return result as T
+}
+
+/**
+ * Sleeps for the specified duration in milliseconds. Note that a duration of 0 will always wait 1 event loop.
+ *
+ * Attempts to use the extension-scoped `setTimeout` if it exists, otherwise will fallback to the global scheduler.
+ */
+
+export function sleep(duration: number = 0): Promise<void> {
+    const schedule = globals?.clock?.setTimeout ?? setTimeout
+    return new Promise(r => schedule(r, Math.max(duration, 0)))
 }
