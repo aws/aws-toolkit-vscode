@@ -406,6 +406,7 @@ describe('keyStrokeHandler', function () {
             invocationContext.startPos = new vscode.Position(1, 0)
             let isPrefixMatched = KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, mockEditor)
             assert.deepStrictEqual(isPrefixMatched, [false, true])
+            telemetryContext.isPrefixMatched = []
             isPrefixMatched = KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(false, mockEditor)
             assert.deepStrictEqual(isPrefixMatched, [])
         })

@@ -286,26 +286,22 @@ export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
     newConsolasRequest: boolean,
     editor: vscode.TextEditor | undefined
 ): boolean[] {
-    // let matched = false
     let typedPrefix = ''
-    const isPrefixMatched: boolean[] = []
     if (newConsolasRequest) {
         telemetryContext.isPrefixMatched = []
     }
 
-    if (!editor && !isValidResponse(recommendations.response)) {
-        return isPrefixMatched
+    if (!editor || !isValidResponse(recommendations.response)) {
+        return []
     }
-    if (editor) {
-        if (invocationContext.startPos.line !== editor.selection.active.line) {
-            return isPrefixMatched
-        }
-        typedPrefix = editor.document.getText(new vscode.Range(invocationContext.startPos, editor.selection.active))
+
+    if (invocationContext.startPos.line !== editor.selection.active.line) {
+        return []
     }
+    typedPrefix = editor.document.getText(new vscode.Range(invocationContext.startPos, editor.selection.active))
+
     recommendations.response.forEach(recommendation => {
         if (recommendation.content.startsWith(typedPrefix)) {
-            //  matched = true
-
             /**
              * TODO: seems like VScode has native prefix matching for completion items
              * if this behavior is changed, then we need to update the string manually
@@ -313,17 +309,16 @@ export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
              */
 
             if (newConsolasRequest) {
-                isPrefixMatched.push(true)
+                telemetryContext.isPrefixMatched.push(true)
             }
         } else {
             if (newConsolasRequest) {
-                isPrefixMatched.push(false)
+                telemetryContext.isPrefixMatched.push(false)
             }
         }
     })
 
-    // return matched
-    return isPrefixMatched
+    return telemetryContext.isPrefixMatched
 }
 
 export function isValidResponse(response: RecommendationsList): boolean {
