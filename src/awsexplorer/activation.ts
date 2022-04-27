@@ -4,20 +4,21 @@
  */
 
 import * as vscode from 'vscode'
-import { loginWithMostRecentCredentials } from '../credentials/activation'
 import { LoginManager } from '../credentials/loginManager'
 import { submitFeedback } from '../feedback/commands/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
-
+import globals from '../shared/extensionGlobals'
+import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { recordAwsRefreshExplorer, recordAwsShowRegion, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
+import { Commands } from '../shared/vscode/commands2'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
 import { executeStateMachine } from '../stepFunctions/commands/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
@@ -26,16 +27,6 @@ import { copyArnCommand } from './commands/copyArn'
 import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
-import { CredentialsStore } from '../credentials/credentialsStore'
-import { showViewLogsMessage } from '../shared/utilities/messages'
-
-let didTryAutoConnect = false
-
-import * as nls from 'vscode-nls'
-import globals from '../shared/extensionGlobals'
-import { ExtContext } from '../shared/extensions'
-import { CredentialsSettings } from '../credentials/credentialsUtilities'
-const localize = nls.loadMessageBundle()
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -60,7 +51,7 @@ export async function activate(args: {
     globals.context.subscriptions.push(
         view.onDidChangeVisibility(async e => {
             if (e.visible) {
-                await tryAutoConnect(args.context.awsContext)
+                await LoginManager.tryAutoConnect(args.context.awsContext)
             }
         })
     )
@@ -70,63 +61,37 @@ export async function activate(args: {
     updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.context.awsContext, globals.context)
 }
 
-async function tryAutoConnect(awsContext: AwsContext) {
-    try {
-        if (!didTryAutoConnect && !(await awsContext.getCredentials())) {
-            getLogger().debug('credentials: attempting autoconnect...')
-            didTryAutoConnect = true
-            const loginManager = new LoginManager(awsContext, new CredentialsStore())
-            await loginWithMostRecentCredentials(new CredentialsSettings(), loginManager)
-        }
-    } catch (err) {
-        getLogger().error('credentials: failed to auto-connect: %O', err)
-        showViewLogsMessage(localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting'))
-    }
-}
-
 async function registerAwsExplorerCommands(
     context: ExtContext,
     awsExplorer: AwsExplorer,
     toolkitOutputChannel: vscode.OutputChannel
 ): Promise<void> {
     context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.showRegion', async () => {
+        Commands.register({ id: 'aws.showRegion', autoconnect: false }, async () => {
             try {
                 await globals.awsContextCommands.onCommandShowRegion()
             } finally {
                 recordAwsShowRegion()
                 recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
             }
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.submitFeedback', async () => {
+        }),
+        Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async () => {
             await submitFeedback(context)
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorer', async (passive: boolean = false) => {
+        }),
+        Commands.register({ id: 'aws.refreshAwsExplorer', autoconnect: true }, async (passive: boolean = false) => {
             awsExplorer.refresh()
 
             if (!passive) {
                 recordAwsRefreshExplorer()
             }
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.deleteCloudFormation',
+        }),
+        Commands.register(
+            { id: 'aws.deleteCloudFormation', autoconnect: true },
             async (node: CloudFormationStackNode) =>
                 await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node)
-        )
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.downloadStateMachineDefinition',
+        ),
+        Commands.register(
+            { id: 'aws.downloadStateMachineDefinition', autoconnect: true },
             async (node: StateMachineNode) =>
                 await downloadStateMachineDefinition({
                     stateMachineNode: node,
