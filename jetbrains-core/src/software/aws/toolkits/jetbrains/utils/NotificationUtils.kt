@@ -71,11 +71,11 @@ fun notifyError(title: String, content: String = "", project: Project? = null, n
 
 fun notifyError(
     title: String = message("aws.notification.title"),
-    content: String = "", project: Project? = null,
+    content: String = "",
+    project: Project? = null,
     listener: NotificationListener? = null,
     stripHtml: Boolean = true
-) =
-    notify(Notification(GROUP_DISPLAY_ID, title, getCleanedContent(content, stripHtml), NotificationType.ERROR, listener), project)
+) = notify(Notification(GROUP_DISPLAY_ID, title, getCleanedContent(content, stripHtml), NotificationType.ERROR, listener), project)
 
 /**
  * Notify error that AWS credentials are not configured.

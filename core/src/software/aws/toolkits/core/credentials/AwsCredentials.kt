@@ -31,7 +31,8 @@ fun AwsCredentials.mergeWithExistingEnvironmentVariables(existing: MutableMap<St
 
 fun AwsCredentials.mergeWithExistingEnvironmentVariables(
     existingKeys: Collection<String>,
-    removeKey: (String) -> Unit, putValues: (Map<String, String>) -> Unit,
+    removeKey: (String) -> Unit,
+    putValues: (Map<String, String>) -> Unit,
     replace: Boolean = false
 ) {
     val envVars = toEnvironmentVariables()

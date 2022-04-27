@@ -128,7 +128,8 @@ formatting:
     active: true
     autoCorrect: true
   ParameterListWrapping:
-    active: false
+    active: true
+    autoCorrect: true
   SpacingAroundAngleBrackets:
     active: false
     autoCorrect: true
