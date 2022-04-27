@@ -8,13 +8,12 @@ import * as nls from 'vscode-nls'
 import * as mde from '../shared/clients/mdeClient'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { MdeInstanceNode } from './mdeInstanceNode'
-import * as treeNodeUtil from '../shared/treeview/treeNodeUtilities'
 import { PlaceholderNode } from '../shared/treeview/nodes/placeholderNode'
-import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { updateInPlace } from '../shared/utilities/collectionUtils'
 import { VSCODE_MDE_TAGS } from './constants'
 import { getEmailHash, makeLabelsString, MDE_STATUS_PRIORITY } from './mdeModel'
 import { DevSettings } from '../shared/settings'
+import { makeChildrenNodes } from '../shared/treeview/utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -37,12 +36,11 @@ export class MdeRootNode extends AWSTreeNodeBase {
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         this.mdeClient = this.mdeClient ?? (await mde.MdeClient.create(this.regionCode))
-        return await treeNodeUtil.makeChildrenNodes({
+        return await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
                 return [...this.nodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () => new PlaceholderNode(this, localize('AWS.empty', '[Empty]')),
             sort: (a, b) => this.sortMdeNodes(a.env, b.env),
         })
