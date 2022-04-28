@@ -12,6 +12,10 @@ import com.intellij.util.text.SemVer
 import com.jetbrains.rider.test.base.PrepareTestEnvironment
 import java.io.File
 import java.nio.file.Paths
+import java.time.Duration
+
+// sometimes Windows Rider tests time out while starting the backend
+val backendStartTimeout = Duration.ofMinutes(3)
 
 val versions by lazy {
     // would be nice if this were json https://github.com/dotnet/runtime/issues/3049

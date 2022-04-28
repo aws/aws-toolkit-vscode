@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.completion
 
 import base.allowCustomDotnetRoots
+import base.backendStartTimeout
 import com.intellij.openapi.util.IconLoader
 import com.jetbrains.rd.ide.model.IconModel
 import com.jetbrains.rider.test.annotations.TestEnvironment
@@ -11,8 +12,10 @@ import com.jetbrains.rider.test.base.BaseTestWithSolution
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
+import java.time.Duration
 
 class DotNetHandlerCompletionTest : BaseTestWithSolution() {
+    override val backendLoadedTimeout: Duration = backendStartTimeout
 
     override fun getSolutionDirectoryName(): String = ""
 

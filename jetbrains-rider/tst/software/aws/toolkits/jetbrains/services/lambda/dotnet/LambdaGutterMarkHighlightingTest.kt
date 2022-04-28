@@ -3,18 +3,22 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
+import base.backendStartTimeout
 import com.jetbrains.rdclient.testFramework.waitForDaemon
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.test.base.BaseTestWithMarkup
 import org.testng.annotations.DataProvider
 import org.testng.annotations.Test
 import software.aws.toolkits.jetbrains.protocol.awsSettingModel
+import java.time.Duration
 
 class LambdaGutterMarkHighlightingTest : BaseTestWithMarkup() {
 
     companion object {
         private const val LAMBDA_RUN_MARKER_ATTRIBUTE_ID = "AWS Lambda Run Method Gutter Mark"
     }
+
+    override val backendLoadedTimeout: Duration = backendStartTimeout
 
     override fun getSolutionDirectoryName(): String = "SamHelloWorldApp"
 

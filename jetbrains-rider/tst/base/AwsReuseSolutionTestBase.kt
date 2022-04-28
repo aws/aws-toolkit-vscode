@@ -76,6 +76,7 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
         GeneralSettings.getInstance().isConfirmExit = false
 
         val params = OpenSolutionParams()
+        params.backendLoadedTimeout = backendStartTimeout
         params.customSolutionName = getCustomSolutionFileName()
         params.preprocessTempDirectory = { preprocessTempDirectory(it) }
         params.persistCaches = persistCaches
