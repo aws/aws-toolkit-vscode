@@ -520,6 +520,7 @@ const DEV_SETTINGS = {
     telemetryUserPool: String,
     mdeBetaEndpoint: String,
     mdeEmailFilter: Boolean,
+    cawsStage: String,
 }
 
 type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>

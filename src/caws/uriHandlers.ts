@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
-import { cawsHostname, ConnectedCawsClient } from '../shared/clients/cawsClient'
-import { cloneCawsRepo, openDevEnv, TryCommandDecorator } from './commands'
+import { ConnectedCawsClient, getCawsConfig } from '../shared/clients/cawsClient'
+import { cloneCawsRepo, openDevEnv, CawsCommands } from './commands'
 
-export function register(handler: UriHandler, tryCommand: TryCommandDecorator) {
-    const tryHandleClone = tryCommand(handleCloneParams)
-    const tryHandleConnect = tryCommand(handleConnectParams)
+export function register(handler: UriHandler, commands: Pick<CawsCommands, 'bindClient'>) {
+    const tryHandleClone = commands.bindClient(handleCloneParams)
+    const tryHandleConnect = commands.bindClient(handleConnectParams)
 
     return vscode.Disposable.from(
         handler.registerHandler('/clone', tryHandleClone, parseCloneParams),
@@ -26,8 +26,11 @@ function parseConnectParams(query: SearchParams) {
     return query.getFromKeysOrThrow(['developmentWorkspaceId', 'organizationName', 'projectName'] as const)
 }
 
-async function handleCloneParams(client: ConnectedCawsClient, params: { url: vscode.Uri }): Promise<void> {
-    if (params.url.authority.endsWith(cawsHostname)) {
+async function handleCloneParams(
+    client: ConnectedCawsClient,
+    params: ReturnType<typeof parseCloneParams>
+): Promise<void> {
+    if (params.url.authority.endsWith(getCawsConfig().gitHostname)) {
         await cloneCawsRepo(client, params.url)
     } else {
         await vscode.commands.executeCommand('git.clone', params.url.toString())

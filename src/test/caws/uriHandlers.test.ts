@@ -43,12 +43,12 @@ describe('CAWS handlers', function () {
 
     beforeEach(function () {
         handler = new UriHandler((testWindow = createTestWindow()))
-        register(
-            handler,
-            command =>
+        register(handler, {
+            bindClient:
+                command =>
                 async (...args) =>
-                    command(instance(client), ...args)
-        )
+                    command(instance(client), ...args),
+        })
         commandStub = sinon.stub(vscode.commands, 'executeCommand')
     })
 
@@ -86,7 +86,7 @@ describe('CAWS handlers', function () {
                 message.assertSeverity(SeverityLevel.Error)
             })
 
-            when(client.getDevEnv(anything())).thenResolve(undefined)
+            when(client.getDevEnv(anything())).thenReject(new Error('No development workspace found'))
             await handler.handleUri(createConnectUri(env))
             await errorMessage
         })

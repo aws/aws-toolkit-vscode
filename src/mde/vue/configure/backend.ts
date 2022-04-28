@@ -12,7 +12,7 @@ import { EnvironmentSettingsWizard, getAllInstanceDescriptions, SettingsForm } f
 import { CreateEnvironmentRequest, GetEnvironmentMetadataResponse } from '../../../../types/clientmde'
 import { getRegistryDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
-import { DefaultMdeEnvironmentClient, GetStatusResponse } from '../../../shared/clients/mdeEnvironmentClient'
+import { RemoteEnvironmentClient, GetStatusResponse } from '../../../shared/clients/mdeEnvironmentClient'
 import { compare } from 'fast-json-patch'
 import { mdeConnectCommand, mdeDeleteCommand, tryRestart } from '../../mdeCommands'
 import { getLogger } from '../../../shared/logger/logger'
@@ -61,7 +61,7 @@ const VueWebview = compileVueWebview({
             })
         },
         async startDevfile(location: string) {
-            const envClient = new DefaultMdeEnvironmentClient()
+            const envClient = new RemoteEnvironmentClient()
             if (!envClient.arn) {
                 throw new Error('Cannot start devfile when not in environment')
             }
@@ -94,7 +94,7 @@ export async function createMdeConfigureWebview(
     context: ExtContext,
     id?: string
 ): Promise<CreateEnvironmentRequest | undefined> {
-    const envClient = new DefaultMdeEnvironmentClient()
+    const envClient = new RemoteEnvironmentClient()
     const environmentId = id ?? parseIdFromArn(envClient.arn ?? '')
     if (!environmentId) {
         throw new Error('Unable to resolve id for MDE environment')
@@ -108,7 +108,7 @@ export async function createMdeConfigureWebview(
     const DEVFILE_POLL_RATE = 1000
     ;(async function () {
         while (!done) {
-            const resp = await new DefaultMdeEnvironmentClient().getStatus()
+            const resp = await new RemoteEnvironmentClient().getStatus()
             getLogger().debug('poll for environment status')
             if (resp.status === 'CHANGED') {
                 webview.emitters.onDevfileUpdate.fire({ ...resp, actionId: 'devfile' })
@@ -142,7 +142,7 @@ function parseIdFromArn(arn: string) {
 }
 
 async function getEnvironmentSummary(id: string): Promise<GetEnvironmentMetadataResponse & { connected: boolean }> {
-    const envClient = new DefaultMdeEnvironmentClient()
+    const envClient = new RemoteEnvironmentClient()
     const summary = await globals.mde.getEnvironmentMetadata({ environmentId: id })
     if (!summary) {
         throw new Error('No env found')
@@ -201,7 +201,7 @@ async function toggleMdeState(mde: Pick<GetEnvironmentMetadataResponse, 'id' | '
 }
 
 async function updateDevfile(location: string): Promise<void> {
-    const client = new DefaultMdeEnvironmentClient()
+    const client = new RemoteEnvironmentClient()
     await client.startDevfile({ location })
     // TODO: start polling? restart the MDE?
 }

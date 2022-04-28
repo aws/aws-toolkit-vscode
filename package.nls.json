@@ -4,6 +4,7 @@
     "AWS.productName": "AWS Toolkit",
     "AWS.productName.cn": "Amazon Toolkit",
     "AWS.cdk.explorerTitle": "CDK (Preview)",
+    "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.logLevel": "The AWS Toolkit's log level (changes reflected on restart)",
     "AWS.configuration.description.logLevel.cn": "The Amazon Toolkit's log level (changes reflected on restart)",

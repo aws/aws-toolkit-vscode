@@ -68,7 +68,6 @@ import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
 import { UriHandler } from './shared/vscode/uriHandler'
-import { CawsAuthenticationProvider, CawsAuthStorage } from './caws/auth'
 
 let localize: nls.LocalizeFunc
 
@@ -128,9 +127,6 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.uriHandler = new UriHandler()
         context.subscriptions.push(vscode.window.registerUriHandler(globals.uriHandler))
 
-        const sessionStorage = new CawsAuthStorage(context.globalState, context.secrets)
-        const cawsAuthProvider = new CawsAuthenticationProvider(sessionStorage)
-
         const extContext: ExtContext = {
             extensionContext: context,
             awsContext: globals.awsContext,
@@ -141,7 +137,6 @@ export async function activate(context: vscode.ExtensionContext) {
             telemetryService: globals.telemetry,
             uriHandler: globals.uriHandler,
             credentialsStore,
-            cawsAuthProvider,
         }
 
         activateDevTools(extContext)

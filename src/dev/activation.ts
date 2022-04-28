@@ -29,8 +29,7 @@ import { selectCawsResource } from '../caws/wizards/selectResource'
 import { createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { createClientFactory } from '../caws/activation'
-import { createCommandDecorator } from '../caws/commands'
+import { CawsCommands } from '../caws/commands'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { DevSettings } from '../shared/settings'
 
@@ -124,12 +123,10 @@ function lazyProgress<T>(timeout: Timeout): LazyProgress<T> {
 }
 
 async function openTerminalCommand(ctx: ExtContext) {
-    const factory = createClientFactory(ctx.cawsAuthProvider)
-    const decorator = createCommandDecorator(ctx.cawsAuthProvider, factory)
-    const command = decorator(openTerminal)
+    const commands = CawsCommands.fromContext(ctx.extensionContext)
     const progress = lazyProgress<{ message: string }>(new Timeout(900000))
 
-    await command(progress).finally(() => progress.dispose())
+    await commands.withClient(openTerminal, progress).finally(() => progress.dispose())
 }
 
 async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<{ message: string }>) {
@@ -161,8 +158,8 @@ async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<
     progress.report({ message: 'Opening terminal...' })
 
     const { ssh, ssm } = deps
-    const provider = createCawsSessionProvider(client, 'us-east-1', ssm, ssh)
-    const envVars = getMdeSsmEnv('us-east-1', ssm, await provider.getDetails(env))
+    const provider = createCawsSessionProvider(client, ssm, ssh)
+    const envVars = getMdeSsmEnv(client.regionCode, ssm, await provider.getDetails(env))
 
     const options: vscode.TerminalOptions = {
         name: `Remote Connection (${env.id})`,
@@ -178,10 +175,9 @@ async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<
 }
 
 async function installVsixCommand(ctx: ExtContext) {
-    const factory = createClientFactory(ctx.cawsAuthProvider)
-    const decorator = createCommandDecorator(ctx.cawsAuthProvider, factory)
+    const commands = CawsCommands.fromContext(ctx.extensionContext)
 
-    await decorator(async client => {
+    await commands.withClient(async client => {
         const env = await selectCawsResource(client, 'env')
         if (!env) {
             return
@@ -194,7 +190,7 @@ async function installVsixCommand(ctx: ExtContext) {
             getLogger().error(`installVsixCommand: installation failed: %O`, err)
             showViewLogsMessage('VSIX installation failed')
         }
-    })()
+    })
 }
 
 async function promptVsix(
@@ -335,7 +331,7 @@ async function installVsix(
         return
     }
 
-    const provider = createCawsSessionProvider(client, 'us-east-1', ssm, ssh)
+    const provider = createCawsSessionProvider(client, ssm, ssh)
     const SessionProcess = createBoundProcess(provider, env).extend({
         timeout: progress.getToken(),
         onStdout: logOutput(`install: ${env.id}:`),

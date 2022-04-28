@@ -83,7 +83,7 @@ describe('CawsAuthenticationProvider', function () {
         const account = await authProvider.createAccount('cookie')
         delete users['cookie']
         await assert.rejects(authProvider.createSession(account), /Invalid session/)
-        await assert.rejects(authProvider.createSession(account), /No secret found/)
+        await assert.rejects(authProvider.createSession(account), /missing access token/)
     })
 
     it('can create multiple sessions from multiple accounts', async function () {

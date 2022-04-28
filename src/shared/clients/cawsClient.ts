@@ -3,33 +3,55 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as AWS from 'aws-sdk'
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import * as caws from '../../../types/clientcodeaws'
-import * as logger from '../logger/logger'
 import apiConfig = require('../../../types/REMOVED.json')
 import globals from '../extensionGlobals'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
+import * as AWS from 'aws-sdk'
+import * as caws from '../../../types/clientcodeaws'
+import * as logger from '../logger/logger'
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { MDE_START_TIMEOUT } from './mdeClient'
-import * as nls from 'vscode-nls'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
-
-const localize = nls.loadMessageBundle()
+import { DevSettings } from '../settings'
 
 // XXX: remove signing from the CAWS model until Bearer token auth is added
 delete (apiConfig.metadata as Partial<typeof apiConfig['metadata']>)['signatureVersion']
 
-export const cawsRegion = 'us-west-2' // Try "us-west-2" for beta/integ/gamma, "us-east-1" otherwise
-export const cawsEndpoint = 'https://public.api-gamma.REMOVED.codes' // gamma web: https://integ.stage.REMOVED.codes/
-export const cawsEndpointGql = 'https://public.api-gamma.REMOVED.codes/graphql'
-export const cawsHostname = 'integ.stage.REMOVED.codes'
-// export const cawsGitHostname = `git.service.${cawsHostname}` // prod endpoint
-export const cawsGitHostname = 'git.gamma.source.caws.REMOVED' // gamma
-export const cawsHelpUrl = `https://${cawsHostname}/help`
+// REMOVE ME SOON: only used for development
+interface CawsConfig {
+    readonly region: string
+    readonly endpoint: string
+    readonly hostname: string
+    readonly gitHostname: string
+}
+
+export function getCawsConfig(): CawsConfig {
+    const stage = DevSettings.instance.get('cawsStage', 'gamma')
+
+    if (stage === 'gamma') {
+        return {
+            region: 'us-west-2',
+            endpoint: 'https://public.api-gamma.REMOVED.codes',
+            hostname: 'integ.stage.REMOVED.codes',
+            gitHostname: 'git.gamma.source.caws.REMOVED',
+        }
+    } else {
+        return {
+            region: 'us-east-1',
+            endpoint: 'https://public.api.REMOVED.codes',
+            hostname: 'REMOVED.codes',
+            gitHostname: 'git.service.REMOVED.codes',
+        }
+    }
+}
 
 /** CAWS-MDE developer environment. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -47,28 +69,30 @@ export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspace
 
 export interface CawsOrg extends caws.OrganizationSummary {
     readonly type: 'org'
-    readonly id: string // TODO: why doesn't OrganizationSummary have this already?
     readonly name: string
+    readonly id: string // TODO: why doesn't OrganizationSummary have this already?
 }
+
 export interface CawsProject extends caws.ProjectSummary {
     readonly type: 'project'
-    readonly org: Pick<CawsOrg, 'name'>
-    readonly id: string // TODO: why doesn't ProjectSummary have this already?
     readonly name: string
+    readonly id: string // TODO: why doesn't ProjectSummary have this already?
+    readonly org: Pick<CawsOrg, 'name'>
 }
+
 export interface CawsRepo extends caws.SourceRepositorySummary {
     readonly type: 'repo'
+    readonly name: string
     readonly org: Pick<CawsOrg, 'name'>
     readonly project: Pick<CawsProject, 'name'>
-    readonly name: string
 }
 
 export type CawsResource = CawsOrg | CawsProject | CawsRepo | CawsDevEnv
 
 async function createCawsClient(
     authCookie: string | undefined,
-    regionCode: string = cawsRegion,
-    endpoint: string = cawsEndpoint
+    regionCode = getCawsConfig().region,
+    endpoint = getCawsConfig().endpoint
 ): Promise<caws> {
     const c = (await globals.sdkClientBuilder.createAwsService(AWS.Service, {
         apiConfig: apiConfig,
@@ -96,6 +120,7 @@ export interface DisconnectedCawsClient extends Pick<CawsClientInternal, 'verify
 
 export interface ConnectedCawsClient extends ClassToInterfaceType<CawsClientInternal> {
     readonly connected: true
+    readonly regionCode: string
 }
 
 export type CawsClient = ConnectedCawsClient | DisconnectedCawsClient
@@ -105,9 +130,9 @@ export type CawsClientFactory = () => Promise<CawsClient>
  * Factory to create a new `CawsClient`. Call `onCredentialsChanged()` before making requests.
  */
 export async function createClient(
-    regionCode: string = cawsRegion,
-    endpoint: string = cawsEndpoint,
-    authCookie?: string
+    authCookie?: string,
+    regionCode = getCawsConfig().region,
+    endpoint = getCawsConfig().endpoint
 ): Promise<CawsClient> {
     const sdkClient = await createCawsClient(authCookie, regionCode, endpoint)
     const c = new CawsClientInternal(regionCode, endpoint, sdkClient, authCookie)
@@ -120,7 +145,7 @@ class CawsClientInternal {
     private readonly log: logger.Logger
 
     public constructor(
-        private readonly regionCode: string,
+        public readonly regionCode: string,
         private readonly endpoint: string,
         private sdkClient: caws,
         private authCookie?: string
@@ -219,9 +244,7 @@ class CawsClientInternal {
      * @param args.expires PAT expires on this date, or undefined.
      * @returns PAT secret
      */
-    public async createAccessToken(
-        args: caws.CreateAccessTokenRequest
-    ): Promise<caws.CreateAccessTokenResponse | undefined> {
+    public async createAccessToken(args: caws.CreateAccessTokenRequest): Promise<caws.CreateAccessTokenResponse> {
         const c = this.sdkClient
         const token = await this.call(c.createAccessToken(args), false)
         return token
@@ -257,14 +280,14 @@ class CawsClientInternal {
     /**
      * Gets a list of all orgs for the current CAWS user.
      */
-    public listOrgs(): AsyncCollection<CawsOrg[]> {
+    public listOrgs(request: caws.ListOrganizationsInput = {}): AsyncCollection<CawsOrg[]> {
         function asCawsOrg(org: caws.OrganizationSummary & { id?: string }): CawsOrg {
             return { id: '', type: 'org', name: org.name ?? 'unknown', ...org }
         }
 
         const requester = async (request: caws.ListOrganizationsInput) =>
             this.call(this.sdkClient.listOrganizations(request), true, { items: [] })
-        const collection = pageableToCollection(requester, {}, 'nextToken', 'items')
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(summaries => summaries?.map(asCawsOrg) ?? [])
     }
 
@@ -423,13 +446,14 @@ class CawsClientInternal {
         return { ...r, sessionId: r.sessionId }
     }
 
-    /** CAWS-MDE: does not have this operation (yet?) */
-    public async stopDevEnv(): Promise<void> {
-        throw Error('CAWS-MDE does not have stopEnvironment currently')
+    public async stopDevEnv(
+        args: caws.StopDevelopmentWorkspaceRequest
+    ): Promise<caws.StopDevelopmentWorkspaceResponse> {
+        return this.call(this.sdkClient.stopDevelopmentWorkspace(args), false)
     }
 
     /** CAWS-MDE */
-    public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<CawsDevEnv | undefined> {
+    public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<CawsDevEnv> {
         const a = { ...args }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
@@ -542,12 +566,8 @@ class CawsClientInternal {
      */
     public async toCawsGitUri(org: string, project: string, repo: string): Promise<string> {
         const pat = await this.createAccessToken({ name: 'aws-toolkits-vscode-token', expires: undefined })
-        if (!pat?.secret) {
-            throw Error('CODE.AWS: Failed to create personal access token (PAT)')
-        }
-
         const username = await this.getUsername()
 
-        return `https://${username}:${pat.secret}@${cawsGitHostname}/v1/${org}/${project}/${repo}`
+        return `https://${username}:${pat.secret}@${getCawsConfig().gitHostname}/v1/${org}/${project}/${repo}`
     }
 }

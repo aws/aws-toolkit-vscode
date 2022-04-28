@@ -20,7 +20,6 @@ import {
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
 import { UriHandler } from '../shared/vscode/uriHandler'
-import { CawsAuthenticationProvider, CawsAuthStorage } from '../caws/auth'
 import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
@@ -122,7 +121,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
-        const cawsAuthProvider = new CawsAuthenticationProvider(new CawsAuthStorage(ctx.globalState, ctx.secrets))
+
         return {
             extensionContext: ctx,
             awsContext,
@@ -133,7 +132,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             telemetryService,
             credentialsStore: new CredentialsStore(),
             uriHandler: new UriHandler(),
-            cawsAuthProvider,
         }
     }
 }

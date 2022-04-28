@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { DevfileRegistry } from '../shared/fs/devfileRegistry'
-import { DefaultMdeEnvironmentClient, MdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
+import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { getLogger } from '../shared/logger/logger'
 import { UPDATE_DEVFILE_COMMAND } from './mdeCommands'
 
@@ -22,7 +22,7 @@ export class MdeDevfileCodeLensProvider implements vscode.CodeLensProvider {
 
     public constructor(
         registry: DevfileRegistry,
-        private readonly client: MdeEnvironmentClient = new DefaultMdeEnvironmentClient(),
+        private readonly client = new RemoteEnvironmentClient(),
         workspace: Workspace = vscode.workspace
     ) {
         this.disposables.push(this._onDidChangeCodeLenses)

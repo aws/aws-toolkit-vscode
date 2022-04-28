@@ -692,14 +692,14 @@
                     "when": "!isCloud9"
                 },
                 {
-                    "id": "aws.caws",
-                    "name": "CODE.AWS"
+                    "id": "aws.developerTools",
+                    "name": "%AWS.developerTools.explorerTitle%"
                 }
             ]
         },
         "viewsWelcome": [
             {
-                "view": "aws.caws",
+                "view": "aws.developerTools",
                 "contents": "[Connect to CODE.AWS](command:aws.caws.connect)\n[Clone Repository](command:aws.caws.cloneRepo)\n[Create Development Environment](command:aws.caws.createDevEnv)\n[CODE.AWS Commands](command:aws.caws.listCommands)\n",
                 "when": "true"
             }

@@ -8,7 +8,7 @@ import { Window } from '../shared/vscode/window'
 import * as localizedText from '../shared/localizedText'
 
 import * as nls from 'vscode-nls'
-import { cawsHelpUrl, cawsHostname, CawsOrg, CawsProject, CawsRepo } from '../shared/clients/cawsClient'
+import { CawsOrg, CawsProject, CawsRepo, getCawsConfig } from '../shared/clients/cawsClient'
 import { Commands } from '../shared/vscode/commands'
 import { pushIf } from '../shared/utilities/collectionUtils'
 const localize = nls.loadMessageBundle()
@@ -25,7 +25,7 @@ export async function promptCawsNotConnected(window = Window.vscode(), commands 
             if (btn === connect) {
                 commands.execute('aws.caws.connect')
             } else if (btn === localizedText.viewDocs) {
-                vscode.env.openExternal(vscode.Uri.parse(cawsHelpUrl))
+                vscode.env.openExternal(vscode.Uri.parse(getHelpUrl()))
             }
         })
 }
@@ -41,7 +41,7 @@ export function fixcookie(s: string): string {
  * Builds a web URL from the given CAWS object.
  */
 export function toCawsUrl(resource: CawsOrg | CawsProject | CawsRepo) {
-    const prefix = `https://${cawsHostname}/organizations`
+    const prefix = `https://${getCawsConfig().hostname}/organizations`
 
     const format = (org: string, proj?: string, repo?: string) => {
         const parts = [prefix, org]
@@ -59,6 +59,10 @@ export function toCawsUrl(resource: CawsOrg | CawsProject | CawsRepo) {
         case 'repo':
             return format(resource.org.name, resource.project.name, resource.name)
     }
+}
+
+export function getHelpUrl(): string {
+    return `https://${getCawsConfig().hostname}/help`
 }
 
 /**

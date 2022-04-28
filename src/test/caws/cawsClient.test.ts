@@ -27,7 +27,7 @@ describe('cawsClient', function () {
             id: 'repoid1',
             name: 'repo1',
         }
-        const prefix = `https://${caws.cawsHostname}/organizations`
+        const prefix = `https://${caws.getCawsConfig().hostname}/organizations`
         assert.deepStrictEqual(toCawsUrl(org), `${prefix}/org1/view`)
         assert.deepStrictEqual(toCawsUrl(project), `${prefix}/org1/projects/project1/view`)
         assert.deepStrictEqual(toCawsUrl(repo), `${prefix}/org1/projects/project1/source-repositories/repo1/view`)

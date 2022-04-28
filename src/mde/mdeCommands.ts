@@ -23,7 +23,7 @@ import { localizedDelete } from '../shared/localizedText'
 import { HOST_NAME_PREFIX, MDE_RESTART_KEY } from './constants'
 import { parse } from '@aws-sdk/util-arn-parser'
 import globals from '../shared/extensionGlobals'
-import { DefaultMdeEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
+import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
 import { getMdeEnvArn } from '../shared/vscode/env'
 
@@ -266,7 +266,7 @@ export async function tagMde(arn: string, tagMap: TagMap) {
  * This function basically acts like a transactional wrapper around the `restarter` callback
  */
 export async function tryRestart(arn: string, restarter: () => Promise<void>): Promise<void> {
-    const client = new DefaultMdeEnvironmentClient()
+    const client = new RemoteEnvironmentClient()
     const canAutoConnect = client.arn === arn
 
     if (canAutoConnect && checkUnsavedChanges()) {
@@ -305,7 +305,7 @@ export async function updateDevfile(uri: vscode.Uri): Promise<void> {
         return void getLogger().debug(`mde: not current in a environment`)
     }
 
-    const client = new DefaultMdeEnvironmentClient()
+    const client = new RemoteEnvironmentClient()
     // XXX: hard-coded `projects` path, waiting for MDE to provide an environment variable
     // could also just parse the devfile...
     const location = path.relative('/projects', uri.fsPath)

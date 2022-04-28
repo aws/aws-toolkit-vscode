@@ -3,56 +3,59 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClassToInterfaceType } from '../utilities/tsUtils'
-import got, { Got } from 'got'
-import { getMdeEnvArn } from '../vscode/env'
+import got from 'got'
+import { getCawsWorkspaceArn, getMdeEnvArn } from '../vscode/env'
 
 const ENVIRONMENT_AUTH_TOKEN = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
 export const MDE_ENVIRONMENT_ENDPOINT = 'http://127.0.0.1:1339'
 
-export type MdeEnvironmentClient = ClassToInterfaceType<DefaultMdeEnvironmentClient>
-export class DefaultMdeEnvironmentClient {
-    public constructor(private endpoint: string = MDE_ENVIRONMENT_ENDPOINT) {}
+export class RemoteEnvironmentClient {
+    public constructor(private readonly endpoint: string = MDE_ENVIRONMENT_ENDPOINT) {}
 
     public get arn(): string | undefined {
-        return getMdeEnvArn()
+        return getCawsWorkspaceArn() ?? getMdeEnvArn()
+    }
+
+    public isCawsWorkspace(): boolean {
+        return !!getCawsWorkspaceArn()
+    }
+
+    // Start an action
+    public async startDevfile(request: StartDevfileRequest): Promise<void> {
+        await this.got.post('start', { json: request })
+    }
+
+    // Create a devfile for the project
+    public async createDevfile(request: CreateDevfileRequest): Promise<CreateDevfileResponse> {
+        const response = await this.got.post<CreateDevfileResponse>('devfile/create', { json: request })
+
+        return response.body
+    }
+
+    // Get status and action type
+    public async getStatus(): Promise<GetStatusResponse> {
+        const response = await this.got<GetStatusResponse>('status')
+
+        return response.body
     }
 
     private get authToken(): string | undefined {
         return process.env[ENVIRONMENT_AUTH_TOKEN]
     }
 
-    private getGot(): Got {
-        return got.extend({
-            prefixUrl: this.endpoint,
-            responseType: 'json',
-            // `Authorization` _should_ have two parameters (RFC 7235), MDE should probably fix that
-            headers: { Authorization: this.authToken },
-        })
-    }
-
-    // Start an action
-    public async startDevfile(request: StartDevfileRequest): Promise<void> {
-        await this.getGot().post('start', { json: request })
-    }
-
-    // Create a devfile for the project
-    public async createDevfile(request: CreateDevfileRequest): Promise<CreateDevfileResponse> {
-        const response = await this.getGot().post<CreateDevfileResponse>('devfile/create', { json: request })
-        return response.body
-    }
-
-    // Get status and action type
-    public async getStatus(): Promise<GetStatusResponse> {
-        const response = await this.getGot()<GetStatusResponse>('status')
-        return response.body
-    }
+    private readonly got = got.extend({
+        prefixUrl: this.endpoint,
+        responseType: 'json',
+        // `Authorization` _should_ have two parameters (RFC 7235), MDE should probably fix that
+        headers: { Authorization: this.authToken },
+    })
 }
 
 export interface GetStatusResponse {
     actionId?: string
     message?: string
     status?: Status
+    location?: string // relative to the currently mounted project
 }
 
 export interface CreateDevfileRequest {

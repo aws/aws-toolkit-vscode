@@ -13,6 +13,7 @@ import {
 } from '../../shared/ui/pickerPrompter'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { isValidResponse } from '../../shared/wizards/wizard'
+import { getHelpUrl } from '../utils'
 
 export function createRepoLabel(r: caws.CawsRepo): string {
     return `${r.org.name} / ${r.project.name} / ${r.name}`
@@ -52,7 +53,7 @@ function createResourcePrompter<T extends caws.CawsResource>(
     const refresh = createRefreshButton()
     const items = resources.map(p => p.map(asQuickpickItem))
     const prompter = createQuickPick(items, {
-        buttons: [refresh, ...createCommonButtons(caws.cawsHelpUrl)],
+        buttons: [refresh, ...createCommonButtons(getHelpUrl())],
         ...presentation,
     })
 

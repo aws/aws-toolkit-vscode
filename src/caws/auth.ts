@@ -12,11 +12,10 @@ import {
 } from '../credentials/authentication'
 import { createClient } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
+import { UnknownError } from '../shared/toolkitError'
 
 async function verifyCookie(cookie: string): Promise<{ id: string; name: string }> {
-    const client = await createClient()
-    await client.setCredentials(cookie)
-
+    const client = await createClient(cookie)
     const user = await client.verifySession()
 
     return { id: user.identity, name: user.name }
@@ -24,16 +23,14 @@ async function verifyCookie(cookie: string): Promise<{ id: string; name: string 
 
 interface UserMetadata {
     /**
-     * Set true if the stored session token is known to be invalid
+     * Username associated with the account (this will be enforced as always defined soon)
      */
-    invalidSession?: boolean
-
-    /**
-     * Username associated with the account
-     */
-    username?: string
+    readonly username?: string
 }
 
+// Secrets stored on the macOS keychain appear as individual entries for each key
+// This is fine so long as the user has only a few accounts. Otherwise this should
+// store secrets as a map.
 export class CawsAuthStorage {
     private static readonly USERS_MEMENTO_KEY = 'caws/users'
     private static readonly SECRETS_KEY = 'caws/authtokens'
@@ -44,17 +41,19 @@ export class CawsAuthStorage {
         return this.memento.get<Record<string, UserMetadata>>(CawsAuthStorage.USERS_MEMENTO_KEY, {})
     }
 
-    public async getSecret(username: string): Promise<string> {
-        const cookie = await this.secrets.get(`${CawsAuthStorage.SECRETS_KEY}/${username}`)
-
-        if (!cookie) {
-            throw new Error(`No secret found for: ${username}`)
-        }
-
-        return cookie
+    public async getSecret(user: string): Promise<string | undefined> {
+        return this.secrets.get(`${CawsAuthStorage.SECRETS_KEY}/${user}`)
     }
 
-    public async updateUser(username: string, secret: string, metadata?: UserMetadata): Promise<void> {
+    public async clearSecret(user: string): Promise<void> {
+        try {
+            await this.secrets.delete(`${CawsAuthStorage.SECRETS_KEY}/${user}`)
+        } catch (error) {
+            getLogger().warn(`CAWS: failed to remove secret for user "${user}"`)
+        }
+    }
+
+    public async updateUser(user: string, secret: string, metadata?: UserMetadata): Promise<void> {
         const userdata = this.memento.get<Record<string, UserMetadata>>(CawsAuthStorage.USERS_MEMENTO_KEY, {})
 
         // XXX: temporary code to remove older user data
@@ -67,10 +66,10 @@ export class CawsAuthStorage {
 
         await this.memento.update(CawsAuthStorage.USERS_MEMENTO_KEY, {
             ...userdata,
-            [username]: { ...userdata[username], ...metadata },
+            [user]: { ...userdata[user], ...metadata },
         })
 
-        return this.secrets.store(`${CawsAuthStorage.SECRETS_KEY}/${username}`, secret)
+        return this.secrets.store(`${CawsAuthStorage.SECRETS_KEY}/${user}`, secret)
     }
 }
 
@@ -121,24 +120,31 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
      * Currently just returns the cookie if it was valid, otherwise throws.
      */
     private async login(account: Pick<AccountDetails, 'id'>): Promise<Session> {
-        try {
-            const cookie = await this.storage.getSecret(account.id)
-            // Ideally a client should always be immutable after creation
-            // Additional context could be bound to derived instances, but best practice is to keep SDK clients 'pure'
-            const person = await this.getUser(cookie)
-            await this.storage.updateUser(person.id, cookie, { username: person.name })
+        const handleError = this.handleLoginFailure.bind(this, account)
+        const accessToken = await this.storage.getSecret(account.id).catch(handleError)
 
-            return {
-                accessDetails: cookie,
-                accountDetails: { id: person.id, label: person.name },
-                id: `session-${(this.sessionCounter += 1)}`,
-            }
-        } catch (err) {
-            // Handle "Decryption Failed" and other potential issues.
-            getLogger().debug(`CAWS: failed to login (will clear existing secrets): ${(err as Error).message}`)
-            this.storage.updateUser(account.id, '', { invalidSession: true })
-            throw err
+        // TODO(sijaden): this check won't be needed with the real SSO flow
+        if (!accessToken) {
+            throw new Error('CAWS: account is missing access token')
         }
+
+        // Ideally a client should always be immutable after creation
+        // Additional context could be bound to derived instances, but best practice is to keep SDK clients 'pure'
+        const person = await this.getUser(accessToken).catch(handleError)
+        await this.storage.updateUser(person.id, accessToken, { username: person.name })
+
+        return {
+            accessDetails: accessToken,
+            accountDetails: { id: person.id, label: person.name },
+            id: `session-${(this.sessionCounter += 1)}`,
+        }
+    }
+
+    private async handleLoginFailure(account: Pick<AccountDetails, 'id'>, error: unknown): Promise<never> {
+        // Handle "Decryption Failed" and other potential issues.
+        getLogger().debug(`CAWS: failed to login (will clear existing secrets): ${UnknownError.cast(error).message}`)
+        await this.storage.clearSecret(account.id)
+        throw error
     }
 
     /**
@@ -166,5 +172,15 @@ export class CawsAuthenticationProvider implements AuthenticationProvider {
         const old = this.sessions.get(session.id)
         this.sessions.delete(session.id)
         old && this._onDidChangeSessions.fire({ removed: [old] })
+    }
+
+    public getActiveSession(): Session | undefined {
+        return this.listSessions()[0]
+    }
+
+    private static instance: CawsAuthenticationProvider
+
+    public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
+        return (this.instance ??= new this(new CawsAuthStorage(ctx.globalState, ctx.secrets)))
     }
 }
