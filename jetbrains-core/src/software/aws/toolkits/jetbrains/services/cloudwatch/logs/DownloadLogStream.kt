@@ -35,11 +35,16 @@ import software.aws.toolkits.telemetry.Result
 import java.io.File
 import java.nio.file.Files
 import java.time.Instant
+import kotlin.coroutines.CoroutineContext
 import kotlin.streams.asSequence
 
-class LogStreamDownloadTask(project: Project, val client: CloudWatchLogsClient, val logGroup: String, val logStream: String) :
-    Task.Backgroundable(project, message("cloudwatch.logs.opening_in_editor", logStream), true) {
-    private val edt = getCoroutineUiContext()
+class LogStreamDownloadTask(
+    project: Project,
+    private val edt: CoroutineContext,
+    val client: CloudWatchLogsClient,
+    val logGroup: String,
+    val logStream: String
+) : Task.Backgroundable(project, message("cloudwatch.logs.opening_in_editor", logStream), true) {
 
     override fun run(indicator: ProgressIndicator) = runBlocking {
         // Default content load limit is 20MB, default per page is 1MB/10000 log entries. so we load MaxLength/1MB
@@ -82,7 +87,9 @@ class LogStreamDownloadTask(project: Project, val client: CloudWatchLogsClient, 
             }
         }
 
-        val success = OpenStreamInEditor.open(project, edt, logStream, buffer.toString())
+        val success = withContext(edt) {
+            OpenStreamInEditor.open(project, logStream, buffer.toString())
+        }
         CloudwatchlogsTelemetry.openStreamInEditor(project, success)
     }
 
@@ -179,7 +186,7 @@ class LogStreamDownloadToFileTask(
     }
 
     override fun onThrowable(e: Throwable) {
-        LogStreamDownloadTask.LOG.error(e) { "LogStreamDownloadToFileTask exception thrown" }
+        LOG.error(e) { "LogStreamDownloadToFileTask exception thrown" }
         val result = if (e is ProcessCanceledException) {
             Result.Cancelled
         } else {

@@ -9,16 +9,16 @@ import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ReadOnlyLightVirtualFile
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
+import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.toLogStreamEntry
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
-import kotlin.coroutines.CoroutineContext
 
 object OpenStreamInEditor {
-    suspend fun open(project: Project, edt: CoroutineContext, logStream: String, fileContent: String): Boolean {
+    suspend fun open(project: Project, logStream: String, fileContent: String): Boolean {
         val file = ReadOnlyLightVirtualFile(logStream, PlainTextLanguage.INSTANCE, fileContent)
-        return withContext(edt) {
+        return withContext(getCoroutineUiContext()) {
             // set virtual file to read only
             FileEditorManager.getInstance(project).openFile(file, true, true).ifEmpty {
                 if (!fileContent.isBlank()) {
