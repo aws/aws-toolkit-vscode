@@ -15,6 +15,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.CredentialIdentifier
@@ -324,9 +325,9 @@ class DefaultAwsResourceCache(
                     try {
                         context.future.complete(result.value.await())
                     } catch (e: Throwable) {
-                        val deferred = currentValue
-                        if (context.useStale && deferred != null && deferred.value.isCompleted) {
-                            context.future.complete(deferred.value.getCompleted())
+                        val previousValue = currentValue
+                        if (context.useStale && previousValue != null && previousValue.value.isCompleted && !previousValue.value.isCompletedExceptionally) {
+                            context.future.complete(previousValue.value.getCompleted())
                         } else {
                             context.future.completeExceptionally(e)
                         }
@@ -340,18 +341,24 @@ class DefaultAwsResourceCache(
 
     private fun runCacheMaintenance() {
         try {
-            var totalWeight = 0
-            val entries = cache.entries.asSequence().filter { it.value.value.isCompleted }.onEach { totalWeight += it.value.weight }.toList()
-            var exceededWeight = totalWeight - maximumCacheEntries
-            if (exceededWeight <= 0) return
-            entries.sortedBy { it.value.expiry }.forEach { (key, value) ->
-                if (exceededWeight <= 0) return@runCacheMaintenance
-                if (cache.computeRemoveIf(key) { it === value }) {
-                    exceededWeight -= value.weight
-                }
-            }
+            doRunCacheMaintenance()
         } finally {
             scheduleCacheMaintenance()
+        }
+    }
+
+    @VisibleForTesting
+    internal fun doRunCacheMaintenance() {
+        var totalWeight = 0
+        cache.entries.removeIf { it.value.value.isCompletedExceptionally }
+        val entries = cache.entries.asSequence().filter { it.value.value.isCompleted }.onEach { totalWeight += it.value.weight }.toList()
+        var exceededWeight = totalWeight - maximumCacheEntries
+        if (exceededWeight <= 0) return
+        entries.sortedBy { it.value.expiry }.forEach { (key, value) ->
+            if (exceededWeight <= 0) return@doRunCacheMaintenance
+            if (cache.computeRemoveIf(key) { it === value }) {
+                exceededWeight -= value.weight
+            }
         }
     }
 
@@ -409,10 +416,13 @@ class DefaultAwsResourceCache(
 
     private fun <T> fetchIfNeeded(context: Context<T>, currentEntry: Entry<T>?) = when {
         currentEntry == null -> fetch(context)
+        currentEntry.value.isCompletedExceptionally -> fetch(context)
         currentEntry.notExpired && !context.forceFetch -> currentEntry
         context.useStale -> fetchWithFallback(context, currentEntry)
         else -> fetch(context)
     }
+
+    private val Deferred<*>.isCompletedExceptionally get() = isCompleted && getCompletionExceptionOrNull() != null
 
     private fun <T> fetchWithFallback(context: Context<T>, currentEntry: Entry<T>) = try {
         fetch(context)
@@ -430,6 +440,9 @@ class DefaultAwsResourceCache(
     }
 
     private val Entry<*>.notExpired get() = value.isActive || clock.instant().isBefore(expiry)
+
+    @VisibleForTesting
+    internal fun hasCacheEntry(resourceId: String): Boolean = cache.filterKeys { it.resourceId == resourceId }.isNotEmpty()
 
     companion object {
         private val LOG = getLogger<DefaultAwsResourceCache>()
