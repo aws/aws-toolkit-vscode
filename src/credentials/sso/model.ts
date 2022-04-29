@@ -57,8 +57,6 @@ export interface SsoProfile {
     readonly startUrl: string
     readonly accountId?: string
     readonly roleName?: string
-
-    // Currently unused
     readonly scopes?: string[]
 }
 

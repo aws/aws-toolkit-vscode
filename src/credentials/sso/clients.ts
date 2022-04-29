@@ -71,12 +71,9 @@ export class OidcClient {
         const response = await this.client.createToken(request as CreateTokenRequest)
         assertHasProps(response, 'accessToken', 'expiresIn')
 
-        const accessToken = response.accessToken.replace(/^aoa/, '')
-
         return {
-            ...selectFrom(response, 'refreshToken', 'tokenType'),
+            ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
             expiresAt: new this.clock.Date(response.expiresIn * 1000 + this.clock.Date.now()),
-            accessToken,
         }
     }
 
@@ -108,15 +105,25 @@ export class OidcClient {
 }
 
 type OmittedProps = 'accessToken' | 'nextToken'
+type ExtractOverload<T> = T extends {
+    (this: void, ...args: infer P1): infer R1
+    (this: void, ...args: infer P2): infer R2
+    (this: void, ...args: infer P3): infer R3
+}
+    ? (...args: P1) => R1
+    : never
 
 export class SsoClient {
-    public constructor(private readonly client: SSO) {}
+    public constructor(private readonly client: SSO, private readonly provider: SsoAccessTokenProvider) {}
 
     public listAccounts(
         request: Omit<ListAccountsRequest, OmittedProps> = {}
     ): AsyncCollection<RequiredProps<AccountInfo, 'accountId'>[]> {
-        const requester = (request: ListAccountsRequest) => this.client.listAccounts(request)
-        const collection = pageableToCollection(requester, this.makeRequest(request), 'nextToken', 'accountList')
+        const method = this.client.listAccounts.bind(this)
+        const requester = (request: Omit<ListAccountsRequest, 'accessToken'>) =>
+            this.call(method as ExtractOverload<typeof method>, request)
+
+        const collection = pageableToCollection(requester, request, 'nextToken', 'accountList')
 
         return collection.filter(isNonNullable).map(accounts => accounts.map(a => (assertHasProps(a, 'accountId'), a)))
     }
@@ -124,8 +131,11 @@ export class SsoClient {
     public listAccountRoles(
         request: Omit<ListAccountRolesRequest, OmittedProps>
     ): AsyncCollection<Required<RoleInfo>[]> {
-        const requester = (request: ListAccountRolesRequest) => this.client.listAccountRoles(request)
-        const collection = pageableToCollection(requester, this.makeRequest(request), 'nextToken', 'roleList')
+        const method = this.client.listAccountRoles.bind(this)
+        const requester = (request: Omit<ListAccountRolesRequest, 'accessToken'>) =>
+            this.call(method as ExtractOverload<typeof method>, request)
+
+        const collection = pageableToCollection(requester, request, 'nextToken', 'roleList')
 
         return collection
             .filter(isNonNullable)
@@ -133,7 +143,8 @@ export class SsoClient {
     }
 
     public async getRoleCredentials(request: Omit<GetRoleCredentialsRequest, OmittedProps>) {
-        const response = await this.client.getRoleCredentials(this.makeRequest(request))
+        const method = this.client.getRoleCredentials.bind(this)
+        const response = await this.call(method as ExtractOverload<typeof method>, request)
 
         assertHasProps(response, 'roleCredentials')
         assertHasProps(response.roleCredentials, 'accessKeyId', 'secretAccessKey')
@@ -146,39 +157,39 @@ export class SsoClient {
         }
     }
 
-    private makeRequest<T extends Record<any, any>>(request: T): T & { accessToken: string | undefined } {
-        return { ...request, accessToken: undefined }
+    private call<T extends { accessToken: string | undefined }, U>(
+        method: (request: T) => Promise<U>,
+        request: Omit<T, 'accessToken'>
+    ): Promise<U> {
+        const requester = async (req: T) => {
+            const token = await this.provider.getToken()
+            assertHasProps(token, 'accessToken')
+
+            try {
+                return await method({ ...req, accessToken: token.accessToken })
+            } catch (error) {
+                await this.handleError(error)
+                throw error
+            }
+        }
+
+        return requester(request as T)
     }
 
-    // TODO(sijaden): remove this. Only used so we don't need to stub the constructor.
-    public static create(region: string, provider: SsoAccessTokenProvider) {
-        const client = new SSO({ region })
-
-        return new this(addTokenMiddleware(client, provider))
-    }
-}
-
-export function addTokenMiddleware(client: SSO, provider: SsoAccessTokenProvider): SSO {
-    async function handleError(error: unknown): Promise<never> {
+    private async handleError(error: unknown): Promise<never> {
         if (
             error instanceof SSOServiceException &&
             error.$fault === 'client' &&
             !(isThrottlingError(error) || isTransientError(error))
         ) {
             getLogger().warn(`credentials (sso): invalidating stored token: ${error.message}`)
-            await provider.invalidate()
+            await this.provider.invalidate()
         }
 
         throw error
     }
 
-    client.middlewareStack.add(next => async args => {
-        const token = await provider.getToken()
-        assertHasProps(token, 'accessToken')
-        args.input.accessToken = token.accessToken
-
-        return next(args).catch(handleError)
-    })
-
-    return client
+    public static create(region: string, provider: SsoAccessTokenProvider) {
+        return new this(new SSO({ region }), provider)
+    }
 }

@@ -35,7 +35,7 @@ describe('SsoProvider', () => {
         const ssoClientInstance = instance(ssoClient)
         ssoClientInstance.middlewareStack = { add: () => {} } as any
 
-        sinon.stub(SsoClient, 'create').returns(new SsoClient(ssoClientInstance))
+        sinon.stub(SsoClient, 'create').returns(new SsoClient(ssoClientInstance, tokenProviderInstance))
         sinon.stub(SsoAccessTokenProvider, 'create').returns(tokenProviderInstance)
         sinon.stub(messages, 'showConfirmationMessage').resolves(true)
     })
@@ -55,14 +55,10 @@ describe('SsoProvider', () => {
 
     describe('getCredentials', () => {
         it('invalidates cached access token if denied', async function () {
-            // Currently skipping this until SDK clients can be tested easier
-            this.skip()
-
             const exception = new UnauthorizedException({ $metadata: {} })
 
             when(ssoClient.getRoleCredentials(anything())).thenReject(exception)
-            when(tokenProvider.getToken()).thenResolve(undefined)
-            when(tokenProvider.createToken()).thenResolve(createToken())
+            when(tokenProvider.getToken()).thenResolve(createToken())
             when(tokenProvider.invalidate()).thenResolve()
 
             await assert.rejects(provider.getCredentials(), exception)
@@ -70,15 +66,11 @@ describe('SsoProvider', () => {
         })
 
         it('keeps cached token on server faults', async function () {
-            // This technically passes but that's because the middleware never runs anyway
-            this.skip()
-
             const exception = new SSOServiceException({ name: 'ServerError', $fault: 'server', $metadata: {} })
             const provider = new SsoProvider(profileName, profile)
 
             when(ssoClient.getRoleCredentials(anything())).thenReject(exception)
-            when(tokenProvider.getToken()).thenResolve(undefined)
-            when(tokenProvider.createToken()).thenResolve(createToken())
+            when(tokenProvider.getToken()).thenResolve(createToken())
 
             await assert.rejects(provider.getCredentials(), exception)
             verify(tokenProvider.invalidate()).never()

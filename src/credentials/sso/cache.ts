@@ -17,7 +17,26 @@ interface RegistrationKey {
     readonly scopes?: string[]
 }
 
+interface SsoAccess {
+    readonly token: SsoToken
+    readonly region: string
+    readonly startUrl: string
+    readonly registration?: ClientRegistration
+}
+
+export interface SsoCache {
+    readonly token: KeyedCache<SsoAccess>
+    readonly registration: KeyedCache<ClientRegistration, RegistrationKey>
+}
+
 const CACHE_DIR = join(homedir(), '.aws', 'sso', 'cache')
+
+export function getCache(directory = CACHE_DIR): SsoCache {
+    return {
+        token: getTokenCache(directory),
+        registration: getRegistrationCache(directory),
+    }
+}
 
 export function getRegistrationCache(directory = CACHE_DIR): KeyedCache<ClientRegistration, RegistrationKey> {
     const hashScopes = (scopes: string[]) => {
@@ -40,13 +59,6 @@ export function getRegistrationCache(directory = CACHE_DIR): KeyedCache<ClientRe
     const cache: KeyedCache<StoredRegistration, RegistrationKey> = createDiskCache(getTarget, logger)
 
     return mapCache(cache, read, write)
-}
-
-interface SsoAccess {
-    readonly token: SsoToken
-    readonly region: string
-    readonly startUrl: string
-    readonly registration?: ClientRegistration
 }
 
 export function getTokenCache(directory = CACHE_DIR): KeyedCache<SsoAccess> {

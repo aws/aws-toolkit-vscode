@@ -30,11 +30,9 @@ describe('SsoAccessTokenProvider', function () {
     let tempDir: string
 
     function setupCaches(dir: string) {
-        const getTokenCache = cache.getTokenCache
-        const getRegistrationCache = cache.getRegistrationCache
-
-        sinon.stub(cache, 'getTokenCache').callsFake(() => getTokenCache(dir))
-        sinon.stub(cache, 'getRegistrationCache').callsFake(() => getRegistrationCache(dir))
+        const tempCache = cache.getCache(dir)
+        sinon.stub(cache, 'getCache').callsFake(() => tempCache)
+        return tempCache
     }
 
     function createToken(timeDelta: number, extras: Partial<SsoToken> = {}) {
@@ -73,9 +71,8 @@ describe('SsoAccessTokenProvider', function () {
     })
 
     beforeEach(async function () {
-        sut = new SsoAccessTokenProvider({ region, startUrl }, instance(oidcClient))
         tempDir = await makeTemporaryToolkitFolder()
-        setupCaches(tempDir)
+        sut = new SsoAccessTokenProvider({ region, startUrl }, setupCaches(tempDir), instance(oidcClient))
     })
 
     afterEach(async function () {

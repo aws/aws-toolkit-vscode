@@ -7,7 +7,7 @@ import globals from '../../shared/extensionGlobals'
 
 import { SSOOIDCServiceException } from '@aws-sdk/client-sso-oidc'
 import { openSsoPortalLink, SsoToken, ClientRegistration, isExpired, SsoProfile } from './model'
-import { getRegistrationCache, getTokenCache } from './cache'
+import { getCache } from './cache'
 import { hasProps } from '../../shared/utilities/tsUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { OidcClient } from './clients'
@@ -57,16 +57,16 @@ const REFRESH_GRANT_TYPE = 'refresh_token'
 export class SsoAccessTokenProvider {
     public constructor(
         private readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes'>,
+        private readonly cache = getCache(),
         private readonly oidc = OidcClient.create(profile.region)
     ) {}
 
     public async invalidate(): Promise<void> {
-        await getTokenCache().clear(this.profile.startUrl)
+        await this.cache.token.clear(this.profile.startUrl)
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
-        const tokenCache = getTokenCache()
-        const data = await tokenCache.load(this.profile.startUrl)
+        const data = await this.cache.token.load(this.profile.startUrl)
 
         if (!data || !isExpired(data.token)) {
             return data?.token
@@ -78,7 +78,7 @@ export class SsoAccessTokenProvider {
             const refreshed = await this.refreshToken(data.token, data.registration)
 
             if (refreshed) {
-                await tokenCache.save(this.profile.startUrl, refreshed)
+                await this.cache.token.save(this.profile.startUrl, refreshed)
             }
 
             return refreshed?.token
@@ -86,17 +86,15 @@ export class SsoAccessTokenProvider {
     }
 
     public async createToken(): Promise<SsoToken> {
-        const tokenCache = getTokenCache()
         const access = await this.runFlow()
-        await tokenCache.save(this.profile.startUrl, access)
+        await this.cache.token.save(this.profile.startUrl, access)
 
         return access.token
     }
 
     private async runFlow() {
         const cacheKey = this.registrationCacheKey()
-        const registrationCache = getRegistrationCache()
-        const registration = await loadOr(registrationCache, cacheKey, () => this.registerClient())
+        const registration = await loadOr(this.cache.registration, cacheKey, () => this.registerClient())
 
         try {
             return await this.authorize(registration)
@@ -106,7 +104,7 @@ export class SsoAccessTokenProvider {
                 error.$fault === 'client' &&
                 !(isThrottlingError(error) || isTransientError(error))
             ) {
-                registrationCache.clear(cacheKey)
+                this.cache.registration.clear(cacheKey)
             }
 
             throw error
