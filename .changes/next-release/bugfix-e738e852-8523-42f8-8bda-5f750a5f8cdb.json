@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Don't attempt to setup run configurations for test code (#3075)"
+}

@@ -10,6 +10,7 @@ import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.TestSourcesFilter
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.psi.YAMLKeyValue
@@ -55,6 +56,11 @@ class LocalLambdaRunConfigurationProducer : LazyRunConfigurationProducer<LocalLa
         if (runtimeGroup !in LambdaHandlerResolver.supportedRuntimeGroups()) {
             return false
         }
+
+        if (context.location?.virtualFile?.let { TestSourcesFilter.isTestSources(it, element.project) } == true) {
+            return false
+        }
+
         val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
         val handler = resolver.determineHandler(element) ?: return false
 

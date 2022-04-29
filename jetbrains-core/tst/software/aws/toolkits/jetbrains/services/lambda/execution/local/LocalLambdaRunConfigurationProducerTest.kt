@@ -20,17 +20,20 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.sam.findByLocation
-import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addModule
+import software.aws.toolkits.jetbrains.utils.rules.addTestClass
 import software.aws.toolkits.jetbrains.utils.rules.openClass
 import kotlin.test.assertNotNull
 
 class LocalLambdaRunConfigurationProducerTest {
     @Rule
     @JvmField
-    val projectRule = JavaCodeInsightTestFixtureRule()
+    val projectRule = HeavyJavaCodeInsightTestFixtureRule()
 
     @Test
     fun validRunConfigurationIsCreated() {
+        projectRule.fixture.addModule("main")
         val psiClass = projectRule.fixture.openClass(
             """
             package com.example;
@@ -52,6 +55,29 @@ class LocalLambdaRunConfigurationProducerTest {
             assertThat(configuration.runtime()).isEqualTo(LambdaRuntime.JAVA8_AL2)
             assertThat(configuration.handler()).isEqualTo("com.example.LambdaHandler::handleRequest")
             assertThat(configuration.name).isEqualTo("[Local] LambdaHandler.handleRequest")
+        }
+    }
+
+    @Test
+    fun `does not create run configuration for test class`() {
+        val newModule = projectRule.fixture.addModule("newModule")
+        val psiClass = projectRule.fixture.addTestClass(
+            newModule,
+            """
+            package com.example;
+
+            public class LambdaHandler {
+                public String handleRequest(String request) {
+                    return request.toUpperCase();
+                }
+            }
+            """
+        )
+
+        val lambdaMethod = psiClass.findMethodsByName("handleRequest", false).first()
+        runInEdtAndWait {
+            val runConfiguration = createRunConfiguration(lambdaMethod)
+            assertThat(runConfiguration).isNull()
         }
     }
 
@@ -110,6 +136,7 @@ Resources:
 
     @Test
     fun invalidLambdaIsNotCreated() {
+        projectRule.fixture.addModule("main")
         val psiClass = projectRule.fixture.openClass(
             """
             package com.example;
