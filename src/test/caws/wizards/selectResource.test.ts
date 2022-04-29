@@ -36,7 +36,7 @@ describe('Prompts', function () {
         const prompt = createOrgPrompter(mockClient())
         const tester = createQuickPickTester(prompt)
 
-        tester.assertItems([{ label: 'MyOrg', detail: 'My Description', description: '', data: orgs[0] }])
+        tester.assertItems([{ label: 'MyOrg', detail: 'My Description', data: orgs[0] }])
         tester.acceptItem('MyOrg')
 
         await tester.result()
@@ -47,7 +47,7 @@ describe('Prompts', function () {
         const tester = createQuickPickTester(prompt)
         const newOrg = { type: 'org', id: '', name: 'AnotherOrg', description: 'More Text' } as const
 
-        tester.assertItems([{ label: 'MyOrg', detail: 'My Description', description: '', data: orgs[0] }])
+        tester.assertItems([{ label: 'MyOrg', detail: 'My Description', data: orgs[0] }])
         tester.addCallback(() => orgs.push(newOrg))
         tester.pressButton('Refresh')
         tester.assertItems(['MyOrg', 'AnotherOrg'])

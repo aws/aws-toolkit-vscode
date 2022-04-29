@@ -60,6 +60,7 @@ export interface CawsDevEnv extends caws.DevelopmentWorkspaceSummary {
     readonly id: string // Alias of developmentWorkspaceId.
     readonly name: string
     readonly description?: string
+    readonly alias?: string // Not on the model yet
     readonly org: Pick<CawsOrg, 'name'>
     readonly project: Pick<CawsProject, 'name'>
 }

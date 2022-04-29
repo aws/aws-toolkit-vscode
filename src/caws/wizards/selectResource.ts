@@ -12,6 +12,7 @@ import {
     QuickPickPrompter,
 } from '../../shared/ui/pickerPrompter'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
+import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { getHelpUrl } from '../utils'
 
@@ -24,16 +25,13 @@ export function createRepoLabel(r: caws.CawsRepo): string {
  */
 export function asQuickpickItem<T extends caws.CawsResource>(resource: T): DataQuickPickItem<T> {
     let label: string
-    let desc = resource.id
 
     if (resource.type === 'repo') {
         label = createRepoLabel(resource)
     } else if (resource.type === 'project') {
         label = `${resource.org.name} / ${resource.name}`
     } else if (resource.type === 'env') {
-        const repo1 = resource.repositories[0]?.repositoryName
-        label = `${resource.org.name} / ${resource.project.name} / ${repo1}`
-        desc = `${resource.lastUpdatedTime.toISOString()} ${resource.ide} ${resource.status}`
+        return { ...fromWorkspace(resource), data: resource }
     } else {
         label = `${resource.name}`
     }
@@ -41,8 +39,37 @@ export function asQuickpickItem<T extends caws.CawsResource>(resource: T): DataQ
     return {
         label,
         detail: resource.description,
-        description: desc,
         data: resource,
+    }
+}
+
+function fromWorkspace(env: caws.CawsDevEnv): Omit<DataQuickPickItem<unknown>, 'data'> {
+    const repo = env.repositories[0]
+
+    if (!repo) {
+        throw new Error('Workspace does not have an associated repository')
+    }
+
+    const labelParts = [] as string[]
+
+    if (env.status === 'RUNNING') {
+        labelParts.push('$(pass) ')
+    } else {
+        labelParts.push('$(circle-slash) ') // TODO(sijaden): get actual 'stopped' icon
+    }
+
+    labelParts.push(`${repo.repositoryName}/${repo.branchName}`)
+
+    if (env.alias) {
+        labelParts.push(` ${env.alias}`)
+    }
+
+    const lastUsed = `Last used: ${getRelativeDate(env.lastUpdatedTime)}`
+
+    return {
+        label: labelParts.join(''),
+        description: env.status === 'RUNNING' ? 'RUNNING - IN USE' : env.status,
+        detail: `${env.org.name}/${env.project.name}, ${lastUsed}`,
     }
 }
 
@@ -66,8 +93,8 @@ function createResourcePrompter<T extends caws.CawsResource>(
 
 export function createOrgPrompter(client: caws.ConnectedCawsClient): QuickPickPrompter<caws.CawsOrg> {
     return createResourcePrompter(client.listOrgs(), {
-        title: 'Select a CODE.AWS Organization',
-        placeholder: 'Choose an organization',
+        title: 'Select a Code.AWS Organization',
+        placeholder: 'Search for an Organization',
     })
 }
 
@@ -78,8 +105,8 @@ export function createProjectPrompter(
     const projects = org ? client.listProjects({ organizationName: org.name }) : client.listResources('project')
 
     return createResourcePrompter(projects, {
-        title: 'Select a CODE.AWS Project',
-        placeholder: 'Choose a project',
+        title: 'Select a Code.AWS Project',
+        placeholder: 'Search for a Project',
     })
 }
 
@@ -92,8 +119,8 @@ export function createRepoPrompter(
         : client.listResources('repo')
 
     return createResourcePrompter(repos, {
-        title: 'Select a CODE.AWS Repository',
-        placeholder: 'Choose a repository',
+        title: 'Select a Code.AWS Repository',
+        placeholder: 'Search for a Repository',
     })
 }
 
@@ -102,10 +129,25 @@ export function createDevEnvPrompter(
     proj?: caws.CawsProject
 ): QuickPickPrompter<caws.CawsDevEnv> {
     const envs = proj ? client.listDevEnvs(proj) : client.listResources('env')
+    const filtered = envs.map(arr => arr.filter(env => env.ide === 'VSCode'))
+    const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
+        return typeof obj !== 'function' && isValidResponse(obj)
+    }
 
-    return createResourcePrompter(envs, {
-        title: 'Select a CODE.AWS Development Environment',
-        placeholder: 'Choose a dev env',
+    return createResourcePrompter(filtered, {
+        title: 'Select a Code.AWS Workspace',
+        placeholder: 'Search for a Workspace',
+        compare: (a, b) => {
+            if (isData(a.data) && isData(b.data)) {
+                if (a.data.status === b.data.status) {
+                    return a.data.lastUpdatedTime.getTime() - b.data.lastUpdatedTime.getTime()
+                }
+
+                return a.data.status === 'RUNNING' ? -1 : b.data.status === 'RUNNING' ? 1 : 0
+            }
+
+            return 0
+        },
     })
 }
 
