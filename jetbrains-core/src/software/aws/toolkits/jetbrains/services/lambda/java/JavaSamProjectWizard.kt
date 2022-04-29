@@ -96,7 +96,7 @@ abstract class JavaGradleSamProjectTemplate : JavaSamProjectTemplate() {
 
         val gradleProjectSettings = GradleProjectSettings().apply {
             withQualifiedModuleNames()
-            externalProjectPath = buildFile.path
+            externalProjectPath = buildFile.parent.path
         }
 
         val externalSystemSettings = ExternalSystemApiUtil.getSettings(rootModel.project, GradleConstants.SYSTEM_ID)
