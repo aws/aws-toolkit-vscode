@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationRequest
 import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationResponse
 import software.amazon.awssdk.services.lambda.model.LastUpdateStatus
+import software.amazon.awssdk.services.lambda.model.State
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeRequest
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeResponse
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationRequest
@@ -85,6 +86,7 @@ class UpdateLambdaCodeTest {
             on { updateFunctionCode(codeRequestCaptor.capture()) } doReturn UpdateFunctionCodeResponse.builder().build()
             on { updateFunctionConfiguration(configRequestCaptor.capture()) } doReturn UpdateFunctionConfigurationResponse.builder().build()
             on { getFunctionConfiguration(any<GetFunctionConfigurationRequest>()) } doReturn GetFunctionConfigurationResponse.builder()
+                .state(State.ACTIVE)
                 .lastUpdateStatus(LastUpdateStatus.SUCCESSFUL)
                 .build()
         }

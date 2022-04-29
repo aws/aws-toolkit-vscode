@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
+import software.aws.toolkits.jetbrains.services.lambda.waitForUpdatableState
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaPackageType
@@ -82,6 +83,7 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
 
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
+                lambdaClient.waitForUpdatableState(functionDetails.name)
                 lambdaClient.updateFunctionConfiguration(functionDetails)
 
                 notifyInfo(
