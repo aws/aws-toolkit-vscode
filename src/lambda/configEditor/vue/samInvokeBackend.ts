@@ -67,9 +67,11 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
     )
 }
 
-export interface AwsSamDebuggerConfigurationLoose extends AwsSamDebuggerConfiguration {
-    invokeTarget: {
-        target: 'template' | 'api' | 'code'
+export type AwsSamDebuggerConfigurationLoose = AwsSamDebuggerConfiguration & {
+    invokeTarget: Omit<
+        AwsSamDebuggerConfiguration['invokeTarget'],
+        'templatePath' | 'logicalId' | 'lambdaHandler' | 'projectRoot'
+    > & {
         templatePath: string
         logicalId: string
         lambdaHandler: string
