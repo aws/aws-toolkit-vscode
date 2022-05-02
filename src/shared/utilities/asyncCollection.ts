@@ -82,16 +82,20 @@ async function* mapGenerator<T, U, R = T>(
 async function* filterGenerator<T, U extends T, R = T>(
     generator: AsyncGenerator<T, R | undefined | void>,
     predicate: Predicate<T | R, U>
-): AsyncGenerator<U, U | undefined> {
+): AsyncGenerator<U, U | void> {
     while (true) {
         const { value, done } = await generator.next()
-        if (value === undefined || !predicate(value)) {
-            if (done) {
-                return value as Awaited<U> | undefined
+
+        if (done) {
+            if (value !== undefined && predicate(value)) {
+                return value as unknown as Awaited<U>
             }
-            continue
+            break
         }
-        yield value
+
+        if (predicate(value)) {
+            yield value
+        }
     }
 }
 
