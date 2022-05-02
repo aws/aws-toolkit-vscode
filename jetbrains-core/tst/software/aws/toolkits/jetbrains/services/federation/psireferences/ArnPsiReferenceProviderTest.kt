@@ -156,4 +156,34 @@ class ArnPsiReferenceProviderTest {
             }
         }
     }
+
+    @Test
+    fun `attaches reference to JSON values`() {
+        // language=JSON
+        val contents = """
+            {
+              "hello": "arn:aws:lambda::123456789012:function"
+            }
+        """.trimIndent()
+
+        val file = runInEdtAndGet {
+            projectRule.fixture.configureByText("json.json", contents)
+        }.virtualFile
+
+        val elements = mutableListOf<ArnReference>()
+        runReadAction {
+            PsiTreeUtil.processElements(
+                file.toPsi(projectRule.project),
+                PsiElementProcessor { child ->
+                    elements.addAll(child.references.filterIsInstance<ArnReference>())
+
+                    return@PsiElementProcessor true
+                }
+            )
+
+            assertThat(elements).hasSize(1).allSatisfy {
+                assertThat(it).isInstanceOf(ArnReference::class.java)
+            }
+        }
+    }
 }
