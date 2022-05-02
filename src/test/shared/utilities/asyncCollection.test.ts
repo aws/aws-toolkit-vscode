@@ -19,6 +19,12 @@ describe('AsyncCollection', function () {
         yield 2
     }
 
+    async function* returnGen() {
+        yield 0
+        yield 1
+        return 2
+    }
+
     async function* genPage() {
         yield [0, 1, 2]
         yield [3, 4, 5]
@@ -68,6 +74,23 @@ describe('AsyncCollection', function () {
             .fill(0)
             .map((_, i) => i)
         assert.deepStrictEqual(await flat.promise(), expected)
+    })
+
+    it('can flatten generators that return things', async function () {
+        const collection = toCollection(async function* () {
+            yield await toCollection(returnGen).promise()
+            yield await toCollection(returnGen)
+                .map(i => i + 1)
+                .promise()
+            return await toCollection(returnGen)
+                .map(i => i + 2)
+                .promise()
+        })
+
+        const flat = collection.flatten().map(i => i * 2)
+        const expected = 0 + 2 + 4 + (2 + 4 + 6) + (4 + 6 + 8) // Writing it all out for readability
+        const actual = (await flat.promise()).reduce((a, b) => a + b, 0)
+        assert.deepStrictEqual(actual, expected)
     })
 
     it('can filter', async function () {
