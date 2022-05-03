@@ -37,14 +37,7 @@ export class DefaultTelemetryService implements TelemetryService {
     private publisher?: TelemetryPublisher
     private readonly _eventQueue: MetricDatum[]
     private readonly _telemetryLogger = new TelemetryLogger()
-    /**
-     * Last metric (if any) loaded from cached telemetry from a previous
-     * session.
-     *
-     * We cannot infer this from "session_start" because there can in theory be
-     * multiple "session_start" metrics cached from multiple sessions.
-     */
-    private _endOfCache: MetricDatum | undefined
+    private hasAssertedPassiveStartup: boolean = false
 
     public constructor(
         private readonly context: ExtensionContext,
@@ -73,10 +66,15 @@ export class DefaultTelemetryService implements TelemetryService {
         return this._telemetryLogger
     }
 
-    public async start(): Promise<void> {
+    public async start(cachePath: string = this.persistFilePath): Promise<void> {
         // TODO: `readEventsFromCache` should be async
-        this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
-        this._endOfCache = this._eventQueue[this._eventQueue.length - 1]
+        const cacheEvents = DefaultTelemetryService.readEventsFromCache(cachePath)
+        if (cacheEvents.length > 0) {
+            // TODO: Defer this until after extension load?
+            // ultimately: create a separate promise with an awaited flush followed by the start timer:
+            // publisher has no safeguards on whether or not it's actively flushing: just start the timer after the initial flush
+            this.flushRecords(cacheEvents)
+        }
         recordSessionStart()
         this.startTimer()
     }
@@ -90,10 +88,15 @@ export class DefaultTelemetryService implements TelemetryService {
         recordSessionEnd({ value: currTime.getTime() - this.startTime.getTime() })
 
         // only write events to disk if telemetry is enabled at shutdown time
+        // clears cache if cache is abnormally large:
+        // call stack while processing cache can overflow if over 25 MB. Let's not let it get that way
         if (this.telemetryEnabled) {
-            try {
-                await writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
-            } catch {}
+            if (this._eventQueue.length < 1000) {
+                try {
+                    await writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+                } catch {}
+            }
+            // TODO: else emit a "failed telemetry cache" metric?
         }
     }
 
@@ -145,15 +148,32 @@ export class DefaultTelemetryService implements TelemetryService {
         this._eventQueue.length = 0
     }
 
-    private async flushRecords(): Promise<void> {
+    /**
+     * @param directPublishEvents Events to be published immediately. Won't flush this._eventQueue.
+     */
+    private async flushRecords(directPublishEvents?: MetricDatum[]): Promise<void> {
         if (this.telemetryEnabled) {
             if (this.publisher === undefined) {
                 await this.createDefaultPublisherAndClient()
             }
             if (this.publisher !== undefined) {
-                this.publisher.enqueue(...this._eventQueue)
+                let currQueue: MetricDatum[]
+                if (directPublishEvents) {
+                    currQueue = directPublishEvents
+                } else if (this.hasAssertedPassiveStartup) {
+                    currQueue = [...this._eventQueue]
+                    // open queue for new telemetry ASAP
+                    this.clearRecords()
+                } else {
+                    getLogger().warn(
+                        'Attempting to flush telemetry queue prior to calling `assertOnlyPassiveTelemetryInQueue` on startup'
+                    )
+
+                    return
+                }
+
+                this.publisher.enqueue(...currQueue)
                 await this.publisher.flush()
-                this.clearRecords()
             }
         }
     }
@@ -271,33 +291,40 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     /**
-     * Only passive telemetry is allowed during startup (except for some known
-     * special-cases).
+     * Verifies that telemetry queue only has passive metrics (except for some known
+     * special-cases). Logs error or throws depending on if this is a prod version or not (respectively)
+     *
+     * Should only be called once per session.
+     *
+     * Specifically designed to be used while validating extension activation.
      */
-    public assertPassiveTelemetry(didReload: boolean) {
+    public assertOnlyPassiveTelemetryInQueue(didReload: boolean) {
+        // should only be called once per activation.
+        if (this.hasAssertedPassiveStartup) {
+            this.throwIfDev('assertOnlyPassiveTelemetryInQueue already called this session')
+        }
+
         // Special case: these may be non-passive during a VSCode "reload". #1592
         const maybeActiveOnReload = ['sam_init']
-        // Metrics from the previous session can be arbitrary: we can't reason
-        // about whether they should be passive/active.
-        let readingCache = true
 
         // Array for..of is in-order:
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
         for (const metric of this._eventQueue) {
-            if (readingCache) {
-                readingCache = metric !== this._endOfCache
-                // Skip cached metrics.
-                continue
-            }
             if (metric.Passive || (didReload && maybeActiveOnReload.includes(metric.MetricName))) {
                 continue
             }
-            const msg = `non-passive metric emitted at startup: ${metric.MetricName}`
-            if (isReleaseVersion()) {
-                getLogger().error(msg)
-            } else {
-                throw Error(msg)
-            }
+            this.hasAssertedPassiveStartup = true
+            this.throwIfDev(`non-passive metric detected in queue: ${metric.MetricName}`)
+        }
+
+        this.hasAssertedPassiveStartup = true
+    }
+
+    private throwIfDev(msg: string) {
+        if (isReleaseVersion()) {
+            getLogger().error(msg)
+        } else {
+            throw Error(msg)
         }
     }
 }
@@ -310,36 +337,32 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
     }
     const arr = input as any[]
 
-    return arr
-        .filter((item: any) => {
-            // Make sure the item is an object
-            if (item !== Object(item)) {
-                getLogger().error(`Item in telemetry cache:\n${item}\nis not an object! skipping!`)
+    return arr.filter((item: any) => {
+        // Make sure the item is an object
+        if (item !== Object(item)) {
+            getLogger().error(`Item in telemetry cache:\n${item}\nis not an object! skipping!`)
 
-                return false
-            }
+            return false
+        }
 
-            return true
-        })
-        .filter((item: any) => {
-            // Only accept objects that have the required telemetry data
-            if (
-                !Object.prototype.hasOwnProperty.call(item, 'Value') ||
-                !Object.prototype.hasOwnProperty.call(item, 'MetricName') ||
-                !Object.prototype.hasOwnProperty.call(item, 'EpochTimestamp') ||
-                !Object.prototype.hasOwnProperty.call(item, 'Unit')
-            ) {
-                getLogger().warn(`skipping invalid item in telemetry cache: ${JSON.stringify(item)}\n`)
+        // Only accept objects that have the required telemetry data
+        if (
+            !Object.prototype.hasOwnProperty.call(item, 'Value') ||
+            !Object.prototype.hasOwnProperty.call(item, 'MetricName') ||
+            !Object.prototype.hasOwnProperty.call(item, 'EpochTimestamp') ||
+            !Object.prototype.hasOwnProperty.call(item, 'Unit')
+        ) {
+            getLogger().warn(`skipping invalid item in telemetry cache: ${JSON.stringify(item)}\n`)
 
-                return false
-            }
+            return false
+        }
 
-            if ((item as any)?.Metadata?.some((m: any) => m?.Value === undefined || m.Value === '')) {
-                getLogger().warn(`telemetry: skipping cached item with null/empty metadata field:\n${item}`)
+        if ((item as any)?.Metadata?.some((m: any) => !m?.Value || m.Value === '')) {
+            getLogger().warn(`telemetry: skipping cached item with null/empty metadata field:\n${item}`)
 
-                return false
-            }
+            return false
+        }
 
-            return true
-        })
+        return true
+    })
 }

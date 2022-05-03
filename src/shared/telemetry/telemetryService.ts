@@ -19,6 +19,8 @@ export interface TelemetryService {
     /**
      * Only passive telemetry is allowed during startup (except for some known
      * special-cases).
+     *
+     * Must be called prior to general queue flush.
      */
-    assertPassiveTelemetry(didReload: boolean): void
+    assertOnlyPassiveTelemetryInQueue(didReload: boolean): void
 }

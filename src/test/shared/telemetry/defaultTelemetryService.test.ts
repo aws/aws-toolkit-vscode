@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as fs from 'fs-extra'
+import * as path from 'path'
 import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
@@ -42,6 +43,7 @@ describe('DefaultTelemetryService', function () {
     let mockPublisher: FakeTelemetryPublisher
     let service: DefaultTelemetryService
     let logger: TelemetryLogger
+    let tempTelemetryFile: string
 
     function initService(awsContext = new FakeAwsContext()): DefaultTelemetryService {
         const newService = new DefaultTelemetryService(mockContext, awsContext, undefined, mockPublisher)
@@ -66,10 +68,12 @@ describe('DefaultTelemetryService', function () {
         service = initService()
         logger = service.logger
         clock = installFakeClock()
+        tempTelemetryFile = path.join(mockContext.globalStoragePath, 'TEMP_CACHE')
     })
 
     afterEach(async function () {
         await fs.remove(service.persistFilePath)
+        await fs.remove(tempTelemetryFile)
         sandbox.restore()
         clock.uninstall()
     })
@@ -86,45 +90,108 @@ describe('DefaultTelemetryService', function () {
         assert.strictEqual(mockPublisher.feedback, feedback)
     })
 
-    it('assertPassiveTelemetry() throws if active, non-cached metric is emitted during startup', async function () {
-        // Simulate cached telemetry by prepopulating records before start().
-        // (Normally readEventsFromCache() does this.)
-        service.record(fakeMetric({ value: 1, passive: true }))
-        service.record(fakeMetric({ value: 2, passive: true }))
-        // Active *cached* metric.
-        service.record(fakeMetric({ value: 4, passive: false }))
-        await service.start()
-
-        // Passive *non-cached* metric.
-        service.record(fakeMetric({ value: 5, passive: true }))
-
-        // Must *not* throw.
-        service.assertPassiveTelemetry(false)
-
+    it('assertOnlyPassiveTelemetryInQueue() throws if it sees non-passive metrics in the general queue', async function () {
+        await service.start(tempTelemetryFile)
         // Active *non-cached* metric.
         service.record(fakeMetric({ value: 6, passive: false }))
-
         // Must throw.
         assert.throws(() => {
-            service.assertPassiveTelemetry(false)
+            service.assertOnlyPassiveTelemetryInQueue(false)
         })
 
         await service.shutdown()
     })
 
-    it('publishes periodically if user has said ok', async function () {
+    it('assertOnlyPassiveTelemetryInQueue() does not throw if passive metrics are in queue', async function () {
+        // Passive *non-cached* metric.
+        await service.start(tempTelemetryFile)
+        service.record(fakeMetric({ value: 5, passive: true }))
+        // Must *not* throw.
+        service.assertOnlyPassiveTelemetryInQueue(false)
+
+        await service.shutdown()
+    })
+
+    it('assertOnlyPassiveTelemetryInQueue() does not throw after processing cached metrics', async function () {
+        // cached metrics
+        // these should skip the queue entirely
+        writeMetricsToTempFile([
+            fakeMetric({ value: 1, passive: false }),
+            fakeMetric({ value: 2, passive: true }),
+            fakeMetric({ value: 3, passive: true }),
+            fakeMetric({ value: 4, passive: false }),
+        ])
+        await service.start(tempTelemetryFile)
+        // Must *not* throw - queue should still be empty after loading telemetry
+        service.assertOnlyPassiveTelemetryInQueue(false)
+
+        await service.shutdown()
+    })
+
+    it('assertOnlyPassiveTelemetryInQueue() throws if is called twice', async function () {
+        await service.start(tempTelemetryFile)
+        // Must *not* throw.
+        service.assertOnlyPassiveTelemetryInQueue(false)
+        // Must throw -- second call
+        assert.throws(() => {
+            service.assertOnlyPassiveTelemetryInQueue(false)
+        })
+
+        await service.shutdown()
+    })
+
+    it('does not publis if a user has not asserted passive telemetry', async function () {
         stubGlobal()
+
+        await service.start(tempTelemetryFile)
+        assert.notStrictEqual(service.timer, undefined)
 
         service.record(fakeMetric())
 
-        await service.start()
+        clock.tick(testFlushPeriod)
+        await service.shutdown()
+
+        assert.strictEqual(mockPublisher.flushCount, 0)
+        assert.strictEqual(mockPublisher.queue.length, 0) // includes session start telemetry
+    })
+
+    it('publishes periodically if user has said ok and if a user has first asserted passive telemetry', async function () {
+        stubGlobal()
+
+        await service.start(tempTelemetryFile)
         assert.notStrictEqual(service.timer, undefined)
+
+        service.record(fakeMetric())
+        service.assertOnlyPassiveTelemetryInQueue(false)
 
         clock.tick(testFlushPeriod)
         await service.shutdown()
 
         assert.strictEqual(mockPublisher.flushCount, 1)
-        assert.strictEqual(mockPublisher.queue.length, 2)
+        assert.strictEqual(mockPublisher.queue.length, 2) // includes session start telemetry
+    })
+
+    it('publishes on start if a user has cached telmetry', async function () {
+        writeMetricsToTempFile([fakeMetric()])
+        stubGlobal()
+
+        await service.start(tempTelemetryFile)
+        assert.notStrictEqual(service.timer, undefined)
+        await service.shutdown()
+
+        assert.strictEqual(mockPublisher.flushCount, 1)
+        assert.strictEqual(mockPublisher.queue.length, 1)
+    })
+
+    it('skips initial publish if cache is empty', async function () {
+        stubGlobal()
+
+        await service.start(tempTelemetryFile)
+        assert.notStrictEqual(service.timer, undefined)
+        await service.shutdown()
+
+        assert.strictEqual(mockPublisher.flushCount, 0)
+        assert.strictEqual(mockPublisher.queue.length, 0)
     })
 
     it('events automatically inject the active account id into the metadata', async function () {
@@ -141,7 +208,7 @@ describe('DefaultTelemetryService', function () {
     it('events with `session` namespace do not have an account tied to them', async function () {
         stubGlobal()
 
-        await service.start()
+        await service.start(tempTelemetryFile)
         await service.shutdown()
 
         assert.strictEqual(logger.metricCount, 2)
@@ -175,7 +242,7 @@ describe('DefaultTelemetryService', function () {
         stubGlobal()
 
         service.telemetryEnabled = false
-        await service.start()
+        await service.start(tempTelemetryFile)
 
         // telemetry off: events are never recorded
         service.record(fakeMetric({ metricName: 'name' }))
@@ -201,5 +268,9 @@ describe('DefaultTelemetryService', function () {
             metadata.some(item => item.Key === 'awsAccount' && item.Value === expectedAccountId),
             'Expected metadata to contain the test account'
         )
+    }
+
+    function writeMetricsToTempFile(datum: ClientTelemetry.MetricDatum[]): void {
+        fs.writeFileSync(tempTelemetryFile, JSON.stringify(datum))
     }
 })

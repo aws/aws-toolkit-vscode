@@ -235,7 +235,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        globals.telemetry.assertOnlyPassiveTelemetryInQueue(globals.didReload)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
