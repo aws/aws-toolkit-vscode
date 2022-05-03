@@ -6,7 +6,14 @@
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import { getLogger } from './logger'
-import { ArrayConstructor, cast, FromDescriptor, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
+import {
+    ArrayConstructor,
+    cast,
+    FromDescriptor,
+    NonNullObject,
+    TypeConstructor,
+    TypeDescriptor,
+} from './utilities/typeConstructors'
 import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isAutomation, isNameMangled } from './vscode/env'
@@ -637,6 +644,8 @@ export async function openSettings<K extends keyof SettingsProps>(key: K): Promi
 const remoteSshTypes = {
     path: String,
     defaultExtensions: ArrayConstructor(String),
+    remotePlatform: NonNullObject,
+    useLocalServer: Boolean,
 }
 
 export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTypes) {
@@ -650,5 +659,19 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
         }
 
         return true
+    }
+
+    public async setRemotePlatform(hostname: string, platform: 'linux' | 'windows' | 'macOS'): Promise<boolean> {
+        try {
+            const current = this.getOrThrow('remotePlatform', {})
+            current[hostname] = platform
+            this.log(`updated remote SSH host "${hostname}" with platform "${platform}"`)
+
+            return this.update('remotePlatform', current)
+        } catch (error) {
+            this.log(`failed to read "remotePlatform", no updates will be made`)
+
+            return false
+        }
     }
 }

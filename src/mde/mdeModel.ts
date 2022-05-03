@@ -24,6 +24,7 @@ import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import globals from '../shared/extensionGlobals'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { ToolkitError } from '../shared/toolkitError'
+import { RemoteSshSettings } from '../shared/settings'
 
 const localize = nls.loadMessageBundle()
 
@@ -359,15 +360,18 @@ if (!$?) {
     Get-Service -Name ssh-agent | Set-Service -StartupType Manual
     if ($?) { Start-Service ssh-agent }
 }
-exit $?
+exit !$?
 `
             const options = {
                 rejectOnErrorCode: true,
                 logging: 'noparams',
             } as const
-            const result = await new ChildProcess('powershell.exe', ['-Command', script], options).run()
+            const result = await new ChildProcess('powershell.exe', ['-Command', script], options).run({
+                onStdout: text => getLogger().verbose(`mde (ssh-agent): ${text}`),
+                onStderr: text => getLogger().verbose(`mde (ssh-agent): ${text}`),
+            })
 
-            if (!result.stdout.includes(runningMessage)) {
+            if (!result.stdout.includes(runningMessage) && !result.stderr) {
                 vscode.window.showInformationMessage(
                     localize('AWS.mde.ssh-agent.start', 'The SSH agent has been started.')
                 )
@@ -570,12 +574,26 @@ export async function startSshController(
 
 export async function startVscodeRemote(
     ProcessClass: typeof ChildProcess,
-    hostName: string,
+    hostname: string,
     targetDirectory: string,
     sshPath: string,
     vscPath: string
 ): Promise<void> {
-    const workspaceUri = `vscode-remote://ssh-remote+${hostName}${targetDirectory}`
-    await startSshController(ProcessClass, sshPath, hostName)
+    const workspaceUri = `vscode-remote://ssh-remote+${hostname}${targetDirectory}`
+    await startSshController(ProcessClass, sshPath, hostname)
+
+    if (process.platform === 'win32') {
+        const settings = new RemoteSshSettings()
+
+        await Promise.all([
+            // TODO(sijaden): we should periodically clean this setting up, maybe
+            // by removing all hostnames that use the `aws-mde-` prefix
+            await settings.setRemotePlatform(hostname, 'linux'),
+
+            // TODO(sijaden): revert this setting back to normal after the user connects
+            await settings.update('useLocalServer', false),
+        ])
+    }
+
     await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run({ rejectOnErrorCode: true })
 }
