@@ -18,7 +18,7 @@ export class SamCliInfoInvocation {
     public constructor(private readonly samPath: string) {}
 
     public async execute(): Promise<SamCliInfoResponse> {
-        const childProcessResult = await new ChildProcess(this.samPath, ['--info']).run({ logging: 'no' })
+        const childProcessResult = await new ChildProcess(this.samPath, ['--info'], { logging: 'no' }).run()
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
         const response = this.convertOutput(childProcessResult.stdout)
