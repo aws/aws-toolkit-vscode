@@ -12,6 +12,7 @@ const FONT_ID = 'aws-toolkit-icons'
 const ROOT_DIR = process.cwd()
 const ICONS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'icons')
 const FONT_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'fonts')
+const STYLESHEETS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'stylesheets')
 const ICON_SOURCES = [`${ICONS_ROOT_DIR}/**/*.svg`, '!**/{cloud9,dark,light}/**']
 
 interface PackageIcon {
@@ -104,7 +105,7 @@ async function generate() {
         fontHeight: 1000,
         template: 'css',
         templateClassName: 'icon',
-        templateFontPath: path.relative(path.join(ROOT_DIR, 'resources', 'stylesheets'), FONT_ROOT_DIR),
+        templateFontPath: path.relative(STYLESHEETS_ROOT_DIR, FONT_ROOT_DIR),
         glyphTransformFn: obj => {
             const filePath = (obj as { path?: string }).path
 
@@ -146,7 +147,7 @@ ${result.template}
 
     await fs.mkdirp(FONT_ROOT_DIR)
     await fs.writeFile(dest, result.woff)
-    await fs.writeFile(path.join(ROOT_DIR, 'resources', 'stylesheets', 'icons.css'), template)
+    await fs.writeFile(path.join(STYLESHEETS_ROOT_DIR, 'icons.css'), template)
 
     await updatePackage(
         `./${relativeDest}`,
