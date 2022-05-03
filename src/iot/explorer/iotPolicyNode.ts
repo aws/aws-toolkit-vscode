@@ -14,9 +14,8 @@ import { inspect } from 'util'
 import { IotPolicyFolderNode } from './iotPolicyFolderNode'
 import { IotCertificateNode } from './iotCertificateNode'
 import { IotPolicyVersionNode } from './iotPolicyVersionNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
@@ -96,7 +95,6 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
             sort: (a: IotPolicyVersionNode, b: IotPolicyVersionNode) => {
                 return b.version.createDate!.getTime() - a.version.createDate!.getTime()
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.iot.noVersions', '[No Policy Versions found]')),
         })

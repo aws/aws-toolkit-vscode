@@ -30,10 +30,10 @@ export interface JavaLambdaHandlerComponents {
 }
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    const manifestUri =
+    const rootUri =
         (await findParentProjectFile(document.uri, /^.*pom.xml$/)) ??
         (await findParentProjectFile(document.uri, /^.*build.gradle$/))
-    if (!manifestUri) {
+    if (!rootUri) {
         return []
     }
 
@@ -46,7 +46,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         return {
             filename: document.uri.fsPath,
             handlerName,
-            manifestUri: manifestUri,
+            rootUri: rootUri,
             range: lambdaHandlerComponents.handlerRange,
         }
     })

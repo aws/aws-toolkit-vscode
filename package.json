@@ -101,11 +101,6 @@
                     "default": "",
                     "description": "%AWS.configuration.profileDescription%"
                 },
-                "aws.onDefaultRegionMissing": {
-                    "type": "string",
-                    "default": "prompt",
-                    "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
-                },
                 "aws.iot.maxItemsPerPage": {
                     "type": "number",
                     "default": 100,
@@ -219,6 +214,10 @@
                             "default": false
                         },
                         "ecsRunCommandDisable": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "regionAddAutomatically": {
                             "type": "boolean",
                             "default": false
                         },
@@ -2824,6 +2823,13 @@
                     "label": "${path}",
                     "separator": "\\"
                 }
+            },
+            {
+                "scheme": "s3*",
+                "formatting": {
+                    "label": "[S3] ${path}",
+                    "separator": "/"
+                }
             }
         ],
         "walkthroughs": [
@@ -3111,7 +3117,7 @@
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^4.5.4",
+        "typescript": "^4.6.4",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",

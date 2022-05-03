@@ -13,9 +13,8 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { toMap, updateInPlace, toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { LogGroupNode } from './logGroupNode'
 import globals from '../../shared/extensionGlobals'
 
@@ -43,7 +42,6 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
 
                 return [...this.logGroupNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.cloudWatchLogs.placeholder', '[No Logs found]')),
             sort: (nodeA, nodeB) => nodeA.name.localeCompare(nodeB.name),

@@ -7,11 +7,10 @@ import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { EcsNode } from './ecsNode'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { EcsClient } from '../../shared/clients/ecsClient'
 import { EcsServiceNode } from './ecsServiceNode'
 import { ECS } from 'aws-sdk'
@@ -41,7 +40,6 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecs.noServices', '[No Services found]')),
         })

@@ -11,9 +11,9 @@ import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNod
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
+import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 
 describe('SchemaItemNode', function () {
     let fakeSchemaItem: Schemas.SchemaSummary
@@ -141,8 +141,6 @@ describe('RegistryItemNode', function () {
         const testNode = new ThrowErrorRegistryItemNode(fakeRegion, fakeRegistry)
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
+        assertNodeListOnlyContainsErrorNode(childNodes)
     })
 })

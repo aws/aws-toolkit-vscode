@@ -7,8 +7,7 @@ import { EcsClient } from '../../shared/clients/ecsClient'
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { EcsClusterNode } from './ecsClusterNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
@@ -27,7 +26,6 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecs.noClusters', '[No Clusters found]')),
         })

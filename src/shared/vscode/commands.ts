@@ -16,6 +16,9 @@ export interface Commands {
     execute<T>(command: string, ...rest: any[]): Thenable<T | undefined>
 }
 
+/**
+ * @deprecated Use `./commands2.ts` instead when possible.
+ */
 export namespace Commands {
     export function vscode(): Commands {
         return new DefaultCommands()
