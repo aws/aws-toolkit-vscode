@@ -6,7 +6,7 @@ A [build script](../../scripts/build/generateIcons.ts) generates Toolkit artifac
 
 -   `resources/icons/cloud9/generated`
 -   `resources/fonts/aws-toolkit-icons.woff`
--   `media/css/icons.css`
+-   `resources/stylesheets/icons.css`
 -   `contributes.icons` in [package.json](../../package.json)
 
 Any changes made to `package.json` should be committed with the relevant icons.

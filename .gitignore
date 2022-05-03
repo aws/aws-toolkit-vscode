@@ -33,4 +33,4 @@ src/testFixtures/**/obj
 # Icons
 resources/icons/cloud9/generated/**
 resources/fonts/aws-toolkit-icons.woff
-media/css/icons.css
+resources/stylesheets/icons.css

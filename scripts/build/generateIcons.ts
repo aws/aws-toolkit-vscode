@@ -104,7 +104,7 @@ async function generate() {
         fontHeight: 1000,
         template: 'css',
         templateClassName: 'icon',
-        templateFontPath: path.relative(path.join(ROOT_DIR, 'media', 'css'), FONT_ROOT_DIR),
+        templateFontPath: path.relative(path.join(ROOT_DIR, 'resources', 'stylesheets'), FONT_ROOT_DIR),
         glyphTransformFn: obj => {
             const filePath = (obj as { path?: string }).path
 
@@ -146,7 +146,7 @@ ${result.template}
 
     await fs.mkdirp(FONT_ROOT_DIR)
     await fs.writeFile(dest, result.woff)
-    await fs.writeFile(path.join(ROOT_DIR, 'media', 'css', 'icons.css'), template)
+    await fs.writeFile(path.join(ROOT_DIR, 'resources', 'stylesheets', 'icons.css'), template)
 
     await updatePackage(
         `./${relativeDest}`,

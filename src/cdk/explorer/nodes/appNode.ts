@@ -11,10 +11,10 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../../shared/logger'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { cdk } from '../../globals'
 import { CdkAppLocation, getApp } from '../cdkProject'
 import { includeConstructInTree } from '../tree/treeInspector'
 import { ConstructNode } from './constructNode'
+import { getIcon } from '../../../shared/icons'
 
 /**
  * Represents a CDK App
@@ -27,12 +27,7 @@ export class AppNode extends AWSTreeNodeBase {
         super(app.cdkJsonPath, vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsCdkAppNode'
         this.label = path.relative(path.dirname(app.workspaceFolder.uri.fsPath), path.dirname(app.cdkJsonPath))
-
-        this.iconPath = {
-            dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
-            light: vscode.Uri.file(cdk.iconPaths.light.cdk),
-        }
-
+        this.iconPath = getIcon('aws-cdk-logo')
         this.id = app.treePath
         this.tooltip = app.cdkJsonPath
     }

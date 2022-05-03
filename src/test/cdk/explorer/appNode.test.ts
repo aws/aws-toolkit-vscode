@@ -10,21 +10,11 @@ import * as vscode from 'vscode'
 import * as app from '../../../cdk/explorer/cdkProject'
 import * as appNode from '../../../cdk/explorer/nodes/appNode'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
-import { cdk } from '../../../cdk/globals'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../iconPathUtils'
 import * as treeUtils from '../treeTestUtils'
 
 let sandbox: sinon.SinonSandbox
 describe('AppNode', function () {
-    before(async function () {
-        setupTestIconPaths()
-    })
-
-    after(async function () {
-        clearTestIconPaths()
-    })
-
     beforeEach(function () {
         sandbox = sinon.createSandbox()
     })
@@ -43,15 +33,6 @@ describe('AppNode', function () {
 
         assert.strictEqual(testNode.label, path.relative(path.dirname(workspaceFolderPath), path.dirname(cdkJsonPath)))
         assert.strictEqual(testNode.tooltip, `${cdkJsonPath}`)
-    })
-
-    it('initializes icon paths', async function () {
-        const testNode = getTestNode()
-
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, cdk.iconPaths.dark.cdk, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, cdk.iconPaths.light.cdk, 'Unexpected light icon path')
     })
 
     it('returns placeholder node when app contains no stacks', async function () {

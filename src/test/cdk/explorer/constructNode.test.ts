@@ -9,21 +9,12 @@ import * as vscode from 'vscode'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
 import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
-import { cdk } from '../../../cdk/globals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../iconPathUtils'
 import * as treeUtils from '../treeTestUtils'
 import { isStateMachine } from '../../../cdk/explorer/nodes/constructNode'
+import { getIcon } from '../../../shared/icons'
 
 describe('ConstructNode', function () {
-    before(async function () {
-        setupTestIconPaths()
-    })
-
-    after(async function () {
-        clearTestIconPaths()
-    })
-
     const label = 'MyConstruct'
     const constructTreePath = 'Path/To/MyConstruct'
     const cdkJsonPath = path.join('the', 'road', 'to', 'cdk.json')
@@ -55,10 +46,7 @@ describe('ConstructNode', function () {
             treeEntity
         )
 
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, cdk.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, cdk.iconPaths.light.cloudFormation, 'Unexpected light icon path')
+        assert.strictEqual(testNode.iconPath, getIcon('aws-cloudformation-stack'))
     })
 
     it('initializes icon paths for CDK constructs', async function () {
@@ -68,10 +56,8 @@ describe('ConstructNode', function () {
             vscode.TreeItemCollapsibleState.Collapsed,
             treeUtils.generateConstructTreeEntity(label, constructTreePath)
         )
-        const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, cdk.iconPaths.dark.cdk, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, cdk.iconPaths.light.cdk, 'Unexpected light icon path')
+        assert.strictEqual(testNode.iconPath, getIcon('aws-cdk-logo'))
     })
 
     it('returns no child nodes if construct does not have any', async function () {

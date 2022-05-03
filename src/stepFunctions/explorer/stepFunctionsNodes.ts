@@ -90,7 +90,7 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
     ) {
         super('')
         this.update(details)
-        this.iconPath = getIcon('aws-stepfunctions-preview') // is this right...?
+        this.iconPath = getIcon('aws-stepfunctions-preview')
     }
 
     public update(details: StepFunctions.StateMachineListItem): void {

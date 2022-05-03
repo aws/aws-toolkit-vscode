@@ -9,7 +9,6 @@ import { AslVisualizationCDKManager } from '../stepFunctions/commands/visualizeS
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
 import { ConstructNode } from './explorer/nodes/constructNode'
-import { cdk } from './globals'
 import { cdkDocumentationUrl } from '../shared/constants'
 import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
 import { renderStateMachineGraphCommand } from '../stepFunctions/commands/visualizeStateMachine/renderStateMachineGraphCDK'
@@ -22,7 +21,6 @@ import { initalizeWebviewPaths } from '../stepFunctions/activation'
 export async function activate(activateArguments: { extensionContext: vscode.ExtensionContext }): Promise<void> {
     const explorer = new AwsCdkExplorer()
 
-    initializeIconPaths(activateArguments.extensionContext)
     globals.visualizationResourcePaths = initalizeWebviewPaths(activateArguments.extensionContext)
 
     await registerCdkCommands(activateArguments.extensionContext, explorer)
@@ -49,14 +47,6 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
             }
         })
     )
-}
-
-function initializeIconPaths(context: vscode.ExtensionContext) {
-    cdk.iconPaths.dark.cdk = context.asAbsolutePath('resources/dark/cdk/cdk.svg')
-    cdk.iconPaths.light.cdk = context.asAbsolutePath('resources/light/cdk/cdk.svg')
-
-    cdk.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cdk/cloudformation.svg')
-    cdk.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cdk/cloudformation.svg')
 }
 
 async function registerCdkCommands(context: vscode.ExtensionContext, explorer: AwsCdkExplorer): Promise<void> {

@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import { getIcon } from '../../../shared/icons'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { cdk } from '../../globals'
 import * as treeInspector from '../tree/treeInspector'
 import { ConstructProps, ConstructTreeEntity } from '../tree/types'
 import { generatePropertyNodes, PropertyNode } from './propertyNode'
@@ -30,18 +30,7 @@ export class ConstructNode extends AWSTreeNodeBase {
 
         this.type = treeInspector.getTypeAttributeOrDefault(construct, '')
         this.properties = treeInspector.getProperties(construct)
-        // TODO move icon logic to global utility
-        if (this.type) {
-            this.iconPath = {
-                dark: vscode.Uri.file(cdk.iconPaths.dark.cloudFormation),
-                light: vscode.Uri.file(cdk.iconPaths.light.cloudFormation),
-            }
-        } else {
-            this.iconPath = {
-                dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
-                light: vscode.Uri.file(cdk.iconPaths.light.cdk),
-            }
-        }
+        this.iconPath = this.type ? getIcon('aws-cloudformation-stack') : getIcon('aws-cdk-logo')
 
         this.tooltip = this.type || this.construct.path
         this.id = `${this.parent.id}/${this.label}`
