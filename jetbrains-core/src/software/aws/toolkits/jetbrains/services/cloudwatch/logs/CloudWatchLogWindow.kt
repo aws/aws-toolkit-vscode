@@ -27,21 +27,20 @@ class CloudWatchLogWindow(override val project: Project) : ToolkitToolWindow {
 
     fun showLogGroup(logGroup: String) {
         var result = Result.Succeeded
-        try {
-            if (showExistingContent(logGroup)) {
-                return
+        runInEdt {
+            try {
+                if (!showExistingContent(logGroup)) {
+                    val group = CloudWatchLogGroup(project, logGroup)
+                    val title = message("cloudwatch.logs.log_group_title", logGroup.split("/").last())
+                    addTab(title, group.content, activate = true, id = logGroup, additionalDisposable = group)
+                }
+            } catch (e: Exception) {
+                LOG.error(e) { "Exception thrown while trying to show log group '$logGroup'" }
+                result = Result.Failed
+                throw e
+            } finally {
+                CloudwatchlogsTelemetry.openGroup(project, result)
             }
-            val group = CloudWatchLogGroup(project, logGroup)
-            val title = message("cloudwatch.logs.log_group_title", logGroup.split("/").last())
-            runInEdt {
-                addTab(title, group.content, activate = true, id = logGroup, additionalDisposable = group)
-            }
-        } catch (e: Exception) {
-            LOG.error(e) { "Exception thrown while trying to show log group '$logGroup'" }
-            result = Result.Failed
-            throw e
-        } finally {
-            CloudwatchlogsTelemetry.openGroup(project, result)
         }
     }
 

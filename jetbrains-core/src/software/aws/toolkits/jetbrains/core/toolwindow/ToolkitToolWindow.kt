@@ -72,7 +72,6 @@ interface ToolkitToolWindow {
         if (content != null) {
             toolWindow.activate(null, true)
             toolWindow.contentManager.setSelectedContent(content)
-
             return true
         }
 

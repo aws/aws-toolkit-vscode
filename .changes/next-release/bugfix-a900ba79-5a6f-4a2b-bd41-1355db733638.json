@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix toolWindow not running in EDT"
+}
