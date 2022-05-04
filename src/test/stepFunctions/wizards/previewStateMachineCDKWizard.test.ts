@@ -6,7 +6,6 @@
 import * as app from '../../../cdk/explorer/cdkProject'
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as sinon from 'sinon'
 
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
@@ -19,7 +18,6 @@ import {
     TopLevelNodePickItem,
 } from '../../../stepFunctions/wizards/previewStateMachineCDKWizard'
 
-let sandbox: sinon.SinonSandbox
 const workspaceFolderName = 'cdk-test-folder'
 const workspaceFolderPath = 'rootcdk-project'
 
@@ -37,12 +35,7 @@ const mockTopLevelConstructTreeEntity: ConstructTreeEntity = {
     },
 }
 
-const mockTopLevelNode = new ConstructNode(
-    new FakeParentNode('cdkJsonPath'),
-    'MyTopLevelNode',
-    vscode.TreeItemCollapsibleState.Collapsed,
-    mockTopLevelConstructTreeEntity
-)
+let mockTopLevelNode: ConstructNode
 
 const mockStateMachineConstructTreeEntity: ConstructTreeEntity = {
     id: 'MyStateMachine',
@@ -58,17 +51,11 @@ const mockStateMachineConstructTreeEntity: ConstructTreeEntity = {
     },
 }
 
-const mockStateMachineNode = new ConstructNode(
-    new FakeParentNode('cdkJsonPath'),
-    'MyStateMachine',
-    vscode.TreeItemCollapsibleState.Collapsed,
-    mockStateMachineConstructTreeEntity
-)
+let mockStateMachineNode: ConstructNode
 
 function getTestNode(): app.CdkAppLocation {
-    const mockUri = sandbox.createStubInstance(vscode.Uri)
-    sandbox.stub(mockUri, 'fsPath').value(workspaceFolderPath)
-    const mockWorkspaceFolder: vscode.WorkspaceFolder = { uri: mockUri, index: 0, name: workspaceFolderName }
+    const uri = vscode.Uri.file(workspaceFolderPath)
+    const mockWorkspaceFolder: vscode.WorkspaceFolder = { uri, index: 0, name: workspaceFolderName }
     const appLocation: app.CdkAppLocation = {
         cdkJsonPath: 'cdkJsonPath',
         treePath: 'treePath',
@@ -88,23 +75,33 @@ describe('PreviewStateMachineCDKWizard', async function () {
     })
 
     const TOP_LEVEL_NODES: TopLevelNodePickItem[] = []
-    TOP_LEVEL_NODES.push({
-        label: mockTopLevelNode.label,
-        topLevelNode: mockTopLevelNode,
-    })
 
     const STATE_MACHINES: ConstructNodePickItem[] = []
-    STATE_MACHINES.push({
-        label: mockStateMachineNode.label,
-        stateMachineNode: mockStateMachineNode,
-    })
 
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
+    before(function () {
+        mockTopLevelNode = new ConstructNode(
+            new FakeParentNode('cdkJsonPath'),
+            'MyTopLevelNode',
+            vscode.TreeItemCollapsibleState.Collapsed,
+            mockTopLevelConstructTreeEntity
+        )
 
-    afterEach(function () {
-        sandbox.restore()
+        mockStateMachineNode = new ConstructNode(
+            new FakeParentNode('cdkJsonPath'),
+            'MyStateMachine',
+            vscode.TreeItemCollapsibleState.Collapsed,
+            mockStateMachineConstructTreeEntity
+        )
+
+        STATE_MACHINES.push({
+            label: mockStateMachineNode.label,
+            stateMachineNode: mockStateMachineNode,
+        })
+
+        TOP_LEVEL_NODES.push({
+            label: mockTopLevelNode.label,
+            topLevelNode: mockTopLevelNode,
+        })
     })
 
     it('exits when cancelled', async function () {
@@ -155,12 +152,6 @@ describe('PreviewStateMachineCDKWizard', async function () {
                 {
                     label: '',
                     topLevelNode: undefined,
-                },
-            ],
-            [
-                {
-                    label: '',
-                    stateMachineNode: undefined,
                 },
             ],
         ]
@@ -224,7 +215,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
         const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
         const result = await wizard.run()
 
-        assert.strictEqual(result, {
+        assert.deepStrictEqual(result, {
             cdkApplication: CDK_APPLOCATIONS[0],
             topLevelNode: TOP_LEVEL_NODES[0],
             stateMachine: STATE_MACHINES[0],

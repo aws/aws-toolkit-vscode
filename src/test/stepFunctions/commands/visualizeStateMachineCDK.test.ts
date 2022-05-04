@@ -15,29 +15,13 @@ import { Disposable } from 'vscode-languageclient'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { getLogger, Logger } from '../../../shared/logger'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
-import globals from '../../../shared/extensionGlobals'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-// Top level defintions
 let mockAslVisualizationCDKManager: MockAslVisualizationCDKManager
-let sandbox: sinon.SinonSandbox
 
 const mockGlobalStorage: vscode.Memento = {
     update: sinon.spy(),
     get: sinon.stub().returns(undefined),
-}
-
-const mockUri: vscode.Uri = {
-    authority: 'amazon.com',
-    fragment: 'MockFragmentOne',
-    fsPath: 'MockFSPathOne',
-    query: 'MockQueryOne',
-    path: '/MockPathOne',
-    scheme: 'MockSchemeOne',
-    with: () => {
-        return mockUri
-    },
-    toJSON: sinon.spy(),
 }
 
 const mockTextDocument: vscode.TextDocument = {
@@ -48,7 +32,7 @@ const mockTextDocument: vscode.TextDocument = {
     isUntitled: false,
     languageId: 'MockLanguageIdOne',
     lineCount: 0,
-    uri: mockUri,
+    uri: vscode.Uri.file(''),
     version: 0,
     getText: () => {
         return 'MockDocumentTextOne'
@@ -93,60 +77,44 @@ const mockStateMachineConstructTreeEntity: ConstructTreeEntity = {
     },
 }
 
-const mockNonStateMachineNode = new ConstructNode(
-    new FakeParentNode('cdkJsonPath'),
-    'MyCDKApp1/MyLambdaFunction',
-    vscode.TreeItemCollapsibleState.Collapsed,
-    mockNonSMConstructTreeEntity
-)
-
-const mockStateMachineNode = new ConstructNode(
-    new FakeParentNode('cdkJsonPath'),
-    'MyCDKApp1/MyStateMachine',
-    vscode.TreeItemCollapsibleState.Collapsed,
-    mockStateMachineConstructTreeEntity
-)
-
-const mockStateMachineNodeDiffAppSameName = new ConstructNode(
-    new FakeParentNode('cdkJsonPath'),
-    'MyCDKApp2/MyStateMachine',
-    vscode.TreeItemCollapsibleState.Collapsed,
-    mockStateMachineConstructTreeEntity
-)
-
-const mockStateMachineNodeSameAppDiffName = new ConstructNode(
-    new FakeParentNode('cdkJsonPath'),
-    'MyCDKApp1/MyStateMachine2',
-    vscode.TreeItemCollapsibleState.Collapsed,
-    mockStateMachineConstructTreeEntity
-)
+let mockNonStateMachineNode: ConstructNode
+let mockStateMachineNode: ConstructNode
+let mockStateMachineNodeDiffAppSameName: ConstructNode
+let mockStateMachineNodeSameAppDiffName: ConstructNode
 
 describe('StepFunctions VisualizeStateMachine', async function () {
-    const oldWebviewScriptsPath = globals.visualizationResourcePaths.localWebviewScriptsPath
-    const oldWebviewBodyPath = globals.visualizationResourcePaths.webviewBodyScript
-    const oldCachePath = globals.visualizationResourcePaths.visualizationLibraryCachePath
-    const oldScriptPath = globals.visualizationResourcePaths.visualizationLibraryScript
-    const oldCssPath = globals.visualizationResourcePaths.visualizationLibraryCSS
-    const oldThemePath = globals.visualizationResourcePaths.stateMachineCustomThemePath
-    const oldThemeCssPath = globals.visualizationResourcePaths.stateMachineCustomThemeCSS
-
-    // Before all
     before(function () {
-        globals.visualizationResourcePaths.localWebviewScriptsPath = mockUri
-        globals.visualizationResourcePaths.visualizationLibraryCachePath = mockUri
-        globals.visualizationResourcePaths.stateMachineCustomThemePath = mockUri
-        globals.visualizationResourcePaths.webviewBodyScript = mockUri
-        globals.visualizationResourcePaths.visualizationLibraryScript = mockUri
-        globals.visualizationResourcePaths.visualizationLibraryCSS = mockUri
-        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUri
+        sinon.stub(StateMachineGraphCache.prototype, 'updateCachedFile').resolves()
 
-        sandbox = sinon.createSandbox()
-        sandbox.stub(StateMachineGraphCache.prototype, 'updateCachedFile').callsFake(async options => {
-            return
-        })
+        mockNonStateMachineNode = new ConstructNode(
+            new FakeParentNode('cdkJsonPath'),
+            'MyCDKApp1/MyLambdaFunction',
+            vscode.TreeItemCollapsibleState.Collapsed,
+            mockNonSMConstructTreeEntity
+        )
+
+        mockStateMachineNode = new ConstructNode(
+            new FakeParentNode('cdkJsonPath'),
+            'MyCDKApp1/MyStateMachine',
+            vscode.TreeItemCollapsibleState.Collapsed,
+            mockStateMachineConstructTreeEntity
+        )
+
+        mockStateMachineNodeDiffAppSameName = new ConstructNode(
+            new FakeParentNode('cdkJsonPath'),
+            'MyCDKApp2/MyStateMachine',
+            vscode.TreeItemCollapsibleState.Collapsed,
+            mockStateMachineConstructTreeEntity
+        )
+
+        mockStateMachineNodeSameAppDiffName = new ConstructNode(
+            new FakeParentNode('cdkJsonPath'),
+            'MyCDKApp1/MyStateMachine2',
+            vscode.TreeItemCollapsibleState.Collapsed,
+            mockStateMachineConstructTreeEntity
+        )
     })
 
-    // Before each
     beforeEach(async function () {
         const fakeExtCtx = await FakeExtensionContext.create()
         fakeExtCtx.globalState = mockGlobalStorage
@@ -155,19 +123,10 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         mockAslVisualizationCDKManager = new MockAslVisualizationCDKManager(fakeExtCtx, 'Workspace1')
     })
 
-    // After all
     after(function () {
-        sandbox.restore()
-        globals.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
-        globals.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
-        globals.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
-        globals.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
-        globals.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
-        globals.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
-        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
+        sinon.restore()
     })
 
-    // Tests
     it('Test AslVisualizationCDK on setup all properties are correct', function () {
         const vis = new MockAslVisualizationCDK(mockTextDocument, '', '', '')
 
@@ -322,7 +281,7 @@ class MockAslVisualizationCDK extends AslVisualizationCDK {
     }
 
     protected getTemplateJsonDocument(templatePath: string): vscode.Uri {
-        return mockUri
+        return vscode.Uri.file('')
     }
 
     public getIsPanelDisposed(): boolean {

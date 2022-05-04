@@ -150,7 +150,9 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
         })
 
         this.topLevelNode = picker.verifySinglePickerOutput<TopLevelNodePickItem>(choices)
-
+        if (!this.topLevelNode?.topLevelNode) {
+            return WIZARD_GOBACK
+        }
         return this.topLevelNode ? wizardContinue(this.SELECT_STATE_MACHINE_ACTION) : WIZARD_GOBACK
     }
 
@@ -204,6 +206,9 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
         })
 
         this.stateMachine = picker.verifySinglePickerOutput<ConstructNodePickItem>(choices)
+        if (!this.stateMachine?.stateMachineNode) {
+            return WIZARD_GOBACK
+        }
         return this.stateMachine ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 
