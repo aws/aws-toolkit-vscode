@@ -13,30 +13,17 @@ import { AslVisualizationManager } from '../../../../src/stepFunctions/commands/
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 
 import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'
-import globals from '../../../shared/extensionGlobals'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
-let sandbox: sinon.SinonSandbox
 
 const mockGlobalStorage: vscode.Memento = {
     update: sinon.spy(),
     get: sinon.stub().returns(undefined),
 }
 
-const mockUriOne: vscode.Uri = {
-    authority: 'amazon.com',
-    fragment: 'MockFragmentOne',
-    fsPath: 'MockFSPathOne',
-    query: 'MockQueryOne',
-    path: '/MockPathOne',
-    scheme: 'MockSchemeOne',
-    with: () => {
-        return mockUriOne
-    },
-    toJSON: sinon.spy(),
-}
+const mockUriOne = vscode.Uri.file('uri1')
 
 const mockTextDocumentOne: vscode.TextDocument = {
     eol: 1,
@@ -60,16 +47,7 @@ const mockTextDocumentOne: vscode.TextDocument = {
     validateRange: sinon.spy(),
 }
 
-const mockUriTwo: vscode.Uri = {
-    authority: 'amazon.org',
-    fragment: 'MockFragmentTwo',
-    fsPath: 'MockFSPathTwo',
-    query: 'MockQueryTwo',
-    path: '/MockPathTwo',
-    scheme: 'MockSchemeTwo',
-    with: sinon.spy(),
-    toJSON: sinon.spy(),
-}
+const mockUriTwo = vscode.Uri.file('uri2')
 
 const mockTextDocumentTwo: vscode.TextDocument = {
     eol: 1,
@@ -93,17 +71,7 @@ const mockTextDocumentTwo: vscode.TextDocument = {
     validateRange: sinon.spy(),
 }
 
-const mockUriThree: vscode.Uri = {
-    authority: 'amazon.de',
-    fragment: 'MockFragmentYaml',
-    fsPath: 'MockFSPathYaml',
-    query: 'MockQueryYaml',
-    path: '/MockPathYaml',
-    scheme: 'MockSchemeYaml',
-    with: sinon.spy(),
-    toJSON: sinon.spy(),
-}
-
+const mockUriThree = vscode.Uri.file('uri3')
 const mockDataJson =
     '{"Comment":"A Hello World example of the Amazon States Language using Pass states","StartAt":"Hello","States":{"Hello":{"Type":"Pass","Result":"Hello","Next":"World"},"World":{"Type":"Pass","Result":"${Text}","End":true}}}'
 
@@ -208,33 +176,11 @@ const mockRange: vscode.Range = {
 describe('StepFunctions VisualizeStateMachine', async function () {
     let mockVsCode: MockVSCode
 
-    const oldWebviewScriptsPath = globals.visualizationResourcePaths.localWebviewScriptsPath
-    const oldWebviewBodyPath = globals.visualizationResourcePaths.webviewBodyScript
-    const oldCachePath = globals.visualizationResourcePaths.visualizationLibraryCachePath
-    const oldScriptPath = globals.visualizationResourcePaths.visualizationLibraryScript
-    const oldCssPath = globals.visualizationResourcePaths.visualizationLibraryCSS
-    const oldThemePath = globals.visualizationResourcePaths.stateMachineCustomThemePath
-    const oldThemeCssPath = globals.visualizationResourcePaths.stateMachineCustomThemeCSS
-
-    // Before all
     before(function () {
         mockVsCode = new MockVSCode()
-
-        globals.visualizationResourcePaths.localWebviewScriptsPath = mockUriOne
-        globals.visualizationResourcePaths.visualizationLibraryCachePath = mockUriOne
-        globals.visualizationResourcePaths.stateMachineCustomThemePath = mockUriOne
-        globals.visualizationResourcePaths.webviewBodyScript = mockUriOne
-        globals.visualizationResourcePaths.visualizationLibraryScript = mockUriOne
-        globals.visualizationResourcePaths.visualizationLibraryCSS = mockUriOne
-        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUriOne
-
-        sandbox = sinon.createSandbox()
-        sandbox.stub(StateMachineGraphCache.prototype, 'updateCachedFile').callsFake(async options => {
-            return
-        })
+        sinon.stub(StateMachineGraphCache.prototype, 'updateCachedFile').resolves()
     })
 
-    // Before each
     beforeEach(async function () {
         const fakeExtCtx = await FakeExtensionContext.create()
         fakeExtCtx.globalState = mockGlobalStorage
@@ -243,24 +189,14 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         aslVisualizationManager = new AslVisualizationManager(fakeExtCtx)
     })
 
-    // After each
     afterEach(function () {
         mockVsCode.closeAll()
     })
 
-    // After all
     after(function () {
-        sandbox.restore()
-        globals.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
-        globals.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
-        globals.visualizationResourcePaths.visualizationLibraryCachePath = oldCachePath
-        globals.visualizationResourcePaths.visualizationLibraryScript = oldScriptPath
-        globals.visualizationResourcePaths.visualizationLibraryCSS = oldCssPath
-        globals.visualizationResourcePaths.stateMachineCustomThemePath = oldThemePath
-        globals.visualizationResourcePaths.stateMachineCustomThemeCSS = oldThemeCssPath
+        sinon.restore()
     })
 
-    // Tests
     it('Test AslVisualization on setup all properties are correct', function () {
         const vis = new MockAslVisualization(mockTextDocumentOne)
 
@@ -506,7 +442,7 @@ class MockVSCode {
         this.updateActiveEditor(doc)
 
         // Update the return value for the stub with each call to showTextDocument
-        sandbox.stub(vscode.window, 'activeTextEditor').value(this.activeEditor)
+        sinon.stub(vscode.window, 'activeTextEditor').value(this.activeEditor)
     }
 
     public closeAll(): void {
