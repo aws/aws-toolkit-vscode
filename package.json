@@ -3004,7 +3004,7 @@
     },
     "scripts": {
         "prepare": "husky install",
-        "vscode:prepublish": "npm run clean && npm run lint && npm run buildScripts && webpack --mode production && npm run copyFiles-- --webpacked",
+        "vscode:prepublish": "npm run clean && npm run lint && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
         "clean": "ts-node ./scripts/clean.ts dist",
         "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
         "reset": "npm run clean -- node_modules && npm install",
