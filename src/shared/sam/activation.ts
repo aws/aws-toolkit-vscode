@@ -38,6 +38,7 @@ import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 import { PromptSettings } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { migrateLegacySettings, SamCliSettings } from './cli/samCliSettings'
+import { Commands } from '../vscode/commands2'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -88,15 +89,18 @@ export async function activate(ctx: ExtContext): Promise<void> {
 async function registerServerlessCommands(ctx: ExtContext, settings: SamCliSettings): Promise<void> {
     lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.samcli.detect', () =>
+        Commands.register({ id: 'aws.samcli.detect', autoconnect: false }, () =>
             sharedDetectSamCli({ passive: false, showMessage: true })
         ),
-        vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
+        Commands.register({ id: 'aws.lambda.createNewSamApp', autoconnect: false }, async () => {
             await createNewSamApplication(ctx)
         }),
-        vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.deploySamApplication', async arg => {
+        Commands.register({ id: 'aws.addSamDebugConfiguration', autoconnect: false }, addSamDebugConfiguration),
+        Commands.register(
+            { id: 'aws.pickAddSamDebugConfiguration', autoconnect: false },
+            codelensUtils.pickAddSamDebugConfiguration
+        ),
+        Commands.register({ id: 'aws.deploySamApplication', autoconnect: true }, async arg => {
             // `arg` is one of :
             //  - undefined
             //  - regionNode (selected from AWS Explorer)
