@@ -5,21 +5,32 @@ package software.aws.toolkits.jetbrains.services.lambda.completion
 
 import base.allowCustomDotnetRoots
 import base.backendStartTimeout
+import base.msBuild
+import base.setUpCustomToolset
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.IconLoader
 import com.jetbrains.rd.ide.model.IconModel
 import com.jetbrains.rider.test.annotations.TestEnvironment
 import com.jetbrains.rider.test.base.BaseTestWithSolution
+import com.jetbrains.rider.test.protocol.testProtocolHost
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
 import java.time.Duration
 
 class DotNetHandlerCompletionTest : BaseTestWithSolution() {
+    // FIX_WHEN_MIN_IS_212: backendShellLoadedTimeout is the one we actually need to override
     override val backendLoadedTimeout: Duration = backendStartTimeout
 
     override fun getSolutionDirectoryName(): String = ""
 
     override val waitForCaches = true
+
+    @BeforeSuite
+    fun setMsBuildVersion() {
+        val host = ApplicationManager.getApplication().testProtocolHost
+        setUpCustomToolset(msBuild, host)
+    }
 
     // TODO: Remove when https://youtrack.jetbrains.com/issue/RIDER-47995 is fixed FIX_WHEN_MIN_IS_203
     @BeforeSuite
