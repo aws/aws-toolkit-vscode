@@ -3,13 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import globals from '../shared/extensionGlobals'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import { recordAwsValidateCredentials, recordVscodeActiveRegions, Result } from '../shared/telemetry/telemetry'
+import {
+    CredentialSourceId,
+    CredentialType,
+    recordAwsRefreshCredentials,
+    recordAwsValidateCredentials,
+    recordVscodeActiveRegions,
+    Result,
+} from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { CredentialsSettings, notifyUserInvalidCredentials } from './credentialsUtilities'
 import {
@@ -22,8 +33,9 @@ import {
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
-import { localize } from 'vscode-nls'
 import { showViewLogsMessage } from '../shared/utilities/messages'
+
+import { Credentials } from '@aws-sdk/types'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -48,27 +60,25 @@ export class LoginManager {
         let telemetryResult: Result = 'Failed'
 
         try {
-            provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
-            if (!provider) {
-                throw new Error(`Could not find Credentials Provider for ${asString(args.providerId)}`)
-            }
+            provider = await getProvider(args.providerId)
 
-            const storedCredentials = await this.store.upsertCredentials(args.providerId, provider)
-            if (!storedCredentials) {
+            const credentials = (await this.store.upsertCredentials(args.providerId, provider))?.credentials
+            if (!credentials) {
                 throw new Error(`No credentials found for id ${asString(args.providerId)}`)
             }
 
             const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
-            const accountId = await getAccountId(storedCredentials.credentials, credentialsRegion)
+            const accountId = await getAccountId(credentials, credentialsRegion)
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
             recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
+            this.awsContext.credentialsShim = createCredentialsShim(this.store, args.providerId, credentials)
             await this.awsContext.setCredentials({
-                credentials: storedCredentials.credentials,
-                credentialsId: asString(args.providerId),
+                credentials,
                 accountId: accountId,
+                credentialsId: asString(args.providerId),
                 defaultRegion: provider.getDefaultRegion(),
             })
 
@@ -88,6 +98,7 @@ export class LoginManager {
 
             await this.logout()
             this.store.invalidateCredentials(args.providerId)
+            this.awsContext.credentialsShim = undefined
             return false
         } finally {
             const credType = provider?.getTelemetryType()
@@ -226,4 +237,126 @@ function tryMakeCredentialsProviderId(credentials: string): CredentialsId | unde
     } catch (err) {
         return undefined
     }
+}
+
+async function getProvider(id: CredentialsId): Promise<CredentialsProvider> {
+    const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(id)
+    if (!provider) {
+        throw new Error(`Could not find Credentials Provider for ${asString(id)}`)
+    }
+    return provider
+}
+
+/**
+ * The Toolkit implementation has a good amount of custom logic (SSO, source profiles, etc.)
+ * that was written to fill feature gaps in both AWS SDK V2 and V3. This code works imperfectly with
+ * pre-existing SDK refresh logic, leading to users experiencing issues with credentials expiring and
+ * forcing them to re-select a profile to refresh.
+ *
+ * So, this interface sits between everything else to mediate the refreshes. Adding a thin interface
+ * is preferred over bulking up existing ones since it allows for clean(-ish) refactors against the
+ * credentials subsystem. The pure data structure shape that existed previously was better, but it
+ * just wouldn't be able to support refreshes on its own.
+ */
+export interface CredentialsShim {
+    /**
+     * Fetches credentials, attempting a passive refresh if needed.
+     *
+     * Passive refreshes will automatically fail when user input is required.
+     */
+    get: () => Promise<Credentials>
+
+    /**
+     * Removes the stored credentials and performs an active refresh, allowing for prompts.
+     *
+     * Calling this function while a refresh is still pending returns the already pending promise.
+     */
+    refresh: () => Promise<Credentials>
+}
+
+/**
+ * Used to ensure that UI prompts are not automatically shown.
+ */
+export class PassiveRefreshError extends Error {}
+
+/**
+ * Collapses a single {@link CredentialsProvider} (referenced by id) into something a bit simpler.
+ *
+ * We don't pass in a provider directly since {@link CredentialsProviderManager} is the true
+ * source of credential state, at least as far as the Toolkit is concerned.
+ */
+function createCredentialsShim(
+    store: CredentialsStore,
+    providerId: CredentialsId,
+    creds: Credentials
+): CredentialsShim {
+    type RefreshType = 'passive' | 'force'
+    interface State {
+        credentials: Promise<Credentials>
+        pendingRefresh: Promise<Credentials>
+    }
+
+    const state: Partial<State> = { credentials: Promise.resolve(creds) }
+
+    async function refresh(type: RefreshType = 'force'): Promise<Credentials> {
+        let result: Result = 'Failed'
+        let credentialType: CredentialType | undefined
+        let credentialSourceId: CredentialSourceId | undefined
+
+        try {
+            getLogger().debug(`credentials: refreshing provider: ${asString(providerId)}`)
+
+            const provider = await getProvider(providerId)
+            const formatProviderId = () => asString(provider.getCredentialsId())
+
+            credentialType = provider.getTelemetryType()
+            credentialSourceId = credentialsProviderToTelemetryType(provider.getProviderType())
+
+            if (type === 'passive' && !provider.canAutoConnect()) {
+                result = 'Cancelled'
+                throw new PassiveRefreshError(`Unable to auto-connect with provider "${formatProviderId()}"`)
+            }
+
+            // Not a great solution but not terrible either.
+            if (provider.getTelemetryType() === 'ssoProfile' && !provider.canAutoConnect()) {
+                const resp = await vscode.window.showInformationMessage(
+                    'Your AWS SSO token is expired or invalid.',
+                    'Login'
+                )
+                if (resp !== 'Login') {
+                    result = 'Cancelled'
+                    throw new PassiveRefreshError(`Cancelled SSO login with provider "${formatProviderId()}"`)
+                }
+            }
+
+            const credentials = await provider.getCredentials()
+            store.setCredentials(credentials, provider)
+            getLogger().debug(`credentials: refresh succeeded for: ${formatProviderId()}`)
+            result = 'Succeeded'
+
+            return credentials
+        } catch (error) {
+            state.credentials = undefined
+            throw error
+        } finally {
+            recordAwsRefreshCredentials({
+                result,
+                passive: true,
+                credentialType,
+                credentialSourceId,
+            })
+        }
+    }
+
+    const shim = {
+        get: () => (state.credentials ??= shim.refresh('passive')),
+        refresh: (type?: RefreshType) => {
+            const clear = () => (state.pendingRefresh = undefined)
+            state.credentials = state.pendingRefresh ??= refresh(type).finally(clear)
+
+            return state.credentials
+        },
+    }
+
+    return shim
 }
