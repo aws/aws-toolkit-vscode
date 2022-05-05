@@ -24,6 +24,7 @@ import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 import { localize } from 'vscode-nls'
 import { showViewLogsMessage } from '../shared/utilities/messages'
+import { isAutomation } from '../shared/vscode/env'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -111,6 +112,9 @@ export class LoginManager {
     private static didTryAutoConnect = false
 
     public static async tryAutoConnect(awsContext: AwsContext = globals.awsContext): Promise<boolean> {
+        if (!isAutomation()) {
+            return false
+        }
         if (await awsContext.getCredentials()) {
             return true // Already connected.
         }
