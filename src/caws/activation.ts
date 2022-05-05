@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as uriHandlers from './uriHandlers'
 import { ExtContext } from '../shared/extensions'
 import { CawsRemoteSourceProvider } from './repos/remoteSourceProvider'
-import { autoConnect, CawsCommands } from './commands'
+import { CawsCommands } from './commands'
 import { GitExtension } from '../shared/extensions/git'
 import { initStatusbar } from './cawsStatusbar'
 import { CawsAuthenticationProvider } from './auth'
@@ -32,8 +32,4 @@ export async function activate(ctx: ExtContext): Promise<void> {
     GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {
         ctx.extensionContext.subscriptions.push(disposable)
     })
-
-    // This function call could be placed inside `injectClient`, though for now auto-connect and explicit
-    // login flows are kept separate.
-    await autoConnect(authProvider)
 }

@@ -4,40 +4,96 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import { CawsAuthenticationProvider, CawsAuthStorage } from '../../caws/auth'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { Session } from '../../credentials/authentication'
+import { Person } from '../../shared/clients/cawsClient'
+import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
+import { SsoToken } from '../../credentials/sso/model'
 
 describe('CawsAuthenticationProvider', function () {
-    let users: Record<string, { id: string; name: string }>
+    const savedUsers = new Map<string, Person | undefined>()
+    let users: typeof savedUsers
+    let secrets: string[]
     let authProvider: CawsAuthenticationProvider
 
-    async function getUser(secret: string): Promise<{ id: string; name: string }> {
-        const data = users[secret]
+    async function getUser(secret: string, id?: string | Person): Promise<Person> {
+        const data = users.get(secret)
+
         if (!data) {
             throw new Error('Invalid session')
         }
+
         return data
     }
+
+    function makeUser(id: string, name: string): string {
+        const secret = `secret-${savedUsers.size + 1}`
+        const person = {
+            version: '1',
+            userId: id,
+            userName: name,
+            displayName: name,
+            primaryEmail: { email: `${name}@foo.com`, verified: false },
+        } as const
+
+        savedUsers.set(secret, person)
+
+        return secret
+    }
+
+    const secret1 = makeUser('123', 'myusername')
+    makeUser('456', 'anothername')
+
+    before(function () {
+        // XXX: we call into UI flows in this service. Need to stub until we can do better dependency management.
+        function getToken(id?: string): SsoToken | undefined {
+            if (!id) {
+                const accessToken = secrets.shift()
+                return accessToken ? { accessToken, expiresAt: new Date(9999999999999) } : undefined
+            }
+
+            const entries = Array.from(users.entries())
+            const accessToken = entries.find(([_, person]) => person?.userId === id)?.[0]
+            if (accessToken) {
+                return { accessToken, expiresAt: new Date(9999999999999) }
+            }
+        }
+
+        sinon
+            .stub(SsoAccessTokenProvider.prototype, 'getToken')
+            .callsFake(async function (this: SsoAccessTokenProvider) {
+                return getToken(this.tokenCacheKey)
+            })
+        sinon.stub(SsoAccessTokenProvider.prototype, 'createToken').callsFake(async callback => {
+            const token = getToken()
+            assert.ok(token)
+            return { ...token, identity: await callback?.(token) }
+        })
+    })
+
+    after(function () {
+        sinon.restore()
+    })
 
     beforeEach(async function () {
         const ctx = await FakeExtensionContext.create()
         authProvider = new CawsAuthenticationProvider(new CawsAuthStorage(ctx.globalState, ctx.secrets), getUser)
-        users = {
-            cookie: { id: '123', name: 'foo?' },
-            'cooooooooookie?': { id: '456', name: 'foo!!!' },
-        }
+        users = new Map(savedUsers.entries())
+        secrets = Array.from(users.keys())
     })
 
     it('can login', async function () {
-        const account = await authProvider.createAccount('cookie')
+        const account = await authProvider.createAccount()
         assert.strictEqual(account.id, '123')
-        assert.strictEqual(account.label, 'foo?')
+        assert.strictEqual(account.label, 'myusername')
         assert.strictEqual(authProvider.listAccounts().length, 1)
     })
 
     it('does not login if the user does not exist', async function () {
-        await assert.rejects(authProvider.createAccount('cook-ie'))
+        users.set(secret1, undefined)
+        await assert.rejects(authProvider.createAccount())
         assert.strictEqual(authProvider.listAccounts().length, 0)
     })
 
@@ -52,14 +108,14 @@ describe('CawsAuthenticationProvider', function () {
             })
         })
 
-        const account = await authProvider.createAccount('cookie')
+        const account = await authProvider.createAccount()
         const session = await authProvider.createSession(account)
 
         assert.deepStrictEqual(session, await newSession)
     })
 
     it('can delete a session', async function () {
-        const account = await authProvider.createAccount('cookie')
+        const account = await authProvider.createAccount()
         const session = await authProvider.createSession(account)
 
         assert.strictEqual(authProvider.listSessions().length, 1)
@@ -80,18 +136,17 @@ describe('CawsAuthenticationProvider', function () {
     })
 
     it('evicts stored secrets on failure', async function () {
-        const account = await authProvider.createAccount('cookie')
-        delete users['cookie']
-        await assert.rejects(authProvider.createSession(account), /Invalid session/)
-        await assert.rejects(authProvider.createSession(account), /missing access token/)
+        const account = await authProvider.createAccount()
+        users.set(secret1, undefined)
+        await assert.rejects(authProvider.createSession(account), /no access token/)
     })
 
     it('can create multiple sessions from multiple accounts', async function () {
-        const account1 = await authProvider.createAccount('cookie')
-        const account2 = await authProvider.createAccount('cooooooooookie?')
+        const account1 = await authProvider.createAccount()
+        const account2 = await authProvider.createAccount()
 
-        assert.strictEqual(account1.label, 'foo?')
-        assert.strictEqual(account2.label, 'foo!!!')
+        assert.strictEqual(account1.label, 'myusername')
+        assert.strictEqual(account2.label, 'anothername')
         assert.strictEqual(authProvider.listAccounts().length, 2)
 
         const session1 = await authProvider.createSession(account1)

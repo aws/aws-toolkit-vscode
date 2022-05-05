@@ -30,13 +30,6 @@ export async function promptCawsNotConnected(window = Window.vscode(), commands 
         })
 }
 
-export function fixcookie(s: string): string {
-    s = s.trim()
-    s = s.replace(/cookie: /i, '')
-    s = s.replace(/code-aws-cognito-session: ?/, 'code-aws-cognito-session=')
-    return s
-}
-
 /**
  * Builds a web URL from the given CAWS object.
  */

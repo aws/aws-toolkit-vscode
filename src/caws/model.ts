@@ -3,11 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../shared/extensionGlobals'
+
 import * as vscode from 'vscode'
 import { HOST_NAME_PREFIX } from '../mde/constants'
 import { checkSession, SessionProvider } from '../mde/mdeModel'
-import { CawsClient, CawsDevEnv, ConnectedCawsClient, createClient } from '../shared/clients/cawsClient'
+import { CawsClient, CawsDevEnv, ConnectedCawsClient, createClient, getCawsConfig } from '../shared/clients/cawsClient'
 import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
+import { getLogger } from '../shared/logger'
 import { CawsAuthenticationProvider } from './auth'
 
 export type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
@@ -41,13 +44,28 @@ export function getHostNameFromEnv(env: DevEnvId): string {
     return `${HOST_NAME_PREFIX}${env.developmentWorkspaceId}`
 }
 
+async function autoConnect(authProvider: CawsAuthenticationProvider) {
+    for (const account of authProvider.listAccounts().filter(({ metadata }) => metadata.canAutoConnect)) {
+        getLogger().info(`CAWS: trying to auto-connect with user: ${account.label}`)
+
+        try {
+            const creds = await authProvider.createSession(account)
+            getLogger().info(`CAWS: auto-connected with user: ${account.label}`)
+
+            return creds
+        } catch (err) {
+            getLogger().debug(`CAWS: unable to auto-connect with user "${account.label}": %O`, err)
+        }
+    }
+}
+
 export function createClientFactory(authProvider: CawsAuthenticationProvider): () => Promise<CawsClient> {
     return async () => {
-        const creds = authProvider.getActiveSession()
         const client = await createClient()
+        const creds = authProvider.getActiveSession() ?? (await autoConnect(authProvider))
 
         if (creds) {
-            await client.setCredentials(creds.accessDetails, creds.accountDetails.id)
+            await client.setCredentials(creds.accessDetails, creds.accountDetails.metadata)
         }
 
         return client
@@ -58,6 +76,8 @@ export interface ConnectedWorkspace {
     readonly summary: CawsDevEnv
     readonly environmentClient: RemoteEnvironmentClient
 }
+
+export const CAWS_WORKSPACE_KEY = 'caws.workspaces'
 
 export async function getConnectedWorkspace(
     cawsClient: ConnectedCawsClient,
@@ -80,35 +100,13 @@ export async function getConnectedWorkspace(
         throw new Error(`Workspace ARN path "${path}" is missing an org, project, or workspace ID`)
     }
 
-    // The following API calls add a good amount of delay. Perhaps `memoize` successful executions.
-    // TODO(sijaden): implement a 'find' method that terminates early. It's useful for other things...
-    const matchedOrgs = await cawsClient
-        .listOrgs()
-        .flatten()
-        .filter(o => o.id === orgId)
-        .promise()
+    // XXX: we store the summary before connecting as resolving from the ARN is unstable
+    const stored = globals.context.globalState.get<Record<string, CawsDevEnv>>(CAWS_WORKSPACE_KEY, {})
+    const summary = stored[workspaceId]
 
-    const organizationName = matchedOrgs[0]?.name
-    if (!organizationName) {
-        throw new Error(`No organization name found for ID: ${orgId}`)
+    if (!summary) {
+        throw new Error('No development workspace summary found within global state')
     }
-
-    const matchedProjects = await cawsClient
-        .listProjects({ organizationName })
-        .flatten()
-        .filter(o => o.id === projectId)
-        .promise()
-
-    const projectName = matchedProjects[0]?.name
-    if (!projectName) {
-        throw new Error(`No project name found for ID: ${projectId}`)
-    }
-
-    const summary = await cawsClient.getDevEnv({
-        projectName,
-        organizationName,
-        developmentWorkspaceId: workspaceId,
-    })
 
     return { summary, environmentClient }
 }
@@ -128,4 +126,16 @@ export async function getDevFileLocation(client: RemoteEnvironmentClient, root?:
     }
 
     return vscode.Uri.joinPath(rootDirectory, devfileLocation)
+}
+
+interface RepoIdentifier {
+    readonly name: string
+    readonly project: string
+    readonly org: string
+}
+
+export function toCawsGitUri(username: string, token: string, repo: RepoIdentifier): string {
+    const { name, project, org } = repo
+
+    return `https://${username}:${token}@${getCawsConfig().gitHostname}/v1/${org}/${project}/${name}`
 }

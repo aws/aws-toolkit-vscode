@@ -26,7 +26,7 @@ import {
 } from '../mde/mdeModel'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
-import { createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
+import { CAWS_WORKSPACE_KEY, createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { CawsCommands } from '../caws/commands'
@@ -391,6 +391,10 @@ async function installVsix(
         progress.report({ message: 'Installing VSIX...' })
         await new SessionProcess(ssh, [`${hostName}`, '-v', installCmd]).run()
     }
+
+    // XXX: store the environment to re-use once connected
+    const previous = ctx.extensionContext.globalState.get(CAWS_WORKSPACE_KEY, {})
+    await ctx.extensionContext.globalState.update(CAWS_WORKSPACE_KEY, { ...previous, [env.id]: env })
 
     progress.report({ message: 'Launching instance...' })
     await startVscodeRemote(SessionProcess, hostName, '/projects', ssh, vsc)

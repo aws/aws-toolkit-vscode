@@ -140,10 +140,10 @@ export function createDevEnvPrompter(
         compare: (a, b) => {
             if (isData(a.data) && isData(b.data)) {
                 if (a.data.status === b.data.status) {
-                    return a.data.lastUpdatedTime.getTime() - b.data.lastUpdatedTime.getTime()
+                    return b.data.lastUpdatedTime.getTime() - a.data.lastUpdatedTime.getTime()
                 }
 
-                return a.data.status === 'RUNNING' ? -1 : b.data.status === 'RUNNING' ? 1 : 0
+                return a.data.status === 'RUNNING' ? 1 : b.data.status === 'RUNNING' ? -1 : 0
             }
 
             return 0

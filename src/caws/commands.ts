@@ -18,7 +18,14 @@ import { openCawsUrl } from './utils'
 import { CawsAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
 import { CawsClient, CawsDevEnv, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
-import { createCawsSessionProvider, createClientFactory, DevEnvId, getHostNameFromEnv } from './model'
+import {
+    CAWS_WORKSPACE_KEY,
+    createCawsSessionProvider,
+    createClientFactory,
+    DevEnvId,
+    getHostNameFromEnv,
+    toCawsGitUri,
+} from './model'
 
 type LoginResult = 'Succeeded' | 'Cancelled' | 'Failed'
 
@@ -34,9 +41,9 @@ export async function login(authProvider: CawsAuthenticationProvider, client: Ca
 
     try {
         const { accountDetails, accessDetails } = response.session
-        await client.setCredentials(accessDetails, accountDetails.id)
+        await client.setCredentials(accessDetails, accountDetails.metadata)
 
-        if (lastSession) {
+        if (lastSession && response.session.id !== lastSession.id) {
             authProvider.deleteSession(lastSession)
         }
 
@@ -45,23 +52,6 @@ export async function login(authProvider: CawsAuthenticationProvider, client: Ca
         getLogger().error('CAWS: failed to login: %O', err)
         return 'Failed'
     }
-}
-
-export async function autoConnect(authProvider: CawsAuthenticationProvider): Promise<boolean> {
-    for (const account of authProvider.listAccounts()) {
-        getLogger().info(`CAWS: trying to auto-connect with user: ${account.label}`)
-
-        try {
-            await authProvider.createSession(account)
-            getLogger().info(`CAWS: auto-connected with user: ${account.label}`)
-
-            return true
-        } catch (err) {
-            getLogger().debug(`CAWS: unable to auto-connect with user "${account.label}": %O`, err)
-        }
-    }
-
-    return false
 }
 
 export async function logout(authProvider: CawsAuthenticationProvider): Promise<void> {
@@ -81,20 +71,29 @@ export async function listCommands(): Promise<void> {
 /** "Clone CODE.AWS Repository" command. */
 export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Uri): Promise<void> {
     // TODO: add telemetry
+
+    async function getPat() {
+        // FIXME: make it easier to go from auth -> client so we don't need to do this
+        const auth = CawsAuthenticationProvider.fromContext(globals.context)
+        return auth.getPat(client)
+    }
+
     if (!url) {
         const r = await selectCawsResource(client, 'repo')
         if (!r) {
             return
         }
-        const cloneLink = await client.toCawsGitUri(r.org.name, r.project.name, r.name)
-        await vscode.commands.executeCommand('git.clone', cloneLink)
+        const resource = { name: r.name, project: r.project.name, org: r.org.name }
+        const uri = toCawsGitUri(client.identity.name, await getPat(), resource)
+        await vscode.commands.executeCommand('git.clone', uri)
     } else {
         const [_, org, project, repo] = url.path.slice(1).split('/')
         if (!org || !project || !repo) {
             throw new Error(`Invalid CAWS URL: unable to parse repository`)
         }
-
-        await vscode.commands.executeCommand('git.clone', await client.toCawsGitUri(org, project, repo))
+        const resource = { name: repo, project, org }
+        const uri = toCawsGitUri(client.identity.name, await getPat(), resource)
+        await vscode.commands.executeCommand('git.clone', uri)
     }
 }
 
@@ -171,6 +170,10 @@ export async function openDevEnv(client: ConnectedCawsClient, env: CawsDevEnv): 
         },
         rejectOnErrorCode: true,
     })
+
+    // XXX: store the environment to re-use once connected
+    const previous = globals.context.globalState.get(CAWS_WORKSPACE_KEY, {})
+    await globals.context.globalState.update(CAWS_WORKSPACE_KEY, { ...previous, [env.id]: env })
 
     await mdeModel.startVscodeRemote(SessionProcess, getHostNameFromEnv(env), '/projects', deps.ssh, deps.vsc)
 }

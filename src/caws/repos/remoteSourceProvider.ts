@@ -10,7 +10,7 @@ import { RemoteSource, RemoteSourceProvider } from '../../../types/git'
 import { promptCawsNotConnected } from '../utils'
 import { CawsAuthenticationProvider } from '../auth'
 import { createRepoLabel } from '../wizards/selectResource'
-import { createClientFactory } from '../model'
+import { createClientFactory, toCawsGitUri } from '../model'
 
 export class CawsRemoteSourceProvider implements RemoteSourceProvider {
     public readonly icon = 'git-merge' // TODO: find a correct icon. I don't think we can provide a custom one...
@@ -42,7 +42,9 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
         const repositoryIter = client.listResources('repo').flatten()
 
         for await (const repo of repositoryIter) {
-            const cloneUrl = await client.toCawsGitUri(repo.org.name, repo.project.name, repo.name)
+            const resource = { name: repo.name, project: repo.project.name, org: repo.org.name }
+            const pat = await this.authProvider.getPat(client)
+            const cloneUrl = toCawsGitUri(client.identity.name, pat, resource)
 
             repos.push({
                 name: createRepoLabel(repo),

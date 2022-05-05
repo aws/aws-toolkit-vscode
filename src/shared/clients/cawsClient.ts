@@ -17,12 +17,12 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { MDE_START_TIMEOUT } from './mdeClient'
 import { showMessageWithCancel } from '../utilities/messages'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { assertHasProps, ClassToInterfaceType, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
 
-// XXX: remove signing from the CAWS model until Bearer token auth is added
+// XXX: remove signing from the CAWS model until Bearer token auth is added to the SDKs
 delete (apiConfig.metadata as Partial<typeof apiConfig['metadata']>)['signatureVersion']
 
 // REMOVE ME SOON: only used for development
@@ -103,12 +103,16 @@ async function createCawsClient(
     } as ServiceConfigurationOptions)) as caws
     c.setupRequestListeners = r => {
         if (authCookie) {
-            // TODO: remove this after CAWS backend implements full authentication story.
-            r.httpRequest.headers['cookie'] = authCookie
+            // TODO: remove this when using an SDK that supports bearer auth
+            r.httpRequest.headers['Authorization'] = `Bearer ${authCookie}`
         }
     }
-    // c.setupRequestListeners()
+
     return c
+}
+
+export type Person = RequiredProps<caws.GetPersonResponse, 'userId' | 'userName' | 'displayName' | 'primaryEmail'> & {
+    readonly version: '1'
 }
 
 // CAWS client has two variants: 'logged-in' and 'not logged-in'
@@ -122,6 +126,7 @@ export interface DisconnectedCawsClient extends Pick<CawsClientInternal, 'verify
 export interface ConnectedCawsClient extends ClassToInterfaceType<CawsClientInternal> {
     readonly connected: true
     readonly regionCode: string
+    readonly identity: { readonly id: string; readonly name: string }
 }
 
 export type CawsClient = ConnectedCawsClient | DisconnectedCawsClient
@@ -142,33 +147,46 @@ export async function createClient(
 
 class CawsClientInternal {
     private userId: string | undefined
-    private username: string | undefined
+    private person?: Person
     private readonly log: logger.Logger
 
     public constructor(
         public readonly regionCode: string,
         private readonly endpoint: string,
         private sdkClient: caws,
-        private authCookie?: string
+        private bearerToken?: string
     ) {
         this.log = logger.getLogger()
     }
 
     public get connected(): boolean {
-        return !!(this.authCookie && this.userId)
+        return !!(this.bearerToken && this.person)
+    }
+
+    public get identity(): ConnectedCawsClient['identity'] {
+        if (!this.person) {
+            throw new Error('CAWS client is not connected')
+        }
+
+        return { id: this.person.userId, name: this.person.userName }
     }
 
     /**
      * Rebuilds/reconnects CAWS clients with new credentials
      *
-     * @param authCookie   User secret
+     * @param bearerToken   User secret
      * @param userId       CAWS account id
      * @returns
      */
-    public async setCredentials(authCookie: string, userId?: string) {
-        this.authCookie = authCookie
-        this.userId = userId
-        this.sdkClient = await createCawsClient(authCookie, this.regionCode, this.endpoint)
+    public async setCredentials(bearerToken: string, id?: string | Person) {
+        this.bearerToken = bearerToken
+        this.sdkClient = await createCawsClient(bearerToken, this.regionCode, this.endpoint)
+
+        if (typeof id === 'string') {
+            this.userId = id
+        } else {
+            this.person = id
+        }
     }
 
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
@@ -246,36 +264,50 @@ class CawsClientInternal {
      * @returns PAT secret
      */
     public async createAccessToken(args: caws.CreateAccessTokenRequest): Promise<caws.CreateAccessTokenResponse> {
-        const c = this.sdkClient
-        const token = await this.call(c.createAccessToken(args), false)
-        return token
+        return this.sdkClient.createAccessToken(args).promise()
     }
 
     /**
      * Gets identity properties of the current authenticated principal, and
      * stores the id for use in later calls.
      */
-    public async verifySession(): Promise<caws.VerifySessionResponse & { name: string; identity: string }> {
-        const o = await this.call(this.sdkClient.verifySession(), false)
-        if (!o.identity) {
-            throw new Error('No CAWS account id found')
+    public async verifySession(): Promise<Person> {
+        const resp = await this.call(this.sdkClient.verifySession(), false)
+        assertHasProps(resp, 'identity')
+
+        if (this.userId && this.userId !== resp.identity) {
+            throw new Error('CAWS identity does not match the one provided by the client')
         }
-        this.userId = o.identity
 
-        const name = (await this.getPerson({ id: this.userId })).userName
+        this.userId = resp.identity
+        this.person ??= await this.getPerson({ id: this.userId })
 
-        return { ...o, identity: this.userId, name }
+        return { ...this.person }
     }
 
-    public async getPerson(args: caws.GetPersonRequest): Promise<caws.GetPersonResponse & { userName: string }> {
+    private async getPerson(args: caws.GetPersonRequest) {
         const resp = await this.call(this.sdkClient.getPerson(args), false)
+        assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
-        if (!resp.userName) {
-            throw new Error('No CAWS username found')
+        if (resp.version !== '1') {
+            throw new Error(`CAWS 'getPerson' API returned an unsupported version: ${resp.version}`)
         }
-        this.username = resp.userName
 
-        return { ...resp, userName: this.username }
+        return { ...resp, version: resp.version } as const
+    }
+
+    public async getOrg(request: caws.GetOrganizationInput): Promise<CawsOrg | undefined> {
+        const resp = await this.call(this.sdkClient.getOrganization(request), false)
+        assertHasProps(resp, 'id', 'name')
+
+        return { ...resp, type: 'org' }
+    }
+
+    public async getProject(request: caws.GetProjectInput): Promise<CawsProject | undefined> {
+        const resp = await this.call(this.sdkClient.getProject(request), false)
+        assertHasProps(resp, 'id', 'name')
+
+        return { ...resp, type: 'project', org: { name: request.organizationName } }
     }
 
     /**
@@ -555,20 +587,5 @@ class CawsClientInternal {
             ),
             onCancel: () => undefined,
         })
-    }
-
-    public async getUsername(): Promise<string> {
-        return (this.username ??= (await this.getPerson({ id: this.userId! })).userName)
-    }
-
-    /**
-     * Creates a link for `git clone` usage
-     * @param r CAWS repo
-     */
-    public async toCawsGitUri(org: string, project: string, repo: string): Promise<string> {
-        const pat = await this.createAccessToken({ name: 'aws-toolkits-vscode-token', expires: undefined })
-        const username = await this.getUsername()
-
-        return `https://${username}:${pat.secret}@${getCawsConfig().gitHostname}/v1/${org}/${project}/${repo}`
     }
 }

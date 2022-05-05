@@ -527,6 +527,7 @@ const DEV_SETTINGS = {
     telemetryUserPool: String,
     mdeBetaEndpoint: String,
     mdeEmailFilter: Boolean,
+    enableSsoProvider: Boolean,
     cawsStage: String,
 }
 
