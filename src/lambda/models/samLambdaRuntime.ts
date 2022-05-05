@@ -27,7 +27,7 @@ export type RuntimePackageType = 'Image' | 'Zip'
 
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
-export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs14.x', 'nodejs12.x'])
+export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs16.x', 'nodejs14.x', 'nodejs12.x'])
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.9',
     'python3.8',
