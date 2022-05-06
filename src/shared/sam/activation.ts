@@ -129,6 +129,11 @@ async function activateCodeLensRegistry(context: ExtContext) {
     try {
         const registry = new CodelensRootRegistry()
         globals.codelensRootRegistry = registry
+
+        //
+        // "**/…" string patterns watch recursively across _all_ workspace
+        // folders (see documentation for addWatchPattern()).
+        //
         await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
         await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
         await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
