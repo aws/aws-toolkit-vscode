@@ -12,6 +12,7 @@ import { invocationContext, automatedTriggerContext } from '../../../../vector/c
 import * as messages from '../../../../shared/utilities/messages'
 import { invokeConsolas } from '../../../../vector/consolas/commands/invokeConsolas'
 import * as KeyStrokeHandler from '../../../../vector/consolas/service/keyStrokeHandler'
+import * as inlineCompletions from '../../../../vector/consolas/views/recommendationSelectionProvider'
 
 describe('invokeConsolas', function () {
     describe('invokeConsolas', function () {
@@ -66,13 +67,13 @@ describe('invokeConsolas', function () {
             assert.ok(getRecommendationStub.called)
         })
 
-        it('Should trigger editor.action.triggerSuggest when at least one response is valid, keyStrokeCount should be set to 0', async function () {
+        it('Should call showFirstRecommendationStub when at least one response is valid, keyStrokeCount should be set to 0', async function () {
             const mockEditor = createMockTextEditor()
+            const showFirstRecommendationStub = sinon.spy(inlineCompletions, 'showFirstRecommendation')
             automatedTriggerContext.keyStrokeCount = 10
-            const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
             await invokeConsolas(mockEditor, mockClient, true, true, true)
             assert.strictEqual(automatedTriggerContext.keyStrokeCount, 0)
-            assert.ok(commandSpy.calledWith('editor.action.triggerSuggest'))
+            sinon.assert.calledWith(showFirstRecommendationStub, mockEditor)
         })
 
         it('Should call prompt message with no suggestions when responses are all invalid', async function () {
