@@ -24,6 +24,7 @@ async function setDefault(editor: vscode.TextEditor) {
     inlineCompletion.items = []
     inlineCompletion.origin = []
     inlineCompletion.position = 0
+    invocationContext.isInlineActive = false
     _context?.extensionContext.globalState.update(ConsolasConstants.CONSOLAS_SERVICE_ACTIVE_KEY, false)
     await vscode.commands.executeCommand('setContext', ConsolasConstants.CONSOLAS_SERVICE_ACTIVE_KEY, false)
     editor.setDecorations(dimDecoration, [])
@@ -51,7 +52,7 @@ export async function acceptRecommendation(editor: vscode.TextEditor) {
             undoStopAfter: false,
             undoStopBefore: false,
         })
-        .then(async _ => {
+        .then(async () => {
             let languageId = editor?.document?.languageId
             languageId = languageId === ConsolasConstants.TYPESCRIPT ? ConsolasConstants.JAVASCRIPT : languageId
             const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
@@ -67,7 +68,6 @@ export async function acceptRecommendation(editor: vscode.TextEditor) {
 
             vscode.commands.executeCommand('aws.consolas.accept', ...acceptArguments)
             await setDefault(editor)
-            invocationContext.isInlineActive = false
         })
 }
 
@@ -86,9 +86,8 @@ export async function rejectRecommendation(
             },
             { undoStopAfter: false, undoStopBefore: false }
         )
-        .then(async _ => {
-            setDefault(editor)
-            invocationContext.isInlineActive = false
+        .then(async () => {
+            await setDefault(editor)
         })
 }
 
@@ -159,7 +158,7 @@ async function showRecommendation(editor: vscode.TextEditor) {
             },
             { undoStopAfter: false, undoStopBefore: false }
         )
-        .then(async _ => {
+        .then(async () => {
             await editor
                 ?.edit(
                     builder => {
@@ -189,9 +188,9 @@ export async function showFirstRecommendation(editor: vscode.TextEditor) {
      */
     await rejectRecommendation(editor)
     if (invocationContext.isInlineActive) return
-    invocationContext.isActive = true
-    invocationContext.isInlineActive = true
     getCompletionItems().then(async res => {
+        invocationContext.isActive = true
+        invocationContext.isInlineActive = true
         inlineCompletion.origin = res
         inlineCompletion.items = res
         if (inlineCompletion.items.length > 0) {
@@ -202,7 +201,8 @@ export async function showFirstRecommendation(editor: vscode.TextEditor) {
                 // Rejection when user has deleted/navigated triggers
                 if (
                     invocationContext.startPos.line > newEditor.selection.active.line ||
-                    invocationContext.startPos.character > newEditor.selection.active.character
+                    (invocationContext.startPos.character > newEditor.selection.active.character &&
+                        invocationContext.startPos.line === newEditor.selection.active.line)
                 ) {
                     rejectRecommendation(editor)
                     return
@@ -222,15 +222,14 @@ export async function showFirstRecommendation(editor: vscode.TextEditor) {
                 )
 
                 setRange(new vscode.Range(currentPosition, currentPosition))
-
                 inlineCompletion.origin.forEach(item => {
                     if (item.startsWith(typedPrefix)) {
                         inlineCompletion.items.push(item.substring(typedPrefix.length))
                     }
                 })
-
                 if (inlineCompletion.items.length === 0) {
-                    onRejection(_isManualTriggerEnabled, _isAutomatedTriggerEnabled)
+                    await onRejection(_isManualTriggerEnabled, _isAutomatedTriggerEnabled)
+                    await setDefault(editor)
                     return
                 }
             }
