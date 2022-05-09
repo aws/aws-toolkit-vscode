@@ -12,9 +12,8 @@ import * as vscode from 'vscode'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { DocumentItemNode } from './documentItemNode'
 import { DocumentItemNodeWriteable } from './documentItemNodeWriteable'
@@ -52,7 +51,6 @@ export class RegistryItemNode extends AWSTreeNodeBase {
 
                 return [...this.documentNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

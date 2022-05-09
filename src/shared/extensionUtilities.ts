@@ -11,12 +11,12 @@ import * as nls from 'vscode-nls'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
-import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion } from './vscode/env'
 import globals from './extensionGlobals'
+import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
 
@@ -36,11 +36,11 @@ export enum IDE {
 let computeRegion: string | undefined = NOT_INITIALIZED
 
 export function getIdeType(): IDE {
-    const settings = new DefaultSettingsConfiguration('aws')
+    const settings = DevSettings.instance
     if (
         vscode.env.appName === CLOUD9_APPNAME ||
         vscode.env.appName === CLOUD9_CN_APPNAME ||
-        !!settings.readDevSetting<boolean>('aws.forceCloud9', 'boolean', true)
+        settings.get('forceCloud9', false)
     ) {
         return IDE.cloud9
     }
@@ -111,7 +111,7 @@ export function isCn(): boolean {
 
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'media', 'libs')
+        const basePath = path.join(globals.context.extensionPath, 'dist', 'libs')
 
         return this.resolveResourceURIs(basePath, names, webview)
     }
@@ -276,25 +276,20 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 
 /**
  * Shows a message with a link to the quickstart page.
- * In cloud9, directly opens quickstart instead
  */
-async function showOrPromptQuickstart(): Promise<void> {
-    if (isCloud9()) {
+async function promptQuickstart(): Promise<void> {
+    const view = localize('AWS.command.quickStart', 'View Quick Start')
+    const prompt = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.message.prompt.quickStart.toastMessage',
+            'You are now using {0} Toolkit {1}',
+            getIdeProperties().company,
+            extensionVersion
+        ),
+        view
+    )
+    if (prompt === view) {
         vscode.commands.executeCommand('aws.quickStart')
-    } else {
-        const view = localize('AWS.command.quickStart', 'View Quick Start')
-        const prompt = await vscode.window.showInformationMessage(
-            localize(
-                'AWS.message.prompt.quickStart.toastMessage',
-                'You are now using {0} Toolkit version {1}',
-                getIdeProperties().company,
-                extensionVersion
-            ),
-            view
-        )
-        if (prompt === view) {
-            vscode.commands.executeCommand('aws.quickStart')
-        }
     }
 }
 
@@ -323,8 +318,9 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
-            // the welcome toast should be nonblocking.
-            showOrPromptQuickstart()
+            if (!isCloud9()) {
+                promptQuickstart()
+            }
         }
     } catch (err) {
         // swallow error and don't block extension load

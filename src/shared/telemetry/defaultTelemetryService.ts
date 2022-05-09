@@ -52,7 +52,7 @@ export class DefaultTelemetryService implements TelemetryService {
         private readonly computeRegion?: string,
         publisher?: TelemetryPublisher
     ) {
-        const persistPath = context.globalStoragePath
+        const persistPath = context.globalStorageUri.fsPath
         this.persistFilePath = path.join(persistPath, 'telemetryCache')
 
         if (!fs.existsSync(persistPath)) {

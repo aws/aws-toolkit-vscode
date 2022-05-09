@@ -11,9 +11,8 @@ import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
@@ -43,7 +42,6 @@ export class LambdaNode extends AWSTreeNodeBase {
 
                 return [...this.functionNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.lambda.noFunctions', '[No Functions found]')),
             sort: (nodeA, nodeB) => nodeA.functionName.localeCompare(nodeB.functionName),

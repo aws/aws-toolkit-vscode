@@ -15,7 +15,6 @@ import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { getLogger } from '../logger'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { Timeout } from '../utilities/timeoutUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
@@ -27,15 +26,13 @@ import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
-import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerContext'
-import { DefaultSamCliConfiguration } from './cli/samCliConfiguration'
-import { extensionSettingsPrefix } from '../constants'
-import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
+import { SamCliSettings } from './cli/samCliSettings'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
-import { sleep } from '../utilities/promiseUtilities'
+import { sleep } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
+import { showMessageWithCancel } from '../utilities/messages'
 
 const localize = nls.loadMessageBundle()
 
@@ -80,7 +77,6 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
-const SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS: number = 90000
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -126,14 +122,10 @@ export async function makeInputTemplate(
 async function buildLambdaHandler(
     timer: Timeout,
     env: NodeJS.ProcessEnv,
-    config: SamLaunchRequestArgs
+    config: SamLaunchRequestArgs,
+    settings: SamCliSettings
 ): Promise<boolean> {
-    const processInvoker = new DefaultSamCliProcessInvoker({
-        preloadedConfig: new DefaultSamCliConfiguration(
-            new DefaultSettingsConfiguration(extensionSettingsPrefix),
-            new DefaultSamCliLocationProvider()
-        ),
-    })
+    const processInvoker = new DefaultSamCliProcessInvoker(settings)
 
     getLogger('channel').info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
@@ -187,7 +179,8 @@ async function buildLambdaHandler(
 async function invokeLambdaHandler(
     timer: Timeout,
     env: NodeJS.ProcessEnv,
-    config: SamLaunchRequestArgs
+    config: SamLaunchRequestArgs,
+    settings: SamCliSettings
 ): Promise<boolean> {
     getLogger('channel').info(localize('AWS.output.starting.sam.app.locally', 'Starting SAM application locally'))
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
@@ -196,8 +189,7 @@ async function invokeLambdaHandler(
 
     if (config.invokeTarget.target === 'api') {
         // sam local start-api ...
-        const samCliContext = new DefaultSamCliProcessInvokerContext()
-        const sam = await samCliContext.cliConfig.getOrDetectSamCli()
+        const sam = await settings.getOrDetectSamCli()
         if (!sam.path) {
             getLogger().warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {
@@ -360,27 +352,32 @@ export async function runLambdaFunction(
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
-    const timer = createLambdaTimer(ctx.settings)
+    const settings = SamCliSettings.instance
+    const timer = new Timeout(settings.getLocalInvokeTimeout())
 
-    if (!(await buildLambdaHandler(timer, envVars, config))) {
+    if (!(await buildLambdaHandler(timer, envVars, config, settings))) {
         return config
     }
 
     await onAfterBuild()
     timer.refresh()
 
-    if (!(await invokeLambdaHandler(timer, envVars, config))) {
+    if (!(await invokeLambdaHandler(timer, envVars, config, settings))) {
         return config
     }
 
-    if (!config.noDebug) {
+    if (config.noDebug) {
+        return config
+    }
+
+    async function attach() {
         if (config.invokeTarget.target === 'api') {
             const payload =
                 config.eventPayloadFile === undefined
                     ? undefined
                     : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
             // Send the request to the local API server.
-            await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
+            await requestLocalApi(timer, config.api!, config.apiPort!, payload)
             // Wait for cue messages ("Starting debugger" etc.) before attach.
             if (!(await samStartApi)) {
                 return config
@@ -424,6 +421,12 @@ export async function runLambdaFunction(
             })
     }
 
+    try {
+        await attach()
+    } finally {
+        timer.dispose()
+    }
+
     return config
 }
 
@@ -455,16 +458,19 @@ vscode.debug.onDidTerminateDebugSession(session => {
  * Lambda, which will then enter debugging.
  */
 async function requestLocalApi(
-    ctx: ExtContext,
+    timeout: Timeout,
     api: APIGatewayProperties,
     apiPort: number,
     payload: any
 ): Promise<void> {
-    const RETRY_LIMIT = 30
+    const RETRY_LIMIT = 10 // Number of attempts before showing a 'cancel' notification
     const RETRY_DELAY = 200
     const reqMethod = api?.httpMethod || 'GET'
     const qs = (api?.querystring?.startsWith('?') ? '' : '?') + (api?.querystring ?? '')
     const uri = `http://127.0.0.1:${apiPort}${api?.path}${qs}`
+
+    let notificationShown = false
+
     const reqOpts: OptionsOfTextResponseBody = {
         json: payload,
         timeout: { socket: 1000 },
@@ -477,16 +483,15 @@ async function requestLocalApi(
                 if (obj.error.response !== undefined) {
                     getLogger().debug('Local API response: %s : %O', uri, obj.error.response.statusMessage)
                 }
-                if (
-                    obj.error.code === 'ETIMEDOUT' ||
-                    obj.attemptCount > RETRY_LIMIT ||
-                    obj.error.response?.statusCode === 403
-                ) {
+                if (obj.error.code === 'ETIMEDOUT' || obj.error.response?.statusCode === 403 || timeout.completed) {
                     return 0
+                } else if (!notificationShown && obj.attemptCount >= RETRY_LIMIT) {
+                    notificationShown = true
+                    getLogger().debug('Local API: showing cancel notification')
+                    showMessageWithCancel('Waiting for local API to start...', timeout)
                 }
-                getLogger().debug(
-                    `Local API: retry (${obj.attemptCount} of ${RETRY_LIMIT}): ${uri}: ${obj.error.message}`
-                )
+
+                getLogger().debug(`Local API: retry (${obj.attemptCount}): ${uri}: ${obj.error.message}`)
                 return RETRY_DELAY
             },
         },
@@ -505,7 +510,7 @@ async function requestLocalApi(
         const msg =
             err.response?.statusCode === 403
                 ? `Local API failed to respond to path: ${api?.path}`
-                : `Local API failed to respond (${err.code}) after ${RETRY_LIMIT} retries, path: ${api?.path}, error: ${err.message}`
+                : `Local API failed to respond (${err.code}) at path: ${api?.path}, error: ${err.message}`
         getLogger('channel').error(msg)
         throw new Error(msg)
     })
@@ -631,12 +636,6 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
         default:
             throw new Error('localLambdaRunner can not determine if runtime requires a relative path.')
     }
-}
-
-function createLambdaTimer(configuration: SettingsConfiguration): Timeout {
-    const timelimit = configuration.readSetting<number>('samcli.lambda.timeout', SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS)
-
-    return new Timeout(timelimit)
 }
 
 /**

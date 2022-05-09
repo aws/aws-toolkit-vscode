@@ -1,3 +1,8 @@
+## 1.37.0 2022-03-25
+
+- **Bug Fix** SAM run/debug: slow debugger attachment for API configurations now shows a cancellable notification instead of automatically failing
+- **Feature** "Adding Go (Golang) as a supported language for code binding generation through the EventBridge Schemas service"
+
 ## 1.36.0 2022-03-03
 
 - **Bug Fix** Step Functions: fixed issue with opening a graph render from the editor

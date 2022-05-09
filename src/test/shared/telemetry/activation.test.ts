@@ -10,16 +10,15 @@ import * as vscode from 'vscode'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
     handleTelemetryNoticeResponse,
-    isTelemetryEnabled,
     noticeResponseViewSettings,
     noticeResponseOk,
     TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED,
     hasUserSeenTelemetryNotice,
     setHasUserSeenTelemetryNotice,
-    sanitizeTelemetrySetting,
+    TelemetryConfig,
+    convertLegacy,
 } from '../../../shared/telemetry/activation'
-import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
-import { extensionSettingsPrefix } from '../../../shared/constants'
+import { Settings } from '../../../shared/settings'
 
 describe('handleTelemetryNoticeResponse', function () {
     let extensionContext: vscode.ExtensionContext
@@ -33,8 +32,8 @@ describe('handleTelemetryNoticeResponse', function () {
         sandbox.restore()
     })
 
-    beforeEach(function () {
-        extensionContext = new FakeExtensionContext()
+    beforeEach(async function () {
+        extensionContext = await FakeExtensionContext.create()
     })
 
     it('does nothing when notice is discarded', async function () {
@@ -72,20 +71,19 @@ describe('handleTelemetryNoticeResponse', function () {
 })
 
 describe('Telemetry on activation', function () {
-    let settings: vscode.WorkspaceConfiguration
-    const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    const SETTING_KEY = 'aws.telemetry'
 
-    // These tests operate against the user's configuration.
-    // Restore the initial value after testing is complete.
-    let originalTelemetryValue: any
+    const target = vscode.ConfigurationTarget.Workspace
+    const settings = new Settings(target)
 
-    before(async function () {
-        settings = vscode.workspace.getConfiguration(extensionSettingsPrefix)
-        originalTelemetryValue = settings.get('telemetry')
+    let sut: TelemetryConfig
+
+    beforeEach(function () {
+        sut = new TelemetryConfig(settings)
     })
 
-    after(async function () {
-        await settings.update('telemetry', originalTelemetryValue, vscode.ConfigurationTarget.Global)
+    afterEach(async function () {
+        await sut.reset()
     })
 
     const scenarios = [
@@ -131,29 +129,32 @@ describe('Telemetry on activation', function () {
             initialSettingValue: undefined,
             expectedIsEnabledValue: true,
             desc: 'Unset value',
-            expectedSanitizedValue: true,
-        }, // The 'expectedSanitizedValue' is true based on the package.json configuration declaration
+            expectedSanitizedValue: undefined,
+        },
     ]
 
     describe('isTelemetryEnabled', function () {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
-                await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
+                await settings.update(SETTING_KEY, scenario.initialSettingValue)
 
-                const isEnabled = isTelemetryEnabled(toolkitSettings)
-                assert.strictEqual(isEnabled, scenario.expectedIsEnabledValue)
+                assert.strictEqual(sut.isEnabled(), scenario.expectedIsEnabledValue)
             })
         })
     })
 
     describe('sanitizeTelemetrySetting', function () {
         scenarios.forEach(scenario => {
-            it(scenario.desc, async () => {
-                await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
+            it(scenario.desc, () => {
+                const tryConvert = () => {
+                    try {
+                        return convertLegacy(scenario.initialSettingValue)
+                    } catch {
+                        return scenario.initialSettingValue
+                    }
+                }
 
-                await sanitizeTelemetrySetting(toolkitSettings)
-                const sanitizedSetting = toolkitSettings.readSetting<any>('telemetry')
-                assert.deepStrictEqual(sanitizedSetting, scenario.expectedSanitizedValue)
+                assert.deepStrictEqual(tryConvert(), scenario.expectedSanitizedValue)
             })
         })
     })
@@ -171,8 +172,8 @@ describe('hasUserSeenTelemetryNotice', async function () {
         sandbox.restore()
     })
 
-    beforeEach(function () {
-        extensionContext = new FakeExtensionContext()
+    beforeEach(async function () {
+        extensionContext = await FakeExtensionContext.create()
     })
 
     it('is affected by setHasUserSeenTelemetryNotice', async function () {

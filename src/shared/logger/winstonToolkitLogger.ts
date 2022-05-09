@@ -46,9 +46,8 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             return
         }
         // Log calls are made with explicit levels to ensure the text is output
-        this.logger.log(this.logger.level, `Setting log level to: ${logLevel}`)
         this.logger.level = logLevel
-        this.logger.log(this.logger.level, `Log level is now: ${this.logger.level}`)
+        this.logger.log(this.logger.level, `Log level: ${this.logger.level}`)
     }
 
     public logLevelEnabled(logLevel: LogLevel): boolean {
@@ -123,10 +122,11 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             throw new Error('Cannot write to disposed logger')
         }
 
-        meta.filter(item => types.isNativeError(item)).forEach(error => coerceNameToString(error))
+        meta.filter(item => types.isNativeError(item))
 
         if (types.isNativeError(message)) {
-            coerceNameToString(message)
+            // `vslsStack` appears to be added by VS Code ?
+            delete (message as { vslsStack?: any[] }).vslsStack
             this.logger.log(level, '%O', message, ...meta, { logID: this.idCounter })
         } else {
             this.logger.log(level, message, ...meta, { logID: this.idCounter })
@@ -176,19 +176,5 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         if (this.logMap[logID] !== undefined && messageSymbol) {
             this.logMap[logID][file.toString(true)] = obj[messageSymbol]
         }
-    }
-}
-
-/**
- * Workaround for logging Errors with a name that's not a string.
- *
- * e.g. AWS SDK for JS can sometimes set the error name to the error code number (like 404).
- *
- * Fixed in Node v12.14.1, can be removed once VSCode uses this version.
- * @see https://github.com/nodejs/node/issues/30572
- */
-function coerceNameToString(error: any): void {
-    if (typeof error.name === 'number') {
-        error.name = String(error.name)
     }
 }

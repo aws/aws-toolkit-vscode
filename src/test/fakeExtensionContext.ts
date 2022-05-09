@@ -3,14 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { mkdirp } from 'fs-extra'
 import * as vscode from 'vscode'
 import { CredentialsStore } from '../credentials/credentialsStore'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
-import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { ExtContext } from '../shared/extensions'
-import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
-import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
-import { MockOutputChannel } from './mockOutputChannel'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
 import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
@@ -20,8 +16,14 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../shared/sam/cli/samCliValidator'
-import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
+import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
+import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
+import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
+import { MockOutputChannel } from './mockOutputChannel'
+import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
+import { createTestWorkspaceFolder } from './testUtil'
+import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -38,13 +40,22 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     }[] = []
     public workspaceState: vscode.Memento = new FakeMemento()
     public globalState: vscode.Memento = new FakeMemento()
+    public globalStorageUri: vscode.Uri = vscode.Uri.file('file://fake/storage/uri')
     public storagePath: string | undefined
     public logPath: string = ''
+    public extensionUri: vscode.Uri = vscode.Uri.file('file://fake/extension/uri')
+    public environmentVariableCollection: vscode.EnvironmentVariableCollection = new FakeEnvironmentVariableCollection()
+    public storageUri: vscode.Uri | undefined
+    public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
+    public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
 
     private _extensionPath: string = ''
     private _globalStoragePath: string = '.'
 
-    public constructor(preload?: FakeExtensionState) {
+    /**
+     * Use {@link create()} to create a FakeExtensionContext.
+     */
+    private constructor(preload?: FakeExtensionState) {
         if (preload) {
             this.globalState = new FakeMemento(preload.globalState)
             this.workspaceState = new FakeMemento(preload.workspaceState)
@@ -74,8 +85,13 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     /**
      * Creates a fake `vscode.ExtensionContext` for use in tests.
      */
-    public static async getNew(): Promise<FakeExtensionContext> {
-        const ctx = new FakeExtensionContext()
+    public static async create(preload?: FakeExtensionState): Promise<FakeExtensionContext> {
+        const ctx = new FakeExtensionContext(preload)
+        const folder = await createTestWorkspaceFolder('test')
+        ctx.globalStorageUri = vscode.Uri.joinPath(folder.uri, 'globalStorage')
+        ctx.logUri = vscode.Uri.joinPath(folder.uri, 'logs')
+        await mkdirp(ctx.globalStorageUri.fsPath)
+        await mkdirp(ctx.logUri.fsPath)
         return ctx
     }
 
@@ -83,7 +99,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
      * Creates a fake `ExtContext` for use in tests.
      */
     public static async getFakeExtContext(): Promise<ExtContext> {
-        const ctx = await FakeExtensionContext.getNew()
+        const ctx = await FakeExtensionContext.create()
         const awsContext = new FakeAwsContext()
         const samCliContext = () => {
             return {
@@ -94,7 +110,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             } as SamCliContext
         }
         const regionProvider = new FakeRegionProvider()
-        const settings = new DefaultSettingsConfiguration('aws')
         const outputChannel = new MockOutputChannel()
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
@@ -104,7 +119,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             awsContext,
             samCliContext,
             regionProvider,
-            settings,
             outputChannel,
             invokeOutputChannel,
             telemetryService,

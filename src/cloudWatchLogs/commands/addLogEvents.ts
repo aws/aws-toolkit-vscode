@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as AsyncLock from 'async-lock'
 import { getLogger } from '../../shared/logger/logger'
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 
 // TODO: Cut a PR to the async-lock package?...as of now, maxPending = 0 is theoretically ideal, but also falsy (which sets maxPending = 1000):
@@ -17,8 +16,7 @@ export async function addLogEvents(
     document: vscode.TextDocument,
     registry: LogStreamRegistry,
     headOrTail: 'head' | 'tail',
-    onDidChangeCodeLensEvent: vscode.EventEmitter<void>,
-    configuration: SettingsConfiguration
+    onDidChangeCodeLensEvent: vscode.EventEmitter<void>
 ): Promise<void> {
     const uri = document.uri
     const lockName = `${headOrTail === 'head' ? 'logStreamHeadLock' : 'logStreamTailLock'}:${uri.path}`
@@ -36,7 +34,7 @@ export async function addLogEvents(
             if (onDidChangeCodeLensEvent) {
                 onDidChangeCodeLensEvent.fire()
             }
-            await registry.updateLog(uri, headOrTail, configuration)
+            await registry.updateLog(uri, headOrTail)
             getLogger().debug('Update done, releasing lock...')
         })
     } catch (e) {

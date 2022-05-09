@@ -1,9 +1,11 @@
 out
 dist
 node_modules
-.coverage/
 .vscode-test/
+.nyc_output/
+coverage/
 *.vsix
+*.bk
 **/.DS_Store
 .idea
 telemetryCache
@@ -11,7 +13,6 @@ quickStart*.html
 README.quickstart.cloud9.md
 README.quickstart.vscode.md
 .gitcommit
-media/libs/
 resources/debugger/__pycache__
 
 # Auto generated definitions

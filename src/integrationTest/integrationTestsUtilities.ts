@@ -29,7 +29,7 @@ export function getTestWorkspaceFolder(): string {
 export async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
     // This changes how long the toolkit will wait for SAM CLI output before ending a session
-    await configAws.update('samcli.lambda.timeout', LAMBDA_SESSION_TIMEOUT, false)
+    await configAws.update('samcli.lambdaTimeout', LAMBDA_SESSION_TIMEOUT, false)
 }
 
 export async function configurePythonExtension(): Promise<void> {

@@ -123,7 +123,7 @@ export function getDiagnostics(schema: TypeSchema, doc: vscode.TextDocument): vs
 
 function getPropertyName(property: string) {
     // the returned format is `/properties/<propertyName>`
-    return property.substr(property.lastIndexOf('/') + 1)
+    return property.slice(property.lastIndexOf('/') + 1)
 }
 
 function getPropertyRange(property: string, text: string, doc: vscode.TextDocument): vscode.Range | undefined {

@@ -1,9 +1,8 @@
-.coverage/**
 .github/**
 .vscode/**
 .vscode-test/**
 .changes/**
-build-scripts/**
+scripts/**
 buildspec/**
 dist/src/test/**
 dist/src/integrationTest/**
@@ -11,15 +10,13 @@ dist/src/testFixtures/**
 dist/test/**
 dist/integrationTest/**
 dist/third-party/test/**
-dist/extension.js.map
 dist/**/*.map
 src/**
 out/**
 third-party/test/**
-test-scripts/**
 webpack.config.js
 .gitignore
-coverconfig.json
+.nycrc.json
 Dockerfile
 tsconfig.json
 tslint.json
@@ -27,4 +24,5 @@ codebuild-image-buildspec.yml
 node_modules
 docs/**
 designs/**
+coverage/**
 package.json.bk

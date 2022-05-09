@@ -12,9 +12,7 @@ import {
 } from './samCliInvokerUtils'
 
 import * as nls from 'vscode-nls'
-import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
-import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
-import { extensionSettingsPrefix } from '../../constants'
+import { SamCliSettings } from './samCliSettings'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -24,25 +22,7 @@ const localize = nls.loadMessageBundle()
  */
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     private childProcess?: ChildProcess
-    private readonly context: SamCliConfiguration
-    public constructor(params: {
-        preloadedConfig?: SamCliConfiguration
-        locationProvider?: { getLocation(): Promise<string | undefined> }
-    }) {
-        if (params.preloadedConfig && params.locationProvider) {
-            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
-        }
-        if (params.preloadedConfig) {
-            this.context = params.preloadedConfig
-        } else if (params.locationProvider) {
-            this.context = new DefaultSamCliConfiguration(
-                new DefaultSettingsConfiguration(extensionSettingsPrefix),
-                params.locationProvider
-            )
-        } else {
-            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
-        }
-    }
+    public constructor(private readonly context = SamCliSettings.instance) {}
 
     public stop(): void {
         if (!this.childProcess) {
@@ -70,7 +50,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
             spawnOptions: invokeOptions.spawnOptions,
         })
 
-        getLogger('channel').info(localize('AWS.running.command', 'Running command: {0}', `${this.childProcess}`))
+        getLogger('channel').info(localize('AWS.running.command', 'Command: {0}', `${this.childProcess}`))
         log.verbose(`running: ${this.childProcess}`)
         return await this.childProcess.run({
             onStdout: (text, context) => {

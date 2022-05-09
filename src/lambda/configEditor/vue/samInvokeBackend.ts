@@ -40,7 +40,7 @@ const localize = nls.loadMessageBundle()
 
 const VueWebview = compileVueWebview({
     id: 'createLambda',
-    title: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
+    title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
     webviewJs: 'lambdaConfigEditorVue.js',
     commands: {
         getRuntimes: () => samLambdaCreatableRuntimes().toArray().sort(),
@@ -67,9 +67,11 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
     )
 }
 
-export interface AwsSamDebuggerConfigurationLoose extends AwsSamDebuggerConfiguration {
-    invokeTarget: {
-        target: 'template' | 'api' | 'code'
+export type AwsSamDebuggerConfigurationLoose = AwsSamDebuggerConfiguration & {
+    invokeTarget: Omit<
+        AwsSamDebuggerConfiguration['invokeTarget'],
+        'templatePath' | 'logicalId' | 'lambdaHandler' | 'projectRoot'
+    > & {
         templatePath: string
         logicalId: string
         lambdaHandler: string

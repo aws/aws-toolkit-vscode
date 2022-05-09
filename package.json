@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.37.0-SNAPSHOT",
+    "version": "1.38.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -13,7 +13,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.44.2"
+        "vscode": "^1.50.1"
     },
     "icon": "resources/aws-icon-256x256.png",
     "bugs": {
@@ -43,7 +43,6 @@
         "onCommand:aws.createIssueOnGitHub",
         "onCommand:aws.submitFeedback",
         "onCommand:aws.showRegion",
-        "onCommand:aws.hideRegion",
         "onView:aws.explorer",
         "onCommand:aws.deploySamApplication",
         "onCommand:aws.samcli.detect",
@@ -86,7 +85,7 @@
         "onFileSystem:s3",
         "onFileSystem:s3-readonly"
     ],
-    "main": "./extensionMain",
+    "main": "./dist/src/main",
     "contributes": {
         "configuration": {
             "type": "object",
@@ -101,11 +100,6 @@
                     "type": "string",
                     "default": "",
                     "description": "%AWS.configuration.profileDescription%"
-                },
-                "aws.onDefaultRegionMissing": {
-                    "type": "string",
-                    "default": "prompt",
-                    "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
                 },
                 "aws.iot.maxItemsPerPage": {
                     "type": "number",
@@ -127,10 +121,10 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
-                "aws.samcli.lambda.timeout": {
+                "aws.samcli.lambdaTimeout": {
                     "type": "number",
                     "default": 90000,
-                    "markdownDescription": "%AWS.configuration.description.samcli.lambda.timeout%"
+                    "markdownDescription": "%AWS.configuration.description.samcli.lambdaTimeout%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -188,12 +182,12 @@
                     "description": "%AWS.cloudWatchLogs.limit.desc%",
                     "maximum": 10000
                 },
-                "aws.manuallySelectedBuckets": {
+                "aws.samcli.manuallySelectedBuckets": {
                     "type": "object",
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
                     "default": []
                 },
-                "aws.sam.enableCodeLenses": {
+                "aws.samcli.enableCodeLenses": {
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
@@ -201,16 +195,13 @@
                 "aws.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
-                    "default": {
-                        "apprunnerNotifyPricing": false,
-                        "ecsRunCommand": false,
-                        "ecsRunCommandDisable": false,
-                        "ecsRunCommandEnable": false,
-                        "yamlExtPrompt": false,
-                        "fileViewerEdit": false
-                    },
+                    "default": {},
                     "properties": {
                         "apprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "apprunnerNotifyPause": {
                             "type": "boolean",
                             "default": false
                         },
@@ -223,6 +214,10 @@
                             "default": false
                         },
                         "ecsRunCommandDisable": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "regionAddAutomatically": {
                             "type": "boolean",
                             "default": false
                         },
@@ -724,6 +719,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.listCommands",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -1079,12 +1078,12 @@
                 {
                     "command": "aws.showRegion",
                     "when": "view == aws.explorer",
-                    "group": "2_region@1"
+                    "group": "1_account@2"
                 },
                 {
-                    "command": "aws.hideRegion",
+                    "command": "aws.listCommands",
                     "when": "view == aws.explorer",
-                    "group": "2_region@2"
+                    "group": "1_account@3"
                 },
                 {
                     "command": "aws.lambda.createNewSamApp",
@@ -1092,9 +1091,14 @@
                     "group": "3_lambda@1"
                 },
                 {
-                    "command": "aws.deploySamApplication",
+                    "command": "aws.launchConfigForm",
                     "when": "view == aws.explorer",
                     "group": "3_lambda@2"
+                },
+                {
+                    "command": "aws.deploySamApplication",
+                    "when": "view == aws.explorer",
+                    "group": "3_lambda@3"
                 },
                 {
                     "command": "aws.quickStart",
@@ -1123,6 +1127,11 @@
                 },
                 {
                     "command": "aws.aboutToolkit",
+                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
+                    "group": "z_about@1"
+                },
+                {
+                    "command": "aws.viewLogs",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
                 },
@@ -1216,14 +1225,24 @@
                     "group": "inline@2"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
-                    "when": "view == aws.explorer && viewItem == awsLambdaNode",
+                    "command": "aws.showRegion",
+                    "when": "view == aws.explorer && viewItem == awsRegionNode",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.lambda.createNewSamApp",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.launchConfigForm",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.deploySamApplication",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
-                    "group": "1@1"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -1474,11 +1493,6 @@
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
                     "group": "1@1"
-                },
-                {
-                    "command": "aws.hideRegion",
-                    "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsRegionNode"
                 },
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
@@ -1772,16 +1786,6 @@
             {
                 "command": "aws.showRegion",
                 "title": "%AWS.command.showRegion%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.hideRegion",
-                "title": "%AWS.command.hideRegion%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2232,6 +2236,17 @@
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.listCommands",
+                "title": "%AWS.command.listCommands%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.listCommands.cn%",
                         "category": "%AWS.title.cn%"
                     }
                 }
@@ -2835,6 +2850,13 @@
                     "label": "${path}",
                     "separator": "\\"
                 }
+            },
+            {
+                "scheme": "s3*",
+                "formatting": {
+                    "label": "[S3] ${path}",
+                    "separator": "/"
+                }
             }
         ],
         "walkthroughs": [
@@ -2865,8 +2887,7 @@
                             "markdown": "resources/walkthrough/setup-region.md"
                         },
                         "completionEvents": [
-                            "onCommand:aws.showRegion",
-                            "onCommand:aws.hideRegion"
+                            "onCommand:aws.showRegion"
                         ]
                     },
                     {
@@ -2882,34 +2903,32 @@
     },
     "scripts": {
         "prepare": "husky install",
-        "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts",
-        "bundleDeps": "node ./build-scripts/bundleDeps.js",
-        "clean": "node ./build-scripts/clean.js dist",
-        "generateNonCodeFiles": "ts-node ./build-scripts/generateNonCodeFiles.ts",
-        "reset": "node ./build-scripts/clean.js dist node_modules && npm install",
-        "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
-        "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
-        "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
-        "compile": "webpack --mode development && npm run buildScripts",
-        "recompile": "npm run clean && npm run compile",
-        "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
-        "testCompile": "tsc -p ./ && npm run buildScripts",
-        "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
-        "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
+        "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts -- --webpacked",
+        "clean": "ts-node ./scripts/clean.ts dist",
+        "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
+        "reset": "npm run clean -- node_modules && npm install",
+        "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
+        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles --",
+        "compile": "npm run clean && webpack --mode development && npm run buildScripts -- --webpacked",
+        "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
+        "postinstall": "ts-node ./scripts/build/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
+        "testCompile": "tsc -p ./ && npm run buildScripts && npm run instrument",
+        "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
+        "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
         "lint": "eslint -c .eslintrc.js --ext .ts .",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
-        "package": "ts-node ./build-scripts/package.ts",
+        "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
-        "generateConfigurationAttributes": "ts-node ./build-scripts/generateConfigurationAttributes.ts",
-        "newChange": "ts-node ./build-scripts/newChange.ts",
-        "createRelease": "ts-node ./build-scripts/createRelease.ts",
-        "serve": "webpack serve --config-name vue-hmr --mode development"
+        "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
+        "newChange": "ts-node ./scripts/newChange.ts",
+        "createRelease": "ts-node ./scripts/build/createRelease.ts",
+        "serve": "webpack serve --config-name vue-hmr --mode development",
+        "instrument": "nyc instrument --in-place ./dist/src",
+        "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.28",
+        "@aws-toolkits/telemetry": "1.0.42",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",
@@ -2918,7 +2937,7 @@
         "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
         "@types/js-yaml": "^4.0.3",
-        "@types/lodash": "^4.14.173",
+        "@types/lodash": "^4.14.180",
         "@types/marked": "^4.0.2",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^9.0.0",
@@ -2929,15 +2948,15 @@
         "@types/sinonjs__fake-timers": "^8.1.1",
         "@types/tcp-port-used": "^1.0.0",
         "@types/uuid": "^8.3.3",
-        "@types/vscode": "1.44.0",
+        "@types/vscode": "1.50.0",
         "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
-        "@typescript-eslint/eslint-plugin": "^5.9.0",
-        "@typescript-eslint/parser": "^5.12.1",
+        "@typescript-eslint/eslint-plugin": "^5.15.0",
+        "@typescript-eslint/parser": "^5.15.0",
+        "@vscode/test-electron": "^2.1.3",
         "@vue/compiler-sfc": "^3.2.26",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.5.1",
-        "decache": "^4.4.0",
         "esbuild-loader": "2.18.0",
         "eslint": "^8.5.0",
         "eslint-config-prettier": "8.3",
@@ -2945,25 +2964,23 @@
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.7",
         "husky": "^7.0.2",
-        "istanbul": "^0.4.5",
         "json-schema-to-typescript": "^10.1.5",
         "marked": "^4.0.10",
         "mocha": "^9.1.3",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
-        "prettier": "^2.5.1",
+        "nyc": "^15.1.0",
+        "prettier": "^2.6.2",
         "prettier-plugin-sh": "^0.8.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
-        "remap-istanbul": "^0.13.0",
         "sinon": "^12.0.1",
         "source-map-support": "^0.5.21",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^10.4.0",
+        "ts-node": "^10.7.0",
         "umd-compat-loader": "^2.1.2",
         "vsce": "^2.6.3",
         "vscode-nls-dev": "^3.3.1",
-        "vscode-test": "^1.5.2",
         "vue-loader": "^16.8.1",
         "vue-style-loader": "^4.1.3",
         "webpack": "^5.65.0",
@@ -2971,20 +2988,20 @@
         "webpack-dev-server": "^4.4.0"
     },
     "dependencies": {
-        "@aws-sdk/client-sso": "^3.16.0",
-        "@aws-sdk/client-sso-oidc": "^3.52.0",
+        "@aws-sdk/client-sso": "^3.54.0",
+        "@aws-sdk/client-sso-oidc": "^3.58.0",
         "@aws-sdk/credential-provider-ini": "^3.46.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.38.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "adm-zip": "^0.5.9",
-        "amazon-states-language-service": "^1.6.4",
+        "amazon-states-language-service": "^1.7.1",
         "async-lock": "^1.3.0",
         "aws-sdk": "^2.1048.0",
         "aws-ssm-document-language-service": "^1.0.0",
-        "bytes": "^3.1.0",
+        "bytes": "^3.1.2",
         "cross-spawn": "^7.0.3",
-        "fast-json-patch": "^3.1.0",
+        "fast-json-patch": "^3.1.1",
         "fs-extra": "^10.0.0",
         "got": "^11.8.2",
         "immutable": "^4.0.0",
@@ -2997,15 +3014,15 @@
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^4.5.4",
+        "typescript": "^4.6.4",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.3",
         "vscode-nls": "^5.0.0",
-        "vue": "^3.2.6",
-        "winston": "^3.2.1",
-        "winston-transport": "^4.3.0",
+        "vue": "^3.2.31",
+        "winston": "^3.7.1",
+        "winston-transport": "^4.5.0",
         "xml2js": "^0.4.19",
         "yaml": "^1.9.2",
         "yaml-cfn": "^0.3.1"

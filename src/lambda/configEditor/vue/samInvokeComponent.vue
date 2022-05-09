@@ -5,7 +5,14 @@
 
 <template>
     <form class="invoke-lambda-form">
-        <h1>SAM Debug Configuration Editor</h1>
+        <h1>Edit SAM Debug Configuration</h1>
+        <p>
+            <em>
+                Using this form you can create, edit, and run launch configs of <code>type:aws-sam</code>. When you
+                <strong>Invoke</strong> the launch config, {{ company }} Toolkit calls SAM CLI and attaches the debugger
+                to the code runing in a local Docker container.
+            </em>
+        </p>
         <settings-panel id="config-panel" title="Configuration" description="">
             <label for="target-type-selector">Invoke Target Type</label>
             <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
@@ -265,8 +272,8 @@
             <div class="input-validation" v-if="payload.errorMsg">Error parsing JSON: {{ payload.errorMsg }}</div>
         </settings-panel>
         <div class="container" id="invoke-button-container">
-            <button class="" v-on:click.prevent="loadConfig">Load Existing Config</button>
-            <button class="form-buttons" v-on:click.prevent="launch">Invoke</button>
+            <button class="" v-on:click.prevent="launch">Invoke</button>
+            <button class="form-buttons" v-on:click.prevent="loadConfig">Load Existing Config</button>
             <button class="form-buttons" v-on:click.prevent="save">Save</button>
         </div>
     </form>

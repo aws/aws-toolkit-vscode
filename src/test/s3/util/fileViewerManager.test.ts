@@ -21,10 +21,8 @@ import { createTestWindow, TestWindow } from '../../shared/vscode/window'
 import { anything, instance, mock, when, resetCalls, verify } from '../../utilities/mockito'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { SeverityLevel } from '../../shared/vscode/message'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
-import { join } from 'path'
 import { assertTextEditorContains, closeAllEditors } from '../../testUtil'
+import { PromptSettings } from '../../../shared/settings'
 
 const bucket = new DefaultBucket({
     name: 'bucket-name',
@@ -142,21 +140,19 @@ describe('FileViewerManager', function () {
     let testWindow: TestWindow
     let workspace: typeof vscode.workspace
     let commands: typeof vscode.commands
-    let settings: SettingsConfiguration
 
     beforeEach(function () {
         s3 = mock()
         fs = new VirualFileSystem()
         workspace = mock()
         commands = mock()
-        settings = new TestSettingsConfiguration()
         const window = (testWindow = createTestWindow())
 
         fileViewerManager = new S3FileViewerManager(
             () => instance(s3),
             fs,
             window,
-            settings,
+            new PromptSettings(),
             instance(commands),
             instance(workspace)
         )
@@ -178,16 +174,17 @@ describe('FileViewerManager', function () {
     })
 
     describe('opens text files', function () {
-        const textFile1Contents = Buffer.from('contents', 'utf-8')
+        const textFile1Contents = Buffer.from('test1 contents', 'utf-8')
         const textFile1 = makeFile('test1.txt', textFile1Contents)
-        const textFile2Contents = Buffer.from('contents', 'utf-8')
+        const textFile2Contents = Buffer.from('test2 contents', 'utf-8')
         const textFile2 = makeFile('test2.txt', textFile2Contents)
 
         function mockOpen(file: ReturnType<typeof makeFile>, scheme: string = S3_READ_SCHEME) {
-            const expectedPath = join('/', bucket.region, bucket.name, `[S3] ${file.name}`)
+            const expectedPath = `/${bucket.region}/${bucket.name}/${file.key}`
+
             when(workspace.openTextDocument(anything())).thenCall(async (uri: vscode.Uri) => {
                 assert.strictEqual(uri.scheme, scheme)
-                assert.strictEqual(uri.fsPath, expectedPath)
+                assert.strictEqual(uri.path, expectedPath)
                 // Currently easier to open a new document, though this isn't _exactly_ what the user would see
                 return vscode.workspace.openTextDocument({ content: file.content.toString() })
             })
@@ -243,8 +240,14 @@ describe('FileViewerManager', function () {
             verify(workspace.openTextDocument(anything())).twice()
             await assertTextEditorContains(textFile1.content.toString())
         })
-    })
 
-    // TODO: test non-text files
-    // this is a bit trickier since it uses webviews, not `TextEditor`
+        it('can open an S3 file with reserved URI characters', async function () {
+            const contents = Buffer.from('text', 'utf-8')
+            const file = makeFile('us-west-2:3cff280c/file.txt', contents)
+
+            mockOpen(file)
+            await fileViewerManager.openInReadMode({ ...file, bucket })
+            await assertTextEditorContains(contents.toString())
+        })
+    })
 })

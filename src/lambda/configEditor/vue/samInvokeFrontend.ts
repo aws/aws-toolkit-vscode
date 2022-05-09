@@ -20,6 +20,7 @@ interface SamInvokeVueData {
     msg: any
     targetTypes: { [k: string]: string }[]
     runtimes: string[]
+    company: string
     httpMethods: string[]
     launchConfig: AwsSamDebuggerConfigurationLoose
     payload: VueDataLaunchPropertyObject
@@ -115,12 +116,17 @@ export default defineComponent({
         client.getRuntimes().then(runtimes => {
             this.runtimes = runtimes
         })
+
+        client.getCompanyName().then(o => {
+            this.company = o
+        })
     },
     mixins: [saveData],
     data(): SamInvokeVueData {
         return {
             ...initData(),
             msg: 'Hello',
+            company: '',
             targetTypes: [
                 { name: 'Code', value: 'code' },
                 { name: 'Template', value: 'template' },
@@ -152,6 +158,7 @@ export default defineComponent({
             if (!config) {
                 return
             }
+            const company = this.company
             this.clearForm()
             this.launchConfig = newLaunchConfig(config)
             if (config.lambda?.payload) {
@@ -172,6 +179,7 @@ export default defineComponent({
             this.containerBuild = config.sam?.containerBuild ?? false
             this.skipNewImageCheck = config.sam?.skipNewImageCheck ?? false
             this.msg = `Loaded config ${config}`
+            this.company = company
         },
         loadPayload() {
             this.resetJsonErrors()

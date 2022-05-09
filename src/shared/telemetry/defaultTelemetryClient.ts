@@ -6,7 +6,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { isReleaseVersion, extensionVersion } from '../vscode/env'
+import { extensionVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
 import { MetricDatum } from './clienttelemetry'
@@ -14,9 +14,8 @@ import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import * as constants from '../constants'
-import { DefaultSettingsConfiguration } from '../settingsConfiguration'
 import globals from '../extensionGlobals'
+import { DevSettings } from '../settings'
 
 interface TelemetryConfiguration {
     readonly endpoint: string
@@ -29,20 +28,17 @@ export class DefaultTelemetryClient implements TelemetryClient {
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
 
     private static initializeConfig(): TelemetryConfiguration {
-        const settings = new DefaultSettingsConfiguration()
-        const identityPool = settings.readDevSetting<string>('aws.dev.telemetryUserPool', 'string', true)
-        const endpoint = settings.readDevSetting<string>('aws.dev.telemetryEndpoint', 'string', true)
+        const settings = DevSettings.instance
 
         return {
-            endpoint: endpoint ?? this.DEFAULT_TELEMETRY_ENDPOINT,
-            identityPool: identityPool ?? this.DEFAULT_IDENTITY_POOL,
+            endpoint: settings.get('telemetryEndpoint', this.DEFAULT_TELEMETRY_ENDPOINT),
+            identityPool: settings.get('telemetryUserPool', this.DEFAULT_IDENTITY_POOL),
         }
     }
 
     public static config = DefaultTelemetryClient.initializeConfig()
 
     private readonly logger = getLogger()
-    private readonly settings = new DefaultSettingsConfiguration()
 
     private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
@@ -57,10 +53,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 return undefined
             }
 
-            if (
-                isReleaseVersion(constants.forceTelemetry) ||
-                this.settings.readDevSetting<boolean>('aws.dev.forceTelemetry', 'boolean', true)
-            ) {
+            if (!isAutomation()) {
                 await this.client
                     .postMetrics({
                         AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,

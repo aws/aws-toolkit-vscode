@@ -13,36 +13,35 @@ import { asyncGenerator } from '../../utilities/collectionUtils'
 import { mock, instance, when } from 'ts-mockito'
 import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { Settings } from '../../../shared/settings'
+import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
 
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
 describe('ResourcesNode', function () {
+    let settings: ResourcesSettings
+
     let testNode: ResourcesNode
     let mockCloudFormation: CloudFormationClient
     let mockCloudControl: CloudControlClient
     let resourceTypes: string[]
 
-    // These tests operate against the user's configuration.
-    // Restore the initial value after testing is complete.
-    let originalResourcesValue: any
-    let settings: vscode.WorkspaceConfiguration
-
     before(async function () {
-        settings = vscode.workspace.getConfiguration('aws.resources')
-        originalResourcesValue = settings.get('enabledResources')
         mockCloudFormation = mock()
         mockCloudControl = mock()
     })
 
-    after(async function () {
-        await settings.update('enabledResources', originalResourcesValue, vscode.ConfigurationTarget.Global)
+    beforeEach(async function () {
+        const workspaceSettings = new Settings(vscode.ConfigurationTarget.Workspace)
+        settings = new ResourcesSettings(workspaceSettings)
+        await settings.reset()
     })
 
     beforeEach(async function () {
         resourceTypes = ['type1', 'type2']
         prepareMock(resourceTypes)
-        testNode = new ResourcesNode('FAKE_REGION', instance(mockCloudFormation), instance(mockCloudControl))
+        testNode = new ResourcesNode('FAKE_REGION', instance(mockCloudFormation), instance(mockCloudControl), settings)
 
         await setConfiguration(resourceTypes)
     })
@@ -91,7 +90,7 @@ describe('ResourcesNode', function () {
     })
 
     async function setConfiguration(resourceTypes: string[]) {
-        await settings.update('enabledResources', resourceTypes, vscode.ConfigurationTarget.Global)
+        await settings.update('enabledResources', resourceTypes)
     }
 
     function prepareMock(resourceTypes: string[]) {

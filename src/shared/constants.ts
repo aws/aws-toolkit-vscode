@@ -5,11 +5,9 @@
 
 import { isCloud9 } from './extensionUtilities'
 
-export const extensionSettingsPrefix: string = 'aws'
-/** Enable telemetry, even in a prerelease build. */
-export const forceTelemetry: boolean = false
-export const regionSettingKey: string = 'region'
-export const profileSettingKey: string = 'profile'
+export const extensionSettingsPrefix = 'aws'
+export const regionSettingKey = 'region'
+export const profileSettingKey = 'profile'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
@@ -74,8 +72,10 @@ export const debugNewSamAppUrl: string = isCloud9()
 export const ecsDocumentationUrl: string = 'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html'
 export const ecsExecToolkitGuideUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html'
-export const ecsRequiredPermissionsUrl: string =
+export const ecsRequiredTaskPermissionsUrl: string =
     'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using'
+export const ecsRequiredIamPermissionsUrl: string =
+    'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command'
 
 /**
  * Moment format for rendering readable dates.

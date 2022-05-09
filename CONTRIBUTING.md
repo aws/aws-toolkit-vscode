@@ -144,11 +144,11 @@ To run a single test in VSCode, do any one of:
 
     -   Unix/macOS/POSIX shell:
         ```
-        NO_COVERAGE=true TEST_FILE=src/test/foo.test npm run test
+        TEST_FILE=src/test/foo.test npm run test
         ```
     -   Powershell:
         ```
-        $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
+        $Env:TEST_FILE = "src/test/foo.test"; npm run test
         ```
 
 -   To run all tests in a particular subdirectory, you can edit
@@ -157,9 +157,14 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
-#### Coverage report
+### Coverage report
 
-You can find the coverage report at `./.coverage/index.html` after running the tests.
+You can find the coverage report at `./coverage/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:
+
+-   Run the command `Tasks: Run Build Task` if not already active
+-   Instrument built code with `npm run instrument`
+-   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
+-   Generate a report with `npm run report`
 
 ## Pull Requests
 
@@ -234,17 +239,17 @@ generating SDKs, etc.
 
 ### Toolkit developer settings (`aws.dev.*`)
 
-The [AwsDevSetting](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/shared/settingsConfiguration.ts#L19)
-type defines various developer-only settings that change the behavior of the
+The [DevSettngs](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
 Toolkit for testing and development purposes. To use a setting just add it to
-your `settings.json`. At runtime if the Toolkit reads any of these settings,
-the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/d52416408aca7e68ff685137f0fe263581f44cfc/src/credentials/awsCredentialsStatusBarItem.ts#L58).
+your `settings.json`. At runtime, if the Toolkit reads any of these settings,
+the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45). Use the setting `aws.dev.forceDevMode` to trigger this effect on start-up.
 
-### Telemetry in prerelease builds
+### Telemetry and Automation
 
-Normally, a non-release VSIX of AWS Toolkit will not send telemetry. Sometimes
-you might want to override this, when sharing a build with a beta-tester
-audience. To enable telemetry to in a non-release build, set [forceTelemetry = true]().
+Metrics are only emitted if the extension is assumed to be ran from an actual user rather than automation scripts.
+This condition is checked through an environment variable `AWS_TOOLKIT_AUTOMATION` which is set by test entry points.
+If any truthy value is present, telemetry will be dropped if the current build is not a release version. Utility functions,
+such as `assertTelemetry`, can be used to test specific telemetry emits even in automation.
 
 ### AWS SDK generator
 
@@ -255,10 +260,10 @@ requests just from the model/types.
 
 1. Add an entry to the list in `generateServiceClient.ts`:
     ```diff
-     diff --git a/build-scripts/generateServiceClient.ts b/build-scripts/generateServiceClient.ts
+     diff --git a/src/scripts/build/generateServiceClient.ts b/src/scripts/build/generateServiceClient.ts
      index 8bb278972d29..6c6914ec8812 100644
-     --- a/build-scripts/generateServiceClient.ts
-     +++ b/build-scripts/generateServiceClient.ts
+     --- a/src/scripts/build/generateServiceClient.ts
+     +++ b/src/scripts/build/generateServiceClient.ts
      @@ -199,6 +199,10 @@ ${fileContents}
       ;(async () => {
           const serviceClientDefinitions: ServiceClientDefinition[] = [
@@ -272,7 +277,7 @@ requests just from the model/types.
     ```
 2. Run the script:
     ```
-    ./node_modules/.bin/ts-node ./build-scripts/generateServiceClient.ts
+    ./node_modules/.bin/ts-node ./scripts/build/generateServiceClient.ts
     ```
 3. The script produces a `*.d.ts` file (used only for IDE
    code-completion, not required to actually make requests):
