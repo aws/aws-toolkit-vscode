@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import * as mdeModel from '../mde/mdeModel'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { LoginWizard } from './wizards/login'
-import { selectCawsResource } from './wizards/selectResource'
+import { selectCawsResource, selectRepoForWorkspace } from './wizards/selectResource'
 import { getLogger } from '../shared/logger'
 import { openCawsUrl } from './utils'
 import { CawsAuthenticationProvider } from './auth'
@@ -100,7 +100,7 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
 /** "Create CODE.AWS Development Environment" (MDE) command. */
 export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     // TODO: add telemetry
-    const repo = await selectCawsResource(client, 'repo')
+    const repo = await selectRepoForWorkspace(client)
     const projectName = repo?.project.name
     const organizationName = repo?.org.name
 

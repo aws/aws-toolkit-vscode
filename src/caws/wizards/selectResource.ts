@@ -14,6 +14,7 @@ import {
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
+import { associateWorkspace } from '../model'
 import { getHelpUrl } from '../utils'
 
 export function createRepoLabel(r: caws.CawsRepo): string {
@@ -172,4 +173,40 @@ export async function selectCawsResource<T extends ResourceType>(
 
     const response = await prompter.prompt()
     return isValidResponse(response) ? (response as caws.CawsResource & { type: T }) : undefined
+}
+
+/**
+ * Special-case of {@link createRepoPrompter} for creating a new workspace
+ */
+export async function selectRepoForWorkspace(client: caws.ConnectedCawsClient): Promise<caws.CawsRepo | undefined> {
+    const repos = associateWorkspace(client, client.listResources('repo').flatten())
+
+    const refresh = createRefreshButton()
+    const items = repos.map(repo => [
+        {
+            ...asQuickpickItem(repo),
+            invalidSelection: repo.developmentWorkspace !== undefined,
+            description: repo.developmentWorkspace ? `Repository already has a workspace` : '',
+        },
+    ])
+
+    const prompter = createQuickPick(items, {
+        buttons: [refresh, ...createCommonButtons(getHelpUrl())],
+        title: 'Select a Code.AWS Repository',
+        placeholder: 'Search for a Repository',
+        compare: (a, b) => {
+            if (a.invalidSelection === b.invalidSelection) {
+                return 0
+            }
+
+            return a.invalidSelection ? 1 : b.invalidSelection ? -1 : 0
+        },
+    })
+
+    refresh.onClick = () => {
+        prompter.clearAndLoadItems(items)
+    }
+
+    const response = await prompter.prompt()
+    return isValidResponse(response) ? response : undefined
 }

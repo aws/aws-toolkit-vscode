@@ -8,10 +8,18 @@ import globals from '../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import { HOST_NAME_PREFIX } from '../mde/constants'
 import { checkSession, SessionProvider } from '../mde/mdeModel'
-import { CawsClient, CawsDevEnv, ConnectedCawsClient, createClient, getCawsConfig } from '../shared/clients/cawsClient'
+import {
+    CawsClient,
+    CawsDevEnv,
+    CawsRepo,
+    ConnectedCawsClient,
+    createClient,
+    getCawsConfig,
+} from '../shared/clients/cawsClient'
 import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { getLogger } from '../shared/logger'
 import { CawsAuthenticationProvider } from './auth'
+import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 
 export type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
 export function createCawsSessionProvider(
@@ -138,4 +146,25 @@ export function toCawsGitUri(username: string, token: string, repo: RepoIdentifi
     const { name, project, org } = repo
 
     return `https://${username}:${token}@${getCawsConfig().gitHostname}/v1/${org}/${project}/${name}`
+}
+
+/**
+ * Given a collection of CAWS repos, try to find a corresponding workspace, if any
+ */
+export function associateWorkspace(
+    client: ConnectedCawsClient,
+    repos: AsyncCollection<CawsRepo>
+): AsyncCollection<CawsRepo & { developmentWorkspace?: CawsDevEnv }> {
+    return toCollection(async function* () {
+        const workspaces = await client
+            .listResources('env')
+            .flatten()
+            .filter(env => env.repositories.length > 0)
+            .toMap(env => `${env.org.name}.${env.project.name}.${env.repositories[0].repositoryName}`)
+
+        yield* repos.map(repo => ({
+            ...repo,
+            developmentWorkspace: workspaces.get(`${repo.org.name}.${repo.project.name}.${repo.name}`),
+        }))
+    })
 }
