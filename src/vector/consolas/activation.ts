@@ -15,6 +15,7 @@ import {
     rejectRecommendation,
     acceptRecommendation,
     setContextAndTrigger,
+    setTypeAheadRecommendations,
 } from './views/recommendationSelectionProvider'
 import { invokeConsolas } from './commands/invokeConsolas'
 import { onAcceptance } from './commands/onAcceptance'
@@ -134,17 +135,20 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
      * Automated trigger
      */
     context.extensionContext.subscriptions.push(
-        vscode.workspace.onDidChangeTextDocument(e => {
+        vscode.workspace.onDidChangeTextDocument(async e => {
             if (
                 e.document === vscode.window.activeTextEditor?.document &&
                 runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
                 e.contentChanges.length != 0
             ) {
+                if (!invocationContext.isInlineActive) {
+                    setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
+                }
                 const isAutoTriggerOn: boolean =
                     context.extensionContext.globalState.get<boolean>(
                         ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY
                     ) || false
-                KeyStrokeHandler.processKeyStroke(
+                await KeyStrokeHandler.processKeyStroke(
                     e,
                     vscode.window.activeTextEditor,
                     client,
@@ -200,29 +204,29 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
      * On recommendation rejection
      */
     context.extensionContext.subscriptions.push(
-        vscode.workspace.onDidSaveTextDocument(e => {
-            rejectRecommendation(vscode.window.activeTextEditor)
+        vscode.workspace.onDidSaveTextDocument(async e => {
+            if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
         })
     )
     context.extensionContext.subscriptions.push(
-        vscode.window.onDidChangeVisibleTextEditors(e => {
-            rejectRecommendation(vscode.window.activeTextEditor)
+        vscode.window.onDidChangeVisibleTextEditors(async e => {
+            if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
         })
     )
     context.extensionContext.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(e => {
-            rejectRecommendation(vscode.window.activeTextEditor)
+        vscode.window.onDidChangeActiveTextEditor(async e => {
+            if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
         })
     )
     context.extensionContext.subscriptions.push(
-        vscode.window.onDidChangeTextEditorSelection(e => {
+        vscode.window.onDidChangeTextEditorSelection(async e => {
             if (
                 e.kind === TextEditorSelectionChangeKind.Mouse &&
                 context?.extensionContext.globalState.get(ConsolasConstants.CONSOLAS_SERVICE_ACTIVE_KEY) &&
                 !invocationContext.isInlineActive &&
                 vscode.window.activeTextEditor
             ) {
-                rejectRecommendation(vscode.window.activeTextEditor)
+                await rejectRecommendation(vscode.window.activeTextEditor)
             }
         })
     )
@@ -241,13 +245,13 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
 
     context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.consolas.acceptCodeSuggestion', async () => {
-            if (vscode.window.activeTextEditor) acceptRecommendation(vscode.window.activeTextEditor)
+            if (vscode.window.activeTextEditor) await acceptRecommendation(vscode.window.activeTextEditor)
         })
     )
 
     context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.consolas.rejectCodeSuggestion', async () => {
-            if (vscode.window.activeTextEditor) rejectRecommendation(vscode.window.activeTextEditor)
+        vscode.commands.registerCommand('aws.consolas.rejectCodeSuggestion', async e => {
+            if (vscode.window.activeTextEditor) await rejectRecommendation(vscode.window.activeTextEditor)
         })
     )
 

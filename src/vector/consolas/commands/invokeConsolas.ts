@@ -64,9 +64,7 @@ export async function invokeConsolas(
         KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(!invocationContext.isActive, editor)
         if (KeyStrokeHandler.isValidResponse(recommendations.response)) {
             automatedTriggerContext.keyStrokeCount = 0
-            showFirstRecommendation(editor).then(() => {
-                invocationContext.isActive = true
-            })
+            await showFirstRecommendation(editor)
         } else {
             showTimedMessage('No suggestions from Consolas', 2000)
         }

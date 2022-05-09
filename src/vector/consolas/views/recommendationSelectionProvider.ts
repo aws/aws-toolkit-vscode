@@ -29,12 +29,8 @@ async function setDefault(editor: vscode.TextEditor) {
     editor.setDecorations(dimDecoration, [])
 }
 
-export function setRange(range: vscode.Range) {
+function setRange(range: vscode.Range) {
     _range = range
-}
-
-export function getRange() {
-    return _range
 }
 
 export function setContextAndTrigger(
@@ -47,8 +43,10 @@ export function setContextAndTrigger(
     _isAutomatedTriggerEnabled = isAutomatedTriggerEnabled
 }
 
-export function acceptRecommendation(editor: vscode.TextEditor) {
-    editor
+export async function acceptRecommendation(editor: vscode.TextEditor) {
+    if (invocationContext.isInlineActive) return
+    invocationContext.isInlineActive = true
+    await editor
         ?.insertSnippet(new vscode.SnippetString(inlineCompletion.items[inlineCompletion.position]), _range, {
             undoStopAfter: false,
             undoStopBefore: false,
@@ -69,27 +67,55 @@ export function acceptRecommendation(editor: vscode.TextEditor) {
 
             vscode.commands.executeCommand('aws.consolas.accept', ...acceptArguments)
             await setDefault(editor)
+            invocationContext.isInlineActive = false
         })
 }
 
-export function rejectRecommendation(editor: vscode.TextEditor | undefined) {
+export async function rejectRecommendation(
+    editor: vscode.TextEditor | undefined,
+    isTypeAheadRejection: boolean = false
+) {
     if (!editor) return
-    editor
+    if (!isTypeAheadRejection && inlineCompletion.items.length === 0) return
+    invocationContext.isInlineActive = true
+    await onRejection(_isManualTriggerEnabled, _isAutomatedTriggerEnabled)
+    await editor
         ?.edit(
             builder => {
-                builder.replace(_range, '')
+                builder.delete(_range)
             },
             { undoStopAfter: false, undoStopBefore: false }
         )
         .then(async _ => {
             setDefault(editor)
-            onRejection(_isManualTriggerEnabled, _isAutomatedTriggerEnabled)
+            invocationContext.isInlineActive = false
         })
 }
 
-export async function setTypeAheadRecommendations(typedPrefix: string, editor: vscode.TextEditor | undefined) {
-    if (!editor || invocationContext.isInlineActive) return
+function getTypedPrefix(editor: vscode.TextEditor): string {
+    return editor.document.getText(
+        new vscode.Range(
+            invocationContext.startPos.line,
+            invocationContext.startPos.character,
+            editor.selection.active.line,
+            editor.selection.active.character + 1
+        )
+    )
+}
+
+export async function setTypeAheadRecommendations(
+    editor: vscode.TextEditor | undefined,
+    event: vscode.TextDocumentChangeEvent
+) {
+    if (
+        !editor ||
+        invocationContext.isInlineActive ||
+        !invocationContext.isActive ||
+        inlineCompletion.origin.length === 0
+    )
+        return
     if (invocationContext.startPos != editor?.selection.active) {
+        const typedPrefix = getTypedPrefix(editor)
         inlineCompletion.items = []
         invocationContext.isInlineActive = true
         inlineCompletion.origin.forEach(item => {
@@ -99,26 +125,42 @@ export async function setTypeAheadRecommendations(typedPrefix: string, editor: v
         if (inlineCompletion.items.length) {
             inlineCompletion.position = 0
 
+            let currentPosition = new vscode.Position(
+                editor.selection.active.line,
+                editor.selection.active.character + 1
+            )
+            let endPosition = new vscode.Position(_range.end.line, _range.end.character + 1)
+            if (event.contentChanges[0].text.startsWith(ConsolasConstants.LINE_BREAK)) {
+                currentPosition = new vscode.Position(
+                    editor.selection.active.line + 1,
+                    event.contentChanges[0].text.length
+                )
+                endPosition = new vscode.Position(_range.end.line + 1, _range.end.character + 1)
+            }
+            setRange(new vscode.Range(currentPosition, endPosition))
+            await showRecommendation(editor)
+        } else {
             const currentPosition = new vscode.Position(
                 editor.selection.active.line,
                 editor.selection.active.character + 1
             )
-            setRange(new vscode.Range(currentPosition, _range.end))
-            await showRecommendation(editor)
+            const endPosition = new vscode.Position(_range.end.line, _range.end.character + 1)
+            setRange(new vscode.Range(currentPosition, endPosition))
+            await rejectRecommendation(editor, true)
         }
     }
 }
 
-export async function showRecommendation(editor: vscode.TextEditor) {
-    editor
+async function showRecommendation(editor: vscode.TextEditor) {
+    await editor
         ?.edit(
             builder => {
-                builder.replace(_range, '')
+                builder.delete(_range)
             },
             { undoStopAfter: false, undoStopBefore: false }
         )
-        .then(_ => {
-            editor
+        .then(async _ => {
+            await editor
                 ?.edit(
                     builder => {
                         if (inlineCompletion.items && inlineCompletion.items.length > 0) {
@@ -127,7 +169,7 @@ export async function showRecommendation(editor: vscode.TextEditor) {
                     },
                     { undoStopAfter: false, undoStopBefore: false }
                 )
-                .then(_ => {
+                .then(async () => {
                     setRange(new vscode.Range(_range.start, editor.selection.active))
                     editor.setDecorations(dimDecoration, [_range])
                     // cursor position
@@ -142,26 +184,71 @@ export async function showRecommendation(editor: vscode.TextEditor) {
 }
 
 export async function showFirstRecommendation(editor: vscode.TextEditor) {
+    /**
+     * Reject previous recommendations if there are ACTIVE ones
+     */
+    await rejectRecommendation(editor)
     if (invocationContext.isInlineActive) return
+    invocationContext.isActive = true
     invocationContext.isInlineActive = true
-    getCompletionItems().then(res => {
+    getCompletionItems().then(async res => {
         inlineCompletion.origin = res
         inlineCompletion.items = res
         if (inlineCompletion.items.length > 0) {
             setRange(new vscode.Range(invocationContext.startPos, invocationContext.startPos))
-            editor
+            const newEditor = vscode.window.activeTextEditor
+            if (!newEditor) return
+            if (invocationContext.startPos !== newEditor.selection.active) {
+                // Rejection when user has deleted/navigated triggers
+                if (
+                    invocationContext.startPos.line > newEditor.selection.active.line ||
+                    invocationContext.startPos.character > newEditor.selection.active.character
+                ) {
+                    rejectRecommendation(editor)
+                    return
+                }
+                const typedPrefix = newEditor.document.getText(
+                    new vscode.Range(
+                        invocationContext.startPos.line,
+                        invocationContext.startPos.character,
+                        newEditor.selection.active.line,
+                        newEditor.selection.active.character
+                    )
+                )
+                inlineCompletion.items = []
+                const currentPosition = new vscode.Position(
+                    newEditor.selection.active.line,
+                    newEditor.selection.active.character
+                )
+
+                setRange(new vscode.Range(currentPosition, currentPosition))
+
+                inlineCompletion.origin.forEach(item => {
+                    if (item.startsWith(typedPrefix)) {
+                        inlineCompletion.items.push(item.substring(typedPrefix.length))
+                    }
+                })
+
+                if (inlineCompletion.items.length === 0) {
+                    onRejection(_isManualTriggerEnabled, _isAutomatedTriggerEnabled)
+                    return
+                }
+            }
+            await editor
                 ?.edit(
                     builder => {
                         if (inlineCompletion.items?.length > 0)
-                            builder.insert(
-                                invocationContext.startPos,
-                                inlineCompletion.items[inlineCompletion.position]
-                            )
+                            builder.insert(_range.start, inlineCompletion.items[inlineCompletion.position])
                     },
                     { undoStopAfter: false, undoStopBefore: false }
                 )
-                .then(async _ => {
-                    setRange(new vscode.Range(invocationContext.startPos, editor.selection.active))
+                .then(async () => {
+                    setRange(
+                        new vscode.Range(
+                            _range.start,
+                            new vscode.Position(editor.selection.active.line, editor.selection.active.character + 1)
+                        )
+                    )
                     editor.setDecorations(dimDecoration, [_range])
                     // cursor position
                     const position = editor.selection.active

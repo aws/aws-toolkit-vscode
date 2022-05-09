@@ -2907,12 +2907,6 @@
                 "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
             },
             {
-                "command": "aws.consolas.rejectCodeSuggestion",
-                "key": "enter",
-                "mac": "enter",
-                "when": "editorTextFocus && CONSOLAS_SERVICE_ACTIVE"
-            },
-            {
                 "command": "aws.consolas.acceptCodeSuggestion",
                 "key": "tab",
                 "mac": "tab",
