@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, mkdtemp, mkdirp, readFile, remove, existsSync } from 'fs-extra'
+import { access, mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -161,4 +161,27 @@ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: v
     const searchFolder = `${dir}**/*${suffix}`
     const matchedFiles = await vscode.workspace.findFiles(searchFolder, exclude, 1)
     return matchedFiles.length > 0
+}
+
+/**
+ * Searches directory and all sub-directories for a filename.
+ * @param dir Directory to search
+ * @param fileName Name of file to locate
+ * @returns  The absolute path if found.
+ */
+export async function findFile(dir: string, fileName: string): Promise<string | undefined> {
+    const files = await readdir(dir)
+    const subDirs = []
+    for (const file of files) {
+        const filePath = path.join(dir, file)
+        if (filePath === path.join(dir, fileName)) {
+            return filePath
+        }
+        if ((await stat(filePath)).isDirectory()) {
+            subDirs.push(filePath)
+        }
+    }
+    for (const dir of subDirs) {
+        findFile(dir, fileName)
+    }
 }

@@ -104,6 +104,7 @@ export type DataQuickPickItem<T> = vscode.QuickPickItem & {
     onClick?: () => any | Promise<any>
     /** Stops the QuickPick from estimating how many steps an item would add in a Wizard flow */
     skipEstimate?: boolean
+    recentlyUsed?: boolean
 }
 
 export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: PrompterButtons<T> }
