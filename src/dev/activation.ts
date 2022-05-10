@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick, DataQuickPickItem } from '../shared/ui/pickerPrompter'
-import { isValidResponse, Wizard, WIZARD_RETRY } from '../shared/wizards/wizard'
+import { isValidResponse, Wizard } from '../shared/wizards/wizard'
 
 // CAWS imports
 // Planning on splitting this file up.
@@ -32,6 +32,9 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { CawsCommands } from '../caws/commands'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { DevSettings } from '../shared/settings'
+import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
+import { Commands } from '../shared/vscode/commands2'
+import { createInputBox } from '../shared/ui/inputPrompter'
 
 const menuOptions = {
     installVsix: {
@@ -43,6 +46,11 @@ const menuOptions = {
         label: 'Open Remote Terminal',
         description: 'Open a new terminal connected to the remote environment',
         executor: openTerminalCommand,
+    },
+    editStorage: {
+        label: 'Edit Storage',
+        description: 'Edit a key in storage as a JSON document',
+        executor: openStorageFromInput,
     },
 }
 
@@ -64,6 +72,9 @@ export function activate(ctx: ExtContext): void {
     )
 
     updateMode()
+
+    const editor = new ObjectEditor(ctx.extensionContext)
+    ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
 }
 
 async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {
@@ -77,10 +88,7 @@ async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<v
                             label: v.label,
                             description: v.description,
                             skipEstimate: true,
-                            data: async () => {
-                                await v.executor(ctx)
-                                return WIZARD_RETRY
-                            },
+                            data: v.executor.bind(undefined, ctx),
                         } as DataQuickPickItem<string>
                     }),
                     {
@@ -399,3 +407,147 @@ async function installVsix(
     progress.report({ message: 'Launching instance...' })
     await startVscodeRemote(SessionProcess, hostName, '/projects', ssh, vsc)
 }
+
+function isSecrets(obj: vscode.Memento | vscode.SecretStorage): obj is vscode.SecretStorage {
+    return (obj as vscode.SecretStorage).store !== undefined
+}
+
+class VirtualObjectFile implements FileProvider {
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChange = this.onDidChangeEmitter.event
+
+    public constructor(
+        private readonly storage: vscode.Memento | vscode.SecretStorage, // we should create a memento w/ an optional 'changed' event
+        private readonly key: string
+    ) {}
+
+    public stat(): { ctime: number; mtime: number; size: number } {
+        // This would need to be filled out to track conflicts
+        return { ctime: 0, mtime: 0, size: 0 }
+    }
+
+    public async read(): Promise<Uint8Array> {
+        const encoder = new TextEncoder()
+
+        return encoder.encode(await this.readStore(this.key))
+    }
+
+    public async write(content: Uint8Array): Promise<void> {
+        const decoder = new TextDecoder()
+        const value = JSON.parse(decoder.decode(content))
+
+        await this.updateStore(this.key, value)
+    }
+
+    private async readStore(key: string): Promise<string> {
+        // show `undefined` in the UI better ?
+        if (isSecrets(this.storage)) {
+            const value = (await this.storage.get(key)) ?? ''
+            return JSON.stringify(JSON.parse(value), undefined, 4)
+        } else {
+            return JSON.stringify(this.storage.get(key, {}), undefined, 4)
+        }
+    }
+
+    private async updateStore(key: string, value: unknown): Promise<unknown> {
+        if (isSecrets(this.storage)) {
+            return this.storage.store(key, JSON.stringify(value))
+        } else {
+            return this.storage.update(key, value)
+        }
+    }
+}
+
+interface Tab {
+    readonly editor: vscode.TextEditor
+    dispose(): void
+}
+
+class ObjectEditor {
+    private static readonly scheme = 'aws-dev'
+
+    private readonly fs = new VirualFileSystem()
+    private readonly tabs: Map<string, Tab> = new Map()
+
+    public constructor(private readonly context: vscode.ExtensionContext) {
+        vscode.workspace.onDidCloseTextDocument(doc => {
+            const key = this.fs.uriToKey(doc.uri)
+            this.tabs.get(key)?.dispose()
+        })
+
+        vscode.workspace.registerFileSystemProvider(ObjectEditor.scheme, this.fs)
+    }
+
+    public async openStorage(type: 'globals' | 'secrets', key: string): Promise<void> {
+        switch (type) {
+            case 'globals':
+                return this.openState(this.context.globalState, key)
+            case 'secrets':
+                return this.openState(this.context.secrets, key)
+        }
+    }
+
+    private async openState(storage: vscode.Memento | vscode.SecretStorage, key: string): Promise<void> {
+        const uri = this.uriFromKey(key, storage)
+        const tab = this.tabs.get(this.fs.uriToKey(uri))
+
+        if (tab) {
+            await vscode.window.showTextDocument(tab.editor.document)
+        } else {
+            const newTab = await this.createTab(storage, key)
+            const newKey = this.fs.uriToKey(newTab.editor.document.uri)
+            this.tabs.set(newKey, newTab)
+        }
+    }
+
+    private async createTab(storage: vscode.Memento | vscode.SecretStorage, key: string): Promise<Tab> {
+        const uri = this.uriFromKey(key, storage)
+        const disposable = this.fs.registerProvider(uri, new VirtualObjectFile(storage, key))
+        const document = await vscode.workspace.openTextDocument(uri)
+        const withLanguage = await vscode.languages.setTextDocumentLanguage(document, 'json')
+        const editor = await vscode.window.showTextDocument(withLanguage)
+
+        return {
+            editor,
+            dispose: () => disposable.dispose(),
+        }
+    }
+
+    private uriFromKey(key: string, storage: vscode.Memento | vscode.SecretStorage): vscode.Uri {
+        const prefix = isSecrets(storage) ? 'secrets' : 'globals'
+
+        return vscode.Uri.parse(`${ObjectEditor.scheme}:`, true).with({
+            path: `/${prefix}/${key}`,
+        })
+    }
+}
+
+async function openStorageFromInput() {
+    const wizard = new (class extends Wizard<{ target: 'globals' | 'secrets'; key: string }> {
+        constructor() {
+            super()
+
+            this.form.target.bindPrompter(() =>
+                createQuickPick(
+                    [
+                        { label: 'Global State', data: 'globals' },
+                        { label: 'Secrets', data: 'secrets' },
+                    ],
+                    {
+                        title: 'Select a storage type',
+                    }
+                )
+            )
+
+            this.form.key.bindPrompter(() => createInputBox({ title: 'Enter a key' }))
+        }
+    })()
+
+    const response = await wizard.run()
+
+    if (response) {
+        return openStorageCommand.execute(response.target, response.key)
+    }
+}
+
+export const openStorageCommand = Commands.from(ObjectEditor).declareOpenStorage('_aws.dev.openStorage')
