@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
+import globals from '../../../../shared/extensionGlobals'
 import { assertTelemetryCurried } from '../../../testUtil'
 import { ConsolasTracker } from '../../../../vector/consolas/tracker/consolasTracker'
 import { resetConsolasGlobalVariables, createAcceptedSuggestionEntry } from '../testUtil'
@@ -28,10 +29,12 @@ describe('consolasTracker', function () {
         })
 
         it('Should not enque when telemetry is disabled', function () {
+            globals.telemetry.telemetryEnabled = false
             const suggestion = createAcceptedSuggestionEntry()
             const pushSpy = sinon.spy(Array.prototype, 'push')
             ConsolasTracker.getTracker().enqueue(suggestion)
             assert.ok(pushSpy.neverCalledWith(suggestion))
+            globals.telemetry.telemetryEnabled = true
         })
     })
 
