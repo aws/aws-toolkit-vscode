@@ -9,9 +9,8 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { EcrNode } from './ecrNode'
 import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 
-import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
+import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { EcrTagNode } from './ecrTagNode'
@@ -43,7 +42,6 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
 
                 return response.map(item => new EcrTagNode(this, this.ecr, this.repository, item))
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noTags', '[No tags found]')),
             sort: (item1, item2) => item1.tag.localeCompare(item2.tag),

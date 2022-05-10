@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
+import globals from '../../../../shared/extensionGlobals'
 import { assertTelemetryCurried } from '../../../testUtil'
-import { TestSettingsConfiguration } from '../../../utilities/testSettingsConfiguration'
 import { ConsolasTracker } from '../../../../vector/consolas/tracker/consolasTracker'
 import { resetConsolasGlobalVariables, createAcceptedSuggestionEntry } from '../testUtil'
 
@@ -14,7 +14,6 @@ describe('consolasTracker', function () {
     describe('enqueue', function () {
         beforeEach(function () {
             resetConsolasGlobalVariables()
-            ConsolasTracker.toolkitSettings = new TestSettingsConfiguration()
             ConsolasTracker.getTracker().shutdown()
         })
 
@@ -30,18 +29,18 @@ describe('consolasTracker', function () {
         })
 
         it('Should not enque when telemetry is disabled', function () {
+            globals.telemetry.telemetryEnabled = false
             const suggestion = createAcceptedSuggestionEntry()
             const pushSpy = sinon.spy(Array.prototype, 'push')
-            sinon.stub(TestSettingsConfiguration.prototype, 'readSetting').returns(false)
             ConsolasTracker.getTracker().enqueue(suggestion)
             assert.ok(pushSpy.neverCalledWith(suggestion))
+            globals.telemetry.telemetryEnabled = true
         })
     })
 
     describe('flush', function () {
         beforeEach(function () {
             resetConsolasGlobalVariables()
-            ConsolasTracker.toolkitSettings = new TestSettingsConfiguration()
             ConsolasTracker.getTracker().shutdown()
         })
 
@@ -63,7 +62,6 @@ describe('consolasTracker', function () {
 
         it('Should skip if telemetry is disabled', async function () {
             const getTimeSpy = sinon.spy(Date.prototype, 'getTime')
-            sinon.stub(TestSettingsConfiguration.prototype, 'readSetting').returns(false)
             await ConsolasTracker.getTracker().flush()
             assert.ok(!getTimeSpy.called)
         })

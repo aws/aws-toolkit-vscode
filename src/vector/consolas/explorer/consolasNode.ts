@@ -5,8 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
+import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { ConsolasIntroductionNode } from './consolasIntroductionNode'
@@ -47,7 +46,6 @@ export class ConsolasNode extends AWSTreeNodeBase {
                     ]
                 }
             },
-            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.consolasNode', '[No Consolas node found]')),
         })

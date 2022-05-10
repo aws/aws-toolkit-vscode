@@ -20,7 +20,6 @@ export interface AwsContextCredentials {
 export interface ContextChangeEventsArgs {
     readonly profileName?: string
     readonly accountId?: string
-    readonly developerMode: Set<string>
 }
 
 // Represents a credential profile and zero or more regions.
@@ -46,7 +45,6 @@ export class DefaultAwsContext implements AwsContext {
     private readonly explorerRegions: string[]
 
     private currentCredentials: AwsContextCredentials | undefined
-    private developerMode = new Set<string>()
 
     public constructor(private context: vscode.ExtensionContext) {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
@@ -69,27 +67,6 @@ export class DefaultAwsContext implements AwsContext {
             return
         }
         this.currentCredentials = credentials
-        this.emitEvent()
-    }
-
-    /**
-     * Sets "developer mode" when a Toolkit developer setting is active.
-     *
-     * @param enable  Set "developer mode" as enabled or disabled
-     * @param settingName  Name of the detected setting, or undefined for `enable=false`.
-     */
-    public async setDeveloperMode(enable: boolean, settingName: string | undefined): Promise<void> {
-        const enabled = this.developerMode.size > 0
-        if (enable === enabled && (!enable || this.developerMode.has(settingName ?? '?'))) {
-            // Do nothing. Besides performance, this avoids infinite loops.
-            return
-        }
-
-        if (!enable) {
-            this.developerMode.clear()
-        } else {
-            this.developerMode.add(settingName ?? '?')
-        }
         this.emitEvent()
     }
 
@@ -122,15 +99,16 @@ export class DefaultAwsContext implements AwsContext {
         return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
     }
 
-    // async so that we could *potentially* support other ways of obtaining
-    // region in future - for example from instance metadata if the
-    // user was running Code on an EC2 instance.
     public async getExplorerRegions(): Promise<string[]> {
+        // (1a63f2a5fe05) "async to potentially support other ways of obtaining regions, e.g. from EC2 IMDS."
         return this.explorerRegions
     }
 
-    // adds one or more regions into the preferred set, persisting the set afterwards as a
-    // comma-separated string.
+    /**
+     * Adds a region(s) into the "preferred set", persisted as a comma-separated string.
+     *
+     * @param regions List of region ids (like `["us-west-2"]`)
+     */
     public async addExplorerRegion(...regions: string[]): Promise<void> {
         regions.forEach(r => {
             const index = this.explorerRegions.findIndex(regionToProcess => regionToProcess === r)
@@ -141,8 +119,11 @@ export class DefaultAwsContext implements AwsContext {
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
     }
 
-    // removes one or more regions from the user's preferred set, persisting the set afterwards as a
-    // comma-separated string.
+    /**
+     * Removes a region(s) from the user's "preferred set".
+     *
+     * @param regions List of region ids (like `["us-west-2"]`)
+     */
     public async removeExplorerRegion(...regions: string[]): Promise<void> {
         regions.forEach(r => {
             const index = this.explorerRegions.findIndex(explorerRegion => explorerRegion === r)
@@ -159,7 +140,6 @@ export class DefaultAwsContext implements AwsContext {
         this._onDidChangeContext.fire({
             profileName: this.currentCredentials?.credentialsId,
             accountId: this.currentCredentials?.accountId,
-            developerMode: this.developerMode,
         })
     }
 }

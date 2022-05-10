@@ -75,3 +75,13 @@ export class ToolkitError extends Error implements ErrorMetadata {
         return CancellationError.isUserCancelled(cause) || (cause instanceof ToolkitError && cause.cancelled)
     }
 }
+
+export class UnknownError extends Error {
+    public constructor(public readonly cause: unknown) {
+        super(`Unknown error: ${String(cause)}`)
+    }
+
+    public static cast(obj: unknown): Error {
+        return obj instanceof Error ? obj : new UnknownError(obj)
+    }
+}

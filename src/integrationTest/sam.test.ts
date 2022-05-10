@@ -25,7 +25,7 @@ import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
-import { sleep } from '../shared/utilities/promiseUtilities'
+import { sleep } from '../shared/utilities/timeoutUtils'
 import globals from '../shared/extensionGlobals'
 import { closeAllEditors } from '../test/testUtil'
 

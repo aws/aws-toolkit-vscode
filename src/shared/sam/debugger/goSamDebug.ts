@@ -22,7 +22,7 @@ import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execFileSync, SpawnOptions } from 'child_process'
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
-import { sleep } from '../../utilities/promiseUtilities'
+import { sleep } from '../../utilities/timeoutUtils'
 import globals from '../../extensionGlobals'
 const localize = nls.loadMessageBundle()
 

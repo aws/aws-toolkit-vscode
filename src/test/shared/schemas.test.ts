@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { anything, capture, deepEqual, instance, mock, verify, when } from '../utilities/mockito'
+import { anything, deepEqual, instance, mock, verify } from '../utilities/mockito'
 import { ExtensionContext } from 'vscode'
 import { YamlExtension } from '../../shared/extensions/yaml'
 import {
@@ -17,11 +17,12 @@ import {
     YamlSchemaHandler,
 } from '../../shared/schemas'
 import { FakeExtensionContext } from '../fakeExtensionContext'
+import { Settings } from '../../shared/settings'
 
 describe('SchemaService', function () {
     let service: SchemaService
     let fakeExtensionContext: ExtensionContext
-    let fakeConfig: vscode.WorkspaceConfiguration
+    let config: Settings
     let fakeYamlExtension: YamlExtension
     const cfnSchema = vscode.Uri.file('cfn')
     const samSchema = vscode.Uri.file('sam')
@@ -29,15 +30,15 @@ describe('SchemaService', function () {
     beforeEach(async function () {
         fakeExtensionContext = await FakeExtensionContext.create()
         fakeYamlExtension = mock()
-        fakeConfig = mock()
-        when(fakeConfig.update(anything(), anything(), anything())).thenResolve()
+        config = new Settings(vscode.ConfigurationTarget.Workspace)
+
         service = new SchemaService(fakeExtensionContext, {
             schemas: {
                 cfn: cfnSchema,
                 sam: samSchema,
             },
             handlers: new Map<SchemaType, SchemaHandler>([
-                ['json', new JsonSchemaHandler(instance(fakeConfig))],
+                ['json', new JsonSchemaHandler(config)],
                 ['yaml', new YamlSchemaHandler(instance(fakeYamlExtension))],
             ]),
         })
@@ -76,14 +77,15 @@ describe('SchemaService', function () {
             schema: 'cfn',
         })
         await service.processUpdates()
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [, configs] = capture(fakeConfig.update).last()
-        assert.strictEqual(configs.length, 1)
 
-        const schemaSettings = configs[0] as JSONSchemaSettings
-        assert.strictEqual(schemaSettings.fileMatch?.length, 1)
-        assert.strictEqual(schemaSettings.fileMatch[0], '/foo')
-        assert.strictEqual(schemaSettings.url, cfnSchema.toString())
+        const mappings = config.get('json.schemas')
+        assert.ok(Array.isArray(mappings))
+
+        const added = mappings.find((s: JSONSchemaSettings) => s.url === cfnSchema.toString())
+        assert.ok(added)
+
+        assert.strictEqual(added.fileMatch?.length, 1)
+        assert.strictEqual(added.fileMatch[0], '/foo')
     })
 
     it('removes schemas from json configuration', async function () {
@@ -93,9 +95,12 @@ describe('SchemaService', function () {
             schema: undefined,
         })
         await service.processUpdates()
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [, configs] = capture(fakeConfig.update).last()
-        assert.strictEqual(configs.length, 0)
+
+        const mappings = config.get('json.schemas')
+        assert.ok(Array.isArray(mappings))
+
+        const added = mappings.find((s: JSONSchemaSettings) => s.url === cfnSchema.toString())
+        assert.strictEqual(added, undefined)
     })
 
     it('processes no updates if schemas are unavailable', async function () {

@@ -13,9 +13,10 @@ import { invokeConsolas } from './commands/invokeConsolas'
 import { onAcceptance } from './commands/onAcceptance'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { onRejection } from './commands/onRejection'
-import { DefaultSettingsConfiguration } from './../../shared/settingsConfiguration'
+import { ConsolasSettings } from './util/consolasSettings'
 import { activate as activateView } from './vue/backend'
 import { ExtContext } from '../../shared/extensions'
+import { Settings } from '../../shared/settings'
 import { TextEditorSelectionChangeKind } from 'vscode'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { ConsolasTracker } from './tracker/consolasTracker'
@@ -23,7 +24,7 @@ import * as consolasClient from './client/consolas'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../../shared/logger'
 
-export async function activate(context: ExtContext): Promise<void> {
+export async function activate(context: ExtContext, configuration: Settings): Promise<void> {
     /**
      * Enable essential intellisense default settings
      */
@@ -32,9 +33,8 @@ export async function activate(context: ExtContext): Promise<void> {
     /**
      * Service control
      */
-    const mainSettings = new DefaultSettingsConfiguration()
-    ConsolasTracker.toolkitSettings = mainSettings
-    const isManualTriggerEnabled: boolean = getManualTriggerStatus()
+    const consolasSettings = new ConsolasSettings(configuration)
+    const isManualTriggerEnabled: boolean = await getManualTriggerStatus()
     const isAutomatedTriggerEnabled: boolean =
         context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY) || false
 
@@ -45,10 +45,8 @@ export async function activate(context: ExtContext): Promise<void> {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
             if (configurationChangeEvent.affectsConfiguration('aws.experiments')) {
-                const consolasPreviewEnabled: boolean =
-                    vscode.workspace.getConfiguration('aws.experiments').get(ConsolasConstants.CONSOLAS_PREVIEW) ||
-                    false
-                if (!consolasPreviewEnabled) {
+                const consolasEnabled = await consolasSettings.isEnabled()
+                if (!consolasEnabled) {
                     set(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY, false)
                     set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, false)
                 }
@@ -131,7 +129,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 context.extensionContext.globalState.get<boolean>(
                     ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY
                 ) || false
-            const isManualTriggerOn: boolean = getManualTriggerStatus()
+            const isManualTriggerOn: boolean = await getManualTriggerStatus()
             invokeConsolas(
                 vscode.window.activeTextEditor as vscode.TextEditor,
                 client,
@@ -257,12 +255,11 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
-    function getManualTriggerStatus(): boolean {
-        const isConsolasPreviewOn: boolean =
-            vscode.workspace.getConfiguration('aws.experiments').get(ConsolasConstants.CONSOLAS_PREVIEW) || false
+    async function getManualTriggerStatus(): Promise<boolean> {
+        const consolasEnabled = await consolasSettings.isEnabled()
         const acceptedTerms: boolean =
             context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY) || false
-        return acceptedTerms && isConsolasPreviewOn
+        return acceptedTerms && consolasEnabled
     }
 }
 

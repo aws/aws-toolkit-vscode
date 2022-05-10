@@ -12,8 +12,11 @@ import { getLogger } from '../../shared/logger'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../../shared/settingsConfiguration'
-import { ecsRequiredPermissionsUrl, extensionSettingsPrefix, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import {
+    ecsRequiredIamPermissionsUrl,
+    ecsRequiredTaskPermissionsUrl,
+    INSIGHTS_TIMESTAMP_FORMAT,
+} from '../../shared/constants'
 import { showOutputMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
@@ -21,6 +24,8 @@ import globals from '../../shared/extensionGlobals'
 import { CommandWizard } from '../wizards/executeCommand'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { PromptSettings } from '../../shared/settings'
+import { viewDocs } from '../../shared/localizedText'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
 const REQUIRED_SSM_PERMISSIONS = [
@@ -34,7 +39,7 @@ export async function runCommandInContainer(
     node: EcsContainerNode,
     window = Window.vscode(),
     outputChannel = globals.outputChannel,
-    settings: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    settings = PromptSettings.instance
 ): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
     let result: 'Succeeded' | 'Failed' | 'Cancelled' = 'Cancelled'
@@ -71,14 +76,14 @@ export async function runCommandInContainer(
                 )
                 .then(selection => {
                     if (selection === viewDocsItem) {
-                        vscode.env.openExternal(vscode.Uri.parse(ecsRequiredPermissionsUrl))
+                        vscode.env.openExternal(vscode.Uri.parse(ecsRequiredTaskPermissionsUrl))
                     }
                 })
             result = 'Failed'
             return
         }
 
-        const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9(), window, settings)
+        const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9(), window)
 
         status = vscode.window.setStatusBarMessage(
             localize('AWS.command.ecs.statusBar.executing', 'ECS: Executing command...')
@@ -94,7 +99,7 @@ export async function runCommandInContainer(
         showOutputMessage(
             `${moment().format(INSIGHTS_TIMESTAMP_FORMAT)}:  Container: "${node.containerName}" Task ID: "${
                 response.task
-            }"  Running command: "${response.command}"`,
+            }" Command: "${response.command}"`,
             outputChannel
         )
 
@@ -109,14 +114,28 @@ export async function runCommandInContainer(
         })
 
         result = 'Succeeded'
-    } catch (error) {
-        if (CancellationError.isUserCancelled(error)) {
+    } catch (err) {
+        const error = err as Error
+        if (CancellationError.isUserCancelled(err)) {
             return
         }
 
         result = 'Failed'
-        getLogger().error('ecs: Failed to execute command in container, %O', error)
-        showViewLogsMessage(localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.'))
+        const failedMessage = localize('AWS.ecs.runCommandInContainer.error', 'Failed to execute command in container.')
+        const missingPermissions = localize(
+            'AWS.ecs.runCommandInContainer.missingPermissions',
+            `Insufficient user role permissions for "Execute Command". See documentation for required permissions.`
+        )
+        getLogger().error('ecs: Failed to execute command in container, %O', err)
+        if (error.name === 'AccessDeniedException') {
+            showViewLogsMessage(missingPermissions, window, 'error', [viewDocs]).then(selection => {
+                if (selection === viewDocs) {
+                    vscode.env.openExternal(vscode.Uri.parse(ecsRequiredIamPermissionsUrl))
+                }
+            })
+        } else {
+            showViewLogsMessage(failedMessage)
+        }
     } finally {
         recordEcsRunExecuteCommand({ result: result, ecsExecuteCommandType: 'command' })
         status?.dispose()

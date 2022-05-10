@@ -4,8 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
-import { isTelemetryEnabled } from '../../../shared/telemetry/activation'
+import globals from '../../../shared/extensionGlobals'
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { distance } from 'fastest-levenshtein'
 import { AcceptedSuggestionEntry } from '../models/model'
@@ -19,7 +18,6 @@ export class ConsolasTracker {
     private _eventQueue: AcceptedSuggestionEntry[]
     private _timer?: NodeJS.Timer
     private static instance: ConsolasTracker
-    public static toolkitSettings: SettingsConfiguration
 
     /**
      * the interval of the background thread invocation, which is triggered by the timer
@@ -40,7 +38,7 @@ export class ConsolasTracker {
     }
 
     public enqueue(suggestion: AcceptedSuggestionEntry) {
-        if (!isTelemetryEnabled(ConsolasTracker.toolkitSettings)) return
+        if (!globals.telemetry.telemetryEnabled) return
 
         if (this._eventQueue.length >= 0) {
             this.startTimer()
@@ -53,7 +51,7 @@ export class ConsolasTracker {
     }
 
     public async flush() {
-        if (!isTelemetryEnabled(ConsolasTracker.toolkitSettings)) {
+        if (!globals.telemetry.telemetryEnabled) {
             this._eventQueue = []
             this.closeTimer()
             return
@@ -142,7 +140,7 @@ export class ConsolasTracker {
     public async shutdown() {
         this.closeTimer()
 
-        if (isTelemetryEnabled(ConsolasTracker.toolkitSettings)) {
+        if (globals.telemetry.telemetryEnabled) {
             try {
                 this.flush()
             } finally {

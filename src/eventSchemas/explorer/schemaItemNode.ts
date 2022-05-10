@@ -12,6 +12,7 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 
 export class SchemaItemNode extends AWSTreeNodeBase {
     public constructor(
@@ -25,6 +26,11 @@ export class SchemaItemNode extends AWSTreeNodeBase {
         this.iconPath = {
             dark: Uri.file(globals.iconPaths.dark.schema),
             light: Uri.file(globals.iconPaths.light.schema),
+        }
+        this.command = {
+            command: 'aws.viewSchemaItem',
+            title: localize('AWS.command.viewSchemaItem', 'Open Schema'),
+            arguments: [this],
         }
     }
 

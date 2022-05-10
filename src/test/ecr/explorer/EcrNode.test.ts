@@ -10,8 +10,8 @@ import { MockEcrClient } from '../../shared/clients/mockClients'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
+import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 
 describe('EcrNode', function () {
     let ecr: EcrClient
@@ -64,11 +64,9 @@ describe('EcrNode', function () {
             yield {} as EcrRepository
         })
 
-        const [firstNode, ...otherNodes] = await new EcrNode(ecr).getChildren()
+        const children = await new EcrNode(ecr).getChildren()
 
-        assert.strictEqual((firstNode as ErrorNode).label, 'Failed to load resources (click for logs)')
-
-        assert.strictEqual(otherNodes.length, 0)
+        assertNodeListOnlyContainsErrorNode(children)
         assert.ok(stub.calledOnce)
     })
 })
@@ -129,11 +127,9 @@ describe('EcrRepositoryNode', function () {
             yield 'string'
         })
 
-        const [firstNode, ...otherNodes] = await new EcrRepositoryNode({} as EcrNode, ecr, repository).getChildren()
+        const children = await new EcrRepositoryNode({} as EcrNode, ecr, repository).getChildren()
 
-        assert.strictEqual((firstNode as ErrorNode).label, 'Failed to load resources (click for logs)')
-
-        assert.strictEqual(otherNodes.length, 0)
+        assertNodeListOnlyContainsErrorNode(children)
         assert.ok(stub.calledOnce)
     })
 })

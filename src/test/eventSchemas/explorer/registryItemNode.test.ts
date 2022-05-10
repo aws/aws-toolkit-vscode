@@ -11,9 +11,11 @@ import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explorerNodeAssertions'
+import {
+    assertNodeListOnlyContainsErrorNode,
+    assertNodeListOnlyContainsPlaceholderNode,
+} from '../../utilities/explorerNodeAssertions'
 import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -218,8 +220,6 @@ describe('DefaultRegistryNode', function () {
         const testNode: ThrowErrorDefaultSchemaRegistrynNode = new ThrowErrorDefaultSchemaRegistrynNode()
 
         const childNodes = await testNode.getChildren()
-        assert(childNodes !== undefined)
-        assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof ErrorNode, true)
+        assertNodeListOnlyContainsErrorNode(childNodes)
     })
 })
