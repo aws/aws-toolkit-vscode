@@ -12,7 +12,12 @@ import * as AdmZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { fileExists, findFile, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import {
+    fileExists,
+    cloud9Findfile,
+    makeTemporaryToolkitFolder,
+    tryRemoveFolder,
+} from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -34,6 +39,41 @@ import globals from '../../shared/extensionGlobals'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { fromExtensionManifest } from '../../shared/settings'
 import { createRegionPrompter } from '../../shared/ui/common/region'
+
+interface SavedLambdas {
+    [profile: string]: { [region: string]: string }
+}
+
+class LambdaSettings extends fromExtensionManifest('aws.lambda', { recentlyUploaded: Object }) {
+    static #instance: LambdaSettings
+
+    public getRecentLambdas(): SavedLambdas | undefined {
+        try {
+            return this.get('recentlyUploaded')
+        } catch (error) {
+            this.delete('recentlyUploaded')
+        }
+    }
+
+    /**
+     * Adds a new "recently used Lambda" to user settings for the given profile
+     * and region (limit of one item per profile+region).
+     */
+    public setRecentLambda(profile: string, region: string, lambdaName: string): Promise<boolean> {
+        const oldLambdas = this.getRecentLambdas()
+        return this.update('recentlyUploaded', {
+            ...oldLambdas,
+            [profile]: {
+                ...(oldLambdas?.[profile] ?? {}),
+                [region]: lambdaName,
+            },
+        })
+    }
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+}
 
 interface LambdaFunction {
     readonly name: string
@@ -84,7 +124,7 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
         if (result === 'Succeeded') {
             const profile = globals.awsContext.getCredentialProfileName()
             if (profile && lambda) {
-                updateSavedLambda(profile, lambda.region, lambda.name)
+                LambdaSettings.instance.setRecentLambda(profile, lambda.region, lambda.name)
             }
         }
     }
@@ -442,27 +482,34 @@ async function uploadZipBuffer(
     )
 }
 
-export async function findApplicationJsonFile(startPath: vscode.Uri): Promise<vscode.Uri | undefined> {
-    const isTemplateFile = /template.(yaml|yml|json)$/.test(startPath.fsPath)
-    const parentDir = isTemplateFile ? vscode.Uri.joinPath(startPath, '..') : startPath
-
-    if (isCloud9()) {
-        const found = await findFile(parentDir.fsPath, '.application.json')
-        if (!found) {
-            getLogger().debug(
-                'lambda: .application.json file not found in parent directory or sub directories of %s',
-                parentDir.fsPath
-            )
-        }
-        return found ? vscode.Uri.file(found) : undefined
-    } else {
-        const found = await vscode.workspace.findFiles(
-            new vscode.RelativePattern(parentDir.path, '**/*.application.json'),
-            undefined,
-            1
+export async function findApplicationJsonFile(
+    startPath: vscode.Uri,
+    cloud9 = isCloud9()
+): Promise<vscode.Uri | undefined> {
+    if (!(await fileExists(startPath.fsPath))) {
+        getLogger().error(
+            'findApplicationJsonFile() invalid path (not accessible or does not exist): "%s"',
+            startPath.fsPath
         )
-        return found[0]
+        return undefined
     }
+    const isdir = fs.statSync(startPath.fsPath).isDirectory()
+    const parentDir = isdir ? startPath.fsPath : path.dirname(startPath.fsPath)
+    const found = cloud9
+        ? await cloud9Findfile(parentDir, '.application.json')
+        : await vscode.workspace.findFiles(
+              new vscode.RelativePattern(parentDir, '**/.application.json'),
+              // exclude:
+              // - null      = NO excludes apply
+              // - undefined = default excludes apply (e.g. the `files.exclude` setting but not `search.exclude`).
+              // eslint-disable-next-line no-null/no-null
+              null,
+              1
+          )
+    if (!found || found.length === 0) {
+        getLogger().debug('uploadLambda: .application.json not found in: "%s"', parentDir)
+    }
+    return found[0]
 }
 
 export function getFunctionNames(file: vscode.Uri, region: string): string[] | undefined {
@@ -489,20 +536,29 @@ export function getFunctionNames(file: vscode.Uri, region: string): string[] | u
 
 async function listAllLambdaNames(region: string, path?: vscode.Uri) {
     const lambdaFunctionNames: DataQuickPickItem<string>[] = []
+
+    // Get Lambda functions from .application.json #2588
     if (path) {
-        const namesFromAppFile = await getLambdaNamesFromApplicationFile(region, path)
-        if (namesFromAppFile) {
+        const appFile = await findApplicationJsonFile(path)
+        const namesFromAppFile = appFile ? getFunctionNames(appFile, region) : undefined
+        if (!appFile) {
+            getLogger().debug('lambda: .application.json not found')
+        } else if (!namesFromAppFile) {
+            getLogger().debug('lambda: no functions in .application.json for region: %s', region)
+        } else {
             lambdaFunctionNames.push(
                 ...namesFromAppFile.map(n => {
                     return {
                         label: n,
-                        description: localize('AWS.lambda.upload.fromC9AppFile', 'from appliication.json'),
+                        description: localize('AWS.lambda.upload.fromAppJson', 'from .application.json'),
                         data: n,
                     }
                 })
             )
         }
     }
+
+    // Get Lambda functions from user AWS account.
     const lambdaClient = globals.toolkitClientBuilder.createLambdaClient(region)
     try {
         const foundLambdas = await toArrayAsync(listLambdaFunctions(lambdaClient))
@@ -510,14 +566,16 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
             lambdaFunctionNames.push({ label: l.FunctionName!, data: l.FunctionName })
         }
     } catch (error) {
-        getLogger().error('upload lambda: Error listing lambdas: %s', (error as Error).message)
+        getLogger().error('lambda: failed to list Lambda functions: %s', (error as Error).message)
     }
-    const previousLambdas = getSavedLambdas()
+
+    // Get "recently used" Lambda functions.
+    const recent = LambdaSettings.instance.getRecentLambdas()
     const profile = globals.awsContext.getCredentialProfileName()
-    if (previousLambdas && profile && previousLambdas[profile] && previousLambdas[profile][region]) {
+    if (profile && recent?.[profile]?.[region]) {
         let isInList = false
         for (const l of lambdaFunctionNames) {
-            if (l.label === previousLambdas[profile][region]) {
+            if (l.label === recent[profile][region]) {
                 l.description = localizedText.recentlyUsed
                 l.recentlyUsed = true
                 isInList = true
@@ -525,9 +583,9 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
         }
         if (!isInList) {
             lambdaFunctionNames.splice(0, 0, {
-                label: previousLambdas[profile][region],
+                label: recent[profile][region],
                 recentlyUsed: true,
-                data: previousLambdas[profile][region],
+                data: recent[profile][region],
                 description: localizedText.recentlyUsed,
             })
         }
@@ -558,39 +616,3 @@ function createFunctionNamePrompter(region: string, path?: vscode.Uri) {
     })
     return prompter
 }
-
-interface SavedLambdas {
-    [profile: string]: { [region: string]: string }
-}
-
-function getSavedLambdas(): SavedLambdas | undefined {
-    const settings = new LambdaSettings()
-    try {
-        return settings.get('recentlyUploaded')
-    } catch (error) {
-        getLogger().error('settings: Error retreiving saved lambdas from settings: %s', (error as Error).message)
-    }
-}
-
-async function updateSavedLambda(profile: string, region: string, lambdaName: string): Promise<boolean> {
-    const settings = new LambdaSettings()
-    const oldLambdas = getSavedLambdas()
-    return settings.update('recentlyUploaded', {
-        ...oldLambdas,
-        [profile]: {
-            ...(oldLambdas?.[profile] ?? {}),
-            [region]: lambdaName,
-        },
-    })
-}
-
-async function getLambdaNamesFromApplicationFile(region: string, path: vscode.Uri) {
-    const appFile = await findApplicationJsonFile(path)
-    if (appFile) {
-        return getFunctionNames(appFile, region)
-    } else {
-        getLogger().debug('lambda: No .application.json files found')
-    }
-}
-
-class LambdaSettings extends fromExtensionManifest('aws.lambda', { recentlyUploaded: Object }) {}

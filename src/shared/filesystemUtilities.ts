@@ -29,9 +29,14 @@ export function downloadsDir(): string {
     }
 }
 
-export async function fileExists(filePath: string): Promise<boolean> {
+/**
+ * Checks if file or directory `p` exists.
+ *
+ * TODO: optionally check read/write permissions and return a granular status.
+ */
+export async function fileExists(p: string): Promise<boolean> {
     try {
-        await access(filePath)
+        await access(p)
     } catch (err) {
         return false
     }
@@ -164,24 +169,29 @@ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: v
 }
 
 /**
- * Searches directory and all sub-directories for a filename.
+ * TEMPORARY SHIM for vscode.workspace.findFiles() on Cloud9.
+ *
  * @param dir Directory to search
  * @param fileName Name of file to locate
- * @returns  The absolute path if found.
+ * @returns  List of one or zero Uris (for compat with vscode.workspace.findFiles())
  */
-export async function findFile(dir: string, fileName: string): Promise<string | undefined> {
+export async function cloud9Findfile(dir: string, fileName: string): Promise<vscode.Uri[]> {
     const files = await readdir(dir)
-    const subDirs = []
+    const subDirs: vscode.Uri[] = []
     for (const file of files) {
         const filePath = path.join(dir, file)
         if (filePath === path.join(dir, fileName)) {
-            return filePath
+            return [vscode.Uri.file(filePath)]
         }
         if ((await stat(filePath)).isDirectory()) {
-            subDirs.push(filePath)
+            subDirs.push(vscode.Uri.file(filePath))
         }
     }
-    for (const dir of subDirs) {
-        findFile(dir, fileName)
+    for (const d of subDirs) {
+        const found = await cloud9Findfile(d.fsPath, fileName)
+        if (found.length > 0) {
+            return found
+        }
     }
+    return []
 }
