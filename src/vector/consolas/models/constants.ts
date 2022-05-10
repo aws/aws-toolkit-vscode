@@ -41,7 +41,7 @@ export const ConsolasConstants = {
     /**
      * Control feature
      */
-    CONSOLAS_PREVIEW: 'consolas(Preview)',
+    CONSOLAS_PREVIEW: 'Consolas',
     /**
      * Supported languages
      */

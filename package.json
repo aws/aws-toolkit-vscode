@@ -239,29 +239,19 @@
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
                         "jsonResourceModification": false,
-                        "consolas(Preview)": false
+                        "Consolas": false
                     },
                     "properties": {
                         "jsonResourceModification": {
                             "type": "boolean",
                             "default": false
                         },
-                        "consolas(Preview)": {
+                        "Consolas": {
                             "type": "boolean",
                             "default": false
                         }
                     },
                     "additionalProperties": false
-                },
-                "aws.experiments.consolas": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "%AWS.configuration.description.telemetry%",
-                    "cloud9": {
-                        "cn": {
-                            "markdownDescription": "%AWS.configuration.description.telemetry.cn%"
-                        }
-                    }
                 },
                 "aws.resources.enabledResources": {
                     "type": "array",

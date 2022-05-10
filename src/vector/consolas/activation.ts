@@ -34,7 +34,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
      * Service control
      */
     const consolasSettings = new ConsolasSettings(configuration)
-    const isManualTriggerEnabled: boolean = getManualTriggerStatus()
+    const isManualTriggerEnabled: boolean = await getManualTriggerStatus()
     const isAutomatedTriggerEnabled: boolean =
         context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY) || false
 
@@ -45,7 +45,8 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
             if (configurationChangeEvent.affectsConfiguration('aws.experiments')) {
-                if (!consolasSettings.isEnabled()) {
+                const consolasEnabled = await consolasSettings.isEnabled()
+                if (!consolasEnabled) {
                     set(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY, false)
                     set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, false)
                 }
@@ -128,7 +129,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                 context.extensionContext.globalState.get<boolean>(
                     ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY
                 ) || false
-            const isManualTriggerOn: boolean = getManualTriggerStatus()
+            const isManualTriggerOn: boolean = await getManualTriggerStatus()
             invokeConsolas(
                 vscode.window.activeTextEditor as vscode.TextEditor,
                 client,
@@ -254,10 +255,11 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         )
     }
 
-    function getManualTriggerStatus(): boolean {
+    async function getManualTriggerStatus(): Promise<boolean> {
+        const consolasEnabled = await consolasSettings.isEnabled()
         const acceptedTerms: boolean =
             context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY) || false
-        return acceptedTerms && consolasSettings.isEnabled()
+        return acceptedTerms && consolasEnabled
     }
 }
 
