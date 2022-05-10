@@ -48,16 +48,18 @@ export async function acceptRecommendation(editor: vscode.TextEditor) {
     if (invocationContext.isInlineActive) return
     invocationContext.isInlineActive = true
     await editor
-        ?.insertSnippet(new vscode.SnippetString(inlineCompletion.items[inlineCompletion.position]), _range, {
-            undoStopAfter: false,
-            undoStopBefore: false,
-        })
+        .edit(
+            builder => {
+                builder.replace(_range, inlineCompletion.items[inlineCompletion.position])
+            },
+            { undoStopAfter: false, undoStopBefore: false }
+        )
         .then(async () => {
             let languageId = editor?.document?.languageId
             languageId = languageId === ConsolasConstants.TYPESCRIPT ? ConsolasConstants.JAVASCRIPT : languageId
             const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
             const acceptArguments = [
-                _range.start.line,
+                _range,
                 inlineCompletion.position,
                 inlineCompletion.items[inlineCompletion.position],
                 recommendations.requestId,

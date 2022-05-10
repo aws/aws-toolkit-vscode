@@ -17,7 +17,7 @@ export const ConsolasConstants = {
      * Automated and manual trigger
      */
     INVOCATION_TIME_INTERVAL_THRESHOLD: 2, // seconds
-    PROMISE_TIMEOUT_LIMIT: 5, // seconds
+    PROMISE_TIMEOUT_LIMIT: 15, // seconds
     INVOCATION_KEY_THRESHOLD: 15,
     SPECIAL_CHARACTERS_LIST: ['{', '[', '(', ':', '\t', '\n'],
     NORMAL_TEXT_CHANGE_REGEX: /[A-Za-z0-9]/g,

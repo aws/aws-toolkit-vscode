@@ -171,7 +171,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         vscode.commands.registerCommand(
             'aws.consolas.accept',
             async (
-                line: number,
+                range: vscode.Range,
                 acceptIndex: number,
                 recommendation: string,
                 requestId: string,
@@ -185,7 +185,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                 onAcceptance(
                     {
                         editor,
-                        line,
+                        range,
                         acceptIndex,
                         recommendation,
                         requestId,

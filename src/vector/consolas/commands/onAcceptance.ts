@@ -29,8 +29,8 @@ export async function onAcceptance(
      */
     if (acceptanceEntry.editor) {
         const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
-        const start = acceptanceEntry.editor.document.lineAt(acceptanceEntry.line).range.start
-        const end = acceptanceEntry.editor.selection.active
+        const start = acceptanceEntry.range.start
+        const end = acceptanceEntry.range.end
         const languageId = acceptanceEntry.editor.document.languageId
         TelemetryHelper.recordUserDecisionTelemetry(
             acceptanceEntry.acceptIndex,
@@ -54,6 +54,9 @@ export async function onAcceptance(
          */
         if (languageId === ConsolasConstants.PYTHON) {
             vscode.commands.executeCommand('editor.action.format').then(() => {
+                if (acceptanceEntry.editor) {
+                    acceptanceEntry.editor.selection = new vscode.Selection(end, end)
+                }
                 invocationContext.isActive = false
             })
         } else {
