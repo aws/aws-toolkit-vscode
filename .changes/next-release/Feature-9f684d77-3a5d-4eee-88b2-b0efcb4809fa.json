@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Show \"Add Debug Config\" codelens in JS/TS files even if package.json is missing #2579"
+}

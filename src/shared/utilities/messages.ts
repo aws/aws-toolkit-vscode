@@ -9,7 +9,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import globals from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { sleep } from './promiseUtilities'
+import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 
 export function makeFailedWriteMessage(filename: string): string {

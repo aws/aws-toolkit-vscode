@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
-import { isThenable } from '../../../shared/utilities/promiseUtilities'
 import { Window } from '../../../shared/vscode/window'
 import { inspect } from 'util'
 
@@ -155,12 +154,7 @@ class DefaultFakeInputBox implements FakeInputBox {
     public async show(options?: vscode.InputBoxOptions): Promise<string | undefined> {
         this.options = options
         if (this.input !== undefined && options?.validateInput) {
-            const result = options.validateInput(this.input)
-            if (isThenable<string | undefined>(result)) {
-                this.errorMessage = await result
-            } else {
-                this.errorMessage = result as string | undefined
-            }
+            this.errorMessage = (await options.validateInput(this.input)) ?? undefined
 
             if (this.errorMessage) {
                 return Promise.resolve(undefined)

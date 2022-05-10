@@ -16,7 +16,6 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../shared/sam/cli/samCliValidator'
-import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
 import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
@@ -111,7 +110,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             } as SamCliContext
         }
         const regionProvider = new FakeRegionProvider()
-        const settings = new DefaultSettingsConfiguration('aws')
         const outputChannel = new MockOutputChannel()
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
@@ -121,7 +119,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             awsContext,
             samCliContext,
             regionProvider,
-            settings,
             outputChannel,
             invokeOutputChannel,
             telemetryService,

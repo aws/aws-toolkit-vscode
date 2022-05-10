@@ -14,7 +14,6 @@ import {
 } from '../../../../vector/consolas/commands/onAcceptance'
 import { resetConsolasGlobalVariables, createMockTextEditor } from '../testUtil'
 import { ConsolasTracker } from '../../../../vector/consolas/tracker/consolasTracker'
-import { TestSettingsConfiguration } from '../../../utilities/testSettingsConfiguration'
 import { assertTelemetryCurried } from '../../../testUtil'
 import { getLogger } from '../../../../shared/logger/logger'
 
@@ -22,7 +21,6 @@ describe('onAcceptance', function () {
     describe('onAcceptance', function () {
         beforeEach(function () {
             resetConsolasGlobalVariables()
-            ConsolasTracker.toolkitSettings = new TestSettingsConfiguration()
         })
 
         afterEach(function () {

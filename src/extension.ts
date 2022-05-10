@@ -20,15 +20,9 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/toolkitClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
-import {
-    documentationUrl,
-    endpointsFileUrl,
-    extensionSettingsPrefix,
-    githubCreateIssueUrl,
-    githubUrl,
-} from './shared/constants'
+import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
-import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
+import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     aboutToolkit,
     getIdeProperties,
@@ -46,18 +40,10 @@ import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetche
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateEcr } from './ecr/activation'
 import { activate as activateSam } from './shared/sam/activation'
-import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
+import * as telemetry from './shared/telemetry/telemetry'
 import { activate as activateVector, shutdown as consolasShutdown } from './vector/consolas/activation'
-import {
-    recordAwsCreateCredentials,
-    recordAwsHelp,
-    recordAwsHelpQuickstart,
-    recordAwsReportPluginIssue,
-    recordAwsShowExtensionSource,
-    recordToolkitInit,
-} from './shared/telemetry/telemetry'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
@@ -77,6 +63,7 @@ import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
+import { Settings } from './shared/settings'
 
 let localize: nls.LocalizeFunc
 
@@ -100,8 +87,6 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
         initializeCredentialsProviderManager()
 
-        const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-
         const endpointsProvider = makeEndpointsProvider()
 
         const awsContext = new DefaultAwsContext(context)
@@ -120,28 +105,17 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         globals.regionProvider = regionProvider
-        globals.awsContextCommands = new DefaultAWSContextCommands(
-            awsContext,
-            awsContextTrees,
-            regionProvider,
-            loginManager
-        )
+        globals.awsContextCommands = new AwsContextCommands(awsContext, awsContextTrees, regionProvider, loginManager)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
 
-        await initializeCredentials({
-            extensionContext: context,
-            awsContext: awsContext,
-            settingsConfiguration: toolkitSettings,
-        })
+        const settings = Settings.instance
 
-        await activateTelemetry({
-            extensionContext: context,
-            awsContext: awsContext,
-            toolkitSettings: toolkitSettings,
-        })
+        await initializeCredentials(context, awsContext, settings)
+
+        await activateTelemetry(context, awsContext, settings)
         await globals.telemetry.start()
         await globals.schemaService.start()
 
@@ -150,7 +124,6 @@ export async function activate(context: vscode.ExtensionContext) {
             awsContext: awsContext,
             samCliContext: getSamCliContext,
             regionProvider: regionProvider,
-            settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
             invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
@@ -173,7 +146,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 try {
                     await globals.awsContextCommands.onCommandCreateCredentialsProfile()
                 } finally {
-                    recordAwsCreateCredentials()
+                    telemetry.recordAwsCreateCredentials()
                 }
             })
         )
@@ -182,19 +155,19 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.help', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
-                recordAwsHelp()
+                telemetry.recordAwsHelp()
             })
         )
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.github', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubUrl))
-                recordAwsShowExtensionSource()
+                telemetry.recordAwsShowExtensionSource()
             })
         )
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.createIssueOnGitHub', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubCreateIssueUrl))
-                recordAwsReportPluginIssue()
+                telemetry.recordAwsReportPluginIssue()
             })
         )
         context.subscriptions.push(
@@ -202,7 +175,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 try {
                     await showQuickStartWebview(context)
                 } finally {
-                    recordAwsHelpQuickstart({ result: 'Succeeded' })
+                    telemetry.recordAwsHelpQuickstart({ result: 'Succeeded' })
                 }
             })
         )
@@ -242,11 +215,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(extContext)
 
-        await activateVector(extContext)
+        await activateVector(extContext, settings)
 
         await activateEcr(context)
 
-        await activateCloudWatchLogs(context, toolkitSettings)
+        await activateCloudWatchLogs(context, settings)
 
         await activateDynamicResources(context)
 
@@ -340,7 +313,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
         const activationFinishedOn = Date.now()
         const duration = activationFinishedOn - activationStartedOn
 
-        recordToolkitInit({
+        telemetry.recordToolkitInit({
             duration: duration,
         })
     } catch (err) {

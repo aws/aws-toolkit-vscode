@@ -79,13 +79,7 @@ abstract class BaseSamCliLocator {
             const context: SamCliValidatorContext = {
                 samCliLocation: async () => fullPath,
                 getSamCliExecutableId: async () => 'bogus',
-                getSamCliInfo: async () => {
-                    const samCliInfo = new SamCliInfoInvocation({
-                        locationProvider: { getLocation: async () => fullPath },
-                    })
-
-                    return await samCliInfo.execute()
-                },
+                getSamCliInfo: async () => new SamCliInfoInvocation(fullPath).execute(),
             }
             const validator = new DefaultSamCliValidator(context)
             if (await filesystemUtilities.fileExists(fullPath)) {

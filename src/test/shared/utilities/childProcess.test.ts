@@ -9,7 +9,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
-import { sleep } from '../../../shared/utilities/promiseUtilities'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { Timeout, waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 describe('ChildProcess', async function () {

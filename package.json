@@ -43,7 +43,6 @@
         "onCommand:aws.createIssueOnGitHub",
         "onCommand:aws.submitFeedback",
         "onCommand:aws.showRegion",
-        "onCommand:aws.hideRegion",
         "onView:aws.explorer",
         "onCommand:aws.deploySamApplication",
         "onCommand:aws.samcli.detect",
@@ -104,11 +103,6 @@
                     "default": "",
                     "description": "%AWS.configuration.profileDescription%"
                 },
-                "aws.onDefaultRegionMissing": {
-                    "type": "string",
-                    "default": "prompt",
-                    "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
-                },
                 "aws.iot.maxItemsPerPage": {
                     "type": "number",
                     "default": 100,
@@ -129,10 +123,10 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
-                "aws.samcli.lambda.timeout": {
+                "aws.samcli.lambdaTimeout": {
                     "type": "number",
                     "default": 90000,
-                    "markdownDescription": "%AWS.configuration.description.samcli.lambda.timeout%"
+                    "markdownDescription": "%AWS.configuration.description.samcli.lambdaTimeout%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -190,12 +184,12 @@
                     "description": "%AWS.cloudWatchLogs.limit.desc%",
                     "maximum": 10000
                 },
-                "aws.manuallySelectedBuckets": {
+                "aws.samcli.manuallySelectedBuckets": {
                     "type": "object",
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
                     "default": []
                 },
-                "aws.sam.enableCodeLenses": {
+                "aws.samcli.enableCodeLenses": {
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
@@ -203,16 +197,13 @@
                 "aws.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
-                    "default": {
-                        "apprunnerNotifyPricing": false,
-                        "ecsRunCommand": false,
-                        "ecsRunCommandDisable": false,
-                        "ecsRunCommandEnable": false,
-                        "yamlExtPrompt": false,
-                        "fileViewerEdit": false
-                    },
+                    "default": {},
                     "properties": {
                         "apprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "apprunnerNotifyPause": {
                             "type": "boolean",
                             "default": false
                         },
@@ -225,6 +216,10 @@
                             "default": false
                         },
                         "ecsRunCommandDisable": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "regionAddAutomatically": {
                             "type": "boolean",
                             "default": false
                         },
@@ -257,6 +252,16 @@
                         }
                     },
                     "additionalProperties": false
+                },
+                "aws.experiments.consolas": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "%AWS.configuration.description.telemetry%",
+                    "cloud9": {
+                        "cn": {
+                            "markdownDescription": "%AWS.configuration.description.telemetry.cn%"
+                        }
+                    }
                 },
                 "aws.resources.enabledResources": {
                     "type": "array",
@@ -1088,19 +1093,14 @@
                     "group": "1_account@1"
                 },
                 {
-                    "command": "aws.listCommands",
+                    "command": "aws.showRegion",
                     "when": "view == aws.explorer",
                     "group": "1_account@2"
                 },
                 {
-                    "command": "aws.showRegion",
+                    "command": "aws.listCommands",
                     "when": "view == aws.explorer",
-                    "group": "2_region@1"
-                },
-                {
-                    "command": "aws.hideRegion",
-                    "when": "view == aws.explorer",
-                    "group": "2_region@2"
+                    "group": "1_account@3"
                 },
                 {
                     "command": "aws.lambda.createNewSamApp",
@@ -1242,19 +1242,24 @@
                     "group": "inline@2"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
-                    "when": "view == aws.explorer && viewItem == awsLambdaNode",
+                    "command": "aws.showRegion",
+                    "when": "view == aws.explorer && viewItem == awsRegionNode",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.lambda.createNewSamApp",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.launchConfigForm",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
-                    "group": "0@2"
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.deploySamApplication",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
-                    "group": "1@1"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -1505,11 +1510,6 @@
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
                     "group": "1@1"
-                },
-                {
-                    "command": "aws.hideRegion",
-                    "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsRegionNode"
                 },
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
@@ -1813,16 +1813,6 @@
             {
                 "command": "aws.showRegion",
                 "title": "%AWS.command.showRegion%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.hideRegion",
-                "title": "%AWS.command.hideRegion%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2920,6 +2910,13 @@
                     "label": "${path}",
                     "separator": "\\"
                 }
+            },
+            {
+                "scheme": "s3*",
+                "formatting": {
+                    "label": "[S3] ${path}",
+                    "separator": "/"
+                }
             }
         ],
         "walkthroughs": [
@@ -2950,8 +2947,7 @@
                             "markdown": "resources/walkthrough/setup-region.md"
                         },
                         "completionEvents": [
-                            "onCommand:aws.showRegion",
-                            "onCommand:aws.hideRegion"
+                            "onCommand:aws.showRegion"
                         ]
                     },
                     {
@@ -3041,7 +3037,7 @@
         "sinon": "^12.0.1",
         "source-map-support": "^0.5.21",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^10.4.0",
+        "ts-node": "^10.7.0",
         "umd-compat-loader": "^2.1.2",
         "vsce": "^2.6.3",
         "vscode-nls-dev": "^3.3.1",
@@ -3078,7 +3074,7 @@
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^4.5.4",
+        "typescript": "^4.6.4",
         "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",

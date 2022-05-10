@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM template.yaml syntax support for condition, requestmodel, requestparameters, custom resources, SSMParameterReadPolicy and AWSSecretsManagerGetSecretValuePolicy"
+}

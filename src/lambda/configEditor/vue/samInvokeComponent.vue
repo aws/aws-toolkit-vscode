@@ -272,8 +272,8 @@
             <div class="input-validation" v-if="payload.errorMsg">Error parsing JSON: {{ payload.errorMsg }}</div>
         </settings-panel>
         <div class="container" id="invoke-button-container">
-            <button class="" v-on:click.prevent="loadConfig">Load Existing Config</button>
-            <button class="form-buttons" v-on:click.prevent="launch">Invoke</button>
+            <button class="" v-on:click.prevent="launch">Invoke</button>
+            <button class="form-buttons" v-on:click.prevent="loadConfig">Load Existing Config</button>
             <button class="form-buttons" v-on:click.prevent="save">Save</button>
         </div>
     </form>

@@ -7,7 +7,7 @@ import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
-import { AWSContextCommands } from './awsContextCommands'
+import { AwsContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { RegionProvider } from './regions/regionProvider'
@@ -61,7 +61,7 @@ interface ToolkitGlobals {
     readonly window: Window
     // TODO: make the rest of these readonly
     outputChannel: OutputChannel
-    awsContextCommands: AWSContextCommands
+    awsContextCommands: AwsContextCommands
     awsContext: AwsContext
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
