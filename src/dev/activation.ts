@@ -145,6 +145,7 @@ class ObjectEditor {
         vscode.workspace.onDidCloseTextDocument(doc => {
             const key = this.fs.uriToKey(doc.uri)
             this.tabs.get(key)?.dispose()
+            this.tabs.delete(key)
         })
 
         vscode.workspace.registerFileSystemProvider(ObjectEditor.scheme, this.fs)
