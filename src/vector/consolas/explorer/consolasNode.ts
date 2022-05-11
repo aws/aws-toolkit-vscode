@@ -8,10 +8,10 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { ConsolasIntroductionNode } from './consolasIntroductionNode'
-import { ConsolasPauseAutoSuggestionsNode } from './consolasPauseAutoSuggestionsNode'
-import { ConsolasEnableCodeSuggestionsNode } from './consolasEnableCodeSuggestionsNode'
-import { ConsolasResumeAutoSuggestionsNode } from './consolasResumeAutoSuggestionsNode'
+import { createIntroductionNode } from './consolasIntroductionNode'
+import { createPauseAutoSuggestionsNode } from './consolasPauseAutoSuggestionsNode'
+import { createEnableCodeSuggestionsNode } from './consolasEnableCodeSuggestionsNode'
+import { createResumeAutoSuggestionsNode } from './consolasResumeAutoSuggestionsNode'
 import globals from '../../../shared/extensionGlobals'
 import { ConsolasConstants } from '../models/constants'
 
@@ -36,14 +36,11 @@ export class ConsolasNode extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 if (globals.context.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY)) {
                     if (globals.context.globalState.get<boolean>(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY)) {
-                        return [new ConsolasPauseAutoSuggestionsNode(this.regionCode, this)]
+                        return [createPauseAutoSuggestionsNode()]
                     }
-                    return [new ConsolasResumeAutoSuggestionsNode(this.regionCode, this)]
+                    return [createResumeAutoSuggestionsNode()]
                 } else {
-                    return [
-                        new ConsolasIntroductionNode(this.regionCode, this),
-                        new ConsolasEnableCodeSuggestionsNode(this.regionCode, this),
-                    ]
+                    return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
                 }
             },
             getNoChildrenPlaceholderNode: async () =>

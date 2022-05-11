@@ -4,26 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ConsolasNode } from './consolasNode'
 import globals from '../../../shared/extensionGlobals'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-/**
- * Represents the group of all Consolas nodes.
- */
-export class ConsolasEnableCodeSuggestionsNode extends AWSTreeNodeBase {
-    public constructor(public readonly regionCode: string, public readonly parent: ConsolasNode) {
-        super('Enable Consolas Code Suggestions', vscode.TreeItemCollapsibleState.None)
-        this.tooltip = localize('AWS.explorerNode.enableConsolasNode.tooltip', 'Click to open the node')
-        this.contextValue = 'awsConsolasEnableCodeSuggestionsNode'
-        this.iconPath = {
+import { enableCodeSuggestions } from '../commands/treeNodeCommands'
+
+export const createEnableCodeSuggestionsNode = () =>
+    enableCodeSuggestions.build().asTreeNode({
+        label: localize('AWS.explorerNode.enableConsolasNode.label', 'Enable Consolas Code Suggestions'),
+        iconPath: {
             dark: vscode.Uri.file(globals.iconPaths.dark.run),
             light: vscode.Uri.file(globals.iconPaths.light.run),
-        }
-        this.command = {
-            command: 'aws.consolas.enabledCodeSuggestions',
-            title: ' Enable Consolas Code Suggestions',
-            arguments: [this],
-        }
-    }
-}
+        },
+        tooltip: localize('AWS.explorerNode.enableConsolasNode.tooltip', 'Click to open the node'),
+        contextValue: 'awsConsolasEnableCodeSuggestionsNode',
+    })

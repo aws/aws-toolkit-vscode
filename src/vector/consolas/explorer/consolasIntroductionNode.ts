@@ -4,33 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { inspect } from 'util'
-import { ConsolasNode } from './consolasNode'
 import globals from '../../../shared/extensionGlobals'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { showIntroduction } from '../commands/treeNodeCommands'
 
-/**
- * Represents the group of all Consolas nodes.
- */
-export class ConsolasIntroductionNode extends AWSTreeNodeBase {
-    public constructor(public readonly regionCode: string, public readonly parent: ConsolasNode) {
-        super('What is Consolas?', vscode.TreeItemCollapsibleState.None)
-        this.tooltip = localize('AWS.explorerNode.introConsolasNode.tooltip', 'Click to open the node')
-        this.contextValue = 'awsConsolaswelcomeNode'
-        this.iconPath = {
+export const createIntroductionNode = () =>
+    showIntroduction.build().asTreeNode({
+        label: localize('AWS.explorerNode.consolasIntroductionNode.label', 'What is Consolas?'),
+        iconPath: {
             dark: vscode.Uri.file(globals.iconPaths.dark.question),
             light: vscode.Uri.file(globals.iconPaths.light.question),
-        }
-
-        this.command = {
-            command: 'aws.consolas.introduction',
-            title: 'Show Consolas Introduction Page',
-            arguments: [this],
-        }
-    }
-
-    public [inspect.custom](): string {
-        return `Consolas-Things`
-    }
-}
+        },
+        tooltip: localize('AWS.explorerNode.consolasIntroductionNode.tooltip', 'Click to open the node'),
+        contextValue: 'awsConsolasIntroductionNode',
+    })
