@@ -52,8 +52,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
     public secrets = new SecretStorage()
 
-    public secrets = new SecretStorage()
-
     // Seems to be the most reliable way to set the extension path (unfortunately)
     // TODO: figure out a robust way to source the project directory that is invariant to entry point
     // Using `package.json` as a reference point seems to make the most sense
