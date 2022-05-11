@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
-import { createQuickPick, DataQuickPickItem } from '../shared/ui/pickerPrompter'
-import { isValidResponse, Wizard } from '../shared/wizards/wizard'
+import { createQuickPick } from '../shared/ui/pickerPrompter'
+import { isValidResponse } from '../shared/wizards/wizard'
 
 // CAWS imports
 // Planning on splitting this file up.
@@ -35,29 +35,50 @@ import { DevSettings } from '../shared/settings'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
+import { Wizard } from '../shared/wizards/wizard'
 
-const menuOptions = {
+interface MenuOption {
+    readonly label: string
+    readonly description?: string
+    readonly detail?: string
+    readonly executor: (ctx: ExtContext) => Promise<unknown> | unknown
+}
+
+/**
+ * Currently contains all known developer tools.
+ *
+ * Options are displayed as quick-pick items. The {@link MenuOption.executor} callback is ran
+ * if the user selects an option. There is no support for name-spacing. Just add the relevant
+ * feature/module as a description so it can be moved around easier.
+ */
+const menuOptions: Record<string, MenuOption> = {
     installVsix: {
         label: 'Install VSIX on Remote Environment',
-        description: 'Automatically upload/install a VSIX to a remote host',
+        description: 'CAWS',
+        detail: 'Automatically upload/install a VSIX to a remote host',
         executor: installVsixCommand,
     },
     openTerminal: {
         label: 'Open Remote Terminal',
-        description: 'Open a new terminal connected to the remote environment',
+        description: 'CAWS',
+        detail: 'Open a new terminal connected to the remote environment',
         executor: openTerminalCommand,
     },
     editStorage: {
         label: 'Edit Storage',
-        description: 'Edit a key in storage as a JSON document',
+        description: 'VS Code',
+        detail: 'Edit a key in global/secret storage as a JSON document',
         executor: openStorageFromInput,
     },
 }
 
-function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
-    return Object.entries(obj) as { [P in keyof T]: [P, T[P]] }[keyof T][]
-}
-
+/**
+ * Enables internal developer tools.
+ *
+ * Commands prefixed with `AWS (Developer)` will appear so long as a developer setting is active.
+ *
+ * See {@link DevSettings} for more information.
+ */
 export function activate(ctx: ExtContext): void {
     const devSettings = DevSettings.instance
 
@@ -77,30 +98,25 @@ export function activate(ctx: ExtContext): void {
     ctx.extensionContext.subscriptions.push(openStorageCommand.register(editor))
 }
 
-async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {
-    const OptionWizard = class extends Wizard<{ option: string }> {
-        constructor() {
-            super()
-            this.form.option.bindPrompter(() => {
-                return createQuickPick(
-                    entries(options).map(([_, v]) => {
-                        return {
-                            label: v.label,
-                            description: v.description,
-                            skipEstimate: true,
-                            data: v.executor.bind(undefined, ctx),
-                        } as DataQuickPickItem<string>
-                    }),
-                    {
-                        title: 'Developer Menu',
-                        buttons: createCommonButtons(),
-                    }
-                )
-            })
-        }
-    }
+function entries<T extends Record<string, U>, U>(obj: T): { [P in keyof T]: [P, T[P]] }[keyof T][] {
+    return Object.entries(obj) as { [P in keyof T]: [P, T[P]] }[keyof T][]
+}
 
-    await new OptionWizard().run()
+async function openMenu(ctx: ExtContext, options: typeof menuOptions): Promise<void> {
+    const items = entries(options).map(([_, v]) => ({
+        label: v.label,
+        detail: v.detail,
+        description: v.description,
+        skipEstimate: true,
+        data: v.executor.bind(undefined, ctx),
+    }))
+
+    const prompter = createQuickPick(items, {
+        title: 'Developer Menu',
+        buttons: createCommonButtons(),
+    })
+
+    await prompter.prompt()
 }
 
 type LazyProgress<T> = vscode.Progress<T> & vscode.Disposable & { getToken(): Timeout }
@@ -416,10 +432,7 @@ class VirtualObjectFile implements FileProvider {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
 
-    public constructor(
-        private readonly storage: vscode.Memento | vscode.SecretStorage, // we should create a memento w/ an optional 'changed' event
-        private readonly key: string
-    ) {}
+    public constructor(private readonly storage: vscode.Memento | vscode.SecretStorage, private readonly key: string) {}
 
     public stat(): { ctime: number; mtime: number; size: number } {
         // This would need to be filled out to track conflicts
@@ -440,7 +453,7 @@ class VirtualObjectFile implements FileProvider {
     }
 
     private async readStore(key: string): Promise<string> {
-        // show `undefined` in the UI better ?
+        // Could potentially show `undefined` in the editor instead of an empty string
         if (isSecrets(this.storage)) {
             const value = (await this.storage.get(key)) ?? ''
             return JSON.stringify(JSON.parse(value), undefined, 4)
@@ -473,6 +486,7 @@ class ObjectEditor {
         vscode.workspace.onDidCloseTextDocument(doc => {
             const key = this.fs.uriToKey(doc.uri)
             this.tabs.get(key)?.dispose()
+            this.tabs.delete(key)
         })
 
         vscode.workspace.registerFileSystemProvider(ObjectEditor.scheme, this.fs)
@@ -539,7 +553,12 @@ async function openStorageFromInput() {
                 )
             )
 
-            this.form.key.bindPrompter(() => createInputBox({ title: 'Enter a key' }))
+            this.form.key.bindPrompter(({ target }) =>
+                createInputBox({
+                    title: 'Enter a key',
+                    placeholder: target === 'globals' ? 'region' : '',
+                })
+            )
         }
     })()
 

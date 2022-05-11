@@ -50,7 +50,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storageUri: vscode.Uri | undefined
     public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
-
     public secrets = new SecretStorage()
 
     // Seems to be the most reliable way to set the extension path (unfortunately)

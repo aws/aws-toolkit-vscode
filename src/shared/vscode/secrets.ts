@@ -4,8 +4,7 @@
  */
 
 // Sourced from https://github.com/microsoft/vscode/blob/238c19cc7727511d495d67d2ce1e0ec0638de2ce/src/vscode-dts/vscode.d.ts
-// May want to think of a better way to manage API versions while maintaining compatability with C9. There's a lot of newer
-// APIs that we just don't notice since we're always behind.
+// This API was added in 1.53. Not supported in Cloud9.
 declare module 'vscode' {
     export interface ExtensionContext {
         /**
