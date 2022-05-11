@@ -15,6 +15,7 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     map<U>(fn: (obj: T) => U): AsyncCollection<U>
     /** Filters out results which will _not_ be passed on to further transformations. */
     filter<U extends T>(predicate: Predicate<T, U>): AsyncCollection<U>
+    filter<U extends T>(predicate: (item: T) => boolean): AsyncCollection<U>
     /** Uses only the first 'count' number of values returned by the generator. */
     take(count: number): AsyncCollection<T>
     /** Converts the collection to a Promise, resolving to an array of all values returned by the generator. */
@@ -103,8 +104,10 @@ async function* delegateGenerator<T, U, R = T>(
     generator: AsyncGenerator<T, R | undefined | void>,
     fn: (item: T | R, ret: () => void) => AsyncGenerator<U, void>
 ): AsyncGenerator<U, U | undefined> {
+    type LastValue = Readonly<{ isSet: false; value?: undefined } | { isSet: true; value: Awaited<U> }>
+    let last: LastValue = { isSet: false }
+
     while (true) {
-        let last: U | undefined
         const { value, done } = await generator.next()
         if (value !== undefined) {
             const delegate = fn(value, generator.return.bind(generator))
@@ -113,16 +116,20 @@ async function* delegateGenerator<T, U, R = T>(
                 if (sub.done) {
                     break
                 }
-                last = sub.value
-                if (!done) {
-                    yield last
+                if (last.isSet) {
+                    yield last.value
                 }
+                last = { isSet: true, value: sub.value as Awaited<U> }
             }
         }
         if (done) {
-            return last as Awaited<U | undefined>
+            break
         }
     }
+
+    // The last value is buffered by one step to ensure it is returned here
+    // rather than yielded in the while loops.
+    return last.value
 }
 
 async function* flatten<T, U extends SafeUnboxIterable<T>>(item: T) {
@@ -142,10 +149,12 @@ function takeFrom<T>(count: number) {
     }
 }
 
-/** Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable */
+/**
+ * Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable
+ */
 type SafeUnboxIterable<T> = T extends Iterable<infer U> ? U : T
 
-function isIterable<T>(obj: any): obj is Iterable<T> {
+export function isIterable<T>(obj: any): obj is Iterable<T> {
     return obj !== undefined && typeof obj[Symbol.iterator] === 'function'
 }
 
@@ -159,7 +168,7 @@ async function promise<T>(iterable: AsyncIterable<T>): Promise<T[]> {
     return result
 }
 
-type Predicate<T, U extends T> = ((item: T) => item is U) | ((item: T) => boolean)
+type Predicate<T, U extends T> = (item: T) => item is U
 
 function addToMap<T, U extends string>(map: Map<string, T>, selector: KeySelector<T, U> | StringProperty<T>, item: T) {
     const key = typeof selector === 'function' ? selector(item) : item[selector]

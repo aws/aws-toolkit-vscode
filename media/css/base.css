@@ -152,6 +152,7 @@ textarea {
     white-space: nowrap;
 }
 
+/* Labels (TODO: move some over to MDE) */
 .label-context {
     display: block;
     padding: 0 0 4px 0;
@@ -251,6 +252,7 @@ textarea {
 .display-contents {
     display: contents;
 }
+/* TODO: move to MDE? */
 .button-container {
     display: flex;
     align-items: flex-start;

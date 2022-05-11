@@ -3,46 +3,75 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
-import { SSO } from '@aws-sdk/client-sso'
-import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
-import * as nls from 'vscode-nls'
+import { hasStringProps } from '../../shared/utilities/tsUtils'
+import { CredentialsId, CredentialsProvider } from './credentials'
+import { CredentialType } from '../../shared/telemetry/telemetry.gen'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { SsoWizard } from '../wizards/sso'
+import { SsoClient } from '../sso/clients'
 
-const localize = nls.loadMessageBundle()
+export class SsoProvider implements CredentialsProvider {
+    public static readonly type = 'sso' as const
 
-export class SsoCredentialProvider {
-    public constructor(
-        private ssoAccount: string,
-        private ssoRole: string,
-        private ssoClient: SSO,
-        private ssoAccessTokenProvider: SsoAccessTokenProvider
-    ) {}
+    public constructor(private readonly name: string, private readonly profile: Record<string, string | undefined>) {}
 
-    public async refreshCredentials(): Promise<Credentials> {
-        try {
-            const accessToken = await this.ssoAccessTokenProvider.accessToken()
-            const roleCredentials = await this.ssoClient.getRoleCredentials({
-                accountId: this.ssoAccount,
-                roleName: this.ssoRole,
-                accessToken: accessToken.accessToken,
-            })
+    public async getCredentials(): Promise<Credentials> {
+        const wizard = new SsoWizard({
+            region: this.getDefaultRegion(),
+            roleName: this.profile['sso_role_name'],
+            accountId: this.profile['sso_account_id'],
+            startUrl: this.profile['sso_start_url'],
+        })
 
-            return {
-                accessKeyId: roleCredentials.roleCredentials!.accessKeyId!,
-                secretAccessKey: roleCredentials.roleCredentials!.secretAccessKey!,
-                sessionToken: roleCredentials.roleCredentials?.sessionToken,
-            }
-        } catch (err) {
-            if ((err as { code: string }).code === 'UnauthorizedException') {
-                this.ssoAccessTokenProvider.invalidate()
-            }
-            vscode.window.showErrorMessage(
-                localize('AWS.message.credentials.sso.error', 'Failed to load SSO credentials. Try logging in again.')
-            )
-            getLogger().error(err as Error)
-            throw err
+        const response = await wizard.run()
+        if (!response) {
+            throw new CancellationError('user')
+        }
+
+        const client = SsoClient.create(response.region, response.tokenProvider)
+
+        return client.getRoleCredentials(response)
+    }
+
+    public async canAutoConnect(): Promise<boolean> {
+        if (!hasStringProps(this.profile, 'sso_start_url', 'sso_region')) {
+            return false
+        }
+
+        const provider = SsoAccessTokenProvider.create({
+            startUrl: this.profile['sso_start_url'],
+            region: this.profile['sso_region'],
+        })
+
+        return (await provider.getToken()) !== undefined
+    }
+
+    public async isAvailable(): Promise<boolean> {
+        return true
+    }
+
+    public getProviderType() {
+        return SsoProvider.type
+    }
+
+    public getTelemetryType(): CredentialType {
+        return 'ssoProfile'
+    }
+
+    public getDefaultRegion(): string | undefined {
+        return this.profile['sso_region']
+    }
+
+    public getHashCode(): string {
+        return JSON.stringify(this.profile)
+    }
+
+    public getCredentialsId(): CredentialsId {
+        return {
+            credentialSource: SsoProvider.type,
+            credentialTypeId: this.name,
         }
     }
 }
