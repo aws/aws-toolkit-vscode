@@ -51,6 +51,7 @@ import { activate as activateDynamicResources } from './dynamicResources/activat
 import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
+import { activate as activateDev } from './dev/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
@@ -127,6 +128,12 @@ export async function activate(context: vscode.ExtensionContext) {
             invokeOutputChannel: remoteInvokeOutputChannel,
             telemetryService: globals.telemetry,
             credentialsStore,
+        }
+
+        try {
+            activateDev(extContext)
+        } catch (error) {
+            getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
         }
 
         context.subscriptions.push(
