@@ -33,7 +33,6 @@ import * as consolasClient from './client/consolas'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { onRejection } from './commands/onRejection'
 
 export async function activate(context: ExtContext, configuration: Settings): Promise<void> {
     /**
