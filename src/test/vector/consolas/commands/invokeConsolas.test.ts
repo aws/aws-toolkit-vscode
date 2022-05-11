@@ -12,7 +12,7 @@ import { invocationContext, automatedTriggerContext } from '../../../../vector/c
 import * as messages from '../../../../shared/utilities/messages'
 import { invokeConsolas } from '../../../../vector/consolas/commands/invokeConsolas'
 import * as KeyStrokeHandler from '../../../../vector/consolas/service/keyStrokeHandler'
-import * as inlineCompletions from '../../../../vector/consolas/views/recommendationSelectionProvider'
+import * as inlineCompletions from '../../../../vector/consolas/service/inlinecompletionProvider'
 
 describe('invokeConsolas', function () {
     describe('invokeConsolas', function () {

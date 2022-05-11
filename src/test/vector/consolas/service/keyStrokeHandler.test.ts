@@ -17,7 +17,7 @@ import {
     telemetryContext,
 } from '../../../../vector/consolas/models/model'
 import * as KeyStrokeHandler from '../../../../vector/consolas/service/keyStrokeHandler'
-import * as inlineCompletions from '../../../../vector/consolas/views/recommendationSelectionProvider'
+import * as inlineCompletions from '../../../../vector/consolas/service/inlinecompletionProvider'
 import { createMockTextEditor, createTextDocumentChangeEvent, resetConsolasGlobalVariables } from '../testUtil'
 import * as EditorContext from '../../../../vector/consolas/util/editorContext'
 import { UnsupportedLanguagesCache } from '../../../../vector/consolas/util/unsupportedLanguagesCache'

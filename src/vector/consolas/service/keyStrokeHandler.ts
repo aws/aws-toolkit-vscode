@@ -21,7 +21,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../../shared/logger'
 import { UnsupportedLanguagesCache } from '../util/unsupportedLanguagesCache'
 import { showTimedMessage } from '../../../shared/utilities/messages'
-import { showFirstRecommendation } from '../views/recommendationSelectionProvider'
+import { showFirstRecommendation } from './inlinecompletionProvider'
 import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
 import globals from '../../../shared/extensionGlobals'
 

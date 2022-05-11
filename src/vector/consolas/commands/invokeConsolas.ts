@@ -9,7 +9,7 @@ import { recommendations, invocationContext, automatedTriggerContext } from '../
 import { onRejection } from './onRejection'
 import { showTimedMessage } from '../../../shared/utilities/messages'
 import { DefaultConsolasClient } from '../client/consolas'
-import { showFirstRecommendation } from '../views/recommendationSelectionProvider'
+import { showFirstRecommendation } from '../service/inlinecompletionProvider'
 
 export async function invokeConsolas(
     editor: vscode.TextEditor,

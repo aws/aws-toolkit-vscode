@@ -16,7 +16,7 @@ import {
     acceptRecommendation,
     setContextAndTrigger,
     setTypeAheadRecommendations,
-} from './views/recommendationSelectionProvider'
+} from './service/inlinecompletionProvider'
 import { invokeConsolas } from './commands/invokeConsolas'
 import { onAcceptance } from './commands/onAcceptance'
 import { TelemetryHelper } from './util/telemetryHelper'
