@@ -8,6 +8,7 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import * as KeyStrokeHandler from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import { ConsolasConstants } from './models/constants'
+import { getCompletionItems } from './service/completionProvider'
 import { invocationContext } from './models/model'
 import {
     showNextRecommendation,
@@ -31,6 +32,8 @@ import { ConsolasTracker } from './tracker/consolasTracker'
 import * as consolasClient from './client/consolas'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../../shared/logger'
+import { isCloud9 } from '../../shared/extensionUtilities'
+import { onRejection } from './commands/onRejection'
 
 export async function activate(context: ExtContext, configuration: Settings): Promise<void> {
     /**
@@ -46,7 +49,6 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
     const isAutomatedTriggerEnabled: boolean =
         context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY) || false
     const client = new consolasClient.DefaultConsolasClient()
-    setContextAndTrigger(context, isManualTriggerEnabled, isAutomatedTriggerEnabled)
     context.extensionContext.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
             if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
@@ -131,33 +133,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
             )
         })
     )
-    /**
-     * Automated trigger
-     */
-    context.extensionContext.subscriptions.push(
-        vscode.workspace.onDidChangeTextDocument(async e => {
-            if (
-                e.document === vscode.window.activeTextEditor?.document &&
-                runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
-                e.contentChanges.length != 0
-            ) {
-                if (!invocationContext.isInlineActive) {
-                    setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
-                }
-                const isAutoTriggerOn: boolean =
-                    context.extensionContext.globalState.get<boolean>(
-                        ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY
-                    ) || false
-                await KeyStrokeHandler.processKeyStroke(
-                    e,
-                    vscode.window.activeTextEditor,
-                    client,
-                    isManualTriggerEnabled,
-                    isAutoTriggerOn
-                )
-            }
-        })
-    )
+
     context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.consolas.enabledCodeSuggestions', () => {
             activateView(context)
@@ -200,61 +176,6 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         )
     )
 
-    /**
-     * On recommendation rejection
-     */
-    context.extensionContext.subscriptions.push(
-        vscode.workspace.onDidSaveTextDocument(async e => {
-            if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
-        })
-    )
-    context.extensionContext.subscriptions.push(
-        vscode.window.onDidChangeVisibleTextEditors(async e => {
-            if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
-        })
-    )
-    context.extensionContext.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(async e => {
-            if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
-        })
-    )
-    context.extensionContext.subscriptions.push(
-        vscode.window.onDidChangeTextEditorSelection(async e => {
-            if (
-                e.kind === TextEditorSelectionChangeKind.Mouse &&
-                context?.extensionContext.globalState.get(ConsolasConstants.CONSOLAS_SERVICE_ACTIVE_KEY) &&
-                !invocationContext.isInlineActive &&
-                vscode.window.activeTextEditor
-            ) {
-                await rejectRecommendation(vscode.window.activeTextEditor)
-            }
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.consolas.nextCodeSuggestion', async () => {
-            if (vscode.window.activeTextEditor) showNextRecommendation(vscode.window.activeTextEditor)
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.consolas.previousCodeSuggestion', async () => {
-            if (vscode.window.activeTextEditor) showPreviousRecommendation(vscode.window.activeTextEditor)
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.consolas.acceptCodeSuggestion', async () => {
-            if (vscode.window.activeTextEditor) await acceptRecommendation(vscode.window.activeTextEditor)
-        })
-    )
-
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.consolas.rejectCodeSuggestion', async e => {
-            if (vscode.window.activeTextEditor) await rejectRecommendation(vscode.window.activeTextEditor)
-        })
-    )
-
     async function showConsolasWelcomeMessage(): Promise<void> {
         const filePath = context.extensionContext.asAbsolutePath(ConsolasConstants.WELCOME_CONSOLAS_README_FILE_SOURCE)
         const readmeUri = vscode.Uri.file(filePath)
@@ -285,6 +206,167 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         const acceptedTerms: boolean =
             context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY) || false
         return acceptedTerms && consolasEnabled
+    }
+
+    function setSubscriptionsforVsCodeInline() {
+        /**
+         * Automated trigger
+         */
+        context.extensionContext.subscriptions.push(
+            vscode.workspace.onDidChangeTextDocument(async e => {
+                if (
+                    e.document === vscode.window.activeTextEditor?.document &&
+                    runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
+                    e.contentChanges.length != 0
+                ) {
+                    if (!invocationContext.isInlineActive) {
+                        setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
+                    }
+                    const isAutoTriggerOn: boolean =
+                        context.extensionContext.globalState.get<boolean>(
+                            ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY
+                        ) || false
+                    await KeyStrokeHandler.processKeyStroke(
+                        e,
+                        vscode.window.activeTextEditor,
+                        client,
+                        isManualTriggerEnabled,
+                        isAutoTriggerOn
+                    )
+                }
+            })
+        )
+        /**
+         * On recommendation rejection
+         */
+        context.extensionContext.subscriptions.push(
+            vscode.workspace.onDidSaveTextDocument(async e => {
+                if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
+            })
+        )
+        context.extensionContext.subscriptions.push(
+            vscode.window.onDidChangeVisibleTextEditors(async e => {
+                if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
+            })
+        )
+        context.extensionContext.subscriptions.push(
+            vscode.window.onDidChangeActiveTextEditor(async e => {
+                if (!invocationContext.isInlineActive) await rejectRecommendation(vscode.window.activeTextEditor)
+            })
+        )
+        context.extensionContext.subscriptions.push(
+            vscode.window.onDidChangeTextEditorSelection(async e => {
+                if (
+                    e.kind === TextEditorSelectionChangeKind.Mouse &&
+                    context?.extensionContext.globalState.get(ConsolasConstants.CONSOLAS_SERVICE_ACTIVE_KEY) &&
+                    !invocationContext.isInlineActive &&
+                    vscode.window.activeTextEditor
+                ) {
+                    await rejectRecommendation(vscode.window.activeTextEditor)
+                }
+            })
+        )
+
+        context.extensionContext.subscriptions.push(
+            vscode.commands.registerCommand('aws.consolas.nextCodeSuggestion', async () => {
+                if (vscode.window.activeTextEditor) showNextRecommendation(vscode.window.activeTextEditor)
+            })
+        )
+
+        context.extensionContext.subscriptions.push(
+            vscode.commands.registerCommand('aws.consolas.previousCodeSuggestion', async () => {
+                if (vscode.window.activeTextEditor) showPreviousRecommendation(vscode.window.activeTextEditor)
+            })
+        )
+
+        context.extensionContext.subscriptions.push(
+            vscode.commands.registerCommand('aws.consolas.acceptCodeSuggestion', async () => {
+                if (vscode.window.activeTextEditor) await acceptRecommendation(vscode.window.activeTextEditor)
+            })
+        )
+
+        context.extensionContext.subscriptions.push(
+            vscode.commands.registerCommand('aws.consolas.rejectCodeSuggestion', async e => {
+                if (vscode.window.activeTextEditor) await rejectRecommendation(vscode.window.activeTextEditor)
+            })
+        )
+        setContextAndTrigger(context, isManualTriggerEnabled, isAutomatedTriggerEnabled)
+    }
+
+    if (isCloud9()) {
+        setSubscriptionsforCloud9()
+    } else {
+        setSubscriptionsforVsCodeInline()
+    }
+
+    function setSubscriptionsforCloud9() {
+        /**
+         * Manual trigger
+         */
+        context.extensionContext.subscriptions.push(
+            vscode.languages.registerCompletionItemProvider(ConsolasConstants.SUPPORTED_LANGUAGES, {
+                async provideCompletionItems(
+                    document: vscode.TextDocument,
+                    position: vscode.Position,
+                    token: vscode.CancellationToken,
+                    context: vscode.CompletionContext
+                ) {
+                    const completionList = new vscode.CompletionList(getCompletionItems(document, position), false)
+                    return completionList
+                },
+            })
+        )
+
+        /**
+         * Automated trigger
+         */
+        context.extensionContext.subscriptions.push(
+            vscode.workspace.onDidChangeTextDocument(e => {
+                if (
+                    e.document === vscode.window.activeTextEditor?.document &&
+                    runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
+                    e.contentChanges.length != 0
+                ) {
+                    const isAutoTriggerOn: boolean =
+                        context.extensionContext.globalState.get<boolean>(
+                            ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY
+                        ) || false
+                    KeyStrokeHandler.processKeyStroke(
+                        e,
+                        vscode.window.activeTextEditor,
+                        client,
+                        isManualTriggerEnabled,
+                        isAutoTriggerOn
+                    )
+                }
+            })
+        )
+
+        /**
+         * On recommendation rejection
+         */
+        context.extensionContext.subscriptions.push(
+            vscode.workspace.onDidSaveTextDocument(e => {
+                onRejection(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+            })
+        )
+        context.extensionContext.subscriptions.push(
+            vscode.window.onDidChangeVisibleTextEditors(e => {
+                onRejection(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+            })
+        )
+        context.extensionContext.subscriptions.push(
+            vscode.window.onDidChangeActiveTextEditor(e => {
+                onRejection(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+            })
+        )
+        context.extensionContext.subscriptions.push(
+            vscode.window.onDidChangeTextEditorSelection(e => {
+                if (e.kind === TextEditorSelectionChangeKind.Mouse) {
+                    onRejection(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+                }
+            })
+        )
     }
 }
 

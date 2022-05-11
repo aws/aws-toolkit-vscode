@@ -16,6 +16,7 @@ import * as EditorContext from '../util/editorContext'
 import { ConsolasConstants } from '../models/constants'
 import { recommendations, invocationContext, automatedTriggerContext, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
+import { onRejection } from '../commands/onRejection'
 import { AWSError } from 'aws-sdk'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../../shared/logger'
@@ -24,6 +25,7 @@ import { showTimedMessage } from '../../../shared/utilities/messages'
 import { showFirstRecommendation } from './inlinecompletionProvider'
 import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
 import globals from '../../../shared/extensionGlobals'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 
 //if this is browser it uses browser and if it's node then it uses nodes
 //TODO remove when node version >= 16
@@ -139,6 +141,11 @@ export async function invokeAutomatedTrigger(
     isAutomatedTriggerEnabled: boolean,
     overrideGetRecommendations = getRecommendations
 ): Promise<void> {
+    const isCloud9CurrentIDE = isCloud9()
+    /**
+     * Reject previous recommendations if there are ACTIVE ones in cloud9
+     */
+    if (isCloud9CurrentIDE) await onRejection(isManualTriggerEnabled, isAutomatedTriggerEnabled)
     if (editor) {
         recommendations.response = await overrideGetRecommendations(
             client,
@@ -155,8 +162,14 @@ export async function invokeAutomatedTrigger(
 
         const isMatchedPrefix = checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
         if (isMatchedPrefix.length > 0) {
-            invocationContext.isActive = true
-            await showFirstRecommendation(editor)
+            if (isCloud9CurrentIDE) {
+                vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+                    invocationContext.isActive = true
+                })
+            } else {
+                invocationContext.isActive = true
+                await showFirstRecommendation(editor)
+            }
         }
     }
 }
@@ -298,6 +311,10 @@ export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
         return []
     }
 
+    // Only works for cloud9, as it works for completion items
+    if (isCloud9() && invocationContext.startPos.line !== editor.selection.active.line) {
+        return []
+    }
     typedPrefix = editor.document.getText(new vscode.Range(invocationContext.startPos, editor.selection.active))
 
     recommendations.response.forEach(recommendation => {

@@ -10,6 +10,7 @@ import { onRejection } from './onRejection'
 import { showTimedMessage } from '../../../shared/utilities/messages'
 import { DefaultConsolasClient } from '../client/consolas'
 import { showFirstRecommendation } from '../service/inlinecompletionProvider'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 
 export async function invokeConsolas(
     editor: vscode.TextEditor,
@@ -64,7 +65,13 @@ export async function invokeConsolas(
         KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(!invocationContext.isActive, editor)
         if (KeyStrokeHandler.isValidResponse(recommendations.response)) {
             automatedTriggerContext.keyStrokeCount = 0
-            await showFirstRecommendation(editor)
+            if (isCloud9()) {
+                vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+                    invocationContext.isActive = true
+                })
+            } else {
+                await showFirstRecommendation(editor)
+            }
         } else {
             showTimedMessage('No suggestions from Consolas', 2000)
         }
