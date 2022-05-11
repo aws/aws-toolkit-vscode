@@ -16,6 +16,7 @@ import { resetConsolasGlobalVariables, createMockTextEditor } from '../testUtil'
 import { ConsolasTracker } from '../../../../vector/consolas/tracker/consolasTracker'
 import { assertTelemetryCurried } from '../../../testUtil'
 import { getLogger } from '../../../../shared/logger/logger'
+import { FakeExtensionContext } from '../../../fakeExtensionContext'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
@@ -30,6 +31,7 @@ describe('onAcceptance', function () {
         it('Should format python code with command editor.action.format when current active document is python', async function () {
             const mockEditor = createMockTextEditor()
             const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
+            const extensionContext = await FakeExtensionContext.create()
             await onAcceptance(
                 {
                     editor: mockEditor,
@@ -41,14 +43,16 @@ describe('onAcceptance', function () {
                     completionType: 'Line',
                     language: 'python',
                 },
-                true
+                true,
+                extensionContext.globalState
             )
             assert.ok(commandSpy.calledWith('editor.action.format'))
         })
 
-        it('Should format code selection with command editor.action.formatSelection when current active document is not python', async function () {
+        it('Should format code selection with command vscode.executeFormatRangeProvider when current active document is not python', async function () {
             const mockEditor = createMockTextEditor("console.log('Hello')", 'test.js', 'javascript', 1, 0)
-            const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
+            const commandStub = sinon.stub(vscode.commands, 'executeCommand')
+            const extensionContext = await FakeExtensionContext.create()
             await onAcceptance(
                 {
                     editor: mockEditor,
@@ -60,14 +64,16 @@ describe('onAcceptance', function () {
                     completionType: 'Line',
                     language: 'javascript',
                 },
-                true
+                true,
+                extensionContext.globalState
             )
-            assert.ok(commandSpy.calledWith('editor.action.formatSelection'))
+            assert.ok(commandStub.calledWith('vscode.executeFormatRangeProvider'))
         })
 
         it('Should enqueue an event object to tracker', async function () {
             const mockEditor = createMockTextEditor()
             const trackerSpy = sinon.spy(ConsolasTracker.prototype, 'enqueue')
+            const extensionContext = await FakeExtensionContext.create()
             await onAcceptance(
                 {
                     editor: mockEditor,
@@ -79,7 +85,8 @@ describe('onAcceptance', function () {
                     completionType: 'Line',
                     language: 'python',
                 },
-                true
+                true,
+                extensionContext.globalState
             )
             const actualArg = trackerSpy.getCall(0).args[0]
             assert.ok(trackerSpy.calledOnce)
@@ -101,6 +108,7 @@ describe('onAcceptance', function () {
             telemetryContext.completionType = 'Line'
             telemetryContext.isPrefixMatched = [true]
             const assertTelemetry = assertTelemetryCurried('consolas_userDecision')
+            const extensionContext = await FakeExtensionContext.create()
             await onAcceptance(
                 {
                     editor: mockEditor,
@@ -112,7 +120,8 @@ describe('onAcceptance', function () {
                     completionType: 'Line',
                     language: 'python',
                 },
-                true
+                true,
+                extensionContext.globalState
             )
             assertTelemetry({
                 consolasRequestId: 'test',
