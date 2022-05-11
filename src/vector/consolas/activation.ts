@@ -37,7 +37,6 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
     const isManualTriggerEnabled: boolean = await getManualTriggerStatus()
     const isAutomatedTriggerEnabled: boolean =
         context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY) || false
-
     const client = new consolasClient.DefaultConsolasClient()
     context.extensionContext.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
@@ -198,7 +197,8 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                         completionType,
                         language,
                     },
-                    isAutoClosingBracketsEnabled
+                    isAutoClosingBracketsEnabled,
+                    context.extensionContext.globalState
                 )
             }
         )

@@ -85,4 +85,9 @@ export const ConsolasConstants = {
 
     //
     CONSOLAS_LEARN_MORE_URI: 'https://en.wikipedia.org/wiki/Consolas',
+
+    /**
+     * the interval of the background thread invocation, which is triggered by the timer
+     */
+    DEFAULT_CHECK_PERIOD_MILLIS: 1000 * 60 * 5,
 }
