@@ -21,7 +21,7 @@ import { ConsolasConstants } from '../models/constants'
  * Contains consolas code suggestions feature.
  */
 export class ConsolasNode extends AWSTreeNodeBase {
-    public constructor(private readonly regionCode: string) {
+    public constructor() {
         super('Consolas(Preview)', vscode.TreeItemCollapsibleState.Collapsed)
         vscode.commands.executeCommand(
             'setContext',
