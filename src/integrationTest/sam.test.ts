@@ -35,7 +35,7 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
 // note: this refers to the _test_ timeout, not the invocation timeout
-const DEBUG_TIMEOUT: number = 120000
+const DEBUG_TIMEOUT: number = 240000
 const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
 
@@ -597,6 +597,9 @@ describe('SAM Integration Tests', async function () {
                             // Resource defined in `src/testFixtures/.../template.yaml`.
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
+                        },
+                        sam: {
+                            containerBuild: true,
                         },
                         ...extraConfig,
                     } as AwsSamDebuggerConfiguration
