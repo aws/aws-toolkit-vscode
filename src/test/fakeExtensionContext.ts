@@ -5,6 +5,7 @@
 
 import { mkdirp } from 'fs-extra'
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { ExtContext } from '../shared/extensions'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
@@ -18,6 +19,7 @@ import {
 } from '../shared/sam/cli/samCliValidator'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
+import { UriHandler } from '../shared/vscode/uriHandler'
 import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
@@ -50,7 +52,12 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
     public secrets = new SecretStorage()
 
-    private _extensionPath: string = ''
+    public secrets = new SecretStorage()
+
+    // Seems to be the most reliable way to set the extension path (unfortunately)
+    // TODO: figure out a robust way to source the project directory that is invariant to entry point
+    // Using `package.json` as a reference point seems to make the most sense
+    private _extensionPath: string = path.resolve(__dirname, '../../..')
     private _globalStoragePath: string = '.'
 
     /**
@@ -80,7 +87,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     }
 
     public asAbsolutePath(relativePath: string): string {
-        return relativePath
+        return path.resolve(this._extensionPath, relativePath)
     }
 
     /**
@@ -115,6 +122,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
+
         return {
             extensionContext: ctx,
             awsContext,
@@ -124,6 +132,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             invokeOutputChannel,
             telemetryService,
             credentialsStore: new CredentialsStore(),
+            uriHandler: new UriHandler(),
         }
     }
 }

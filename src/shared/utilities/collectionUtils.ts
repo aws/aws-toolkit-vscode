@@ -275,7 +275,9 @@ export function applyPrimitives<T1 extends Record<string, any>, T2 extends T1>(o
 }
 
 /** Recursively delete undefined key/value pairs */
-export function stripUndefined(obj: any): void {
+export function stripUndefined<T extends Record<string, any>>(
+    obj: T
+): asserts obj is { [P in keyof T]-?: NonNullable<T[P]> } {
     Object.keys(obj).forEach(key => {
         if (obj[key] === undefined) {
             delete obj[key]

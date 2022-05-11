@@ -109,6 +109,36 @@ export function ArrayConstructor<T>(type: TypeConstructor<T>): TypeConstructor<A
     })
 }
 
+export function RecordConstructor<K extends string, U>(
+    keyType: TypeConstructor<K>,
+    valueType: TypeConstructor<U>
+): TypeConstructor<Record<K, U>> {
+    return addTypeName(`Record<${(getTypeName(keyType), getTypeName(valueType))}>`, value => {
+        if (typeof value !== 'object' || !isNonNullable(value)) {
+            throw new TypeError('Value is not a non-null object')
+        }
+
+        const mapped: { [P in K]?: U } = {}
+        for (const [k, v] of Object.entries(value)) {
+            // TODO(sijaden): allow errors to accumulate, then return the final result + any errors
+            mapped[cast(k, keyType)] = cast(v, valueType)
+        }
+
+        return mapped
+    })
+}
+
+// It's _very_ important to note that `Object(null)` results in an empty object
+// This silent conversion may be unexpected, especially for any logic that relies
+// on the explicit presence (or absence) of `null`.
+function checkForObject(value: unknown): NonNullObject {
+    if (!isNonNullable(value)) {
+        throw new TypeError('Value is null or undefned')
+    }
+
+    return cast(value, Object)
+}
+
 function OptionalConstructor<T>(type: TypeConstructor<T>): TypeConstructor<T | undefined> {
     return addTypeName(`Optional<${getTypeName(type)}>`, input =>
         isNonNullable(input) ? cast(input, type) : undefined
@@ -121,3 +151,6 @@ export const Optional = OptionalConstructor
 // Aliasing to distinguish from the concrete implementation the "primitive" object
 export type Any = any
 export const Any: TypeConstructor<any> = addTypeName('Any', value => value)
+
+export type NonNullObject = Record<any, unknown>
+export const NonNullObject = addTypeName('Object', checkForObject)
