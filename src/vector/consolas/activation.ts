@@ -22,7 +22,7 @@ import { ConsolasTracker } from './tracker/consolasTracker'
 import * as consolasClient from './client/consolas'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../../shared/logger'
-import { enableCodeSuggestions, toggleCodeSuggestions, showIntroduction } from './commands/treeNodeCommands'
+import { enableCodeSuggestions, toggleCodeSuggestions, showIntroduction, set, get } from './commands/basicCommands'
 
 export async function activate(context: ExtContext, configuration: Settings): Promise<void> {
     /**
@@ -223,19 +223,6 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
             context.extensionContext.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY) || false
         return acceptedTerms && consolasEnabled
     }
-}
-
-export function get(key: string, context: ExtContext): any {
-    return context.extensionContext.globalState.get(key)
-}
-
-export function set(key: string, value: any, context: ExtContext): void {
-    context.extensionContext.globalState.update(key, value).then(
-        () => {},
-        error => {
-            getLogger().verbose(`Failed to update global state: ${error}`)
-        }
-    )
 }
 
 export async function shutdown() {

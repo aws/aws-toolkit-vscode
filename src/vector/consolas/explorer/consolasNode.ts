@@ -8,12 +8,14 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { createIntroductionNode } from './consolasIntroductionNode'
-import { createPauseAutoSuggestionsNode } from './consolasPauseAutoSuggestionsNode'
-import { createEnableCodeSuggestionsNode } from './consolasEnableCodeSuggestionsNode'
-import { createResumeAutoSuggestionsNode } from './consolasResumeAutoSuggestionsNode'
 import globals from '../../../shared/extensionGlobals'
 import { ConsolasConstants } from '../models/constants'
+import {
+    createEnableCodeSuggestionsNode,
+    createIntroductionNode,
+    createPauseAutoSuggestionsNode,
+    createResumeAutoSuggestionsNode,
+} from './consolasChildrenNodes'
 
 /**
  * An AWS Explorer node representing Consolas.
