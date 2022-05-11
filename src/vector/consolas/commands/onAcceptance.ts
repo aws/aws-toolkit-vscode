@@ -15,15 +15,20 @@ import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLan
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ConsolasTracker } from '../tracker/consolasTracker'
+import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
+import { TextEdit, WorkspaceEdit, workspace } from 'vscode'
+import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 
 export async function onAcceptance(
     acceptanceEntry: OnRecommendationAcceptanceEntry,
-    isAutoClosingBracketsEnabled: boolean
+    isAutoClosingBracketsEnabled: boolean,
+    globalStorage: vscode.Memento
 ) {
     /**
      * Format document
      */
     if (acceptanceEntry.editor) {
+        const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
         const start = acceptanceEntry.editor.document.lineAt(acceptanceEntry.line).range.start
         const end = acceptanceEntry.editor.selection.active
         const languageId = acceptanceEntry.editor.document.languageId
@@ -52,15 +57,22 @@ export async function onAcceptance(
                 invocationContext.isActive = false
             })
         } else {
-            acceptanceEntry.editor.selection = new vscode.Selection(start, end)
-            vscode.commands.executeCommand('editor.action.formatSelection').then(() => {
-                if (acceptanceEntry.editor) {
-                    acceptanceEntry.editor.selection = new vscode.Selection(end, end)
+            const range = new vscode.Range(start, end)
+            const edits: TextEdit[] | undefined = await vscode.commands.executeCommand(
+                'vscode.executeFormatRangeProvider',
+                acceptanceEntry.editor.document.uri,
+                range,
+                {
+                    tabSize: getTabSizeSetting(),
+                    insertSpaces: true,
                 }
-                invocationContext.isActive = false
-            })
+            )
+            if (edits) {
+                const wEdit = new WorkspaceEdit()
+                wEdit.set(acceptanceEntry.editor.document.uri, edits)
+                await workspace.applyEdit(wEdit)
+            }
         }
-        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         ConsolasTracker.getTracker().enqueue({
             time: new Date(),
             fileUrl: acceptanceEntry.editor.document.uri,
@@ -75,8 +87,10 @@ export async function onAcceptance(
             languageRuntime: languageContext.runtimeLanguage,
             languageRuntimeSource: languageContext.runtimeLanguageSource,
         })
+        ConsolasCodeCoverageTracker.getTracker(languageContext.language, globalStorage).setAcceptedTokens(
+            acceptanceEntry.recommendation
+        )
     }
-
     recommendations.requestId = ''
 }
 

@@ -22,6 +22,8 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../../shared/logger'
 import { UnsupportedLanguagesCache } from '../util/unsupportedLanguagesCache'
 import { showTimedMessage } from '../../../shared/utilities/messages'
+import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
+import globals from '../../../shared/extensionGlobals'
 
 //if this is browser it uses browser and if it's node then it uses nodes
 //TODO remove when node version >= 16
@@ -35,6 +37,11 @@ export async function processKeyStroke(
     isAutomatedTriggerEnabled: boolean
 ): Promise<void> {
     try {
+        const content = event.contentChanges[0].text
+        const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
+        ConsolasCodeCoverageTracker.getTracker(languageContext.language, globals.context.globalState).setTotalTokens(
+            content
+        )
         const changedText = getChangedText(event, isAutomatedTriggerEnabled, editor)
         if (changedText === '') {
             return
@@ -254,7 +261,7 @@ export async function getRecommendations(
          * TODO: fill in runtime fields after solution is found to access runtime in vscode
          */
         telemetry.recordConsolasServiceInvocation({
-            consolasRequestId: requestId,
+            consolasRequestId: requestId ? requestId : undefined,
             consolasTriggerType: triggerType,
             consolasAutomatedtriggerType: autoTriggerType,
             consolasCompletionType: invocationResult == 'Succeeded' ? telemetryContext.completionType : undefined,
@@ -265,7 +272,7 @@ export async function getRecommendations(
             consolasLanguage: languageContext.language,
             consolasRuntime: languageContext.runtimeLanguage,
             consolasRuntimeSource: languageContext.runtimeLanguageSource,
-            reason: reason,
+            reason: reason ? reason : undefined,
         })
         recommendations.requestId = requestId
     }

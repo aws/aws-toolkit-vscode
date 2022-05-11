@@ -18,7 +18,7 @@ export class TelemetryHelper {
         // emit user decision telemetry
         recommendations.response.forEach((_elem, i) => {
             telemetry.recordConsolasUserDecision({
-                consolasRequestId: recommendations.requestId,
+                consolasRequestId: recommendations.requestId ? recommendations.requestId : undefined,
                 consolasTriggerType: telemetryContext.triggerType,
                 consolasSuggestionIndex: i,
                 consolasSuggestionState: this.getSuggestionState(telemetryContext.isPrefixMatched, i, acceptIndex),

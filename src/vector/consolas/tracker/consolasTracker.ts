@@ -89,7 +89,7 @@ export class ConsolasTracker {
             getLogger().verbose(`Exception Thrown from ConsolasTracker: ${e}`)
         } finally {
             telemetry.recordConsolasUserModification({
-                consolasRequestId: suggestion.requestId,
+                consolasRequestId: suggestion.requestId ? suggestion.requestId : undefined,
                 consolasTriggerType: suggestion.triggerType,
                 consolasSuggestionIndex: suggestion.index,
                 consolasModificationPercentage: percentage,
