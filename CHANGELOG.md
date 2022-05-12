@@ -1,3 +1,18 @@
+## 1.38.0 2022-05-12
+
+- **Breaking Change** Removed the `aws.onDefaultRegionMissing` setting
+- **Bug Fix** SAM template.yaml syntax support for condition, requestmodel, requestparameters, custom resources, SSMParameterReadPolicy and AWSSecretsManagerGetSecretValuePolicy
+- **Bug Fix** Fixed issue with API Gateway 'Invoke on AWS' resource names always showing 'resource.path'
+- **Bug Fix** S3 File Viewer: file paths containing reserved URI characters are now handled correctly
+- **Feature** `Edit SAM Debug Configuration` and `View Toolkit Logs` commands are now shown in the AWS Explorer main menu
+- **Feature** Lambda: Use Upload Lambda from a folder, template file, or the command palette.
+- **Feature** renamed `SAM Debug Configuration Editor` command to `Edit SAM Debug Configuration`
+- **Feature** SAM run/debug now uses the current active credentials (if the `aws.credentials` launch-config field is not set)
+- **Feature** Show "Add Debug Config" codelens in JS/TS files even if package.json is missing #2579
+- **Feature** "Show or Hide Regions" is now one command that supports multiple selections
+- **Feature** added `Show AWS Commands...` command to AWS Explorer menu
+- **Feature** Open schemas directly when clicking on schema item nodes
+
 ## 1.37.0 2022-03-25
 
 - **Bug Fix** SAM run/debug: slow debugger attachment for API configurations now shows a cancellable notification instead of automatically failing
