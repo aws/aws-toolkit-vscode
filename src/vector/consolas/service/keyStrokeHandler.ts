@@ -339,8 +339,11 @@ export async function getServiceResponse(
     triggerType: telemetry.ConsolasTriggerType,
     isManualTriggerOn: boolean
 ): Promise<any> {
+    invocationContext.isPendingResponse = true
+    const consolasPromise = client.generateRecommendations(req).finally(() => {
+        invocationContext.isPendingResponse = false
+    })
     if (isManualTriggerOn && triggerType === 'OnDemand') {
-        invocationContext.isPendingResponse = true
         return vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
@@ -348,17 +351,11 @@ export async function getServiceResponse(
                 cancellable: false,
             },
             async () => {
-                const consolasPromise = client.generateRecommendations(req).finally(() => {
-                    invocationContext.isPendingResponse = false
-                })
                 return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.PROMISE_TIMEOUT_LIMIT * 1000)
             }
         )
-    } else {
-        return client.generateRecommendations(req).then(result => {
-            return result
-        })
     }
+    return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.PROMISE_TIMEOUT_LIMIT * 1000)
 }
 
 /**
