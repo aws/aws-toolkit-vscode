@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, mkdtemp, mkdirp, readFile, remove, existsSync } from 'fs-extra'
+import { access, mkdtemp, mkdirp, readFile, remove, existsSync, readdir, stat } from 'fs-extra'
 import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -29,9 +29,14 @@ export function downloadsDir(): string {
     }
 }
 
-export async function fileExists(filePath: string): Promise<boolean> {
+/**
+ * Checks if file or directory `p` exists.
+ *
+ * TODO: optionally check read/write permissions and return a granular status.
+ */
+export async function fileExists(p: string): Promise<boolean> {
     try {
-        await access(filePath)
+        await access(p)
     } catch (err) {
         return false
     }
@@ -161,4 +166,32 @@ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: v
     const searchFolder = `${dir}**/*${suffix}`
     const matchedFiles = await vscode.workspace.findFiles(searchFolder, exclude, 1)
     return matchedFiles.length > 0
+}
+
+/**
+ * TEMPORARY SHIM for vscode.workspace.findFiles() on Cloud9.
+ *
+ * @param dir Directory to search
+ * @param fileName Name of file to locate
+ * @returns  List of one or zero Uris (for compat with vscode.workspace.findFiles())
+ */
+export async function cloud9Findfile(dir: string, fileName: string): Promise<vscode.Uri[]> {
+    const files = await readdir(dir)
+    const subDirs: vscode.Uri[] = []
+    for (const file of files) {
+        const filePath = path.join(dir, file)
+        if (filePath === path.join(dir, fileName)) {
+            return [vscode.Uri.file(filePath)]
+        }
+        if ((await stat(filePath)).isDirectory()) {
+            subDirs.push(vscode.Uri.file(filePath))
+        }
+    }
+    for (const d of subDirs) {
+        const found = await cloud9Findfile(d.fsPath, fileName)
+        if (found.length > 0) {
+            return found
+        }
+    }
+    return []
 }

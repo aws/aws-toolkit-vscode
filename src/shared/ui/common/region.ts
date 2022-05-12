@@ -8,7 +8,7 @@ import globals from '../../extensionGlobals'
 import { getLogger } from '../../logger/logger'
 import { Region } from '../../regions/endpoints'
 import { getRegionsForActiveCredentials } from '../../regions/regionUtilities'
-import { PrompterButtons } from '../buttons'
+import { createCommonButtons, PrompterButtons } from '../buttons'
 import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
 
 const localize = nls.loadMessageBundle()
@@ -27,23 +27,25 @@ export function createRegionPrompter(
     if (!regions) {
         regions = getRegionsForActiveCredentials(globals.awsContext, globals.regionProvider)
     }
+    options.defaultRegion ??= globals.awsContext.getCredentialDefaultRegion()
 
     const items = regions.map(region => ({
         label: region.name,
         detail: region.id,
         data: region,
+        skipEstimate: true,
         description: '',
     }))
 
-    const defaultRegionItem = items.find(item => item.label === options.defaultRegion)
+    const defaultRegionItem = items.find(item => item.detail === options.defaultRegion)
 
     if (defaultRegionItem !== undefined) {
-        defaultRegionItem.description = localize('AWS.generic.defaultRegion', 'Default region')
+        defaultRegionItem.description = localize('AWS.generic.defaultRegion', '(default region)')
     }
 
     const prompter = createQuickPick(items, {
         title: options.title ?? localize('AWS.generic.selectRegion', 'Select a region'),
-        buttons: options.buttons,
+        buttons: options.buttons ?? createCommonButtons(),
         matchOnDetail: true,
         compare: (a, b) => {
             return a.detail === options.defaultRegion ? -1 : b.detail === options.defaultRegion ? 1 : 0

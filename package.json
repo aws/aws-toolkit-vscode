@@ -83,7 +83,8 @@
         "onCommand:aws.cloudFormation.newTemplate",
         "onCommand:aws.sam.newTemplate",
         "onFileSystem:s3",
-        "onFileSystem:s3-readonly"
+        "onFileSystem:s3-readonly",
+        "onCommand:aws.uploadLambda"
     ],
     "main": "./dist/src/main",
     "contributes": {
@@ -252,6 +253,11 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "aws.lambda.recentlyUploaded": {
+                    "type": "object",
+                    "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
+                    "default": []
                 }
             }
         },
@@ -735,10 +741,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.uploadLambda",
-                    "when": "false"
-                },
-                {
                     "command": "aws.invokeLambda",
                     "when": "false"
                 },
@@ -1155,6 +1157,11 @@
                     "command": "aws.deploySamApplication",
                     "when": "isFileSystemResource == true && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.uploadLambda",
+                    "when": "isFileSystemResource == true && resourceFilename =~ /^template\\.(json|yml|yaml)$/ || (explorerResourceIsFolder && isCloud9)",
+                    "group": "z_aws@2"
                 }
             ],
             "view/item/context": [
@@ -2127,7 +2134,6 @@
                 "command": "aws.uploadLambda",
                 "title": "%AWS.command.uploadLambda%",
                 "category": "%AWS.title%",
-                "enablement": "viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
