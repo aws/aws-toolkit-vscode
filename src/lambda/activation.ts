@@ -48,8 +48,18 @@ export async function activate(context: ExtContext): Promise<void> {
             'aws.downloadLambda',
             async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)
         ),
-        vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
-            await uploadLambdaCommand(node)
+        vscode.commands.registerCommand('aws.uploadLambda', async arg => {
+            if (arg instanceof LambdaFunctionNode) {
+                await uploadLambdaCommand({
+                    name: arg.functionName,
+                    region: arg.regionCode,
+                    configuration: arg.configuration,
+                })
+            } else if (arg instanceof vscode.Uri) {
+                await uploadLambdaCommand(undefined, arg)
+            } else {
+                await uploadLambdaCommand()
+            }
         }),
         registerSamInvokeVueCommand(context)
     )
