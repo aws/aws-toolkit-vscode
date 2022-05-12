@@ -4,11 +4,9 @@
  */
 
 import * as path from 'path'
-import * as semver from 'semver'
 import * as vscode from 'vscode'
 import { ExtContext } from '../shared/extensions'
 import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
-import { getLogger } from '../shared/logger'
 import {
     CompileContext,
     DataFromOptions,
@@ -189,8 +187,6 @@ export function compileVueWebview<Options extends WebviewCompileOptions>(
     } as any
 }
 
-const MIN_WEBVIEW_VIEW_VERSION = '1.50.0'
-
 /**
  * This is the {@link vscode.WebviewView} version of {@link compileVueWebview}.
  *
@@ -224,12 +220,6 @@ export function compileVueWebviewView<Options extends WebviewCompileOptions>(
         public start(...data: DataFromOptions<Options>): void {
             if (this._view) {
                 throw new Error('VueWebviewView has already been started.')
-            }
-
-            if (semver.lt(vscode.version, MIN_WEBVIEW_VIEW_VERSION)) {
-                const warnData = `${vscode.version} < ${MIN_WEBVIEW_VIEW_VERSION} (id: ${params.id})`
-                getLogger().warn(`VS Code version is too low to support WebviewViews: ${warnData}`)
-                return
             }
 
             vscode.window.registerWebviewViewProvider(params.id, {

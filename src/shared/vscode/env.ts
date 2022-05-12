@@ -79,5 +79,12 @@ export { extensionVersion }
  * by the `engines` field in `package.json`
  */
 export function isMinimumVersion(): boolean {
-    return vscode.version.startsWith(packageJson.engines.vscode.replace(/\^\~/, ''))
+    return vscode.version.startsWith(getMinVscodeVersion())
+}
+
+/**
+ * Returns the minimum vscode "engine" version declared in `package.json`.
+ */
+export function getMinVscodeVersion(): string {
+    return packageJson.engines.vscode.replace(/[^~]/, '')
 }
