@@ -102,7 +102,7 @@ export class RegionNode extends AWSTreeNodeBase {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
         this.childNodes.push(new ResourcesNode(this.regionCode))
-        this.consolasNode = new ConsolasNode(this.regionCode)
+        this.consolasNode = new ConsolasNode()
     }
 
     private tryClearChildren(): void {
