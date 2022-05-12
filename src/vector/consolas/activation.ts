@@ -14,7 +14,6 @@ import { onAcceptance } from './commands/onAcceptance'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { onRejection } from './commands/onRejection'
 import { ConsolasSettings } from './util/consolasSettings'
-import { activate as activateView } from './vue/backend'
 import { ExtContext } from '../../shared/extensions'
 import { Settings } from '../../shared/settings'
 import { TextEditorSelectionChangeKind } from 'vscode'
@@ -23,6 +22,7 @@ import { ConsolasTracker } from './tracker/consolasTracker'
 import * as consolasClient from './client/consolas'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../../shared/logger'
+import { enableCodeSuggestions, toggleCodeSuggestions, showIntroduction, set, get } from './commands/basicCommands'
 
 export async function activate(context: ExtContext, configuration: Settings): Promise<void> {
     /**
@@ -46,52 +46,33 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
             if (configurationChangeEvent.affectsConfiguration('aws.experiments')) {
                 const consolasEnabled = await consolasSettings.isEnabled()
                 if (!consolasEnabled) {
-                    set(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY, false)
-                    set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, false)
+                    set(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY, false, context)
+                    set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, false, context)
                 }
                 vscode.commands.executeCommand('aws.refreshAwsExplorer')
             }
         })
     )
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.consolas.pauseCodeSuggestion', async () => {
-            const autoTriggerEnabled: boolean =
-                context.extensionContext.globalState.get<boolean>(
-                    ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY
-                ) || false
-            set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, !autoTriggerEnabled)
-            await vscode.commands.executeCommand('aws.refreshAwsExplorer')
-        })
-    )
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.consolas.resumeCodeSuggestion', async () => {
-            const autoTriggerEnabled: boolean =
-                context.extensionContext.globalState.get<boolean>(
-                    ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY
-                ) || false
-            set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, !autoTriggerEnabled)
-            await vscode.commands.executeCommand('aws.refreshAwsExplorer')
-        })
-    )
+    context.extensionContext.subscriptions.push(toggleCodeSuggestions.register(context))
     context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.consolas.acceptTermsAndConditions', async () => {
-            set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, true)
-            set(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY, true)
+            set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, true, context)
+            set(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY, true, context)
             await vscode.commands.executeCommand('setContext', ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY, true)
             await vscode.commands.executeCommand('aws.refreshAwsExplorer')
             /**
              *  TODO Beta landing page removes in GA state
              */
-            const isShow = get(ConsolasConstants.CONSOLAS_WELCOME_MESSAGE_KEY)
+            const isShow = get(ConsolasConstants.CONSOLAS_WELCOME_MESSAGE_KEY, context)
             if (!isShow) {
                 showConsolasWelcomeMessage()
-                set(ConsolasConstants.CONSOLAS_WELCOME_MESSAGE_KEY, true)
+                set(ConsolasConstants.CONSOLAS_WELCOME_MESSAGE_KEY, true, context)
             }
         })
     )
     context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.consolas.cancelTermsAndConditions', async () => {
-            set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, false)
+            set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, false, context)
             await vscode.commands.executeCommand('aws.refreshAwsExplorer')
         })
     )
@@ -99,9 +80,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         vscode.commands.registerCommand('aws.consolas.configure', async () => {
             await vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.experiments`)
         }),
-        vscode.commands.registerCommand('aws.consolas.introduction', async () => {
-            vscode.env.openExternal(vscode.Uri.parse(ConsolasConstants.CONSOLAS_LEARN_MORE_URI))
-        })
+        showIntroduction.register(context)
     )
 
     /**
@@ -162,11 +141,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
             }
         })
     )
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.consolas.enabledCodeSuggestions', () => {
-            activateView(context)
-        })
-    )
+    context.extensionContext.subscriptions.push(enableCodeSuggestions.register(context))
 
     /**
      * On recommendation acceptance
@@ -241,19 +216,6 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
             TelemetryHelper.recordUserDecisionTelemetry(-1, vscode.window.activeTextEditor?.document.languageId)
         })
     )
-
-    function get(key: string): string | undefined {
-        return context.extensionContext.globalState.get(key)
-    }
-
-    function set(key: string, value: any): void {
-        context.extensionContext.globalState.update(key, value).then(
-            () => {},
-            error => {
-                getLogger().verbose(`Failed to update global state: ${error}`)
-            }
-        )
-    }
 
     async function getManualTriggerStatus(): Promise<boolean> {
         const consolasEnabled = await consolasSettings.isEnabled()
