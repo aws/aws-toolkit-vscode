@@ -9,7 +9,7 @@ import software.aws.toolkits.jetbrains.utils.execution.steps.StepEmitter
 import software.aws.toolkits.resources.message
 
 class AttachDebuggerParent(private val childSteps: List<Step>) : Step() {
-    override val stepName = message("sam.debug.attach")
+    override val stepName = message("sam.debug.attach.parent")
     override val hidden = childSteps.size <= 1
     override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
         childSteps.forEach {
