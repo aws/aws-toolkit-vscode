@@ -7,8 +7,8 @@ import { ConsolasConstants } from '../models/constants'
 import globals from '../../../shared/extensionGlobals'
 
 export class UnsupportedLanguagesCache {
-    static TTL: number = ConsolasConstants.CONSOLAS_UNSUPPORTED_LANGUAGES_CACHE_TTL
-    static key = ConsolasConstants.CONSOLAS_UNSUPPORTED_LANGUAGES_KEY
+    static TTL: number = ConsolasConstants.unsupportedLanguagesCacheTTL
+    static key = ConsolasConstants.unsupportedLanguagesKey
 
     private static get(key: string): any {
         return globals.context.globalState.get(key)

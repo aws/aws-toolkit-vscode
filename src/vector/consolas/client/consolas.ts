@@ -23,9 +23,9 @@ export class DefaultConsolasClient {
             Service,
             {
                 apiConfig: apiConfig,
-                region: ConsolasConstants.REGION,
+                region: ConsolasConstants.region,
                 credentials: await globals.awsContext.getCredentials(),
-                endpoint: ConsolasConstants.PROD_ENDPOINT,
+                endpoint: ConsolasConstants.prodEndpoint,
             } as ServiceConfigurationOptions,
             undefined,
             false

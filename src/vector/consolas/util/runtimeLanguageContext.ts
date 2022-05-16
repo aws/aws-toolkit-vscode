@@ -47,14 +47,14 @@ export class RuntimeLanguageContext {
     public getRuntimeLanguage(language: string, version: string): ConsolasRuntime {
         const versionNumber = version.split('.')[0]?.match(/\d+/)?.[0] ?? ''
         switch (language) {
-            case ConsolasConstants.PYTHON:
+            case ConsolasConstants.python:
                 switch (versionNumber) {
                     case '3':
                         return 'python3'
                     default:
                         return 'python2'
                 }
-            case ConsolasConstants.JAVA:
+            case ConsolasConstants.java:
                 switch (versionNumber) {
                     case '8':
                         return 'java8'
@@ -63,7 +63,7 @@ export class RuntimeLanguageContext {
                     default:
                         return 'java16'
                 }
-            case ConsolasConstants.JAVASCRIPT:
+            case ConsolasConstants.javascript:
                 return 'javascript'
             default:
                 return 'unknown'
@@ -94,7 +94,7 @@ export class RuntimeLanguageContext {
         const languageName = this.convertLanguage(languageId)
         const cmdArg = process.platform === 'win32' ? '-version' : '--version'
         if (languageName in this.runtimeLanguageContext.languageContexts) return
-        if (languageId === ConsolasConstants.PYTHON) {
+        if (languageId === ConsolasConstants.python) {
             const configValue = config?.get<string>('defaultInterpreterPath')
             const pythonPath = configValue ? configValue.split('/') : []
             const pythonVersion = pythonPath.length > 0 ? pythonPath[pythonPath.length - 1].match(/\d/) : undefined
@@ -105,10 +105,10 @@ export class RuntimeLanguageContext {
                 runtimeVersion = runtimeVersion ? runtimeVersion?.version : 'unknown'
             }
             version = runtimeVersion
-        } else if (languageId === ConsolasConstants.JAVA) {
+        } else if (languageId === ConsolasConstants.java) {
             runtimeVersion = await this.getLanguageVersionNumber('java', [cmdArg])
             version = runtimeVersion ? runtimeVersion?.version : 'unknown'
-        } else if (languageId === ConsolasConstants.JAVASCRIPT) {
+        } else if (languageId === ConsolasConstants.javascript) {
             runtimeVersion = await this.getLanguageVersionNumber('node', ['--version'])
             version = runtimeVersion ? runtimeVersion?.version : 'unknown'
         }
@@ -130,9 +130,9 @@ export class RuntimeLanguageContext {
 
     public async initLanguageRuntimeContexts() {
         await Promise.all([
-            this.initLanguageContext(ConsolasConstants.PYTHON, workspace.getConfiguration(ConsolasConstants.PYTHON)),
-            this.initLanguageContext(ConsolasConstants.JAVA),
-            this.initLanguageContext(ConsolasConstants.JAVASCRIPT),
+            this.initLanguageContext(ConsolasConstants.python, workspace.getConfiguration(ConsolasConstants.python)),
+            this.initLanguageContext(ConsolasConstants.java),
+            this.initLanguageContext(ConsolasConstants.javascript),
         ])
     }
 
@@ -152,7 +152,7 @@ export class RuntimeLanguageContext {
         /**
          * Notice: convert typescript language id to "javascript"
          */
-        languageId = languageId === ConsolasConstants.TYPESCRIPT ? ConsolasConstants.JAVASCRIPT : languageId
+        languageId = languageId === ConsolasConstants.typescript ? ConsolasConstants.javascript : languageId
         if (!languageId) {
             return 'plaintext'
         }

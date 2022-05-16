@@ -28,11 +28,11 @@ const VueWebview = compileVueWebview({
     // These are exposed directly to the frontend via the `client` object
     commands: {
         async controlTrigger() {
-            await vscode.commands.executeCommand('aws.consolas.acceptTermsAndConditions')
+            await vscode.commands.executeCommand('aws.consolas.acceptTermsOfService')
             this.dispose()
         },
         async cancelCodeSuggestion() {
-            await vscode.commands.executeCommand('aws.consolas.cancelTermsAndConditions')
+            await vscode.commands.executeCommand('aws.consolas.cancelTermsOfService')
             this.dispose()
         },
     },

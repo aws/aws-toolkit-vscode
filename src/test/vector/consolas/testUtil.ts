@@ -23,12 +23,11 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 export function resetConsolasGlobalVariables() {
     recommendations.requestId = ''
     recommendations.response = []
-    invocationContext.isActive = false
+    invocationContext.isIntelliSenseActive = false
     invocationContext.isPendingResponse = false
     automatedTriggerContext.specialChar = ''
     automatedTriggerContext.keyStrokeCount = 0
-    invocationContext.lastInvocationTime =
-        performance.now() - ConsolasConstants.INVOCATION_TIME_INTERVAL_THRESHOLD * 1000
+    invocationContext.lastInvocationTime = performance.now() - ConsolasConstants.invocationTimeIntervalThreshold * 1000
     invocationContext.startPos = new vscode.Position(0, 0)
     telemetryContext.isPrefixMatched = []
     telemetryContext.triggerType = 'OnDemand'

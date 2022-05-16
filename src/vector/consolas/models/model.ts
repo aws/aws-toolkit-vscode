@@ -26,9 +26,9 @@ export const recommendations: Recommendations = {
 
 interface InvocationContext {
     /**
-     * Flag indicates completion menu is active or not
+     * Flag indicates intelli sense pop up is active or not
      */
-    isActive: boolean
+    isIntelliSenseActive: boolean
     /**
      * Flag indicates invocation is in progress
      */
@@ -42,19 +42,24 @@ interface InvocationContext {
      */
     startPos: vscode.Position
     /**
-     * Flag indicates inline editor menu is active or not
+     * Flag indicates whether consolas is doing text edit
      */
-    isInlineActive: boolean
+    isConsolasEditing: boolean
+    /**
+     * Flag indicates whether typeahead of current inline recommendation is in progress
+     */
+    isTypeaheadInProgress: boolean
 }
 
 export const invocationContext: InvocationContext = {
-    isActive: false,
+    isIntelliSenseActive: false,
     isPendingResponse: false,
-    isInlineActive: false,
+    isConsolasEditing: false,
+    isTypeaheadInProgress: false,
     /**
      * Initialize lastInvocationTime (ms) by performance.now() - "duration threshold" x 1000 ms
      */
-    lastInvocationTime: performance.now() - ConsolasConstants.INVOCATION_TIME_INTERVAL_THRESHOLD * 1000,
+    lastInvocationTime: performance.now() - ConsolasConstants.invocationTimeIntervalThreshold * 1000,
     startPos: new vscode.Position(0, 0),
 }
 

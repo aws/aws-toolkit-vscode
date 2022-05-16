@@ -24,11 +24,11 @@ import {
  */
 export class ConsolasNode extends AWSTreeNodeBase {
     public constructor() {
-        super('Consolas(Preview)', vscode.TreeItemCollapsibleState.Collapsed)
+        super('Consolas (Preview)', vscode.TreeItemCollapsibleState.Collapsed)
         vscode.commands.executeCommand(
             'setContext',
-            ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY,
-            globals.context.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY)
+            ConsolasConstants.termsAcceptedKey,
+            globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)
         )
         this.contextValue = 'awsConsolasNode'
     }
@@ -36,8 +36,8 @@ export class ConsolasNode extends AWSTreeNodeBase {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                if (globals.context.globalState.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY)) {
-                    if (globals.context.globalState.get<boolean>(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY)) {
+                if (globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)) {
+                    if (globals.context.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey)) {
                         return [createPauseAutoSuggestionsNode()]
                     }
                     return [createResumeAutoSuggestionsNode()]
