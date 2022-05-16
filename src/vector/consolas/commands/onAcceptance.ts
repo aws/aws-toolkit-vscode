@@ -46,7 +46,7 @@ export async function onAcceptance(
          * When using intelliSense
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
-        if (isAutoClosingBracketsEnabled) {
+        if (isAutoClosingBracketsEnabled && !invocationContext.isTypeaheadInProgress) {
             await handleAutoClosingBrackets(
                 acceptanceEntry.triggerType,
                 acceptanceEntry.editor,
@@ -85,6 +85,7 @@ export async function onAcceptance(
             }
         }
         invocationContext.isConsolasEditing = false
+        invocationContext.isTypeaheadInProgress = false
 
         ConsolasTracker.getTracker().enqueue({
             time: new Date(),

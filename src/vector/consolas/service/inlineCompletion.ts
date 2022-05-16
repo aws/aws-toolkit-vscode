@@ -155,7 +155,16 @@ async function showRecommendation(editor: vscode.TextEditor) {
                         { undoStopAfter: false, undoStopBefore: false }
                     )
                     .then(async () => {
-                        setRange(new vscode.Range(_range.start, editor.selection.active))
+                        const pos = new vscode.Position(
+                            editor.selection.active.line,
+                            editor.selection.active.character + 1
+                        )
+                        /*
+                         * When typeAhead is involved we set the position of character with one more character to net let
+                         * last bracket of recommendation to be removed
+                         */
+                        if (invocationContext.isTypeaheadInProgress) setRange(new vscode.Range(_range.start, pos))
+                        else setRange(new vscode.Range(_range.start, editor.selection.active))
                         editor.setDecorations(dimDecoration, [_range])
                         // cursor position
                         const position = editor.selection.active
@@ -201,6 +210,8 @@ export async function showFirstRecommendation(editor: vscode.TextEditor) {
                         newEditor.selection.active.character
                     )
                 )
+                if (typedPrefix.length > 0) inlineCompletion.items = []
+
                 const currentPosition = new vscode.Position(
                     newEditor.selection.active.line,
                     newEditor.selection.active.character
