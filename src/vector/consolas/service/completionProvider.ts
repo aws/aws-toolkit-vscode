@@ -8,7 +8,9 @@ import { ConsolasConstants } from '../models/constants'
 import { recommendations, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { RecommendationDetail } from '../client/consolas'
-
+/**
+ * completion provider for intelliSense popup
+ */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
     recommendations.response.forEach((recommendation, index) => {
@@ -31,13 +33,13 @@ export function getCompletionItem(
     completionItem.insertText = new vscode.SnippetString(recommendation)
     completionItem.documentation = new vscode.MarkdownString().appendCodeblock(recommendation, document.languageId)
     completionItem.kind = vscode.CompletionItemKind.Method
-    completionItem.detail = ConsolasConstants.COMPLETION_DETAIL
+    completionItem.detail = ConsolasConstants.completionDetail
     completionItem.keepWhitespace = true
     completionItem.label = getLabel(recommendation)
     completionItem.preselect = true
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     let languageId = document.languageId
-    languageId = languageId === ConsolasConstants.TYPESCRIPT ? ConsolasConstants.JAVASCRIPT : languageId
+    languageId = languageId === ConsolasConstants.typescript ? ConsolasConstants.javascript : languageId
     const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
     completionItem.command = {
         command: 'aws.consolas.accept',
@@ -56,5 +58,5 @@ export function getCompletionItem(
 }
 
 export function getLabel(recommendation: string): string {
-    return recommendation.slice(0, ConsolasConstants.LABEL_LENGTH) + '..'
+    return recommendation.slice(0, ConsolasConstants.labelLength) + '..'
 }

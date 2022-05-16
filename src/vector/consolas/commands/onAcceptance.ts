@@ -19,6 +19,9 @@ import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTrac
 import { TextEdit, WorkspaceEdit, workspace } from 'vscode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 
+/**
+ * This function is called when user accepts a intelliSense suggestion or an inline suggestion
+ */
 export async function onAcceptance(
     acceptanceEntry: OnRecommendationAcceptanceEntry,
     isAutoClosingBracketsEnabled: boolean,
@@ -36,7 +39,11 @@ export async function onAcceptance(
             acceptanceEntry.acceptIndex,
             acceptanceEntry.editor?.document.languageId
         )
+        // consolas will be doing editing while formatting.
+        // formatting should not trigger consoals auto trigger
+        invocationContext.isConsolasEditing = true
         /**
+         * When using intelliSense
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
         if (isAutoClosingBracketsEnabled) {
@@ -47,18 +54,16 @@ export async function onAcceptance(
                 end.line
             )
         }
-
         /**
          * Python formatting uses Black but Black does not support the "Format Selection" command,
          * instead we use document format here. For other languages, we use "Format Selection"
          */
-        if (languageId === ConsolasConstants.PYTHON) {
-            vscode.commands.executeCommand('editor.action.format').then(() => {
-                if (acceptanceEntry.editor) {
-                    acceptanceEntry.editor.selection = new vscode.Selection(end, end)
-                }
-                invocationContext.isActive = false
-            })
+        if (languageId === ConsolasConstants.python) {
+            await vscode.commands.executeCommand('editor.action.format')
+            if (acceptanceEntry.editor) {
+                acceptanceEntry.editor.selection = new vscode.Selection(end, end)
+            }
+            invocationContext.isIntelliSenseActive = false
         } else {
             const range = new vscode.Range(start, end)
             const edits: TextEdit[] | undefined = await vscode.commands.executeCommand(
@@ -75,7 +80,12 @@ export async function onAcceptance(
                 wEdit.set(acceptanceEntry.editor.document.uri, edits)
                 await workspace.applyEdit(wEdit)
             }
+            if (acceptanceEntry.editor) {
+                acceptanceEntry.editor.selection = new vscode.Selection(end, end)
+            }
         }
+        invocationContext.isConsolasEditing = false
+
         ConsolasTracker.getTracker().enqueue({
             time: new Date(),
             fileUrl: acceptanceEntry.editor.document.uri,

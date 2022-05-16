@@ -13,8 +13,8 @@ import { getLogger } from '../../../shared/logger'
 export const toggleCodeSuggestions = Commands.declare(
     'aws.consolas.toggleCodeSuggestion',
     (context: ExtContext) => async () => {
-        const autoTriggerEnabled: boolean = get(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, context) || false
-        set(ConsolasConstants.CONSOLAS_AUTO_TRIGGER_ENABLED_KEY, !autoTriggerEnabled, context)
+        const autoTriggerEnabled: boolean = get(ConsolasConstants.autoTriggerEnabledKey, context) || false
+        set(ConsolasConstants.autoTriggerEnabledKey, !autoTriggerEnabled, context)
         await vscode.commands.executeCommand('aws.refreshAwsExplorer')
     }
 )
@@ -27,7 +27,7 @@ export const enableCodeSuggestions = Commands.declare(
 )
 
 export const showIntroduction = Commands.declare('aws.consolas.introduction', (context: ExtContext) => async () => {
-    vscode.env.openExternal(vscode.Uri.parse(ConsolasConstants.CONSOLAS_LEARN_MORE_URI))
+    vscode.env.openExternal(vscode.Uri.parse(ConsolasConstants.learnMoreUri))
 })
 
 export function get(key: string, context: ExtContext): any {

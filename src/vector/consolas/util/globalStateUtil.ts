@@ -5,7 +5,7 @@
 
 import { recommendations, invocationContext } from '../models/model'
 
-export async function onRejection(isManualTriggerEnabled: boolean, isAutomatedTriggerEnabled: boolean) {
+export function resetIntelliSenseState(isManualTriggerEnabled: boolean, isAutomatedTriggerEnabled: boolean) {
     /**
      * Skip when Consolas service is turned off
      */
@@ -13,7 +13,7 @@ export async function onRejection(isManualTriggerEnabled: boolean, isAutomatedTr
         return
     }
 
-    if (invocationContext.isActive && recommendations.response.length > 0) {
-        invocationContext.isActive = false
+    if (invocationContext.isIntelliSenseActive && recommendations.response.length > 0) {
+        invocationContext.isIntelliSenseActive = false
     }
 }

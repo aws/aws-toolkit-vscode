@@ -42,9 +42,7 @@ describe('unsupportedLanguageCache', function () {
             UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage('go')
             UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage('c')
             const earlierTime =
-                UnsupportedLanguagesCache.getCache()['go'] -
-                ConsolasConstants.CONSOLAS_UNSUPPORTED_LANGUAGES_CACHE_TTL -
-                1000
+                UnsupportedLanguagesCache.getCache()['go'] - ConsolasConstants.unsupportedLanguagesCacheTTL - 1000
             const dateStub = sinon.stub(Date, 'now').returns(earlierTime)
             UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage('cpp')
             dateStub.restore()

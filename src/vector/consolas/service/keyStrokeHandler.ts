@@ -16,13 +16,13 @@ import * as EditorContext from '../util/editorContext'
 import { ConsolasConstants } from '../models/constants'
 import { recommendations, invocationContext, automatedTriggerContext, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
-import { onRejection } from '../commands/onRejection'
+import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { AWSError } from 'aws-sdk'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../../shared/logger'
 import { UnsupportedLanguagesCache } from '../util/unsupportedLanguagesCache'
 import { showTimedMessage } from '../../../shared/utilities/messages'
-import { showFirstRecommendation } from './inlinecompletionProvider'
+import { showFirstRecommendation } from './inlineCompletion'
 import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
 import globals from '../../../shared/extensionGlobals'
 import { isCloud9 } from '../../../shared/extensionUtilities'
@@ -61,18 +61,17 @@ export async function processKeyStroke(
 }
 
 function getAutoTriggerReason(changedText: string): string {
-    for (const val of ConsolasConstants.SPECIAL_CHARACTERS_LIST) {
+    for (const val of ConsolasConstants.specialCharactersList) {
         if (changedText.includes(val)) {
             automatedTriggerContext.specialChar = val
-
-            if (val === ConsolasConstants.LINE_BREAK) {
+            if (val === ConsolasConstants.lineBreak) {
                 return 'Enter'
             } else {
                 return 'SpecialCharacters'
             }
         }
     }
-    if (changedText.includes(ConsolasConstants.SPACE)) {
+    if (changedText.includes(ConsolasConstants.space)) {
         let isTab = true
         let space = 0
         for (let i = 0; i < changedText.length; i++) {
@@ -87,7 +86,7 @@ function getAutoTriggerReason(changedText: string): string {
             return 'SpecialCharacters'
         }
     }
-    if (automatedTriggerContext.keyStrokeCount === ConsolasConstants.INVOCATION_KEY_THRESHOLD) {
+    if (automatedTriggerContext.keyStrokeCount === ConsolasConstants.invocationKeyThreshold) {
         return 'KeyStrokeCount'
     } else {
         automatedTriggerContext.keyStrokeCount += 1
@@ -103,12 +102,15 @@ function getChangedText(
     if (!isAutomatedTriggerEnabled) {
         return ''
     }
-
     /**
      * Pause automated trigger when typed input matches recommendation prefix
+     * for both intelliSense and inline
      */
-    const isMatchedPrefix = checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
-    if (invocationContext.isActive && isMatchedPrefix.length > 0) {
+    checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
+    if (invocationContext.isIntelliSenseActive && telemetryContext.isPrefixMatched.length > 0) {
+        return ''
+    }
+    if (invocationContext.isTypeaheadInProgress) {
         return ''
     }
 
@@ -123,13 +125,12 @@ function getChangedText(
     }
 
     /**
-     * Time duration between 2 invations should be greater than the threshold
+     * Time duration between 2 invocations should be greater than the threshold
      */
     const duration = Math.floor((performance.now() - invocationContext.lastInvocationTime) / 1000)
-    if (duration < ConsolasConstants.INVOCATION_TIME_INTERVAL_THRESHOLD) {
+    if (duration < ConsolasConstants.invocationTimeIntervalThreshold) {
         return ''
     }
-
     return changedText
 }
 
@@ -141,12 +142,9 @@ export async function invokeAutomatedTrigger(
     isAutomatedTriggerEnabled: boolean,
     overrideGetRecommendations = getRecommendations
 ): Promise<void> {
-    const isCloud9CurrentIDE = isCloud9()
-    /**
-     * Reject previous recommendations if there are ACTIVE ones in cloud9
-     */
-    if (isCloud9CurrentIDE) await onRejection(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+    if (isCloud9()) resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
     if (editor) {
+        automatedTriggerContext.keyStrokeCount = 0
         recommendations.response = await overrideGetRecommendations(
             client,
             editor,
@@ -154,20 +152,18 @@ export async function invokeAutomatedTrigger(
             isManualTriggerEnabled,
             autoTriggerType
         )
-        automatedTriggerContext.keyStrokeCount = 0
         /**
          * Swallow "no recommendations case" for automated trigger
          * TODO: Check when there is no left context
          */
 
-        const isMatchedPrefix = checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
-        if (isMatchedPrefix.length > 0) {
-            if (isCloud9CurrentIDE) {
+        checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
+        if (telemetryContext.isPrefixMatched.length > 0) {
+            if (isCloud9()) {
                 vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
-                    invocationContext.isActive = true
+                    invocationContext.isIntelliSenseActive = true
                 })
             } else {
-                invocationContext.isActive = true
                 await showFirstRecommendation(editor)
             }
         }
@@ -201,7 +197,6 @@ export async function getRecommendations(
         /**
          * Validate request
          */
-
         if (EditorContext.validateRequest(req)) {
             const resp = await overrideGetServiceResponse(client, req, triggerType, isManualTriggerOn)
             latency = startTime !== 0 ? performance.now() - startTime : 0
@@ -211,7 +206,7 @@ export async function getRecommendations(
             telemetryContext.triggerType = triggerType
             telemetryContext.ConsolasAutomatedtriggerType =
                 autoTriggerType === undefined ? 'KeyStrokeCount' : autoTriggerType
-            if (recommendation.length > 0 && recommendation[0].content.search(ConsolasConstants.LINE_BREAK) !== -1) {
+            if (recommendation.length > 0 && recommendation[0].content.search(ConsolasConstants.lineBreak) !== -1) {
                 completionType = 'Block'
             }
             telemetryContext.completionType = completionType
@@ -236,7 +231,6 @@ export async function getRecommendations(
         ) {
             let languageName = req.contextInfo.programmingLanguage.languageName
             UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage(languageName)
-            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
             languageName = `${languageName.charAt(0).toUpperCase()}${languageName.slice(1)}`
             showTimedMessage(`Programming language ${languageName} is currently not supported by Consolas`, 2000)
         }
@@ -285,6 +279,14 @@ export async function getRecommendations(
         })
         recommendations.requestId = requestId
     }
+
+    /**
+     * Since we allow concurrent auto trigger API calls,
+     * We should drop the auto trigger API call result that is not latest.
+     */
+    if (invocationContext.lastInvocationTime > startTime) {
+        return []
+    }
     return recommendation
 }
 
@@ -301,19 +303,19 @@ export async function getRecommendations(
 export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
     newConsolasRequest: boolean,
     editor: vscode.TextEditor | undefined
-): boolean[] {
+) {
     let typedPrefix = ''
     if (newConsolasRequest) {
         telemetryContext.isPrefixMatched = []
     }
 
     if (!editor || !isValidResponse(recommendations.response)) {
-        return []
+        return
     }
 
     // Only works for cloud9, as it works for completion items
     if (isCloud9() && invocationContext.startPos.line !== editor.selection.active.line) {
-        return []
+        return
     }
     typedPrefix = editor.document.getText(new vscode.Range(invocationContext.startPos, editor.selection.active))
 
@@ -334,8 +336,6 @@ export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
             }
         }
     })
-
-    return telemetryContext.isPrefixMatched
 }
 
 export function isValidResponse(response: RecommendationsList): boolean {
@@ -357,15 +357,15 @@ export async function getServiceResponse(
         return vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
-                title: ConsolasConstants.PENDING_RESPONSE,
+                title: ConsolasConstants.pendingResponse,
                 cancellable: false,
             },
             async () => {
-                return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.PROMISE_TIMEOUT_LIMIT * 1000)
+                return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.promiseTimeoutLimit * 1000)
             }
         )
     }
-    return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.PROMISE_TIMEOUT_LIMIT * 1000)
+    return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.promiseTimeoutLimit * 1000)
 }
 
 /**
