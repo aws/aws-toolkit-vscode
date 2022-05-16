@@ -8,7 +8,6 @@ import { invocationContext, inlineCompletion, recommendations, telemetryContext 
 import { ConsolasConstants } from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { checkPrefixMatchSuggestionAndUpdatePrefixMatchArray } from './keyStrokeHandler'
 /**
  * completion provider for inline suggestions
  */
@@ -86,7 +85,6 @@ export async function rejectRecommendation(
         .then(async () => {
             invocationContext.isConsolasEditing = false
             await resetInlineStates(editor)
-            checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
             TelemetryHelper.recordUserDecisionTelemetry(-1, editor.document.languageId)
         })
 }
