@@ -47,7 +47,6 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
     const isAutomatedTriggerEnabled: boolean =
         context.extensionContext.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) || false
     const client = new consolasClient.DefaultConsolasClient()
-
     context.extensionContext.subscriptions.push(
         /**
          * Configuration change
@@ -133,7 +132,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                 const bracketConfiguration = vscode.workspace.getConfiguration('editor').get('autoClosingBrackets')
                 const isAutoClosingBracketsEnabled: boolean = bracketConfiguration !== 'never' ? true : false
                 const editor = vscode.window.activeTextEditor
-                onAcceptance(
+                await onAcceptance(
                     {
                         editor,
                         range,
@@ -302,6 +301,9 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                 if (e.kind === TextEditorSelectionChangeKind.Mouse) {
                     resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
                 }
+            }),
+            vscode.workspace.onDidSaveTextDocument(e => {
+                resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
             })
         )
     }
