@@ -274,6 +274,19 @@ export function applyPrimitives<T1 extends Record<string, any>, T2 extends T1>(o
     Object.assign(obj, clone)
 }
 
+/**
+ * A looser form of {@link applyPrimitives}.
+ *
+ * Nearly equivalent to {@link Object.assign} except that `undefined` values are ignored.
+ */
+export function assign<T extends Record<any, any>, U extends Partial<T>>(data: T, target: U): asserts target is T & U {
+    for (const [k, v] of Object.entries(data)) {
+        if (v !== undefined) {
+            target[k as keyof U] = v
+        }
+    }
+}
+
 /** Recursively delete undefined key/value pairs */
 export function stripUndefined(obj: any): void {
     Object.keys(obj).forEach(key => {
