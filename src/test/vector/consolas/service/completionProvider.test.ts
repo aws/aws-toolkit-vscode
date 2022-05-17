@@ -34,7 +34,7 @@ describe('completionProviderService', function () {
 
     describe('getCompletionItem', function () {
         it('should return targetCompletionItem given input', function () {
-            const mockPosition = new vscode.Position(14, 83)
+            const mockPosition = new vscode.Position(0, 83)
             const mockRecommendationDetail: RecommendationDetail = {
                 content: "\n\t\tconsole.log('Hello world!');\n\t}",
             }
@@ -55,7 +55,15 @@ describe('completionProviderService', function () {
                 command: {
                     command: 'aws.consolas.accept',
                     title: 'On acceptance',
-                    arguments: [14, 1, "\n\t\tconsole.log('Hello world!');\n\t}", '', 'OnDemand', 'Line', 'javascript'],
+                    arguments: [
+                        new vscode.Range(0, 0, 0, 0),
+                        1,
+                        "\n\t\tconsole.log('Hello world!');\n\t}",
+                        '',
+                        'OnDemand',
+                        'Line',
+                        'javascript',
+                    ],
                 },
             }
             const actual = getCompletionItem(
@@ -78,7 +86,7 @@ describe('completionProviderService', function () {
     describe('getCompletionItems', function () {
         it('should return completion items for each non-empty recommendation', async function () {
             recommendations.response = [{ content: "\n\t\tconsole.log('Hello world!');\n\t}" }, { content: '' }]
-            const mockPosition = new vscode.Position(14, 83)
+            const mockPosition = new vscode.Position(0, 0)
             const mockDocument = createMockDocument('', 'test.ts', 'typescript')
             const actual = getCompletionItems(mockDocument, mockPosition)
             assert.strictEqual(actual.length, 1)

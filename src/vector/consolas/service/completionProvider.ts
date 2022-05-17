@@ -27,7 +27,8 @@ export function getCompletionItem(
     recommendationDetail: RecommendationDetail,
     recommendationIndex: number
 ) {
-    const line = position.line
+    const start = document.lineAt(position.line).range.start
+    const range = new vscode.Range(start, start)
     const recommendation = recommendationDetail.content
     const completionItem = new vscode.CompletionItem(recommendation)
     completionItem.insertText = new vscode.SnippetString(recommendation)
@@ -45,7 +46,7 @@ export function getCompletionItem(
         command: 'aws.consolas.accept',
         title: 'On acceptance',
         arguments: [
-            line,
+            range,
             recommendationIndex,
             recommendation,
             recommendations.requestId,
