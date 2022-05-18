@@ -57,24 +57,24 @@ describe('detectCdkProjects', function () {
     })
 
     it('detects CDK project when cdk.json exists', async function () {
-        const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
-        await saveCdkJson(cdkJsonPath)
+        const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
+        await saveCdkJson(cdkJsonUri.fsPath)
         const actual = await detectCdkProjects(workspaceFolders)
 
         assert.ok(actual)
 
         const project = actual[0]
         assert.ok(project)
-        assert.strictEqual(project.cdkJsonUri.fsPath, cdkJsonPath)
-        assert.strictEqual(project.treeUri.fsPath, path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json'))
+        assert.strictEqual(project.cdkJsonUri.fsPath, cdkJsonUri.fsPath)
+        assert.strictEqual(project.treeUri.fsPath, vscode.Uri.joinPath(cdkJsonUri, '..', 'cdk.out', 'tree.json').fsPath)
     })
 
     it('detects deep projects', async function () {
-        const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'directory1', 'directory2', 'cdk.json')
-        await mkdirp(path.dirname(cdkJsonPath))
-        await saveCdkJson(cdkJsonPath)
+        const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'directory1', 'directory2', 'cdk.json')
+        await mkdirp(path.dirname(cdkJsonUri.fsPath))
+        await saveCdkJson(cdkJsonUri.fsPath)
         const actual = await detectCdkProjects(workspaceFolders)
-        assert.strictEqual(actual[0]?.cdkJsonUri.fsPath, cdkJsonPath)
+        assert.strictEqual(actual[0]?.cdkJsonUri.fsPath, cdkJsonUri.fsPath)
     })
 
     it('ignores projects in `node_modules`', async function () {
@@ -86,18 +86,18 @@ describe('detectCdkProjects', function () {
     })
 
     it('takes into account `output` from cdk.json to build tree.json path', async function () {
-        const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
-        await writeJSON(cdkJsonPath, { app: 'npx ts-node bin/demo-nov7.ts', output: 'build/cdk.out' })
+        const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
+        await writeJSON(cdkJsonUri.fsPath, { app: 'npx ts-node bin/demo-nov7.ts', output: 'build/cdk.out' })
         const actual = await detectCdkProjects(workspaceFolders)
 
         assert.ok(actual)
 
         const project = actual[0]
         assert.ok(project)
-        assert.strictEqual(project.cdkJsonUri.fsPath, cdkJsonPath)
+        assert.strictEqual(project.cdkJsonUri.fsPath, cdkJsonUri.fsPath)
         assert.strictEqual(
             project.treeUri.fsPath,
-            path.normalize(path.join(cdkJsonPath, '..', 'build/cdk.out', 'tree.json'))
+            vscode.Uri.joinPath(cdkJsonUri, '..', 'build/cdk.out', 'tree.json').fsPath
         )
     })
 
@@ -111,11 +111,11 @@ describe('detectCdkProjects', function () {
             index: 1,
         })
 
-        const projectPath1 = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
-        const projectPath2 = path.join(workspaceFolders[1].uri.fsPath, 'cdk.json')
+        const projectPath1 = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
+        const projectPath2 = vscode.Uri.joinPath(workspaceFolders[1].uri, 'cdk.json')
 
-        await saveCdkJson(projectPath1)
-        await saveCdkJson(projectPath2)
+        await saveCdkJson(projectPath1.fsPath)
+        await saveCdkJson(projectPath2.fsPath)
         const actual = await detectCdkProjects(workspaceFolders)
         assert.ok(actual)
         assert.strictEqual(actual.length, 2)
@@ -124,10 +124,16 @@ describe('detectCdkProjects', function () {
         const project2 = actual[1]
 
         assert.ok(project1)
-        assert.strictEqual(project1.cdkJsonUri.fsPath, projectPath1)
-        assert.strictEqual(project1.treeUri.fsPath, path.join(projectPath1, '..', 'cdk.out', 'tree.json'))
+        assert.strictEqual(project1.cdkJsonUri.fsPath, projectPath1.fsPath)
+        assert.strictEqual(
+            project1.treeUri.fsPath,
+            vscode.Uri.joinPath(projectPath1, '..', 'cdk.out', 'tree.json').fsPath
+        )
         assert.ok(project2)
-        assert.strictEqual(project2.cdkJsonUri.fsPath, projectPath2)
-        assert.strictEqual(project2.treeUri.fsPath, path.join(projectPath2, '..', 'cdk.out', 'tree.json'))
+        assert.strictEqual(project2.cdkJsonUri.fsPath, projectPath2.fsPath)
+        assert.strictEqual(
+            project2.treeUri.fsPath,
+            vscode.Uri.joinPath(projectPath2, '..', 'cdk.out', 'tree.json').fsPath
+        )
     })
 })
