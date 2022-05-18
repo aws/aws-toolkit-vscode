@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { cdkNode } from '../cdk/explorer/awsCdkExplorer'
+import { cdkNode } from '../cdk/explorer/rootNode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 
 export interface RootNode extends TreeNode {

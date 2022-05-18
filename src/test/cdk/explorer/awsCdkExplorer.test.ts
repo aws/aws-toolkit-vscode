@@ -8,9 +8,9 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as detectCdkProjects from '../../../cdk/explorer/detectCdkProjects'
 import { CdkAppLocation } from '../../../cdk/explorer/cdkProject'
-import { createCdkTreeDataProvider } from '../../../cdk/explorer/awsCdkExplorer'
+import { CdkRootNode } from '../../../cdk/explorer/rootNode'
 
-describe('AwsCdkExplorer', function () {
+describe('CdkRootNode', function () {
     it('shows CDK projects', async function () {
         const appLocation: CdkAppLocation = {
             cdkJsonUri: vscode.Uri.file('/cdk.json'),
@@ -19,8 +19,8 @@ describe('AwsCdkExplorer', function () {
 
         sinon.stub(detectCdkProjects, 'detectCdkProjects').resolves([appLocation])
 
-        const cdkProvider = createCdkTreeDataProvider()
-        const treeNodes = await cdkProvider.getChildren()
+        const rootNode = new CdkRootNode()
+        const treeNodes = await rootNode.getChildren()
         assert.strictEqual(treeNodes.length, 1)
         assert.deepStrictEqual(treeNodes[0].resource, appLocation)
     })
