@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { getLogger } from '../../shared/logger'
 import { CdkAppLocation } from './cdkProject'
 
@@ -36,8 +36,11 @@ async function detectCdkProjectsFromWorkspaceFolder(
         try {
             const cdkJsonDoc = await vscode.workspace.openTextDocument(cdkJson)
             const { output = 'cdk.out' } = JSON.parse(cdkJsonDoc.getText())
-            const treeJsonPath = path.resolve(path.dirname(cdkJson.fsPath), path.join(output, 'tree.json'))
-            const project = { workspaceFolder: workspaceFolder, cdkJsonPath: cdkJson.fsPath, treePath: treeJsonPath }
+            const outputUri = vscode.Uri.parse(`${cdkJson.scheme}:`, true).with({
+                path: path.resolve(vscode.Uri.joinPath(cdkJson, '..').path, output),
+            })
+            const treeJsonUri = vscode.Uri.joinPath(outputUri, 'tree.json')
+            const project = { cdkJsonUri: cdkJson, treeUri: treeJsonUri }
             result.push(project)
         } catch (err) {
             getLogger().error(`Failed to parse cdk.json from %s: %O`, cdkJson.fsPath, err)

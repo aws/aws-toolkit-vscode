@@ -4,82 +4,68 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { cdk } from '../../globals'
+import { CdkAppLocation } from '../cdkProject'
 import * as treeInspector from '../tree/treeInspector'
-import { ConstructProps, ConstructTreeEntity } from '../tree/types'
-import { generatePropertyNodes, PropertyNode } from './propertyNode'
+import { ConstructTreeEntity } from '../tree/types'
+import { generatePropertyNodes } from './propertyNode'
 
-/**
- * Represents a CDK construct
- */
-export class ConstructNode extends AWSTreeNodeBase {
-    private readonly type: string
-    private readonly properties: ConstructProps | undefined
-    public readonly id: string
-    public readonly tooltip: string
+export class ConstructNode implements TreeNode {
+    public readonly id = this.construct.id
+    public readonly treeItem: vscode.TreeItem
+    private readonly type = treeInspector.getTypeAttributeOrDefault(this.construct, '')
+    private readonly properties = treeInspector.getProperties(this.construct)
 
-    public constructor(
-        public readonly parent: AWSTreeNodeBase,
-        public readonly label: string,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly construct: ConstructTreeEntity
-    ) {
-        super(construct.id, collapsibleState)
-        this.contextValue = isStateMachine(construct) ? 'awsCdkStateMachineNode' : 'awsCdkConstructNode'
+    public constructor(private readonly location: CdkAppLocation, private readonly construct: ConstructTreeEntity) {
+        this.treeItem = this.createTreeItem()
+    }
 
-        this.type = treeInspector.getTypeAttributeOrDefault(construct, '')
-        this.properties = treeInspector.getProperties(construct)
-        // TODO move icon logic to global utility
+    public get resource() {
+        return {
+            construct: this.construct,
+            location: this.location.treeUri.with({ fragment: this.construct.path }),
+        }
+    }
+
+    public getChildren() {
+        const propertyNodes = this.properties !== undefined ? generatePropertyNodes(this.properties) : []
+        const constructNodes =
+            this.construct.children !== undefined ? generateConstructNodes(this.location, this.construct.children) : []
+
+        return [...propertyNodes, ...constructNodes]
+    }
+
+    private createTreeItem() {
+        const collapsibleState =
+            this.construct.children || this.construct.attributes
+                ? vscode.TreeItemCollapsibleState.Collapsed
+                : vscode.TreeItemCollapsibleState.None
+
+        const item = new vscode.TreeItem(treeInspector.getDisplayLabel(this.construct), collapsibleState)
+        item.contextValue = isStateMachine(this.construct) ? 'awsCdkStateMachineNode' : 'awsCdkConstructNode'
+        item.tooltip = this.type || this.construct.path
+
         if (this.type) {
-            this.iconPath = {
+            item.iconPath = {
                 dark: vscode.Uri.file(cdk.iconPaths.dark.cloudFormation),
                 light: vscode.Uri.file(cdk.iconPaths.light.cloudFormation),
             }
         } else {
-            this.iconPath = {
+            item.iconPath = {
                 dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
                 light: vscode.Uri.file(cdk.iconPaths.light.cdk),
             }
         }
 
-        this.tooltip = this.type || this.construct.path
-        this.id = `${this.parent.id}/${this.label}`
+        return item
     }
+}
 
-    public async getChildren(): Promise<(ConstructNode | PropertyNode)[]> {
-        const entities: (ConstructNode | PropertyNode)[] = []
-
-        // add all properties
-        if (this.properties) {
-            const propertyNodes: PropertyNode[] = generatePropertyNodes(this.properties)
-            entities.push(...propertyNodes)
-        }
-
-        if (!this.construct.children) {
-            return entities
-        }
-
-        // add all children
-        for (const key of Object.keys(this.construct.children)) {
-            const child = this.construct.children[key] as ConstructTreeEntity
-
-            if (treeInspector.includeConstructInTree(child)) {
-                entities.push(
-                    new ConstructNode(
-                        this,
-                        treeInspector.getDisplayLabel(child),
-                        child.children || child.attributes
-                            ? vscode.TreeItemCollapsibleState.Collapsed
-                            : vscode.TreeItemCollapsibleState.None,
-                        child
-                    )
-                )
-            }
-        }
-
-        return entities
-    }
+export function generateConstructNodes(app: CdkAppLocation, children: NonNullable<ConstructTreeEntity['children']>) {
+    return Object.values(children)
+        .filter(c => treeInspector.includeConstructInTree(c))
+        .map(c => new ConstructNode(app, c))
 }
 
 /**

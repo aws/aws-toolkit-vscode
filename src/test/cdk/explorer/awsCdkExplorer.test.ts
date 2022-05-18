@@ -4,58 +4,24 @@
  */
 
 import * as assert from 'assert'
-import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-
-import { AwsCdkExplorer } from '../../../cdk/explorer/awsCdkExplorer'
-import { CdkAppLocation } from '../../../cdk/explorer/cdkProject'
+import * as sinon from 'sinon'
 import * as detectCdkProjects from '../../../cdk/explorer/detectCdkProjects'
-import * as app from '../../../cdk/explorer/nodes/appNode'
-import { CdkErrorNode } from '../../../cdk/explorer/nodes/errorNode'
-
-let sandbox: sinon.SinonSandbox
-beforeEach(function () {
-    sandbox = sinon.createSandbox()
-})
-
-afterEach(function () {
-    sandbox.restore()
-})
+import { CdkAppLocation } from '../../../cdk/explorer/cdkProject'
+import { createCdkTreeDataProvider } from '../../../cdk/explorer/awsCdkExplorer'
 
 describe('AwsCdkExplorer', function () {
-    it('does nothing if not visible', async function () {
-        const awsCdkExplorer = new AwsCdkExplorer()
-        awsCdkExplorer.visible = false
-        const treeNodes = await awsCdkExplorer.getChildren()
-        assert.strictEqual(treeNodes.length, 0)
-    })
-
-    it('shows a message if no CDK projects were found', async function () {
-        const awsCdkExplorer = new AwsCdkExplorer()
-        awsCdkExplorer.visible = true
-        const treeNodes = await awsCdkExplorer.getChildren()
-        assert.strictEqual(treeNodes.length, 1)
-        assert.strictEqual(treeNodes[0] instanceof CdkErrorNode, true)
-    })
-
     it('shows CDK projects', async function () {
-        const stubUri = sandbox.createStubInstance(vscode.Uri)
-        const workspaceFolder: vscode.WorkspaceFolder = { uri: stubUri, index: 0, name: 'testworkspace' }
-
         const appLocation: CdkAppLocation = {
-            workspaceFolder: workspaceFolder,
-            cdkJsonPath: 'cdkJson.fsPath',
-            treePath: 'treeJsonPath',
+            cdkJsonUri: vscode.Uri.file('/cdk.json'),
+            treeUri: vscode.Uri.file('/cdk.out/tree.json'),
         }
-        sandbox.stub(detectCdkProjects, 'detectCdkProjects').resolves([appLocation])
 
-        const stubAppNode = sandbox.createStubInstance(app.AppNode)
-        sandbox.stub(app, 'AppNode').returns(stubAppNode)
+        sinon.stub(detectCdkProjects, 'detectCdkProjects').resolves([appLocation])
 
-        const awsCdkExplorer = new AwsCdkExplorer()
-        awsCdkExplorer.visible = true
-        const treeNodes = await awsCdkExplorer.getChildren()
+        const cdkProvider = createCdkTreeDataProvider()
+        const treeNodes = await cdkProvider.getChildren()
         assert.strictEqual(treeNodes.length, 1)
-        assert.strictEqual(treeNodes[0], stubAppNode)
+        assert.deepStrictEqual(treeNodes[0].resource, appLocation)
     })
 })

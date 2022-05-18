@@ -73,6 +73,22 @@ export function createErrorItem(error: Error, message?: string): TreeNode {
     })
 }
 
+export function createPlaceholderItem(message: string): TreeNode {
+    return {
+        id: 'placeholder',
+        resource: message,
+        treeItem: new vscode.TreeItem(message, vscode.TreeItemCollapsibleState.None),
+    }
+}
+
+export function unboxTreeNode<T>(node: TreeNode, predicate: (resource: unknown) => resource is T): T {
+    if (!predicate(node.resource)) {
+        throw new TypeError(`Unexpected tree node resource for node: ${node.id}`)
+    }
+
+    return node.resource
+}
+
 export class TreeShim extends AWSTreeNodeBase {
     public constructor(public readonly node: TreeNode) {
         super(node.treeItem.label ?? '[No label]')

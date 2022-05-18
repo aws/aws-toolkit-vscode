@@ -12,11 +12,42 @@ export interface TreeItemContent extends Omit<vscode.TreeItem, ExcludedKeys> {
 }
 
 export interface TreeNode<T = unknown> {
+    /**
+     * A node's ID is only used to maintain uniqueness when multiple referentially
+     * equivalent nodes are present within a tree. The ID of a node received by the
+     * extension may not be the same as a freshly instantiated node.
+     */
     readonly id: string
+
+    /**
+     * The underlying model that this node represents.
+     */
     readonly resource: T
+
+    /**
+     * A tree item used to display the node in a tree view.
+     */
     readonly treeItem: vscode.TreeItem
+
+    /**
+     * Optional event to signal that this node's children has changed.
+     */
     readonly onDidChangeChildren?: vscode.Event<void>
+
+    /**
+     * Optional method to provide child nodes.
+     */
     getChildren?(): Promise<TreeNode[]> | TreeNode[]
+}
+
+export function isTreeNode(obj: unknown): obj is TreeNode {
+    return (
+        !!obj &&
+        typeof obj === 'object' &&
+        'resource' in obj &&
+        typeof (obj as TreeNode).id === 'string' &&
+        (obj as TreeNode).treeItem instanceof vscode.TreeItem
+    )
 }
 
 function copyNode<T>(id: string, node: Omit<TreeNode<T>, 'id'>): TreeNode<T> {
@@ -30,8 +61,8 @@ function copyNode<T>(id: string, node: Omit<TreeNode<T>, 'id'>): TreeNode<T> {
 }
 
 export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
-    private readonly nodes: Map<string, TreeNode[]> = new Map()
-    private readonly listeners: Map<string, vscode.Disposable[]> = new Map()
+    private readonly children: Map<string, TreeNode[]> = new Map()
+    private readonly listeners: Map<string, vscode.Disposable> = new Map()
     private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<TreeNode | void>()
     public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event
 
@@ -44,55 +75,40 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
         return item
     }
 
-    public async getChildren(element?: TreeNode): Promise<TreeNode[] | undefined> {
-        const getId = (id: string) => (element ? `${element.id}-${id}` : id)
+    public async getChildren(element?: TreeNode): Promise<TreeNode[]> {
+        const getId = (id: string) => (element ? `${element.id}/${id}` : id)
         const children = (await (element ?? this.root).getChildren?.()) ?? []
+        const tracked = children.map(r => this.insert(getId(r.id), r))
+        element && this.children.set(element.id, tracked)
 
-        return children.map(r => this.intoNode(getId(r.id), r))
+        return tracked
     }
 
     public refresh(): void {
-        for (const l of this.listeners.values()) {
-            vscode.Disposable.from(...l).dispose()
-        }
+        vscode.Disposable.from(...this.listeners.values()).dispose()
 
-        this.nodes.clear()
+        this.children.clear()
         this.listeners.clear()
         this.onDidChangeTreeDataEmitter.fire()
     }
 
-    private insert(id: string, node: TreeNode): typeof node {
-        const nodes = this.nodes.get(id) ?? []
-        this.nodes.set(id, [...nodes, node])
+    private clear(node: TreeNode): void {
+        this.listeners.get(node.id)?.dispose()
+        this.listeners.delete(node.id)
+    }
+
+    private insert(id: string, resource: TreeNode): TreeNode {
+        const node = copyNode(id, resource)
 
         if (node.onDidChangeChildren) {
-            const listeners = this.listeners.get(id) ?? []
             const listener = node.onDidChangeChildren?.(() => {
-                this.clear(node)
+                this.children.get(node.id)?.forEach(n => this.clear(n))
                 this.onDidChangeTreeDataEmitter.fire(node)
             })
 
-            this.listeners.set(id, [...listeners, listener])
+            this.listeners.set(id, listener)
         }
 
         return node
-    }
-
-    private clear(node: TreeNode): void {
-        for (const id of Array.from(this.nodes.keys()).filter(k => k.startsWith(node.id))) {
-            vscode.Disposable.from(...(this.listeners.get(id) ?? [])).dispose()
-            this.nodes.delete(id)
-            this.listeners.delete(id)
-        }
-    }
-
-    private intoNode(id: string, resource: TreeNode): TreeNode {
-        const previous = this.nodes.get(resource.id)?.find(n => n.id === id)
-
-        if (previous) {
-            return previous
-        }
-
-        return this.insert(resource.id, copyNode(id, resource))
     }
 }

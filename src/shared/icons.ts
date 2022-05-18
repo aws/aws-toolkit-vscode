@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { cdk } from '../cdk/globals'
 import globals from './extensionGlobals'
 import { isCloud9 } from './extensionUtilities'
 
@@ -96,4 +97,10 @@ export function initializeIconPaths(context: vscode.ExtensionContext) {
 
     globals.iconPaths.dark.exit = context.asAbsolutePath('resources/dark/exit.svg')
     globals.iconPaths.light.exit = context.asAbsolutePath('resources/light/exit.svg')
+
+    cdk.iconPaths.dark.cdk = context.asAbsolutePath('resources/dark/cdk/cdk.svg')
+    cdk.iconPaths.light.cdk = context.asAbsolutePath('resources/light/cdk/cdk.svg')
+
+    cdk.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cdk/cloudformation.svg')
+    cdk.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cdk/cloudformation.svg')
 }

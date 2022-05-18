@@ -3,54 +3,112 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-'use strict'
-
 import * as vscode from 'vscode'
-import { RefreshableAwsTreeProvider } from '../../shared/treeview/awsTreeProvider'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { createPlaceholderItem } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { Commands } from '../../shared/vscode/commands2'
+import { CdkProject } from './cdkProject'
 import { detectCdkProjects } from './detectCdkProjects'
 import { AppNode } from './nodes/appNode'
-import { CdkErrorNode } from './nodes/errorNode'
 
-/**
- * Provides data for the AWS CDK Explorer view
- */
-export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
-    public viewProviderId: string = 'aws.cdk.explorer'
-    public visible = false
-    private readonly onDidChangeTreeDataEventEmitter: vscode.EventEmitter<AWSTreeNodeBase | undefined>
+export async function getAppNodes(): Promise<TreeNode[]> {
+    const appsFound = await detectCdkProjects(vscode.workspace.workspaceFolders)
 
-    public get onDidChangeTreeData(): vscode.Event<AWSTreeNodeBase | undefined> {
-        return this.onDidChangeTreeDataEventEmitter.event
+    if (appsFound.length === 0) {
+        return [createPlaceholderItem(localize('AWS.cdk.explorerNode.noApps', '[No CDK Apps found in Workspaces]'))]
     }
 
-    public constructor() {
-        this.onDidChangeTreeDataEventEmitter = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
+    return appsFound.map(appLocation => new AppNode(appLocation))
+}
+
+class CdkProjectRegistry {
+    private watcher?: vscode.FileSystemWatcher
+    private readonly projects = new Map<string, CdkProject>()
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChange = this.onDidChangeEmitter.event
+
+    public constructor() {}
+
+    public getProjects(): CdkProject[] {
+        this.watcher ??= this.createWatcher()
+
+        return Array.from(this.projects.values())
     }
 
-    public getTreeItem(element: AWSTreeNodeBase): vscode.TreeItem {
-        return element
+    public async findProjects(): Promise<CdkProject[]> {
+        const pattern = '**/cdk.json'
+        const excludePattern = '**/{node_modules,.aws-sam}/**'
+        const cdkJsonFiles = await vscode.workspace.findFiles(pattern, excludePattern)
+
+        this.clear()
+
+        const projects = await Promise.all(cdkJsonFiles.map(f => CdkProject.fromManifest(f)))
+        projects.forEach(p => this.projects.set(p.manifest.toString(), p))
+        this.onDidChangeEmitter.fire()
+
+        return projects
     }
 
-    public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
-        if (!this.visible) {
-            return []
-        }
-        if (element) {
-            return element.getChildren()
-        } else {
-            const appsFound = await detectCdkProjects(vscode.workspace.workspaceFolders)
-
-            if (appsFound.length === 0) {
-                return [new CdkErrorNode(localize('AWS.cdk.explorerNode.noApps', '[No CDK Apps found in Workspaces]'))]
-            }
-
-            return appsFound.map(appLocation => new AppNode(appLocation))
-        }
+    private clear(): void {
+        vscode.Disposable.from(...this.projects.values()).dispose()
+        this.projects.clear()
     }
 
-    public refresh(node?: AWSTreeNodeBase): void {
-        this.onDidChangeTreeDataEventEmitter.fire(undefined)
+    private createWatcher(): vscode.FileSystemWatcher {
+        const pattern = '**/cdk.json'
+        const watcher = vscode.workspace.createFileSystemWatcher(pattern)
+
+        watcher.onDidCreate(async uri => {
+            const project = await CdkProject.fromManifest(uri)
+            this.projects.set(uri.toString(), project)
+            this.onDidChangeEmitter.fire()
+        })
+
+        watcher.onDidChange(async uri => {
+            this.projects.get(uri.toString())?.dispose()
+            const project = await CdkProject.fromManifest(uri)
+            this.projects.set(uri.toString(), project)
+            this.onDidChangeEmitter.fire()
+        })
+
+        watcher.onDidDelete(async uri => {
+            this.projects.get(uri.toString())?.dispose()
+            this.projects.delete(uri.toString())
+            this.onDidChangeEmitter.fire()
+        })
+
+        return watcher
     }
+}
+
+export class CdkRootNode implements TreeNode {
+    public readonly id = 'cdk'
+    public readonly treeItem = this.createTreeItem()
+    public readonly resource = this
+    private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
+
+    public async getChildren() {
+        return getAppNodes()
+    }
+
+    public refresh(): void {
+        this.onDidChangeChildrenEmitter.fire()
+    }
+
+    private createTreeItem() {
+        const item = new vscode.TreeItem('CDK')
+        item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
+        item.contextValue = 'awsCdkRootNode'
+
+        return item
+    }
+}
+
+export const cdkNode = new CdkRootNode()
+export const refreshCdkExplorer = Commands.register('aws.cdk.refresh', cdkNode.refresh.bind(cdkNode))
+
+export function createCdkTreeDataProvider(): ResourceTreeDataProvider {
+    return new ResourceTreeDataProvider({ getChildren: getAppNodes })
 }

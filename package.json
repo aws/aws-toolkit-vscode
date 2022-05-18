@@ -55,8 +55,8 @@
         "onCommand:aws.previewStateMachine",
         "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
         "onCommand:aws.stepfunctions.publishStateMachine",
-        "onView:aws.cdk.explorer",
-        "onCommand:aws.refreshCdkExplorer",
+        "onView:aws.developerTools",
+        "onCommand:aws.cdk.refresh",
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
@@ -684,9 +684,8 @@
                     "name": "%AWS.lambda.explorerTitle%"
                 },
                 {
-                    "id": "aws.cdk.explorer",
-                    "name": "%AWS.cdk.explorerTitle%",
-                    "when": "!isCloud9"
+                    "id": "aws.developerTools",
+                    "name": "%AWS.developerTools.explorerTitle%"
                 }
             ]
         },
@@ -761,7 +760,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.refreshCdkExplorer",
+                    "command": "aws.cdk.refresh",
                     "when": "false"
                 },
                 {
@@ -923,10 +922,6 @@
                 {
                     "command": "aws.s3.uploadFileToParent",
                     "when": "false"
-                },
-                {
-                    "command": "aws.cdk.help",
-                    "when": "!isCloud9"
                 },
                 {
                     "command": "aws.apprunner.startDeployment",
@@ -1140,16 +1135,6 @@
                     "command": "aws.viewLogs",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
-                },
-                {
-                    "command": "aws.refreshCdkExplorer",
-                    "when": "view == aws.cdk.explorer",
-                    "group": "navigation@5"
-                },
-                {
-                    "command": "aws.cdk.help",
-                    "when": "view == aws.cdk.explorer",
-                    "group": "z_externalLinks@1"
                 }
             ],
             "explorer/context": [
@@ -1337,12 +1322,12 @@
                 },
                 {
                     "command": "aws.cdk.renderStateMachineGraph",
-                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "when": "viewItem == awsCdkStateMachineNode",
                     "group": "inline@1"
                 },
                 {
                     "command": "aws.cdk.renderStateMachineGraph",
-                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "when": "viewItem == awsCdkStateMachineNode",
                     "group": "0@1"
                 },
                 {
@@ -1644,6 +1629,11 @@
                     "command": "aws.sam.newTemplate",
                     "group": "0@2",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
+                },
+                {
+                    "command": "aws.cdk.refresh",
+                    "when": "viewItem == awsCdkRootNode",
+                    "group": "inline@1"
                 }
             ]
         },
@@ -1723,16 +1713,6 @@
             {
                 "command": "aws.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.cdk.help",
-                "title": "%AWS.command.cdk.help%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2337,7 +2317,7 @@
                 }
             },
             {
-                "command": "aws.refreshCdkExplorer",
+                "command": "aws.cdk.refresh",
                 "title": "%AWS.command.refreshCdkExplorer%",
                 "category": "%AWS.title%",
                 "icon": {

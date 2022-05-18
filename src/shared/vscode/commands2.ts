@@ -240,7 +240,7 @@ interface Deferred<T extends Callback, U extends any[]> {
 class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private disposed?: boolean
     private subscription?: vscode.Disposable
-    private static counter = 0 // Used to generated unique-ish tree item IDs
+    private idCounter = 0
     public readonly id = this.resource.info.id
 
     public constructor(private readonly resource: Deferred<T, U>, private readonly commands = vscode.commands) {}
@@ -310,12 +310,10 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
             const treeItem = new vscode.TreeItem(content.label, vscode.TreeItemCollapsibleState.None)
             treeItem.command = { command: id, arguments: args, title: content.label }
 
-            Object.assign(treeItem, content)
-
             return {
-                id: `${id}-${(CommandResource.counter += 1)}`,
+                id: `${id}-${(this.idCounter += 1)}`,
+                treeItem: Object.assign(treeItem, content),
                 resource: this,
-                treeItem,
             }
         }
     }

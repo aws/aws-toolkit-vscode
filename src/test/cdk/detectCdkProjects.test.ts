@@ -65,9 +65,8 @@ describe('detectCdkProjects', function () {
 
         const project = actual[0]
         assert.ok(project)
-        assert.strictEqual(project.cdkJsonPath, cdkJsonPath)
-        assert.strictEqual(project.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
-        assert.strictEqual(project.treePath, path.normalize(path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json')))
+        assert.strictEqual(project.cdkJsonUri.fsPath, cdkJsonPath)
+        assert.strictEqual(project.treeUri.fsPath, path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json'))
     })
 
     it('detects deep projects', async function () {
@@ -75,7 +74,7 @@ describe('detectCdkProjects', function () {
         await mkdirp(path.dirname(cdkJsonPath))
         await saveCdkJson(cdkJsonPath)
         const actual = await detectCdkProjects(workspaceFolders)
-        assert.strictEqual(actual[0]?.cdkJsonPath, cdkJsonPath)
+        assert.strictEqual(actual[0]?.cdkJsonUri.fsPath, cdkJsonPath)
     })
 
     it('ignores projects in `node_modules`', async function () {
@@ -95,9 +94,11 @@ describe('detectCdkProjects', function () {
 
         const project = actual[0]
         assert.ok(project)
-        assert.strictEqual(project.cdkJsonPath, cdkJsonPath)
-        assert.strictEqual(project.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
-        assert.strictEqual(project.treePath, path.normalize(path.join(cdkJsonPath, '..', 'build/cdk.out', 'tree.json')))
+        assert.strictEqual(project.cdkJsonUri.fsPath, cdkJsonPath)
+        assert.strictEqual(
+            project.treeUri.fsPath,
+            path.normalize(path.join(cdkJsonPath, '..', 'build/cdk.out', 'tree.json'))
+        )
     })
 
     it('detects CDK projects in multi-folder workspace', async function () {
@@ -123,12 +124,10 @@ describe('detectCdkProjects', function () {
         const project2 = actual[1]
 
         assert.ok(project1)
-        assert.strictEqual(project1.cdkJsonPath, projectPath1)
-        assert.strictEqual(project1.workspaceFolder.uri.fsPath, workspaceFolders[0].uri.fsPath)
-        assert.strictEqual(project1.treePath, path.join(projectPath1, '..', 'cdk.out', 'tree.json'))
+        assert.strictEqual(project1.cdkJsonUri.fsPath, projectPath1)
+        assert.strictEqual(project1.treeUri.fsPath, path.join(projectPath1, '..', 'cdk.out', 'tree.json'))
         assert.ok(project2)
-        assert.strictEqual(project2.cdkJsonPath, projectPath2)
-        assert.strictEqual(project2.workspaceFolder.uri.fsPath, workspaceFolders[1].uri.fsPath)
-        assert.strictEqual(project2.treePath, path.join(projectPath2, '..', 'cdk.out', 'tree.json'))
+        assert.strictEqual(project2.cdkJsonUri.fsPath, projectPath2)
+        assert.strictEqual(project2.treeUri.fsPath, path.join(projectPath2, '..', 'cdk.out', 'tree.json'))
     })
 })

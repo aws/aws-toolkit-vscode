@@ -17,16 +17,36 @@ export interface Resource {
     readonly id: string
 }
 
+export interface ResourceProvider<T extends Resource = Resource> {
+    listResources(): Promise<T[]> | T[]
+    readonly onDidChange?: vscode.Event<void>
+}
+
 export class ResourceTreeNode<T extends Resource> implements TreeNode<T> {
     public readonly id = this.resource.id
     public readonly treeItem = this.createTreeItem()
 
-    public constructor(public readonly resource: T, private readonly content: TreeItemContent) {}
+    public constructor(
+        public readonly resource: T,
+        private readonly content: TreeItemContent,
+        private readonly children?: ResourceProvider<TreeNode>
+    ) {}
+
+    public get onDidChangeChildren() {
+        return this.children?.onDidChange
+    }
+
+    public getChildren(): Promise<TreeNode[]> | TreeNode[] {
+        return this.children?.listResources() ?? []
+    }
 
     private createTreeItem(): vscode.TreeItem {
-        const collapsed = vscode.TreeItemCollapsibleState.None
-        const item = new vscode.TreeItem(this.content.label, collapsed)
+        const collapsed =
+            this.children !== undefined
+                ? vscode.TreeItemCollapsibleState.Collapsed
+                : vscode.TreeItemCollapsibleState.None
 
+        const item = new vscode.TreeItem(this.content.label, collapsed)
         assign(this.content, item)
 
         return item
