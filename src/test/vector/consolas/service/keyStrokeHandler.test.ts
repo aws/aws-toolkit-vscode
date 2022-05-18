@@ -17,6 +17,7 @@ import {
     telemetryContext,
 } from '../../../../vector/consolas/models/model'
 import * as KeyStrokeHandler from '../../../../vector/consolas/service/keyStrokeHandler'
+import * as inlineCompletions from '../../../../vector/consolas/service/inlineCompletion'
 import { createMockTextEditor, createTextDocumentChangeEvent, resetConsolasGlobalVariables } from '../testUtil'
 import * as EditorContext from '../../../../vector/consolas/util/editorContext'
 import { UnsupportedLanguagesCache } from '../../../../vector/consolas/util/unsupportedLanguagesCache'
@@ -66,7 +67,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 'd'
             )
-            invocationContext.isActive = true
+            invocationContext.isIntelliSenseActive = true
             invocationContext.startPos = new vscode.Position(1, 0)
             recommendations.response = [{ content: 'def two_sum(nums, target):\n for i in nums' }]
             await KeyStrokeHandler.processKeyStroke(
@@ -287,10 +288,9 @@ describe('keyStrokeHandler', function () {
             )
             assert.strictEqual(automatedTriggerContext.keyStrokeCount, 0)
         })
-
-        it('should executeCommand editor.action.triggerSuggest when recommendation matches current code prefix', async function () {
+        it('should call showFirstRecommendationStub when recommendation matches current code prefix', async function () {
             const mockEditor = createMockTextEditor()
-            const cmdSpy = sinon.spy(vscode.commands, 'executeCommand')
+            const showFirstRecommendationStub = sinon.spy(inlineCompletions, 'showFirstRecommendation')
             invocationContext.startPos = new vscode.Position(1, 0)
             const getRecommendationStub = sinon
                 .stub(KeyStrokeHandler, 'getRecommendations')
@@ -306,7 +306,7 @@ describe('keyStrokeHandler', function () {
                 isAutomatedTriggerOn,
                 getRecommendationStub
             )
-            assert.ok(cmdSpy.calledWith('editor.action.triggerSuggest'))
+            sinon.assert.calledWith(showFirstRecommendationStub, mockEditor)
         })
 
         it('should not executeCommand editor.action.triggerSuggest when recommendation does not match current code prefix', async function () {
@@ -404,11 +404,11 @@ describe('keyStrokeHandler', function () {
                 { content: 'def two_sum(nums, target):\n for i in nums' },
             ]
             invocationContext.startPos = new vscode.Position(1, 0)
-            let isPrefixMatched = KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, mockEditor)
-            assert.deepStrictEqual(isPrefixMatched, [false, true])
+            KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, mockEditor)
+            assert.deepStrictEqual(telemetryContext.isPrefixMatched, [false, true])
             telemetryContext.isPrefixMatched = []
-            isPrefixMatched = KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(false, mockEditor)
-            assert.deepStrictEqual(isPrefixMatched, [])
+            KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(false, mockEditor)
+            assert.deepStrictEqual(telemetryContext.isPrefixMatched, [])
         })
     })
 

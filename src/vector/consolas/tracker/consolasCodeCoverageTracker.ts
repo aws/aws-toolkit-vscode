@@ -27,7 +27,7 @@ export class ConsolasCodeCoverageTracker {
     }
 
     public setAcceptedTokens(recommendation: string) {
-        const terms = this._globals.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY) || false
+        const terms = this._globals.get<boolean>(ConsolasConstants.termsAcceptedKey) || false
         if (!terms) return
 
         // generate accepted recoomendation token and stored in collection
@@ -49,7 +49,7 @@ export class ConsolasCodeCoverageTracker {
     }
 
     public flush() {
-        const terms = this._globals.get<boolean>(ConsolasConstants.CONSOLAS_TERMS_ACCEPTED_KEY) || false
+        const terms = this._globals.get<boolean>(ConsolasConstants.termsAcceptedKey) || false
         if (!terms) {
             this._totalTokens = []
             this._acceptedTokens = []
@@ -80,7 +80,7 @@ export class ConsolasCodeCoverageTracker {
         this._timer = setTimeout(() => {
             try {
                 const currentTime = new globals.clock.Date().getTime()
-                const delay: number = ConsolasConstants.DEFAULT_CHECK_PERIOD_MILLIS
+                const delay: number = ConsolasConstants.defaultCheckPeriodMillis
                 const diffTime: number = this._startTime + delay
                 if (diffTime <= currentTime) {
                     const totalTokens = this._totalTokens
@@ -99,7 +99,7 @@ export class ConsolasCodeCoverageTracker {
                 this._startTime = 0
                 this.closeTimer()
             }
-        }, ConsolasConstants.DEFAULT_CHECK_PERIOD_MILLIS)
+        }, ConsolasConstants.defaultCheckPeriodMillis)
     }
 
     public closeTimer() {

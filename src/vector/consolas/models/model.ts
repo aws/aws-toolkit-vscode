@@ -26,9 +26,9 @@ export const recommendations: Recommendations = {
 
 interface InvocationContext {
     /**
-     * Flag indicates completion menu is active or not
+     * Flag indicates intelli sense pop up is active or not
      */
-    isActive: boolean
+    isIntelliSenseActive: boolean
     /**
      * Flag indicates invocation is in progress
      */
@@ -41,15 +41,25 @@ interface InvocationContext {
      * Invocation start position
      */
     startPos: vscode.Position
+    /**
+     * Flag indicates whether consolas is doing text edit
+     */
+    isConsolasEditing: boolean
+    /**
+     * Flag indicates whether typeahead of current inline recommendation is in progress
+     */
+    isTypeaheadInProgress: boolean
 }
 
 export const invocationContext: InvocationContext = {
-    isActive: false,
+    isIntelliSenseActive: false,
     isPendingResponse: false,
+    isConsolasEditing: false,
+    isTypeaheadInProgress: false,
     /**
      * Initialize lastInvocationTime (ms) by performance.now() - "duration threshold" x 1000 ms
      */
-    lastInvocationTime: performance.now() - ConsolasConstants.INVOCATION_TIME_INTERVAL_THRESHOLD * 1000,
+    lastInvocationTime: performance.now() - ConsolasConstants.invocationTimeIntervalThreshold * 1000,
     startPos: new vscode.Position(0, 0),
 }
 
@@ -118,11 +128,21 @@ export interface AcceptedSuggestionEntry {
 
 export interface OnRecommendationAcceptanceEntry {
     readonly editor: vscode.TextEditor | undefined
-    readonly line: number
+    readonly range: vscode.Range
     readonly acceptIndex: number
     readonly recommendation: string
     readonly requestId: string
     readonly triggerType: telemetry.ConsolasTriggerType
     readonly completionType: telemetry.ConsolasCompletionType
     readonly language: telemetry.ConsolasLanguage
+}
+interface InlineCompletion {
+    items: string[]
+    origin: string[]
+    position: number
+}
+export const inlineCompletion: InlineCompletion = {
+    items: [],
+    origin: [],
+    position: 0,
 }

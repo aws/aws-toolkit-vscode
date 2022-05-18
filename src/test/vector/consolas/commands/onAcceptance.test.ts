@@ -35,7 +35,7 @@ describe('onAcceptance', function () {
             await onAcceptance(
                 {
                     editor: mockEditor,
-                    line: 1,
+                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
                     acceptIndex: 0,
                     recommendation: "print('Hello World!')",
                     requestId: '',
@@ -56,7 +56,7 @@ describe('onAcceptance', function () {
             await onAcceptance(
                 {
                     editor: mockEditor,
-                    line: 0,
+                    range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 27)),
                     acceptIndex: 0,
                     recommendation: "console.log('Hello World!')",
                     requestId: '',
@@ -77,7 +77,7 @@ describe('onAcceptance', function () {
             await onAcceptance(
                 {
                     editor: mockEditor,
-                    line: 1,
+                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 26)),
                     acceptIndex: 0,
                     recommendation: "print('Hello World!')",
                     requestId: '',
@@ -112,7 +112,7 @@ describe('onAcceptance', function () {
             await onAcceptance(
                 {
                     editor: mockEditor,
-                    line: 1,
+                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
                     acceptIndex: 0,
                     recommendation: "print('Hello World!')",
                     requestId: '',

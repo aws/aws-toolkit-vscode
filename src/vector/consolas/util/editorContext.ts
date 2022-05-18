@@ -25,11 +25,11 @@ export function extractContextForConsolas(editor: vscode.TextEditor): consolasCl
     telemetryContext.cursorOffset = offset
 
     const caretLeftFileContext = editor.document.getText(
-        new vscode.Range(document.positionAt(offset - ConsolasConstants.CHARACTERS_LIMIT), document.positionAt(offset))
+        new vscode.Range(document.positionAt(offset - ConsolasConstants.charactersLimit), document.positionAt(offset))
     )
 
     const caretRightFileContext = editor.document.getText(
-        new vscode.Range(document.positionAt(offset), document.positionAt(offset + ConsolasConstants.CHARACTERS_LIMIT))
+        new vscode.Range(document.positionAt(offset), document.positionAt(offset + ConsolasConstants.charactersLimit))
     )
 
     editorFileContext = {
@@ -42,7 +42,7 @@ export function extractContextForConsolas(editor: vscode.TextEditor): consolasCl
 export function getFileName(editor: vscode.TextEditor): string {
     if (editor !== undefined) {
         const fileName = path.basename(editor.document.fileName)
-        return fileName.substring(0, ConsolasConstants.FILENAME_CHARS_LIMIT)
+        return fileName.substring(0, ConsolasConstants.filenameCharsLimit)
     }
     return ''
 }
@@ -77,7 +77,7 @@ export function buildRequest(editor: vscode.TextEditor): consolasClient.Consolas
             leftFileContent: '',
             rightFileContent: '',
         },
-        maxRecommendations: ConsolasConstants.MAX_RECOMMENDATIONS,
+        maxRecommendations: ConsolasConstants.maxRecommendations,
     }
     if (editor !== undefined) {
         const fileContext = extractContextForConsolas(editor)
@@ -85,13 +85,13 @@ export function buildRequest(editor: vscode.TextEditor): consolasClient.Consolas
         const pLanguage = getProgrammingLanguage(editor)
         const contextInfo = {
             filename: fileName.toString(),
-            naturalLanguageCode: ConsolasConstants.NATURAL_LANGUAGE,
+            naturalLanguageCode: ConsolasConstants.naturalLanguage,
             programmingLanguage: pLanguage,
         }
         req = {
             contextInfo: contextInfo,
             fileContext: fileContext,
-            maxRecommendations: ConsolasConstants.MAX_RECOMMENDATIONS,
+            maxRecommendations: ConsolasConstants.maxRecommendations,
         }
     }
     return req
@@ -117,8 +117,8 @@ export function validateRequest(req: consolasClient.ConsolasGenerateRecommendati
         req.contextInfo.naturalLanguageCode?.length > 5
     )
     const isFileContextValid = !(
-        req.fileContext.leftFileContent.length > ConsolasConstants.CHARACTERS_LIMIT ||
-        req.fileContext.rightFileContent.length > ConsolasConstants.CHARACTERS_LIMIT
+        req.fileContext.leftFileContent.length > ConsolasConstants.charactersLimit ||
+        req.fileContext.rightFileContent.length > ConsolasConstants.charactersLimit
     )
 
     const isMaxRecommendationsValid = !(
@@ -151,10 +151,10 @@ export function getLeftContext(editor: vscode.TextEditor, line: number): string 
     let lineText = ''
     if (editor && editor.document.lineAt(line)) {
         lineText = editor.document.lineAt(line).text
-        if (lineText.length > ConsolasConstants.CONTEXT_PREVIEW_LEN) {
+        if (lineText.length > ConsolasConstants.contextPreviewLen) {
             lineText =
                 '...' +
-                lineText.substring(lineText.length - ConsolasConstants.CONTEXT_PREVIEW_LEN - 1, lineText.length - 1)
+                lineText.substring(lineText.length - ConsolasConstants.contextPreviewLen - 1, lineText.length - 1)
         }
     }
     return lineText

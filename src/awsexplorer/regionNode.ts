@@ -149,6 +149,6 @@ export class RegionNode extends AWSTreeNodeBase {
     }
 
     private shouldShowConsolas(): boolean {
-        return workspace.getConfiguration('aws.experiments').get(ConsolasConstants.CONSOLAS_PREVIEW) || false
+        return workspace.getConfiguration('aws.experiments').get(ConsolasConstants.consolas) || false
     }
 }

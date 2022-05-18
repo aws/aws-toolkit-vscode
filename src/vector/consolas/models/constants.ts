@@ -7,87 +7,89 @@ export const ConsolasConstants = {
     /**
      * SDK Client
      */
-    ALPHA_ENDPOINT: 'https://conso-conso-kt91i2m4jckw-a308b301002e515e.elb.us-west-2.amazonaws.com/',
-    BETA_ENDPOINT: 'https://conso-conso-1gaw7rhj4gx1w-a813d3d32546185b.elb.us-west-2.amazonaws.com/',
-    GAMMA_ENDPOINT: 'https://Conso-Conso-5NU9CUFTKAGS-82f6f7a6431ff74a.elb.us-west-2.amazonaws.com/',
-    PROD_ENDPOINT: 'https://conso-conso-eh28s3s7lpja-dc3892a3fd48c07f.elb.us-west-2.amazonaws.com/',
-    REGION: 'us-west-2',
+    alphaEndpoint: 'https://conso-conso-kt91i2m4jckw-a308b301002e515e.elb.us-west-2.amazonaws.com/',
+    betaEndpoint: 'https://conso-conso-1gaw7rhj4gx1w-a813d3d32546185b.elb.us-west-2.amazonaws.com/',
+    gammaEndpoint: 'https://Conso-Conso-5NU9CUFTKAGS-82f6f7a6431ff74a.elb.us-west-2.amazonaws.com/',
+    prodEndpoint: 'https://conso-conso-eh28s3s7lpja-dc3892a3fd48c07f.elb.us-west-2.amazonaws.com/',
+    region: 'us-west-2',
 
     /**
      * Automated and manual trigger
      */
-    INVOCATION_TIME_INTERVAL_THRESHOLD: 2, // seconds
-    PROMISE_TIMEOUT_LIMIT: 5, // seconds
-    INVOCATION_KEY_THRESHOLD: 15,
-    SPECIAL_CHARACTERS_LIST: ['{', '[', '(', ':', '\t', '\n'],
-    NORMAL_TEXT_CHANGE_REGEX: /[A-Za-z0-9]/g,
+    invocationTimeIntervalThreshold: 1, // seconds
+    promiseTimeoutLimit: 15, // seconds
+    invocationKeyThreshold: 15,
+    specialCharactersList: ['{', '[', '(', ':', '\t', '\n'],
+    normalTextChangeRegex: /[A-Za-z0-9]/g,
 
     /**
      * EditorCon context
      */
-    CHARACTERS_LIMIT: 25600,
-    FILENAME_CHARS_LIMIT: 1024,
-    NATURAL_LANGUAGE: 'en-US',
-    MAX_RECOMMENDATIONS: 10,
-    SPACE: ' ',
-    LINE_BREAK: '\n',
+    charactersLimit: 25600,
+    filenameCharsLimit: 1024,
+    naturalLanguage: 'en-US',
+    maxRecommendations: 10,
+    space: ' ',
+    lineBreak: '\n',
+    lineBreakWin: '\r\n',
 
     /**
      * Ux of recommendations
      */
-    LABEL_LENGTH: 20,
-    COMPLETION_DETAIL: 'AWS Consolas',
+    labelLength: 20,
+    completionDetail: 'AWS Consolas',
 
     /**
-     * Control feature
+     * Consolas in configuration
      */
-    CONSOLAS_PREVIEW: 'Consolas',
+    consolas: 'Consolas',
     /**
      * Supported languages
      */
-    JAVA: 'java',
-    PYTHON: 'python',
-    JAVASCRIPT: 'javascript',
-    TYPESCRIPT: 'typescript',
+    java: 'java',
+    python: 'python',
+    javascript: 'javascript',
+    typescript: 'typescript',
 
-    SUPPORTED_LANGUAGES: ['java', 'python', 'javascript', 'typescript'],
+    supportedLanguages: ['java', 'python', 'javascript', 'typescript'],
 
     /**
      * Prompt
      */
-    PENDING_RESPONSE: 'Pending Consolas response, please wait...',
+    pendingResponse: 'Pending Consolas response, please wait...',
 
     /**
      * Beta landing page file
      */
-    WELCOME_CONSOLAS_README_FILE_SOURCE: 'resources/markdown/WelcomeToConsolas.md',
-    CONSOLAS_WELCOME_MESSAGE_KEY: 'CONSOLAS_WELCOME_MESSAGE',
+    welcomeConsolasReadmeFileSource: 'resources/markdown/WelcomeToConsolas.md',
+    welcomeMessageKey: 'CONSOLAS_WELCOME_MESSAGE',
 
     /**
      * Key bindings JSON file path
      */
-    KEY_BINDING_PATH_MAC: 'Library/Application Support/Code/User/keybindings.json',
-    KEY_BINDING_PATH_LINUX: '.config/Code/User/keybindings.json',
-    KEY_BINDING_PATH_WIN: 'Code/User/keybindings.json',
+    keyBindingPathMac: 'Library/Application Support/Code/User/keybindings.json',
+    keyBindingPathLinux: '.config/Code/User/keybindings.json',
+    keyBindingPathWin: 'Code/User/keybindings.json',
 
     /**
      * Length of left context preview in output channel
      */
-    CONTEXT_PREVIEW_LEN: 20,
+    contextPreviewLen: 20,
 
     /**
      * Unsupported language cache
      */
-    CONSOLAS_UNSUPPORTED_LANGUAGES_CACHE_TTL: 10 * 60 * 60 * 1000,
-    CONSOLAS_UNSUPPORTED_LANGUAGES_KEY: 'CONSOLAS_UNSUPPORTED_LANGUAGES_KEY',
-    CONSOLAS_AUTO_TRIGGER_ENABLED_KEY: 'CONSOLAS_AUTO_TRIGGER_ENABLED',
-    CONSOLAS_TERMS_ACCEPTED_KEY: 'CONSOLAS_TERMS_ACCEPTED',
+    unsupportedLanguagesCacheTTL: 10 * 60 * 60 * 1000,
+    unsupportedLanguagesKey: 'CONSOLAS_UNSUPPORTED_LANGUAGES_KEY',
+    autoTriggerEnabledKey: 'CONSOLAS_AUTO_TRIGGER_ENABLED',
+    termsAcceptedKey: 'CONSOLAS_TERMS_ACCEPTED',
+    serviceActiveKey: 'CONSOLAS_SERVICE_ACTIVE',
 
     //
-    CONSOLAS_LEARN_MORE_URI: 'https://en.wikipedia.org/wiki/Consolas',
+    learnMoreUri: 'https://en.wikipedia.org/wiki/Consolas',
 
     /**
      * the interval of the background thread invocation, which is triggered by the timer
      */
-    DEFAULT_CHECK_PERIOD_MILLIS: 1000 * 60 * 5,
+    defaultCheckPeriodMillis: 1000 * 60 * 5,
 }
