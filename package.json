@@ -1160,7 +1160,7 @@
                 },
                 {
                     "command": "aws.uploadLambda",
-                    "when": "isFileSystemResource == true && resourceFilename =~ /^template\\.(json|yml|yaml)$/ || (explorerResourceIsFolder && isCloud9)",
+                    "when": "isFileSystemResource == true && resourceFilename =~ /^template\\.(json|yml|yaml)$/ || explorerResourceIsFolder && isCloud9",
                     "group": "z_aws@2"
                 }
             ],
