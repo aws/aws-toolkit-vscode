@@ -17,7 +17,7 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../shared/sam/cli/samCliValidator'
-import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
+import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
 import { UriHandler } from '../shared/vscode/uriHandler'
 import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
