@@ -63,6 +63,7 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
+import { isReleaseVersion } from './shared/vscode/env'
 
 let localize: nls.LocalizeFunc
 
@@ -237,7 +238,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        if (!isReleaseVersion()) {
+            globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
