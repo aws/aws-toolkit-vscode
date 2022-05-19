@@ -71,14 +71,14 @@ export default defineComponent({
         initialData: defaultInitialData,
         selectedApiResource: '',
         selectedMethod: '',
-        methods: [],
+        methods: [] as string[],
         jsonInput: '',
         queryString: '',
         errors: [] as string[],
         isLoading: false,
     }),
     async created() {
-        this.initialData = (await client.init()) ?? this.initialData
+        this.initialData = (await client.getData()) ?? this.initialData
     },
     mounted() {
         this.$nextTick(function () {
@@ -103,12 +103,10 @@ export default defineComponent({
                     break
             }
         },
-        setApiResource: function () {
-            client.handler({
-                command: 'apiResourceSelected',
-                resource: this.initialData.Resources[this.selectedApiResource],
-                region: this.initialData.Region,
-            })
+        setApiResource: async function () {
+            const methods = await client.listValidMethods(this.initialData.Resources[this.selectedApiResource])
+            this.methods = methods
+            this.selectedMethod = methods[0]
         },
         sendInput: function () {
             this.errors = []
@@ -122,15 +120,17 @@ export default defineComponent({
                 return
             }
 
-            client.handler({
-                command: 'invokeApi',
-                body: this.jsonInput,
-                api: this.initialData.ApiId,
-                selectedApiResource: this.initialData.Resources[this.selectedApiResource],
-                selectedMethod: this.selectedMethod,
-                queryString: this.queryString,
-                region: this.initialData.Region,
-            })
+            this.isLoading = true
+            client
+                .invokeApi({
+                    body: this.jsonInput,
+                    api: this.initialData.ApiId,
+                    selectedApiResource: this.initialData.Resources[this.selectedApiResource],
+                    selectedMethod: this.selectedMethod,
+                    queryString: this.queryString,
+                    region: this.initialData.Region,
+                })
+                .finally(() => (this.isLoading = false))
         },
     },
 })

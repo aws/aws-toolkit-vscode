@@ -1,7 +1,7 @@
 /*! * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <template>
-    <h1>Start Execution: {{ initialData.StateMachineName }}</h1>
+    <h1>Start Execution: {{ initialData.name }}</h1>
     <div id="app">
         <div>
             <label class="input-header"> Execution Input </label>
@@ -56,7 +56,7 @@ const defaultInitialData = {
 
 export default defineComponent({
     async created() {
-        this.initialData = (await client.init()) ?? this.initialData
+        this.initialData = (await client.getData()) ?? this.initialData
     },
     data: () => ({
         initialData: defaultInitialData,
@@ -113,14 +113,7 @@ export default defineComponent({
             }
         },
         sendInput: function () {
-            console.log(this.executionInput)
-            client.handler({
-                command: 'executeStateMachine',
-                value: this.executionInput,
-                arn: this.initialData.arn,
-                name: this.initialData.name,
-                region: this.initialData.region,
-            })
+            client.executeStateMachine(this.executionInput)
         },
     },
     mixins: [saveData],

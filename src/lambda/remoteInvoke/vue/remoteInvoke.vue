@@ -16,7 +16,7 @@
         <h3>Or, use a sample request payload from a template:</h3>
         <select v-model="selectedSampleRequest" v-on:change="newSelection">
             <option disabled value="">Select an example input</option>
-            <option v-for="item in initialData.InputSamples" :key="item" :value="item.filename">
+            <option v-for="item in initialData.InputSamples" :key="item.name" :value="item.filename">
                 {{ item.name }}
             </option>
         </select>
@@ -45,81 +45,30 @@ const defaultInitialData = {
 
 export default defineComponent({
     async created() {
-        this.initialData = (await client.init()) ?? this.initialData
+        this.initialData = (await client.getData()) ?? this.initialData
     },
     data(): RemoteInvokeData {
         return {
             initialData: { ...defaultInitialData },
             selectedSampleRequest: '',
             sampleText: '',
-            error: undefined,
-            payload: {},
-            statusCode: '',
-            logs: '',
-            showResponse: false,
-            isLoading: false,
             selectedFile: '',
         }
     },
-    mounted() {
-        this.$nextTick(function () {
-            window.addEventListener('message', this.handleMessageReceived)
-        })
-    },
     methods: {
-        newSelection: function () {
-            client.handler({
-                command: 'sampleRequestSelected',
-                requestName: this.selectedSampleRequest,
-            })
+        async newSelection() {
+            const resp = await client.getSample(this.selectedSampleRequest)
+            this.sampleText = resp
         },
-        promptForFileLocation: function () {
-            client.handler({
-                command: 'promptForFile',
-            })
-        },
-        handleMessageReceived: function (event: any) {
-            const message = event.data
-            switch (message.command) {
-                case 'loadedSample':
-                    this.loadSampleText(message.sample)
-                    this.selectedFile = message.selectedFile
-                    break
-                case 'invokedLambda':
-                    this.showResponse = true
-                    this.error = undefined
-                    this.payload = ''
-                    this.statusCode = ''
-                    this.logs = ''
-                    if (message.error) {
-                        this.error = message.error
-                    } else {
-                        let parsed
-                        try {
-                            parsed = JSON.parse(message.payload)
-                        } catch (e) {
-                            parsed = message.payload
-                        }
-                        this.payload = parsed
-                        this.statusCode = message.statusCode
-                        this.logs = message.logs
-                    }
-                    this.isLoading = false
-                    break
+        async promptForFileLocation() {
+            const resp = await client.promptFile()
+            if (resp) {
+                this.sampleText = resp.sample
+                this.selectedFile = resp.selectedFile
             }
         },
-        loadSampleText: function (txt: string) {
-            this.sampleText = txt
-        },
-        sendInput: function () {
-            this.isLoading = true
-            client.handler({
-                command: 'invokeLambda',
-                region: this.initialData.FunctionRegion,
-                functionArn: this.initialData.FunctionArn,
-                functionName: this.initialData.FunctionName,
-                json: this.sampleText,
-            })
+        sendInput() {
+            client.invokeLambda(this.sampleText)
         },
     },
     mixins: [saveData],

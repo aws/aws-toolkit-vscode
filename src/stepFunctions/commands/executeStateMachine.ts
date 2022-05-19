@@ -16,95 +16,82 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import globals from '../../shared/extensionGlobals'
-import { compileVueWebview } from '../../webviews/main'
 import { ExtContext } from '../../shared/extensions'
-import { WebviewServer } from '../../webviews/server'
+import { VueWebview } from '../../webviews/main'
+import * as vscode from 'vscode'
 
-interface CommandMessage {
-    command: string
-    value?: string
-}
-
-interface InitialData {
+interface StateMachine {
     arn: string
     name: string
     region: string
 }
 
-interface ExecuteStateMachineMessage extends CommandMessage, InitialData {}
+export class ExecuteStateMachineWebview extends VueWebview {
+    public readonly id = 'remoteInvoke'
+    public readonly title = localize('AWS.executeStateMachine.title', 'Start Execution')
+    public readonly source = 'stepFunctionsExecuteStateMachineVue.js'
+    private readonly logger = getLogger()
 
-function isExecuteStateMachineMessage(m: CommandMessage): m is ExecuteStateMachineMessage {
-    return m.command === 'executeStateMachine'
+    public constructor(private readonly channel: vscode.OutputChannel, private readonly stateMachine: StateMachine) {
+        super()
+    }
+
+    public getData() {
+        return this.stateMachine
+    }
+
+    public async executeStateMachine(input: string) {
+        let executeResult: Result = 'Succeeded'
+        this.logger.info('Starting Step Functions State Machine execution')
+
+        this.channel.show()
+        this.channel.appendLine(
+            localize(
+                'AWS.message.info.stepFunctions.executeStateMachine.executing',
+                'Executing {0} in {1}...',
+                this.stateMachine.name,
+                this.stateMachine.region
+            )
+        )
+        this.channel.appendLine('')
+
+        try {
+            const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(
+                this.stateMachine.region
+            )
+            const startExecResponse = await client.executeStateMachine(this.stateMachine.arn, input)
+            this.logger.info('Successfully started execution for Step Functions State Machine')
+            this.channel.appendLine(
+                localize('AWS.message.info.stepFunctions.executeStateMachine.started', 'Execution started')
+            )
+            this.channel.appendLine(startExecResponse.executionArn)
+        } catch (e) {
+            executeResult = 'Failed'
+            const error = e as Error
+            this.logger.error('Error starting execution for Step Functions State Machine: %O', error)
+            this.channel.appendLine(
+                localize(
+                    'AWS.message.error.stepFunctions.executeStateMachine.failed_to_start',
+                    'There was an error starting execution for {0}, check logs for more information.',
+                    this.stateMachine.arn
+                )
+            )
+            this.channel.appendLine('')
+        } finally {
+            recordStepfunctionsExecuteStateMachine({ result: executeResult })
+        }
+    }
 }
 
-const VueWebview = compileVueWebview({
-    id: 'remoteInvoke',
-    title: localize('AWS.executeStateMachine.title', 'Start Execution'),
-    webviewJs: 'stepFunctionsExecuteStateMachineVue.js',
-    cssFiles: ['executeStateMachine.css'],
-    commands: {
-        handler: function (message: CommandMessage | ExecuteStateMachineMessage) {
-            handleMessage(this, message)
-        },
-    },
-    start: (init: InitialData) => init,
-})
-export class ExecuteStateMachineWebview extends VueWebview {}
+const Server = VueWebview.compilePanel(ExecuteStateMachineWebview)
 
 export async function executeStateMachine(context: ExtContext, node: StateMachineNode): Promise<void> {
-    recordStepfunctionsExecuteStateMachineView()
-    const wv = new ExecuteStateMachineWebview(context)
-    await wv.start({
+    const wv = new Server(context, context.outputChannel, {
         arn: node.details.stateMachineArn,
         name: node.details.name,
         region: node.regionCode,
     })
-}
 
-async function handleMessage(server: WebviewServer, message: CommandMessage): Promise<void> {
-    const logger = getLogger()
-    if (isExecuteStateMachineMessage(message)) {
-        let executeResult: Result = 'Succeeded'
-        logger.info('Starting Step Functions State Machine execution')
-
-        server.context.outputChannel.show()
-        server.context.outputChannel.appendLine(
-            localize(
-                'AWS.message.info.stepFunctions.executeStateMachine.executing',
-                'Executing {0} in {1}...',
-                message.name,
-                message.region
-            )
-        )
-        server.context.outputChannel.appendLine('')
-
-        try {
-            if (!message.arn) {
-                throw new Error(`Could not determine ARN for state machine ${message.name}`)
-            }
-            const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(message.region)
-            const startExecResponse = await client.executeStateMachine(message.arn, message.value || undefined)
-            logger.info('Successfully started execution for Step Functions State Machine')
-            server.context.outputChannel.appendLine(
-                localize('AWS.message.info.stepFunctions.executeStateMachine.started', 'Execution started')
-            )
-            server.context.outputChannel.appendLine(startExecResponse.executionArn)
-        } catch (e) {
-            executeResult = 'Failed'
-            const error = e as Error
-            logger.error('Error starting execution for Step Functions State Machine: %O', error)
-            server.context.outputChannel.appendLine(
-                localize(
-                    'AWS.message.error.stepFunctions.executeStateMachine.failed_to_start',
-                    'There was an error starting execution for {0}, check logs for more information.',
-                    message.arn
-                )
-            )
-            server.context.outputChannel.appendLine('')
-        } finally {
-            recordStepfunctionsExecuteStateMachine({ result: executeResult })
-        }
-    } else {
-        throw new Error('Invalid command')
-    }
+    await wv.show({ cssFiles: ['executeStateMachine.css'] })
+    recordStepfunctionsExecuteStateMachineView()
 }

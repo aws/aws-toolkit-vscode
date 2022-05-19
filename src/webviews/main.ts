@@ -7,104 +7,89 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ExtContext } from '../shared/extensions'
 import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
-import {
-    CompileContext,
-    DataFromOptions,
-    OptionsToProtocol,
-    OutputFromOptions,
-    PropsFromOptions,
-    registerWebviewServer,
-    SubmitFromOptions,
-    WebviewCompileOptions,
-} from './server'
+import { Protocol, registerWebviewServer } from './server'
 import { getIdeProperties } from '../shared/extensionUtilities'
 
 interface WebviewParams {
-    /** The entry-point into the webview. */
+    /**
+     * The entry-point into the webview.
+     */
     webviewJs: string
-    /** Styling sheets to use, applied to the entire webview. If none are provided, `base.css` is used by default. */
+
+    /**
+     * Styling sheets to use, applied to the entire webview.
+     *
+     * If none are provided, `base.css` is used by default.
+     */
     cssFiles?: string[]
-    /** Additional JS files to loaded in. */
+
+    /**
+     * Additional JS files to loaded in.
+     */
     libFiles?: string[]
 }
 
 interface WebviewPanelParams extends WebviewParams {
-    /** ID of the webview which should be globally unique per view. */
+    /**
+     * ID of the webview which should be globally unique per view.
+     */
     id: string
-    /** Title of the webview panel. This is shown in the editor tab. */
+
+    /**
+     * Title of the webview panel. This is shown in the editor tab.
+     */
     title: string
-    /** Preserves the webview when not focused by the user. This has a performance penalty and should be avoided. */
+
+    /**
+     * Preserves the webview when not focused by the user.
+     *
+     * This has a performance penalty and should be avoided.
+     */
     retainContextWhenHidden?: boolean
-    /**  View column to initally show the view in. Defaults to split view. */
+
+    /**
+     * View column to initally show the view in. Defaults to split view.
+     */
     viewColumn?: vscode.ViewColumn
 }
 
 interface WebviewViewParams extends WebviewParams {
-    /** ID of the webview which must be the same as the one used in `package.json`. */
+    /**
+     * ID of the webview which must be the same as the one used in `package.json`.
+     */
     id: string
-    /** Title of the view. Defaults to the title set in `package.json` is not provided. */
-    title?: string
-    /** Optional 'description' text applied to the title. */
-    description?: string
-}
 
-export interface VueWebview<Options extends WebviewCompileOptions> {
     /**
-     * Reset the view with new data. Resolves false if the view was unable to be cleared.
+     * Title of the view. Defaults to the title set in `package.json` is not provided.
      */
-    clear(...data: DataFromOptions<Options>): Promise<boolean>
+    title?: string
+
     /**
-     * Event emitters registered by the view. Can be used by backend logic to trigger events in the view.
+     * Optional 'description' text applied to the title.
      */
-    readonly emitters: Options['events']
-    /**
-     * This exists only for use by the client.
-     * Trying to access it on the backend will result in an error.
-     */
-    readonly protocol: OptionsToProtocol<Options>
+    description?: string
 }
 
 /**
  * A compiled webview created from {@link compileVueWebview}.
  */
-export interface VueWebviewPanel<Options extends WebviewCompileOptions> extends VueWebview<Options> {
+export interface VueWebviewPanel<T extends VueWebview = VueWebview> {
     /**
      * Shows the webview with the given parameters.
      *
-     * @param data Data to initialize the view with. The exact meaning of this is highly dependent on the view type.
-     *
-     * @returns A Promise that is resolved once the view is closed. Can return an object if the view supports `submit`.
+     * @returns A Promise that is resolved once the view is closed.
      */
-    start(...data: DataFromOptions<Options>): Promise<OutputFromOptions<Options> | undefined>
-    /**
-     * The underlying {@link vscode.WebviewPanel}.
-     *
-     * This may be undefined if the view has not been started yet, or if the view was disposed.
-     */
-    readonly panel: vscode.WebviewPanel | undefined
+    show(params?: Partial<Omit<WebviewPanelParams, 'id' | 'webviewJs'>>): Promise<vscode.WebviewPanel>
+
+    clear(): Promise<boolean>
+
+    readonly server: T
 }
 
-export interface VueWebviewView<Options extends WebviewCompileOptions> extends VueWebview<Options> {
-    /**
-     * Finalizes the view registration with initial data.
-     *
-     * @param data Data to initialize the view with. The exact meaning of this is highly dependent on the view type.
-     */
-    start(...data: DataFromOptions<Options>): void
-    /**
-     * The underlying {@link vscode.WebviewView}.
-     *
-     * This may be undefined if the view has not been started yet, or if the view was disposed.
-     */
-    readonly view: vscode.WebviewView | undefined
-}
+export interface VueWebviewView<T extends VueWebview = VueWebview> {
+    register(params?: Partial<Omit<WebviewViewParams, 'id' | 'webviewJs'>>): vscode.Disposable
 
-function copyEmitters(events?: WebviewCompileOptions['events']): WebviewCompileOptions['events'] {
-    const copyEmitters = {} as typeof events
-    Object.keys(events ?? {}).forEach(k => {
-        Object.assign(copyEmitters, { [k]: new vscode.EventEmitter() })
-    })
-    return copyEmitters
+    readonly server: T
 }
 
 /**
@@ -121,71 +106,157 @@ function copyEmitters(events?: WebviewCompileOptions['events']): WebviewCompileO
  *
  * @returns An anonymous class that can instantiate instances of {@link VueWebviewPanel}.
  */
-export function compileVueWebview<Options extends WebviewCompileOptions>(
-    params: WebviewPanelParams & Options & { commands?: CompileContext<Options> }
-): { new (context: ExtContext): VueWebviewPanel<Options> } {
-    return class implements VueWebviewPanel<Options> {
-        private _panel?: vscode.WebviewPanel
-        private initialData?: PropsFromOptions<Options>
-        public readonly emitters: Options['events']
+export abstract class VueWebview {
+    public abstract readonly id: string
+    public abstract readonly source: string
+    public readonly title?: string
 
-        public get panel() {
-            return this._panel
+    private readonly protocol: Protocol
+    private readonly onDidDisposeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidDispose = this.onDidDisposeEmitter.event
+
+    private context?: ExtContext
+
+    public constructor() {
+        const commands: Record<string, (...args: any[]) => unknown> = {}
+        const proto = Object.getPrototypeOf(this)
+
+        // This only checks the immediate parent class; it should be checking the entire chain down to the current class
+        for (const prop of Object.getOwnPropertyNames(proto)) {
+            const val = proto[prop]
+            if (typeof val === 'function') {
+                commands[prop] = val.bind(this)
+            }
         }
 
-        public get protocol(): OptionsToProtocol<Options> {
-            throw new Error('Cannot access the webview protocol on the backend.')
+        this.protocol = commands
+    }
+
+    public getCompanyName(): string {
+        return getIdeProperties().company
+    }
+
+    protected dispose(): void {
+        this.onDidDisposeEmitter.fire()
+    }
+
+    protected getContext(): ExtContext {
+        if (!this.context) {
+            throw new Error('Webview was not initialized with "ExtContext')
         }
 
-        constructor(private readonly context: ExtContext) {
-            this.emitters = copyEmitters(params.events)
-        }
+        return this.context
+    }
 
-        public async start(...data: DataFromOptions<Options>): Promise<OutputFromOptions<Options> | undefined> {
-            // TODO: potentially fix this type. If no `start` is defined then it defauls to the args
-            // `start` may just be a required type, though sometimes we don't care about initializing the view
-            this.initialData = (await params.start?.(...data)) ?? data
-            this._panel = createWebviewPanel({ ...params, context: this.context })
+    public static compilePanel<T extends new (...args: any[]) => U, U extends VueWebview>(
+        target: T
+    ): new (context: ExtContext, ...args: ConstructorParameters<T>) => VueWebviewPanel<U> {
+        return class Panel {
+            private readonly instance: U
+            private panel?: vscode.WebviewPanel
 
-            const panel = this._panel
-            return new Promise<OutputFromOptions<Options> | undefined>(resolve => {
-                const onDispose = panel.onDidDispose(() => resolve(undefined))
+            public constructor(protected readonly context: ExtContext, ...args: ConstructorParameters<T>) {
+                this.instance = new target(...args)
 
-                if (params.commands) {
-                    const submit = async (response: SubmitFromOptions<Options>) => {
-                        const result = (await params.submit?.(response)) ?? response
-                        if (result) {
-                            onDispose.dispose()
-                            panel.dispose()
-                            resolve(result)
-                        }
+                for (const [prop, val] of Object.entries(this.instance)) {
+                    if (val instanceof vscode.EventEmitter) {
+                        Object.assign(this.instance.protocol, { [prop]: val })
                     }
-                    const init = async () => this.initialData
-                    const modifiedWebview = Object.assign(panel.webview, {
-                        dispose: () => panel.dispose(),
-                        context: this.context,
-                        emitters: this.emitters,
-                    })
-                    Object.defineProperty(modifiedWebview, 'data', { get: () => this.initialData })
-                    registerWebviewServer(modifiedWebview, {
-                        init,
-                        submit,
-                        ...params.commands,
-                        ...this.emitters,
-                        getCompanyName: async () => {
-                            return getIdeProperties().company
-                        },
-                    })
                 }
-            })
-        }
+            }
 
-        public async clear(...data: DataFromOptions<Options>): Promise<boolean> {
-            this.initialData = (await params.start?.(...data)) ?? data
-            return this._panel?.webview.postMessage({ command: '$clear' }) ?? false
+            public get server() {
+                return this.instance
+            }
+
+            public async show(params: Omit<WebviewPanelParams, 'id' | 'webviewJs'>): Promise<vscode.WebviewPanel> {
+                if (this.panel) {
+                    this.panel.reveal(params.viewColumn, false)
+                    return this.panel
+                }
+
+                const panel = createWebviewPanel({
+                    id: this.instance.id,
+                    webviewJs: this.instance.source,
+                    context: this.context,
+                    ...params,
+                })
+                const server = registerWebviewServer(panel.webview, this.instance.protocol)
+                this.instance.onDidDispose(() => {
+                    server.dispose()
+                    this.panel?.dispose()
+                    this.panel = undefined
+                })
+
+                return (this.panel = panel)
+            }
+
+            public async clear(): Promise<boolean> {
+                return this.panel?.webview.postMessage({ command: '$clear' }) ?? false
+            }
         }
-    } as any
+    }
+
+    public static compileView<T extends new (...args: any[]) => U, U extends VueWebview>(
+        target: T
+    ): new (context: ExtContext, ...args: ConstructorParameters<T>) => VueWebviewView<U> {
+        return class View {
+            private readonly instance: U
+            private view?: vscode.WebviewView
+
+            public constructor(protected readonly context: ExtContext, ...args: ConstructorParameters<T>) {
+                this.instance = new target(...args)
+
+                for (const [prop, val] of Object.entries(this.instance)) {
+                    if (val instanceof vscode.EventEmitter) {
+                        Object.assign(this.instance.protocol, { [prop]: val })
+                    }
+                }
+
+                this.instance.context = this.context
+            }
+
+            public get server() {
+                return this.instance
+            }
+
+            public register(params: Omit<WebviewViewParams, 'id' | 'webviewJs'>): vscode.Disposable {
+                return vscode.window.registerWebviewViewProvider(this.instance.id, {
+                    resolveWebviewView: async view => {
+                        view.title = params.title ?? view.title
+                        view.description = params.description ?? view.description
+                        updateWebview(view.webview, {
+                            ...params,
+                            webviewJs: this.instance.source,
+                            context: this.context,
+                        })
+
+                        if (!this.view) {
+                            this.view = view
+
+                            const server = registerWebviewServer(this.view.webview, this.instance.protocol)
+                            this.view.onDidDispose(() => server.dispose())
+                            this.view.onDidDispose(() => {
+                                server.dispose()
+                                this.view = undefined
+                            })
+                        }
+                    },
+                })
+            }
+        }
+    }
 }
+
+type FilteredKeys<T> = { [P in keyof T]: unknown extends T[P] ? never : P }[keyof T]
+type FilterUnknown<T> = Pick<T, FilteredKeys<T>>
+type Commands<T extends VueWebview> = {
+    [P in keyof T]: T[P] extends (...args: any[]) => any ? T[P] : unknown
+}
+type Events<T extends VueWebview> = {
+    [P in keyof T]: T[P] extends vscode.EventEmitter<any> ? T[P] : unknown
+}
+export type ClassToProtocol<T extends VueWebview> = FilterUnknown<Commands<T> & Events<T>>
 
 /**
  * This is the {@link vscode.WebviewView} version of {@link compileVueWebview}.
@@ -197,66 +268,6 @@ export function compileVueWebview<Options extends WebviewCompileOptions>(
  *
  * @returns An anonymous class that can instantiate instances of {@link VueWebviewView}.
  */
-export function compileVueWebviewView<Options extends WebviewCompileOptions>(
-    params: WebviewViewParams & Options & { commands?: CompileContext<Options> }
-): { new (context: ExtContext): VueWebviewView<Options> } {
-    return class implements VueWebviewView<Options> {
-        private _view: vscode.WebviewView | undefined
-        private initialData?: PropsFromOptions<Options>
-        public readonly emitters: Options['events']
-
-        public get view() {
-            return this._view
-        }
-
-        public get protocol(): OptionsToProtocol<Options> {
-            throw new Error('Cannot access the webview protocol on the backend.')
-        }
-
-        constructor(private readonly context: ExtContext) {
-            this.emitters = copyEmitters(params.events)
-        }
-
-        public start(...data: DataFromOptions<Options>): void {
-            if (this._view) {
-                throw new Error('VueWebviewView has already been started.')
-            }
-
-            vscode.window.registerWebviewViewProvider(params.id, {
-                resolveWebviewView: async view => {
-                    view.title = params.title ?? view.title
-                    view.description = params.description ?? view.description
-                    updateWebview(view.webview, { ...params, context: this.context })
-                    this.initialData = (await params.start?.(...data)) ?? data
-
-                    if (!this._view && params.commands) {
-                        const init = async () => this.initialData
-                        const modifiedWebview = Object.assign(view.webview, {
-                            dispose: () => {}, // currently does nothing for `view` type webviews
-                            context: this.context,
-                            emitters: this.emitters,
-                        })
-                        Object.defineProperty(modifiedWebview, 'data', { get: () => this.initialData })
-                        const server = registerWebviewServer(modifiedWebview, {
-                            init,
-                            ...params.commands,
-                            ...this.emitters,
-                        })
-                        view.onDidDispose(() => server.dispose())
-                    }
-
-                    this._view = view
-                    view.onDidDispose(() => (this._view = undefined))
-                },
-            })
-        }
-
-        public async clear(...data: DataFromOptions<Options>): Promise<boolean> {
-            this.initialData = (await params.start?.(...data)) ?? data
-            return this._view?.webview.postMessage({ command: '$clear' }) ?? false
-        }
-    } as any
-}
 
 /**
  * Creates a brand new webview panel, setting some basic initial parameters and updating the webview.
@@ -391,176 +402,4 @@ function resolveWebviewHtml(params: {
  */
 export function updateCspSource(baseSource: string) {
     return isCloud9() ? `https://*.amazonaws.com ${baseSource}` : baseSource
-}
-
-/**
- * To preserve compatability with our min-version types we are declaring only portions of the latest API.
- *
- * Introduced in VS Code 1.50.0. Types sourced from:
- * https://github.com/DefinitelyTyped/DefinitelyTyped/blob/ccaaa6ab6a4168c8644fd3c391c8bff9e485734b/types/vscode/index.d.ts
- */
-declare module 'vscode' {
-    /**
-     * A webview based view.
-     */
-    export interface WebviewView {
-        /**
-         * Identifies the type of the webview view, such as `'hexEditor.dataView'`.
-         */
-        readonly viewType: string
-
-        /**
-         * The underlying webview for the view.
-         */
-        readonly webview: Webview
-
-        /**
-         * View title displayed in the UI.
-         *
-         * The view title is initially taken from the extension `package.json` contribution.
-         */
-        title?: string
-
-        /**
-         * Human-readable string which is rendered less prominently in the title.
-         */
-        description?: string
-
-        /**
-         * Event fired when the view is disposed.
-         *
-         * Views are disposed when they are explicitly hidden by a user (this happens when a user
-         * right clicks in a view and unchecks the webview view).
-         *
-         * Trying to use the view after it has been disposed throws an exception.
-         */
-        readonly onDidDispose: Event<void>
-
-        /**
-         * Tracks if the webview is currently visible.
-         *
-         * Views are visible when they are on the screen and expanded.
-         */
-        readonly visible: boolean
-
-        /**
-         * Event fired when the visibility of the view changes.
-         *
-         * Actions that trigger a visibility change:
-         *
-         * - The view is collapsed or expanded.
-         * - The user switches to a different view group in the sidebar or panel.
-         *
-         * Note that hiding a view using the context menu instead disposes of the view and fires `onDidDispose`.
-         */
-        readonly onDidChangeVisibility: Event<void>
-
-        /**
-         * Reveal the view in the UI.
-         *
-         * If the view is collapsed, this will expand it.
-         *
-         * @param preserveFocus When `true` the view will not take focus.
-         */
-        show(preserveFocus?: boolean): void
-    }
-
-    /**
-     * Additional information the webview view being resolved.
-     *
-     * @param T Type of the webview's state.
-     */
-    interface WebviewViewResolveContext<T = unknown> {
-        /**
-         * Persisted state from the webview content.
-         *
-         * To save resources, the editor normally deallocates webview documents (the iframe content) that are not visible.
-         * For example, when the user collapse a view or switches to another top level activity in the sidebar, the
-         * `WebviewView` itself is kept alive but the webview's underlying document is deallocated. It is recreated when
-         * the view becomes visible again.
-         *
-         * You can prevent this behavior by setting `retainContextWhenHidden` in the `WebviewOptions`. However this
-         * increases resource usage and should be avoided wherever possible. Instead, you can use persisted state to
-         * save off a webview's state so that it can be quickly recreated as needed.
-         *
-         * To save off a persisted state, inside the webview call `acquireVsCodeApi().setState()` with
-         * any json serializable object. To restore the state again, call `getState()`. For example:
-         *
-         * ```js
-         * // Within the webview
-         * const vscode = acquireVsCodeApi();
-         *
-         * // Get existing state
-         * const oldState = vscode.getState() || { value: 0 };
-         *
-         * // Update state
-         * setState({ value: oldState.value + 1 })
-         * ```
-         *
-         * The editor ensures that the persisted state is saved correctly when a webview is hidden and across
-         * editor restarts.
-         */
-        readonly state: T | undefined
-    }
-
-    export interface WebviewViewProvider {
-        /**
-         * Revolves a webview view.
-         *
-         * `resolveWebviewView` is called when a view first becomes visible. This may happen when the view is
-         * first loaded or when the user hides and then shows a view again.
-         *
-         * @param webviewView Webview view to restore. The provider should take ownership of this view. The
-         *    provider must set the webview's `.html` and hook up all webview events it is interested in.
-         * @param context Additional metadata about the view being resolved.
-         * @param token Cancellation token indicating that the view being provided is no longer needed.
-         *
-         * @return Optional thenable indicating that the view has been fully resolved.
-         */
-        resolveWebviewView(
-            webviewView: WebviewView,
-            context: WebviewViewResolveContext,
-            token: CancellationToken
-        ): Thenable<void> | void
-    }
-
-    export namespace window {
-        /**
-         * Register a new provider for webview views.
-         *
-         * @param viewId Unique id of the view. This should match the `id` from the
-         *   `views` contribution in the package.json.
-         * @param provider Provider for the webview views.
-         *
-         * @return Disposable that unregisters the provider.
-         */
-        export function registerWebviewViewProvider(
-            viewId: string,
-            provider: WebviewViewProvider,
-            options?: {
-                /**
-                 * Content settings for the webview created for this view.
-                 */
-                readonly webviewOptions?: {
-                    /**
-                     * Controls if the webview element itself (iframe) is kept around even when the view
-                     * is no longer visible.
-                     *
-                     * Normally the webview's html context is created when the view becomes visible
-                     * and destroyed when it is hidden. Extensions that have complex state
-                     * or UI can set the `retainContextWhenHidden` to make the editor keep the webview
-                     * context around, even when the webview moves to a background tab. When a webview using
-                     * `retainContextWhenHidden` becomes hidden, its scripts and other dynamic content are suspended.
-                     * When the view becomes visible again, the context is automatically restored
-                     * in the exact same state it was in originally. You cannot send messages to a
-                     * hidden webview, even with `retainContextWhenHidden` enabled.
-                     *
-                     * `retainContextWhenHidden` has a high memory overhead and should only be used if
-                     * your view's context cannot be quickly saved and restored.
-                     */
-                    readonly retainContextWhenHidden?: boolean
-                }
-            }
-        ): Disposable
-    }
 }

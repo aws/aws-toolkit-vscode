@@ -24,7 +24,6 @@ import {
 import * as input from '../../../shared/ui/input'
 import * as picker from '../../../shared/ui/picker'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
-import { compileVueWebview } from '../../../webviews/main'
 import { sampleRequestPath } from '../../constants'
 import { tryGetAbsolutePath } from '../../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
@@ -35,37 +34,9 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
 import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
 import globals from '../../../shared/extensionGlobals'
+import { VueWebview } from '../../../webviews/main'
 
 const localize = nls.loadMessageBundle()
-
-const VueWebview = compileVueWebview({
-    id: 'createLambda',
-    title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration'),
-    webviewJs: 'lambdaConfigEditorVue.js',
-    commands: {
-        getRuntimes: () => samLambdaCreatableRuntimes().toArray().sort(),
-        getTemplate,
-        getSamplePayload,
-        loadSamLaunchConfig,
-        saveLaunchConfig,
-        invokeLaunchConfig(config: AwsSamDebuggerConfiguration) {
-            return invokeLaunchConfig(config, this.context)
-        },
-    },
-    start: (param?: AwsSamDebuggerConfiguration) => param,
-})
-
-export class SamInvokeWebview extends VueWebview {}
-
-export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
-    return vscode.commands.registerCommand(
-        'aws.launchConfigForm',
-        async (launchConfig?: AwsSamDebuggerConfiguration) => {
-            new SamInvokeWebview(context).start(launchConfig)
-            recordSamOpenConfigUi()
-        }
-    )
-}
 
 export type AwsSamDebuggerConfigurationLoose = AwsSamDebuggerConfiguration & {
     invokeTarget: Omit<
@@ -79,143 +50,8 @@ export type AwsSamDebuggerConfigurationLoose = AwsSamDebuggerConfiguration & {
     }
 }
 
-/**
- * Open a quick pick containing the names of launch configs in the `launch.json` array.
- * Filter out non-supported launch configs.
- * Call back into the webview with the selected launch config.
- * @param postMessageFn
- */
-async function loadSamLaunchConfig(): Promise<AwsSamDebuggerConfiguration | undefined> {
-    // TODO: Find a better way to infer this. Might need another arg from the frontend (depends on the context in which the launch config is made?)
-    const workspaceFolder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0] : undefined
-    if (!workspaceFolder) {
-        vscode.window.showErrorMessage(localize('AWS.lambda.form.noFolder', 'No workspace folder found.'))
-        return
-    }
-    const uri = workspaceFolder.uri
-    const launchConfig = new LaunchConfiguration(uri)
-    const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
-    if (pickerItems.length === 0) {
-        pickerItems.push({
-            index: -1,
-            label: localize('AWS.lambda.form.noDebugConfigs', 'No aws-sam debug configurations found.'),
-            detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
-        })
-    }
-    const qp = picker.createQuickPick({
-        items: pickerItems,
-        options: {
-            title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration'),
-        },
-    })
-
-    const choices = await picker.promptUser({
-        picker: qp,
-    })
-    const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
-
-    if (!pickerResponse || pickerResponse.index === -1) {
-        return
-    }
-    return pickerResponse.config!
-}
-
 interface SampleQuickPickItem extends vscode.QuickPickItem {
     filename: string
-}
-
-/**
- * Open a quick pick containing upstream sample payloads.
- * Call back into the webview with the contents of the payload to add to the JSON field.
- * @param postMessageFn
- */
-async function getSamplePayload(): Promise<string | undefined> {
-    try {
-        const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map(entry => {
-            return { label: entry.name ?? '', filename: entry.filename ?? '' }
-        })
-
-        const qp = picker.createQuickPick({
-            items: inputs,
-            options: {
-                title: localize('AWS.lambda.form.pickSampleInput', 'Choose Sample Input'),
-            },
-        })
-
-        const choices = await picker.promptUser({
-            picker: qp,
-        })
-        const pickerResponse = picker.verifySinglePickerOutput<SampleQuickPickItem>(choices)
-
-        if (!pickerResponse) {
-            return
-        }
-        const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
-        const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
-
-        return sample
-    } catch (err) {
-        getLogger().error('Error getting manifest data..: %O', err as Error)
-    }
-}
-
-/**
- * Get all templates in the registry.
- * Call back into the webview with the registry contents.
- */
-async function getTemplate() {
-    const items: (vscode.QuickPickItem & { templatePath: string })[] = []
-    const NO_TEMPLATE = 'NOTEMPLATEFOUND'
-    for (const template of globals.templateRegistry.registeredItems) {
-        const resources = template.item.Resources
-        if (resources) {
-            for (const resource of Object.keys(resources)) {
-                if (
-                    resources[resource]?.Type === CloudFormation.LAMBDA_FUNCTION_TYPE ||
-                    resources[resource]?.Type === CloudFormation.SERVERLESS_FUNCTION_TYPE ||
-                    resources[resource]?.Type === CloudFormation.SERVERLESS_API_TYPE
-                ) {
-                    items.push({
-                        label: resource,
-                        detail: localize('AWS.lambda.form.selectResource.detail', 'Template: {0}', template.path),
-                        templatePath: template.path,
-                    })
-                }
-            }
-        }
-    }
-
-    if (items.length === 0) {
-        items.push({
-            label: localize(
-                'AWS.lambda.form.selectResource.noTemplates',
-                'No templates with valid SAM functions found.'
-            ),
-            detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
-            templatePath: NO_TEMPLATE,
-        })
-    }
-
-    const qp = picker.createQuickPick({
-        items,
-        options: {
-            title: localize('AWS.lambda.form.selectResource', 'Select Resource'),
-        },
-    })
-
-    const choices = await picker.promptUser({
-        picker: qp,
-    })
-    const selectedTemplate = picker.verifySinglePickerOutput(choices)
-
-    if (!selectedTemplate || selectedTemplate.templatePath === NO_TEMPLATE) {
-        return
-    }
-
-    return {
-        logicalId: selectedTemplate.label,
-        template: selectedTemplate.templatePath,
-    }
 }
 
 interface LaunchConfigPickItem extends vscode.QuickPickItem {
@@ -223,87 +59,255 @@ interface LaunchConfigPickItem extends vscode.QuickPickItem {
     config?: AwsSamDebuggerConfiguration
 }
 
-/**
- * Open a quick pick containing the names of launch configs in the `launch.json` array, plus a "Create New Entry" entry.
- * On selecting a name, overwrite the existing entry in the `launch.json` array and resave the file.
- * On selecting "Create New Entry", prompt the user for a name and save the contents to the end of the `launch.json` array.
- * @param config Config to save
- */
-async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
-    const uri = getUriFromLaunchConfig(config)
-    if (!uri) {
-        // TODO Localize
-        vscode.window.showErrorMessage('Toolkit requires a target resource in order to save a debug configuration')
-        return
-    }
-    const launchConfig = new LaunchConfiguration(uri)
-    const pickerItems = [
-        {
-            label: addCodiconToString(
-                'add',
-                localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
-            ),
-            index: -1,
-            alwaysShow: true,
-        },
-        ...getLaunchConfigQuickPickItems(launchConfig, uri),
-    ]
+export class SamInvokeWebview extends VueWebview {
+    public readonly id = 'createLambda'
+    public readonly source = 'lambdaConfigEditorVue.js'
+    public readonly title = localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration')
 
-    const qp = picker.createQuickPick({
-        items: pickerItems,
-        options: {
-            title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration'),
-        },
-    })
-
-    const choices = await picker.promptUser({
-        picker: qp,
-    })
-    const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
-
-    if (!pickerResponse) {
-        return
+    public constructor(private readonly config?: AwsSamDebuggerConfiguration) {
+        super()
     }
 
-    if (pickerResponse.index === -1) {
-        const ib = input.createInputBox({
+    public getRuntimes() {
+        return samLambdaCreatableRuntimes().toArray().sort()
+    }
+
+    public getConfig() {
+        return this.config
+    }
+
+    /**
+     * Open a quick pick containing the names of launch configs in the `launch.json` array.
+     * Filter out non-supported launch configs.
+     */
+    public async loadSamLaunchConfig(): Promise<AwsSamDebuggerConfiguration | undefined> {
+        // TODO: Find a better way to infer this. Might need another arg from the frontend (depends on the context in which the launch config is made?)
+        const workspaceFolder = vscode.workspace.workspaceFolders?.length
+            ? vscode.workspace.workspaceFolders[0]
+            : undefined
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage(localize('AWS.lambda.form.noFolder', 'No workspace folder found.'))
+            return
+        }
+        const uri = workspaceFolder.uri
+        const launchConfig = new LaunchConfiguration(uri)
+        const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
+        if (pickerItems.length === 0) {
+            pickerItems.push({
+                index: -1,
+                label: localize('AWS.lambda.form.noDebugConfigs', 'No aws-sam debug configurations found.'),
+                detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
+            })
+        }
+        const qp = picker.createQuickPick({
+            items: pickerItems,
             options: {
-                prompt: localize('AWS.lambda.form.debugConfigName', 'Input Name For Debug Configuration'),
+                title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration'),
             },
         })
-        const response = await input.promptUser({ inputBox: ib })
-        if (response) {
-            launchConfig.addDebugConfiguration(finalizeConfig(config, response))
+
+        const choices = await picker.promptUser({
+            picker: qp,
+        })
+        const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
+
+        if (!pickerResponse || pickerResponse.index === -1) {
+            return
+        }
+        return pickerResponse.config!
+    }
+
+    /**
+     * Open a quick pick containing upstream sample payloads.
+     * Call back into the webview with the contents of the payload to add to the JSON field.
+     */
+    public async getSamplePayload(): Promise<string | undefined> {
+        try {
+            const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map(entry => {
+                return { label: entry.name ?? '', filename: entry.filename ?? '' }
+            })
+
+            const qp = picker.createQuickPick({
+                items: inputs,
+                options: {
+                    title: localize('AWS.lambda.form.pickSampleInput', 'Choose Sample Input'),
+                },
+            })
+
+            const choices = await picker.promptUser({
+                picker: qp,
+            })
+            const pickerResponse = picker.verifySinglePickerOutput<SampleQuickPickItem>(choices)
+
+            if (!pickerResponse) {
+                return
+            }
+            const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
+            const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
+
+            return sample
+        } catch (err) {
+            getLogger().error('Error getting manifest data..: %O', err as Error)
+        }
+    }
+
+    /**
+     * Get all templates in the registry.
+     * Call back into the webview with the registry contents.
+     */
+    public async getTemplate() {
+        const items: (vscode.QuickPickItem & { templatePath: string })[] = []
+        const NO_TEMPLATE = 'NOTEMPLATEFOUND'
+        for (const template of globals.templateRegistry.registeredItems) {
+            const resources = template.item.Resources
+            if (resources) {
+                for (const resource of Object.keys(resources)) {
+                    if (
+                        resources[resource]?.Type === CloudFormation.LAMBDA_FUNCTION_TYPE ||
+                        resources[resource]?.Type === CloudFormation.SERVERLESS_FUNCTION_TYPE ||
+                        resources[resource]?.Type === CloudFormation.SERVERLESS_API_TYPE
+                    ) {
+                        items.push({
+                            label: resource,
+                            detail: localize('AWS.lambda.form.selectResource.detail', 'Template: {0}', template.path),
+                            templatePath: template.path,
+                        })
+                    }
+                }
+            }
+        }
+
+        if (items.length === 0) {
+            items.push({
+                label: localize(
+                    'AWS.lambda.form.selectResource.noTemplates',
+                    'No templates with valid SAM functions found.'
+                ),
+                detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
+                templatePath: NO_TEMPLATE,
+            })
+        }
+
+        const qp = picker.createQuickPick({
+            items,
+            options: {
+                title: localize('AWS.lambda.form.selectResource', 'Select Resource'),
+            },
+        })
+
+        const choices = await picker.promptUser({
+            picker: qp,
+        })
+        const selectedTemplate = picker.verifySinglePickerOutput(choices)
+
+        if (!selectedTemplate || selectedTemplate.templatePath === NO_TEMPLATE) {
+            return
+        }
+
+        return {
+            logicalId: selectedTemplate.label,
+            template: selectedTemplate.templatePath,
+        }
+    }
+
+    /**
+     * Open a quick pick containing the names of launch configs in the `launch.json` array, plus a "Create New Entry" entry.
+     * On selecting a name, overwrite the existing entry in the `launch.json` array and resave the file.
+     * On selecting "Create New Entry", prompt the user for a name and save the contents to the end of the `launch.json` array.
+     * @param config Config to save
+     */
+    public async saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
+        const uri = getUriFromLaunchConfig(config)
+        if (!uri) {
+            // TODO Localize
+            vscode.window.showErrorMessage('Toolkit requires a target resource in order to save a debug configuration')
+            return
+        }
+        const launchConfig = new LaunchConfiguration(uri)
+        const pickerItems = [
+            {
+                label: addCodiconToString(
+                    'add',
+                    localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
+                ),
+                index: -1,
+                alwaysShow: true,
+            },
+            ...getLaunchConfigQuickPickItems(launchConfig, uri),
+        ]
+
+        const qp = picker.createQuickPick({
+            items: pickerItems,
+            options: {
+                title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration'),
+            },
+        })
+
+        const choices = await picker.promptUser({
+            picker: qp,
+        })
+        const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
+
+        if (!pickerResponse) {
+            return
+        }
+
+        if (pickerResponse.index === -1) {
+            const ib = input.createInputBox({
+                options: {
+                    prompt: localize('AWS.lambda.form.debugConfigName', 'Input Name For Debug Configuration'),
+                },
+            })
+            const response = await input.promptUser({ inputBox: ib })
+            if (response) {
+                launchConfig.addDebugConfiguration(finalizeConfig(config, response))
+                await openLaunchJsonFile()
+            }
+        } else {
+            // use existing label
+            launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.label), pickerResponse.index)
             await openLaunchJsonFile()
         }
-    } else {
-        // use existing label
-        launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.label), pickerResponse.index)
-        await openLaunchJsonFile()
+    }
+
+    /**
+     * Validate and execute the provided launch config.
+     * TODO: Post validation failures back to webview?
+     * @param config Config to invoke
+     */
+    public async invokeLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<void> {
+        const finalConfig = finalizeConfig(
+            resolveWorkspaceFolderVariable(undefined, config),
+            'Editor-Created Debug Config'
+        )
+        const targetUri = getUriFromLaunchConfig(finalConfig)
+        const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
+
+        // Cloud9 currently can't resolve the `aws-sam` debug config provider.
+        // Directly invoke the config instead.
+        // NOTE: This bypasses the `${workspaceFolder}` resolution, but shouldn't naturally occur in Cloud9
+        // (Cloud9 also doesn't currently have variable resolution support anyways)
+        if (isCloud9()) {
+            const provider = new SamDebugConfigProvider(this.getContext())
+            await provider.resolveDebugConfiguration(folder, finalConfig)
+        } else {
+            // startDebugging on VS Code goes through the whole resolution chain
+            await vscode.debug.startDebugging(folder, finalConfig)
+        }
     }
 }
 
-/**
- * Validate and execute the provided launch config.
- * TODO: Post validation failures back to webview?
- * @param config Config to invoke
- */
-async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: ExtContext): Promise<void> {
-    const finalConfig = finalizeConfig(resolveWorkspaceFolderVariable(undefined, config), 'Editor-Created Debug Config')
-    const targetUri = getUriFromLaunchConfig(finalConfig)
-    const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
+const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 
-    // Cloud9 currently can't resolve the `aws-sam` debug config provider.
-    // Directly invoke the config instead.
-    // NOTE: This bypasses the `${workspaceFolder}` resolution, but shouldn't naturally occur in Cloud9
-    // (Cloud9 also doesn't currently have variable resolution support anyways)
-    if (isCloud9()) {
-        const provider = new SamDebugConfigProvider(context)
-        await provider.resolveDebugConfiguration(folder, finalConfig)
-    } else {
-        // startDebugging on VS Code goes through the whole resolution chain
-        await vscode.debug.startDebugging(folder, finalConfig)
-    }
+export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
+    return vscode.commands.registerCommand(
+        'aws.launchConfigForm',
+        async (launchConfig?: AwsSamDebuggerConfiguration) => {
+            const webview = new WebviewPanel(context, launchConfig)
+            webview.show()
+            recordSamOpenConfigUi()
+        }
+    )
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {

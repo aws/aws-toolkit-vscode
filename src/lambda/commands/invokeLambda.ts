@@ -11,35 +11,15 @@ import { LambdaClient } from '../../shared/clients/lambdaClient'
 import globals from '../../shared/extensionGlobals'
 import { ExtContext } from '../../shared/extensions'
 
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
-import { compileVueWebview } from '../../webviews/main'
 import { sampleRequestPath } from '../constants'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { getSampleLambdaPayloads, SampleRequest } from '../utils'
 
 import * as nls from 'vscode-nls'
-import { WebviewServer } from '../../webviews/server'
+import { VueWebview } from '../../webviews/main'
 const localize = nls.loadMessageBundle()
-
-export interface CommandMessage {
-    command: string
-}
-
-interface SampleRequestSelectedMessage extends CommandMessage {
-    requestName: string
-}
-
-interface InvokeLambdaMessage extends CommandMessage {
-    json: string
-    functionName: string
-    functionArn: string
-    region: string
-}
-
-interface PromptFileMessage extends CommandMessage {
-    command: 'promptForFile'
-}
 
 export interface InitialData {
     FunctionName: string
@@ -48,43 +28,85 @@ export interface InitialData {
     InputSamples: SampleRequest[]
 }
 
-function isSampleRequestSelectedMessage(message: CommandMessage): message is SampleRequestSelectedMessage {
-    return message.command === 'sampleRequestSelected'
-}
-
-function isInvokeLambdaMessage(message: CommandMessage): message is InvokeLambdaMessage {
-    return message.command === 'invokeLambda'
-}
-
-function isPromptFileMessage(message: CommandMessage): message is PromptFileMessage {
-    return message.command === 'promptForFile'
-}
-
 export interface RemoteInvokeData {
     initialData: InitialData
     selectedSampleRequest: string
     sampleText: string
-    error?: Error
-    payload: any
-    statusCode: string
-    logs: string
-    showResponse: boolean
-    isLoading: boolean
     selectedFile: string
 }
 
-const VueWebview = compileVueWebview({
-    id: 'remoteInvoke',
-    title: localize('AWS.invokeLambda.title', 'Invoke Lambda'), // TODO: set Lambda name in title: need a proper constructor
-    webviewJs: 'lambdaRemoteInvokeVue.js',
-    commands: {
-        handler: function (message: CommandMessage | SampleRequestSelectedMessage | InvokeLambdaMessage) {
-            handleMessage(this, message)
-        },
-    },
-    start: (init: InitialData) => init,
-})
-export class RemoteInvokeWebview extends VueWebview {}
+export class RemoteInvokeWebview extends VueWebview {
+    public readonly id = 'remoteInvoke'
+    //title: localize('AWS.invokeLambda.title', 'Invoke Lambda')
+    public readonly source = 'lambdaRemoteInvokeVue.js'
+
+    public constructor(
+        private readonly channel: vscode.OutputChannel,
+        private readonly client: LambdaClient,
+        private readonly data: InitialData
+    ) {
+        super()
+    }
+
+    public getData() {
+        return this.data
+    }
+
+    public async invokeLambda(input: string): Promise<void> {
+        this.channel.show()
+        this.channel.appendLine('Loading response...')
+
+        try {
+            const funcResponse = await this.client.invoke(this.data.FunctionArn, input)
+            const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ''
+            const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
+
+            this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
+            this.channel.appendLine('Logs:')
+            this.channel.appendLine(logs)
+            this.channel.appendLine('')
+            this.channel.appendLine('Payload:')
+            this.channel.appendLine(payload.toString())
+            this.channel.appendLine('')
+        } catch (e) {
+            const error = e as Error
+            this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
+            this.channel.appendLine(error.toString())
+            this.channel.appendLine('')
+        }
+    }
+
+    public async getSample(requestName: string) {
+        const sampleUrl = `${sampleRequestPath}${requestName}`
+        const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
+
+        return sample
+    }
+
+    public async promptFile() {
+        const fileLocations = await vscode.window.showOpenDialog({
+            openLabel: 'Open',
+        })
+
+        if (!fileLocations || fileLocations.length === 0) {
+            return undefined
+        }
+
+        try {
+            const fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+
+            return {
+                sample: fileContent,
+                selectedFile: fileLocations[0].path,
+            }
+        } catch (e) {
+            getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+            vscode.window.showErrorMessage((e as Error).message)
+        }
+    }
+}
+
+const Server = VueWebview.compilePanel(RemoteInvokeWebview)
 
 export async function invokeRemoteLambda(
     context: ExtContext,
@@ -100,82 +122,14 @@ export async function invokeRemoteLambda(
     }
 ) {
     const inputs = await getSampleLambdaPayloads()
+    const client = globals.toolkitClientBuilder.createLambdaClient(params.functionNode.regionCode)
 
-    const wv = new RemoteInvokeWebview(context)
-    await wv.start({
+    const wv = new Server(context, context.outputChannel, client, {
         FunctionName: params.functionNode.configuration.FunctionName ?? '',
         FunctionArn: params.functionNode.configuration.FunctionArn ?? '',
         FunctionRegion: params.functionNode.regionCode,
         InputSamples: inputs,
     })
-}
 
-async function handleMessage(server: WebviewServer, message: CommandMessage) {
-    const logger: Logger = getLogger()
-    if (isSampleRequestSelectedMessage(message)) {
-        logger.info(`Requesting ${message.requestName}`)
-        const sampleUrl = `${sampleRequestPath}${message.requestName}`
-
-        const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
-
-        logger.debug(`Retrieved: ${sample}`)
-
-        server.postMessage({ command: 'loadedSample', sample: sample, selectedFile: '' })
-
-        return
-    } else if (isInvokeLambdaMessage(message)) {
-        logger.info('invoking lambda function with the following payload:')
-        logger.info(message.json)
-
-        server.context.invokeOutputChannel.show()
-        server.context.invokeOutputChannel.appendLine('Loading response...')
-
-        try {
-            if (!message.functionArn) {
-                throw new Error(`Could not determine ARN for function ${message.functionName}`)
-            }
-            const client: LambdaClient = globals.toolkitClientBuilder.createLambdaClient(message.region)
-            const funcResponse = await client.invoke(message.functionArn, message.json)
-            const logs = funcResponse.LogResult ? Buffer.from(funcResponse.LogResult, 'base64').toString() : ''
-            const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
-
-            server.context.invokeOutputChannel.appendLine(`Invocation result for ${message.functionArn}`)
-            server.context.invokeOutputChannel.appendLine('Logs:')
-            server.context.invokeOutputChannel.appendLine(logs)
-            server.context.invokeOutputChannel.appendLine('')
-            server.context.invokeOutputChannel.appendLine('Payload:')
-            server.context.invokeOutputChannel.appendLine(payload.toString())
-            server.context.invokeOutputChannel.appendLine('')
-        } catch (e) {
-            const error = e as Error
-            server.context.invokeOutputChannel.appendLine(`There was an error invoking ${message.functionArn}`)
-            server.context.invokeOutputChannel.appendLine(error.toString())
-            server.context.invokeOutputChannel.appendLine('')
-        }
-
-        return
-    } else if (isPromptFileMessage(message)) {
-        const fileLocations = await vscode.window.showOpenDialog({
-            openLabel: 'Open',
-        })
-
-        if (!fileLocations || fileLocations.length === 0) {
-            return undefined
-        }
-
-        try {
-            const fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
-            server.postMessage({
-                command: 'loadedSample',
-                sample: fileContent,
-                selectedFile: fileLocations[0].path,
-            })
-        } catch (e) {
-            getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
-            vscode.window.showErrorMessage((e as Error).message)
-        }
-        return
-    } else {
-        throw new Error(`Message is invalid: ${message}`)
-    }
+    await wv.show({ title: localize('AWS.invokeLambda.title', 'Invoke Lambda {0}', params.functionNode.functionName) })
 }
