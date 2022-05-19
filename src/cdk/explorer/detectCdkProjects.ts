@@ -16,9 +16,11 @@ export async function detectCdkProjects(
     }
 
     const results = new Map<string, CdkAppLocation>()
-    const projects = (await Promise.all(workspaceFolders.map(detectCdkProjectsFromWorkspaceFolder))).reduce((a, b) =>
-        a.concat(b)
+    const projects = (await Promise.all(workspaceFolders.map(detectCdkProjectsFromWorkspaceFolder))).reduce(
+        (a, b) => a.concat(b),
+        []
     )
+
     projects.forEach(p => results.set(p.cdkJsonUri.toString(), p))
 
     return Array.from(projects.values())
