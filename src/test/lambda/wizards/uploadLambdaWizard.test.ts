@@ -47,16 +47,19 @@ describe('UploadLambdaWizard', function () {
     })
 
     describe('invoked from directory', function () {
-        let tempDir: string | undefined
+        let tempDir: string
+        let invokePath: vscode.Uri
         beforeEach(async function () {
             tempDir = await makeTemporaryToolkitFolder()
-            tester = createWizardTester(new UploadLambdaWizard(undefined, vscode.Uri.file(tempDir)))
+            invokePath = vscode.Uri.file(tempDir)
+            tester = createWizardTester(new UploadLambdaWizard(undefined, invokePath))
         })
 
-        it('skip select directory', function () {
+        it('skip select directory, auto selected', function () {
             tester.lambda.region.assertShow()
             tester.uploadType.assertShow()
             tester.targetUri.assertDoesNotShow()
+            tester.targetUri.assertValue(invokePath)
             tester.lambda.name.assertShow()
             tester.confirmedDeploy.assertShow()
         })
