@@ -17,11 +17,11 @@ describe('UploadLambdaWizard', function () {
         })
 
         it('shows all but build prompts', function () {
-            tester.lambda.region.assertShow()
-            tester.uploadType.assertShow()
-            tester.targetUri.assertShow()
-            tester.lambda.name.assertShow()
-            tester.confirmedDeploy.assertShow()
+            tester.lambda.region.assertShow(1)
+            tester.uploadType.assertShow(2)
+            tester.targetUri.assertShow(3)
+            tester.lambda.name.assertShow(4)
+            tester.confirmedDeploy.assertShow(5)
         })
     })
 
@@ -56,12 +56,13 @@ describe('UploadLambdaWizard', function () {
         })
 
         it('skip select directory, auto selected', function () {
-            tester.lambda.region.assertShow()
-            tester.uploadType.assertShow()
+            tester.lambda.region.assertShow(1)
+            tester.uploadType.assertDoesNotShow()
+            tester.uploadType.assertValue('directory')
             tester.targetUri.assertDoesNotShow()
             tester.targetUri.assertValue(invokePath)
-            tester.lambda.name.assertShow()
-            tester.confirmedDeploy.assertShow()
+            tester.lambda.name.assertShow(2)
+            tester.confirmedDeploy.assertShow(3)
         })
     })
 })

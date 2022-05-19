@@ -210,10 +210,11 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
         super({ initState: { lambda } })
         this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
 
-        this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
         if (invokePath && fs.statSync(invokePath.fsPath).isDirectory()) {
+            this.form.uploadType.setDefault('directory')
             this.form.targetUri.setDefault(invokePath)
         } else {
+            this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
             this.form.targetUri.bindPrompter(({ uploadType }) => {
                 if (uploadType === 'directory') {
                     return createSingleFileDialog({
