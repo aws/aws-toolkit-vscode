@@ -36,9 +36,7 @@ async function detectCdkProjectsFromWorkspaceFolder(
         try {
             const cdkJsonDoc = await vscode.workspace.openTextDocument(cdkJson)
             const { output = 'cdk.out' } = JSON.parse(cdkJsonDoc.getText())
-            const outputUri = vscode.Uri.parse(`${cdkJson.scheme}:`, true).with({
-                path: path.resolve(vscode.Uri.joinPath(cdkJson, '..').path, output),
-            })
+            const outputUri = vscode.Uri.file(path.resolve(vscode.Uri.joinPath(cdkJson, '..').fsPath, output))
             const treeJsonUri = vscode.Uri.joinPath(outputUri, 'tree.json')
             const project = { cdkJsonUri: cdkJson, treeUri: treeJsonUri }
             result.push(project)

@@ -29,7 +29,7 @@ export class CdkRootNode implements TreeNode {
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
 
     public async getChildren() {
-        return getAppNodes()
+        return (await getAppNodes()).sort((a, b) => a.treeItem?.label?.localeCompare(b.treeItem?.label ?? '') ?? 0)
     }
 
     public refresh(): void {
