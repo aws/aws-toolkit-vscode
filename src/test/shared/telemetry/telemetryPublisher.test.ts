@@ -5,10 +5,9 @@
 
 import * as assert from 'assert'
 import AWS = require('aws-sdk')
-import { DefaultTelemetryPublisher } from '../../../shared/telemetry/defaultTelemetryPublisher'
-import { TelemetryClient } from '../../../shared/telemetry/telemetryClient'
-import { TelemetryFeedback } from '../../../shared/telemetry/telemetryFeedback'
-import { fakeMetric } from './defaultTelemetryService.test'
+import { DefaultTelemetryPublisher } from '../../../shared/telemetry/telemetryPublisher'
+import { TelemetryClient, TelemetryFeedback } from '../../../shared/telemetry/telemetryClient'
+import { fakeMetric } from './telemetryService.test'
 
 class MockTelemetryClient implements TelemetryClient {
     public feedback?: TelemetryFeedback
