@@ -1634,6 +1634,11 @@
                     "command": "aws.cdk.refresh",
                     "when": "viewItem == awsCdkRootNode",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.cdk.refresh",
+                    "when": "viewItem == awsCdkRootNode",
+                    "group": "0@1"
                 }
             ]
         },
