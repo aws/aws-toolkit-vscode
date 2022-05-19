@@ -7,8 +7,8 @@ import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as fs from 'fs-extra'
-import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
-import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
+import { DefaultTelemetryService } from '../../../shared/telemetry/telemetryService'
+import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 import {
