@@ -75,7 +75,7 @@ class LambdaSettings extends fromExtensionManifest('aws.lambda', { recentlyUploa
     }
 }
 
-interface LambdaFunction {
+export interface LambdaFunction {
     readonly name: string
     readonly region: string
     readonly configuration?: FunctionConfiguration
@@ -197,7 +197,7 @@ function createConfirmDeploymentPrompter(lambda: LambdaFunction) {
     })()
 }
 
-interface UploadLambdaWizardState {
+export interface UploadLambdaWizardState {
     readonly uploadType: 'zip' | 'directory'
     readonly targetUri: vscode.Uri
     readonly directoryBuildType: 'zip' | 'sam'
@@ -205,7 +205,7 @@ interface UploadLambdaWizardState {
     readonly lambda: LambdaFunction
 }
 
-class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
+export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
     constructor(lambda?: LambdaFunction, invokePath?: vscode.Uri) {
         super({ initState: { lambda } })
         this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
