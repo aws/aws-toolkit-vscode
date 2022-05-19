@@ -534,7 +534,7 @@ export function getFunctionNames(file: vscode.Uri, region: string): string[] | u
         }
         return names.length > 0 ? names : undefined
     } catch (error) {
-        getLogger().info('lambda: Error parsing .application.json: %s', (error as Error).message)
+        getLogger().error('lambda: failed to parse .application.json: %s', (error as Error).message)
     }
 }
 
