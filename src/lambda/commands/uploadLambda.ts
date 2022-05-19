@@ -211,23 +211,26 @@ class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
         this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
 
         this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
-
-        this.form.targetUri.bindPrompter(({ uploadType }) => {
-            if (uploadType === 'directory') {
-                return createSingleFileDialog({
-                    canSelectFolders: true,
-                    canSelectFiles: false,
-                })
-            } else {
-                return createSingleFileDialog({
-                    canSelectFolders: false,
-                    canSelectFiles: true,
-                    filters: {
-                        'ZIP archive': ['zip'],
-                    },
-                })
-            }
-        })
+        if (invokePath && fs.statSync(invokePath.fsPath).isDirectory()) {
+            this.form.targetUri.setDefault(invokePath)
+        } else {
+            this.form.targetUri.bindPrompter(({ uploadType }) => {
+                if (uploadType === 'directory') {
+                    return createSingleFileDialog({
+                        canSelectFolders: true,
+                        canSelectFiles: false,
+                    })
+                } else {
+                    return createSingleFileDialog({
+                        canSelectFolders: false,
+                        canSelectFiles: true,
+                        filters: {
+                            'ZIP archive': ['zip'],
+                        },
+                    })
+                }
+            })
+        }
 
         this.form.lambda.name.bindPrompter(state => {
             // invoking from the command palette passes no arguments
