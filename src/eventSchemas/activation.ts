@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { downloadSchemaItemCode } from '../eventSchemas/commands/downloadSchemaItemCode'
-import { createSearchSchemasWebView } from '../eventSchemas/commands/searchSchemas'
+import { createSearchSchemasWebView } from './vue/searchSchemas'
 import { viewSchemaItem } from '../eventSchemas/commands/viewSchemaItem'
 import { RegistryItemNode } from '../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../eventSchemas/explorer/schemaItemNode'

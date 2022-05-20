@@ -55,7 +55,7 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
-import { FeedbackWebview } from '../commands/submitFeedback'
+import { FeedbackWebview } from './submitFeedback'
 
 const client = WebviewClientFactory.create<FeedbackWebview>()
 

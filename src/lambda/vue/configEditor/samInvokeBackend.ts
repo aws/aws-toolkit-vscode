@@ -61,8 +61,7 @@ interface LaunchConfigPickItem extends vscode.QuickPickItem {
 
 export class SamInvokeWebview extends VueWebview {
     public readonly id = 'createLambda'
-    public readonly source = 'lambdaConfigEditorVue.js'
-    public readonly title = localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration')
+    public readonly source = 'src/lambda/vue/configEditor/index.js'
 
     public constructor(private readonly config?: AwsSamDebuggerConfiguration) {
         super()
@@ -72,7 +71,7 @@ export class SamInvokeWebview extends VueWebview {
         return samLambdaCreatableRuntimes().toArray().sort()
     }
 
-    public getConfig() {
+    public init() {
         return this.config
     }
 
@@ -304,7 +303,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
         'aws.launchConfigForm',
         async (launchConfig?: AwsSamDebuggerConfiguration) => {
             const webview = new WebviewPanel(context, launchConfig)
-            webview.show()
+            webview.show({ title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration') })
             recordSamOpenConfigUi()
         }
     )

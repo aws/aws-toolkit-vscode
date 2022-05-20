@@ -7,14 +7,6 @@ import * as assert from 'assert'
 
 import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
-import {
-    getPageHeader,
-    getRegistryNames,
-    getSearchListForSingleRegistry,
-    getSearchResults,
-    SearchSchemasWebview,
-} from '../../../eventSchemas/commands/searchSchemas'
-import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 import { MockSchemaClient } from '../../shared/clients/mockClients'
@@ -22,6 +14,14 @@ import { asyncGenerator } from '../../utilities/collectionUtils'
 
 import * as vscode from 'vscode'
 import { MockOutputChannel } from '../../mockOutputChannel'
+import {
+    getPageHeader,
+    getRegistryNames,
+    getSearchListForSingleRegistry,
+    getSearchResults,
+    SearchSchemasWebview,
+} from '../../../eventSchemas/vue/searchSchemas'
+import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 
 describe('Search Schemas', function () {
     let sandbox: sinon.SinonSandbox

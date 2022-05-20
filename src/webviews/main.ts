@@ -79,7 +79,7 @@ export interface VueWebviewPanel<T extends VueWebview = VueWebview> {
      *
      * @returns A Promise that is resolved once the view is closed.
      */
-    show(params?: Partial<Omit<WebviewPanelParams, 'id' | 'webviewJs'>>): Promise<vscode.WebviewPanel>
+    show(params: Omit<WebviewPanelParams, 'id' | 'webviewJs'>): Promise<vscode.WebviewPanel>
 
     /**
      * Forces a reload of the Vue runtime, resetting saved state without reloading the whole webview.
@@ -93,6 +93,11 @@ export interface VueWebviewPanel<T extends VueWebview = VueWebview> {
 }
 
 export interface VueWebviewView<T extends VueWebview = VueWebview> {
+    /**
+     * Registers the webview with VS Code.
+     *
+     * The view will not be rendered untl this is called.
+     */
     register(params?: Partial<Omit<WebviewViewParams, 'id' | 'webviewJs'>>): vscode.Disposable
 
     /**
@@ -107,6 +112,9 @@ export interface VueWebviewView<T extends VueWebview = VueWebview> {
  * Sub-classes can be used to create new classes with fully-resolved bindings:
  * ```ts
  * class MyVueWebview extends VueWebview {
+ *     public readonly id = 'foo'
+ *     public readonly source = 'foo.js'
+ *
  *     public constructor(private readonly myData: string) {
  *         super()
  *     }
@@ -118,7 +126,7 @@ export interface VueWebviewView<T extends VueWebview = VueWebview> {
  *
  * const Panel = VueWebview.compilePanel(MyVueWebview)
  * const view = new Panel(context, 'data')
- * view.show()
+ * view.show({ title: 'Foo' })
  * ```
  *
  * The unbound class type should then be used on the frontend:
@@ -135,9 +143,17 @@ export interface VueWebviewView<T extends VueWebview = VueWebview> {
  *
  */
 export abstract class VueWebview {
+    /**
+     * A unique identifier to associate with the webview.
+     *
+     * This must be the same as the `id` in `package.json` when using a WebviewView.
+     */
     public abstract readonly id: string
+
+    /**
+     * The relative location, from the repository root, to the frontend entrypoint.
+     */
     public abstract readonly source: string
-    public readonly title?: string
 
     private readonly protocol: Protocol
     private readonly onDidDisposeEmitter = new vscode.EventEmitter<void>()

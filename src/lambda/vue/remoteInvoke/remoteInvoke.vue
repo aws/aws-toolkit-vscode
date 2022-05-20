@@ -33,7 +33,7 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
-import { RemoteInvokeData, RemoteInvokeWebview } from '../../commands/invokeLambda'
+import { RemoteInvokeData, RemoteInvokeWebview } from './invokeLambda'
 
 const client = WebviewClientFactory.create<RemoteInvokeWebview>()
 const defaultInitialData = {

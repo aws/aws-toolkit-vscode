@@ -31,7 +31,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
-import { SchemaVersionedSummary, SearchSchemasWebview } from '../commands/searchSchemas'
+import { SchemaVersionedSummary, SearchSchemasWebview } from './searchSchemas'
 import saveData from '../../webviews/mixins/saveData'
 
 const client = WebviewClientFactory.create<SearchSchemasWebview>()

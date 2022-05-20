@@ -20,8 +20,7 @@ export interface FeedbackMessage {
 
 export class FeedbackWebview extends VueWebview {
     public readonly id = 'submitFeedback'
-    public readonly source = 'feedbackVue.js'
-    public readonly title = localize('AWS.submitFeedback.title', 'Send Feedback')
+    public readonly source = 'src/feedback/vue/index.js'
 
     public constructor(private readonly telemetry: TelemetryService) {
         super()
@@ -57,15 +56,18 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
-const Server = VueWebview.compilePanel(FeedbackWebview)
+const Panel = VueWebview.compilePanel(FeedbackWebview)
 
 let activeWebview: VueWebviewPanel | undefined
 
 export async function submitFeedback(context: ExtContext) {
     if (!activeWebview) {
-        activeWebview = new Server(context, globals.telemetry)
+        activeWebview = new Panel(context, globals.telemetry)
         activeWebview.server.onDidDispose(() => (activeWebview = undefined))
     }
 
-    await activeWebview.show({ cssFiles: ['submitFeedback.css'] })
+    await activeWebview.show({
+        title: localize('AWS.submitFeedback.title', 'Send Feedback'),
+        cssFiles: ['submitFeedback.css'],
+    })
 }

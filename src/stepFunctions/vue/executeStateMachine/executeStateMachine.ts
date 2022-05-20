@@ -6,18 +6,18 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../../shared/logger'
 import {
     recordStepfunctionsExecuteStateMachine,
     recordStepfunctionsExecuteStateMachineView,
     Result,
-} from '../../shared/telemetry/telemetry'
-import { StateMachineNode } from '../explorer/stepFunctionsNodes'
-import globals from '../../shared/extensionGlobals'
-import { ExtContext } from '../../shared/extensions'
-import { VueWebview } from '../../webviews/main'
+} from '../../../shared/telemetry/telemetry'
+import { StateMachineNode } from '../../explorer/stepFunctionsNodes'
+import globals from '../../../shared/extensionGlobals'
+import { ExtContext } from '../../../shared/extensions'
+import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
 
 interface StateMachine {
@@ -28,8 +28,7 @@ interface StateMachine {
 
 export class ExecuteStateMachineWebview extends VueWebview {
     public readonly id = 'remoteInvoke'
-    public readonly title = localize('AWS.executeStateMachine.title', 'Start Execution')
-    public readonly source = 'stepFunctionsExecuteStateMachineVue.js'
+    public readonly source = 'src/stepFunctions/vue/executeStateMachine/index.js'
     private readonly logger = getLogger()
 
     public constructor(private readonly channel: vscode.OutputChannel, private readonly stateMachine: StateMachine) {
@@ -92,6 +91,9 @@ export async function executeStateMachine(context: ExtContext, node: StateMachin
         region: node.regionCode,
     })
 
-    await wv.show({ cssFiles: ['executeStateMachine.css'] })
+    await wv.show({
+        title: localize('AWS.executeStateMachine.title', 'Start Execution'),
+        cssFiles: ['executeStateMachine.css'],
+    })
     recordStepfunctionsExecuteStateMachineView()
 }

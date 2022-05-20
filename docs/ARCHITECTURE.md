@@ -17,9 +17,9 @@ Be very mindful about state managment; violating these principles will lead to b
 
 ### Bundling
 
-Each webview is bundled into a single file to speed up load times as well as isolate the 'web' modules from the 'node' modules. Webview bundles are automatically generated on compilation by targeting `entry.ts` files when located under a `vue` directory. All bundles are placed directly under `dist`.
+Each webview is bundled into a single file to speed up load times as well as isolate the 'web' modules from the 'node' modules. Webview bundles are automatically generated on compilation by targeting `index.ts` files when located under a `vue` directory. All bundles are placed under `dist` in the same relative location.
 
-Generated bundle names map based off their path relative to `src`: `src/foo/vue/bar/entry.ts` -> `fooBarVue.js`
+Generated bundle names map based off their path relative to `src`: `src/foo/vue/bar/index.ts` -> `dist/src/foo/vue/bar/index.js`
 
 Running the extension in development mode (e.g. via the `Extension` launch task) starts a local server to automatically rebuild and serve webviews in real-time via hot-module reloading. It's assumed that the server runs on port `8080`, so make sure that nothing is already using that port. Otherwise webviews will not be displayed during development.
 
@@ -39,7 +39,6 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
     // Export the class so the frontend code can use it for types
     export class MyVueWebview extends VueWebview {
         public readonly id = 'my.view'
-        public readonly title = 'A title'
         public readonly source = 'myView.js'
         public readonly onBar = new vscode.EventEmitter<number>()
 
@@ -59,7 +58,7 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
 
     // `context` is `ExtContext` provided on activation
     const view = new Panel(context, 'hello')
-    view.show()
+    view.show({ title: 'My title' })
     view.server.onFoo.fire(1)
     ```
 

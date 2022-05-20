@@ -5,14 +5,14 @@
 
 import * as vscode from 'vscode'
 import { deleteLambda } from './commands/deleteLambda'
-import { invokeRemoteLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { ExtContext } from '../shared/extensions'
 import globals from '../shared/extensionGlobals'
-import { registerSamInvokeVueCommand } from './configEditor/vue/samInvokeBackend'
+import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
+import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 
 /**
  * Activates Lambda components.

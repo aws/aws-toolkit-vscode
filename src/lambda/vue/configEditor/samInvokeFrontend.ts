@@ -111,7 +111,7 @@ export default defineComponent({
         settingsPanel,
     },
     created() {
-        client.getConfig().then(config => this.parseConfig(config))
+        client.init().then(config => this.parseConfig(config))
 
         client.getRuntimes().then(runtimes => {
             this.runtimes = runtimes

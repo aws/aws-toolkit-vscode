@@ -44,7 +44,7 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
-import { ExecuteStateMachineWebview } from '../../commands/executeStateMachine'
+import { ExecuteStateMachineWebview } from './executeStateMachine'
 
 const defaultJsonPlaceholder = '{\n\t"key1": "value1",\n\t"key2": "value2",\n\t"key3": "value3"\n}'
 const client = WebviewClientFactory.create<ExecuteStateMachineWebview>()

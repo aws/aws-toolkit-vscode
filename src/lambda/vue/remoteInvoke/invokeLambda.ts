@@ -7,18 +7,18 @@ import { _Blob } from 'aws-sdk/clients/lambda'
 import { readFileSync } from 'fs'
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
-import { LambdaClient } from '../../shared/clients/lambdaClient'
-import globals from '../../shared/extensionGlobals'
-import { ExtContext } from '../../shared/extensions'
+import { LambdaClient } from '../../../shared/clients/lambdaClient'
+import globals from '../../../shared/extensionGlobals'
+import { ExtContext } from '../../../shared/extensions'
 
-import { getLogger } from '../../shared/logger'
-import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
-import { sampleRequestPath } from '../constants'
-import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { getSampleLambdaPayloads, SampleRequest } from '../utils'
+import { getLogger } from '../../../shared/logger'
+import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
+import { sampleRequestPath } from '../../constants'
+import { LambdaFunctionNode } from '../../explorer/lambdaFunctionNode'
+import { getSampleLambdaPayloads, SampleRequest } from '../../utils'
 
 import * as nls from 'vscode-nls'
-import { VueWebview } from '../../webviews/main'
+import { VueWebview } from '../../../webviews/main'
 const localize = nls.loadMessageBundle()
 
 export interface InitialData {
@@ -37,8 +37,7 @@ export interface RemoteInvokeData {
 
 export class RemoteInvokeWebview extends VueWebview {
     public readonly id = 'remoteInvoke'
-    //title: localize('AWS.invokeLambda.title', 'Invoke Lambda')
-    public readonly source = 'lambdaRemoteInvokeVue.js'
+    public readonly source = 'src/lambda/vue/remoteInvoke/index.js'
 
     public constructor(
         private readonly channel: vscode.OutputChannel,
@@ -106,7 +105,7 @@ export class RemoteInvokeWebview extends VueWebview {
     }
 }
 
-const Server = VueWebview.compilePanel(RemoteInvokeWebview)
+const Panel = VueWebview.compilePanel(RemoteInvokeWebview)
 
 export async function invokeRemoteLambda(
     context: ExtContext,
@@ -124,7 +123,7 @@ export async function invokeRemoteLambda(
     const inputs = await getSampleLambdaPayloads()
     const client = globals.toolkitClientBuilder.createLambdaClient(params.functionNode.regionCode)
 
-    const wv = new Server(context, context.outputChannel, client, {
+    const wv = new Panel(context, context.outputChannel, client, {
         FunctionName: params.functionNode.configuration.FunctionName ?? '',
         FunctionArn: params.functionNode.configuration.FunctionArn ?? '',
         FunctionRegion: params.functionNode.regionCode,

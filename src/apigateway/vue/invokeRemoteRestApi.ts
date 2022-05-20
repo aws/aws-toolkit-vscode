@@ -42,8 +42,7 @@ export interface InvokeRemoteRestApiInitialData {
 
 export class RemoteRestInvokeWebview extends VueWebview {
     public readonly id = 'remoteInvoke'
-    public readonly source = 'apigatewayVue.js'
-    public readonly title = localize('AWS.invokeApi.title', 'Invoke Remote API')
+    public readonly source = 'src/apigateway/vue/index.js'
     private readonly logger = getLogger()
 
     public constructor(
@@ -103,7 +102,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
     }
 }
 
-const Server = VueWebview.compilePanel(RemoteRestInvokeWebview)
+const Panel = VueWebview.compilePanel(RemoteRestInvokeWebview)
 
 export async function invokeRemoteRestApi(
     context: ExtContext,
@@ -126,7 +125,7 @@ export async function invokeRemoteRestApi(
 
         // something is wrong if the paths aren't defined...
         // const sortResources = (a: [string, Resource], b: [string, Resource]) => a[1].path!.localeCompare(b[1].path!)
-        const wv = new Server(
+        const wv = new Panel(
             context,
             {
                 ApiName: params.apiNode.name,
@@ -142,7 +141,7 @@ export async function invokeRemoteRestApi(
             context.outputChannel
         )
 
-        await wv.show()
+        await wv.show({ title: localize('AWS.invokeApi.title', 'Invoke Remote API') })
     } catch (err) {
         logger.error(err as Error)
     }

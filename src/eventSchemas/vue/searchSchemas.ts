@@ -7,11 +7,11 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { Schemas } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { downloadSchemaItemCode } from '../../eventSchemas/commands/downloadSchemaItemCode'
-import { RegistryItemNode } from '../../eventSchemas/explorer/registryItemNode'
-import { SchemaItemNode } from '../../eventSchemas/explorer/schemaItemNode'
-import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
-import { listRegistryItems, searchSchemas } from '../../eventSchemas/utils'
+import { downloadSchemaItemCode } from '../commands/downloadSchemaItemCode'
+import { RegistryItemNode } from '../explorer/registryItemNode'
+import { SchemaItemNode } from '../explorer/schemaItemNode'
+import { SchemasNode } from '../explorer/schemasNode'
+import { listRegistryItems, searchSchemas } from '../utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
 import { getLogger, Logger } from '../../shared/logger'
@@ -38,8 +38,7 @@ interface InitialData {
 
 export class SearchSchemasWebview extends VueWebview {
     public readonly id = 'remoteInvoke'
-    public readonly title = localize('AWS.executeStateMachine.title', 'Start Execution')
-    public readonly source = 'eventSchemasVue.js'
+    public readonly source = 'src/eventSchemas/vue/index.js'
 
     public constructor(
         private readonly channel: vscode.OutputChannel,
@@ -79,12 +78,17 @@ export class SearchSchemasWebview extends VueWebview {
     }
 
     public async searchSchemas(keyword: string) {
-        const results = await getSearchResults(this.client, this.data.RegistryNames, keyword)
-        recordSchemasSearch({ result: 'Succeeded' }) // This isn't right...
+        try {
+            const results = await getSearchResults(this.client, this.data.RegistryNames, keyword)
+            recordSchemasSearch({ result: 'Succeeded' })
 
-        return {
-            results: results,
-            resultsNotFound: results.length === 0,
+            return {
+                results: results,
+                resultsNotFound: results.length === 0,
+            }
+        } catch (error) {
+            recordSchemasSearch({ result: 'Failed' })
+            throw error
         }
     }
 
@@ -97,7 +101,7 @@ export class SearchSchemasWebview extends VueWebview {
     }
 }
 
-const Server = VueWebview.compilePanel(SearchSchemasWebview)
+const Panel = VueWebview.compilePanel(SearchSchemasWebview)
 
 export async function createSearchSchemasWebView(context: ExtContext, node: RegistryItemNode | SchemasNode) {
     const logger: Logger = getLogger()
@@ -113,7 +117,7 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
 
             return
         }
-        const wv = new Server(context, context.outputChannel, client, {
+        const wv = new Panel(context, context.outputChannel, client, {
             RegistryNames: registryNames,
             Header: getPageHeader(registryNames),
             SearchInputPlaceholder: localize('AWS.schemas.search.input.placeholder', 'Search for schema keyword...'),
@@ -126,7 +130,10 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
                 select: localize('AWS.schemas.search.select', 'Select a schema'),
             },
         })
-        await wv.show({ cssFiles: ['searchSchemas.css'] })
+        await wv.show({
+            title: localize('AWS.executeStateMachine.title', 'Start Execution'),
+            cssFiles: ['searchSchemas.css'],
+        })
     } catch (err) {
         webviewResult = 'Failed'
         const error = err as Error
