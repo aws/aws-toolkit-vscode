@@ -188,14 +188,8 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
      * This method will largely go unused unless multi-tenant auth becomes a requirement.
      */
     public listSessions(): CawsSession[] {
-        const expired = Array.from(this.sessions.values()).filter(session => {
-            const expiration = this.sessionExpiration.get(session.id)
-
-            if (expiration && expiration.getTime() - 60000 < Date.now()) {
-                getLogger().debug(`CAWS: removed expired session: ${session.id}`)
-                return true
-            }
-        })
+        const expired = Array.from(this.sessions.values()).filter(s => this.isSessionExpired(s))
+        expired.forEach(({ id }) => getLogger().debug(`CAWS: removing expired session: ${id}`))
 
         this.deleteSession(...expired)
         return Array.from(this.sessions.values())
@@ -254,10 +248,11 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
             await Promise.all(
                 sessions.map(async ({ id, accountDetails }) => {
                     const previous = this.sessions.get(id)
+                    const isExpired = this.isSessionExpired({ id })
                     this.sessions.delete(id)
                     this.sessionExpiration.delete(id)
 
-                    if (previous) {
+                    if (previous && !isExpired) {
                         await this.storage.updateUser(accountDetails.id, {
                             ...previous.accountDetails.metadata,
                             canAutoConnect: false,
@@ -294,6 +289,12 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
         await this.storage.storePat(client.identity.id, resp.secret)
 
         return resp.secret
+    }
+
+    private isSessionExpired(session: Pick<CawsSession, 'id'>): boolean {
+        const expiration = this.sessionExpiration.get(session.id)
+
+        return !!expiration && expiration.getTime() - 60000 < Date.now()
     }
 
     private static instance: CawsAuthenticationProvider
