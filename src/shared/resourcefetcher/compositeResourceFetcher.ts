@@ -6,6 +6,7 @@
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 
+// TODO: replace this with something more generic like Log.all(...)
 export class CompositeResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
     private readonly fetchers: ResourceFetcher[]
