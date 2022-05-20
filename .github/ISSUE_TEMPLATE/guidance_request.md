@@ -10,6 +10,6 @@ labels: guidance
 -   Visual Studio Code version:
 -   AWS Toolkit version:
 
-**Question**
+## Question
 
 <!-- Summary of the topic, followed by relevant details/context. -->
