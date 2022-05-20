@@ -60,9 +60,6 @@ import { FeedbackWebview } from './submitFeedback'
 const client = WebviewClientFactory.create<FeedbackWebview>()
 
 export default defineComponent({
-    setup() {
-        console.log('Loaded!')
-    },
     data() {
         return {
             comment: '',

@@ -34,7 +34,7 @@
         <br />
         <textarea rows="20" cols="90" v-model="jsonInput"></textarea>
         <br />
-        <input type="submit" v-on:click="sendInput" value="Invoke" :disabled="isLoading" />
+        <button class="mt-16 mb-16" @click="sendInput" :disabled="isLoading">{{ invokeText }}</button>
         <br />
         <div v-if="errors.length">
             <b>Please correct the following error(s):</b>
@@ -80,29 +80,7 @@ export default defineComponent({
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
     },
-    mounted() {
-        this.$nextTick(function () {
-            window.addEventListener('message', this.handleMessageReceived)
-        })
-    },
     methods: {
-        handleMessageReceived: function (event: any) {
-            const message = event.data
-            switch (message.command) {
-                case 'setMethods':
-                    this.methods = message.methods
-                    if (this.methods) {
-                        this.selectedMethod = this.methods[0]
-                    }
-                    break
-                case 'invokeApiStarted':
-                    this.isLoading = true
-                    break
-                case 'invokeApiFinished':
-                    this.isLoading = false
-                    break
-            }
-        },
         setApiResource: async function () {
             const methods = await client.listValidMethods(this.initialData.Resources[this.selectedApiResource])
             this.methods = methods
@@ -131,6 +109,11 @@ export default defineComponent({
                     region: this.initialData.Region,
                 })
                 .finally(() => (this.isLoading = false))
+        },
+    },
+    computed: {
+        invokeText() {
+            return this.isLoading ? 'Invoking...' : 'Invoke'
         },
     },
 })

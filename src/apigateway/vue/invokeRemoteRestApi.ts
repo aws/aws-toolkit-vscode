@@ -60,7 +60,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
         return listValidMethods(resource)
     }
 
-    public async invokeApi(message: InvokeApiMessage): Promise<void> {
+    public async invokeApi(message: InvokeApiMessage): Promise<string> {
         let result: Result = 'Succeeded'
         const client = globals.toolkitClientBuilder.createApiGatewayClient(message.region)
 
@@ -99,6 +99,8 @@ export class RemoteRestInvokeWebview extends VueWebview {
                 httpMethod: method,
             })
         }
+
+        return result
     }
 }
 

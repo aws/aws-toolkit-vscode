@@ -2,31 +2,28 @@
 
 <template>
     <h1>Invoke function {{ initialData.FunctionName }}</h1>
-    <div id="app">
-        <p style="margin-bottom: 5px; margin-top: 0; margin-right: 5px">ARN: {{ initialData.FunctionArn }}</p>
+    <p style="margin-bottom: 5px; margin-top: 0; margin-right: 5px">ARN: {{ initialData.FunctionArn }}</p>
 
-        <p style="margin-top: 0">Region: {{ initialData.FunctionRegion }}</p>
+    <p style="margin-top: 0">Region: {{ initialData.FunctionRegion }}</p>
 
-        <h3>Select a file to use as payload:</h3>
-        <div>
-            <button v-on:click="promptForFileLocation">Choose File</button>
-            &nbsp; {{ selectedFile }}
-        </div>
-        <br />
-        <h3>Or, use a sample request payload from a template:</h3>
-        <select v-model="selectedSampleRequest" v-on:change="newSelection">
-            <option disabled value="">Select an example input</option>
-            <option v-for="item in initialData.InputSamples" :key="item.name" :value="item.filename">
-                {{ item.name }}
-            </option>
-        </select>
-        <br />
-        <br />
-        <textarea rows="20" cols="90" v-model="sampleText"></textarea>
-        <br />
-        <input type="submit" v-on:click="sendInput" value="Invoke" />
-        <br />
+    <h3>Select a file to use as payload:</h3>
+    <div>
+        <button v-on:click="promptForFileLocation">Choose File</button>
+        &nbsp; {{ selectedFile }}
     </div>
+    <br />
+    <h3>Or, use a sample request payload from a template:</h3>
+    <select v-model="selectedSampleRequest" v-on:change="newSelection">
+        <option disabled value="">Select an example input</option>
+        <option v-for="item in initialData.InputSamples" :key="item.name" :value="item.filename">
+            {{ item.name }}
+        </option>
+    </select>
+    <br />
+    <br />
+    <textarea rows="20" cols="90" v-model="sampleText"></textarea>
+    <br />
+    <button class="mt-16 mb-16" v-on:click="sendInput">Invoke</button>
 </template>
 
 <script lang="ts">
