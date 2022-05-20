@@ -76,6 +76,10 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
     }
 
     public async getChildren(element?: TreeNode): Promise<TreeNode[]> {
+        if (element) {
+            this.children.get(element.id)?.forEach(n => this.clear(n))
+        }
+
         const getId = (id: string) => (element ? `${element.id}/${id}` : id)
         const children = (await (element ?? this.root).getChildren?.()) ?? []
         const tracked = children.map(r => this.insert(getId(r.id), r))
@@ -93,8 +97,13 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
     }
 
     private clear(node: TreeNode): void {
+        const children = this.children.get(node.id)
+
+        this.children.delete(node.id)
         this.listeners.get(node.id)?.dispose()
         this.listeners.delete(node.id)
+
+        children?.forEach(c => this.clear(c))
     }
 
     private insert(id: string, resource: TreeNode): TreeNode {

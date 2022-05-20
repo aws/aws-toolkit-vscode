@@ -91,6 +91,9 @@ export function unboxTreeNode<T>(node: TreeNode, predicate: (resource: unknown) 
 
 /**
  * Wrapper that allows a {@link TreeNode} to be used in the legacy explorer.
+ *
+ * Any new or existing code needs to account for this additional layer as the shim
+ * would be passed in as-is.
  */
 export class TreeShim extends AWSTreeNodeBase {
     public constructor(public readonly node: TreeNode) {
