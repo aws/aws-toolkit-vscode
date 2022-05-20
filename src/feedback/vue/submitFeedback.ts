@@ -28,7 +28,10 @@ export class FeedbackWebview extends VueWebview {
 
     public async submit(message: FeedbackMessage): Promise<string | void> {
         const logger = getLogger()
-        logger.info(`Submitting ${message.sentiment} feedback`)
+
+        if (!message.sentiment) {
+            return 'Choose a reaction (smile/frown)'
+        }
 
         try {
             await this.telemetry.postFeedback({
@@ -37,14 +40,14 @@ export class FeedbackWebview extends VueWebview {
             })
         } catch (err) {
             const errorMessage = (err as Error).message || 'Failed to submit feedback'
-            logger.error(`Failed to submit ${message.sentiment} feedback: ${errorMessage}`)
+            logger.error(`feedback failed: "${message.sentiment}": ${errorMessage}`)
 
             telemetry.recordFeedbackResult({ result: 'Failed' })
 
             return errorMessage
         }
 
-        logger.info(`Successfully submitted ${message.sentiment} feedback`)
+        logger.info(`feedback sent: "${message.sentiment}"`)
 
         telemetry.recordFeedbackResult({ result: 'Succeeded' })
 

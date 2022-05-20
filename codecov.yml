@@ -15,11 +15,7 @@ coverage:
             default:
                 threshold: 1
                 informational: true
-        patch:
-            default:
-                threshold: 1
-                only_pulls: true
-                informational: false
+        patch: no
         changes: no
 
 comment: off

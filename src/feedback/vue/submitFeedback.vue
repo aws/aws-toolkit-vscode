@@ -34,20 +34,14 @@
             </div>
         </div>
 
-        <p>
-            <input v-if="isSubmitting" type="submit" value="Submitting..." disabled />
-            <input
-                v-else
-                type="submit"
-                @click="submitFeedback"
-                :disabled="comment.length === 0 || comment.length > 2000 || sentiment === ''"
-                value="Submit"
-            />
-        </p>
-
-        <div id="error" v-if="error !== ''">
+        <div id="error" v-if="error !== ''" style="float: right">
             <strong>{{ error }}</strong>
         </div>
+
+        <p>
+            <input v-if="isSubmitting" type="submit" value="Submitting..." disabled />
+            <input v-else type="submit" @click="submitFeedback" :disabled="comment.length > 2000" value="Send" />
+        </p>
     </div>
 </template>
 
