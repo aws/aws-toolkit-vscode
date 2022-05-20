@@ -179,9 +179,7 @@ export async function getRemoteOrCachedFile(params: {
         // Check that the cached file actually can be fetched. Else we might
         // never update the cache.
         const fileFetcher = new FileResourceFetcher(params.filepath)
-        const content = await fileFetcher.get().catch(err => {
-            getLogger().debug('failed to load cached resource: %s', (err as Error).message)
-        })
+        const content = await fileFetcher.get()
         if (content) {
             return content
         }
@@ -195,9 +193,7 @@ export async function getRemoteOrCachedFile(params: {
             params.extensionContext.globalState.update(params.cacheKey, params.version)
         },
     })
-    const content = await httpFetcher.get().catch(err => {
-        getLogger().debug('failed to fetch HTTP resource: %s', (err as Error).message)
-    })
+    const content = await httpFetcher.get()
     if (!content) {
         throw new Error(`failed to resolve schema: ${params.filepath}`)
     }
