@@ -21,14 +21,10 @@ describe('submitFeedbackListener', function () {
 
     it('submits feedback, disposes, and shows message on success', async function () {
         const webview = new FeedbackWebview(instance(mockTelemetry))
-        const disposed = new Promise<boolean>((resolve, reject) => {
-            setTimeout(() => reject(false), 5000)
-            webview.onDidDispose(() => resolve(true))
-        })
         await webview.submit(message)
 
         verify(mockTelemetry.postFeedback(deepEqual({ comment: COMMENT, sentiment: SENTIMENT }))).once()
-        assert.ok(await disposed)
+        assert.ok(webview.isDisposed)
     })
 
     it('submits feedback and posts failure message on failure', async function () {

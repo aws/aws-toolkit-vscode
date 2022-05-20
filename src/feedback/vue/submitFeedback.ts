@@ -61,13 +61,12 @@ const Panel = VueWebview.compilePanel(FeedbackWebview)
 let activeWebview: VueWebviewPanel | undefined
 
 export async function submitFeedback(context: ExtContext) {
-    if (!activeWebview) {
-        activeWebview = new Panel(context, globals.telemetry)
-        activeWebview.server.onDidDispose(() => (activeWebview = undefined))
-    }
+    activeWebview ??= new Panel(context, globals.telemetry)
 
-    await activeWebview.show({
+    const webviewPanel = await activeWebview.show({
         title: localize('AWS.submitFeedback.title', 'Send Feedback'),
         cssFiles: ['submitFeedback.css'],
     })
+
+    webviewPanel.onDidDispose(() => (activeWebview = undefined))
 }

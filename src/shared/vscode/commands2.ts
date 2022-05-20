@@ -10,6 +10,7 @@ import { isNameMangled } from './env'
 import { UnknownError } from '../toolkitError'
 import { getLogger, NullLogger } from '../logger/logger'
 import { LoginManager } from '../../credentials/loginManager'
+import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -184,35 +185,12 @@ export class Commands {
     public static readonly from = this.instance.from.bind(this.instance)
 }
 
-type Functions<T> = { [P in keyof T]: T[P] extends Callback ? T[P] : never }
-type FunctionKeys<T> = { [P in keyof T]: T[P] extends Callback ? P : never }[keyof T]
-
 interface Declare<T, F extends Callback> {
     (id: string): DeclaredCommand<F, [target: T]>
 }
 
 type Declarables<T> = {
     [P in FunctionKeys<T> as `declare${Capitalize<P & string>}`]: Declare<T, Functions<T>[P]>
-}
-
-/**
- * Returns all functions found on the target's prototype chain.
- *
- * Conflicts from functions sharing the same key are resolved by order of appearance, earlier
- * functions given precedence. This is equivalent to how the prototype chain is traversed when
- * evaluating `target[key]`, so long as the property descriptor is not a 'getter' function.
- */
-function getFunctions<T>(target: new (...args: any[]) => T): Functions<T> {
-    const result = {} as Functions<T>
-
-    for (const k of Object.getOwnPropertyNames(target.prototype)) {
-        if (typeof target.prototype[k] === 'function') {
-            result[k as keyof T] = target.prototype[k]
-        }
-    }
-
-    const next = Object.getPrototypeOf(target)
-    return next && next.prototype ? { ...getFunctions(next), ...result } : result
 }
 
 // TODO(sijaden): implement decoupled tree-view, then move this

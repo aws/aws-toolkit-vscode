@@ -9,6 +9,7 @@ import { ExtContext } from '../shared/extensions'
 import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
 import { Protocol, registerWebviewServer } from './server'
 import { getIdeProperties } from '../shared/extensionUtilities'
+import { getFunctions } from '../shared/utilities/classUtils'
 
 interface WebviewParams {
     /**
@@ -70,9 +71,6 @@ interface WebviewViewParams extends WebviewParams {
     description?: string
 }
 
-/**
- * A compiled webview created from {@link compileVueWebview}.
- */
 export interface VueWebviewPanel<T extends VueWebview = VueWebview> {
     /**
      * Shows the webview with the given parameters.
@@ -157,23 +155,24 @@ export abstract class VueWebview {
 
     private readonly protocol: Protocol
     private readonly onDidDisposeEmitter = new vscode.EventEmitter<void>()
-    public readonly onDidDispose = this.onDidDisposeEmitter.event
+    private readonly onDidDispose = this.onDidDisposeEmitter.event
 
+    private disposed = false
     private context?: ExtContext
 
     public constructor() {
         const commands: Record<string, (...args: any[]) => unknown> = {}
-        const proto = Object.getPrototypeOf(this)
+        const ctor = this.constructor as new (...args: any[]) => any
 
-        // This only checks the immediate parent class; it should be checking the entire chain down to the current class
-        for (const prop of Object.getOwnPropertyNames(proto)) {
-            const val = proto[prop]
-            if (typeof val === 'function') {
-                commands[prop] = val.bind(this)
-            }
+        for (const [k, v] of Object.entries(getFunctions(ctor))) {
+            commands[k] = v.bind(this)
         }
 
         this.protocol = commands
+    }
+
+    public get isDisposed() {
+        return this.disposed
     }
 
     public getCompanyName(): string {
@@ -181,6 +180,7 @@ export abstract class VueWebview {
     }
 
     protected dispose(): void {
+        this.disposed = true
         this.onDidDisposeEmitter.fire()
     }
 
@@ -279,7 +279,6 @@ export abstract class VueWebview {
                             this.view = view
 
                             const server = registerWebviewServer(this.view.webview, this.instance.protocol)
-                            this.view.onDidDispose(() => server.dispose())
                             this.view.onDidDispose(() => {
                                 server.dispose()
                                 this.view = undefined

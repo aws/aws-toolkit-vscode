@@ -44,8 +44,12 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
 
         public constructor(private readonly myData: string) {}
 
-        public foo() {
+        public init() {
             return this.myData
+        }
+
+        public foo() {
+            return 'foo'
         }
 
         public bar() {
@@ -84,6 +88,12 @@ Commands and events are defined on the backend via sub-classes of `VueWebview`. 
 
     ```ts
     client.onBar(num => console.log(num))
+    ```
+
+-   Methods called `init` will only return data on the initial webview load:
+
+    ```ts
+    client.init(data => (this.data = data ?? this.data))
     ```
 
 ### Testing
