@@ -16,7 +16,7 @@ labels: bug
 
 ## Expected behavior
 
-## System details (try the `AWS: About Toolkit` command)
+## System details (run the `AWS: About Toolkit` command)
 
 -   OS:
 -   Visual Studio Code version:
