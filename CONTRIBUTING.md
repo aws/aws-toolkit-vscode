@@ -251,6 +251,12 @@ This condition is checked through an environment variable `AWS_TOOLKIT_AUTOMATIO
 If any truthy value is present, telemetry will be dropped if the current build is not a release version. Utility functions,
 such as `assertTelemetry`, can be used to test specific telemetry emits even in automation.
 
+### SAM/CFN ("goformation") JSON schema
+
+See [docs/cfn-schema-support.md](./docs/cfn-schema-support.md) for how to fix
+and improve the JSON schema that provides auto-completion and syntax checking
+of SAM and CloudFormation `template.yaml` files.
+
 ### AWS SDK generator
 
 When the AWS SDK does not (yet) support a service but you have an API
