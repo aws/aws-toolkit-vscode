@@ -48,7 +48,7 @@ export class RemoteInvokeWebview extends VueWebview {
         super()
     }
 
-    public getData() {
+    public init() {
         return this.data
     }
 

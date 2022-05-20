@@ -53,7 +53,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
         super()
     }
 
-    public getData(): typeof this.data {
+    public init(): typeof this.data {
         return this.data
     }
 

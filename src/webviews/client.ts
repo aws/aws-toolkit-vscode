@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'vscode'
 import { WebviewApi } from 'vscode-webview'
-import { ClassToProtocol, VueWebview, VueWebviewPanel } from './main'
+import { ClassToProtocol, VueWebview } from './main'
 import { Protocol } from './server'
 
 declare const vscode: WebviewApi<any>

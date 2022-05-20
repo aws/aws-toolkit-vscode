@@ -81,30 +81,58 @@ export interface VueWebviewPanel<T extends VueWebview = VueWebview> {
      */
     show(params?: Partial<Omit<WebviewPanelParams, 'id' | 'webviewJs'>>): Promise<vscode.WebviewPanel>
 
+    /**
+     * Forces a reload of the Vue runtime, resetting saved state without reloading the whole webview.
+     */
     clear(): Promise<boolean>
 
+    /**
+     * The backend {@link VueWebview proxy} connected to this instance
+     */
     readonly server: T
 }
 
 export interface VueWebviewView<T extends VueWebview = VueWebview> {
     register(params?: Partial<Omit<WebviewViewParams, 'id' | 'webviewJs'>>): vscode.Disposable
 
+    /**
+     * The backend {@link VueWebview proxy} connected to this instance
+     */
     readonly server: T
 }
 
 /**
- * Generates an anonymous class whose instances have the interface {@link VueWebviewPanel}.
+ * Base class used to define client/server bindings for webviews.
  *
- * You can give this class a name by extending off of it:
+ * Sub-classes can be used to create new classes with fully-resolved bindings:
  * ```ts
- * export class MyWebview extends compileVueWebview(...) {}
- * const view = new MyWebview()
+ * class MyVueWebview extends VueWebview {
+ *     public constructor(private readonly myData: string) {
+ *         super()
+ *     }
+ *
+ *     public getMyData() {
+ *         return this.myData
+ *     }
+ * }
+ *
+ * const Panel = VueWebview.compilePanel(MyVueWebview)
+ * const view = new Panel(context, 'data')
  * view.show()
  * ```
  *
- * @param params Required parameters are defined by {@link WebviewPanelParams}, optional parameters are defined by {@link WebviewCompileOptions}
+ * The unbound class type should then be used on the frontend:
+ * ```ts
+ * const client = WebviewClientFactory.create<MyVueWebview>()
  *
- * @returns An anonymous class that can instantiate instances of {@link VueWebviewPanel}.
+ * defineComponent({
+ *   async created() {
+ *       const data = await client.getMyData()
+ *       console.log(data)
+ *   },
+ * })
+ * ```
+ *
  */
 export abstract class VueWebview {
     public abstract readonly id: string
@@ -142,21 +170,21 @@ export abstract class VueWebview {
 
     protected getContext(): ExtContext {
         if (!this.context) {
-            throw new Error('Webview was not initialized with "ExtContext')
+            throw new Error('Webview was not initialized with "ExtContext"')
         }
 
         return this.context
     }
 
-    public static compilePanel<T extends new (...args: any[]) => U, U extends VueWebview>(
+    public static compilePanel<T extends new (...args: any[]) => VueWebview>(
         target: T
-    ): new (context: ExtContext, ...args: ConstructorParameters<T>) => VueWebviewPanel<U> {
+    ): new (context: ExtContext, ...args: ConstructorParameters<T>) => VueWebviewPanel<InstanceType<T>> {
         return class Panel {
-            private readonly instance: U
+            private readonly instance: InstanceType<T>
             private panel?: vscode.WebviewPanel
 
             public constructor(protected readonly context: ExtContext, ...args: ConstructorParameters<T>) {
-                this.instance = new target(...args)
+                this.instance = new target(...args) as InstanceType<T>
 
                 for (const [prop, val] of Object.entries(this.instance)) {
                     if (val instanceof vscode.EventEmitter) {
@@ -177,8 +205,8 @@ export abstract class VueWebview {
 
                 const panel = createWebviewPanel({
                     id: this.instance.id,
-                    webviewJs: this.instance.source,
                     context: this.context,
+                    webviewJs: this.instance.source,
                     ...params,
                 })
                 const server = registerWebviewServer(panel.webview, this.instance.protocol)
@@ -197,15 +225,15 @@ export abstract class VueWebview {
         }
     }
 
-    public static compileView<T extends new (...args: any[]) => U, U extends VueWebview>(
+    public static compileView<T extends new (...args: any[]) => VueWebview>(
         target: T
-    ): new (context: ExtContext, ...args: ConstructorParameters<T>) => VueWebviewView<U> {
+    ): new (context: ExtContext, ...args: ConstructorParameters<T>) => VueWebviewView<InstanceType<T>> {
         return class View {
-            private readonly instance: U
+            private readonly instance: InstanceType<T>
             private view?: vscode.WebviewView
 
             public constructor(protected readonly context: ExtContext, ...args: ConstructorParameters<T>) {
-                this.instance = new target(...args)
+                this.instance = new target(...args) as InstanceType<T>
 
                 for (const [prop, val] of Object.entries(this.instance)) {
                     if (val instanceof vscode.EventEmitter) {

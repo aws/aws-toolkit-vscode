@@ -78,7 +78,7 @@ export default defineComponent({
         isLoading: false,
     }),
     async created() {
-        this.initialData = (await client.getData()) ?? this.initialData
+        this.initialData = (await client.init()) ?? this.initialData
     },
     mounted() {
         this.$nextTick(function () {

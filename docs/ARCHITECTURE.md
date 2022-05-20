@@ -29,37 +29,38 @@ The VS Code API restricts our Webviews to a single `postMessage` function. To si
 
 Webview (frontend) clients can be created via `WebviewClientFactory`. This generates a simple Proxy to send messages to the extension, mapping the function name to the command name. Unique IDs are also generated to stop requests from receiving extraneous responses. It is **highly** recommended to use the [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar) extension for syntax highlighting and type-checking when working with SFCs. Keep in mind that this is purely a development tool: users of the toolkits do not require Volar to view webviews.
 
-Commands and events are defined on the backend via `compileVueWebview` or `compileVueWebviewView` for the special 'view' case. This takes a configuration object that contains information about the webview, such as the name of the main script, the panel id, and the commands/events that the backend provides. This returns a class that can be instantiated into the webview. Webviews can then be executed by calling `start` with any initial data (if applicable). Webviews can be cleared of their internal state without reloading the HTML by calling `clear` with any re-initialization data (if applicable).
+Commands and events are defined on the backend via sub-classes of `VueWebview`. Classes define all the functions and events that will be available to the frontend. These sub-classes can be turned into a fully-resolved class by using either `VueWeview.compilePanel` or `VueWebview.compileView`. The resulting classes can finally be used to instantiate webview panels or view. Panels are shown by calling `show`, while views must be registered before they can be seen.
 
 ### Examples
 
 -   Creating and executing a webview:
 
     ```ts
-    const VueWebview = compileVueWebview({
-        id: 'my.view',
-        title: 'A title',
-        webviewJs: 'myView.js',
-        start: (param?: string) => param ?? 'foo',
-        events: {
-            onBar: new vscode.EventEmitter<number>(),
-        },
-        commands: {
-            foo: () => 'hello!',
-            bar() {
-                // All commands have access to `WebviewServer` via `this`
-                this.emiters.onBar.fire(0)
-            },
-        },
-    })
+    // Export the class so the frontend code can use it for types
+    export class MyVueWebview extends VueWebview {
+        public readonly id = 'my.view'
+        public readonly title = 'A title'
+        public readonly source = 'myView.js'
+        public readonly onBar = new vscode.EventEmitter<number>()
+
+        public constructor(private readonly myData: string) {}
+
+        public foo() {
+            return this.myData
+        }
+
+        public bar() {
+            this.onBar.fire(0)
+        }
+    }
+
+    // Create panel bindings using our class
+    const Panel = VueWebview.compilePanel(MyVueWebview)
 
     // `context` is `ExtContext` provided on activation
-    const view = new VueWebview(context)
-    view.start('some data')
-    view.emitters.onFoo.fire(1)
-
-    // Export a class so the frontend code can use it for types
-    export class MyView extends VueWebview {}
+    const view = new Panel(context, 'hello')
+    view.show()
+    view.server.onFoo.fire(1)
     ```
 
 -   Creating the client on the frontend:
@@ -85,22 +86,6 @@ Commands and events are defined on the backend via `compileVueWebview` or `compi
     ```ts
     client.onBar(num => console.log(num))
     ```
-
--   Retrieving initialization data by calling the `init` method:
-
-    ```ts
-    client.init(data => console.log(data))
-    ```
-
-    Note that data is retrieved only **once**. Subsequent calls made by the same webview resolve `undefined` unless the state is cleared either by `clear` or refreshing the view.
-
--   Submitting a result (this destroys the view on success):
-
-    ```ts
-    client.submit(result).catch(err => console.error('Something went wrong!'))
-    ```
-
-    `submit` does nothing on views registered as a `WebviewView` as they cannot be disposed of by the extension.
 
 ### Testing
 

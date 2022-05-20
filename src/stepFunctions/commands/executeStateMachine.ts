@@ -36,7 +36,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
         super()
     }
 
-    public getData() {
+    public init() {
         return this.stateMachine
     }
 
@@ -83,10 +83,10 @@ export class ExecuteStateMachineWebview extends VueWebview {
     }
 }
 
-const Server = VueWebview.compilePanel(ExecuteStateMachineWebview)
+const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
 
 export async function executeStateMachine(context: ExtContext, node: StateMachineNode): Promise<void> {
-    const wv = new Server(context, context.outputChannel, {
+    const wv = new Panel(context, context.outputChannel, {
         arn: node.details.stateMachineArn,
         name: node.details.name,
         region: node.regionCode,

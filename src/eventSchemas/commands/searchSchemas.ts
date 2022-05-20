@@ -49,8 +49,8 @@ export class SearchSchemasWebview extends VueWebview {
         super()
     }
 
-    public getData() {
-        recordSchemasView({ result: 'Succeeded' }) // But why?
+    public init() {
+        recordSchemasView({ result: 'Succeeded' })
 
         return this.data
     }
