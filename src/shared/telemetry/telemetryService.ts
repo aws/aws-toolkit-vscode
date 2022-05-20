@@ -21,6 +21,7 @@ import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telem
 import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { shared } from '../utilities/functionUtils'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
@@ -28,7 +29,7 @@ export class DefaultTelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
     public static readonly TELEMETRY_CLIENT_ID_KEY = 'telemetryClientId'
 
-    private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
+    private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 5 // 5 minutes in milliseconds
 
     public startTime: Date
     public readonly persistFilePath: string
@@ -171,12 +172,7 @@ export class DefaultTelemetryService {
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
         try {
             // grab our clientId and generate one if it doesn't exist
-            let clientId = this.context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
-            if (!clientId) {
-                clientId = uuidv4()
-                await this.context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
-            }
-
+            const clientId = await getClientIdShared(this.context)
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = this.context.globalState.get<string>(
@@ -345,3 +341,12 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
             return true
         })
 }
+async function getClientId(context: ExtensionContext): Promise<string> {
+    let clientId = context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
+    if (!clientId) {
+        clientId = uuidv4()
+        await context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
+    }
+    return clientId
+}
+export const getClientIdShared = shared(getClientId)
