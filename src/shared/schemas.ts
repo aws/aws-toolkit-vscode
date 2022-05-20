@@ -196,7 +196,7 @@ export async function getRemoteOrCachedFile(params: {
         },
     })
     const content = await httpFetcher.get().catch(err => {
-        getLogger().debug('failed to load cached resource: %s', (err as Error).message)
+        getLogger().debug('failed to fetch HTTP resource: %s', (err as Error).message)
     })
     if (!content) {
         throw new Error(`failed to resolve schema: ${params.filepath}`)
