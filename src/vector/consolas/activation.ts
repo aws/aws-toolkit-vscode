@@ -43,9 +43,6 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
      * Service control
      */
     const consolasSettings = new ConsolasSettings(configuration)
-    const isManualTriggerEnabled: boolean = await getManualTriggerStatus()
-    const isAutomatedTriggerEnabled: boolean =
-        context.extensionContext.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) || false
     const client = new consolasClient.DefaultConsolasClient()
     context.extensionContext.subscriptions.push(
         /**
@@ -104,15 +101,12 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         vscode.commands.registerCommand('aws.consolas', async () => {
             const isShowMethodsOn: boolean =
                 vscode.workspace.getConfiguration('editor').get('suggest.showMethods') || false
-            const isAutomatedTriggerOn: boolean =
-                context.extensionContext.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) || false
-            const isManualTriggerOn: boolean = await getManualTriggerStatus()
             invokeConsolas(
                 vscode.window.activeTextEditor as vscode.TextEditor,
                 client,
                 isShowMethodsOn,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
+                await isManualTriggerEnabled(),
+                isAutoTriggerEnabled()
             )
         }),
         /**
@@ -160,11 +154,15 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
     }
 
-    async function getManualTriggerStatus(): Promise<boolean> {
+    async function isManualTriggerEnabled(): Promise<boolean> {
         const consolasEnabled = await consolasSettings.isEnabled()
         const acceptedTerms: boolean =
             context.extensionContext.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey) || false
         return acceptedTerms && consolasEnabled
+    }
+
+    function isAutoTriggerEnabled(): boolean {
+        return context.extensionContext.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) || false
     }
 
     if (isCloud9()) {
@@ -193,15 +191,12 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                      */
                     await sleep(10)
                     await setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
-                    const isAutoTriggerOn: boolean =
-                        context.extensionContext.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) ||
-                        false
                     await KeyStrokeHandler.processKeyStroke(
                         e,
                         vscode.window.activeTextEditor,
                         client,
-                        isManualTriggerEnabled,
-                        isAutoTriggerOn
+                        await isManualTriggerEnabled(),
+                        isAutoTriggerEnabled()
                     )
                 }
             }),
@@ -274,15 +269,12 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                      * Then this event can be processed by our code.
                      */
                     await sleep(10)
-                    const isAutoTriggerOn: boolean =
-                        context.extensionContext.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) ||
-                        false
                     await KeyStrokeHandler.processKeyStroke(
                         e,
                         vscode.window.activeTextEditor,
                         client,
-                        isManualTriggerEnabled,
-                        isAutoTriggerOn
+                        await isManualTriggerEnabled(),
+                        isAutoTriggerEnabled()
                     )
                 }
             }),
@@ -291,19 +283,19 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
              * On intelliSense recommendation rejection, reset set intelli sense is active state
              * Maintaining this variable because VS Code does not expose official intelliSense isActive API
              */
-            vscode.window.onDidChangeVisibleTextEditors(e => {
-                resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+            vscode.window.onDidChangeVisibleTextEditors(async e => {
+                resetIntelliSenseState(await isManualTriggerEnabled(), isAutoTriggerEnabled())
             }),
-            vscode.window.onDidChangeActiveTextEditor(e => {
-                resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+            vscode.window.onDidChangeActiveTextEditor(async e => {
+                resetIntelliSenseState(await isManualTriggerEnabled(), isAutoTriggerEnabled())
             }),
-            vscode.window.onDidChangeTextEditorSelection(e => {
+            vscode.window.onDidChangeTextEditorSelection(async e => {
                 if (e.kind === TextEditorSelectionChangeKind.Mouse) {
-                    resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+                    resetIntelliSenseState(await isManualTriggerEnabled(), isAutoTriggerEnabled())
                 }
             }),
-            vscode.workspace.onDidSaveTextDocument(e => {
-                resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+            vscode.workspace.onDidSaveTextDocument(async e => {
+                resetIntelliSenseState(await isManualTriggerEnabled(), isAutoTriggerEnabled())
             })
         )
     }
