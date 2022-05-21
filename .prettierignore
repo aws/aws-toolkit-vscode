@@ -5,3 +5,4 @@ CHANGELOG.md
 src/shared/telemetry/service-2.json
 .changes
 src/testFixtures/**
+resources/markdown/samReadme.md
