@@ -71,7 +71,7 @@
             "name": "consolasSuggestionState",
             "type": "string",
             "description": "User decision of each of the suggestion returned from Consolas",
-            "allowedValues": ["Accept", "Reject", "Discard", "Ignore"]
+            "allowedValues": ["Accept", "Reject", "Discard", "Ignore", "Filter"]
         },
         {
             "name": "consolasModificationPercentage",
@@ -82,6 +82,11 @@
             "name": "consolasSuggestionIndex",
             "type": "int",
             "description": "The index for each suggestion, respectively, in the list of suggestions returned from service invocation."
+        },
+        {
+            "name": "consolasSuggestionReferences",
+            "type": "string",
+            "description": "The references of the suggestion."
         },
         {
             "name": "consolasCompletionType",
@@ -327,6 +332,10 @@
                 },
                 {
                     "type": "consolasSuggestionState"
+                },
+                {
+                    "type": "consolasSuggestionReferences",
+                    "required": false
                 },
                 {
                     "type": "consolasCompletionType"

@@ -6,7 +6,12 @@
 import * as vscode from 'vscode'
 import globals from '../../../shared/extensionGlobals'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { enableCodeSuggestions, showIntroduction, toggleCodeSuggestions } from '../commands/basicCommands'
+import {
+    enableCodeSuggestions,
+    showIntroduction,
+    toggleCodeSuggestions,
+    showReferenceLog,
+} from '../commands/basicCommands'
 
 export const createEnableCodeSuggestionsNode = () =>
     enableCodeSuggestions.build().asTreeNode({
@@ -45,4 +50,18 @@ export const createIntroductionNode = () =>
         },
         tooltip: localize('AWS.explorerNode.consolasIntroductionNode.tooltip', 'Click to open the node'),
         contextValue: 'awsConsolasIntroductionNode',
+    })
+
+export const createOpenReferenceLogNode = () =>
+    showReferenceLog.build().asTreeNode({
+        label: localize('AWS.explorerNode.consolasOpenReferenceLogNode.label', 'Open Consolas code reference panel'),
+        iconPath: {
+            dark: vscode.Uri.file(globals.iconPaths.dark.file),
+            light: vscode.Uri.file(globals.iconPaths.light.file),
+        },
+        tooltip: localize(
+            'AWS.explorerNode.consolasOpenReferenceLogNode.tooltip',
+            'Click to open Consolas code reference panel'
+        ),
+        contextValue: 'awsConsolasOpenReferenceLogNode',
     })

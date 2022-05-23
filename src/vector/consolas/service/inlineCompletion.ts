@@ -8,10 +8,13 @@ import { invocationContext, inlineCompletion, recommendations, telemetryContext 
 import { ConsolasConstants } from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { ReferenceInlineProvider } from './referenceInlineProvider'
+import { RecommendationDetail } from '../client/consolas'
 /**
  * completion provider for inline suggestions
  */
 let _range!: vscode.Range
+let _referenceProvider: ReferenceInlineProvider
 const dimDecoration = vscode.window.createTextEditorDecorationType(<vscode.DecorationRenderOptions>{
     textDecoration: `none; opacity: ${50 / 100}`,
     color: '#DDDDDD',
@@ -29,11 +32,15 @@ function setRange(range: vscode.Range) {
     _range = range
 }
 
+export function setReferenceInlineProvider(provider: ReferenceInlineProvider) {
+    _referenceProvider = provider
+}
+
 export async function getCompletionItems() {
-    const completionItems: string[] = []
+    const completionItems: RecommendationDetail[] = []
     recommendations.response.forEach(async (recommendation, index) => {
         if (recommendation.content.length > 0) {
-            completionItems.push(recommendation.content)
+            completionItems.push(recommendation)
         }
     })
     return completionItems
@@ -45,7 +52,7 @@ export async function acceptRecommendation(editor: vscode.TextEditor) {
     await editor
         ?.edit(
             builder => {
-                builder.replace(_range, inlineCompletion.items[inlineCompletion.position])
+                builder.replace(_range, inlineCompletion.items[inlineCompletion.position].content)
             },
             { undoStopAfter: true, undoStopBefore: true }
         )
@@ -53,16 +60,19 @@ export async function acceptRecommendation(editor: vscode.TextEditor) {
             let languageId = editor?.document?.languageId
             languageId = languageId === ConsolasConstants.typescript ? ConsolasConstants.javascript : languageId
             const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+            const index = inlineCompletion.items[inlineCompletion.position].index
             const acceptArguments = [
                 _range,
                 inlineCompletion.position,
-                inlineCompletion.items[inlineCompletion.position],
+                inlineCompletion.origin[index].content,
                 recommendations.requestId,
                 telemetryContext.triggerType,
                 telemetryContext.completionType,
                 languageContext.language,
+                inlineCompletion.origin[index].references,
             ] as const
             invocationContext.isConsolasEditing = false
+            _referenceProvider.removeInlineReference()
             await vscode.commands.executeCommand('aws.consolas.accept', ...acceptArguments)
             await resetInlineStates(editor)
         })
@@ -75,6 +85,7 @@ export async function rejectRecommendation(
     if (!editor || invocationContext.isConsolasEditing) return
     if (!isTypeAheadRejection && inlineCompletion.items.length === 0) return
     invocationContext.isConsolasEditing = true
+    _referenceProvider.removeInlineReference()
     await editor
         ?.edit(
             builder => {
@@ -111,8 +122,10 @@ export async function setTypeAheadRecommendations(
     if (invocationContext.startPos != editor.selection.active) {
         const typedPrefix = getTypedPrefix(editor)
         inlineCompletion.items = []
-        inlineCompletion.origin.forEach(item => {
-            if (item.startsWith(typedPrefix)) inlineCompletion.items.push(item.substring(typedPrefix.length))
+        inlineCompletion.origin.forEach((item, index) => {
+            if (item.content.startsWith(typedPrefix)) {
+                inlineCompletion.items.push({ content: item.content.substring(typedPrefix.length), index: index })
+            }
         })
         const currentPosition = new vscode.Position(editor.selection.active.line, editor.selection.active.character)
         let endPosition = new vscode.Position(_range.end.line, _range.end.character + 1)
@@ -150,7 +163,7 @@ async function showRecommendation(editor: vscode.TextEditor) {
                 await editor
                     ?.edit(
                         builder => {
-                            builder.insert(_range.start, inlineCompletion.items[inlineCompletion.position])
+                            builder.insert(_range.start, inlineCompletion.items[inlineCompletion.position].content)
                         },
                         { undoStopAfter: false, undoStopBefore: false }
                     )
@@ -173,6 +186,7 @@ async function showRecommendation(editor: vscode.TextEditor) {
                         const newSelection = new vscode.Selection(newPosition, newPosition)
                         editor.selection = newSelection
                         invocationContext.isConsolasEditing = false
+                        _referenceProvider.setInlineReference()
                     })
             }
             invocationContext.isConsolasEditing = false
@@ -187,7 +201,9 @@ export async function showFirstRecommendation(editor: vscode.TextEditor) {
     if (invocationContext.isConsolasEditing) return
     getCompletionItems().then(async res => {
         inlineCompletion.origin = res
-        inlineCompletion.items = res
+        inlineCompletion.items = res.map((a, i) => {
+            return { content: a.content, index: i }
+        })
         if (inlineCompletion.items.length > 0) {
             setRange(new vscode.Range(invocationContext.startPos, invocationContext.startPos))
             const newEditor = vscode.window.activeTextEditor
@@ -218,9 +234,12 @@ export async function showFirstRecommendation(editor: vscode.TextEditor) {
                 )
 
                 setRange(new vscode.Range(currentPosition, currentPosition))
-                inlineCompletion.origin.forEach(item => {
-                    if (item.startsWith(typedPrefix)) {
-                        inlineCompletion.items.push(item.substring(typedPrefix.length))
+                inlineCompletion.origin.forEach((item, index) => {
+                    if (item.content.startsWith(typedPrefix)) {
+                        inlineCompletion.items.push({
+                            content: item.content.substring(typedPrefix.length),
+                            index: index,
+                        })
                     }
                 })
                 if (inlineCompletion.items.length === 0) {
@@ -234,7 +253,7 @@ export async function showFirstRecommendation(editor: vscode.TextEditor) {
                 await editor
                     ?.edit(
                         builder => {
-                            builder.insert(_range.start, inlineCompletion.items[inlineCompletion.position])
+                            builder.insert(_range.start, inlineCompletion.items[inlineCompletion.position].content)
                         },
                         { undoStopAfter: false, undoStopBefore: false }
                     )
@@ -254,6 +273,7 @@ export async function showFirstRecommendation(editor: vscode.TextEditor) {
                         // set Position
                         await vscode.commands.executeCommand('setContext', ConsolasConstants.serviceActiveKey, true)
                         invocationContext.isConsolasEditing = false
+                        _referenceProvider.setInlineReference()
                     })
             }
         }

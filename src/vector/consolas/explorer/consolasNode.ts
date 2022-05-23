@@ -15,6 +15,7 @@ import {
     createIntroductionNode,
     createPauseAutoSuggestionsNode,
     createResumeAutoSuggestionsNode,
+    createOpenReferenceLogNode,
 } from './consolasChildrenNodes'
 
 /**
@@ -38,9 +39,9 @@ export class ConsolasNode extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 if (globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)) {
                     if (globals.context.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey)) {
-                        return [createPauseAutoSuggestionsNode()]
+                        return [createPauseAutoSuggestionsNode(), createOpenReferenceLogNode()]
                     }
-                    return [createResumeAutoSuggestionsNode()]
+                    return [createResumeAutoSuggestionsNode(), createOpenReferenceLogNode()]
                 } else {
                     return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
                 }

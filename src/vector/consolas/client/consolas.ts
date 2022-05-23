@@ -17,6 +17,8 @@ export type ConsolasGenerateRecommendationsReq = Readonly<ConsolasClient.Generat
 export type RecommendationsList = ConsolasClient.RecommendationsList
 export type GenerateRecommendationsResponse = ConsolasClient.GenerateRecommendationsResponse
 export type RecommendationDetail = ConsolasClient.RecommendationDetail
+export type Reference = ConsolasClient.Reference
+export type References = ConsolasClient.References
 export class DefaultConsolasClient {
     private async createSdkClient(): Promise<ConsolasClient> {
         return (await globals.sdkClientBuilder.createAwsService(

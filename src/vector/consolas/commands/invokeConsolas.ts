@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as KeyStrokeHandler from '../service/keyStrokeHandler'
-import { recommendations, invocationContext, automatedTriggerContext } from '../models/model'
+import { recommendations, invocationContext, automatedTriggerContext, ConfigurationEntry } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { showTimedMessage } from '../../../shared/utilities/messages'
 import { DefaultConsolasClient } from '../client/consolas'
@@ -15,14 +15,12 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 export async function invokeConsolas(
     editor: vscode.TextEditor,
     client: DefaultConsolasClient,
-    isShowMethodsOn: boolean,
-    isManualTriggerEnabled: boolean,
-    isAutomatedTriggerEnabled: boolean
+    config: ConfigurationEntry
 ) {
     /**
      * Show prompt when manual trigger is turned off
      */
-    if (!isManualTriggerEnabled) {
+    if (!config.isManualTriggerEnabled) {
         showTimedMessage('Consolas turned off', 2000)
         return
     }
@@ -35,7 +33,7 @@ export async function invokeConsolas(
     /**
      * IntelliSense in Cloud9 needs editor.suggest.showMethods
      */
-    if (!isShowMethodsOn) {
+    if (!config.isShowMethodsEnabled) {
         vscode.window.showWarningMessage('Turn on "editor.suggest.showMethods" to use Consolas')
         return
     }
@@ -50,7 +48,7 @@ export async function invokeConsolas(
          * When using intelliSense, if invocation position changed, reject previous active recommendations
          */
         if (invocationContext.isIntelliSenseActive && editor.selection.active !== invocationContext.startPos) {
-            resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+            resetIntelliSenseState(config.isManualTriggerEnabled, config.isAutomatedTriggerEnabled)
         }
 
         /**
@@ -60,12 +58,7 @@ export async function invokeConsolas(
             (!invocationContext.isIntelliSenseActive && isCloud9()) ||
             (!invocationContext.isConsolasEditing && !isCloud9())
         ) {
-            recommendations.response = await KeyStrokeHandler.getRecommendations(
-                client,
-                editor,
-                'OnDemand',
-                isManualTriggerEnabled
-            )
+            recommendations.response = await KeyStrokeHandler.getRecommendations(client, editor, 'OnDemand', config)
         }
 
         KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(

@@ -14,7 +14,13 @@ import {
 } from '../client/consolas'
 import * as EditorContext from '../util/editorContext'
 import { ConsolasConstants } from '../models/constants'
-import { recommendations, invocationContext, automatedTriggerContext, telemetryContext } from '../models/model'
+import {
+    recommendations,
+    invocationContext,
+    automatedTriggerContext,
+    telemetryContext,
+    ConfigurationEntry,
+} from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { AWSError } from 'aws-sdk'
@@ -35,8 +41,7 @@ export async function processKeyStroke(
     event: vscode.TextDocumentChangeEvent,
     editor: vscode.TextEditor,
     client: DefaultConsolasClient,
-    isManualTriggerEnabled: boolean,
-    isAutomatedTriggerEnabled: boolean
+    config: ConfigurationEntry
 ): Promise<void> {
     try {
         const content = event.contentChanges[0].text
@@ -44,7 +49,7 @@ export async function processKeyStroke(
         ConsolasCodeCoverageTracker.getTracker(languageContext.language, globals.context.globalState).setTotalTokens(
             content
         )
-        const changedText = getChangedText(event, isAutomatedTriggerEnabled, editor)
+        const changedText = getChangedText(event, config.isAutomatedTriggerEnabled, editor)
         if (changedText === '') {
             return
         }
@@ -53,7 +58,7 @@ export async function processKeyStroke(
             return
         }
         const triggerTtype = autoTriggerType as telemetry.ConsolasAutomatedtriggerType
-        invokeAutomatedTrigger(triggerTtype, editor, client, isManualTriggerEnabled, isAutomatedTriggerEnabled)
+        invokeAutomatedTrigger(triggerTtype, editor, client, config)
     } catch (error) {
         getLogger().error('Automated Trigger Exception : ', error)
         getLogger().verbose(`Automated Trigger Exception : ${error}`)
@@ -138,18 +143,17 @@ export async function invokeAutomatedTrigger(
     autoTriggerType: telemetry.ConsolasAutomatedtriggerType,
     editor: vscode.TextEditor,
     client: DefaultConsolasClient,
-    isManualTriggerEnabled: boolean,
-    isAutomatedTriggerEnabled: boolean,
+    config: ConfigurationEntry,
     overrideGetRecommendations = getRecommendations
 ): Promise<void> {
-    if (isCloud9()) resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+    if (isCloud9()) resetIntelliSenseState(config.isManualTriggerEnabled, config.isAutomatedTriggerEnabled)
     if (editor) {
         automatedTriggerContext.keyStrokeCount = 0
         recommendations.response = await overrideGetRecommendations(
             client,
             editor,
             'AutoTrigger',
-            isManualTriggerEnabled,
+            config,
             autoTriggerType
         )
         /**
@@ -174,7 +178,7 @@ export async function getRecommendations(
     client: DefaultConsolasClient,
     editor: vscode.TextEditor,
     triggerType: telemetry.ConsolasTriggerType,
-    isManualTriggerOn: boolean,
+    config: ConfigurationEntry,
     autoTriggerType?: telemetry.ConsolasAutomatedtriggerType,
     overrideGetServiceResponse = getServiceResponse
 ): Promise<RecommendationsList> {
@@ -198,7 +202,7 @@ export async function getRecommendations(
          * Validate request
          */
         if (EditorContext.validateRequest(req)) {
-            const resp = await overrideGetServiceResponse(client, req, triggerType, isManualTriggerOn)
+            const resp = await overrideGetServiceResponse(client, req, triggerType, config.isManualTriggerEnabled)
             latency = startTime !== 0 ? performance.now() - startTime : 0
             recommendation = (resp && resp.recommendations) || []
             getLogger().info('Consolas Recommendations : ', recommendation)
@@ -258,6 +262,7 @@ export async function getRecommendations(
         getLogger().verbose('Recommendations:')
         recommendation.forEach((item, index) => {
             getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
+            getLogger().verbose(`Ref: ${item.references}`)
         })
 
         /**
@@ -278,6 +283,17 @@ export async function getRecommendations(
             reason: reason ? reason : undefined,
         })
         recommendations.requestId = requestId
+        if (config.isIncludeSuggestionsWithCodeReferencesEnabled === false) {
+            const filteredRecommendationList: RecommendationsList = []
+            recommendation.forEach((r, index) => {
+                if (r.references === undefined || r.references.length === 0) {
+                    filteredRecommendationList.push(r)
+                } else {
+                    TelemetryHelper.recordUserDecisionTelemetry(index, editor?.document?.languageId, true)
+                }
+            })
+            recommendation = filteredRecommendationList
+        }
     }
 
     /**

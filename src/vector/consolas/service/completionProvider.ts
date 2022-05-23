@@ -8,6 +8,7 @@ import { ConsolasConstants } from '../models/constants'
 import { recommendations, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { RecommendationDetail } from '../client/consolas'
+import { LicenseUtil } from '../util/licenseUtil'
 /**
  * completion provider for intelliSense popup
  */
@@ -42,6 +43,14 @@ export function getCompletionItem(
     let languageId = document.languageId
     languageId = languageId === ConsolasConstants.typescript ? ConsolasConstants.javascript : languageId
     const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+    let references = undefined
+    if (recommendationDetail.references != undefined && recommendationDetail.references.length > 0) {
+        references = recommendationDetail.references
+        const licenses = [
+            ...new Set(references.map(r => `[${r.licenseName}](${LicenseUtil.getLicenseHtml(r.licenseName)})`)),
+        ].join(', ')
+        completionItem.documentation.appendMarkdown(ConsolasConstants.suggestionDetailReferenceText(licenses))
+    }
     completionItem.command = {
         command: 'aws.consolas.accept',
         title: 'On acceptance',
@@ -53,6 +62,7 @@ export function getCompletionItem(
             telemetryContext.triggerType,
             telemetryContext.completionType,
             languageContext.language,
+            references,
         ],
     }
     return completionItem

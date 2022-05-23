@@ -253,6 +253,11 @@
                     },
                     "additionalProperties": false
                 },
+                "aws.consolas.includeSuggestionsWithCodeReferences": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.consolas%",
+                    "default": false
+                },
                 "aws.resources.enabledResources": {
                     "type": "array",
                     "description": "%AWS.configuration.description.resources.enabledResources%",
@@ -676,6 +681,13 @@
                         }
                     }
                 }
+            ],
+            "panel": [
+                {
+                    "id": "aws-consolas-reference-log",
+                    "title": "Consolas Reference Log",
+                    "icon": "media/aws-logo.svg"
+                }
             ]
         },
         "views": {
@@ -688,6 +700,13 @@
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
                     "when": "!isCloud9"
+                }
+            ],
+            "aws-consolas-reference-log": [
+                {
+                    "type": "webview",
+                    "id": "aws.consolas.referenceLog",
+                    "name": ""
                 }
             ]
         },

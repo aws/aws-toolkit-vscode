@@ -42,6 +42,7 @@ describe('onAcceptance', function () {
                     triggerType: 'OnDemand',
                     completionType: 'Line',
                     language: 'python',
+                    references: undefined,
                 },
                 true,
                 extensionContext.globalState
@@ -53,6 +54,17 @@ describe('onAcceptance', function () {
             const mockEditor = createMockTextEditor("console.log('Hello')", 'test.js', 'javascript', 1, 0)
             const commandStub = sinon.stub(vscode.commands, 'executeCommand')
             const extensionContext = await FakeExtensionContext.create()
+            const fakeReferences = [
+                {
+                    message: '',
+                    licenseName: 'MIT',
+                    repository: 'http://github.com/fake',
+                    contentSpan: {
+                        start: 0,
+                        end: 10,
+                    },
+                },
+            ]
             await onAcceptance(
                 {
                     editor: mockEditor,
@@ -63,6 +75,7 @@ describe('onAcceptance', function () {
                     triggerType: 'OnDemand',
                     completionType: 'Line',
                     language: 'javascript',
+                    references: fakeReferences,
                 },
                 true,
                 extensionContext.globalState
@@ -74,6 +87,17 @@ describe('onAcceptance', function () {
             const mockEditor = createMockTextEditor()
             const trackerSpy = sinon.spy(ConsolasTracker.prototype, 'enqueue')
             const extensionContext = await FakeExtensionContext.create()
+            const fakeReferences = [
+                {
+                    message: '',
+                    licenseName: 'MIT',
+                    repository: 'http://github.com/fake',
+                    contentSpan: {
+                        start: 0,
+                        end: 10,
+                    },
+                },
+            ]
             await onAcceptance(
                 {
                     editor: mockEditor,
@@ -84,6 +108,7 @@ describe('onAcceptance', function () {
                     triggerType: 'OnDemand',
                     completionType: 'Line',
                     language: 'python',
+                    references: fakeReferences,
                 },
                 true,
                 extensionContext.globalState
@@ -119,6 +144,7 @@ describe('onAcceptance', function () {
                     triggerType: 'OnDemand',
                     completionType: 'Line',
                     language: 'python',
+                    references: undefined,
                 },
                 true,
                 extensionContext.globalState

@@ -138,4 +138,6 @@ export interface IconPaths {
     run: string
     pause: string
     question: string
+    check: string
+    chromeMaximize: string
 }

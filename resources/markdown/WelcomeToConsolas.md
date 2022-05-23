@@ -9,7 +9,7 @@ the Visual Studio Code toolkit [documentation on account linking](https://docs.a
 
 Consolas is already enabled for this toolkit, meaning suggestions will appear as your type or you can explicitly request a suggestion using [ALT C in windows and linux] or
 [Option C in Mac].
-If at any point you'd like to change or pause Consolas, you can find options in Settings > Extensions > AWS Toolkit.
+If at any point you'd like to change or pause Consolas, you can find options in Settings > Extensions > AWS Toolkit. Based on your code and your settings configurations, Consolas can include suggestions that may be subject to an open source license.
 For more information on our Private Preview Terms of Service, please refer to the document we've provided via email.
 
 Additional questions? Email: consolas-feedback@amazon.com

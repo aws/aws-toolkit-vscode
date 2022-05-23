@@ -8,7 +8,11 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as consolasSDkClient from '../../../../vector/consolas/client/consolas'
 import { resetConsolasGlobalVariables, createMockTextEditor } from '../testUtil'
-import { invocationContext, automatedTriggerContext } from '../../../../vector/consolas/models/model'
+import {
+    invocationContext,
+    automatedTriggerContext,
+    ConfigurationEntry,
+} from '../../../../vector/consolas/models/model'
 import * as messages from '../../../../shared/utilities/messages'
 import { invokeConsolas } from '../../../../vector/consolas/commands/invokeConsolas'
 import * as KeyStrokeHandler from '../../../../vector/consolas/service/keyStrokeHandler'
@@ -33,19 +37,28 @@ describe('invokeConsolas', function () {
         })
 
         it('Should call showTimedMessage if Consolas (Manual Trigger) turned off, should not call getRecommendations', async function () {
-            const isManualTriggerEnabled = false
-            const isAutoTriggerEnabled = false
+            const config: ConfigurationEntry = {
+                isShowMethodsEnabled: true,
+                isManualTriggerEnabled: false,
+                isAutomatedTriggerEnabled: true,
+                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            }
             const mockEditor = createMockTextEditor()
-            await invokeConsolas(mockEditor, mockClient, true, isManualTriggerEnabled, isAutoTriggerEnabled)
+            await invokeConsolas(mockEditor, mockClient, config)
             assert.ok(promptMessageSpy.calledOnce)
             assert.ok(!getRecommendationStub.called)
         })
 
         it("Should skip if there's IN-PROGRESS invocation, should not prompt message, should not call getRecommendations", async function () {
-            const isManualTriggerEnabled = true
+            const config: ConfigurationEntry = {
+                isShowMethodsEnabled: true,
+                isManualTriggerEnabled: true,
+                isAutomatedTriggerEnabled: true,
+                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            }
             invocationContext.isPendingResponse = true
             const mockEditor = createMockTextEditor()
-            await invokeConsolas(mockEditor, mockClient, true, isManualTriggerEnabled, true)
+            await invokeConsolas(mockEditor, mockClient, config)
             assert.ok(!promptMessageSpy.called)
             assert.ok(!getRecommendationStub.called)
         })
@@ -53,17 +66,26 @@ describe('invokeConsolas', function () {
         it('Should call showWarningMessage if editor.suggest.showMethods(isShowMethods) is false, should not call getRecommendations', async function () {
             const spy = sinon.spy(vscode.window, 'showWarningMessage')
             const mockEditor = createMockTextEditor()
-            vscode.workspace
-                .getConfiguration('editor')
-                .update('suggest.showMethods', false, vscode.ConfigurationTarget.Global)
-            await invokeConsolas(mockEditor, mockClient, false, true, true)
+            const config: ConfigurationEntry = {
+                isShowMethodsEnabled: false,
+                isManualTriggerEnabled: true,
+                isAutomatedTriggerEnabled: true,
+                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            }
+            await invokeConsolas(mockEditor, mockClient, config)
             assert.ok(spy.calledOnce)
             assert.ok(!getRecommendationStub.called)
         })
 
         it('Should call getRecommendation with OnDemand as trigger type', async function () {
             const mockEditor = createMockTextEditor()
-            await invokeConsolas(mockEditor, mockClient, true, true, true)
+            const config: ConfigurationEntry = {
+                isShowMethodsEnabled: true,
+                isManualTriggerEnabled: true,
+                isAutomatedTriggerEnabled: true,
+                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            }
+            await invokeConsolas(mockEditor, mockClient, config)
             assert.ok(getRecommendationStub.called)
         })
 
@@ -71,7 +93,13 @@ describe('invokeConsolas', function () {
             const mockEditor = createMockTextEditor()
             const showFirstRecommendationStub = sinon.spy(inlineCompletions, 'showFirstRecommendation')
             automatedTriggerContext.keyStrokeCount = 10
-            await invokeConsolas(mockEditor, mockClient, true, true, true)
+            const config: ConfigurationEntry = {
+                isShowMethodsEnabled: true,
+                isManualTriggerEnabled: true,
+                isAutomatedTriggerEnabled: true,
+                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            }
+            await invokeConsolas(mockEditor, mockClient, config)
             assert.strictEqual(automatedTriggerContext.keyStrokeCount, 0)
             sinon.assert.calledWith(showFirstRecommendationStub, mockEditor)
         })
@@ -82,7 +110,13 @@ describe('invokeConsolas', function () {
             getRecommendationStub = sinon
                 .stub(KeyStrokeHandler, 'getRecommendations')
                 .resolves([{ content: '' }, { content: '' }])
-            await invokeConsolas(mockEditor, mockClient, true, true, true)
+            const config: ConfigurationEntry = {
+                isShowMethodsEnabled: true,
+                isManualTriggerEnabled: true,
+                isAutomatedTriggerEnabled: true,
+                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            }
+            await invokeConsolas(mockEditor, mockClient, config)
             assert.ok(promptMessageSpy.calledWith('No suggestions from Consolas', 2000))
         })
     })

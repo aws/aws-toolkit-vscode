@@ -109,4 +109,14 @@ export function initializeIconPaths(context: vscode.ExtensionContext) {
 
     globals.iconPaths.dark.exit = context.asAbsolutePath('resources/dark/exit.svg')
     globals.iconPaths.light.exit = context.asAbsolutePath('resources/light/exit.svg')
+
+    globals.iconPaths.dark.check = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/check.svg')
+    globals.iconPaths.light.check = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/check.svg')
+
+    globals.iconPaths.dark.chromeMaximize = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/dark/chrome-maximize.svg'
+    )
+    globals.iconPaths.light.chromeMaximize = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/light/chrome-maximize.svg'
+    )
 }

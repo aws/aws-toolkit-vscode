@@ -30,6 +30,13 @@ export const showIntroduction = Commands.declare('aws.consolas.introduction', (c
     vscode.env.openExternal(vscode.Uri.parse(ConsolasConstants.learnMoreUri))
 })
 
+export const showReferenceLog = Commands.declare(
+    'aws.consolas.openReferencePanel',
+    (context: ExtContext) => async () => {
+        await vscode.commands.executeCommand('aws.consolas.referenceLog.focus')
+    }
+)
+
 export function get(key: string, context: ExtContext): any {
     return context.extensionContext.globalState.get(key)
 }

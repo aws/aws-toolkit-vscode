@@ -9,12 +9,13 @@ import * as sinon from 'sinon'
 import * as consolasSDkClient from '../../../../vector/consolas/client/consolas'
 import { AWSError } from 'aws-sdk'
 import { assertTelemetryCurried } from '../../../testUtil'
-import { RecommendationsList } from '../../../../vector/consolas/client/consolasclient'
+import { RecommendationsList } from '../../../../vector/consolas/client/consolas'
 import {
     recommendations,
     invocationContext,
     automatedTriggerContext,
     telemetryContext,
+    ConfigurationEntry,
 } from '../../../../vector/consolas/models/model'
 import * as KeyStrokeHandler from '../../../../vector/consolas/service/keyStrokeHandler'
 import * as inlineCompletions from '../../../../vector/consolas/service/inlineCompletion'
@@ -25,8 +26,12 @@ import { UnsupportedLanguagesCache } from '../../../../vector/consolas/util/unsu
 const performance = require('perf_hooks') ? require('perf_hooks').performance : globalThis.performance
 
 describe('keyStrokeHandler', function () {
-    const isManualTriggerOn = true
-    const isAutomatedTriggerOn = true
+    const config: ConfigurationEntry = {
+        isShowMethodsEnabled: true,
+        isManualTriggerEnabled: true,
+        isAutomatedTriggerEnabled: true,
+        isIncludeSuggestionsWithCodeReferencesEnabled: true,
+    }
     beforeEach(function () {
         resetConsolasGlobalVariables()
     })
@@ -49,14 +54,13 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 ' '
             )
-            const isAutomatedTriggerEnabled = false
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerEnabled
-            )
+            const cfg: ConfigurationEntry = {
+                isShowMethodsEnabled: true,
+                isManualTriggerEnabled: true,
+                isAutomatedTriggerEnabled: false,
+                isIncludeSuggestionsWithCodeReferencesEnabled: true,
+            }
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, cfg)
             assert.ok(!invokeSpy.called)
         })
 
@@ -70,13 +74,7 @@ describe('keyStrokeHandler', function () {
             invocationContext.isIntelliSenseActive = true
             invocationContext.startPos = new vscode.Position(1, 0)
             recommendations.response = [{ content: 'def two_sum(nums, target):\n for i in nums' }]
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -87,13 +85,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(1, 0)),
                 'print(n'
             )
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -104,13 +96,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 ''
             )
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -122,13 +108,7 @@ describe('keyStrokeHandler', function () {
                 '\n'
             )
             invocationContext.lastInvocationTime = performance.now() - 1500
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -139,13 +119,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 '\n'
             )
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('Enter', mockEditor, mockClient)
             assert.ok(invokeSpy.called)
         })
@@ -157,13 +131,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 '{'
             )
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('SpecialCharacters', mockEditor, mockClient)
             assert.ok(invokeSpy.called)
         })
@@ -176,13 +144,7 @@ describe('keyStrokeHandler', function () {
                 '  '
             )
             EditorContext.updateTabSize(2)
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('SpecialCharacters', mockEditor, mockClient)
             assert.ok(invokeSpy.called)
         })
@@ -195,13 +157,7 @@ describe('keyStrokeHandler', function () {
                 '   '
             )
             EditorContext.updateTabSize(2)
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
         })
 
@@ -213,13 +169,7 @@ describe('keyStrokeHandler', function () {
                 'a'
             )
             automatedTriggerContext.keyStrokeCount = 15
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invokeSpy('KeyStrokeCount', mockEditor, mockClient)
             assert.ok(invokeSpy.called)
         })
@@ -232,13 +182,7 @@ describe('keyStrokeHandler', function () {
                 'a'
             )
             automatedTriggerContext.keyStrokeCount = 8
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!invokeSpy.called)
             assert.strictEqual(automatedTriggerContext.keyStrokeCount, 9)
         })
@@ -263,8 +207,7 @@ describe('keyStrokeHandler', function () {
                 'Enter',
                 mockEditor,
                 mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn,
+                config,
                 getRecommendationsStub
             )
             assert.ok(getRecommendationsStub.calledOnce)
@@ -282,8 +225,7 @@ describe('keyStrokeHandler', function () {
                 'Enter',
                 mockEditor,
                 mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn,
+                config,
                 getRecommendationsStub
             )
             assert.strictEqual(automatedTriggerContext.keyStrokeCount, 0)
@@ -302,8 +244,7 @@ describe('keyStrokeHandler', function () {
                 'Enter',
                 mockEditor,
                 mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn,
+                config,
                 getRecommendationStub
             )
             sinon.assert.calledWith(showFirstRecommendationStub, mockEditor)
@@ -317,8 +258,7 @@ describe('keyStrokeHandler', function () {
                 'Enter',
                 mockEditor,
                 mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn,
+                config,
                 getRecommendationStub
             )
             assert.ok(!cmdSpy.called)
@@ -337,13 +277,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 ' '
             )
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(telemetryContext.isPrefixMatched.length == 0)
         })
 
@@ -353,13 +287,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 ' '
             )
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(telemetryContext.isPrefixMatched.length == 0)
         })
 
@@ -369,13 +297,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 ' '
             )
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             invocationContext.startPos = new vscode.Position(0, 1)
             assert.ok(telemetryContext.isPrefixMatched.length == 0)
         })
@@ -386,13 +308,7 @@ describe('keyStrokeHandler', function () {
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 ' '
             )
-            await KeyStrokeHandler.processKeyStroke(
-                mockEvent,
-                mockEditor,
-                mockClient,
-                isManualTriggerOn,
-                isAutomatedTriggerOn
-            )
+            await KeyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             recommendations.response = [{ content: "\n\t\tconsole.log('Hello world!');\n\t}" }, { content: '' }]
             assert.ok(telemetryContext.isPrefixMatched.length == 0)
         })
@@ -437,7 +353,7 @@ describe('keyStrokeHandler', function () {
                 mockClient,
                 mockEditor,
                 'AutoTrigger',
-                isManualTriggerOn,
+                config,
                 'Enter',
                 getServiceResponseStub
             )
@@ -457,7 +373,7 @@ describe('keyStrokeHandler', function () {
                 mockClient,
                 mockEditor,
                 'AutoTrigger',
-                isManualTriggerOn,
+                config,
                 'Enter',
                 getServiceResponseStub
             )
@@ -480,7 +396,7 @@ describe('keyStrokeHandler', function () {
                 mockClient,
                 mockEditor,
                 'AutoTrigger',
-                isManualTriggerOn,
+                config,
                 'Enter',
                 getServiceResponseStub
             )
@@ -517,7 +433,7 @@ describe('keyStrokeHandler', function () {
                 mockClient,
                 mockEditor,
                 'AutoTrigger',
-                isManualTriggerOn,
+                config,
                 'Enter',
                 getServiceResponseStub
             )

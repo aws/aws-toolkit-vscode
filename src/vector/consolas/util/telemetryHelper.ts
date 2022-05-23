@@ -12,8 +12,13 @@ export class TelemetryHelper {
      * @param acceptIndex the index of the accepted suggestion in the corresponding list of Consolas response.
      * If this function is not called on acceptance, then acceptIndex == -1
      * @param languageId the language ID of the current document in current active editor
+     * @param filtered whether this user decision is to filter the recommendation due to license
      */
-    public static async recordUserDecisionTelemetry(acceptIndex: number, languageId: string | undefined) {
+    public static async recordUserDecisionTelemetry(
+        acceptIndex: number,
+        languageId: string | undefined,
+        filtered = false
+    ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         // emit user decision telemetry
         recommendations.response.forEach((_elem, i) => {
@@ -21,7 +26,13 @@ export class TelemetryHelper {
                 consolasRequestId: recommendations.requestId ? recommendations.requestId : undefined,
                 consolasTriggerType: telemetryContext.triggerType,
                 consolasSuggestionIndex: i,
-                consolasSuggestionState: this.getSuggestionState(telemetryContext.isPrefixMatched, i, acceptIndex),
+                consolasSuggestionState: this.getSuggestionState(
+                    telemetryContext.isPrefixMatched,
+                    i,
+                    acceptIndex,
+                    filtered
+                ),
+                consolasSuggestionReferences: JSON.stringify(_elem.references),
                 consolasCompletionType: telemetryContext.completionType,
                 consolasLanguage: languageContext.language,
                 consolasRuntime: languageContext.runtimeLanguage,
@@ -38,8 +49,10 @@ export class TelemetryHelper {
     public static getSuggestionState(
         isPrefixMatched: boolean[],
         i: number,
-        acceptIndex: number
+        acceptIndex: number,
+        filtered: boolean = false
     ): telemetry.ConsolasSuggestionState {
+        if (filtered) return 'Filter'
         if (acceptIndex == -1) {
             return isPrefixMatched[i] ? 'Reject' : 'Discard'
         }

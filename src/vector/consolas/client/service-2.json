@@ -2,7 +2,7 @@
     "version": "2.0",
     "metadata": {
         "apiVersion": "2021-10-01",
-        "endpointPrefix": "awsvectorconsolasruntimeservice",
+        "endpointPrefix": "consolas",
         "jsonVersion": "1.0",
         "protocol": "json",
         "serviceFullName": "AWS Vector Consolas Service and Client Sdks",
@@ -40,6 +40,93 @@
                 }
             ],
             "documentation": "<p>Generate recommendations according to the file context and return to the user</p>"
+        },
+        "GetSecurityScanStatus": {
+            "name": "GetSecurityScanStatus",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetSecurityScanStatusRequest"
+            },
+            "output": {
+                "shape": "GetSecurityScanStatusResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                },
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ],
+            "documentation": "<p>Get status of a security scan job and get result once it completes.</p>"
+        },
+        "GetUploadUrl": {
+            "name": "GetUploadUrl",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetUploadUrlRequest"
+            },
+            "output": {
+                "shape": "GetUploadUrlResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "ConflictException"
+                }
+            ],
+            "documentation": "<p>Get presigned s3 write URL for uploading customer repository zip or jar archive</p>"
+        },
+        "StartSecurityScan": {
+            "name": "StartSecurityScan",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "StartSecurityScanRequest"
+            },
+            "output": {
+                "shape": "StartSecurityScanResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                },
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ],
+            "documentation": "<p>Start a security scan job</p>"
         }
     },
     "shapes": {
@@ -54,42 +141,16 @@
             "documentation": "<p>This exception is thrown when the user does not have sufficient access to perform this action.</p>",
             "exception": true
         },
-        "Attribution": {
+        "ConflictException": {
             "type": "structure",
+            "required": ["message"],
             "members": {
-                "licenseName": {
-                    "shape": "AttributionLicenseNameString"
-                },
                 "message": {
-                    "shape": "AttributionMessageString"
-                },
-                "source": {
-                    "shape": "AttributionSourceString"
+                    "shape": "String"
                 }
-            }
-        },
-        "AttributionLicenseNameString": {
-            "type": "string",
-            "max": 1024,
-            "min": 1
-        },
-        "AttributionMessageString": {
-            "type": "string",
-            "max": 5120,
-            "min": 1
-        },
-        "AttributionSourceString": {
-            "type": "string",
-            "max": 1024,
-            "min": 1
-        },
-        "AttributionsList": {
-            "type": "list",
-            "member": {
-                "shape": "Attribution"
             },
-            "max": 10,
-            "min": 0
+            "documentation": "<p>This exception is thrown when the action to perform couldn't be completed because the resource is in a conflicting state.</p>",
+            "exception": true
         },
         "ContextInfo": {
             "type": "structure",
@@ -122,32 +183,22 @@
             "required": ["leftFileContent", "rightFileContent"],
             "members": {
                 "leftFileContent": {
-                    "shape": "FileContextLeftFileContentString"
+                    "shape": "SyntheticFileContextString"
                 },
                 "rightFileContent": {
-                    "shape": "FileContextRightFileContentString"
+                    "shape": "SyntheticFileContextString"
                 }
             }
         },
-        "FileContextLeftFileContentString": {
-            "type": "string",
-            "max": 5120,
-            "min": 0
-        },
-        "FileContextRightFileContentString": {
-            "type": "string",
-            "max": 5120,
-            "min": 0
-        },
         "GenerateRecommendationsRequest": {
             "type": "structure",
-            "required": ["contextInfo", "fileContext"],
+            "required": ["fileContext", "contextInfo"],
             "members": {
-                "contextInfo": {
-                    "shape": "ContextInfo"
-                },
                 "fileContext": {
                     "shape": "FileContext"
+                },
+                "contextInfo": {
+                    "shape": "ContextInfo"
                 },
                 "maxRecommendations": {
                     "shape": "GenerateRecommendationsRequestMaxRecommendationsInteger"
@@ -167,6 +218,71 @@
                     "shape": "RecommendationsList"
                 }
             }
+        },
+        "GetSecurityScanStatusRequest": {
+            "type": "structure",
+            "required": ["jobId"],
+            "members": {
+                "jobId": {
+                    "shape": "GetSecurityScanStatusRequestJobIdString"
+                }
+            }
+        },
+        "GetSecurityScanStatusRequestJobIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "GetSecurityScanStatusResponse": {
+            "type": "structure",
+            "required": ["status"],
+            "members": {
+                "status": {
+                    "shape": "GetSecurityScanStatusResponseStatusString"
+                },
+                "result": {
+                    "shape": "SecurityRecommendationList"
+                }
+            }
+        },
+        "GetSecurityScanStatusResponseStatusString": {
+            "type": "string",
+            "max": 10,
+            "min": 1
+        },
+        "GetUploadUrlRequest": {
+            "type": "structure",
+            "members": {
+                "customerKey": {
+                    "shape": "SyntheticGetUploadUrlRequestString"
+                }
+            }
+        },
+        "GetUploadUrlResponse": {
+            "type": "structure",
+            "required": ["importId", "uploadUrl"],
+            "members": {
+                "importId": {
+                    "shape": "GetUploadUrlResponseImportIdString"
+                },
+                "uploadUrl": {
+                    "shape": "GetUploadUrlResponseUploadUrlString"
+                }
+            }
+        },
+        "GetUploadUrlResponseImportIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "GetUploadUrlResponseUploadUrlString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "Integer": {
+            "type": "integer",
+            "box": true
         },
         "InternalServerException": {
             "type": "structure",
@@ -199,7 +315,7 @@
             "type": "string",
             "max": 128,
             "min": 1,
-            "pattern": "[ -~]+"
+            "pattern": ".*(python|javascript|java)"
         },
         "ProgrammingLanguageRuntimeVersionString": {
             "type": "string",
@@ -210,18 +326,13 @@
             "type": "structure",
             "required": ["content"],
             "members": {
-                "attributions": {
-                    "shape": "AttributionsList"
-                },
                 "content": {
-                    "shape": "RecommendationDetailContentString"
+                    "shape": "SyntheticRecommendationDetailString"
+                },
+                "references": {
+                    "shape": "References"
                 }
             }
-        },
-        "RecommendationDetailContentString": {
-            "type": "string",
-            "max": 5120,
-            "min": 1
         },
         "RecommendationsList": {
             "type": "list",
@@ -231,8 +342,175 @@
             "max": 10,
             "min": 0
         },
+        "Reference": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "ReferenceMessageString"
+                },
+                "licenseName": {
+                    "shape": "ReferenceLicenseNameString"
+                },
+                "repository": {
+                    "shape": "ReferenceRepositoryString"
+                },
+                "contentSpan": {
+                    "shape": "Span"
+                }
+            }
+        },
+        "ReferenceLicenseNameString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "ReferenceMessageString": {
+            "type": "string",
+            "max": 5120,
+            "min": 1
+        },
+        "ReferenceRepositoryString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "References": {
+            "type": "list",
+            "member": {
+                "shape": "Reference"
+            },
+            "max": 10,
+            "min": 0
+        },
+        "ResourceNotFoundException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception is thrown when describing a resource that doesn't exist.</p>",
+            "exception": true
+        },
+        "SecurityRecommendation": {
+            "type": "structure",
+            "required": ["projectName", "filePath", "startLine", "endLine", "lineToHighlight", "content"],
+            "members": {
+                "projectName": {
+                    "shape": "String"
+                },
+                "filePath": {
+                    "shape": "String"
+                },
+                "startLine": {
+                    "shape": "Integer"
+                },
+                "endLine": {
+                    "shape": "Integer"
+                },
+                "lineToHighlight": {
+                    "shape": "Integer"
+                },
+                "content": {
+                    "shape": "SyntheticSecurityRecommendationString"
+                }
+            }
+        },
+        "SecurityRecommendationList": {
+            "type": "list",
+            "member": {
+                "shape": "SecurityRecommendation"
+            }
+        },
+        "Span": {
+            "type": "structure",
+            "members": {
+                "start": {
+                    "shape": "SpanStartInteger"
+                },
+                "end": {
+                    "shape": "SpanEndInteger"
+                }
+            }
+        },
+        "SpanEndInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "SpanStartInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "StartSecurityScanRequest": {
+            "type": "structure",
+            "required": ["importId", "language"],
+            "members": {
+                "importId": {
+                    "shape": "StartSecurityScanRequestImportIdString"
+                },
+                "language": {
+                    "shape": "StartSecurityScanRequestLanguageString"
+                }
+            }
+        },
+        "StartSecurityScanRequestImportIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "StartSecurityScanRequestLanguageString": {
+            "type": "string",
+            "max": 20,
+            "min": 1,
+            "pattern": ".*(python|javascript|java)"
+        },
+        "StartSecurityScanResponse": {
+            "type": "structure",
+            "required": ["jobId", "status"],
+            "members": {
+                "jobId": {
+                    "shape": "StartSecurityScanResponseJobIdString"
+                },
+                "status": {
+                    "shape": "StartSecurityScanResponseStatusString"
+                }
+            }
+        },
+        "StartSecurityScanResponseJobIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "StartSecurityScanResponseStatusString": {
+            "type": "string",
+            "max": 10,
+            "min": 1
+        },
         "String": {
             "type": "string"
+        },
+        "SyntheticFileContextString": {
+            "type": "string",
+            "max": 5120,
+            "min": 0,
+            "sensitive": true
+        },
+        "SyntheticGetUploadUrlRequestString": {
+            "type": "string",
+            "sensitive": true
+        },
+        "SyntheticRecommendationDetailString": {
+            "type": "string",
+            "max": 5120,
+            "min": 1,
+            "sensitive": true
+        },
+        "SyntheticSecurityRecommendationString": {
+            "type": "string",
+            "sensitive": true
         },
         "ThrottlingException": {
             "type": "structure",
@@ -260,5 +538,5 @@
             "exception": true
         }
     },
-    "documentation": "<p>Provides Consolas suggestion.</p>"
+    "documentation": "<p>Provides Consolas suggestion. Provides Security Scan.</p>"
 }

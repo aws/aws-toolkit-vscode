@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { getCompletionItems, getCompletionItem, getLabel } from '../../../../vector/consolas/service/completionProvider'
 import { createMockDocument, resetConsolasGlobalVariables } from '../testUtil'
 import { recommendations } from '../../../../vector/consolas/models/model'
-import { RecommendationDetail } from '../../../../vector/consolas/client/consolasclient'
+import { RecommendationDetail } from '../../../../vector/consolas/client/consolas'
 
 describe('completionProviderService', function () {
     beforeEach(function () {
@@ -63,6 +63,7 @@ describe('completionProviderService', function () {
                         'OnDemand',
                         'Line',
                         'javascript',
+                        undefined,
                     ],
                 },
             }

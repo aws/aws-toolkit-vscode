@@ -9,12 +9,13 @@ import * as KeyStrokeHandler from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import { ConsolasConstants } from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { invocationContext } from './models/model'
+import { invocationContext, ConfigurationEntry } from './models/model'
 import {
     navigateRecommendation,
     rejectRecommendation,
     acceptRecommendation,
     setTypeAheadRecommendations,
+    setReferenceInlineProvider,
 } from './service/inlineCompletion'
 import { invokeConsolas } from './commands/invokeConsolas'
 import { onAcceptance } from './commands/onAcceptance'
@@ -30,8 +31,18 @@ import * as consolasClient from './client/consolas'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { enableCodeSuggestions, toggleCodeSuggestions, showIntroduction, set, get } from './commands/basicCommands'
+import {
+    enableCodeSuggestions,
+    toggleCodeSuggestions,
+    showIntroduction,
+    showReferenceLog,
+    set,
+    get,
+} from './commands/basicCommands'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
+import { ReferenceHoverProvider } from './service/referenceHoverProvider'
+import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 
 export async function activate(context: ExtContext, configuration: Settings): Promise<void> {
     /**
@@ -42,8 +53,18 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
     /**
      * Service control
      */
-    const consolasSettings = new ConsolasSettings(configuration)
+    const consolasSettings = ConsolasSettings.instance
     const client = new consolasClient.DefaultConsolasClient()
+
+    // Origin tracker reference Hover provider, Reference Log Channel.
+    const referenceHoverProvider = new ReferenceHoverProvider()
+    const referenceLogViewProvider = new ReferenceLogViewProvider(
+        context.extensionContext.extensionUri,
+        consolasSettings
+    )
+    const referenceCodeLensProvider = new ReferenceInlineProvider()
+    setReferenceInlineProvider(referenceCodeLensProvider)
+
     context.extensionContext.subscriptions.push(
         /**
          * Configuration change
@@ -59,6 +80,9 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                     set(ConsolasConstants.autoTriggerEnabledKey, false, context)
                 }
                 vscode.commands.executeCommand('aws.refreshAwsExplorer')
+            }
+            if (configurationChangeEvent.affectsConfiguration('aws.consolas')) {
+                referenceLogViewProvider.update()
             }
         }),
         /**
@@ -88,8 +112,12 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         /**
          * Open Configuration
          */
-        vscode.commands.registerCommand('aws.consolas.configure', async () => {
-            await vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.experiments`)
+        vscode.commands.registerCommand('aws.consolas.configure', async id => {
+            if (id === 'consolas') {
+                await vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.consolas`)
+            } else {
+                await vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.experiments`)
+            }
         }),
         // show introduction
         showIntroduction.register(context),
@@ -99,15 +127,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         enableCodeSuggestions.register(context),
         // manual trigger
         vscode.commands.registerCommand('aws.consolas', async () => {
-            const isShowMethodsOn: boolean =
-                vscode.workspace.getConfiguration('editor').get('suggest.showMethods') || false
-            invokeConsolas(
-                vscode.window.activeTextEditor as vscode.TextEditor,
-                client,
-                isShowMethodsOn,
-                await isManualTriggerEnabled(),
-                isAutoTriggerEnabled()
-            )
+            invokeConsolas(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
         /**
          * On recommendation acceptance
@@ -121,7 +141,8 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                 requestId: string,
                 triggerType: telemetry.ConsolasTriggerType,
                 completionType: telemetry.ConsolasCompletionType,
-                language: telemetry.ConsolasLanguage
+                language: telemetry.ConsolasLanguage,
+                references: consolasClient.References
             ) => {
                 const bracketConfiguration = vscode.workspace.getConfiguration('editor').get('autoClosingBrackets')
                 const isAutoClosingBracketsEnabled: boolean = bracketConfiguration !== 'never' ? true : false
@@ -136,16 +157,27 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                         triggerType,
                         completionType,
                         language,
+                        references,
                     },
                     isAutoClosingBracketsEnabled,
                     context.extensionContext.globalState
                 )
+                if (references != undefined && editor != undefined) {
+                    const referenceLog = ReferenceLogViewProvider.getReferenceLog(recommendation, references, editor)
+                    referenceLogViewProvider.addReferenceLog(referenceLog)
+                    referenceHoverProvider.addLicensedCode(recommendation, references)
+                }
             }
         ),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             TelemetryHelper.recordUserDecisionTelemetry(-1, vscode.window.activeTextEditor?.document.languageId)
-        })
+        }),
+        // origin tracker related providers
+        vscode.languages.registerHoverProvider(ConsolasConstants.supportedLanguages, referenceHoverProvider),
+        vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, referenceLogViewProvider),
+        showReferenceLog.register(context),
+        vscode.languages.registerCodeLensProvider(ConsolasConstants.supportedLanguages, referenceCodeLensProvider)
     )
 
     async function showConsolasWelcomeMessage(): Promise<void> {
@@ -154,15 +186,30 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
         await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
     }
 
-    async function isManualTriggerEnabled(): Promise<boolean> {
+    async function getManualTriggerStatus(): Promise<boolean> {
         const consolasEnabled = await consolasSettings.isEnabled()
         const acceptedTerms: boolean =
             context.extensionContext.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey) || false
         return acceptedTerms && consolasEnabled
     }
 
-    function isAutoTriggerEnabled(): boolean {
+    function getAutoTriggerStatus(): boolean {
         return context.extensionContext.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) || false
+    }
+
+    async function getConfigEntry(): Promise<ConfigurationEntry> {
+        const isShowMethodsEnabled: boolean =
+            vscode.workspace.getConfiguration('editor').get('suggest.showMethods') || false
+        const isAutomatedTriggerEnabled: boolean = getAutoTriggerStatus()
+        const isManualTriggerEnabled: boolean = await getManualTriggerStatus()
+        const isIncludeSuggestionsWithCodeReferencesEnabled =
+            consolasSettings.isIncludeSuggestionsWithCodeReferencesEnabled()
+        return {
+            isShowMethodsEnabled,
+            isManualTriggerEnabled,
+            isAutomatedTriggerEnabled,
+            isIncludeSuggestionsWithCodeReferencesEnabled,
+        }
     }
 
     if (isCloud9()) {
@@ -195,8 +242,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                         e,
                         vscode.window.activeTextEditor,
                         client,
-                        await isManualTriggerEnabled(),
-                        isAutoTriggerEnabled()
+                        await getConfigEntry()
                     )
                 }
             }),
@@ -273,8 +319,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                         e,
                         vscode.window.activeTextEditor,
                         client,
-                        await isManualTriggerEnabled(),
-                        isAutoTriggerEnabled()
+                        await getConfigEntry()
                     )
                 }
             }),
@@ -284,18 +329,18 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
              * Maintaining this variable because VS Code does not expose official intelliSense isActive API
              */
             vscode.window.onDidChangeVisibleTextEditors(async e => {
-                resetIntelliSenseState(await isManualTriggerEnabled(), isAutoTriggerEnabled())
+                resetIntelliSenseState(await getManualTriggerStatus(), getAutoTriggerStatus())
             }),
             vscode.window.onDidChangeActiveTextEditor(async e => {
-                resetIntelliSenseState(await isManualTriggerEnabled(), isAutoTriggerEnabled())
+                resetIntelliSenseState(await getManualTriggerStatus(), getAutoTriggerStatus())
             }),
             vscode.window.onDidChangeTextEditorSelection(async e => {
                 if (e.kind === TextEditorSelectionChangeKind.Mouse) {
-                    resetIntelliSenseState(await isManualTriggerEnabled(), isAutoTriggerEnabled())
+                    resetIntelliSenseState(await getManualTriggerStatus(), getAutoTriggerStatus())
                 }
             }),
             vscode.workspace.onDidSaveTextDocument(async e => {
-                resetIntelliSenseState(await isManualTriggerEnabled(), isAutoTriggerEnabled())
+                resetIntelliSenseState(await getManualTriggerStatus(), getAutoTriggerStatus())
             })
         )
     }
