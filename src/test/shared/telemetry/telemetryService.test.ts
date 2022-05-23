@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as fs from 'fs-extra'
-import { DefaultTelemetryService } from '../../../shared/telemetry/telemetryService'
+import { DefaultTelemetryService, getClientId } from '../../../shared/telemetry/telemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
@@ -202,4 +202,22 @@ describe('DefaultTelemetryService', function () {
             'Expected metadata to contain the test account'
         )
     }
+})
+
+describe('getClientId', function () {
+    it('should generate a unique id', async function () {
+        assert.ok(await getClientId(await FakeExtensionContext.create()))
+    })
+    it('returns the same value across the calls', async function () {
+        const context = await FakeExtensionContext.create()
+        const c1 = getClientId(context)
+        const c2 = getClientId(context)
+        assert.strictEqual(await c1, await c2, 'Expected client ids to be same')
+    })
+    it('returns the same value across the calls sequentially', async function () {
+        const context = await FakeExtensionContext.create()
+        const c1 = await getClientId(context)
+        const c2 = await getClientId(context)
+        assert.strictEqual(c1, c2)
+    })
 })

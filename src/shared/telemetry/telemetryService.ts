@@ -172,7 +172,7 @@ export class DefaultTelemetryService {
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
         try {
             // grab our clientId and generate one if it doesn't exist
-            const clientId = await getClientIdShared(this.context)
+            const clientId = await getClientId(this.context)
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = this.context.globalState.get<string>(
@@ -341,12 +341,11 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
             return true
         })
 }
-async function getClientId(context: ExtensionContext): Promise<string> {
+export const getClientId = shared(async (context: ExtensionContext) => {
     let clientId = context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
     if (!clientId) {
         clientId = uuidv4()
         await context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
     }
     return clientId
-}
-export const getClientIdShared = shared(getClientId)
+})
