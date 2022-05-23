@@ -19,7 +19,7 @@ ${COMPANYNAME} Lambda functions not defined in the [`template.yaml`](./template.
 
 ## Deploying Serverless Applications
 
-You can deploy a serverless application by invoking the `AWS: Deploy SAM application` command through the Command Palette or by right-clicking the Lambda node in the ${COMPANYNAME} Explorer and entering the deployment region, a valid S3 bucket from the region, and the name of a CloudFormation stack to deploy to. You can monitor your deployment's progress through the **${COMPANYNAME} Toolkit\*\* Output Channel.
+You can deploy a serverless application by invoking the `AWS: Deploy SAM application` command through the Command Palette or by right-clicking the Lambda node in the ${COMPANYNAME} Explorer and entering the deployment region, a valid S3 bucket from the region, and the name of a CloudFormation stack to deploy to. You can monitor your deployment's progress through the **${COMPANYNAME} Toolkit** Output Channel.
 
 ## Interacting With Deployed Serverless Applications
 
