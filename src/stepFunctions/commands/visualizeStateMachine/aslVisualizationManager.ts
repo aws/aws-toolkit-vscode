@@ -11,7 +11,6 @@ import { getLogger, Logger } from '../../../shared/logger'
 
 export class AslVisualizationManager extends AbstractAslVisualizationManager {
     protected readonly name: string = 'AslVisualizationManager'
-    private readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
 
     public constructor(extensionContext: vscode.ExtensionContext) {
         super(extensionContext)
@@ -19,25 +18,10 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
     public async visualizeStateMachine(
         globalStorage: vscode.Memento,
-        input: vscode.Uri | vscode.TextEditor | undefined
+        target: vscode.TextDocument | vscode.Uri
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
-
-        /* TODO: Determine behaviour when command is run against bad input, or
-         * non-json files. Determine if we want to limit the command to only a
-         * specifc subset of file types ( .json only, custom .states extension, etc...)
-         * Ensure tests are written for this use case as well.
-         */
-
-        const document =
-            input instanceof vscode.Uri
-                ? await vscode.workspace.openTextDocument(input)
-                : input?.document ?? vscode.window.activeTextEditor?.document
-
-        if (!document || document.fileName.includes('extension-output')) {
-            logger.error('Could not get active text editor for state machine render.')
-            throw new Error('Could not get active text editor for state machine render.')
-        }
+        const document = target instanceof vscode.Uri ? await vscode.workspace.openTextDocument(target) : target
 
         // Attempt to retrieve existing visualization if it exists.
         const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
@@ -52,34 +36,11 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
             await this.cache.updateCache(globalStorage)
 
             const newVisualization = new AslVisualization(document)
-            this.handleNewVisualization(newVisualization)
+            this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             return newVisualization.getPanel()
         } catch (err) {
             this.handleErr(err as Error, logger)
         }
-
-        return
-    }
-
-    private handleNewVisualization(newVisualization: AslVisualization): void {
-        this.managedVisualizations.set(newVisualization.documentUri.fsPath, newVisualization)
-
-        const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
-            this.deleteVisualization(newVisualization.documentUri.fsPath)
-        })
-        this.pushToExtensionContextSubscriptions(visualizationDisposable)
-    }
-
-    public getManagedVisualizations(): Map<string, AslVisualization> {
-        return this.managedVisualizations
-    }
-
-    private deleteVisualization(visualizationToDelete: string): void {
-        this.managedVisualizations.delete(visualizationToDelete)
-    }
-
-    private getExistingVisualization(visualization: string): AslVisualization | undefined {
-        return this.managedVisualizations.get(visualization)
     }
 }

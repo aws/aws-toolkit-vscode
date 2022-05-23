@@ -56,7 +56,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
             this.logGroupNodes,
             logGroups.keys(),
             key => this.logGroupNodes.get(key)!.update(logGroups.get(key)!),
-            key => new LogGroupNode(this, this.regionCode, logGroups.get(key)!)
+            key => new LogGroupNode(this.regionCode, logGroups.get(key)!)
         )
     }
 }
