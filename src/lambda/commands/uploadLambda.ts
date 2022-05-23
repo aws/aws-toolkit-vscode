@@ -75,7 +75,7 @@ class LambdaSettings extends fromExtensionManifest('aws.lambda', { recentlyUploa
     }
 }
 
-interface LambdaFunction {
+export interface LambdaFunction {
     readonly name: string
     readonly region: string
     readonly configuration?: FunctionConfiguration
@@ -197,7 +197,7 @@ function createConfirmDeploymentPrompter(lambda: LambdaFunction) {
     })()
 }
 
-interface UploadLambdaWizardState {
+export interface UploadLambdaWizardState {
     readonly uploadType: 'zip' | 'directory'
     readonly targetUri: vscode.Uri
     readonly directoryBuildType: 'zip' | 'sam'
@@ -205,29 +205,33 @@ interface UploadLambdaWizardState {
     readonly lambda: LambdaFunction
 }
 
-class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
+export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
     constructor(lambda?: LambdaFunction, invokePath?: vscode.Uri) {
         super({ initState: { lambda } })
         this.form.lambda.region.bindPrompter(() => createRegionPrompter().transform(region => region.id))
 
-        this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
-
-        this.form.targetUri.bindPrompter(({ uploadType }) => {
-            if (uploadType === 'directory') {
-                return createSingleFileDialog({
-                    canSelectFolders: true,
-                    canSelectFiles: false,
-                })
-            } else {
-                return createSingleFileDialog({
-                    canSelectFolders: false,
-                    canSelectFiles: true,
-                    filters: {
-                        'ZIP archive': ['zip'],
-                    },
-                })
-            }
-        })
+        if (invokePath && fs.statSync(invokePath.fsPath).isDirectory()) {
+            this.form.uploadType.setDefault('directory')
+            this.form.targetUri.setDefault(invokePath)
+        } else {
+            this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
+            this.form.targetUri.bindPrompter(({ uploadType }) => {
+                if (uploadType === 'directory') {
+                    return createSingleFileDialog({
+                        canSelectFolders: true,
+                        canSelectFiles: false,
+                    })
+                } else {
+                    return createSingleFileDialog({
+                        canSelectFolders: false,
+                        canSelectFiles: true,
+                        filters: {
+                            'ZIP archive': ['zip'],
+                        },
+                    })
+                }
+            })
+        }
 
         this.form.lambda.name.bindPrompter(state => {
             // invoking from the command palette passes no arguments
@@ -530,7 +534,7 @@ export function getFunctionNames(file: vscode.Uri, region: string): string[] | u
         }
         return names.length > 0 ? names : undefined
     } catch (error) {
-        getLogger().info('lambda: Error parsing .application.json: %s', (error as Error).message)
+        getLogger().error('lambda: failed to parse .application.json: %s', (error as Error).message)
     }
 }
 
