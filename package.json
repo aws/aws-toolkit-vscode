@@ -764,6 +764,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.cdk.viewDocs",
+                    "when": "false"
+                },
+                {
                     "command": "aws.ssmDocument.openLocalDocument",
                     "when": "false"
                 },
@@ -1639,6 +1643,11 @@
                     "command": "aws.cdk.refresh",
                     "when": "viewItem == awsCdkRootNode",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.cdk.viewDocs",
+                    "when": "viewItem == awsCdkRootNode",
+                    "group": "0@2"
                 }
             ]
         },
@@ -2328,12 +2337,12 @@
                 "icon": {
                     "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
-                },
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
                 }
+            },
+            {
+                "command": "aws.cdk.viewDocs",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.stepfunctions.createStateMachineFromTemplate",

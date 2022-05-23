@@ -44,6 +44,12 @@ async function registerStepFunctionCommands(
     const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
 
     extensionContext.subscriptions.push(
+        /*
+         * TODO: Determine behaviour when command is run against bad input, or
+         * non-json files. Determine if we want to limit the command to only a
+         * specifc subset of file types ( .json only, custom .states extension, etc...)
+         * Ensure tests are written for this use case as well.
+         */
         vscode.commands.registerCommand('aws.previewStateMachine', async (arg?: vscode.TextEditor | vscode.Uri) => {
             try {
                 const input = arg instanceof vscode.Uri ? arg : arg?.document

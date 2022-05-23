@@ -174,6 +174,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 clientId = uuidv4()
                 await this.context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
             }
+            getLogger().info(`clientId: ${clientId}`)
 
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool

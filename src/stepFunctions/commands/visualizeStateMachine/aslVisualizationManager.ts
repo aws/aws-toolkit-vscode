@@ -23,12 +23,6 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
         const logger: Logger = getLogger()
         const document = target instanceof vscode.Uri ? await vscode.workspace.openTextDocument(target) : target
 
-        /* TODO: Determine behaviour when command is run against bad input, or
-         * non-json files. Determine if we want to limit the command to only a
-         * specifc subset of file types ( .json only, custom .states extension, etc...)
-         * Ensure tests are written for this use case as well.
-         */
-
         // Attempt to retrieve existing visualization if it exists.
         const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
         if (existingVisualization) {

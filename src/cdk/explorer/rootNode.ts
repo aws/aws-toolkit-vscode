@@ -4,6 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import { cdkDocumentationUrl } from '../../shared/constants'
+import { recordAwsHelp } from '../../shared/telemetry/telemetry.gen'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -47,3 +49,8 @@ export class CdkRootNode implements TreeNode {
 
 export const cdkNode = new CdkRootNode()
 export const refreshCdkExplorer = Commands.register('aws.cdk.refresh', cdkNode.refresh.bind(cdkNode))
+
+Commands.register('aws.cdk.viewDocs', () => {
+    vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
+    recordAwsHelp({ name: 'cdk' })
+})
