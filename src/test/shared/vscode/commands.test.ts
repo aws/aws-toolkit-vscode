@@ -134,11 +134,13 @@ describe('Commands', function () {
             it('can build a tree node', function () {
                 const registered = commands.register('sum', sum)
                 const built = registered.build(5, 4).asTreeNode({ label: 'Sum' })
+                const item = built.treeItem
 
-                assert.ok(built instanceof vscode.TreeItem)
-                assert.strictEqual(built.label, 'Sum')
-                assert.strictEqual(built.command?.command, 'sum')
-                assert.deepStrictEqual(built.command?.arguments, [5, 4])
+                assert.ok(item instanceof vscode.TreeItem)
+                assert.strictEqual(item.label, 'Sum')
+                assert.strictEqual(item.command?.command, 'sum')
+                assert.deepStrictEqual(item.command?.arguments, [5, 4])
+                assert.strictEqual(built.resource, registered)
             })
         })
     })

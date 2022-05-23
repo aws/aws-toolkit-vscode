@@ -12,6 +12,8 @@ import { getLogger } from '../logger'
 import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
 import { UnknownError } from '../toolkitError'
 import { Logging } from '../logger/commands'
+import { TreeNode } from './resourceTreeDataProvider'
+import { assign } from '../utilities/collectionUtils'
 
 /**
  * Produces a list of child nodes using handlers to consistently populate the
@@ -38,7 +40,7 @@ export async function makeChildrenNodes<T extends AWSTreeNodeBase, P extends AWS
     } catch (error) {
         const converted = UnknownError.cast(error)
 
-        return [parameters.getErrorNode?.(converted) ?? createErrorItem(converted)]
+        return [parameters.getErrorNode?.(converted) ?? new TreeShim(createErrorItem(converted))]
     }
 }
 
@@ -59,7 +61,7 @@ export function createThemeIcon(id: string, color?: string) {
     }
 }
 
-export function createErrorItem(error: Error, message?: string): AWSTreeNodeBase {
+export function createErrorItem(error: Error, message?: string): TreeNode {
     const command = Logging.declared.viewLogsAtMessage
     const logId = message ? getLogger().error(message) : getLogger().error(error)
 
@@ -69,4 +71,41 @@ export function createErrorItem(error: Error, message?: string): AWSTreeNodeBase
         iconPath: createThemeIcon('error', 'testing.iconErrored'),
         contextValue: 'awsErrorNode',
     })
+}
+
+export function createPlaceholderItem(message: string): TreeNode {
+    return {
+        id: 'placeholder',
+        resource: message,
+        treeItem: new vscode.TreeItem(message, vscode.TreeItemCollapsibleState.None),
+    }
+}
+
+export function unboxTreeNode<T>(node: TreeNode, predicate: (resource: unknown) => resource is T): T {
+    if (!predicate(node.resource)) {
+        throw new TypeError(`Unexpected tree node resource for node: ${node.id}`)
+    }
+
+    return node.resource
+}
+
+/**
+ * Wrapper that allows a {@link TreeNode} to be used in the legacy explorer.
+ *
+ * Any new or existing code needs to account for this additional layer as the shim
+ * would be passed in as-is.
+ */
+export class TreeShim extends AWSTreeNodeBase {
+    public constructor(public readonly node: TreeNode) {
+        super(node.treeItem.label ?? '[No label]')
+        assign(node.treeItem, this)
+
+        this.node.onDidChangeChildren?.(() => this.refresh())
+    }
+
+    public override async getChildren(): Promise<AWSTreeNodeBase[]> {
+        const children = (await this.node.getChildren?.()) ?? []
+
+        return children.map(n => new TreeShim(n))
+    }
 }
