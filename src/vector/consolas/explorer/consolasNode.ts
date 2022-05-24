@@ -4,10 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { makeChildrenNodes } from '../../../shared/treeview/utils'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { localize } from '../../../shared/utilities/vsCodeUtils'
 import globals from '../../../shared/extensionGlobals'
 import { ConsolasConstants } from '../models/constants'
 import {
@@ -17,37 +13,38 @@ import {
     createResumeAutoSuggestionsNode,
     createOpenReferenceLogNode,
 } from './consolasChildrenNodes'
+import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { Commands } from '../../../shared/vscode/commands2'
+export class ConsolasNode implements TreeNode {
+    public readonly id = 'consolas'
+    public readonly treeItem = this.createTreeItem()
+    public readonly resource = this
+    private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
 
-/**
- * An AWS Explorer node representing Consolas.
- *
- * Contains consolas code suggestions feature.
- */
-export class ConsolasNode extends AWSTreeNodeBase {
-    public constructor() {
-        super('Consolas (Preview)', vscode.TreeItemCollapsibleState.Collapsed)
-        vscode.commands.executeCommand(
-            'setContext',
-            ConsolasConstants.termsAcceptedKey,
-            globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)
-        )
-        this.contextValue = 'awsConsolasNode'
+    private createTreeItem() {
+        const item = new vscode.TreeItem('Consolas (Preview)')
+        item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
+        item.contextValue = 'awsConsolasNode'
+
+        return item
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return await makeChildrenNodes({
-            getChildNodes: async () => {
-                if (globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)) {
-                    if (globals.context.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey)) {
-                        return [createPauseAutoSuggestionsNode(), createOpenReferenceLogNode()]
-                    }
-                    return [createResumeAutoSuggestionsNode(), createOpenReferenceLogNode()]
-                } else {
-                    return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
-                }
-            },
-            getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(this, localize('AWS.consolasNode', '[No Consolas node found]')),
-        })
+    public refresh(): void {
+        this.onDidChangeChildrenEmitter.fire()
+    }
+
+    public getChildren() {
+        if (globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)) {
+            if (globals.context.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey)) {
+                return [createPauseAutoSuggestionsNode(), createOpenReferenceLogNode()]
+            }
+            return [createResumeAutoSuggestionsNode(), createOpenReferenceLogNode()]
+        } else {
+            return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
+        }
     }
 }
+
+export const consolasNode = new ConsolasNode()
+export const refreshConsolas = Commands.register('aws.consolas.refresh', consolasNode.refresh.bind(consolasNode))

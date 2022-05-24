@@ -9,13 +9,22 @@ import { cdkNode } from '../cdk/explorer/rootNode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { once } from '../shared/utilities/functionUtils'
 import { AppNode } from '../cdk/explorer/nodes/appNode'
+import { consolasNode } from '../vector/consolas/explorer/consolasNode'
+import { ConsolasConstants } from '../vector/consolas/models/constants'
 
 export interface RootNode extends TreeNode {
     canShow?(): Promise<boolean> | boolean
     readonly onDidChangeVisibility?: vscode.Event<void>
 }
 
-const roots: readonly RootNode[] = [cdkNode]
+const shouldShowConsolas = (): boolean => {
+    return vscode.workspace.getConfiguration('aws.experiments').get<boolean>(ConsolasConstants.consolas) || false
+}
+
+let roots: readonly RootNode[] = [cdkNode]
+if (shouldShowConsolas()) {
+    roots = [...roots, consolasNode]
+}
 
 async function getChildren(roots: readonly RootNode[]) {
     const nodes: TreeNode[] = []

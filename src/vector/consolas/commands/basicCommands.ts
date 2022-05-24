@@ -15,7 +15,7 @@ export const toggleCodeSuggestions = Commands.declare(
     (context: ExtContext) => async () => {
         const autoTriggerEnabled: boolean = get(ConsolasConstants.autoTriggerEnabledKey, context) || false
         set(ConsolasConstants.autoTriggerEnabledKey, !autoTriggerEnabled, context)
-        await vscode.commands.executeCommand('aws.refreshAwsExplorer')
+        await vscode.commands.executeCommand('aws.consolas.refresh')
     }
 )
 
