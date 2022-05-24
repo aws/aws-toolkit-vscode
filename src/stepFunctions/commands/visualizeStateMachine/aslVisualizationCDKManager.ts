@@ -36,7 +36,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager<
         try {
             await this.cache.updateCache(globalStorage)
 
-            const textDocument = await vscode.workspace.openTextDocument(templateUri)
+            const textDocument = await vscode.workspace.openTextDocument(templateUri.with({ fragment: '' }))
             const newVisualization = new AslVisualizationCDK(textDocument, templateUri.fsPath, resourceName)
             this.handleNewVisualization(this.getKey(uri), newVisualization)
 
