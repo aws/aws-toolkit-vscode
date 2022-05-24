@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { invocationContext, inlineCompletion } from '../models/model'
 import { ConsolasConstants } from '../models/constants'
 import { getLogger } from '../../../shared/logger'
-import { isReturnStatement } from 'typescript'
 
 //if this is browser it uses browser and if it's node then it uses nodes
 //TODO remove when node version >= 16
@@ -34,8 +33,8 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
         }
         const n = new Set()
         inlineCompletion.origin[item.index].references?.forEach(r => n.add(r.licenseName))
+        if (n.size === 0) return
         const licenses = [...n].join(', ')
-        if (licenses === '') isReturnStatement
         this.ranges.push(new vscode.Range(line, 0, line, 1))
         this.refs.push(ConsolasConstants.suggestionDetailReferenceText(licenses))
         const duration = performance.now() - startTime
