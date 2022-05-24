@@ -27,11 +27,11 @@ import { AWSError } from 'aws-sdk'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../../shared/logger'
 import { UnsupportedLanguagesCache } from '../util/unsupportedLanguagesCache'
-import { showTimedMessage } from '../../../shared/utilities/messages'
 import { showFirstRecommendation } from './inlineCompletion'
 import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
 import globals from '../../../shared/extensionGlobals'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { showTimedMessage } from '../../../shared/utilities/messages'
 
 //if this is browser it uses browser and if it's node then it uses nodes
 //TODO remove when node version >= 16
@@ -218,6 +218,7 @@ export async function getRecommendations(
         } else {
             getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
             getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
+            recommendations.errorCode = `Invalid Request`
         }
     } catch (error) {
         if (latency === 0) {
@@ -225,21 +226,34 @@ export async function getRecommendations(
         }
         getLogger().error('Consolas Invocation Exception : ', error)
         getLogger().verbose(`Consolas Invocation Exception : ${error}`)
-        /**
-         * TODO: how to cast to AWSError type-safely
-         */
-        const awsError = error as AWSError
-        if (
-            awsError.code === 'ValidationException' &&
-            awsError.message.includes(`contextInfo.programmingLanguage.languageName`)
-        ) {
-            let languageName = req.contextInfo.programmingLanguage.languageName
-            UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage(languageName)
-            languageName = `${languageName.charAt(0).toUpperCase()}${languageName.slice(1)}`
-            showTimedMessage(`Programming language ${languageName} is currently not supported by Consolas`, 2000)
+        const isAwsError = (error: any): error is AWSError => {
+            return (
+                typeof error?.name === 'string' &&
+                typeof error.message === 'string' &&
+                typeof error.code === 'string' &&
+                error.time instanceof Date
+            )
         }
-        requestId = awsError.requestId || ''
-        reason = `Consolas Invocation Exception: ${awsError?.code ?? awsError?.name ?? 'unknown'}`
+        if (isAwsError(error)) {
+            const awsError = error as AWSError
+            if (
+                awsError.code === 'ValidationException' &&
+                awsError.message.includes(`contextInfo.programmingLanguage.languageName`)
+            ) {
+                let languageName = req.contextInfo.programmingLanguage.languageName
+                UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage(languageName)
+                languageName = `${languageName.charAt(0).toUpperCase()}${languageName.slice(1)}`
+                showTimedMessage(`Programming language ${languageName} is currently not supported by Consolas`, 2000)
+            } else if (awsError.code === 'CredentialsError') {
+                showTimedMessage(`Invalid AWS credential. Please use a valid AWS credential`, 3000)
+            }
+            requestId = awsError.requestId || ''
+            recommendations.errorCode = awsError.code
+            reason = `Consolas Invocation Exception: ${awsError?.code ?? awsError?.name ?? 'unknown'}`
+        } else {
+            requestId = ''
+            reason = error as string
+        }
     } finally {
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
         const languageId = editor?.document?.languageId
@@ -262,7 +276,6 @@ export async function getRecommendations(
         getLogger().verbose('Recommendations:')
         recommendation.forEach((item, index) => {
             getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
-            getLogger().verbose(`Ref: ${item.references}`)
         })
 
         /**

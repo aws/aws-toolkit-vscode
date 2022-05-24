@@ -23,6 +23,7 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 export function resetConsolasGlobalVariables() {
     recommendations.requestId = ''
     recommendations.response = []
+    recommendations.errorCode = ''
     invocationContext.isIntelliSenseActive = false
     invocationContext.isPendingResponse = false
     automatedTriggerContext.specialChar = ''

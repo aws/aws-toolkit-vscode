@@ -17,11 +17,14 @@ interface Recommendations {
      * Recommendations queue
      */
     response: RecommendationsList
+    // user facing error message
+    errorCode: string
 }
 
 export const recommendations: Recommendations = {
     response: [],
     requestId: '',
+    errorCode: '',
 }
 
 interface InvocationContext {

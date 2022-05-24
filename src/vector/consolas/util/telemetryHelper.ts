@@ -44,6 +44,8 @@ export class TelemetryHelper {
          * Clear recommendation queue
          */
         recommendations.response = []
+        recommendations.errorCode = ''
+        recommendations.requestId = ''
     }
 
     public static getSuggestionState(

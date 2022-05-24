@@ -65,6 +65,7 @@ export async function invokeConsolas(
             !invocationContext.isIntelliSenseActive,
             editor
         )
+
         if (KeyStrokeHandler.isValidResponse(recommendations.response)) {
             automatedTriggerContext.keyStrokeCount = 0
             if (isCloud9()) {
@@ -75,7 +76,9 @@ export async function invokeConsolas(
                 await showFirstRecommendation(editor)
             }
         } else {
-            showTimedMessage('No suggestions from Consolas', 2000)
+            if (recommendations.errorCode === '') {
+                showTimedMessage('No suggestions from Consolas', 2000)
+            }
         }
     }
 }
