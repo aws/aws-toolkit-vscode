@@ -79,7 +79,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
                     set(ConsolasConstants.termsAcceptedKey, false, context)
                     set(ConsolasConstants.autoTriggerEnabledKey, false, context)
                 }
-                vscode.commands.executeCommand('aws.refreshAwsExplorer')
+                vscode.commands.executeCommand('aws.consolas.refresh')
             }
             if (configurationChangeEvent.affectsConfiguration('aws.consolas')) {
                 referenceLogViewProvider.update()
@@ -92,7 +92,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
             set(ConsolasConstants.autoTriggerEnabledKey, true, context)
             set(ConsolasConstants.termsAcceptedKey, true, context)
             await vscode.commands.executeCommand('setContext', ConsolasConstants.termsAcceptedKey, true)
-            await vscode.commands.executeCommand('aws.refreshAwsExplorer')
+            await vscode.commands.executeCommand('aws.consolas.refresh')
             /**
              *  TODO Beta landing page removes in GA state
              */
@@ -107,7 +107,7 @@ export async function activate(context: ExtContext, configuration: Settings): Pr
          */
         vscode.commands.registerCommand('aws.consolas.cancelTermsOfService', async () => {
             set(ConsolasConstants.autoTriggerEnabledKey, false, context)
-            await vscode.commands.executeCommand('aws.refreshAwsExplorer')
+            await vscode.commands.executeCommand('aws.consolas.refresh')
         }),
         /**
          * Open Configuration

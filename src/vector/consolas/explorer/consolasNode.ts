@@ -13,14 +13,25 @@ import {
     createResumeAutoSuggestionsNode,
     createOpenReferenceLogNode,
 } from './consolasChildrenNodes'
-import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { Commands } from '../../../shared/vscode/commands2'
-export class ConsolasNode implements TreeNode {
+import { RootNode } from '../../../awsexplorer/localExplorer'
+import { Experiments } from '../../../shared/settings'
+export class ConsolasNode implements RootNode {
     public readonly id = 'consolas'
     public readonly treeItem = this.createTreeItem()
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
+    private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
+
+    constructor() {
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('aws.experiments')) {
+                this.onDidChangeVisibilityEmitter.fire()
+            }
+        })
+    }
 
     private createTreeItem() {
         const item = new vscode.TreeItem('Consolas (Preview)')
@@ -43,6 +54,10 @@ export class ConsolasNode implements TreeNode {
         } else {
             return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
         }
+    }
+
+    public async canShow(): Promise<boolean> {
+        return await Experiments.instance.isExperimentEnabled('Consolas')
     }
 }
 
