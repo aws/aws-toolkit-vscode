@@ -16,6 +16,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.core.experiments.ToolkitExperimentManager.Companion.EXPERIMENT_CHANGED
 import software.aws.toolkits.jetbrains.utils.deserializeState
 import software.aws.toolkits.jetbrains.utils.rules.RegistryRule
 import software.aws.toolkits.jetbrains.utils.serializeState
@@ -188,8 +189,7 @@ class ToolkitExperimentManagerTest {
         val anExperiment = DummyExperiment()
         assertThat(anExperiment.isEnabled()).isFalse
         val mockListener: ToolkitExperimentStateChangedListener = mock()
-        val conn = ApplicationManager.getApplication().messageBus.connect()
-        conn.subscribe(ToolkitExperimentManager.EXPERIMENT_CHANGED, mockListener)
+        subscribeToTopic(mockListener)
         anExperiment.setState(true)
 
         argumentCaptor<ToolkitExperiment>().apply {
@@ -197,8 +197,6 @@ class ToolkitExperimentManagerTest {
             assertThat(allValues).hasSize(1)
             assertThat(firstValue.id).isEqualTo(anExperiment.id)
         }
-
-        conn.dispose()
     }
 
     @Test
@@ -207,8 +205,7 @@ class ToolkitExperimentManagerTest {
         ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
         assertThat(experiment.isEnabled()).isTrue
         val mockListener: ToolkitExperimentStateChangedListener = mock()
-        val conn = ApplicationManager.getApplication().messageBus.connect()
-        conn.subscribe(ToolkitExperimentManager.EXPERIMENT_CHANGED, mockListener)
+        subscribeToTopic(mockListener)
         experiment.setState(false)
 
         argumentCaptor<ToolkitExperiment>().apply {
@@ -216,8 +213,14 @@ class ToolkitExperimentManagerTest {
             assertThat(allValues).hasSize(1)
             assertThat(firstValue.id).isEqualTo(experiment.id)
         }
+    }
 
-        conn.dispose()
+    @Test
+    fun `updated experiment state is reflected when event is consumed`() {
+        val anExperiment = DummyExperiment()
+        ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(anExperiment), disposableRule.disposable)
+        subscribeToTopic { toolkitExperiment -> assertThat(toolkitExperiment.isEnabled()).isTrue }
+        anExperiment.setState(true)
     }
 
     @Test
@@ -226,13 +229,11 @@ class ToolkitExperimentManagerTest {
         ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
         assertThat(experiment.isEnabled()).isTrue
         val mockListener: ToolkitExperimentStateChangedListener = mock()
-        val conn = ApplicationManager.getApplication().messageBus.connect()
-        conn.subscribe(ToolkitExperimentManager.EXPERIMENT_CHANGED, mockListener)
+        subscribeToTopic(mockListener)
 
         experiment.setState(true)
-        verifyNoInteractions(mockListener)
 
-        conn.dispose()
+        verifyNoInteractions(mockListener)
     }
 
     @Test
@@ -241,13 +242,10 @@ class ToolkitExperimentManagerTest {
         ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
         assertThat(experiment.isEnabled()).isFalse
         val mockListener: ToolkitExperimentStateChangedListener = mock()
-        val conn = ApplicationManager.getApplication().messageBus.connect()
-        conn.subscribe(ToolkitExperimentManager.EXPERIMENT_CHANGED, mockListener)
+        subscribeToTopic(mockListener)
 
         experiment.setState(false)
         verifyNoInteractions(mockListener)
-
-        conn.dispose()
     }
 
     @Test
@@ -294,6 +292,11 @@ class ToolkitExperimentManagerTest {
 
         sut.neverPrompt(experiment)
         assertThat(sut.shouldPrompt(experiment, now.plusMillis(2))).isFalse
+    }
+
+    private fun subscribeToTopic(listener: ToolkitExperimentStateChangedListener) {
+        val conn = ApplicationManager.getApplication().messageBus.connect(disposableRule.disposable)
+        conn.subscribe(EXPERIMENT_CHANGED, listener)
     }
 }
 

@@ -102,13 +102,14 @@ internal class ToolkitExperimentManager : PersistentStateComponent<ExperimentSta
         EP_NAME.extensionList.contains(experiment) && enabledState.getOrDefault(experiment.id, getDefault(experiment))
 
     fun setState(experiment: ToolkitExperiment, enabled: Boolean) {
-        if (enabled != isEnabled(experiment)) {
-            ApplicationManager.getApplication().messageBus.syncPublisher(EXPERIMENT_CHANGED).enableSettingsStateChanged(experiment)
-        }
+        val previousState = isEnabled(experiment)
         if (enabled == getDefault(experiment)) {
             enabledState.remove(experiment.id)
         } else {
             enabledState[experiment.id] = enabled
+        }
+        if (enabled != previousState) {
+            ApplicationManager.getApplication().messageBus.syncPublisher(EXPERIMENT_CHANGED).enableSettingsStateChanged(experiment)
         }
         AwsTelemetry.experimentActivation(
             experimentId = experiment.id,
@@ -170,6 +171,6 @@ internal class ExperimentState : BaseState() {
     val nextSuggestion by map<String, Long>()
 }
 
-interface ToolkitExperimentStateChangedListener {
+fun interface ToolkitExperimentStateChangedListener {
     fun enableSettingsStateChanged(toolkitExperiment: ToolkitExperiment)
 }
