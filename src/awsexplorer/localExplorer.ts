@@ -52,5 +52,8 @@ export function createLocalExplorerView(): vscode.TreeView<TreeNode> {
         }
     })
 
+    // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
+    view.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+
     return view
 }
