@@ -4,9 +4,10 @@
  */
 
 import * as vscode from 'vscode'
+import { RootNode } from '../awsexplorer/localExplorer'
 import { CawsDevEnv } from '../shared/clients/cawsClient'
-import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { createThemeIcon, makeChildrenNodes } from '../shared/treeview/utils'
+import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { createThemeIcon } from '../shared/treeview/utils'
 import { CawsAuthenticationProvider } from './auth'
 import { CawsCommands } from './commands'
 import { ConnectedWorkspace, createClientFactory, getConnectedWorkspace, getDevFileLocation } from './model'
@@ -44,20 +45,66 @@ function getRemoteCommands(currentWorkspace: CawsDevEnv, devFileLocation: vscode
     ]
 }
 
-export class CawsRootNode extends AWSTreeNodeBase {
-    public readonly id = 'caws'
-    public readonly type = 'service'
+export function initNodes(ctx: vscode.ExtensionContext): RootNode[] {
+    const authProvider = CawsAuthenticationProvider.fromContext(ctx)
 
-    public constructor(private readonly workspace?: ConnectedWorkspace) {
-        super('CODE.AWS', vscode.TreeItemCollapsibleState.Collapsed)
+    return [new AuthNode(authProvider), new CawsRootNode(authProvider)]
+}
 
-        if (this.workspace !== undefined) {
-            this.description = 'Connected to Workspace'
-            this.iconPath = createThemeIcon('pass', 'testing.iconPassed')
-        }
+export class AuthNode implements RootNode {
+    public readonly id = 'auth'
+
+    public constructor(public readonly resource: CawsAuthenticationProvider) {}
+
+    public get treeItem() {
+        return this.createTreeItem()
     }
 
-    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+    private createTreeItem() {
+        const session = this.resource.getActiveSession()
+
+        if (session !== undefined) {
+            const item = new vscode.TreeItem(session.accountDetails.label)
+            item.iconPath = createThemeIcon('account')
+
+            return item
+        }
+
+        const loginNode = CawsCommands.declared.login.build().asTreeNode({
+            label: 'Login...',
+            iconPath: createThemeIcon('account'),
+        })
+
+        return loginNode.treeItem
+    }
+}
+
+export class CawsRootNode implements RootNode {
+    public readonly id = 'caws'
+    public readonly resource = this.workspace
+
+    private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
+
+    private workspace?: ConnectedWorkspace
+
+    public constructor(private readonly authProvider: CawsAuthenticationProvider) {
+        this.authProvider.onDidChangeSessions(() => {
+            this.onDidChangeVisibilityEmitter.fire()
+        })
+
+        this.getWorkspace().then(w => (this.workspace = w))
+    }
+
+    public get treeItem() {
+        return this.createTreeItem()
+    }
+
+    public canShow(): boolean {
+        return !!this.authProvider.getActiveSession()
+    }
+
+    public async getChildren(): Promise<TreeNode[]> {
         if (!this.workspace) {
             return localCommands
         }
@@ -66,67 +113,21 @@ export class CawsRootNode extends AWSTreeNodeBase {
 
         return getRemoteCommands(this.workspace.summary, devFileLocation)
     }
-}
 
-// Placing 'DeveloperTools' in this file until it makes sense to split it up
-// TODO(sijaden): get rid of `AWSTreeNodeBase`, replace with an interface compatible with all UI
+    private createTreeItem() {
+        const item = new vscode.TreeItem('CODE.AWS', vscode.TreeItemCollapsibleState.Collapsed)
 
-export class DeveloperToolsView implements vscode.TreeDataProvider<AWSTreeNodeBase> {
-    public static readonly viewId = 'aws.developerTools'
-
-    private readonly onDidChangeEmitter = new vscode.EventEmitter<AWSTreeNodeBase | void>()
-    public readonly onDidChangeTreeData = this.onDidChangeEmitter.event
-
-    public constructor(private readonly authProvider: CawsAuthenticationProvider) {
-        this.authProvider.onDidChangeSessions(() => this.onDidChangeEmitter.fire())
-    }
-
-    public getTreeItem(element: AWSTreeNodeBase): AWSTreeNodeBase {
-        return element
-    }
-
-    public getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
-        return makeChildrenNodes({
-            getChildNodes: async () => {
-                if (!element) {
-                    const authNode = this.getAuthNode()
-                    const cawsNode = await this.getCawsNode()
-
-                    return cawsNode ? [authNode, cawsNode] : [authNode]
-                }
-
-                return element.getChildren()
-            },
-        })
-    }
-
-    private getAuthNode() {
-        const session = this.authProvider.getActiveSession()
-
-        if (session !== undefined) {
-            return new (class extends AWSTreeNodeBase {
-                public constructor(label: string) {
-                    super(label, vscode.TreeItemCollapsibleState.None)
-                    this.iconPath = createThemeIcon('account')
-                }
-            })(session.accountDetails.label)
+        if (this.workspace !== undefined) {
+            item.description = 'Connected to Workspace'
+            item.iconPath = createThemeIcon('pass', 'testing.iconPassed')
         }
 
-        return CawsCommands.declared.login.build().asTreeNode({
-            label: 'Login...',
-            iconPath: createThemeIcon('account'),
-        })
+        return item
     }
 
-    private async getCawsNode() {
+    private async getWorkspace() {
         const client = await createClientFactory(this.authProvider)()
 
-        if (client.connected) {
-            const devWorkspace = client.connected ? await getConnectedWorkspace(client) : undefined
-
-            return new CawsRootNode(devWorkspace)
-        }
-
-        // Should we show a placeholder when not connected?
+        return client.connected ? await getConnectedWorkspace(client) : undefined
     }
 }

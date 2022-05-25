@@ -55,8 +55,8 @@
         "onCommand:aws.previewStateMachine",
         "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
         "onCommand:aws.stepfunctions.publishStateMachine",
-        "onView:aws.cdk.explorer",
-        "onCommand:aws.refreshCdkExplorer",
+        "onView:aws.developerTools",
+        "onCommand:aws.cdk.refresh",
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
@@ -693,11 +693,6 @@
                     "name": "%AWS.lambda.explorerTitle%"
                 },
                 {
-                    "id": "aws.cdk.explorer",
-                    "name": "%AWS.cdk.explorerTitle%",
-                    "when": "!isCloud9"
-                },
-                {
                     "id": "aws.developerTools",
                     "name": "%AWS.developerTools.explorerTitle%"
                 }
@@ -785,7 +780,11 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.refreshCdkExplorer",
+                    "command": "aws.cdk.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cdk.viewDocs",
                     "when": "false"
                 },
                 {
@@ -947,10 +946,6 @@
                 {
                     "command": "aws.s3.uploadFileToParent",
                     "when": "false"
-                },
-                {
-                    "command": "aws.cdk.help",
-                    "when": "!isCloud9"
                 },
                 {
                     "command": "aws.apprunner.startDeployment",
@@ -1201,16 +1196,6 @@
                     "command": "aws.caws.openDevEnv",
                     "when": "view == aws.caws",
                     "group": "1_caws@1"
-                },
-                {
-                    "command": "aws.refreshCdkExplorer",
-                    "when": "view == aws.cdk.explorer",
-                    "group": "navigation@5"
-                },
-                {
-                    "command": "aws.cdk.help",
-                    "when": "view == aws.cdk.explorer",
-                    "group": "z_externalLinks@1"
                 }
             ],
             "explorer/context": [
@@ -1428,12 +1413,12 @@
                 },
                 {
                     "command": "aws.cdk.renderStateMachineGraph",
-                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "when": "viewItem == awsCdkStateMachineNode",
                     "group": "inline@1"
                 },
                 {
                     "command": "aws.cdk.renderStateMachineGraph",
-                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "when": "viewItem == awsCdkStateMachineNode",
                     "group": "0@1"
                 },
                 {
@@ -1735,6 +1720,21 @@
                     "command": "aws.sam.newTemplate",
                     "group": "0@2",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
+                },
+                {
+                    "command": "aws.cdk.refresh",
+                    "when": "viewItem == awsCdkRootNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cdk.refresh",
+                    "when": "viewItem == awsCdkRootNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.cdk.viewDocs",
+                    "when": "viewItem == awsCdkRootNode",
+                    "group": "0@2"
                 }
             ]
         },
@@ -1859,16 +1859,6 @@
             {
                 "command": "aws.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
-                "command": "aws.cdk.help",
-                "title": "%AWS.command.cdk.help%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2473,18 +2463,18 @@
                 }
             },
             {
-                "command": "aws.refreshCdkExplorer",
+                "command": "aws.cdk.refresh",
                 "title": "%AWS.command.refreshCdkExplorer%",
                 "category": "%AWS.title%",
                 "icon": {
                     "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
-                },
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
                 }
+            },
+            {
+                "command": "aws.cdk.viewDocs",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.stepfunctions.createStateMachineFromTemplate",
@@ -3024,7 +3014,7 @@
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
-                "when": "editorTextFocus && (editorLangId == asl || editorLangId == asl-yaml)"
+                "when": "editorTextFocus && editorLangId == asl || editorTextFocus && editorLangId == asl-yaml"
             }
         ],
         "grammars": [

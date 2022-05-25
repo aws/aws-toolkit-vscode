@@ -255,10 +255,14 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             //
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
             const props = keys(descriptor)
+            const store = toRecord(props, p => this.get(p))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
-                for (const key of props.filter(p => event.affectsConfiguration(p))) {
+                const isDifferent = (p: keyof T & string) => event.affectsConfiguration(p) || store[p] !== this.get(p)
+
+                for (const key of props.filter(isDifferent)) {
                     this.log(`key "${key}" changed`)
+                    store[key] = this.get(key)
                     emitter.fire({ key })
                 }
             })

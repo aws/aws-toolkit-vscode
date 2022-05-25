@@ -8,7 +8,6 @@ import * as nls from 'vscode-nls'
 
 import * as caws from './caws/activation'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
-import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
@@ -67,6 +66,7 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
+import { isReleaseVersion } from './shared/vscode/env'
 import { UriHandler } from './shared/vscode/uriHandler'
 
 let localize: nls.LocalizeFunc
@@ -203,10 +203,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
-        await activateCdk({
-            extensionContext: extContext.extensionContext,
-        })
-
         await activateAwsExplorer({
             context: extContext,
             awsContextTrees,
@@ -254,7 +250,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        if (!isReleaseVersion()) {
+            globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long

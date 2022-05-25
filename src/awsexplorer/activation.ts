@@ -27,6 +27,7 @@ import { copyArnCommand } from './commands/copyArn'
 import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
+import { createLocalExplorerView } from './localExplorer'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -138,6 +139,9 @@ async function registerAwsExplorerCommands(
             await loadMoreChildrenCommand(node, awsExplorer)
         })
     )
+
+    const developerTools = createLocalExplorerView(context.extensionContext)
+    context.extensionContext.subscriptions.push(developerTools)
 }
 
 function updateAwsExplorerWhenAwsContextCredentialsChange(

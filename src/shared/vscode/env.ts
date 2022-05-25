@@ -92,6 +92,13 @@ export function getMinVscodeVersion(): string {
     return packageJson.engines.vscode.replace(/[^~]/, '')
 }
 
+/**
+ * Returns the minimum nodejs version declared in `package.json`.
+ */
+export function getMinNodejsVersion(): string {
+    return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
+}
+
 export function getMdeEnvArn(): string | undefined {
     return process.env[ENVIRONMENT_ARN_KEY]
 }
