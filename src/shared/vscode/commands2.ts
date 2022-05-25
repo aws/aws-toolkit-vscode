@@ -193,26 +193,6 @@ type Declarables<T> = {
     [P in FunctionKeys<T> as `declare${Capitalize<P & string>}`]: Declare<T, Functions<T>[P]>
 }
 
-/**
- * Returns all functions found on the target's prototype chain.
- *
- * Conflicts from functions sharing the same key are resolved by order of appearance, earlier
- * functions given precedence. This is equivalent to how the prototype chain is traversed when
- * evaluating `target[key]`, so long as the property descriptor is not a 'getter' function.
- */
-function getFunctions<T>(target: new (...args: any[]) => T): Functions<T> {
-    const result = {} as Functions<T>
-
-    for (const k of Object.getOwnPropertyNames(target.prototype)) {
-        if (typeof target.prototype[k] === 'function') {
-            result[k as keyof T] = target.prototype[k]
-        }
-    }
-
-    const next = Object.getPrototypeOf(target)
-    return next && next.prototype ? { ...getFunctions(next), ...result } : result
-}
-
 type PartialCommand = Omit<vscode.Command, 'arguments' | 'command'>
 type PartialTreeItem = Omit<TreeItemContent, 'command'>
 
