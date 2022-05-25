@@ -52,6 +52,7 @@ async function registerStepFunctionCommands(
          */
         vscode.commands.registerCommand('aws.previewStateMachine', async (arg?: vscode.TextEditor | vscode.Uri) => {
             try {
+                arg ??= vscode.window.activeTextEditor
                 const input = arg instanceof vscode.Uri ? arg : arg?.document
 
                 if (!input) {
