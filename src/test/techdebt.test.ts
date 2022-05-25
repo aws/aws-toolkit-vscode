@@ -5,13 +5,13 @@
 
 import * as assert from 'assert'
 import * as semver from 'semver'
-import { getMinVscodeVersion } from '../shared/vscode/env'
+import * as env from '../shared/vscode/env'
 
 // Checks project config and dependencies, to remind us to remove old things
 // when possible.
 describe('tech debt', function () {
     it('vscode minimum version', async function () {
-        const minVscode = getMinVscodeVersion()
+        const minVscode = env.getMinVscodeVersion()
 
         assert.ok(
             semver.lt(minVscode, '1.53.0'),
@@ -21,6 +21,20 @@ describe('tech debt', function () {
         assert.ok(
             semver.lt(minVscode, '1.51.0'),
             'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead'
+        )
+    })
+
+    it('nodejs minimum version', async function () {
+        const minNodejs = env.getMinNodejsVersion()
+
+        assert.ok(
+            semver.lt(minNodejs, '16.0.0'),
+            'remove require("perf_hooks").performance workarounds, use globalThis.performance instead (always available since nodejs 16.x)'
+        )
+
+        assert.ok(
+            semver.lt(minNodejs, '16.0.0'),
+            'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
         )
     })
 })
