@@ -2828,7 +2828,7 @@
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
-                "when": "editorTextFocus && (editorLangId == asl || editorLangId == asl-yaml)"
+                "when": "editorTextFocus && editorLangId == asl || editorTextFocus && editorLangId == asl-yaml"
             }
         ],
         "grammars": [
