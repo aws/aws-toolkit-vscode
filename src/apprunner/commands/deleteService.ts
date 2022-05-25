@@ -9,6 +9,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { AppRunnerServiceNode } from '../explorer/apprunnerServiceNode'
 import * as nls from 'vscode-nls'
 import { isValidResponse } from '../../shared/wizards/wizard'
+import { getTelemetryLogger } from '../../shared/telemetry/recorder'
 const localize = nls.loadMessageBundle()
 
 function validateName(name: string) {
@@ -20,31 +21,23 @@ function validateName(name: string) {
 }
 
 export async function deleteService(node: AppRunnerServiceNode): Promise<void> {
-    let telemetryResult: telemetry.Result = 'Failed'
     const appRunnerServiceStatus = node.info.Status as telemetry.AppRunnerServiceStatus
 
-    try {
-        const inputBox = createInputBox({
-            title: localize('AWS.apprunner.deleteService.title', 'Delete App Runner service'),
-            placeholder: localize('AWS.apprunner.deleteService.placeholder', 'delete'),
-            buttons: [createHelpButton('https://docs.aws.amazon.com/apprunner/latest/dg/manage-delete.html')],
-            validateInput: validateName,
-        })
+    getTelemetryLogger('ApprunnerDeleteService').recordAppRunnerServiceStatus(appRunnerServiceStatus)
 
-        const userInput = await inputBox.prompt()
+    const inputBox = createInputBox({
+        title: localize('AWS.apprunner.deleteService.title', 'Delete App Runner service'),
+        placeholder: localize('AWS.apprunner.deleteService.placeholder', 'delete'),
+        buttons: [createHelpButton('https://docs.aws.amazon.com/apprunner/latest/dg/manage-delete.html')],
+        validateInput: validateName,
+    })
 
-        if (!isValidResponse(userInput)) {
-            telemetryResult = 'Cancelled'
-            return
-        }
+    const userInput = await inputBox.prompt()
 
-        await node.delete()
-        telemetryResult = 'Succeeded'
-    } finally {
-        telemetry.recordApprunnerDeleteService({
-            result: telemetryResult,
-            appRunnerServiceStatus,
-            passive: false,
-        })
+    if (!isValidResponse(userInput)) {
+        getTelemetryLogger('ApprunnerDeleteService').recordResult('Cancelled')
+        return
     }
+
+    await node.delete()
 }
