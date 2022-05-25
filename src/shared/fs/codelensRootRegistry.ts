@@ -4,7 +4,7 @@
  */
 
 import * as path from 'path'
-import { WatchedFiles } from '../watchedFiles'
+import { WatchedFiles } from './watchedFiles'
 
 /**
  * CodelensRootRegistry stores the locations of files that we consider as candidates for
