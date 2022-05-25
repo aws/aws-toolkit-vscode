@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import { toTitleCase } from '../utilities/textUtilities'
-import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { isNameMangled } from './env'
 import { UnknownError } from '../toolkitError'
 import { getLogger, NullLogger } from '../logger/logger'
 import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
+import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -193,19 +193,33 @@ type Declarables<T> = {
     [P in FunctionKeys<T> as `declare${Capitalize<P & string>}`]: Declare<T, Functions<T>[P]>
 }
 
-// TODO(sijaden): implement decoupled tree-view, then move this
-type ExcludedKeys = 'id' | 'label' | 'collapsibleState'
-interface LabeledTreeItem extends Omit<vscode.TreeItem, ExcludedKeys> {
-    readonly label: string
+/**
+ * Returns all functions found on the target's prototype chain.
+ *
+ * Conflicts from functions sharing the same key are resolved by order of appearance, earlier
+ * functions given precedence. This is equivalent to how the prototype chain is traversed when
+ * evaluating `target[key]`, so long as the property descriptor is not a 'getter' function.
+ */
+function getFunctions<T>(target: new (...args: any[]) => T): Functions<T> {
+    const result = {} as Functions<T>
+
+    for (const k of Object.getOwnPropertyNames(target.prototype)) {
+        if (typeof target.prototype[k] === 'function') {
+            result[k as keyof T] = target.prototype[k]
+        }
+    }
+
+    const next = Object.getPrototypeOf(target)
+    return next && next.prototype ? { ...getFunctions(next), ...result } : result
 }
 
 type PartialCommand = Omit<vscode.Command, 'arguments' | 'command'>
-type PartialTreeItem = Omit<LabeledTreeItem, 'command'>
+type PartialTreeItem = Omit<TreeItemContent, 'command'>
 
 interface Builder {
     asUri(): vscode.Uri
     asCommand(content: PartialCommand): vscode.Command
-    asTreeNode(content: PartialTreeItem): AWSTreeNodeBase
+    asTreeNode(content: PartialTreeItem): TreeNode<Command>
     asCodeLens(range: vscode.Range, content: PartialCommand): vscode.CodeLens
 }
 
@@ -224,7 +238,7 @@ interface Deferred<T extends Callback, U extends any[]> {
 class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private disposed?: boolean
     private subscription?: vscode.Disposable
-    private static counter = 0 // Used to generated unique-ish tree item IDs
+    private idCounter = 0
     public readonly id = this.resource.info.id
 
     public constructor(private readonly resource: Deferred<T, U>, private readonly commands = vscode.commands) {}
@@ -291,15 +305,14 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
 
     private buildTreeNode(id: string, args: unknown[]) {
         return (content: PartialTreeItem) => {
-            return new (class extends AWSTreeNodeBase {
-                public constructor() {
-                    super(content.label, vscode.TreeItemCollapsibleState.None)
-                    this.id = `${id}-${(CommandResource.counter += 1)}`
-                    this.command = { command: id, arguments: args, title: content.label }
+            const treeItem = new vscode.TreeItem(content.label, vscode.TreeItemCollapsibleState.None)
+            treeItem.command = { command: id, arguments: args, title: content.label }
 
-                    Object.assign(this, content)
-                }
-            })()
+            return {
+                id: `${id}-${(this.idCounter += 1)}`,
+                treeItem: Object.assign(treeItem, content),
+                resource: this,
+            }
         }
     }
 }

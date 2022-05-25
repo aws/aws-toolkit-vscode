@@ -63,3 +63,5 @@ The AWS Toolkit for Visual Studio Code supports multiple languages that you can 
 ## Using Your toolchain
 
 Once you have your toolchain set up, you can use it to [run or debug](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-debug) the AWS SAM application\.
+
+Try the [AWS Code Sample Catalog](https://docs.aws.amazon.com/code-samples/latest/catalog/welcome.html) to start coding with the AWS SDK.
