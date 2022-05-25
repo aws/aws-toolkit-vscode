@@ -23,7 +23,6 @@ import { TelemetryHelper } from './util/telemetryHelper'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { ConsolasSettings } from './util/consolasSettings'
 import { ExtContext } from '../../shared/extensions'
-import { Settings } from '../../shared/settings'
 import { TextEditorSelectionChangeKind } from 'vscode'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { ConsolasTracker } from './tracker/consolasTracker'
@@ -44,7 +43,7 @@ import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
 import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 
-export async function activate(context: ExtContext, configuration: Settings): Promise<void> {
+export async function activate(context: ExtContext): Promise<void> {
     /**
      * Enable essential intellisense default settings
      */

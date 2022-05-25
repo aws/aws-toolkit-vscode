@@ -218,7 +218,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(extContext)
 
-        await activateVector(extContext, settings)
+        await activateVector(extContext)
 
         await activateEcr(context)
 
