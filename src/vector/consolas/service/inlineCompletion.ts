@@ -17,7 +17,12 @@ let _range!: vscode.Range
 let _referenceProvider: ReferenceInlineProvider
 const dimDecoration = vscode.window.createTextEditorDecorationType(<vscode.DecorationRenderOptions>{
     textDecoration: `none; opacity: ${50 / 100}`,
-    color: '#DDDDDD',
+    light: {
+        color: '#013220',
+    },
+    dark: {
+        color: '#DDDDDD',
+    },
 })
 
 async function resetInlineStates(editor: vscode.TextEditor) {
