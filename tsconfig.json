@@ -16,7 +16,8 @@
         "strict": true,
         "noUnusedLocals": true,
         "lib": ["dom", "es6", "esnext.asynciterable"],
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "jsx": "preserve"
     },
     "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
 }
