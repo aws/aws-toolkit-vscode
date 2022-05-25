@@ -1662,12 +1662,12 @@
                 },
                 {
                     "command": "aws.consolas.configure",
-                    "when": "view == aws.explorer && viewItem == awsConsolasNode && !isCloud9",
+                    "when": "viewItem == awsConsolasNode && !isCloud9",
                     "group": "inline@2"
                 },
                 {
                     "command": "aws.consolas.introduction",
-                    "when": "view == aws.explorer && viewItem == awsConsolasNode && !isCloud9 && CONSOLAS_TERMS_ACCEPTED",
+                    "when": "viewItem == awsConsolasNode && !isCloud9 && CONSOLAS_TERMS_ACCEPTED",
                     "group": "inline@1"
                 },
                 {
