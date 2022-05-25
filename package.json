@@ -240,7 +240,7 @@
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
                         "jsonResourceModification": false,
-                        "Consolas": false
+                        "Consolas": true
                     },
                     "properties": {
                         "jsonResourceModification": {
@@ -249,7 +249,7 @@
                         },
                         "Consolas": {
                             "type": "boolean",
-                            "default": false
+                            "default": true
                         }
                     },
                     "additionalProperties": false
@@ -257,7 +257,7 @@
                 "aws.consolas.includeSuggestionsWithCodeReferences": {
                     "type": "boolean",
                     "description": "%AWS.configuration.description.consolas%",
-                    "default": false
+                    "default": true
                 },
                 "aws.resources.enabledResources": {
                     "type": "array",

@@ -67,7 +67,7 @@
     "AWS.configuration.description.awssam.debug.snippets.api.description": "A new configuration for invoking an AWS Lambda in a CloudFormation template, simulating API Gateway",
     "AWS.configuration.description.awssam.debug.snippets.api.label.cn": "Amazon SAM: API Gateway lambda invoke",
     "AWS.configuration.description.awssam.debug.snippets.api.description.cn": "A new configuration for invoking an Amazon Lambda in a CloudFormation template, simulating API Gateway",
-    "AWS.configuration.description.consolas": "Include suggestions with code references",
+    "AWS.configuration.description.consolas": "When checked, Consolas will include suggestions with code references",
     "AWS.command.apig.copyUrl": "Copy URL",
     "AWS.command.apig.invokeRemoteRestApi": "Invoke on AWS",
     "AWS.command.apig.invokeRemoteRestApi.cn": "Invoke on Amazon",
