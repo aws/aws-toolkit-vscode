@@ -14,7 +14,6 @@ import {
     convertDescribeLogStreamsToQuickPickItems,
 } from '../../../cloudWatchLogs/commands/viewLogStream'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
-import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
 import globals from '../../../shared/extensionGlobals'
 
@@ -40,7 +39,7 @@ class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
 describe('viewLogStreamWizard', async function () {
     it('exits when cancelled', async function () {
         const wizard = new SelectLogStreamWizard(
-            new LogGroupNode(new FakeParentNode('asdf'), 'region', {}),
+            new LogGroupNode('region', {}),
             new MockSelectLogStreamWizardContext([undefined])
         )
         const result = await wizard.run()
@@ -53,7 +52,7 @@ describe('viewLogStreamWizard', async function () {
         const region = 'us-weast-99'
         const groupName = 'grouper'
         const wizard = new SelectLogStreamWizard(
-            new LogGroupNode(new FakeParentNode('asdf'), region, { logGroupName: groupName }),
+            new LogGroupNode(region, { logGroupName: groupName }),
             new MockSelectLogStreamWizardContext([streamName])
         )
         const result = await wizard.run()
