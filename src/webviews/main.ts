@@ -5,7 +5,6 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ExtContext } from '../shared/extensions'
 import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
 import { Protocol, registerWebviewServer } from './server'
 import { getIdeProperties } from '../shared/extensionUtilities'
@@ -99,6 +98,13 @@ export interface VueWebviewView<T extends VueWebview = VueWebview> {
     register(params?: Partial<Omit<WebviewViewParams, 'id' | 'webviewJs'>>): vscode.Disposable
 
     /**
+     * Event fired whenever the associated view is resolved.
+     *
+     * This can happen when the view first becomes visisble or when it is hidden and revealed again.
+     */
+    readonly onDidResolveView: vscode.Event<vscode.WebviewView>
+
+    /**
      * The backend {@link VueWebview proxy} connected to this instance
      */
     readonly server: T
@@ -158,7 +164,7 @@ export abstract class VueWebview {
     private readonly onDidDispose = this.onDidDisposeEmitter.event
 
     private disposed = false
-    private context?: ExtContext
+    private context?: vscode.ExtensionContext
 
     public constructor() {
         const commands: Record<string, (...args: any[]) => unknown> = {}
@@ -184,7 +190,7 @@ export abstract class VueWebview {
         this.onDidDisposeEmitter.fire()
     }
 
-    protected getContext(): ExtContext {
+    protected getContext(): vscode.ExtensionContext {
         if (!this.context) {
             throw new Error('Webview was not initialized with "ExtContext"')
         }
@@ -194,12 +200,12 @@ export abstract class VueWebview {
 
     public static compilePanel<T extends new (...args: any[]) => VueWebview>(
         target: T
-    ): new (context: ExtContext, ...args: ConstructorParameters<T>) => VueWebviewPanel<InstanceType<T>> {
+    ): new (context: vscode.ExtensionContext, ...args: ConstructorParameters<T>) => VueWebviewPanel<InstanceType<T>> {
         return class Panel {
             private readonly instance: InstanceType<T>
             private panel?: vscode.WebviewPanel
 
-            public constructor(protected readonly context: ExtContext, ...args: ConstructorParameters<T>) {
+            public constructor(protected readonly context: vscode.ExtensionContext, ...args: ConstructorParameters<T>) {
                 this.instance = new target(...args) as InstanceType<T>
 
                 for (const [prop, val] of Object.entries(this.instance)) {
@@ -219,9 +225,8 @@ export abstract class VueWebview {
                     return this.panel
                 }
 
-                const panel = createWebviewPanel({
+                const panel = createWebviewPanel(this.context, {
                     id: this.instance.id,
-                    context: this.context,
                     webviewJs: this.instance.source,
                     ...params,
                 })
@@ -243,12 +248,15 @@ export abstract class VueWebview {
 
     public static compileView<T extends new (...args: any[]) => VueWebview>(
         target: T
-    ): new (context: ExtContext, ...args: ConstructorParameters<T>) => VueWebviewView<InstanceType<T>> {
+    ): new (context: vscode.ExtensionContext, ...args: ConstructorParameters<T>) => VueWebviewView<InstanceType<T>> {
         return class View {
+            private readonly onDidResolveViewEmitter = new vscode.EventEmitter<vscode.WebviewView>()
             private readonly instance: InstanceType<T>
-            private view?: vscode.WebviewView
+            private resolvedView?: vscode.WebviewView
 
-            public constructor(protected readonly context: ExtContext, ...args: ConstructorParameters<T>) {
+            public readonly onDidResolveView = this.onDidResolveViewEmitter.event
+
+            public constructor(protected readonly context: vscode.ExtensionContext, ...args: ConstructorParameters<T>) {
                 this.instance = new target(...args) as InstanceType<T>
 
                 for (const [prop, val] of Object.entries(this.instance)) {
@@ -269,21 +277,22 @@ export abstract class VueWebview {
                     resolveWebviewView: async view => {
                         view.title = params.title ?? view.title
                         view.description = params.description ?? view.description
-                        updateWebview(view.webview, {
+                        updateWebview(this.context, view.webview, {
                             ...params,
                             webviewJs: this.instance.source,
-                            context: this.context,
                         })
 
-                        if (!this.view) {
-                            this.view = view
+                        if (!this.resolvedView) {
+                            this.resolvedView = view
 
-                            const server = registerWebviewServer(this.view.webview, this.instance.protocol)
-                            this.view.onDidDispose(() => {
+                            const server = registerWebviewServer(this.resolvedView.webview, this.instance.protocol)
+                            this.resolvedView.onDidDispose(() => {
                                 server.dispose()
-                                this.view = undefined
+                                this.resolvedView = undefined
                             })
                         }
+
+                        this.onDidResolveViewEmitter.fire(view)
                     },
                 })
             }
@@ -315,7 +324,7 @@ export type ClassToProtocol<T extends VueWebview> = FilterUnknown<Commands<T> & 
 /**
  * Creates a brand new webview panel, setting some basic initial parameters and updating the webview.
  */
-function createWebviewPanel(params: WebviewPanelParams & { context: ExtContext }): vscode.WebviewPanel {
+function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelParams): vscode.WebviewPanel {
     const panel = vscode.window.createWebviewPanel(
         params.id,
         params.title,
@@ -330,7 +339,7 @@ function createWebviewPanel(params: WebviewPanelParams & { context: ExtContext }
             retainContextWhenHidden: isCloud9() || params.retainContextWhenHidden,
         }
     )
-    updateWebview(panel.webview, params)
+    updateWebview(ctx, panel.webview, params)
 
     return panel
 }
@@ -338,13 +347,12 @@ function createWebviewPanel(params: WebviewPanelParams & { context: ExtContext }
 /**
  * Mutates a webview, applying various options and a static HTML page to bootstrap the Vue code.
  */
-function updateWebview(webview: vscode.Webview, params: WebviewParams & { context: ExtContext }): vscode.Webview {
-    const context = params.context.extensionContext
-    const libsPath: string = path.join(context.extensionPath, 'dist', 'libs')
-    const jsPath: string = path.join(context.extensionPath, 'media', 'js')
-    const cssPath: string = path.join(context.extensionPath, 'media', 'css')
-    const webviewPath: string = path.join(context.extensionPath, 'dist')
-    const resourcesPath: string = path.join(context.extensionPath, 'resources')
+function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, params: WebviewParams): vscode.Webview {
+    const libsPath: string = path.join(ctx.extensionPath, 'dist', 'libs')
+    const jsPath: string = path.join(ctx.extensionPath, 'media', 'js')
+    const cssPath: string = path.join(ctx.extensionPath, 'media', 'css')
+    const webviewPath: string = path.join(ctx.extensionPath, 'dist')
+    const resourcesPath: string = path.join(ctx.extensionPath, 'resources')
 
     webview.options = {
         enableScripts: true,

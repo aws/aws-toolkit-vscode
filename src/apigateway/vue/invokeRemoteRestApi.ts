@@ -128,7 +128,7 @@ export async function invokeRemoteRestApi(
         // something is wrong if the paths aren't defined...
         // const sortResources = (a: [string, Resource], b: [string, Resource]) => a[1].path!.localeCompare(b[1].path!)
         const wv = new Panel(
-            context,
+            context.extensionContext,
             {
                 ApiName: params.apiNode.name,
                 ApiId: params.apiNode.id,

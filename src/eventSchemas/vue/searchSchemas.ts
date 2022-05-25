@@ -117,7 +117,7 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
 
             return
         }
-        const wv = new Panel(context, context.outputChannel, client, {
+        const wv = new Panel(context.extensionContext, context.outputChannel, client, {
             RegistryNames: registryNames,
             Header: getPageHeader(registryNames),
             SearchInputPlaceholder: localize('AWS.schemas.search.input.placeholder', 'Search for schema keyword...'),

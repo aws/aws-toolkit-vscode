@@ -63,7 +63,10 @@ export class SamInvokeWebview extends VueWebview {
     public readonly id = 'createLambda'
     public readonly source = 'src/lambda/vue/configEditor/index.js'
 
-    public constructor(private readonly config?: AwsSamDebuggerConfiguration) {
+    public constructor(
+        private readonly extContext: ExtContext, // TODO(sijaden): get rid of `ExtContext`
+        private readonly config?: AwsSamDebuggerConfiguration
+    ) {
         super()
     }
 
@@ -287,7 +290,7 @@ export class SamInvokeWebview extends VueWebview {
         // NOTE: This bypasses the `${workspaceFolder}` resolution, but shouldn't naturally occur in Cloud9
         // (Cloud9 also doesn't currently have variable resolution support anyways)
         if (isCloud9()) {
-            const provider = new SamDebugConfigProvider(this.getContext())
+            const provider = new SamDebugConfigProvider(this.extContext)
             await provider.resolveDebugConfiguration(folder, finalConfig)
         } else {
             // startDebugging on VS Code goes through the whole resolution chain
@@ -302,7 +305,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
     return vscode.commands.registerCommand(
         'aws.launchConfigForm',
         async (launchConfig?: AwsSamDebuggerConfiguration) => {
-            const webview = new WebviewPanel(context, launchConfig)
+            const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
             webview.show({ title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration') })
             recordSamOpenConfigUi()
         }

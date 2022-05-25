@@ -19,6 +19,8 @@ import { getSampleLambdaPayloads, SampleRequest } from '../../utils'
 
 import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
+import * as telemetry from '../../../shared/telemetry/telemetry'
+
 const localize = nls.loadMessageBundle()
 
 export interface InitialData {
@@ -52,6 +54,8 @@ export class RemoteInvokeWebview extends VueWebview {
     }
 
     public async invokeLambda(input: string): Promise<void> {
+        let result: telemetry.Result = 'Succeeded'
+
         this.channel.show()
         this.channel.appendLine('Loading response...')
 
@@ -72,6 +76,9 @@ export class RemoteInvokeWebview extends VueWebview {
             this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
             this.channel.appendLine(error.toString())
             this.channel.appendLine('')
+            result = 'Failed'
+        } finally {
+            telemetry.recordLambdaInvokeRemote({ result, passive: false })
         }
     }
 
@@ -123,7 +130,7 @@ export async function invokeRemoteLambda(
     const inputs = await getSampleLambdaPayloads()
     const client = globals.toolkitClientBuilder.createLambdaClient(params.functionNode.regionCode)
 
-    const wv = new Panel(context, context.outputChannel, client, {
+    const wv = new Panel(context.extensionContext, context.outputChannel, client, {
         FunctionName: params.functionNode.configuration.FunctionName ?? '',
         FunctionArn: params.functionNode.configuration.FunctionArn ?? '',
         FunctionRegion: params.functionNode.regionCode,

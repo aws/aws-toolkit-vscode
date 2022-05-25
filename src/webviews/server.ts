@@ -56,11 +56,6 @@ export function registerWebviewServer(webview: vscode.Webview, commands: Protoco
         let result: any
         try {
             result = await handler.call(webview, ...data)
-            // For now undefined means we should not send any data back
-            // Later on the commands should specify how undefined is handled
-            if (result === undefined) {
-                return
-            }
         } catch (err) {
             if (!(err instanceof Error)) {
                 getLogger().debug(`Webview server threw on comamnd "${command}" but it was not an error: `, err)

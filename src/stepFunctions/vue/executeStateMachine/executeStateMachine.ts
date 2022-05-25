@@ -85,7 +85,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
 const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
 
 export async function executeStateMachine(context: ExtContext, node: StateMachineNode): Promise<void> {
-    const wv = new Panel(context, context.outputChannel, {
+    const wv = new Panel(context.extensionContext, context.outputChannel, {
         arn: node.details.stateMachineArn,
         name: node.details.name,
         region: node.regionCode,

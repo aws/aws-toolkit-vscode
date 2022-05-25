@@ -64,7 +64,7 @@ const Panel = VueWebview.compilePanel(FeedbackWebview)
 let activeWebview: VueWebviewPanel | undefined
 
 export async function submitFeedback(context: ExtContext) {
-    activeWebview ??= new Panel(context, globals.telemetry)
+    activeWebview ??= new Panel(context.extensionContext, globals.telemetry)
 
     const webviewPanel = await activeWebview.show({
         title: localize('AWS.submitFeedback.title', 'Send Feedback'),
