@@ -58,7 +58,9 @@ export function createLocalExplorerView(): vscode.TreeView<TreeNode> {
 
     // Cloud9 will only refresh when refreshing the entire tree
     if (isCloud9()) {
-        cdkNode.onDidChangeChildren(() => treeDataProvider.refresh())
+        roots.forEach(node => {
+            node.onDidChangeChildren?.(() => treeDataProvider.refresh())
+        })
     }
 
     return view
