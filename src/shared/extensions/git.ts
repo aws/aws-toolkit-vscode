@@ -252,7 +252,7 @@ export class GitExtension {
         // TODO: make a promise 'pipe' function
         if (branches.length === 0) {
             try {
-                const { stdout } = await execFileAsync(api.git.path, ['ls-remote', '--heads', remote.fetchUrl ?? ''])
+                const { stdout } = await execFileAsync(api.git.path, ['ls-remote', '--heads', '--', remote.fetchUrl ?? ''])
                 return stdout
                     .toString()
                     .split(/\r?\n/)
