@@ -18,21 +18,21 @@ body.vscode-high-contrast p {
 
 body.vscode-light p code {
     color: #008000;
-    white-space: pre-line;
+    white-space: pre-wrap;
     font-size: var(--vscode-editor-font-size);
     font-family: var(--vscode-editor-font-family);
 }
 
 body.vscode-dark p code {
     color: #6a9955;
-    white-space: pre-line;
+    white-space: pre-wrap;
     font-size: var(--vscode-editor-font-size);
     font-family: var(--vscode-editor-font-family);
 }
 
 body.vscode-high-contrast p code {
     color: #008000;
-    white-space: pre-line;
+    white-space: pre-wrap;
     font-size: var(--vscode-editor-font-size);
     font-family: var(--vscode-editor-font-family);
 }

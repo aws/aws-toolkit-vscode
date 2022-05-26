@@ -92,13 +92,24 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         this._referenceLogs.push(referenceLog)
         this.update()
     }
-
+    // TODO: migrate to vue based webview
     private getHtml(webview: vscode.Webview, showPrompt: boolean): string {
         const styleVSCodeUri = webview.asWebviewUri(
             vscode.Uri.joinPath(this._extensionUri, 'media', 'css/consolasReferenceLog.css')
         )
         const prompt = showPrompt ? ConsolasConstants.referenceLogPromptText : ''
-        const csp = isCloud9() ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none';">` : ''
+        let csp = ''
+        if (isCloud9()) {
+            csp = `<meta
+            http-equiv="Content-Security-Policy"
+            content=
+                "default-src 'none';
+                img-src https: data:;
+                script-src 'self' 'unsafe-inline';
+                style-src 'self' 'unsafe-inline' ${webview.cspSource};
+                font-src 'self' data:;"
+            >`
+        }
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
