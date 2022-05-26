@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add warning to indicate time delay in SQS queue deletion"
+}

@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.ui.panel.ComponentPanelBuilder
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
@@ -17,7 +18,8 @@ import javax.swing.event.DocumentEvent
 class DeleteResourceDialog(
     project: Project,
     private val resourceType: String,
-    private val resourceName: String
+    private val resourceName: String,
+    private val comment: String = ""
 ) : DialogWrapper(project) {
     private val deleteResourceConfirmation = JBTextField().apply {
         emptyText.text = message("delete_resource.confirmation_text")
@@ -33,6 +35,14 @@ class DeleteResourceDialog(
             row {
                 deleteResourceConfirmation(grow)
             }
+            createNoteOrCommentRow(
+                ComponentPanelBuilder.createCommentComponent(
+                    comment,
+                    true,
+                    -1,
+                    true
+                )
+            ).visible = !comment.isNullOrEmpty()
         }
     }
 
