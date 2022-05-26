@@ -26,7 +26,7 @@ describe('AppNode', function () {
     it('uses the `cdk.json` uri as its id', async function () {
         const testNode = getTestNode()
 
-        assert.strictEqual(testNode.id, vscode.Uri.parse(cdkJsonPath).toString())
+        assert.strictEqual(testNode.id, vscode.Uri.file(cdkJsonPath).toString())
     })
 
     it('initializes label and tooltip', async function () {
