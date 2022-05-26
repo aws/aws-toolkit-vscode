@@ -26,8 +26,8 @@ export class ConsolasNode implements RootNode {
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
 
     constructor() {
-        vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('aws.experiments')) {
+        Experiments.instance.onDidChange(({ key }) => {
+            if (key === 'Consolas') {
                 this.onDidChangeVisibilityEmitter.fire()
             }
         })

@@ -4,45 +4,34 @@
  */
 
 import * as vscode from 'vscode'
-import { ExtContext } from '../../../shared/extensions'
-import { compileVueWebview } from '../../../webviews/main'
+import { VueWebview } from '../../../webviews/main'
 
-const VueWebview = compileVueWebview({
-    // The `id` should match the value in `package.json`
-    id: 'aws.consolas.enabledCodeSuggestions',
-    title: 'Terms And Conditions',
-    // The file name is generated, but this needs to be updated manually if changing the file structure
-    webviewJs: 'vectorConsolasVue.js',
+export class ConsolasWebview extends VueWebview {
+    public readonly id = 'aws.consolas.enabledCodeSuggestions'
+    public readonly source = 'src/vector/consolas/vue/index.js'
 
-    // 'start' is the entry point for the view which can take any number of parameters
-    // its return value is what the frontend code will receive
-    start: (title?: string) => ({ title: title?.toUpperCase() }),
+    public readonly onDidChangeTriggerStatus = new vscode.EventEmitter<boolean>()
+    public readonly onDidChangeKeyBinding = new vscode.EventEmitter<string>()
 
-    // Events can be added here, they must be of type `vscode.EventEmitter`
-    events: {
-        onDidChangeTriggerStatus: new vscode.EventEmitter<boolean>(),
-        onDidChangeKeyBinding: new vscode.EventEmitter<string>(),
-    },
+    public async controlTrigger() {
+        await vscode.commands.executeCommand('aws.consolas.acceptTermsOfService')
+        this.dispose()
+    }
 
-    // Add 'commands' (which are just functions) here
-    // These are exposed directly to the frontend via the `client` object
-    commands: {
-        async controlTrigger() {
-            await vscode.commands.executeCommand('aws.consolas.acceptTermsOfService')
-            this.dispose()
-        },
-        async cancelCodeSuggestion() {
-            await vscode.commands.executeCommand('aws.consolas.cancelTermsOfService')
-            this.dispose()
-        },
-    },
-})
+    public async cancelCodeSuggestion() {
+        await vscode.commands.executeCommand('aws.consolas.cancelTermsOfService')
+        this.dispose()
+    }
+}
 
-export class ConsolasWebview extends VueWebview {}
+const Panel = VueWebview.compilePanel(ConsolasWebview)
+let activeWebview: vscode.WebviewPanel | undefined
 
-export function activate(context: ExtContext) {
-    const consolasWebview = new ConsolasWebview(context)
-
-    // initializes the view
-    consolasWebview.start()
+export async function showView(context: vscode.ExtensionContext) {
+    if (!activeWebview) {
+        activeWebview = await new Panel(context).show({ title: 'Terms And Conditions' })
+        activeWebview.onDidDispose(() => (activeWebview = undefined))
+    } else {
+        activeWebview.reveal()
+    }
 }
