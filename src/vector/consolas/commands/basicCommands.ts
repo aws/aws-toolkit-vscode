@@ -33,7 +33,7 @@ export const showIntroduction = Commands.declare('aws.consolas.introduction', (c
 export const showReferenceLog = Commands.declare(
     'aws.consolas.openReferencePanel',
     (context: ExtContext) => async () => {
-        await vscode.commands.executeCommand('aws.consolas.referenceLog.focus')
+        await vscode.commands.executeCommand('workbench.view.extension.aws-consolas-reference-log')
     }
 )
 
