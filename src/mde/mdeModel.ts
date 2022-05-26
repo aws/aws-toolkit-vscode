@@ -287,11 +287,16 @@ Host ${configHostName}
             fs.mkdirpSync(path.dirname(sshConfigPath))
             fs.appendFileSync(sshConfigPath, mdeSshConfig)
         } catch (e) {
-            getLogger().error('ensureMdeSshConfig: failed to write: %O', sshConfigPath)
+            getLogger().error('ensureMdeSshConfig: failed to write: %O: %s', sshConfigPath, (e as Error).message ?? '')
+
             return {
                 ok: false,
                 err: 'write failed',
-                msg: localize('AWS.mde.error.writeFail', 'Failed to write SSH config: {0}', sshConfigPath),
+                msg: localize(
+                    'AWS.mde.error.writeFail',
+                    'Failed to write SSH config: {0} (permission issue?)',
+                    sshConfigPath
+                ),
             }
         }
     }
