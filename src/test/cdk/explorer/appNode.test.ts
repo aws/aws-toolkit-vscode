@@ -23,6 +23,12 @@ describe('AppNode', function () {
     const cdkJsonPath = path.join(getTestWorkspaceFolder(), workspaceFolderName, 'cdk.json')
     const treePath = path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json')
 
+    it('uses the `cdk.json` uri as its id', async function () {
+        const testNode = getTestNode()
+
+        assert.strictEqual(testNode.id, vscode.Uri.parse(cdkJsonPath).toString())
+    })
+
     it('initializes label and tooltip', async function () {
         const testNode = getTestNode()
 
