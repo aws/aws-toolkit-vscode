@@ -5,14 +5,14 @@
 
 import * as vscode from 'vscode'
 import { deleteLambda } from './commands/deleteLambda'
-import { invokeRemoteLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { ExtContext } from '../shared/extensions'
 import globals from '../shared/extensionGlobals'
-import { registerSamInvokeVueCommand } from './configEditor/vue/samInvokeBackend'
+import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
+import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 
 /**
  * Activates Lambda components.
@@ -48,8 +48,18 @@ export async function activate(context: ExtContext): Promise<void> {
             'aws.downloadLambda',
             async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)
         ),
-        vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
-            await uploadLambdaCommand(node)
+        vscode.commands.registerCommand('aws.uploadLambda', async arg => {
+            if (arg instanceof LambdaFunctionNode) {
+                await uploadLambdaCommand({
+                    name: arg.functionName,
+                    region: arg.regionCode,
+                    configuration: arg.configuration,
+                })
+            } else if (arg instanceof vscode.Uri) {
+                await uploadLambdaCommand(undefined, arg)
+            } else {
+                await uploadLambdaCommand()
+            }
         }),
         registerSamInvokeVueCommand(context)
     )

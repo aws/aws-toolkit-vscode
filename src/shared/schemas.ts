@@ -10,10 +10,8 @@ import globals from './extensionGlobals'
 import { activateYamlExtension, YamlExtension } from './extensions/yaml'
 import * as filesystemUtilities from './filesystemUtilities'
 import { getLogger } from './logger'
-import { CompositeResourceFetcher } from './resourcefetcher/compositeResourceFetcher'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
-import { ResourceFetcher } from './resourcefetcher/resourcefetcher'
 import { Settings } from './settings'
 import { once } from './utilities/functionUtils'
 import { normalizeSeparator } from './utilities/pathUtils'
@@ -50,6 +48,7 @@ export class SchemaService {
     public constructor(
         private readonly extensionContext: vscode.ExtensionContext,
         opts?: {
+            /** Assigned in start(). */
             schemas?: Schemas
             updatePeriod?: number
             handlers?: Map<SchemaType, SchemaHandler>
@@ -147,6 +146,8 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
         }
     } catch (e) {
         getLogger().verbose('Could not refresh schemas: %s', (e as Error).message)
+        // this.schemas will be undefined for the rest of the session, so
+        // processUpdates() will never do its work.
         return undefined
     }
 }
@@ -171,28 +172,32 @@ export async function getRemoteOrCachedFile(params: {
     if (!(await filesystemUtilities.fileExists(dir))) {
         mkdirSync(dir, { recursive: true })
     }
-    const cachedVersion = params.extensionContext.globalState.get<string>(params.cacheKey)
-    const fetchers: ResourceFetcher[] = []
-    if (params.version && params.version !== cachedVersion) {
-        fetchers.push(
-            new HttpResourceFetcher(params.url, {
-                showUrl: true,
-                // updates curr version
-                onSuccess: contents => {
-                    writeFileSync(params.filepath, contents)
-                    params.extensionContext.globalState.update(params.cacheKey, params.version)
-                },
-            })
-        )
-    }
-    fetchers.push(new FileResourceFetcher(params.filepath))
-    const fetcher = new CompositeResourceFetcher(...fetchers)
 
-    const result = await fetcher.get()
-    if (!result) {
-        throw new Error(`could not resolve schema at ${params.filepath}`)
+    const cachedVersion = params.extensionContext.globalState.get<string>(params.cacheKey)
+    const outdated = params.version && params.version !== cachedVersion
+    if (!outdated) {
+        // Check that the cached file actually can be fetched. Else we might
+        // never update the cache.
+        const fileFetcher = new FileResourceFetcher(params.filepath)
+        const content = await fileFetcher.get()
+        if (content) {
+            return content
+        }
     }
-    return result
+
+    const httpFetcher = new HttpResourceFetcher(params.url, {
+        showUrl: true,
+        // updates curr version
+        onSuccess: contents => {
+            writeFileSync(params.filepath, contents)
+            params.extensionContext.globalState.update(params.cacheKey, params.version)
+        },
+    })
+    const content = await httpFetcher.get()
+    if (!content) {
+        throw new Error(`failed to resolve schema: ${params.filepath}`)
+    }
+    return content
 }
 
 /**

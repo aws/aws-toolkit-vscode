@@ -248,10 +248,14 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             //
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
             const props = keys(descriptor)
+            const store = toRecord(props, p => this.get(p))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
-                for (const key of props.filter(p => event.affectsConfiguration(p))) {
+                const isDifferent = (p: keyof T & string) => event.affectsConfiguration(p) || store[p] !== this.get(p)
+
+                for (const key of props.filter(isDifferent)) {
                     this.log(`key "${key}" changed`)
+                    store[key] = this.get(key)
                     emitter.fire({ key })
                 }
             })
@@ -594,17 +598,18 @@ export class DevSettings extends Settings.define('aws.dev', DEV_SETTINGS) {
  * Simple utility function to 'migrate' a setting from one key to another.
  *
  * Currently only used for simple migrations where we are not concerned about maintaining the
- * legacy definition.
+ * legacy definition. Only migrates to global settings.
  */
 export async function migrateSetting<T, U = T>(
     from: { key: string; type: TypeConstructor<T> },
     to: { key: string; transform?: (value: T) => U }
 ) {
+    // TODO(sijaden): we should handle other targets besides 'global'
     const config = vscode.workspace.getConfiguration()
     const hasLatest = config.inspect(to.key)?.globalValue !== undefined
     const logPrefix = `Settings migration ("${from.key}" -> "${to.key}")`
 
-    if (hasLatest) {
+    if (hasLatest || !config.has(from.key)) {
         return true
     }
 
@@ -613,10 +618,11 @@ export async function migrateSetting<T, U = T>(
         const newVal = to.transform?.(oldVal) ?? oldVal
 
         await config.update(to.key, newVal, vscode.ConfigurationTarget.Global)
+        getLogger().debug(`${logPrefix}: succeeded`)
 
         return true
     } catch (error) {
-        getLogger().verbose(`${logPrefix}: conversion failed: ${error}`)
+        getLogger().verbose(`${logPrefix}: failed: ${error}`)
 
         return false
     }

@@ -10,7 +10,7 @@ import { getLogger } from '../../../shared/logger'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { createErrorItem, makeChildrenNodes } from '../../../shared/treeview/utils'
+import { createErrorItem, makeChildrenNodes, TreeShim } from '../../../shared/treeview/utils'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { ResourcesNode } from './resourcesNode'
 import { ResourceNode } from './resourceNode'
@@ -75,7 +75,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
                     return new PlaceholderNode(this, `[${UNAVAILABLE_RESOURCE}]`)
                 } else {
                     result = 'Failed'
-                    return createErrorItem(error, `Resources: unexpected error: ${error.message}`)
+                    return new TreeShim(createErrorItem(error, `Resources: unexpected error: ${error.message}`))
                 }
             },
             getNoChildrenPlaceholderNode: async () =>

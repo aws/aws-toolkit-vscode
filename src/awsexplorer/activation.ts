@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
-import { submitFeedback } from '../feedback/commands/submitFeedback'
+import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import { AwsContext } from '../shared/awsContext'
@@ -20,13 +20,14 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { Commands } from '../shared/vscode/commands2'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
-import { executeStateMachine } from '../stepFunctions/commands/executeStateMachine'
+import { executeStateMachine } from '../stepFunctions/vue/executeStateMachine/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
 import { copyArnCommand } from './commands/copyArn'
 import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
+import { createLocalExplorerView } from './localExplorer'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -138,6 +139,9 @@ async function registerAwsExplorerCommands(
             await loadMoreChildrenCommand(node, awsExplorer)
         })
     )
+
+    const developerTools = createLocalExplorerView()
+    context.extensionContext.subscriptions.push(developerTools)
 }
 
 function updateAwsExplorerWhenAwsContextCredentialsChange(

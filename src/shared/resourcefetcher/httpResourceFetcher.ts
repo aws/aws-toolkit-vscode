@@ -65,12 +65,12 @@ export class HttpResourceFetcher implements ResourceFetcher {
     public get(): Promise<string | undefined>
     public get(pipeLocation: string): FetcherResult
     public get(pipeLocation?: string): Promise<string | undefined> | FetcherResult {
-        this.logger.verbose(`Downloading ${this.logText()}`)
+        this.logger.verbose(`downloading: ${this.logText()}`)
 
         if (pipeLocation) {
             const result = this.pipeGetRequest(pipeLocation, this.params.timeout)
             result.fsStream.on('exit', () => {
-                this.logger.verbose(`Finished downloading ${this.logText()}`)
+                this.logger.verbose(`downloaded: ${this.logText()}`)
             })
 
             return result
@@ -87,7 +87,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
                 this.params.onSuccess(contents)
             }
 
-            this.logger.verbose(`Finished downloading ${this.logText()}`)
+            this.logger.verbose(`downloaded: ${this.logText()}`)
 
             return contents
         } catch (err) {
@@ -171,7 +171,7 @@ export async function getPropertyFromJsonUrl(
                 return json[property]
             }
         } catch (err) {
-            getLogger().error(`JSON at ${url} not parsable: ${err}`)
+            getLogger().error(`JSON parsing failed for "${url}": ${(err as Error).message}`)
         }
     }
 }

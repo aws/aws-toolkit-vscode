@@ -8,11 +8,9 @@ import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
 import globals from '../../../shared/extensionGlobals'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
-import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 describe('LogGroupNode', function () {
-    const parentNode = new TestAWSTreeNode('test node')
     let testNode: LogGroupNode
     let fakeLogGroup: CloudWatchLogs.LogGroup
 
@@ -23,7 +21,7 @@ describe('LogGroupNode', function () {
             arn: "it'sBetterThanBadIt'sGood",
         }
 
-        testNode = new LogGroupNode(parentNode, 'someregioncode', fakeLogGroup)
+        testNode = new LogGroupNode('someregioncode', fakeLogGroup)
     })
 
     after(async function () {
@@ -32,10 +30,6 @@ describe('LogGroupNode', function () {
 
     it('instantiates without issue', async function () {
         assert.ok(testNode)
-    })
-
-    it('initializes the parent node', async function () {
-        assert.strictEqual(testNode.parent, parentNode, 'unexpected parent node')
     })
 
     it('initializes the region code', async function () {
