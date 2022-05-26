@@ -5,5 +5,12 @@
 
 import { createApp } from 'vue'
 import component from './root.vue'
-const app = createApp(component)
+
+const create = () => createApp(component)
+const app = create()
 app.mount('#vue-app')
+
+window.addEventListener('remount', () => {
+    app.unmount()
+    create().mount('#vue-app')
+})

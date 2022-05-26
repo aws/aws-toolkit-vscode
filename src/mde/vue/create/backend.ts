@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { IAM } from 'aws-sdk'
 import { ExtContext } from '../../../shared/extensions'
-import { compileVueWebview } from '../../../webviews/main'
 import * as nls from 'vscode-nls'
 import * as mdeModel from '../../mdeModel'
 import { EnvironmentSettingsWizard, getAllInstanceDescriptions, SettingsForm } from '../../wizards/environmentSettings'
@@ -20,63 +19,114 @@ import { productName } from '../../../shared/constants'
 import { cloneToMde } from '../../mdeCommands'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import globals from '../../../shared/extensionGlobals'
+import { VueWebview } from '../../../webviews/main'
 
 const localize = nls.loadMessageBundle()
 
+// TODO: make this more robust by parsing the document then checking principals
+// TODO: check 'Action' to see that the role can be assumed
+const MDE_SERVICE_PRINCIPAL = 'moontide'
 export interface DefinitionTemplate {
     name: string
     source: string
 }
 
-const VueWebview = compileVueWebview({
-    id: 'createMde',
-    title: localize('AWS.command.createMdeForm.title', 'Create new development environment'),
-    webviewJs: 'mdeCreateVue.js',
-    viewColumn: vscode.ViewColumn.Active,
-    start: (repo?: { url: string; branch?: string }) => repo,
-    submit: async (result: CreateEnvironmentRequest) => {
-        return await submit(result)
-    },
-    // TODO: typescript can't verify if `commands` is passed with a function that has an invalid `this` type
-    // not a big deal, it's rare to define a function with an explicit `this` type
-    commands: {
-        loadRoles,
-        cancel() {
-            this.dispose()
-        },
-        editSettings,
-        async loadTemplates() {
-            return getRegistryDevFiles().then(t =>
-                t.map(name => ({
-                    name,
-                    source: PUBLIC_REGISTRY_URI.with({ path: `devfiles/${name}` }).toString(),
-                }))
-            )
-        },
-        openDevfile,
-        getAllInstanceDescriptions,
-        listBranches,
-    },
-})
+export class MdeCreateWebview extends VueWebview {
+    public readonly id = 'createMde'
+    public readonly source = 'src/mde/vue/create/index.js'
+    private environment?: MdeEnvironment
 
-export class MdeCreateWebview extends VueWebview {}
+    public constructor(private readonly repo?: { url: string; branch?: string }) {
+        super()
+    }
+
+    public get submitResult() {
+        return this.environment
+    }
+
+    public init() {
+        return this.repo
+    }
+
+    public async submit(request: CreateEnvironmentRequest) {
+        const env = await submit(request)
+        this.environment = env
+        this.dispose()
+
+        return env
+    }
+
+    public async loadRoles(): Promise<IAM.Role[]> {
+        const client = globals.toolkitClientBuilder.createIamClient('us-east-1') // hard-coded region for now
+
+        // Not paginated
+        try {
+            return (await client.listRoles()).filter(r => r.AssumeRolePolicyDocument?.includes(MDE_SERVICE_PRINCIPAL))
+        } catch (err) {
+            vscode.window.showErrorMessage((err as Error).message)
+            return []
+        }
+    }
+
+    public cancel() {
+        this.dispose()
+    }
+
+    public async editSettings(data: SettingsForm) {
+        const settingsWizard = new EnvironmentSettingsWizard(data)
+        const response = await settingsWizard.run()
+
+        return response
+    }
+
+    public async loadTemplates() {
+        return getRegistryDevFiles().then(t =>
+            t.map(name => ({
+                name,
+                source: PUBLIC_REGISTRY_URI.with({ path: `devfiles/${name}` }).toString(),
+            }))
+        )
+    }
+
+    public async openDevfile(url: string | vscode.Uri) {
+        url = typeof url === 'string' ? vscode.Uri.parse(url, true) : url
+        if (url.scheme === 'http' || url.scheme === 'https') {
+            const fetcher = new HttpResourceFetcher(url.toString(), { showUrl: true })
+            fetcher.get().then(content => {
+                vscode.workspace.openTextDocument({ language: 'yaml', content })
+            })
+        } else if (url.scheme === 'file') {
+            vscode.workspace.openTextDocument(url)
+        }
+    }
+
+    public getAllInstanceDescriptions() {
+        return getAllInstanceDescriptions()
+    }
+
+    public async listBranches(url: string) {
+        const git = GitExtension.instance
+        const targetNoSsh = url.startsWith('ssh://') ? url.slice(6) : url
+        const branches = await git.getBranchesForRemote({ name: 'User Input', fetchUrl: targetNoSsh, isReadOnly: true })
+        return branches.filter(b => b.name !== undefined).map(b => b.name?.split('/').slice(1).join('/')) as string[]
+    }
+}
+
+const Panel = VueWebview.compilePanel(MdeCreateWebview)
 
 export async function createMdeWebview(
     context: ExtContext,
     repo?: { url: string; branch?: string }
 ): Promise<MdeEnvironment | undefined> {
-    return new MdeCreateWebview(context).start(repo)
-}
+    const webview = new Panel(context.extensionContext, repo)
+    const panel = await webview.show({
+        title: localize('AWS.command.createMdeForm.title', 'Create new development environment'),
+        viewColumn: vscode.ViewColumn.Active,
+    })
 
-// TODO: where should we present errors?
-// ideally the webview should validate all data prior to submission
-// though in the off-chance that something slips through, it would be bad UX to dispose of
-// the create form prior to a successful create
-
-async function editSettings(data: SettingsForm) {
-    const settingsWizard = new EnvironmentSettingsWizard(data)
-    const response = await settingsWizard.run()
-    return response
+    return new Promise<MdeEnvironment | undefined>(resolve => {
+        panel.onDidDispose(() => resolve(webview.server.submitResult))
+    })
 }
 
 // This currently mutates the argument.
@@ -121,41 +171,6 @@ async function submit(data: CreateEnvironmentRequest) {
     }
 
     return createMdeWithTags(data)
-}
-
-// TODO: make this more robust by parsing the document then checking principals
-// TODO: check 'Action' to see that the role can be assumed
-const MDE_SERVICE_PRINCIPAL = 'moontide'
-
-async function loadRoles(): Promise<IAM.Role[]> {
-    const client = globals.toolkitClientBuilder.createIamClient('us-east-1') // hard-coded region for now
-
-    // Not paginated
-    try {
-        return (await client.listRoles()).filter(r => r.AssumeRolePolicyDocument?.includes(MDE_SERVICE_PRINCIPAL))
-    } catch (err) {
-        vscode.window.showErrorMessage((err as Error).message)
-        return []
-    }
-}
-
-async function openDevfile(url: string | vscode.Uri) {
-    url = typeof url === 'string' ? vscode.Uri.parse(url, true) : url
-    if (url.scheme === 'http' || url.scheme === 'https') {
-        const fetcher = new HttpResourceFetcher(url.toString(), { showUrl: true })
-        fetcher.get().then(content => {
-            vscode.workspace.openTextDocument({ language: 'yaml', content })
-        })
-    } else if (url.scheme === 'file') {
-        vscode.workspace.openTextDocument(url)
-    }
-}
-
-async function listBranches(url: string) {
-    const git = GitExtension.instance
-    const targetNoSsh = url.startsWith('ssh://') ? url.slice(6) : url
-    const branches = await git.getBranchesForRemote({ name: 'User Input', fetchUrl: targetNoSsh, isReadOnly: true })
-    return branches.filter(b => b.name !== undefined).map(b => b.name?.split('/').slice(1).join('/')) as string[]
 }
 
 /**
