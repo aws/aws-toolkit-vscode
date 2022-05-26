@@ -328,4 +328,25 @@ describe('Experiments', function () {
         await sut.update('jsonResourceModification', true)
         assert.strictEqual(await sut.isExperimentEnabled('jsonResourceModification'), true)
     })
+
+    it('fires events from nested settings', async function () {
+        const info = vscode.workspace.getConfiguration().inspect('aws.experiments.jsonResourceModification')
+        if (info?.globalValue) {
+            this.skip()
+        }
+
+        const experiments = new Experiments(new Settings(vscode.ConfigurationTarget.Workspace))
+
+        try {
+            const key = new Promise<string>((resolve, reject) => {
+                experiments.onDidChange(event => resolve(event.key))
+                setTimeout(() => reject(new Error('Timed out waiting for settings event')), 5000)
+            })
+
+            await experiments.update('jsonResourceModification', true)
+            assert.strictEqual(await key, 'jsonResourceModification')
+        } finally {
+            await experiments.reset()
+        }
+    })
 })
