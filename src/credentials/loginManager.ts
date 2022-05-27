@@ -37,6 +37,7 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 import { isAutomation } from '../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
 import { ToolkitError } from '../shared/toolkitError'
+import { AWSError } from 'aws-sdk'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -326,7 +327,7 @@ function createCredentialsShim(
             if (error instanceof ToolkitError) {
                 reason = error.detail // Maybe just add a separate `reason` field. Or rename.
             } else {
-                reason = (error as any)?.code ?? (error as any)?.name
+                reason = (error as Partial<AWSError>)?.code ?? (error as Partial<AWSError>)?.name
             }
 
             state.credentials = undefined
