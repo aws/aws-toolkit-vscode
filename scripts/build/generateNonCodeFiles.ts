@@ -44,7 +44,12 @@ function generateFileHash(root: string) {
     }
 }
 
-translateReadmeToHtml(REPO_ROOT, 'README.quickstart.vscode.md', 'quickStartVscode.html')
-translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9.html')
-translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', true)
-generateFileHash(REPO_ROOT)
+try {
+    translateReadmeToHtml(REPO_ROOT, 'README.quickstart.vscode.md', 'quickStartVscode.html')
+    translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9.html')
+    translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', true)
+    generateFileHash(REPO_ROOT)
+} catch (error) {
+    console.error(error)
+    process.exit(100)
+}

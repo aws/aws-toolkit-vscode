@@ -10,7 +10,7 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createThemeIcon } from '../shared/treeview/utils'
 import { CawsAuthenticationProvider } from './auth'
 import { CawsCommands } from './commands'
-import { ConnectedWorkspace, createClientFactory, getConnectedWorkspace, getDevFileLocation } from './model'
+import { ConnectedWorkspace, createClientFactory, getConnectedWorkspace, getDevfileLocation } from './model'
 
 const localCommands = [
     CawsCommands.declared.cloneRepo.build().asTreeNode({
@@ -93,7 +93,10 @@ export class CawsRootNode implements RootNode {
             this.onDidChangeVisibilityEmitter.fire()
         })
 
-        this.getWorkspace().then(w => (this.workspace = w))
+        this.getWorkspace().then(workspace => {
+            this.workspace = workspace
+            this.onDidChangeVisibilityEmitter.fire()
+        })
     }
 
     public get treeItem() {
@@ -109,7 +112,7 @@ export class CawsRootNode implements RootNode {
             return localCommands
         }
 
-        const devFileLocation = await getDevFileLocation(this.workspace.environmentClient)
+        const devFileLocation = await getDevfileLocation(this.workspace.environmentClient)
 
         return getRemoteCommands(this.workspace.summary, devFileLocation)
     }

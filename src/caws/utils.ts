@@ -8,7 +8,7 @@ import { Window } from '../shared/vscode/window'
 import * as localizedText from '../shared/localizedText'
 
 import * as nls from 'vscode-nls'
-import { CawsOrg, CawsProject, CawsRepo, getCawsConfig } from '../shared/clients/cawsClient'
+import { CawsResource, getCawsConfig } from '../shared/clients/cawsClient'
 import { Commands } from '../shared/vscode/commands'
 import { pushIf } from '../shared/utilities/collectionUtils'
 const localize = nls.loadMessageBundle()
@@ -33,7 +33,7 @@ export async function promptCawsNotConnected(window = Window.vscode(), commands 
 /**
  * Builds a web URL from the given CAWS object.
  */
-export function toCawsUrl(resource: CawsOrg | CawsProject | CawsRepo) {
+export function toCawsUrl(resource: CawsResource): string {
     const prefix = `https://${getCawsConfig().hostname}/organizations`
 
     const format = (org: string, proj?: string, repo?: string) => {
@@ -51,6 +51,10 @@ export function toCawsUrl(resource: CawsOrg | CawsProject | CawsRepo) {
             return format(resource.org.name, resource.name)
         case 'repo':
             return format(resource.org.name, resource.project.name, resource.name)
+        case 'env':
+            // There's currently no page to view an individual workspace
+            // This may be changed to direct to the underlying repository instead
+            return [prefix, resource.org.name, 'projects', resource.project.name, 'development-workspaces'].join('/')
     }
 }
 
@@ -61,7 +65,7 @@ export function getHelpUrl(): string {
 /**
  * Builds a web URL from the given CAWS object.
  */
-export function openCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
+export function openCawsUrl(o: CawsResource) {
     const url = toCawsUrl(o)
     vscode.env.openExternal(vscode.Uri.parse(url))
 }

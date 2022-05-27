@@ -57,7 +57,7 @@ export function getAllInstanceDescriptions(): { [key: string]: InstanceDescripti
     return desc
 }
 
-function createInstancePrompt(): QuickPickPrompter<InstanceType> {
+export function createInstancePrompter(): QuickPickPrompter<InstanceType> {
     const items = entries(environmentOptions.instanceType).map(([name, desc]) => ({
         data: name,
         label: `${getInstanceDescription(name).name} (${getInstanceDescription(name).specs})`,
@@ -68,7 +68,7 @@ function createInstancePrompt(): QuickPickPrompter<InstanceType> {
     })
 }
 
-function createTimeoutPrompt(): Prompter<number> {
+export function createTimeoutPrompter(): Prompter<number> {
     return createInputBox({
         title: 'Timeout Length',
         placeholder: 'Timeout length in minutes',
@@ -111,7 +111,7 @@ function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm, t
         description: diffState.instanceType !== undefined ? '(Modified)' : undefined,
         detail: `${instanceDesc.name} (${instanceDesc.specs})`,
         data: async () => {
-            const prompter = createInstancePrompt()
+            const prompter = createInstancePrompter()
             prompter.recentItem = currentState.instanceType
             const result = await prompter.prompt()
 
@@ -129,7 +129,7 @@ function createMenuPrompt(initState: SettingsForm, currentState: SettingsForm, t
         description: diffState.inactivityTimeoutMinutes !== undefined ? '(Modified)' : undefined,
         detail: `${currentState.inactivityTimeoutMinutes} minutes`,
         data: async () => {
-            const prompter = createTimeoutPrompt()
+            const prompter = createTimeoutPrompter()
             prompter.recentItem = currentState.inactivityTimeoutMinutes.toString()
             const result = await prompter.prompt()
 

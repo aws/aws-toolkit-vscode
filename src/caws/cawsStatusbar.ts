@@ -18,15 +18,15 @@ export function initStatusbar(authProvider: CawsAuthenticationProvider): vscode.
     statusbarItem.command = CawsCommands.declared.login.id
     statusbarItem.tooltip = STATUS_TOOLTIP
     statusbarItem.show()
-    setCawsStatusbar(statusbarItem)
 
-    return vscode.Disposable.from(
-        statusbarItem,
-        authProvider.onDidChangeSessions(e => {
-            const session = authProvider.getActiveSession()
-            setCawsStatusbar(statusbarItem, session?.accountDetails.label)
-        })
-    )
+    function update() {
+        const session = authProvider.getActiveSession()
+        setCawsStatusbar(statusbarItem, session?.accountDetails.label)
+    }
+
+    update()
+
+    return vscode.Disposable.from(statusbarItem, authProvider.onDidChangeSessions(update))
 }
 
 function setCawsStatusbar(statusBarItem: vscode.StatusBarItem, username?: string): void {

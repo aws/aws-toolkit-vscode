@@ -111,7 +111,10 @@ async function createCawsClient(
     return c
 }
 
-export type Person = RequiredProps<caws.GetPersonResponse, 'userId' | 'userName' | 'displayName' | 'primaryEmail'> & {
+export type UserDetails = RequiredProps<
+    caws.GetUserDetailsResponse,
+    'userId' | 'userName' | 'displayName' | 'primaryEmail'
+> & {
     readonly version: '1'
 }
 
@@ -147,7 +150,7 @@ export async function createClient(
 
 class CawsClientInternal {
     private userId: string | undefined
-    private person?: Person
+    private userDetails?: UserDetails
     private readonly log: logger.Logger
 
     public constructor(
@@ -160,15 +163,15 @@ class CawsClientInternal {
     }
 
     public get connected(): boolean {
-        return !!(this.bearerToken && this.person)
+        return !!(this.bearerToken && this.userDetails)
     }
 
     public get identity(): ConnectedCawsClient['identity'] {
-        if (!this.person) {
+        if (!this.userDetails) {
             throw new Error('CAWS client is not connected')
         }
 
-        return { id: this.person.userId, name: this.person.userName }
+        return { id: this.userDetails.userId, name: this.userDetails.userName }
     }
 
     /**
@@ -178,14 +181,14 @@ class CawsClientInternal {
      * @param userId       CAWS account id
      * @returns
      */
-    public async setCredentials(bearerToken: string, id?: string | Person) {
+    public async setCredentials(bearerToken: string, id?: string | UserDetails) {
         this.bearerToken = bearerToken
         this.sdkClient = await createCawsClient(bearerToken, this.regionCode, this.endpoint)
 
         if (typeof id === 'string') {
             this.userId = id
         } else {
-            this.person = id
+            this.userDetails = id
         }
     }
 
@@ -271,7 +274,7 @@ class CawsClientInternal {
      * Gets identity properties of the current authenticated principal, and
      * stores the id for use in later calls.
      */
-    public async verifySession(): Promise<Person> {
+    public async verifySession(): Promise<UserDetails> {
         const resp = await this.call(this.sdkClient.verifySession(), false)
         assertHasProps(resp, 'identity')
 
@@ -280,17 +283,17 @@ class CawsClientInternal {
         }
 
         this.userId = resp.identity
-        this.person ??= await this.getPerson({ id: this.userId })
+        this.userDetails ??= await this.getUserDetails({ id: this.userId })
 
-        return { ...this.person }
+        return { ...this.userDetails }
     }
 
-    private async getPerson(args: caws.GetPersonRequest) {
-        const resp = await this.call(this.sdkClient.getPerson(args), false)
+    private async getUserDetails(args: caws.GetUserDetailsRequest) {
+        const resp = await this.call(this.sdkClient.getUserDetails(args), false)
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
         if (resp.version !== '1') {
-            throw new Error(`CAWS 'getPerson' API returned an unsupported version: ${resp.version}`)
+            throw new Error(`CAWS 'getUserDetails' API returned an unsupported version: ${resp.version}`)
         }
 
         return { ...resp, version: resp.version } as const
@@ -511,6 +514,12 @@ class CawsClientInternal {
     ): Promise<caws.DeleteDevelopmentWorkspaceResponse | undefined> {
         const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
         return r
+    }
+
+    public updateDevelopmentWorkspace(
+        args: caws.UpdateDevelopmentWorkspaceRequest
+    ): Promise<caws.UpdateDevelopmentWorkspaceResponse> {
+        return this.call(this.sdkClient.updateDevelopmentWorkspace(args), false)
     }
 
     /**

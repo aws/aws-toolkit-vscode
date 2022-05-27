@@ -7,9 +7,6 @@ import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
 
-const ENVIRONMENT_ARN_KEY = '__ENVIRONMENT_ARN'
-const CAWS_WORKSPACE_ARN_KEY = '__DEVELOPMENT_WORKSPACE_ARN'
-
 /**
  * Components associated with {@link module:vscode.env}.
  */
@@ -100,9 +97,17 @@ export function getMinNodejsVersion(): string {
 }
 
 export function getMdeEnvArn(): string | undefined {
-    return process.env[ENVIRONMENT_ARN_KEY]
+    return process.env['__ENVIRONMENT_ARN']
 }
 
 export function getCawsWorkspaceArn(): string | undefined {
-    return process.env[CAWS_WORKSPACE_ARN_KEY]
+    return process.env['__DEVELOPMENT_WORKSPACE_ARN']
+}
+
+export function getCawsProjectName(): string | undefined {
+    return process.env['__DEVELOPMENT_WORKSPACE_PROJECT_NAME']
+}
+
+export function getCawsOrganizationName(): string | undefined {
+    return process.env['__DEVELOPMENT_WORKSPACE_ORGANIZATION_NAME']
 }

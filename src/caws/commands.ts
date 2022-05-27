@@ -19,13 +19,15 @@ import { CawsAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
 import { CawsClient, CawsDevEnv, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
 import {
-    CAWS_WORKSPACE_KEY,
     createCawsSessionProvider,
     createClientFactory,
     DevEnvId,
+    getConnectedWorkspace,
     getHostNameFromEnv,
     toCawsGitUri,
 } from './model'
+import { showConfigureWorkspace } from './vue/configure/backend'
+import { UpdateDevelopmentWorkspaceRequest } from '../../types/clientcodeaws'
 
 type LoginResult = 'Succeeded' | 'Cancelled' | 'Failed'
 
@@ -171,10 +173,6 @@ export async function openDevEnv(client: ConnectedCawsClient, env: CawsDevEnv): 
         rejectOnErrorCode: true,
     })
 
-    // XXX: store the environment to re-use once connected
-    const previous = globals.context.globalState.get(CAWS_WORKSPACE_KEY, {})
-    await globals.context.globalState.update(CAWS_WORKSPACE_KEY, { ...previous, [env.id]: env })
-
     await mdeModel.startVscodeRemote(SessionProcess, getHostNameFromEnv(env), '/projects', deps.ssh, deps.vsc)
 }
 
@@ -219,8 +217,31 @@ export async function stopWorkspace(client: ConnectedCawsClient, workspace: DevE
     })
 }
 
-async function showNotImplemented() {
-    return vscode.window.showInformationMessage('Not implemented 😞')
+export async function deleteWorkspace(client: ConnectedCawsClient, workspace: DevEnvId): Promise<void> {
+    await client.deleteDevEnv({
+        developmentWorkspaceId: workspace.developmentWorkspaceId,
+        projectName: workspace.project.name,
+        organizationName: workspace.org.name,
+    })
+}
+
+export type WorkspaceSettings = Pick<
+    UpdateDevelopmentWorkspaceRequest,
+    'alias' | 'instanceType' | 'inactivityTimeoutMinutes'
+>
+
+export async function updateWorkspace(
+    client: ConnectedCawsClient,
+    workspace: DevEnvId,
+    settings: WorkspaceSettings
+): Promise<void> {
+    await client.updateDevelopmentWorkspace({
+        ...settings,
+        id: workspace.developmentWorkspaceId,
+        projectName: workspace.project.name,
+        organizationName: workspace.org.name,
+        updateBehavior: 'restart',
+    })
 }
 
 function createClientInjector(
@@ -309,6 +330,14 @@ export class CawsCommands {
         return this.withClient(stopWorkspace, ...args)
     }
 
+    public deleteWorkspace(...args: WithClient<typeof deleteWorkspace>) {
+        return this.withClient(deleteWorkspace, ...args)
+    }
+
+    public updateWorkspace(...args: WithClient<typeof updateWorkspace>) {
+        return this.withClient(updateWorkspace, ...args)
+    }
+
     public openOrganization() {
         return this.openResource('org')
     }
@@ -333,8 +362,14 @@ export class CawsCommands {
         await vscode.window.showTextDocument(uri)
     }
 
-    public openWorkspaceSettings() {
-        return showNotImplemented()
+    public async openWorkspaceSettings() {
+        const workspace = await this.withClient(getConnectedWorkspace)
+
+        if (!workspace) {
+            throw new Error('No workspace available')
+        }
+
+        return showConfigureWorkspace(globals.context, workspace, CawsCommands.declared)
     }
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
@@ -356,9 +391,9 @@ export class CawsCommands {
         openRepository: Commands.from(this).declareOpenRepository('aws.caws.openRepo'),
         openWorkspace: Commands.from(this).declareOpenWorkspace('aws.caws.openDevEnv'),
         stopWorkspace: Commands.from(this).declareStopWorkspace('aws.caws.stopWorkspace'),
+        deleteWorkspace: Commands.from(this).declareDeleteWorkspace('aws.caws.deleteWorkspace'),
+        updateWorkspace: Commands.from(this).declareUpdateWorkspace('aws.caws.updateWorkspace'),
         openDevFile: Commands.from(this).declareOpenDevFile('aws.caws.openDevFile'),
-
-        // No APIs to implement anything meaningful here
         openWorkspaceSettings: Commands.from(this).declareOpenWorkspaceSettings('aws.caws.openWorkspaceSettings'),
     } as const
 }

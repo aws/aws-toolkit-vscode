@@ -8,17 +8,17 @@ import * as sinon from 'sinon'
 import { CawsAuthenticationProvider, CawsAuthStorage } from '../../caws/auth'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { Session } from '../../credentials/authentication'
-import { Person } from '../../shared/clients/cawsClient'
+import { UserDetails } from '../../shared/clients/cawsClient'
 import { SsoAccessTokenProvider } from '../../credentials/sso/ssoAccessTokenProvider'
 import { SsoToken } from '../../credentials/sso/model'
 
 describe('CawsAuthenticationProvider', function () {
-    const savedUsers = new Map<string, Person | undefined>()
+    const savedUsers = new Map<string, UserDetails | undefined>()
     let users: typeof savedUsers
     let secrets: string[]
     let authProvider: CawsAuthenticationProvider
 
-    async function getUser(secret: string, id?: string | Person): Promise<Person> {
+    async function getUser(secret: string, id?: string | UserDetails): Promise<UserDetails> {
         const data = users.get(secret)
 
         if (!data) {

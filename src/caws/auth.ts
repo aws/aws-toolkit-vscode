@@ -13,8 +13,9 @@ import {
 import { getRegistrationCache } from '../credentials/sso/cache'
 import { ClientRegistration, SsoToken } from '../credentials/sso/model'
 import { SsoAccessTokenProvider } from '../credentials/sso/ssoAccessTokenProvider'
-import { ConnectedCawsClient, createClient, Person } from '../shared/clients/cawsClient'
+import { ConnectedCawsClient, createClient, UserDetails } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
+import { UnknownError } from '../shared/toolkitError'
 import { createSecretsCache, KeyedCache, mapCache } from '../shared/utilities/cacheUtils'
 import { assertHasProps, isNonNullable } from '../shared/utilities/tsUtils'
 
@@ -24,7 +25,7 @@ const CAWS_SONO_PROFILE = {
     scopes: ['sso:account:access'],
 }
 
-async function verifySession(token: string, id?: string | Person) {
+async function verifySession(token: string, id?: string | UserDetails) {
     const client = await createClient()
     await client.setCredentials(token, id)
 
@@ -38,7 +39,7 @@ interface SonoAccess {
     readonly startUrl: typeof CAWS_SONO_PROFILE['startUrl']
 }
 
-interface UserMetadata extends Person {
+interface UserMetadata extends UserDetails {
     readonly canAutoConnect?: boolean
 }
 
@@ -69,10 +70,15 @@ export class CawsAuthStorage {
     public async updateUser(id: string, metadata?: UserMetadata): Promise<void> {
         const userdata = this.memento.get<Record<string, UserMetadata>>(CawsAuthStorage.USERS_MEMENTO_KEY, {})
 
-        await this.memento.update(CawsAuthStorage.USERS_MEMENTO_KEY, {
-            ...userdata,
-            [id]: { ...userdata[id], ...metadata },
-        })
+        try {
+            await this.memento.update(CawsAuthStorage.USERS_MEMENTO_KEY, {
+                ...userdata,
+                [id]: { ...userdata[id], ...metadata },
+            })
+        } catch (error) {
+            const message = UnknownError.cast(error).message
+            getLogger().warn(`CAWS: failed to save user information for: ${id}: ${message}`)
+        }
     }
 
     private getTokenCache(): KeyedCache<SonoAccess> {
@@ -174,7 +180,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
         const user = this.storage.getUser(token.identity)
 
         if (!user) {
-            throw new Error()
+            throw new Error(`No user found with identity: ${token.identity}`)
         }
 
         return {
@@ -206,6 +212,8 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
 
         try {
             const stored = this.storage.getUser(account.id)
+            // TODO(sijaden): we need to know exactly which errors CAWS returns for bad tokens
+            // right now we invalidate on any error, even if it isn't directly related to the token
             const person = await this.verify(token.accessToken, stored ?? account.id)
             const sessionId = `session-${(this.sessionCounter += 1)}`
             const updatedPerson = { ...person, canAutoConnect: true }

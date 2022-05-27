@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../shared/extensionGlobals'
-
 import * as vscode from 'vscode'
 import { HOST_NAME_PREFIX } from '../mde/constants'
 import { checkSession, SessionProvider } from '../mde/mdeModel'
@@ -20,6 +18,7 @@ import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { getLogger } from '../shared/logger'
 import { CawsAuthenticationProvider } from './auth'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
+import { getCawsOrganizationName, getCawsProjectName } from '../shared/vscode/env'
 
 export type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
 export function createCawsSessionProvider(
@@ -85,8 +84,6 @@ export interface ConnectedWorkspace {
     readonly environmentClient: RemoteEnvironmentClient
 }
 
-export const CAWS_WORKSPACE_KEY = 'caws.workspaces'
-
 export async function getConnectedWorkspace(
     cawsClient: ConnectedCawsClient,
     environmentClient = new RemoteEnvironmentClient()
@@ -97,30 +94,34 @@ export async function getConnectedWorkspace(
     }
 
     // ARN path segment follows this pattern: /organization/<GUID>/project/<GUID>/development-workspace/<GUID>
-    // Pretty unwieldy. I'd expect that CAWS introduces a way to get a resource from a single GUID soon.
     const path = arn.split(':').pop()
     if (!path) {
         throw new Error(`Workspace ARN "${arn}" did not contain a path segment`)
     }
 
-    const [_0, _1, orgId, _2, projectId, _3, workspaceId] = path.split('/')
-    if (!orgId || !projectId || !workspaceId) {
-        throw new Error(`Workspace ARN path "${path}" is missing an org, project, or workspace ID`)
+    const projectName = getCawsProjectName()
+    const organizationName = getCawsOrganizationName()
+    const workspaceId = path.match(/development-workspace\/([\w\-]+)/)?.[1]
+
+    if (!workspaceId) {
+        throw new Error('Unable to parse workspace id from ARN')
     }
 
-    // XXX: we store the summary before connecting as resolving from the ARN is unstable
-    const stored = globals.context.globalState.get<Record<string, CawsDevEnv>>(CAWS_WORKSPACE_KEY, {})
-    const summary = stored[workspaceId]
-
-    if (!summary) {
-        throw new Error('No development workspace summary found within global state')
+    if (!projectName || !organizationName) {
+        throw new Error('No project or organization name found.')
     }
+
+    const summary = await cawsClient.getDevEnv({
+        projectName,
+        organizationName,
+        developmentWorkspaceId: workspaceId,
+    })
 
     return { summary, environmentClient }
 }
 
 // Should technically be with the MDE stuff
-export async function getDevFileLocation(client: RemoteEnvironmentClient, root?: vscode.Uri) {
+export async function getDevfileLocation(client: RemoteEnvironmentClient, root?: vscode.Uri) {
     const rootDirectory = root ?? vscode.workspace.workspaceFolders?.[0].uri
     if (!rootDirectory) {
         throw new Error('No root directory or workspace folder found')
