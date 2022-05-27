@@ -298,7 +298,6 @@ function createCredentialsShim(
 
     async function refresh(): Promise<Credentials> {
         let result: Result = 'Failed'
-        let reason: string | undefined
         let credentialType: CredentialType | undefined
         let credentialSourceId: CredentialSourceId | undefined
 
@@ -316,6 +315,7 @@ function createCredentialsShim(
                 const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
 
                 if (resp === localizedText.no) {
+                    result = 'Cancelled'
                     throw new ToolkitError('User cancelled login', { cancelled: true })
                 }
             }
@@ -327,10 +327,8 @@ function createCredentialsShim(
 
             return credentials
         } catch (error) {
-            if (error instanceof ToolkitError && error.cancelled) {
-                result = 'Cancelled'
-            } else {
-                reason = (error as Partial<AWSError>)?.code ?? (error as Partial<AWSError>)?.name
+            const originalError = (error as Partial<AWSError> | undefined)?.originalError
+            if (!(originalError && originalError instanceof ToolkitError && originalError.cancelled)) {
                 showViewLogsMessage(`Failed to refresh credentials: ${(error as any)?.message}`)
             }
 
@@ -343,7 +341,6 @@ function createCredentialsShim(
         } finally {
             recordAwsRefreshCredentials({
                 result,
-                reason,
                 passive: true,
                 credentialType,
                 credentialSourceId,
