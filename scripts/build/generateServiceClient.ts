@@ -210,6 +210,10 @@ ${fileContents}
             serviceJsonPath: 'src/shared/telemetry/service-2.json',
             serviceName: 'ClientTelemetry',
         },
+        {
+            serviceJsonPath: 'src/vector/consolas/client/service-2.json',
+            serviceName: 'ConsolasClient',
+        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()

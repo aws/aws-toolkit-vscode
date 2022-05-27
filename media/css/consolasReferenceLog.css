@@ -1,0 +1,38 @@
+body {
+    background-color: var(--vscode-panel-background);
+    color: var(--vscode-terminal-foreground);
+    resize: none;
+}
+
+body.vscode-light p {
+    color: #1d2021;
+}
+
+body.vscode-dark p {
+    color: #faf7ea;
+}
+
+body.vscode-high-contrast p {
+    color: #1d2021;
+}
+
+body.vscode-light p code {
+    color: #008000;
+    white-space: pre-wrap;
+    font-size: var(--vscode-editor-font-size);
+    font-family: var(--vscode-editor-font-family);
+}
+
+body.vscode-dark p code {
+    color: #6a9955;
+    white-space: pre-wrap;
+    font-size: var(--vscode-editor-font-size);
+    font-family: var(--vscode-editor-font-family);
+}
+
+body.vscode-high-contrast p code {
+    color: #008000;
+    white-space: pre-wrap;
+    font-size: var(--vscode-editor-font-size);
+    font-family: var(--vscode-editor-font-family);
+}

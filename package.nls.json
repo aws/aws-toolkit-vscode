@@ -16,7 +16,7 @@
     "AWS.configuration.description.suppressPrompts": "Prompts which ask for confirmation. Checking an item suppresses the prompt.",
     "AWS.configuration.enableCodeLenses": "Enable SAM hints in source files",
     "AWS.configuration.description.resources.enabledResources": "AWS resources to display in the 'Resources' portion of the explorer.",
-    "AWS.configuration.description.experiments": "Try experimental features and give feedback. Note that experimental features may be removed at any time.\n * `jsonResourceModification` - Enables basic JSON-based create, update, and delete support for cloud resources through the Resources node in the AWS Explorer",
+    "AWS.configuration.description.experiments": "Try experimental features and give feedback. Note that experimental features may be removed at any time.\n * `jsonResourceModification` - Enables basic create, update, and delete support for cloud resources via the JSON Resources explorer component \n * `Consolas` - Consolas helps improve efficiency by providing real-time code suggestions from AI models. [Learn More](https://en.wikipedia.org/wiki/Consolas). Use a keyboard shortcut to request suggestions from Consolas while writing code. Default keyboard shortcut is [Alt(Option) + C], can be updated in Keyboard Shortcuts.",
     "AWS.stepFunctions.asl.format.enable.desc": "Enables the default formatter used with Amazon States Language files",
     "AWS.stepFunctions.asl.maxItemsComputed.desc": "The maximum number of outline symbols and folding regions computed (limited for performance reasons).",
     "AWS.configuration.description.awssam.debug.api": "API Gateway configuration",
@@ -67,6 +67,7 @@
     "AWS.configuration.description.awssam.debug.snippets.api.description": "A new configuration for invoking an AWS Lambda in a CloudFormation template, simulating API Gateway",
     "AWS.configuration.description.awssam.debug.snippets.api.label.cn": "Amazon SAM: API Gateway lambda invoke",
     "AWS.configuration.description.awssam.debug.snippets.api.description.cn": "A new configuration for invoking an Amazon Lambda in a CloudFormation template, simulating API Gateway",
+    "AWS.configuration.description.consolas": "When checked, Consolas will include suggestions with code references",
     "AWS.command.apig.copyUrl": "Copy URL",
     "AWS.command.apig.invokeRemoteRestApi": "Invoke on AWS",
     "AWS.command.apig.invokeRemoteRestApi.cn": "Invoke on Amazon",
@@ -162,6 +163,8 @@
     "AWS.command.apprunner.startDeployment": "Start Deployment",
     "AWS.command.resources.copyIdentifier": "Copy Identifier",
     "AWS.command.resources.configure": "Show Resources...",
+    "AWS.command.consolas.introduction": "What is Consolas?",
+    "AWS.command.consolas.configure": "Consolas Settings",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.cloudWatchLogs.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",
@@ -179,5 +182,6 @@
     "AWS.walkthrough.gettingStarted.description.cn": "These walkthroughs help you set up the Amazon Toolkit.",
     "AWS.walkthrough.gettingStarted.connect": "Connect to AWS",
     "AWS.walkthrough.gettingStarted.changeRegions": "Change AWS Regions",
-    "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain"
+    "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain",
+    "AWS.command.consolas.title": "Consolas Invoke Service"
 }

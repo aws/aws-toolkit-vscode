@@ -31,6 +31,19 @@ export function initializeIconPaths(context: vscode.ExtensionContext) {
     globals.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/gear.svg')
     globals.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/gear.svg')
 
+    globals.iconPaths.dark.run = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/run.svg')
+    globals.iconPaths.light.run = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/run.svg')
+
+    globals.iconPaths.dark.question = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/dark/question.svg'
+    )
+    globals.iconPaths.light.question = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/light/question.svg'
+    )
+
+    globals.iconPaths.dark.pause = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/pause.svg')
+    globals.iconPaths.light.pause = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/pause.svg')
+
     globals.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
     globals.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
 
@@ -98,6 +111,15 @@ export function initializeIconPaths(context: vscode.ExtensionContext) {
     globals.iconPaths.dark.exit = context.asAbsolutePath('resources/dark/exit.svg')
     globals.iconPaths.light.exit = context.asAbsolutePath('resources/light/exit.svg')
 
+    globals.iconPaths.dark.check = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/check.svg')
+    globals.iconPaths.light.check = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/check.svg')
+
+    globals.iconPaths.dark.chromeMaximize = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/dark/chrome-maximize.svg'
+    )
+    globals.iconPaths.light.chromeMaximize = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/light/chrome-maximize.svg'
+    )
     cdk.iconPaths.dark.cdk = context.asAbsolutePath('resources/dark/cdk/cdk.svg')
     cdk.iconPaths.light.cdk = context.asAbsolutePath('resources/light/cdk/cdk.svg')
 

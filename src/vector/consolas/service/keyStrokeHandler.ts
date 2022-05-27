@@ -1,0 +1,418 @@
+/*!
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import * as telemetry from '../../../shared/telemetry/telemetry'
+import { extensionVersion } from '../../../shared/vscode/env'
+import {
+    RecommendationsList,
+    GenerateRecommendationsResponse,
+    DefaultConsolasClient,
+    ConsolasGenerateRecommendationsReq,
+} from '../client/consolas'
+import * as EditorContext from '../util/editorContext'
+import { ConsolasConstants } from '../models/constants'
+import {
+    recommendations,
+    invocationContext,
+    automatedTriggerContext,
+    telemetryContext,
+    ConfigurationEntry,
+} from '../models/model'
+import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
+import { resetIntelliSenseState } from '../util/globalStateUtil'
+import { AWSError } from 'aws-sdk'
+import { TelemetryHelper } from '../util/telemetryHelper'
+import { getLogger } from '../../../shared/logger'
+import { UnsupportedLanguagesCache } from '../util/unsupportedLanguagesCache'
+import { showFirstRecommendation } from './inlineCompletion'
+import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
+import globals from '../../../shared/extensionGlobals'
+import { isCloud9 } from '../../../shared/extensionUtilities'
+import { showTimedMessage } from '../../../shared/utilities/messages'
+
+//if this is browser it uses browser and if it's node then it uses nodes
+//TODO remove when node version >= 16
+const performance = globalThis.performance ?? require('perf_hooks').performance
+
+export async function processKeyStroke(
+    event: vscode.TextDocumentChangeEvent,
+    editor: vscode.TextEditor,
+    client: DefaultConsolasClient,
+    config: ConfigurationEntry
+): Promise<void> {
+    try {
+        const content = event.contentChanges[0].text
+        const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
+        ConsolasCodeCoverageTracker.getTracker(languageContext.language, globals.context.globalState).setTotalTokens(
+            content
+        )
+        const changedText = getChangedText(event, config.isAutomatedTriggerEnabled, editor)
+        if (changedText === '') {
+            return
+        }
+        const autoTriggerType = getAutoTriggerReason(changedText)
+        if (autoTriggerType === '') {
+            return
+        }
+        const triggerTtype = autoTriggerType as telemetry.ConsolasAutomatedtriggerType
+        invokeAutomatedTrigger(triggerTtype, editor, client, config)
+    } catch (error) {
+        getLogger().error('Automated Trigger Exception : ', error)
+        getLogger().verbose(`Automated Trigger Exception : ${error}`)
+    }
+}
+
+function getAutoTriggerReason(changedText: string): string {
+    for (const val of ConsolasConstants.specialCharactersList) {
+        if (changedText.includes(val)) {
+            automatedTriggerContext.specialChar = val
+            if (val === ConsolasConstants.lineBreak) {
+                return 'Enter'
+            } else {
+                return 'SpecialCharacters'
+            }
+        }
+    }
+    if (changedText.includes(ConsolasConstants.space)) {
+        let isTab = true
+        let space = 0
+        for (let i = 0; i < changedText.length; i++) {
+            if (changedText[i] !== ' ') {
+                isTab = false
+                break
+            } else {
+                space++
+            }
+        }
+        if (isTab && space > 1 && space <= EditorContext.getTabSize()) {
+            return 'SpecialCharacters'
+        }
+    }
+    if (automatedTriggerContext.keyStrokeCount === ConsolasConstants.invocationKeyThreshold) {
+        return 'KeyStrokeCount'
+    } else {
+        automatedTriggerContext.keyStrokeCount += 1
+    }
+    return ''
+}
+
+function getChangedText(
+    event: vscode.TextDocumentChangeEvent,
+    isAutomatedTriggerEnabled: boolean,
+    editor: vscode.TextEditor
+): string {
+    if (!isAutomatedTriggerEnabled) {
+        return ''
+    }
+    /**
+     * Pause automated trigger when typed input matches recommendation prefix
+     * for both intelliSense and inline
+     */
+    checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
+    if (invocationContext.isIntelliSenseActive && telemetryContext.isPrefixMatched.length > 0) {
+        return ''
+    }
+    if (invocationContext.isTypeaheadInProgress) {
+        return ''
+    }
+
+    /**
+     * DO NOT auto trigger Consolas when appending muli-line snippets to document
+     * DO NOT auto trigger Consolas when deleting or undo
+     */
+    const changedText = event.contentChanges[0].text
+    const changedRange = event.contentChanges[0].range
+    if (!changedRange.isSingleLine || changedText === '') {
+        return ''
+    }
+
+    /**
+     * Time duration between 2 invocations should be greater than the threshold
+     */
+    const duration = Math.floor((performance.now() - invocationContext.lastInvocationTime) / 1000)
+    if (duration < ConsolasConstants.invocationTimeIntervalThreshold) {
+        return ''
+    }
+    return changedText
+}
+
+export async function invokeAutomatedTrigger(
+    autoTriggerType: telemetry.ConsolasAutomatedtriggerType,
+    editor: vscode.TextEditor,
+    client: DefaultConsolasClient,
+    config: ConfigurationEntry,
+    overrideGetRecommendations = getRecommendations
+): Promise<void> {
+    if (isCloud9()) resetIntelliSenseState(config.isManualTriggerEnabled, config.isAutomatedTriggerEnabled)
+    if (editor) {
+        automatedTriggerContext.keyStrokeCount = 0
+        recommendations.response = await overrideGetRecommendations(
+            client,
+            editor,
+            'AutoTrigger',
+            config,
+            autoTriggerType
+        )
+        /**
+         * Swallow "no recommendations case" for automated trigger
+         * TODO: Check when there is no left context
+         */
+
+        checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(true, editor)
+        if (telemetryContext.isPrefixMatched.length > 0) {
+            if (isCloud9()) {
+                vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+                    invocationContext.isIntelliSenseActive = true
+                })
+            } else {
+                await showFirstRecommendation(editor)
+            }
+        }
+    }
+}
+
+export async function getRecommendations(
+    client: DefaultConsolasClient,
+    editor: vscode.TextEditor,
+    triggerType: telemetry.ConsolasTriggerType,
+    config: ConfigurationEntry,
+    autoTriggerType?: telemetry.ConsolasAutomatedtriggerType,
+    overrideGetServiceResponse = getServiceResponse
+): Promise<RecommendationsList> {
+    /**
+     * Record user decision on previous recommendations before getting new ones
+     */
+    TelemetryHelper.recordUserDecisionTelemetry(-1, editor?.document.languageId)
+
+    let recommendation: RecommendationsList = []
+    let invocationResult: telemetry.Result = 'Failed'
+    let requestId = ''
+    let reason = ''
+    let completionType: telemetry.ConsolasCompletionType = 'Line'
+    let startTime = 0
+    let latency = 0
+    const req = EditorContext.buildRequest(editor as vscode.TextEditor)
+    try {
+        startTime = performance.now()
+        invocationContext.lastInvocationTime = startTime
+        /**
+         * Validate request
+         */
+        if (EditorContext.validateRequest(req)) {
+            const resp = await overrideGetServiceResponse(client, req, triggerType, config.isManualTriggerEnabled)
+            latency = startTime !== 0 ? performance.now() - startTime : 0
+            recommendation = (resp && resp.recommendations) || []
+            getLogger().info('Consolas Recommendations : ', recommendation)
+            invocationResult = 'Succeeded'
+            telemetryContext.triggerType = triggerType
+            telemetryContext.ConsolasAutomatedtriggerType =
+                autoTriggerType === undefined ? 'KeyStrokeCount' : autoTriggerType
+            if (recommendation.length > 0 && recommendation[0].content.search(ConsolasConstants.lineBreak) !== -1) {
+                completionType = 'Block'
+            }
+            telemetryContext.completionType = completionType
+            requestId = resp?.$response && resp?.$response?.requestId
+        } else {
+            getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
+            getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
+            recommendations.errorCode = `Invalid Request`
+        }
+    } catch (error) {
+        if (latency === 0) {
+            latency = startTime !== 0 ? performance.now() - startTime : 0
+        }
+        getLogger().error('Consolas Invocation Exception : ', error)
+        getLogger().verbose(`Consolas Invocation Exception : ${error}`)
+        const isAwsError = (error: any): error is AWSError => {
+            return (
+                typeof error?.name === 'string' &&
+                typeof error.message === 'string' &&
+                typeof error.code === 'string' &&
+                error.time instanceof Date
+            )
+        }
+        if (isAwsError(error)) {
+            const awsError = error as AWSError
+            if (
+                awsError.code === 'ValidationException' &&
+                awsError.message.includes(`contextInfo.programmingLanguage.languageName`)
+            ) {
+                let languageName = req.contextInfo.programmingLanguage.languageName
+                UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage(languageName)
+                languageName = `${languageName.charAt(0).toUpperCase()}${languageName.slice(1)}`
+                showTimedMessage(`Programming language ${languageName} is currently not supported by Consolas`, 2000)
+            } else if (awsError.code === 'CredentialsError') {
+                showTimedMessage(`Invalid AWS credential. Please use a valid AWS credential`, 3000)
+            }
+            requestId = awsError.requestId || ''
+            recommendations.errorCode = awsError.code
+            reason = `Consolas Invocation Exception: ${awsError?.code ?? awsError?.name ?? 'unknown'}`
+        } else {
+            requestId = ''
+            reason = error as string
+        }
+    } finally {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const languageId = editor?.document?.languageId
+        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
+        getLogger().verbose(
+            `Request ID: ${requestId}, timestamp(epoch): ${Date.now()}, timezone: ${timezone}, datetime: ${new Date().toLocaleString(
+                [],
+                { timeZone: timezone }
+            )}, vscode version: '${
+                vscode.version
+            }', extension version: '${extensionVersion}', filename: '${EditorContext.getFileName(
+                editor
+            )}', left context of line:  '${EditorContext.getLeftContext(
+                editor,
+                invocationContext.startPos.line
+            )}', line number: ${invocationContext.startPos.line}, character location: ${
+                invocationContext.startPos.character
+            }, latency: ${latency} ms.`
+        )
+        getLogger().verbose('Recommendations:')
+        recommendation.forEach((item, index) => {
+            getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
+        })
+
+        /**
+         * TODO: fill in runtime fields after solution is found to access runtime in vscode
+         */
+        telemetry.recordConsolasServiceInvocation({
+            consolasRequestId: requestId ? requestId : undefined,
+            consolasTriggerType: triggerType,
+            consolasAutomatedtriggerType: autoTriggerType,
+            consolasCompletionType: invocationResult == 'Succeeded' ? telemetryContext.completionType : undefined,
+            result: invocationResult,
+            duration: latency,
+            consolasLineNumber: invocationContext.startPos.line,
+            consolasCursorOffset: telemetryContext.cursorOffset,
+            consolasLanguage: languageContext.language,
+            consolasRuntime: languageContext.runtimeLanguage,
+            consolasRuntimeSource: languageContext.runtimeLanguageSource,
+            reason: reason ? reason : undefined,
+        })
+        recommendations.requestId = requestId
+        if (config.isIncludeSuggestionsWithCodeReferencesEnabled === false) {
+            const filteredRecommendationList: RecommendationsList = []
+            recommendation.forEach((r, index) => {
+                if (r.references === undefined || r.references.length === 0) {
+                    filteredRecommendationList.push(r)
+                } else {
+                    TelemetryHelper.recordUserDecisionTelemetry(index, editor?.document?.languageId, true)
+                }
+            })
+            recommendation = filteredRecommendationList
+        }
+    }
+
+    /**
+     * Since we allow concurrent auto trigger API calls,
+     * We should drop the auto trigger API call result that is not latest.
+     */
+    if (invocationContext.lastInvocationTime > startTime) {
+        return []
+    }
+    return recommendation
+}
+
+/**
+ * VScode IntelliSense has native matching for recommendation.
+ * This is only to check if the recommendation match the updated left context when
+ * user keeps typing before getting consolas response back.
+ * @param newConsolasRequest if newConsolasRequest, then we need to reset the invocationContext.isPrefixMatched, which is used as
+ *                           part of user decision telemetry (see models.ts for more details)
+ * @param editor the current VSCode editor
+ *
+ * @returns
+ */
+export function checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
+    newConsolasRequest: boolean,
+    editor: vscode.TextEditor | undefined
+) {
+    let typedPrefix = ''
+    if (newConsolasRequest) {
+        telemetryContext.isPrefixMatched = []
+    }
+
+    if (!editor || !isValidResponse(recommendations.response)) {
+        return
+    }
+
+    // Only works for cloud9, as it works for completion items
+    if (isCloud9() && invocationContext.startPos.line !== editor.selection.active.line) {
+        return
+    }
+    typedPrefix = editor.document.getText(new vscode.Range(invocationContext.startPos, editor.selection.active))
+
+    recommendations.response.forEach(recommendation => {
+        if (recommendation.content.startsWith(typedPrefix)) {
+            /**
+             * TODO: seems like VScode has native prefix matching for completion items
+             * if this behavior is changed, then we need to update the string manually
+             * e.g., recommendation.content = recommendation.content.substring(changedContextLength)
+             */
+
+            if (newConsolasRequest) {
+                telemetryContext.isPrefixMatched.push(true)
+            }
+        } else {
+            if (newConsolasRequest) {
+                telemetryContext.isPrefixMatched.push(false)
+            }
+        }
+    })
+}
+
+export function isValidResponse(response: RecommendationsList): boolean {
+    return (
+        response !== undefined && response.length > 0 && response.filter(option => option.content.length > 0).length > 0
+    )
+}
+export async function getServiceResponse(
+    client: DefaultConsolasClient,
+    req: ConsolasGenerateRecommendationsReq,
+    triggerType: telemetry.ConsolasTriggerType,
+    isManualTriggerOn: boolean
+): Promise<any> {
+    invocationContext.isPendingResponse = true
+    const consolasPromise = client.generateRecommendations(req).finally(() => {
+        invocationContext.isPendingResponse = false
+    })
+    if (isManualTriggerOn && triggerType === 'OnDemand') {
+        return vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: ConsolasConstants.pendingResponse,
+                cancellable: false,
+            },
+            async () => {
+                return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.promiseTimeoutLimit * 1000)
+            }
+        )
+    }
+    return await asyncCallWithTimeout(consolasPromise, ConsolasConstants.promiseTimeoutLimit * 1000)
+}
+
+/**
+ * Call an async function with a maximum time limit (in milliseconds) for the timeout
+ * @param {Promise<T>} asyncPromise An asynchronous promise to resolve
+ * @param {number} timeLimit Time limit to attempt function in milliseconds
+ * @returns {Promise<T> | undefined} Resolved promise for async function call, or an error if time limit reached
+ */
+export async function asyncCallWithTimeout<T extends GenerateRecommendationsResponse>(
+    asyncPromise: Promise<T>,
+    timeLimit: number
+): Promise<T> {
+    let timeoutHandle: NodeJS.Timeout
+    const timeoutPromise = new Promise((_resolve, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error('Consolas promise timed out')), timeLimit)
+    })
+    return Promise.race([asyncPromise, timeoutPromise]).then(result => {
+        clearTimeout(timeoutHandle)
+        return result as T
+    })
+}
