@@ -23,7 +23,7 @@ export async function detectCdkProjects(
 
     projects.forEach(p => results.set(p.cdkJsonUri.toString(), p))
 
-    return Array.from(projects.values())
+    return Array.from(results.values())
 }
 
 async function detectCdkProjectsFromWorkspaceFolder(
