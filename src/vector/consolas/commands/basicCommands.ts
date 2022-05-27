@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { activate as activateView } from '../vue/backend'
+import { showView } from '../vue/backend'
 import { ExtContext } from '../../../shared/extensions'
 import { Commands } from '../../../shared/vscode/commands2'
 import { ConsolasConstants } from '../models/constants'
@@ -22,7 +22,7 @@ export const toggleCodeSuggestions = Commands.declare(
 export const enableCodeSuggestions = Commands.declare(
     'aws.consolas.enableCodeSuggestions',
     (context: ExtContext) => async () => {
-        activateView(context)
+        showView(context.extensionContext)
     }
 )
 

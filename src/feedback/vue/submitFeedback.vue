@@ -1,7 +1,7 @@
 /*! * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <template>
-    <div :id="id">
+    <div>
         <h1>Feedback for AWS Toolkit</h1>
 
         <h3 id="sentiment-heading">How was your experience?</h3>
@@ -49,14 +49,11 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
-import { FeedbackWebview } from '../commands/submitFeedback'
+import { FeedbackWebview } from './submitFeedback'
 
 const client = WebviewClientFactory.create<FeedbackWebview>()
 
 export default defineComponent({
-    setup() {
-        console.log('Loaded!')
-    },
     data() {
         return {
             comment: '',
@@ -65,30 +62,19 @@ export default defineComponent({
             error: '',
         }
     },
-    mounted() {
-        this.$nextTick(function () {
-            window.addEventListener('message', this.handleMessageReceived)
-        })
-    },
     methods: {
-        handleMessageReceived(e: MessageEvent) {
-            const message = e.data
-            switch (message.statusCode) {
-                case 'Failure':
-                    console.error(`Failed to submit feedback: ${message.error}`)
-                    this.error = message.error
-                    this.isSubmitting = false
-                    break
-            }
-        },
-        submitFeedback() {
+        async submitFeedback() {
             this.error = ''
             this.isSubmitting = true
             console.log('Submitting feedback...')
-            client.feedback({
+
+            const resp = await client.submit({
                 comment: this.comment,
                 sentiment: this.sentiment,
             })
+
+            this.error = resp ?? ''
+            this.isSubmitting = false
         },
     },
     mixins: [saveData],
