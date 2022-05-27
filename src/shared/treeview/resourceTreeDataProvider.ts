@@ -27,7 +27,7 @@ export interface TreeNode<T = unknown> {
     /**
      * A tree item used to display the node in a tree view.
      */
-    readonly treeItem: vscode.TreeItem
+    readonly treeItem: vscode.TreeItem // TODO(sijaden): just realized this interface is equivalent to {}, should add 1 required field
 
     /**
      * Optional event to signal that this node's children has changed.

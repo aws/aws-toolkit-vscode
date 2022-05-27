@@ -162,3 +162,10 @@ export function getWorkspaceRelativePath(
         }
     }
 }
+
+/**
+ * This only checks text documents; the API does not expose webviews.
+ */
+export function checkUnsavedChanges(): boolean {
+    return vscode.workspace.textDocuments.some(doc => doc.isDirty)
+}
