@@ -9,6 +9,7 @@ import { cdkNode } from '../cdk/explorer/rootNode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { once } from '../shared/utilities/functionUtils'
 import { AppNode } from '../cdk/explorer/nodes/appNode'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { consolasNode } from '../vector/consolas/explorer/consolasNode'
 
 export interface RootNode extends TreeNode {
@@ -55,6 +56,13 @@ export function createLocalExplorerView(): vscode.TreeView<TreeNode> {
 
     // Legacy CDK behavior. Mostly useful for C9 as they do not have inline buttons.
     view.onDidChangeVisibility(({ visible }) => visible && cdkNode.refresh())
+
+    // Cloud9 will only refresh when refreshing the entire tree
+    if (isCloud9()) {
+        roots.forEach(node => {
+            node.onDidChangeChildren?.(() => treeDataProvider.refresh())
+        })
+    }
 
     return view
 }

@@ -69,6 +69,7 @@ describe('runtimes', function () {
         assert.deepStrictEqual(samLambdaCreatableRuntimes(true).toArray().sort(), [
             'nodejs12.x',
             'nodejs14.x',
+            'nodejs16.x',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -76,6 +77,7 @@ describe('runtimes', function () {
         assert.deepStrictEqual(samImageLambdaRuntimes(true).toArray().sort(), [
             'nodejs12.x',
             'nodejs14.x',
+            'nodejs16.x',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -91,6 +93,7 @@ describe('runtimes', function () {
             'java8.al2',
             'nodejs12.x',
             'nodejs14.x',
+            'nodejs16.x',
             'python3.6',
             'python3.7',
             'python3.8',
@@ -106,6 +109,7 @@ describe('runtimes', function () {
             'java8.al2',
             'nodejs12.x',
             'nodejs14.x',
+            'nodejs16.x',
             'python3.6',
             'python3.7',
             'python3.8',
