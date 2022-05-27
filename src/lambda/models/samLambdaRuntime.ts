@@ -74,6 +74,7 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.9',
     'python3.8',
+    'nodejs16.x',
     'nodejs14.x',
     'nodejs12.x',
     'java11',
