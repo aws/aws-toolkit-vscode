@@ -38,6 +38,7 @@ import { isAutomation } from '../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
 import { ToolkitError } from '../shared/toolkitError'
 import { AWSError } from 'aws-sdk'
+import * as localizedText from '../shared/localizedText'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -265,14 +266,12 @@ async function getProvider(id: CredentialsId): Promise<CredentialsProvider> {
  */
 export interface CredentialsShim {
     /**
-     * Fetches credentials, attempting a passive refresh if needed.
-     *
-     * Passive refreshes will automatically fail when user input is required.
+     * Fetches credentials, attempting a refresh if needed.
      */
     get: () => Promise<Credentials>
 
     /**
-     * Removes the stored credentials and performs an active refresh, allowing for prompts.
+     * Removes the stored credentials and performs a refresh, allowing for prompts.
      *
      * Calling this function while a refresh is still pending returns the already pending promise.
      */
@@ -299,6 +298,7 @@ function createCredentialsShim(
 
     async function refresh(): Promise<Credentials> {
         let result: Result = 'Failed'
+        let passive = false
         let reason: string | undefined
         let credentialType: CredentialType | undefined
         let credentialSourceId: CredentialSourceId | undefined
@@ -309,12 +309,17 @@ function createCredentialsShim(
             const provider = await getProvider(providerId)
             const formatProviderId = () => asString(provider.getCredentialsId())
 
+            passive = provider.canAutoConnect()
             credentialType = provider.getTelemetryType()
             credentialSourceId = credentialsProviderToTelemetryType(provider.getProviderType())
 
-            if (!provider.canAutoConnect()) {
-                const detail = 'Credentials provider cannot auto-connect'
-                throw new ToolkitError(`${detail}: ${formatProviderId()}`, { detail })
+            if (!passive) {
+                const message = localize('aws.credentials.expired', 'Credentials are expired or invalid, login again?')
+                const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
+
+                if (resp === localizedText.no) {
+                    throw new ToolkitError('User cancelled auto-login', { cancelled: true })
+                }
             }
 
             const credentials = await provider.getCredentials()
@@ -324,19 +329,24 @@ function createCredentialsShim(
 
             return credentials
         } catch (error) {
-            if (error instanceof ToolkitError) {
-                reason = error.detail // Maybe just add a separate `reason` field. Or rename.
+            if (error instanceof ToolkitError && error.cancelled) {
+                result = 'Cancelled'
             } else {
                 reason = (error as Partial<AWSError>)?.code ?? (error as Partial<AWSError>)?.name
+                showViewLogsMessage(`Failed to refresh credentials: ${(error as any)?.message}`)
             }
 
             state.credentials = undefined
+            store.invalidateCredentials(providerId)
+            globals.awsContext.credentialsShim = undefined
+            globals.awsContext.setCredentials(undefined, true)
+
             throw error
         } finally {
             recordAwsRefreshCredentials({
                 result,
                 reason,
-                passive: true,
+                passive,
                 credentialType,
                 credentialSourceId,
             })
