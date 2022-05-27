@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
-import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
@@ -51,6 +50,7 @@ import { activate as activateDynamicResources } from './dynamicResources/activat
 import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
+import { activate as activateDev } from './dev/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
@@ -63,6 +63,7 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
+import { isReleaseVersion } from './shared/vscode/env'
 
 let localize: nls.LocalizeFunc
 
@@ -129,6 +130,12 @@ export async function activate(context: vscode.ExtensionContext) {
             credentialsStore,
         }
 
+        try {
+            activateDev(extContext)
+        } catch (error) {
+            getLogger().debug(`Developer Tools (internal): failed to activate: ${(error as Error).message}`)
+        }
+
         context.subscriptions.push(
             // No-op command used for decoration-only codelenses.
             vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
@@ -187,10 +194,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
-        await activateCdk({
-            extensionContext: extContext.extensionContext,
-        })
-
         await activateAwsExplorer({
             context: extContext,
             awsContextTrees,
@@ -235,7 +238,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        if (!isReleaseVersion()) {
+            globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long

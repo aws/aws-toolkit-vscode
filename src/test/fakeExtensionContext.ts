@@ -16,7 +16,7 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../shared/sam/cli/samCliValidator'
-import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
+import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
 import { ChildProcessResult } from '../shared/utilities/childProcess'
 import { FakeEnvironmentVariableCollection } from './fake/fakeEnvironmentVariableCollection'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
@@ -48,6 +48,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storageUri: vscode.Uri | undefined
     public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
+    public secrets = new SecretStorage()
 
     private _extensionPath: string = ''
     private _globalStoragePath: string = '.'
@@ -145,6 +146,27 @@ class FakeMemento implements vscode.Memento {
         this._storage[key] = value
 
         return Promise.resolve()
+    }
+}
+
+class SecretStorage implements vscode.SecretStorage {
+    private _onDidChange = new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
+    public readonly onDidChange = this._onDidChange.event
+
+    public constructor(private readonly storage: Record<string, string> = {}) {}
+
+    public async get(key: string): Promise<string | undefined> {
+        return this.storage[key]
+    }
+
+    public async store(key: string, value: string): Promise<void> {
+        this.storage[key] = value
+        this._onDidChange.fire({ key })
+    }
+
+    public async delete(key: string): Promise<void> {
+        delete this.storage[key]
+        this._onDidChange.fire({ key })
     }
 }
 

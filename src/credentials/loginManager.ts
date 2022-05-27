@@ -34,6 +34,10 @@ import { CredentialsProviderManager } from './providers/credentialsProviderManag
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 import { showViewLogsMessage } from '../shared/utilities/messages'
+import { isAutomation } from '../shared/vscode/env'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
 import { Credentials } from '@aws-sdk/types'
 
@@ -122,6 +126,9 @@ export class LoginManager {
     private static didTryAutoConnect = false
 
     public static async tryAutoConnect(awsContext: AwsContext = globals.awsContext): Promise<boolean> {
+        if (isAutomation()) {
+            return false
+        }
         if (await awsContext.getCredentials()) {
             return true // Already connected.
         }

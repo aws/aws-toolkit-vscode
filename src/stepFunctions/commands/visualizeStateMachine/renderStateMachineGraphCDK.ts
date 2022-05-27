@@ -6,49 +6,31 @@
 import * as vscode from 'vscode'
 
 import { AslVisualizationCDKManager } from './aslVisualizationCDKManager'
-import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
-import { getLogger } from '../../../shared/logger'
-import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { PreviewStateMachineCDKWizard } from '../../wizards/previewStateMachineCDKWizard'
-import { Window } from '../../../shared/vscode/window'
+import { Commands } from '../../../shared/vscode/commands2'
+import { isTreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { unboxTreeNode } from '../../../shared/treeview/utils'
+
+function isLocationResource(obj: unknown): obj is { location: vscode.Uri } {
+    return !!obj && typeof obj === 'object' && (obj as any).location instanceof vscode.Uri
+}
 
 /**
- * Renders a state graph of the state machine represented by the given node
+ * Renders a state graph of the state machine.
+ *
+ * If given a {@link TreeNode}, it should contain a resource with a URI pointing to the `tree.json`.
+ * URIs should have a fragment with the resource path in order to locate it within the CFN template.
  */
-export async function renderStateMachineGraphCommand(
-    globalStorage: vscode.Memento,
-    visualizationManager: AslVisualizationCDKManager,
-    node?: ConstructNode,
-    window = Window.vscode()
-): Promise<void> {
-    if (!node) {
-        const wizardResponse = await new PreviewStateMachineCDKWizard().run()
+export const renderCdkStateMachineGraph = Commands.declare(
+    'aws.cdk.renderStateMachineGraph',
+    (memento: vscode.Memento, manager: AslVisualizationCDKManager) => async (input?: unknown) => {
+        const resource = isTreeNode(input) ? unboxTreeNode(input, isLocationResource) : undefined
+        const resourceUri = resource?.location ?? (await new PreviewStateMachineCDKWizard().run())?.resource.location
 
-        if (
-            wizardResponse &&
-            wizardResponse.cdkApplication &&
-            wizardResponse.stateMachine &&
-            wizardResponse.stateMachine.stateMachineNode
-        ) {
-            node = wizardResponse.stateMachine.stateMachineNode
+        if (!resourceUri) {
+            return
         }
-    }
 
-    if (!node) {
-        return
+        await manager.visualizeStateMachine(memento, resourceUri)
     }
-
-    const uniqueIdentifier = node.label
-
-    try {
-        visualizationManager.visualizeStateMachine(globalStorage, node)
-        getLogger().info('Rendered graph: %O', uniqueIdentifier)
-    } catch (e) {
-        getLogger().error(`Failed to render graph ${uniqueIdentifier}: %O`, e)
-        showViewLogsMessage(
-            localize('AWS.cdk.renderStateMachineGraph.error.general', 'Failed to render graph {0}', uniqueIdentifier),
-            window
-        )
-    }
-}
+)

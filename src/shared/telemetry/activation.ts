@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
-import { DefaultTelemetryService } from './defaultTelemetryService'
+import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { fromExtensionManifest, openSettings, Settings } from '../settings'
