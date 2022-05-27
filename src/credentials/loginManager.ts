@@ -298,7 +298,6 @@ function createCredentialsShim(
 
     async function refresh(): Promise<Credentials> {
         let result: Result = 'Failed'
-        let passive = false
         let reason: string | undefined
         let credentialType: CredentialType | undefined
         let credentialSourceId: CredentialSourceId | undefined
@@ -309,11 +308,10 @@ function createCredentialsShim(
             const provider = await getProvider(providerId)
             const formatProviderId = () => asString(provider.getCredentialsId())
 
-            passive = provider.canAutoConnect()
             credentialType = provider.getTelemetryType()
             credentialSourceId = credentialsProviderToTelemetryType(provider.getProviderType())
 
-            if (!passive) {
+            if (!provider.canAutoConnect()) {
                 const message = localize('aws.credentials.expired', 'Credentials are expired or invalid, login again?')
                 const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
 
@@ -346,7 +344,7 @@ function createCredentialsShim(
             recordAwsRefreshCredentials({
                 result,
                 reason,
-                passive,
+                passive: true,
                 credentialType,
                 credentialSourceId,
             })
