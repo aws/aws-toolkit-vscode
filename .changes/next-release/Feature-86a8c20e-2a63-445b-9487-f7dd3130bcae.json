@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "SAM: create and run/debug nodejs16.x"
+	"description": "SAM: create, run and debug nodejs16.x Lambdas"
 }
