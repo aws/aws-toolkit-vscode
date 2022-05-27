@@ -37,7 +37,6 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 import { isAutomation } from '../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
 import { ToolkitError } from '../shared/toolkitError'
-import { AWSError } from 'aws-sdk'
 import * as localizedText from '../shared/localizedText'
 
 export class LoginManager {
@@ -315,7 +314,6 @@ function createCredentialsShim(
                 const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
 
                 if (resp === localizedText.no) {
-                    result = 'Cancelled'
                     throw new ToolkitError('User cancelled login', { cancelled: true })
                 }
             }
@@ -327,8 +325,9 @@ function createCredentialsShim(
 
             return credentials
         } catch (error) {
-            const originalError = (error as Partial<AWSError> | undefined)?.originalError
-            if (!(originalError && originalError instanceof ToolkitError && originalError.cancelled)) {
+            if (error instanceof ToolkitError && error.cancelled) {
+                result = 'Cancelled'
+            } else {
                 showViewLogsMessage(`Failed to refresh credentials: ${(error as any)?.message}`)
             }
 
