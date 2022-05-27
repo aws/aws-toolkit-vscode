@@ -318,7 +318,7 @@ function createCredentialsShim(
                 const resp = await vscode.window.showInformationMessage(message, localizedText.yes, localizedText.no)
 
                 if (resp === localizedText.no) {
-                    throw new ToolkitError('User cancelled auto-login', { cancelled: true })
+                    throw new ToolkitError('User cancelled login', { cancelled: true })
                 }
             }
 
