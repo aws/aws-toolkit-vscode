@@ -19,7 +19,7 @@ import { createPlaceholderItem } from '../../../shared/treeview/utils'
  * Existence of apps is determined by the presence of `cdk.json` in a workspace folder
  */
 export class AppNode implements TreeNode {
-    public readonly id = this.makeId()
+    public readonly id = this.location.cdkJsonUri.toString()
     public readonly resource = this.location
     public readonly treeItem: vscode.TreeItem
 
@@ -57,12 +57,6 @@ export class AppNode implements TreeNode {
                 ),
             ]
         }
-    }
-
-    private makeId() {
-        const rootUri = vscode.Uri.joinPath(this.location.cdkJsonUri, '..')
-
-        return vscode.workspace.asRelativePath(rootUri)
     }
 
     private createTreeItem() {

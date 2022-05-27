@@ -85,6 +85,20 @@ describe('detectCdkProjects', function () {
         assert.strictEqual(actual.length, 0)
     })
 
+    it('de-dupes identical projects`', async function () {
+        workspaceFolders.push(workspaceFolders[0])
+
+        try {
+            const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
+            await saveCdkJson(cdkJsonUri.fsPath)
+
+            const actual = await detectCdkProjects(workspaceFolders)
+            assert.strictEqual(actual.length, 1)
+        } finally {
+            workspaceFolders.pop()
+        }
+    })
+
     it('takes into account `output` from cdk.json to build tree.json path', async function () {
         const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
         await writeJSON(cdkJsonUri.fsPath, { app: 'npx ts-node bin/demo-nov7.ts', output: 'build/cdk.out' })
