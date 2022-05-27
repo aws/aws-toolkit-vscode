@@ -7,7 +7,6 @@ import { Request, AWSError, Credentials } from 'aws-sdk'
 import { CredentialsOptions } from 'aws-sdk/lib/credentials'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
-import { PassiveRefreshError } from '../credentials/loginManager'
 import { AwsContext } from './awsContext'
 import { extensionVersion } from './vscode/env'
 
@@ -96,9 +95,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
                             this.loadCreds(creds)
                             this.needsRefresh() ? this.refresh(callback) : callback()
                         })
-                        .catch(err => {
-                            err instanceof PassiveRefreshError ? this.refresh(callback) : callback(err)
-                        })
+                        .catch(callback)
                 }
 
                 public override refresh(callback: (err?: AWSError) => void): void {

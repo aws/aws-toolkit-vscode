@@ -35,11 +35,8 @@ import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { isAutomation } from '../shared/vscode/env'
-
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import { Credentials } from '@aws-sdk/types'
+import { ToolkitError } from '../shared/toolkitError'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -282,11 +279,6 @@ export interface CredentialsShim {
 }
 
 /**
- * Used to ensure that UI prompts are not automatically shown.
- */
-export class PassiveRefreshError extends Error {}
-
-/**
  * Collapses a single {@link CredentialsProvider} (referenced by id) into something a bit simpler.
  *
  * We don't pass in a provider directly since {@link CredentialsProviderManager} is the true
@@ -297,7 +289,6 @@ function createCredentialsShim(
     providerId: CredentialsId,
     creds: Credentials
 ): CredentialsShim {
-    type RefreshType = 'passive' | 'force'
     interface State {
         credentials: Promise<Credentials>
         pendingRefresh: Promise<Credentials>
@@ -305,8 +296,9 @@ function createCredentialsShim(
 
     const state: Partial<State> = { credentials: Promise.resolve(creds) }
 
-    async function refresh(type: RefreshType = 'force'): Promise<Credentials> {
+    async function refresh(): Promise<Credentials> {
         let result: Result = 'Failed'
+        let reason: string | undefined
         let credentialType: CredentialType | undefined
         let credentialSourceId: CredentialSourceId | undefined
 
@@ -319,21 +311,9 @@ function createCredentialsShim(
             credentialType = provider.getTelemetryType()
             credentialSourceId = credentialsProviderToTelemetryType(provider.getProviderType())
 
-            if (type === 'passive' && !provider.canAutoConnect()) {
-                result = 'Cancelled'
-                throw new PassiveRefreshError(`Unable to auto-connect with provider "${formatProviderId()}"`)
-            }
-
-            // Not a great solution but not terrible either.
-            if (provider.getTelemetryType() === 'ssoProfile' && !provider.canAutoConnect()) {
-                const resp = await vscode.window.showInformationMessage(
-                    'Your AWS SSO token is expired or invalid.',
-                    'Login'
-                )
-                if (resp !== 'Login') {
-                    result = 'Cancelled'
-                    throw new PassiveRefreshError(`Cancelled SSO login with provider "${formatProviderId()}"`)
-                }
+            if (!provider.canAutoConnect()) {
+                const detail = 'Credentials provider cannot auto-connect'
+                throw new ToolkitError(`${detail}: ${formatProviderId()}`, { detail })
             }
 
             const credentials = await provider.getCredentials()
@@ -343,11 +323,18 @@ function createCredentialsShim(
 
             return credentials
         } catch (error) {
+            if (error instanceof ToolkitError) {
+                reason = error.detail // Maybe just add a separate `reason` field. Or rename.
+            } else {
+                reason = (error as any)?.code ?? (error as any)?.name
+            }
+
             state.credentials = undefined
             throw error
         } finally {
             recordAwsRefreshCredentials({
                 result,
+                reason,
                 passive: true,
                 credentialType,
                 credentialSourceId,
@@ -356,10 +343,10 @@ function createCredentialsShim(
     }
 
     const shim = {
-        get: () => (state.credentials ??= shim.refresh('passive')),
-        refresh: (type?: RefreshType) => {
+        get: () => (state.credentials ??= shim.refresh()),
+        refresh: () => {
             const clear = () => (state.pendingRefresh = undefined)
-            state.credentials = state.pendingRefresh ??= refresh(type).finally(clear)
+            state.credentials = state.pendingRefresh ??= refresh().finally(clear)
 
             return state.credentials
         },

@@ -33,6 +33,10 @@
                     "type": "result"
                 },
                 {
+                    "type": "reason",
+                    "required": false
+                },
+                {
                     "type": "credentialType",
                     "required": false
                 },
