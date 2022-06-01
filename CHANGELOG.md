@@ -1,3 +1,14 @@
+# _1.44_ (2022-06-01)
+- **(Feature)** Add warning to indicate time delay in SQS queue deletion
+- **(Bug Fix)** Fixed issue with uncaught exception in resource cache ([#3098](https://github.com/aws/aws-toolkit-jetbrains/issues/3098))
+- **(Bug Fix)** Don't attempt to setup run configurations for test code ([#3075](https://github.com/aws/aws-toolkit-jetbrains/issues/3075))
+- **(Bug Fix)** Fix toolWindow not running in EDT
+- **(Bug Fix)** Handle Lambda pending states while updating function ([#2984](https://github.com/aws/aws-toolkit-jetbrains/issues/2984))
+- **(Bug Fix)** Fix modality issue when opening a CloudWatch log stream in editor ([#2991](https://github.com/aws/aws-toolkit-jetbrains/issues/2991))
+- **(Bug Fix)** Workaround regression with ARN console navigation in JSON files
+- **(Bug Fix)** Fix 'The project directory does not exist!' when creating SAM/Gradle projects when the Android plugin is also installed
+- **(Deprecation)** An upcoming release will remove support for IDEs based on the 2021.1 platform
+
 # _1.43_ (2022-04-14)
 - **(Bug Fix)** Fix regression in DataGrip 2022.1 caused by new APIs in the platform ([#3125](https://github.com/aws/aws-toolkit-jetbrains/issues/3125))
 

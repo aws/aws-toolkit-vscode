@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fixed issue with uncaught exception in resource cache (#3098)"
-}

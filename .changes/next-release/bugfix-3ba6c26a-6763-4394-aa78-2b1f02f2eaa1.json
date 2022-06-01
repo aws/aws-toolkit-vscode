@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix 'The project directory does not exist!' when creating SAM/Gradle projects when the Android plugin is also installed"
-}

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Handle Lambda pending states while updating function (#2984)"
-}

@@ -1,0 +1,32 @@
+{
+  "date" : "2022-06-01",
+  "version" : "1.44",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add warning to indicate time delay in SQS queue deletion"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixed issue with uncaught exception in resource cache (#3098)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Don't attempt to setup run configurations for test code (#3075)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix toolWindow not running in EDT"
+  }, {
+    "type" : "bugfix",
+    "description" : "Handle Lambda pending states while updating function (#2984)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix modality issue when opening a CloudWatch log stream in editor (#2991)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Workaround regression with ARN console navigation in JSON files"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix 'The project directory does not exist!' when creating SAM/Gradle projects when the Android plugin is also installed"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for IDEs based on the 2021.1 platform"
+  } ]
+}

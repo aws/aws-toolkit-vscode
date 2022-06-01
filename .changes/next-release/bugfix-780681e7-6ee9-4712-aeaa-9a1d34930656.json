@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Workaround regression with ARN console navigation in JSON files"
-}

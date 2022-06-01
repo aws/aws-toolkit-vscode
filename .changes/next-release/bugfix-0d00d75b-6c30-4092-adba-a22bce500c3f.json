@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix modality issue when opening a CloudWatch log stream in editor (#2991)"
-}
