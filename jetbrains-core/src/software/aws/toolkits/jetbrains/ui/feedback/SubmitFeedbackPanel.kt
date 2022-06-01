@@ -50,6 +50,7 @@ class SubmitFeedbackPanel(initialSentiment: Sentiment? = null) {
 
     private fun createUIComponents() {
         textArea = JBTextArea(6, 70)
+        textArea.emptyText.text = message("feedback.comment.emptyText")
         textArea.lineWrap = true
         textAreaPane = JBScrollPane(textArea)
         smileIcon = JLabel(IconUtil.scale(AwsIcons.Misc.SMILE, null, 3f))
@@ -57,6 +58,14 @@ class SubmitFeedbackPanel(initialSentiment: Sentiment? = null) {
         lengthLimitLabel = JLabel()
 
         textArea.document.addUndoableEditListener { onTextAreaUpdate() }
+    }
+
+    @TestOnly
+    internal fun setSentimentForTest(sentiment: Sentiment) {
+        when (sentiment) {
+            Sentiment.POSITIVE -> smileButton.isSelected = true
+            else -> sadButton.isSelected = true
+        }
     }
 
     init {

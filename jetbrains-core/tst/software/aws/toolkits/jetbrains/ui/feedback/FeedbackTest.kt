@@ -83,11 +83,9 @@ class FeedbackTest {
             runInEdtAndWait {
                 val dialog = FeedbackDialog(projectRule.project)
                 val panel = dialog.getViewForTesting()
-
+                panel.setSentimentForTest(Sentiment.POSITIVE)
                 panel.comment = case
-                assertThat(dialog.doValidate()).isInstanceOfSatisfying(ValidationInfo::class.java) {
-                    it.message.contains(message("feedback.validation.empty_comment"))
-                }
+                assertThat(dialog.doValidate()).isNull()
             }
         }
     }

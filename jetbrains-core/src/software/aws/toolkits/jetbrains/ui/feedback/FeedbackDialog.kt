@@ -75,7 +75,7 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project) {
         val comment = panel.comment
 
         return when {
-            comment.isNullOrEmpty() -> ValidationInfo(message("feedback.validation.empty_comment"))
+            comment.isNullOrEmpty() -> null
             comment.length >= SubmitFeedbackPanel.MAX_LENGTH -> ValidationInfo(message("feedback.validation.comment_too_long"))
             else -> null
         }
