@@ -4,3 +4,4 @@
 package software.aws.toolkits.jetbrains.ui.feedback
 
 const val FEEDBACK_SOURCE = "source"
+const val ENABLED_EXPERIMENTS = "experimentsEnabled"
