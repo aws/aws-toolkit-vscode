@@ -201,6 +201,9 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
+        await caws.activate(extContext)
+        await mde.activate(extContext)
+
         await activateCloudFormationTemplateRegistry(context)
 
         await activateAwsExplorer({
@@ -242,9 +245,6 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
-
-        caws.activate(extContext)
-        mde.activate(extContext)
 
         showWelcomeMessage(context)
 
