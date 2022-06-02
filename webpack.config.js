@@ -116,6 +116,10 @@ const vueConfig = {
     name: 'vue',
     target: 'web',
     entry: createVueEntries(),
+    output: {
+        ...baseConfig.output,
+        libraryTarget: 'this',
+    },
     module: {
         rules: baseConfig.module.rules.concat(
             {
