@@ -252,7 +252,12 @@ export class GitExtension {
         // TODO: make a promise 'pipe' function
         if (branches.length === 0) {
             try {
-                const { stdout } = await execFileAsync(api.git.path, ['ls-remote', '--heads', '--', remote.fetchUrl ?? ''])
+                const { stdout } = await execFileAsync(api.git.path, [
+                    'ls-remote',
+                    '--heads',
+                    '--',
+                    remote.fetchUrl ?? '',
+                ])
                 return stdout
                     .toString()
                     .split(/\r?\n/)
@@ -373,5 +378,15 @@ export class GitExtension {
             tryRemoveFolder(tmpDir)
             throw err
         }
+    }
+
+    public async registerRemoteSourceProvider(provider: GitTypes.RemoteSourceProvider): Promise<vscode.Disposable> {
+        const api = await this.validateApi('git: extension disabled, unable to register source provider')
+
+        if (!api) {
+            return { dispose: () => {} }
+        }
+
+        return api.registerRemoteSourceProvider(provider)
     }
 }

@@ -95,3 +95,19 @@ export function getMinVscodeVersion(): string {
 export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
+
+export function getMdeEnvArn(): string | undefined {
+    return process.env['__ENVIRONMENT_ARN']
+}
+
+export function getCawsWorkspaceArn(): string | undefined {
+    return process.env['__DEVELOPMENT_WORKSPACE_ARN']
+}
+
+export function getCawsProjectName(): string | undefined {
+    return process.env['__DEVELOPMENT_WORKSPACE_PROJECT_NAME']
+}
+
+export function getCawsOrganizationName(): string | undefined {
+    return process.env['__DEVELOPMENT_WORKSPACE_ORGANIZATION_NAME']
+}
