@@ -565,7 +565,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'my.test.handler',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -716,7 +715,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'app.handler',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -870,7 +868,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'src/subfolder/app.handlerTwoFoldersDeep',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -1000,7 +997,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'HelloWorldFunction',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -1084,10 +1080,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 invokeTarget: {
                     target: API_TARGET_TYPE,
                     templatePath: 'template.yaml',
-                    logicalId: 'SourceCodeTwoFoldersDeep',
                 },
                 api: {
-                    path: '/hello',
+                    path: '/hello3',
                     httpMethod: 'post',
                     headers: {
                         'user-agent': 'mozilla 42',
@@ -1134,7 +1129,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'src/subfolder/app.handlerTwoFoldersDeep',
                 invokeTarget: { ...input.invokeTarget },
                 api: {
                     ...(input.api as APIGatewayProperties),
@@ -1214,7 +1208,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: handler,
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -1316,7 +1309,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: handler,
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -1379,7 +1371,6 @@ describe('SamDebugConfigurationProvider', async function () {
         })
 
         it('target=template: java maven', async function () {
-            const handler = 'helloworld.App::handleRequest'
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-plain-maven-sam-app/')
             )
@@ -1429,7 +1420,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: handler,
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -1532,7 +1522,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'HelloWorldFunction',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -1624,7 +1613,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -1790,7 +1778,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -1947,7 +1934,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'HelloWorldFunction',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -2095,7 +2081,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2155,7 +2140,7 @@ describe('SamDebugConfigurationProvider', async function () {
   helloworld:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: ${expected.handlerName}
+      Handler: app.lambda_handler
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: python3.7
@@ -2206,7 +2191,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
-                handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
                 envFile: undefined,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
@@ -2241,7 +2225,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2327,7 +2310,6 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
             // Test noDebug=true.
-            expected.handlerName = 'app.lambda_handler'
             await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
         })
 
@@ -2343,7 +2325,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 invokeTarget: {
                     target: API_TARGET_TYPE,
                     templatePath: 'python3.7-plain-sam-app/template.yaml',
-                    logicalId: 'HelloWorldFunction',
                 },
                 api: {
                     path: '/hello',
@@ -2367,7 +2348,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2424,7 +2404,6 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actual, expected)
 
             // Test noDebug=true.
-            expected.handlerName = 'app.lambda_handler'
             await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
         })
 
@@ -2459,7 +2438,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'HelloWorldFunction',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2632,7 +2610,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 useIkpdb: true,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2683,7 +2660,7 @@ describe('SamDebugConfigurationProvider', async function () {
   helloworld:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: ${expected.handlerName}
+      Handler: app.lambda_handler
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: python3.7
@@ -2701,7 +2678,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
-                handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
                 envFile: undefined,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
@@ -2738,7 +2714,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 useIkpdb: true,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2790,7 +2765,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
-                handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
                 envFile: undefined,
                 eventPayloadFile: undefined,
@@ -2893,7 +2867,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'my.test.handler',
                 invokeTarget: {
                     target: 'template',
                     templatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
@@ -2982,7 +2955,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'hello-world',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -3218,19 +3190,17 @@ describe('createTemplateAwsSamDebugConfig', function () {
 })
 
 describe('createApiAwsSamDebugConfig', function () {
-    const name = 'my body is a template'
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
     const runtime = 'timeToRun'
 
     it('creates a API-type SAM debugger configuration with minimal configurations', function () {
-        const config = createApiAwsSamDebugConfig(undefined, undefined, name, templatePath)
+        const config = createApiAwsSamDebugConfig(undefined, undefined, templatePath)
         assert.deepStrictEqual(config, {
-            name: `API yellow:${name}`,
+            name: `API yellow:/`,
             type: AWS_SAM_DEBUG_TYPE,
             request: DIRECT_INVOKE_TYPE,
             invokeTarget: {
                 target: API_TARGET_TYPE,
-                logicalId: name,
                 templatePath: templatePath,
             },
             api: {
@@ -3244,18 +3214,17 @@ describe('createApiAwsSamDebugConfig', function () {
     })
 
     it('creates a API-type SAM debugger configuration with additional params', function () {
-        const config = createApiAwsSamDebugConfig(undefined, runtime, name, templatePath, {
+        const config = createApiAwsSamDebugConfig(undefined, runtime, templatePath, {
             payload: { json: { key: 'value' } },
             httpMethod: 'OPTIONS',
             path: '/api',
         })
         assert.deepStrictEqual(config, {
-            name: `API yellow:${name} (${runtime})`,
+            name: `API yellow:/api (${runtime})`,
             type: AWS_SAM_DEBUG_TYPE,
             request: DIRECT_INVOKE_TYPE,
             invokeTarget: {
                 target: API_TARGET_TYPE,
-                logicalId: name,
                 templatePath: templatePath,
             },
             api: {
@@ -3286,7 +3255,7 @@ describe('debugConfiguration', function () {
         globals.templateRegistry.reset()
     })
 
-    it('getCodeRoot(), getHandlerName() with invokeTarget=code', async function () {
+    it('getCodeRoot() with invokeTarget=code', async function () {
         const folder = testutil.getWorkspaceFolder(tempFolder)
         const relativePath = 'src'
         const fullPath = pathutil.normalize(path.join(tempFolder, relativePath))
@@ -3305,8 +3274,6 @@ describe('debugConfiguration', function () {
             },
         }
 
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'my.test.handler')
-
         // Config with relative path:
         config.invokeTarget.projectRoot = relativePath
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
@@ -3316,7 +3283,7 @@ describe('debugConfiguration', function () {
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
     })
 
-    it('getCodeRoot(), getHandlerName() with invokeTarget=template', async function () {
+    it('getCodeRoot() with invokeTarget=template', async function () {
         const folder = testutil.getWorkspaceFolder(tempFolder)
         const relativePath = 'src'
         const fullPath = pathutil.normalize(path.join(tempFolder, relativePath))
@@ -3346,7 +3313,6 @@ describe('debugConfiguration', function () {
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }), tempFile.fsPath)
         await globals.templateRegistry.addItemToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'handler')
 
         // Template with absolute path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
@@ -3374,7 +3340,6 @@ describe('debugConfiguration', function () {
         )
         await globals.templateRegistry.addItemToRegistry(tempFileRefs)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
 
         // Template with refs that overrides handler via default parameter value in YAML template
         const tempFileDefaultRefs = vscode.Uri.file(path.join(tempFolder, 'testDefaultRefs.yaml'))
@@ -3401,7 +3366,6 @@ describe('debugConfiguration', function () {
         )
         await globals.templateRegistry.addItemToRegistry(tempFileDefaultRefs)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
 
         // Template with refs that overrides handler via override value in launch config
         const tempFileOverrideRef = vscode.Uri.file(path.join(tempFolder, 'testOverrideRefs.yaml'))
@@ -3423,6 +3387,5 @@ describe('debugConfiguration', function () {
         )
         await globals.templateRegistry.addItemToRegistry(tempFileOverrideRef)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
     })
 })

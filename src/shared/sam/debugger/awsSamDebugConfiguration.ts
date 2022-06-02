@@ -85,24 +85,17 @@ export function ensureRelativePaths(
 /**
  * Creates a description for a SAM debugconfig entry (in launch.json).
  *
- * Example: `makeName('foo', '/bar/baz', 'zub')` => `"baz:foo (zub)"
+ * Example: `makeName('API ', 'foo', '/bar/baz', 'zub')` => "API baz:foo (zub)"
  *
+ * @param prefix prepended literally
  * @param primaryName
- * @param parentDir  Optional directory name (used as a prefix)
- * @param suffix  Optional info used to differentiate the name
+ * @param parentDir  directory name (append to `primaryName`)
+ * @param suffix  appended in parentheses
  */
-function makeName(primaryName: string, parentDir: string | undefined, suffix: string | undefined) {
-    const withPrefix = parentDir ? `${parentDir}:${primaryName}` : primaryName
-    return suffix ? `${withPrefix} (${suffix})` : withPrefix
-}
-
-/**
- * Creates a description for a SAM debugconfig entry (in launch.json), preprending API
- *
- * see: makeName for the format
- */
-function makeNameApi(primaryName: string, parentDir: string | undefined, suffix: string | undefined) {
-    return `API ${makeName(primaryName, parentDir, suffix)}`
+function makeName(prefix: string, primaryName: string, parentDir: string | undefined, suffix: string | undefined) {
+    suffix = suffix ? ` (${suffix})` : ''
+    const body = parentDir ? `${parentDir}:${primaryName}` : primaryName
+    return `${prefix}${body}${suffix}`
 }
 
 /**
@@ -133,7 +126,7 @@ export function createTemplateAwsSamDebugConfig(
     const response: AwsSamDebuggerConfiguration = {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
-        name: makeName(resourceName, templateParentDir, runtimeName),
+        name: makeName('', resourceName, templateParentDir, runtimeName),
         invokeTarget: {
             target: TEMPLATE_TARGET_TYPE,
             templatePath: workspaceRelativePath,
@@ -187,7 +180,7 @@ export function createCodeAwsSamDebugConfig(
     return {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
-        name: makeName(lambdaHandler, parentDir, runtime),
+        name: makeName('', lambdaHandler, parentDir, runtime),
         invokeTarget: {
             target: CODE_TARGET_TYPE,
             projectRoot: workspaceRelativePath,
@@ -204,7 +197,6 @@ export function createCodeAwsSamDebugConfig(
 export function createApiAwsSamDebugConfig(
     folder: vscode.WorkspaceFolder | undefined,
     runtimeName: string | undefined,
-    resourceName: string,
     templatePath: string,
     preloadedConfig?: {
         path?: string
@@ -214,6 +206,7 @@ export function createApiAwsSamDebugConfig(
 ): AwsSamDebuggerConfiguration {
     const workspaceRelativePath = makeWorkspaceRelativePath(folder, templatePath)
     const templateParentDir = path.basename(path.dirname(templatePath))
+    const pathName = preloadedConfig?.path ?? '/'
 
     const withRuntime = runtimeName
         ? {
@@ -226,14 +219,13 @@ export function createApiAwsSamDebugConfig(
     return {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
-        name: makeNameApi(resourceName, templateParentDir, runtimeName),
+        name: makeName('API ', pathName, templateParentDir, runtimeName),
         invokeTarget: {
             target: API_TARGET_TYPE,
             templatePath: workspaceRelativePath,
-            logicalId: resourceName,
         },
         api: {
-            path: preloadedConfig?.path ?? '/',
+            path: pathName,
             // coerce it into the correct type. The types do not entirely overlap (there is an any)
             // so in that case let the user decide
             httpMethod: (preloadedConfig?.httpMethod as APIGatewayProperties['httpMethod']) ?? 'get',

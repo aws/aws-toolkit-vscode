@@ -68,7 +68,6 @@ function createApiConfig(): AwsSamDebuggerConfiguration {
         invokeTarget: {
             target: 'api',
             templatePath: '/',
-            logicalId: 'TestResource',
         },
         api: {
             path: '/',
@@ -179,9 +178,17 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         assert.strictEqual(result.isValid, false)
     })
 
-    it('API config is invalid when it does not have an API field', function () {
+    it('API config is invalid when missing "api" field', function () {
         const config = createApiConfig()
         config.api = undefined
+
+        const result = validator.validate(config)
+        assert.strictEqual(result.isValid, false)
+    })
+
+    it('API config is invalid when missing "api.path" field', function () {
+        const config = createApiConfig()
+        ;(config.api as any).path = undefined
 
         const result = validator.validate(config)
         assert.strictEqual(result.isValid, false)

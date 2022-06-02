@@ -134,13 +134,7 @@ export async function addSamDebugConfiguration(
                 payload: apiEvent?.event.Properties?.Payload,
             }
 
-            samDebugConfig = createApiAwsSamDebugConfig(
-                workspaceFolder,
-                runtimeName,
-                resourceName,
-                rootUri.fsPath,
-                apiConfig
-            )
+            samDebugConfig = createApiAwsSamDebugConfig(workspaceFolder, runtimeName, rootUri.fsPath, apiConfig)
         }
     } else if (type === CODE_TARGET_TYPE) {
         const quickPick = createRuntimeQuickPick({

@@ -10,7 +10,6 @@ import * as nls from 'vscode-nls'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import {
     getCodeRoot,
-    getHandlerName,
     getTemplateResource,
     NodejsDebugConfiguration,
     PythonDebugConfiguration,
@@ -84,8 +83,6 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     /** Runtime id-name passed to vscode to select a debugger/launcher. */
     runtime: Runtime
     runtimeFamily: RuntimeFamily
-    /** Resolved (potentinally generated) handler name. This field is mutable and should adjust to whatever handler name is currently generated*/
-    handlerName: string
     workspaceFolder: vscode.WorkspaceFolder
 
     /**
@@ -242,16 +239,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                                     if (value.Type === 'Api') {
                                         const properties = value.Properties as CloudFormation.ApiEventProperties
                                         configs.push(
-                                            createApiAwsSamDebugConfig(
-                                                folder,
-                                                runtimeName,
-                                                resourceKey,
-                                                templateDatum.path,
-                                                {
-                                                    path: properties?.Path,
-                                                    httpMethod: properties?.Method,
-                                                }
-                                            )
+                                            createApiAwsSamDebugConfig(folder, runtimeName, templateDatum.path, {
+                                                path: properties?.Path,
+                                                httpMethod: properties?.Method,
+                                            })
                                         )
                                     }
                                 }
@@ -390,10 +381,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const templateResource = getTemplateResource(folder, config)
         const codeRoot = getCodeRoot(folder, config)
         const architecture = getArchitecture(template, templateResource, config.invokeTarget)
-        // Handler is the only field that we need to parse refs for.
-        // This is necessary for Python debugging since we have to create the temporary entry file
-        // Other refs can fail; SAM will handle them.
-        const handlerName = getHandlerName(folder, config)
 
         config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
         fs.ensureDir(config.baseBuildDir)
@@ -529,7 +516,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             workspaceFolder: folder,
             runtime: runtime,
             runtimeFamily: runtimeFamily,
-            handlerName: handlerName,
             documentUri: documentUri,
             templatePath: pathutil.normalize(templateInvoke?.templatePath),
             eventPayloadFile: '', // Populated by makeConfig().

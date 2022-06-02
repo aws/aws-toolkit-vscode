@@ -1,7 +1,37 @@
 Resources:
+    AnotherResource1:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: .
+            Handler: src/subfolder/app.handlerTwoFoldersDeep
+            Runtime: nodejs14.x
+            Events:
+                HelloWorld:
+                    Type: Api
+                    Properties:
+                        Path: /hello1
+                        Method: get
+    AnotherResource2:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: .
+            Handler: src/subfolder/app.handlerTwoFoldersDeep
+            Runtime: nodejs14.x
+            Events:
+                HelloWorld:
+                    Type: Api
+                    Properties:
+                        Path: /hello2
+                        Method: get
     SourceCodeTwoFoldersDeep:
         Type: AWS::Serverless::Function
         Properties:
             CodeUri: .
             Handler: src/subfolder/app.handlerTwoFoldersDeep
             Runtime: nodejs14.x
+            Events:
+                HelloWorld:
+                    Type: Api
+                    Properties:
+                        Path: /hello3
+                        Method: get

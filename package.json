@@ -366,10 +366,6 @@
                                                 "description": "%AWS.configuration.description.awssam.debug.templatePath%",
                                                 "type": "string"
                                             },
-                                            "logicalId": {
-                                                "description": "%AWS.configuration.description.awssam.debug.logicalId%",
-                                                "type": "string"
-                                            },
                                             "target": {
                                                 "description": "%AWS.configuration.description.awssam.debug.target%",
                                                 "type": "string",
@@ -381,7 +377,6 @@
                                         "additionalProperties": false,
                                         "required": [
                                             "templatePath",
-                                            "logicalId",
                                             "target"
                                         ],
                                         "type": "object"
@@ -641,8 +636,7 @@
                             "name": "${5:Invoke Lambda with API Gateway}",
                             "invokeTarget": {
                                 "target": "api",
-                                "templatePath": "${1:Template Location}",
-                                "logicalId": "${2:Function Logical ID}"
+                                "templatePath": "${1:Template Location}"
                             },
                             "api": {
                                 "path": "${3:Path}",
