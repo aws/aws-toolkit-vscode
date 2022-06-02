@@ -111,7 +111,7 @@ export function createExecutableFile(filepath: string, contents: string): void {
     if (process.platform === 'win32') {
         fs.writeFileSync(filepath, `@echo OFF$\r\n${contents}\r\n`)
     } else {
-        fs.writeFileSync(filepath, contents)
+        fs.writeFileSync(filepath, `#!/bin/sh\n${contents}`)
         fs.chmodSync(filepath, 0o744)
     }
 }
