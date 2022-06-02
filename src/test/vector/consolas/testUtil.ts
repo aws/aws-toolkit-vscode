@@ -6,35 +6,13 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as consolasClient from '../../../vector/consolas/client/consolas'
-import {
-    recommendations,
-    invocationContext,
-    AcceptedSuggestionEntry,
-    automatedTriggerContext,
-    telemetryContext,
-} from '../../../vector/consolas/models/model'
-import { ConsolasConstants } from '../../../vector/consolas/models/constants'
+import { vsCodeState, AcceptedSuggestionEntry } from '../../../vector/consolas/models/model'
 import { MockDocument } from '../../fake/fakeDocument'
 import { getLogger } from '../../../shared/logger'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
 export function resetConsolasGlobalVariables() {
-    recommendations.requestId = ''
-    recommendations.response = []
-    recommendations.errorCode = ''
-    invocationContext.isIntelliSenseActive = false
-    invocationContext.isPendingResponse = false
-    automatedTriggerContext.specialChar = ''
-    automatedTriggerContext.keyStrokeCount = 0
-    invocationContext.lastInvocationTime = performance.now() - ConsolasConstants.invocationTimeIntervalThreshold * 1000
-    invocationContext.startPos = new vscode.Position(0, 0)
-    telemetryContext.isPrefixMatched = []
-    telemetryContext.triggerType = 'OnDemand'
-    telemetryContext.ConsolasAutomatedtriggerType = 'KeyStrokeCount'
-    telemetryContext.completionType = 'Line'
-    telemetryContext.cursorOffset = 0
+    vsCodeState.isIntelliSenseActive = false
     runtimeLanguageContext.setRuntimeLanguageContext('python', 'python2', '2.7.16')
     runtimeLanguageContext.setRuntimeLanguageContext('java', 'java11', '11.0.13')
     runtimeLanguageContext.setRuntimeLanguageContext('javascript', 'javascript', '12.22.9')
@@ -105,8 +83,8 @@ export function createMockSelection(line: number, character: number): vscode.Sel
     return selection
 }
 
-export function createMockClientRequest(maxrecommendations = 10): consolasClient.ConsolasGenerateRecommendationsReq {
-    const req: consolasClient.ConsolasGenerateRecommendationsReq = {
+export function createMockClientRequest(): consolasClient.ListRecommendationsRequest {
+    const req: consolasClient.ListRecommendationsRequest = {
         contextInfo: {
             filename: 'test.py',
             naturalLanguageCode: 'en-US',
@@ -119,7 +97,6 @@ export function createMockClientRequest(maxrecommendations = 10): consolasClient
             leftFileContent: 'def add',
             rightFileContent: '',
         },
-        maxRecommendations: maxrecommendations,
     }
     return req
 }
@@ -141,6 +118,7 @@ export function createAcceptedSuggestionEntry(time = new Date()): AcceptedSugges
         startPosition: new vscode.Position(1, 1),
         endPosition: new vscode.Position(1, 1),
         requestId: 'test',
+        sessionId: 'test',
         index: 1,
         triggerType: 'OnDemand',
         completionType: 'Line',

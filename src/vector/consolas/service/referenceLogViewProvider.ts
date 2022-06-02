@@ -7,9 +7,9 @@ import * as vscode from 'vscode'
 import { References } from '../client/consolas'
 import { LicenseUtil } from '../util/licenseUtil'
 import { ConsolasConstants } from '../models/constants'
-import { telemetryContext } from '../models/model'
 import { ConsolasSettings } from '../util/consolasSettings'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.consolas.referenceLog'
@@ -62,9 +62,10 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             }
             const code = recommendation.substring(reference.contentSpan.start, reference.contentSpan.end)
             const firstCharLineNumber =
-                editor.document.positionAt(telemetryContext.cursorOffset + reference.contentSpan.start).line + 1
+                editor.document.positionAt(TelemetryHelper.instance.cursorOffset + reference.contentSpan.start).line + 1
             const lastCharLineNumber =
-                editor.document.positionAt(telemetryContext.cursorOffset + reference.contentSpan.end - 1).line + 1
+                editor.document.positionAt(TelemetryHelper.instance.cursorOffset + reference.contentSpan.end - 1).line +
+                1
             const license = `<a href=${LicenseUtil.getLicenseHtml(reference.licenseName)}>${reference.licenseName}</a>`
             let lineInfo = ``
             if (firstCharLineNumber === lastCharLineNumber) {
@@ -85,11 +86,12 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                     lineInfo
                 ) + ' <br>'
         }
+        if (text === ``) return ''
         return `[${time}] Accepted recommendation ${text}<br>`
     }
 
     public addReferenceLog(referenceLog: string) {
-        this._referenceLogs.push(referenceLog)
+        if (referenceLog !== '') this._referenceLogs.push(referenceLog)
         this.update()
     }
     // TODO: migrate to vue based webview

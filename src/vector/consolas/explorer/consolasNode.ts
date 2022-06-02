@@ -8,14 +8,17 @@ import globals from '../../../shared/extensionGlobals'
 import { ConsolasConstants } from '../models/constants'
 import {
     createEnableCodeSuggestionsNode,
+    createEnterAccessCodeNode,
     createIntroductionNode,
-    createPauseAutoSuggestionsNode,
-    createResumeAutoSuggestionsNode,
+    createAutoSuggestionsNode,
+    createRequestAccessNode,
     createOpenReferenceLogNode,
+    createSecurityScanNode,
 } from './consolasChildrenNodes'
 import { Commands } from '../../../shared/vscode/commands2'
 import { RootNode } from '../../../awsexplorer/localExplorer'
 import { Experiments } from '../../../shared/settings'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 export class ConsolasNode implements RootNode {
     public readonly id = 'consolas'
     public readonly treeItem = this.createTreeItem()
@@ -46,13 +49,19 @@ export class ConsolasNode implements RootNode {
     }
 
     public getChildren() {
-        if (globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)) {
-            if (globals.context.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey)) {
-                return [createPauseAutoSuggestionsNode(), createOpenReferenceLogNode()]
+        if (globals.context.globalState.get<string | undefined>(ConsolasConstants.accessToken) || isCloud9()) {
+            if (globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)) {
+                const enabled =
+                    globals.context.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) || false
+                if (isCloud9()) {
+                    return [createAutoSuggestionsNode(enabled), createOpenReferenceLogNode()]
+                }
+                return [createAutoSuggestionsNode(enabled), createOpenReferenceLogNode(), createSecurityScanNode()]
+            } else {
+                return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
             }
-            return [createResumeAutoSuggestionsNode(), createOpenReferenceLogNode()]
         } else {
-            return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
+            return [createIntroductionNode(), createEnterAccessCodeNode(), createRequestAccessNode()]
         }
     }
 

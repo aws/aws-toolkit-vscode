@@ -5,21 +5,18 @@
 
 import * as vscode from 'vscode'
 import { ConsolasConstants } from '../models/constants'
-import {
-    recommendations,
-    invocationContext,
-    OnRecommendationAcceptanceEntry,
-    automatedTriggerContext,
-} from '../models/model'
+import { vsCodeState, OnRecommendationAcceptanceEntry } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
-import * as telemetry from '../../../shared/telemetry/telemetry'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { ConsolasTracker } from '../tracker/consolasTracker'
 import { ConsolasCodeCoverageTracker } from '../tracker/consolasCodeCoverageTracker'
 import { TextEdit, WorkspaceEdit, workspace } from 'vscode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { handleAutoClosingBrackets } from '../util/closingBracketUtil'
+import { RecommendationHandler } from '../service/recommendationHandler'
+import { InlineCompletion } from '../service/inlineCompletion'
+import { KeyStrokeHandler } from '../service/keyStrokeHandler'
 
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
@@ -29,6 +26,7 @@ export async function onAcceptance(
     isAutoClosingBracketsEnabled: boolean,
     globalStorage: vscode.Memento
 ) {
+    RecommendationHandler.instance.cancelPaginatedRequest()
     /**
      * Format document
      */
@@ -37,28 +35,37 @@ export async function onAcceptance(
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
         const languageId = acceptanceEntry.editor.document.languageId
-        TelemetryHelper.recordUserDecisionTelemetry(
+        RecommendationHandler.instance.updatePrefixMatchArray(true, acceptanceEntry.editor)
+        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
             acceptanceEntry.acceptIndex,
-            acceptanceEntry.editor?.document.languageId
+            acceptanceEntry.editor?.document.languageId,
+            false
         )
         // consolas will be doing editing while formatting.
         // formatting should not trigger consoals auto trigger
-        invocationContext.isConsolasEditing = true
+        vsCodeState.isConsolasEditing = true
         /**
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
-        if (isAutoClosingBracketsEnabled && !invocationContext.isTypeaheadInProgress) {
+        if (isAutoClosingBracketsEnabled && !InlineCompletion.instance.isTypeaheadInProgress) {
             try {
                 await handleAutoClosingBrackets(
                     acceptanceEntry.triggerType,
                     acceptanceEntry.editor,
                     acceptanceEntry.recommendation,
-                    end.line
+                    end.line,
+                    KeyStrokeHandler.instance.specialChar
                 )
             } catch (error) {
                 getLogger().error(`${error} in handleAutoClosingBrackets`)
             }
         }
+        // move cursor to end of suggestion before doing code format
+        // after formatting, the end position will still be editor.selection.active
+        if (!isCloud9()) {
+            acceptanceEntry.editor.selection = new vscode.Selection(end, end)
+        }
+
         /**
          * Python formatting uses Black but Black does not support the "Format Selection" command,
          * instead we use document format here. For other languages, we use "Format Selection"
@@ -82,24 +89,15 @@ export async function onAcceptance(
                 await workspace.applyEdit(wEdit)
             }
         }
-        /* After formatting, move the current active cursor position
-         *  and update global variable states.
+        /* After formatting, update global variable states.
          */
+
         if (isCloud9()) {
-            if (acceptanceEntry.editor) {
-                acceptanceEntry.editor.selection = new vscode.Selection(
-                    acceptanceEntry.editor.selection.active,
-                    acceptanceEntry.editor.selection.active
-                )
-            }
-            invocationContext.isIntelliSenseActive = false
+            vsCodeState.isIntelliSenseActive = false
         } else {
-            if (acceptanceEntry.editor) {
-                acceptanceEntry.editor.selection = new vscode.Selection(end, end)
-            }
+            InlineCompletion.instance.isTypeaheadInProgress = false
         }
-        invocationContext.isConsolasEditing = false
-        invocationContext.isTypeaheadInProgress = false
+        vsCodeState.isConsolasEditing = false
         ConsolasTracker.getTracker().enqueue({
             time: new Date(),
             fileUrl: acceptanceEntry.editor.document.uri,
@@ -107,6 +105,7 @@ export async function onAcceptance(
             startPosition: start,
             endPosition: end,
             requestId: acceptanceEntry.requestId,
+            sessionId: acceptanceEntry.sessionId,
             index: acceptanceEntry.acceptIndex,
             triggerType: acceptanceEntry.triggerType,
             completionType: acceptanceEntry.completionType,
@@ -118,58 +117,7 @@ export async function onAcceptance(
             acceptanceEntry.recommendation
         )
     }
-    recommendations.requestId = ''
-}
 
-export async function handleAutoClosingBrackets(
-    triggerType: telemetry.ConsolasTriggerType,
-    editor: vscode.TextEditor,
-    recommendation: string,
-    line: number
-) {
-    const openingBrackets = new Map<string, string>()
-    openingBrackets.set('{', '}')
-    openingBrackets.set('(', ')')
-    openingBrackets.set('[', ']')
-    const closingBracket = openingBrackets.get(automatedTriggerContext.specialChar)
-    if (
-        triggerType === 'AutoTrigger' &&
-        closingBracket !== undefined &&
-        hasExtraClosingBracket(recommendation, automatedTriggerContext.specialChar, closingBracket)
-    ) {
-        let curLine = line
-        let textLine = editor.document.lineAt(curLine).text
-        while (curLine >= 0 && !textLine.includes(closingBracket)) {
-            curLine--
-            textLine = editor.document.lineAt(curLine).text
-        }
-        if (curLine >= 0) {
-            await editor.edit(
-                editBuilder => {
-                    const pos = textLine.lastIndexOf(closingBracket)
-                    editBuilder.delete(new vscode.Range(curLine, pos, curLine, pos + 1))
-                },
-                { undoStopAfter: false, undoStopBefore: false }
-            )
-        }
-    }
-}
-
-export function hasExtraClosingBracket(
-    recommendation: string,
-    openingBracket: string,
-    closingBracket: string
-): boolean {
-    let count = 0
-    let pos = recommendation.indexOf(closingBracket)
-    while (pos > 0) {
-        count++
-        pos = recommendation.indexOf(closingBracket, pos + 1)
-    }
-    pos = recommendation.indexOf(openingBracket)
-    while (pos > 0) {
-        count--
-        pos = recommendation.indexOf(openingBracket, pos + 1)
-    }
-    return count === 1
+    // at the end of recommendation acceptance, clear recommendations.
+    RecommendationHandler.instance.clearRecommendations()
 }

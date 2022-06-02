@@ -7,18 +7,18 @@ export const ConsolasConstants = {
     /**
      * SDK Client
      */
-    alphaEndpoint: 'https://conso-conso-kt91i2m4jckw-a308b301002e515e.elb.us-west-2.amazonaws.com/',
+    alphaEndpoint: 'https://conso-conso-2ql1n3f7bqyy-1380812087.us-west-2.elb.amazonaws.com/',
     betaEndpoint: 'https://conso-conso-1gaw7rhj4gx1w-a813d3d32546185b.elb.us-west-2.amazonaws.com/',
-    gammaEndpoint: 'https://Conso-Conso-5NU9CUFTKAGS-82f6f7a6431ff74a.elb.us-west-2.amazonaws.com/',
+    gammaEndpoint: 'https://conso-conso-1ohz4gfxol2wj-1382674778.us-west-2.elb.amazonaws.com/',
     prodEndpoint: 'https://conso-conso-eh28s3s7lpja-dc3892a3fd48c07f.elb.us-west-2.amazonaws.com/',
     region: 'us-west-2',
 
     /**
      * Automated and manual trigger
      */
-    invocationTimeIntervalThreshold: 1, // seconds
+    invocationTimeIntervalThreshold: 2, // seconds
     promiseTimeoutLimit: 15, // seconds
-    invocationKeyThreshold: 15,
+    invocationKeyThreshold: 30,
     specialCharactersList: ['{', '[', '(', ':', '\t', '\n'],
     normalTextChangeRegex: /[A-Za-z0-9]/g,
 
@@ -28,7 +28,7 @@ export const ConsolasConstants = {
     charactersLimit: 25600,
     filenameCharsLimit: 1024,
     naturalLanguage: 'en-US',
-    maxRecommendations: 10,
+    maxRecommendations: 1,
     space: ' ',
     lineBreak: '\n',
     lineBreakWin: '\r\n',
@@ -57,6 +57,7 @@ export const ConsolasConstants = {
      * Prompt
      */
     pendingResponse: 'Pending Consolas response, please wait...',
+    runningSecurityScan: 'Running security scan...',
 
     /**
      * Beta landing page file
@@ -84,10 +85,18 @@ export const ConsolasConstants = {
     autoTriggerEnabledKey: 'CONSOLAS_AUTO_TRIGGER_ENABLED',
     termsAcceptedKey: 'CONSOLAS_TERMS_ACCEPTED',
     serviceActiveKey: 'CONSOLAS_SERVICE_ACTIVE',
+    accessToken: 'CONSOLAS_ACCESS_TOKEN',
 
     //
     learnMoreUri: 'https://en.wikipedia.org/wiki/Consolas',
 
+    // TODO: Update the portal url
+    previewSignupPortal: 'https://docs.aws.amazon.com/',
+
+    prodIdentityPoolID: 'us-west-2:1ec95da4-4533-48a5-aafb-fcac96a9bbc6',
+    alphaIdentityPoolID: 'us-west-2:c84f4c4c-e283-469f-a1d4-bf43c44f48c1',
+    betaIdentityPoolID: 'us-west-2:b4e4d976-f042-4347-9d89-299b8f9787f3',
+    gammaIdentityPoolID: 'us-west-2:97e13e76-921d-4298-8a5d-614dd3039585',
     /**
      * the interval of the background thread invocation, which is triggered by the timer
      */
@@ -109,4 +118,16 @@ export const ConsolasConstants = {
     referenceLogPromptText: `Don\'t want suggestions that include code from other sources? Uncheck this option in 
     <a href="#" onclick="openSettings();return false;">AWS Toolkit settings</a> 
     (Settings / Extensions / AWS Toolkit / Aws: Consolas / Include suggestions with licensed code).`,
+    /**
+     * Security Scan
+     */
+    codeScanStartedKey: 'CONSOLAS_SECURITY_SCAN_STARTED',
+    codeScanPayloadSizeLimit: 1e6, // 1 MB
+    codeScanTruncDirPrefix: 'consolas_scan',
+    codeScanZipExt: '.zip',
+    contextTruncationTimeout: 100, // Seconds
+    codeScanJobTimeout: 300, // Seconds
+    codeScanJobPollingInterval: 5, // Seconds
+    artifactTypeSource: 'SourceCode',
+    artifactTypeBuild: 'BuiltJars',
 }

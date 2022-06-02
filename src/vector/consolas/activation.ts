@@ -5,21 +5,14 @@
 
 import * as vscode from 'vscode'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import * as KeyStrokeHandler from './service/keyStrokeHandler'
+import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import { ConsolasConstants } from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { invocationContext, ConfigurationEntry } from './models/model'
-import {
-    navigateRecommendation,
-    rejectRecommendation,
-    acceptRecommendation,
-    setTypeAheadRecommendations,
-    setReferenceInlineProvider,
-} from './service/inlineCompletion'
+import { vsCodeState, ConfigurationEntry } from './models/model'
+import { InlineCompletion } from './service/inlineCompletion'
 import { invokeConsolas } from './commands/invokeConsolas'
 import { onAcceptance } from './commands/onAcceptance'
-import { TelemetryHelper } from './util/telemetryHelper'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { ConsolasSettings } from './util/consolasSettings'
 import { ExtContext } from '../../shared/extensions'
@@ -37,11 +30,17 @@ import {
     showReferenceLog,
     set,
     get,
+    enterAccessToken,
+    requestAccess,
+    showSecurityScan,
 } from './commands/basicCommands'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
 import { ReferenceInlineProvider } from './service/referenceInlineProvider'
+import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
+import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
+import { RecommendationHandler } from './service/recommendationHandler'
 
 export async function activate(context: ExtContext): Promise<void> {
     /**
@@ -49,6 +48,13 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     await enableDefaultConfig()
     await runtimeLanguageContext.initLanguageRuntimeContexts()
+
+    /**
+     * Consolas security panel
+     */
+    const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
+    activateSecurityScan()
+
     /**
      * Service control
      */
@@ -62,7 +68,7 @@ export async function activate(context: ExtContext): Promise<void> {
         consolasSettings
     )
     const referenceCodeLensProvider = new ReferenceInlineProvider()
-    setReferenceInlineProvider(referenceCodeLensProvider)
+    InlineCompletion.instance.setReferenceInlineProvider(referenceCodeLensProvider)
 
     context.extensionContext.subscriptions.push(
         /**
@@ -77,6 +83,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (!consolasEnabled) {
                     set(ConsolasConstants.termsAcceptedKey, false, context)
                     set(ConsolasConstants.autoTriggerEnabledKey, false, context)
+                    if (!isCloud9()) InlineCompletion.instance.hideConsolasStatusBar()
                 }
                 vscode.commands.executeCommand('aws.consolas.refresh')
             }
@@ -100,6 +107,10 @@ export async function activate(context: ExtContext): Promise<void> {
                 showConsolasWelcomeMessage()
                 set(ConsolasConstants.welcomeMessageKey, true, context)
             }
+
+            if (!isCloud9()) {
+                InlineCompletion.instance.setConsolasStatusBarOk()
+            }
         }),
         /**
          * Cancel terms of service
@@ -113,7 +124,10 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         vscode.commands.registerCommand('aws.consolas.configure', async id => {
             if (id === 'consolas') {
-                await vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.consolas`)
+                await vscode.commands.executeCommand(
+                    'workbench.action.openSettings',
+                    `@id:aws.consolas.includeSuggestionsWithCodeReferences`
+                )
             } else {
                 await vscode.commands.executeCommand('workbench.action.openSettings', `@id:aws.experiments`)
             }
@@ -124,6 +138,12 @@ export async function activate(context: ExtContext): Promise<void> {
         toggleCodeSuggestions.register(context),
         // enable code suggestions
         enableCodeSuggestions.register(context),
+        // enter access token
+        enterAccessToken.register(context, client),
+        // request access
+        requestAccess.register(context),
+        // code scan
+        showSecurityScan.register(context, securityPanelViewProvider, client),
         // manual trigger
         vscode.commands.registerCommand('aws.consolas', async () => {
             invokeConsolas(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
@@ -138,6 +158,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 acceptIndex: number,
                 recommendation: string,
                 requestId: string,
+                sessionId: string,
                 triggerType: telemetry.ConsolasTriggerType,
                 completionType: telemetry.ConsolasCompletionType,
                 language: telemetry.ConsolasLanguage,
@@ -153,6 +174,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         acceptIndex,
                         recommendation,
                         requestId,
+                        sessionId,
                         triggerType,
                         completionType,
                         language,
@@ -170,7 +192,11 @@ export async function activate(context: ExtContext): Promise<void> {
         ),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
-            TelemetryHelper.recordUserDecisionTelemetry(-1, vscode.window.activeTextEditor?.document.languageId)
+            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+                -1,
+                vscode.window.activeTextEditor?.document.languageId
+            )
+            RecommendationHandler.instance.clearRecommendations()
         }),
         // origin tracker related providers
         vscode.languages.registerHoverProvider(ConsolasConstants.supportedLanguages, referenceHoverProvider),
@@ -178,6 +204,23 @@ export async function activate(context: ExtContext): Promise<void> {
         showReferenceLog.register(context),
         vscode.languages.registerCodeLensProvider(ConsolasConstants.supportedLanguages, referenceCodeLensProvider)
     )
+
+    function activateSecurityScan() {
+        set(ConsolasConstants.codeScanStartedKey, false, context)
+        context.extensionContext.subscriptions.push(
+            vscode.window.registerWebviewViewProvider(SecurityPanelViewProvider.viewType, securityPanelViewProvider)
+        )
+
+        context.extensionContext.subscriptions.push(
+            vscode.window.onDidChangeActiveTextEditor(editor => {
+                if (isCloud9()) {
+                    if (editor) {
+                        securityPanelViewProvider.setDecoration(editor, editor.document.uri)
+                    }
+                }
+            })
+        )
+    }
 
     async function showConsolasWelcomeMessage(): Promise<void> {
         const filePath = context.extensionContext.asAbsolutePath(ConsolasConstants.welcomeConsolasReadmeFileSource)
@@ -223,11 +266,22 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         context.extensionContext.subscriptions.push(
             vscode.workspace.onDidChangeTextDocument(async e => {
+                /**
+                 * Consolas security panel dynamic handling
+                 */
+                if (e.document === vscode.window.activeTextEditor?.document) {
+                    if (isCloud9()) {
+                        securityPanelViewProvider.disposeSecurityPanelItem(e, vscode.window.activeTextEditor)
+                    } else {
+                        disposeSecurityDiagnostic(e)
+                    }
+                }
+
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
                     runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
                     e.contentChanges.length != 0 &&
-                    !invocationContext.isConsolasEditing
+                    !vsCodeState.isConsolasEditing
                 ) {
                     /**
                      * Important:  Doing this sleep(10) is to make sure
@@ -236,8 +290,8 @@ export async function activate(context: ExtContext): Promise<void> {
                      * Then this event can be processed by our code.
                      */
                     await sleep(10)
-                    await setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
-                    await KeyStrokeHandler.processKeyStroke(
+                    await InlineCompletion.instance.setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
+                    await KeyStrokeHandler.instance.processKeyStroke(
                         e,
                         vscode.window.activeTextEditor,
                         client,
@@ -250,35 +304,45 @@ export async function activate(context: ExtContext): Promise<void> {
              * On recommendation rejection
              */
             vscode.window.onDidChangeVisibleTextEditors(async e => {
-                await rejectRecommendation(vscode.window.activeTextEditor)
+                await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
             }),
             vscode.window.onDidChangeActiveTextEditor(async e => {
-                await rejectRecommendation(vscode.window.activeTextEditor)
+                await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
             }),
             vscode.window.onDidChangeTextEditorSelection(async e => {
                 if (e.kind === TextEditorSelectionChangeKind.Mouse && vscode.window.activeTextEditor) {
-                    await rejectRecommendation(vscode.window.activeTextEditor)
+                    await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
                 }
             }),
             vscode.commands.registerCommand('aws.consolas.rejectCodeSuggestion', async e => {
-                if (vscode.window.activeTextEditor) await rejectRecommendation(vscode.window.activeTextEditor)
+                if (vscode.window.activeTextEditor)
+                    await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
             }),
             /**
              * Recommendation navigation
              */
             vscode.commands.registerCommand('aws.consolas.nextCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor) navigateRecommendation(vscode.window.activeTextEditor, true)
+                if (vscode.window.activeTextEditor)
+                    InlineCompletion.instance.navigateRecommendation(vscode.window.activeTextEditor, true)
             }),
             vscode.commands.registerCommand('aws.consolas.previousCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor) navigateRecommendation(vscode.window.activeTextEditor, false)
+                if (vscode.window.activeTextEditor)
+                    InlineCompletion.instance.navigateRecommendation(vscode.window.activeTextEditor, false)
             }),
             /**
              * Recommendation acceptance
              */
             vscode.commands.registerCommand('aws.consolas.acceptCodeSuggestion', async () => {
-                if (vscode.window.activeTextEditor) await acceptRecommendation(vscode.window.activeTextEditor)
+                if (vscode.window.activeTextEditor)
+                    await InlineCompletion.instance.acceptRecommendation(vscode.window.activeTextEditor)
             })
         )
+        // If the vscode is refreshed we need to maintain the status bar
+        const acceptedTerms: boolean =
+            context.extensionContext.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey) || false
+        if (acceptedTerms) {
+            InlineCompletion.instance.setConsolasStatusBarOk()
+        }
     }
 
     function setSubscriptionsforCloud9() {
@@ -301,11 +365,22 @@ export async function activate(context: ExtContext): Promise<void> {
              * Automated trigger
              */
             vscode.workspace.onDidChangeTextDocument(async e => {
+                /**
+                 * Consolas security panel dynamic handling
+                 */
+                if (e.document === vscode.window.activeTextEditor?.document) {
+                    if (isCloud9()) {
+                        securityPanelViewProvider.disposeSecurityPanelItem(e, vscode.window.activeTextEditor)
+                    } else {
+                        disposeSecurityDiagnostic(e)
+                    }
+                }
+
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
                     runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
                     e.contentChanges.length != 0 &&
-                    !invocationContext.isConsolasEditing
+                    !vsCodeState.isConsolasEditing
                 ) {
                     /**
                      * Important:  Doing this sleep(10) is to make sure
@@ -314,7 +389,7 @@ export async function activate(context: ExtContext): Promise<void> {
                      * Then this event can be processed by our code.
                      */
                     await sleep(10)
-                    await KeyStrokeHandler.processKeyStroke(
+                    await KeyStrokeHandler.instance.processKeyStroke(
                         e,
                         vscode.window.activeTextEditor,
                         client,
@@ -328,25 +403,44 @@ export async function activate(context: ExtContext): Promise<void> {
              * Maintaining this variable because VS Code does not expose official intelliSense isActive API
              */
             vscode.window.onDidChangeVisibleTextEditors(async e => {
-                resetIntelliSenseState(await getManualTriggerStatus(), getAutoTriggerStatus())
+                resetIntelliSenseState(
+                    await getManualTriggerStatus(),
+                    getAutoTriggerStatus(),
+                    RecommendationHandler.instance.isValidResponse()
+                )
             }),
             vscode.window.onDidChangeActiveTextEditor(async e => {
-                resetIntelliSenseState(await getManualTriggerStatus(), getAutoTriggerStatus())
+                resetIntelliSenseState(
+                    await getManualTriggerStatus(),
+                    getAutoTriggerStatus(),
+                    RecommendationHandler.instance.isValidResponse()
+                )
             }),
             vscode.window.onDidChangeTextEditorSelection(async e => {
                 if (e.kind === TextEditorSelectionChangeKind.Mouse) {
-                    resetIntelliSenseState(await getManualTriggerStatus(), getAutoTriggerStatus())
+                    resetIntelliSenseState(
+                        await getManualTriggerStatus(),
+                        getAutoTriggerStatus(),
+                        RecommendationHandler.instance.isValidResponse()
+                    )
                 }
             }),
             vscode.workspace.onDidSaveTextDocument(async e => {
-                resetIntelliSenseState(await getManualTriggerStatus(), getAutoTriggerStatus())
+                resetIntelliSenseState(
+                    await getManualTriggerStatus(),
+                    getAutoTriggerStatus(),
+                    RecommendationHandler.instance.isValidResponse()
+                )
             })
         )
     }
 }
 
 export async function shutdown() {
-    TelemetryHelper.recordUserDecisionTelemetry(-1, vscode.window.activeTextEditor?.document.languageId)
+    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+        -1,
+        vscode.window.activeTextEditor?.document.languageId
+    )
     ConsolasTracker.getTracker().shutdown()
 }
 

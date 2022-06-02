@@ -4,13 +4,18 @@
  */
 
 import * as vscode from 'vscode'
-import * as KeyStrokeHandler from '../service/keyStrokeHandler'
-import { recommendations, invocationContext, automatedTriggerContext, ConfigurationEntry } from '../models/model'
+import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { showTimedMessage } from '../../../shared/utilities/messages'
 import { DefaultConsolasClient } from '../client/consolas'
-import { showFirstRecommendation } from '../service/inlineCompletion'
+import { InlineCompletion } from '../service/inlineCompletion'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { RecommendationHandler } from '../service/recommendationHandler'
+import { KeyStrokeHandler } from '../service/keyStrokeHandler'
+
+/**
+ * This function is for manual trigger Consolas
+ */
 
 export async function invokeConsolas(
     editor: vscode.TextEditor,
@@ -22,12 +27,6 @@ export async function invokeConsolas(
      */
     if (!config.isManualTriggerEnabled) {
         showTimedMessage('Consolas turned off', 2000)
-        return
-    }
-    /**
-     * For manual trigger, freeze incoming invocation if there's IN-PROGRESS invocation
-     */
-    if (invocationContext.isPendingResponse) {
         return
     }
     /**
@@ -47,37 +46,39 @@ export async function invokeConsolas(
         /**
          * When using intelliSense, if invocation position changed, reject previous active recommendations
          */
-        if (invocationContext.isIntelliSenseActive && editor.selection.active !== invocationContext.startPos) {
-            resetIntelliSenseState(config.isManualTriggerEnabled, config.isAutomatedTriggerEnabled)
+        if (vsCodeState.isIntelliSenseActive && editor.selection.active !== RecommendationHandler.instance.startPos) {
+            resetIntelliSenseState(
+                config.isManualTriggerEnabled,
+                config.isAutomatedTriggerEnabled,
+                RecommendationHandler.instance.isValidResponse()
+            )
         }
-
-        /**
-         * Refresh recommendations response if there's no UNDECIDED/ACTIVE invocation, otherwise freeze incoming invocation
-         */
-        if (
-            (!invocationContext.isIntelliSenseActive && isCloud9()) ||
-            (!invocationContext.isConsolasEditing && !isCloud9())
-        ) {
-            recommendations.response = await KeyStrokeHandler.getRecommendations(client, editor, 'OnDemand', config)
-        }
-
-        KeyStrokeHandler.checkPrefixMatchSuggestionAndUpdatePrefixMatchArray(
-            !invocationContext.isIntelliSenseActive,
-            editor
-        )
-
-        if (KeyStrokeHandler.isValidResponse(recommendations.response)) {
-            automatedTriggerContext.keyStrokeCount = 0
-            if (isCloud9()) {
-                vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
-                    invocationContext.isIntelliSenseActive = true
-                })
-            } else {
-                await showFirstRecommendation(editor)
+        KeyStrokeHandler.instance.keyStrokeCount = 0
+        if (isCloud9()) {
+            if (!vsCodeState.isIntelliSenseActive) {
+                RecommendationHandler.instance.clearRecommendations()
+                await RecommendationHandler.instance.getRecommendations(
+                    client,
+                    editor,
+                    'OnDemand',
+                    config,
+                    undefined,
+                    false
+                )
+                RecommendationHandler.instance.updatePrefixMatchArray(!vsCodeState.isIntelliSenseActive, editor)
+                if (RecommendationHandler.instance.isValidResponse()) {
+                    vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+                        vsCodeState.isIntelliSenseActive = true
+                    })
+                } else {
+                    showTimedMessage('No suggestions from Consolas', 2000)
+                }
             }
         } else {
-            if (recommendations.errorCode === '') {
-                showTimedMessage('No suggestions from Consolas', 2000)
+            if (!vsCodeState.isConsolasEditing && !InlineCompletion.instance.isPaginationRunning()) {
+                await InlineCompletion.instance.resetInlineStates(editor)
+                InlineCompletion.instance.setConsolasStatusBarLoading()
+                InlineCompletion.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
             }
         }
     }

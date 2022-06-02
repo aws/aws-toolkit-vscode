@@ -4,9 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import { invocationContext, inlineCompletion } from '../models/model'
 import { ConsolasConstants } from '../models/constants'
 import { getLogger } from '../../../shared/logger'
+import { InlineCompletion } from './inlineCompletion'
 
 //if this is browser it uses browser and if it's node then it uses nodes
 //TODO remove when node version >= 16
@@ -20,11 +20,10 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
     public refs: string[] = []
     constructor() {}
 
-    public setInlineReference() {
+    public setInlineReference(line: number) {
         const startTime = performance.now()
         this.removeInlineReference()
-        let line = invocationContext.startPos.line
-        const item = inlineCompletion.items[inlineCompletion.position]
+        const item = InlineCompletion.instance.items[InlineCompletion.instance.position]
         if (
             item.content.includes(ConsolasConstants.lineBreak) ||
             item.content.includes(ConsolasConstants.lineBreakWin)
@@ -32,7 +31,7 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
             line = line + 1
         }
         const n = new Set()
-        inlineCompletion.origin[item.index].references?.forEach(r => n.add(r.licenseName))
+        InlineCompletion.instance.origin[item.index].references?.forEach(r => n.add(r.licenseName))
         if (n.size === 0) return
         const licenses = [...n].join(', ')
         this.ranges.push(new vscode.Range(line, 0, line, 1))

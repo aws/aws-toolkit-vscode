@@ -7,59 +7,63 @@ import * as assert from 'assert'
 import { assertTelemetryCurried } from '../../../testUtil'
 import { resetConsolasGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../../vector/consolas/util/telemetryHelper'
-import { recommendations, telemetryContext } from '../../../../vector/consolas/models/model'
 
 describe('telemetryHelper', function () {
     describe('getSuggestionState', function () {
+        let telemetryHelper = new TelemetryHelper()
         beforeEach(function () {
             resetConsolasGlobalVariables()
+            telemetryHelper = new TelemetryHelper()
         })
 
         it('user event is discard when recommendation 0 with accept index = -1 & recommendation prefix 0 does not match current code', function () {
-            telemetryContext.isPrefixMatched = [false, true]
-            const actual = TelemetryHelper.getSuggestionState(telemetryContext.isPrefixMatched, 0, -1)
+            telemetryHelper.isPrefixMatched = [false, true]
+            const actual = telemetryHelper.getSuggestionState(0, -1)
             assert.strictEqual(actual, 'Discard')
         })
 
         it('user event is reject when recommendation 0 with accept index = -1 & recommendation prefix 0 matches current code', function () {
-            telemetryContext.isPrefixMatched = [true, true]
-            const actual = TelemetryHelper.getSuggestionState(telemetryContext.isPrefixMatched, 0, -1)
+            telemetryHelper.isPrefixMatched = [true, true]
+            const actual = telemetryHelper.getSuggestionState(0, -1)
             assert.strictEqual(actual, 'Reject')
         })
 
         it('user event is discard when recommendation 1 with accept index = 1 & recommendation prefix 1 does not match code', function () {
-            telemetryContext.isPrefixMatched = [true, false]
-            const actual = TelemetryHelper.getSuggestionState(telemetryContext.isPrefixMatched, 1, 1)
+            telemetryHelper.isPrefixMatched = [true, false]
+            const actual = telemetryHelper.getSuggestionState(1, 1)
             assert.strictEqual(actual, 'Discard')
         })
 
         it('user event is Accept when recommendation 0 with accept index = 1 & recommendation prefix 0 matches code', function () {
-            telemetryContext.isPrefixMatched = [true, true]
-            const actual = TelemetryHelper.getSuggestionState(telemetryContext.isPrefixMatched, 0, 0)
+            telemetryHelper.isPrefixMatched = [true, true]
+            const actual = telemetryHelper.getSuggestionState(0, 0)
             assert.strictEqual(actual, 'Accept')
         })
 
         it('user event is Ignore when recommendation 0 with accept index = 1 & recommendation prefix 0 matches code', function () {
-            telemetryContext.isPrefixMatched = [true, true]
-            const actual = TelemetryHelper.getSuggestionState(telemetryContext.isPrefixMatched, 0, 1)
+            telemetryHelper.isPrefixMatched = [true, true]
+            const actual = telemetryHelper.getSuggestionState(0, 1)
             assert.strictEqual(actual, 'Ignore')
         })
     })
 
     describe('recordUserDecisionTelemetry', function () {
         it('Should call telemetry record for each recommendations with proper arguments', async function () {
-            recommendations.response = [{ content: "print('Hello')" }]
-            recommendations.requestId = 'test_x'
-            telemetryContext.completionType = 'Line'
-            telemetryContext.triggerType = 'AutoTrigger'
+            const telemetryHelper = new TelemetryHelper()
+            const response = [{ content: "print('Hello')" }]
+            const requestId = 'test_x'
+            const sessionId = 'test_x'
+            telemetryHelper.completionType = 'Line'
+            telemetryHelper.triggerType = 'AutoTrigger'
             const assertTelemetry = assertTelemetryCurried('consolas_userDecision')
-            await TelemetryHelper.recordUserDecisionTelemetry(0, 'python')
-            assert.strictEqual(recommendations.response.length, 0)
+            await telemetryHelper.recordUserDecisionTelemetry(requestId, sessionId, response, 0, 'python', false, 0)
             assertTelemetry({
                 consolasRequestId: 'test_x',
+                consolasSessionId: 'test_x',
+                consolasPaginationProgress: 0,
                 consolasTriggerType: 'AutoTrigger',
                 consolasSuggestionIndex: 0,
-                consolasSuggestionState: 'Accept',
+                consolasSuggestionState: 'Discard',
                 consolasCompletionType: 'Line',
                 consolasLanguage: 'python',
                 consolasRuntime: 'python2',

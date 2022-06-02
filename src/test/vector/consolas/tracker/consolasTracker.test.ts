@@ -85,6 +85,7 @@ describe('consolasTracker', function () {
             await ConsolasTracker.getTracker().emitTelemetryOnSuggestion(suggestion)
             assertTelemetry({
                 consolasRequestId: 'test',
+                consolasSessionId: 'test',
                 consolasTriggerType: 'OnDemand',
                 consolasSuggestionIndex: 1,
                 consolasModificationPercentage: 1,

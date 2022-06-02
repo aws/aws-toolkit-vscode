@@ -8,10 +8,14 @@ import globals from '../../../shared/extensionGlobals'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import {
     enableCodeSuggestions,
+    enterAccessToken,
+    requestAccess,
     showIntroduction,
     toggleCodeSuggestions,
     showReferenceLog,
+    showSecurityScan,
 } from '../commands/basicCommands'
+import { ConsolasConstants } from '../models/constants'
 
 export const createEnableCodeSuggestionsNode = () =>
     enableCodeSuggestions.build().asTreeNode({
@@ -23,23 +27,24 @@ export const createEnableCodeSuggestionsNode = () =>
         tooltip: localize('AWS.explorerNode.enableConsolasNode.tooltip', 'Click to open the node'),
     })
 
-export const createPauseAutoSuggestionsNode = () =>
-    toggleCodeSuggestions.build().asTreeNode({
-        label: localize('AWS.explorerNode.pauseConsolasNode.label', 'Pause auto-suggestions'),
-        iconPath: {
-            dark: vscode.Uri.file(globals.iconPaths.dark.pause),
-            light: vscode.Uri.file(globals.iconPaths.light.pause),
-        },
-    })
-
-export const createResumeAutoSuggestionsNode = () =>
-    toggleCodeSuggestions.build().asTreeNode({
-        label: localize('AWS.explorerNode.resumeConsolasNode.label', 'Resume auto-suggestions'),
-        iconPath: {
-            dark: vscode.Uri.file(globals.iconPaths.dark.run),
-            light: vscode.Uri.file(globals.iconPaths.light.run),
-        },
-    })
+export const createAutoSuggestionsNode = (pause: boolean) =>
+    toggleCodeSuggestions.build().asTreeNode(
+        pause
+            ? {
+                  label: localize('AWS.explorerNode.pauseConsolasNode.label', 'Pause auto-suggestions'),
+                  iconPath: {
+                      dark: vscode.Uri.file(globals.iconPaths.dark.pause),
+                      light: vscode.Uri.file(globals.iconPaths.light.pause),
+                  },
+              }
+            : {
+                  label: localize('AWS.explorerNode.resumeConsolasNode.label', 'Resume auto-suggestions'),
+                  iconPath: {
+                      dark: vscode.Uri.file(globals.iconPaths.dark.run),
+                      light: vscode.Uri.file(globals.iconPaths.light.run),
+                  },
+              }
+    )
 
 export const createIntroductionNode = () =>
     showIntroduction.build().asTreeNode({
@@ -50,6 +55,24 @@ export const createIntroductionNode = () =>
         },
         tooltip: localize('AWS.explorerNode.consolasIntroductionNode.tooltip', 'Click to open the node'),
         contextValue: 'awsConsolasIntroductionNode',
+    })
+
+export const createEnterAccessCodeNode = () =>
+    enterAccessToken.build().asTreeNode({
+        label: localize('AWS.explorerNode.enterConsolasAccessTokenNode.label', 'Enter Preview Access Code'),
+        iconPath: {
+            dark: vscode.Uri.file(globals.iconPaths.dark.email),
+            light: vscode.Uri.file(globals.iconPaths.light.email),
+        },
+    })
+
+export const createRequestAccessNode = () =>
+    requestAccess.build().asTreeNode({
+        label: localize('AWS.explorerNode.requestConsolasAccessNode.label', 'Request Preview Access'),
+        iconPath: {
+            dark: vscode.Uri.file(globals.iconPaths.dark.megaphone),
+            light: vscode.Uri.file(globals.iconPaths.light.megaphone),
+        },
     })
 
 export const createOpenReferenceLogNode = () =>
@@ -65,3 +88,22 @@ export const createOpenReferenceLogNode = () =>
         ),
         contextValue: 'awsConsolasOpenReferenceLogNode',
     })
+
+export const createSecurityScanNode = () => {
+    const running = globals.context.globalState.get<boolean>(ConsolasConstants.codeScanStartedKey)
+    const prefix = running ? 'Running' : 'Start'
+    return showSecurityScan.build().asTreeNode({
+        label: `${prefix} security scan`,
+        iconPath: running
+            ? {
+                  dark: vscode.Uri.file(globals.iconPaths.dark.loading),
+                  light: vscode.Uri.file(globals.iconPaths.light.loading),
+              }
+            : {
+                  dark: vscode.Uri.file(globals.iconPaths.dark.securityScan),
+                  light: vscode.Uri.file(globals.iconPaths.light.securityScan),
+              },
+        tooltip: `${prefix} security scan`,
+        contextValue: `awsConsolas${prefix}SecurityScanNode`,
+    })
+}

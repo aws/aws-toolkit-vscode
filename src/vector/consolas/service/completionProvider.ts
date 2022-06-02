@@ -5,16 +5,17 @@
 
 import * as vscode from 'vscode'
 import { ConsolasConstants } from '../models/constants'
-import { recommendations, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { RecommendationDetail } from '../client/consolas'
 import { LicenseUtil } from '../util/licenseUtil'
+import { TelemetryHelper } from '../util/telemetryHelper'
+import { RecommendationHandler } from './recommendationHandler'
 /**
  * completion provider for intelliSense popup
  */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
-    recommendations.response.forEach((recommendation, index) => {
+    RecommendationHandler.instance.recommendations.forEach((recommendation, index) => {
         if (recommendation.content.length > 0) {
             completionItems.push(getCompletionItem(document, position, recommendation, index))
         }
@@ -58,9 +59,10 @@ export function getCompletionItem(
             range,
             recommendationIndex,
             recommendation,
-            recommendations.requestId,
-            telemetryContext.triggerType,
-            telemetryContext.completionType,
+            RecommendationHandler.instance.requestId,
+            RecommendationHandler.instance.sessionId,
+            TelemetryHelper.instance.triggerType,
+            TelemetryHelper.instance.completionType,
             languageContext.language,
             references,
         ],

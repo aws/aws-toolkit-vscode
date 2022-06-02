@@ -4,114 +4,24 @@
  */
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
-import { RecommendationsList, References, RecommendationDetail } from '../client/consolas'
-import { ConsolasConstants } from './constants'
+import { References } from '../client/consolas'
 
-//if this is browser it uses browser and if it's node then it uses nodes
-//TODO remove when node version >= 16
-const performance = globalThis.performance ?? require('perf_hooks').performance
-
-interface Recommendations {
-    requestId: string
-    /**
-     * Recommendations queue
-     */
-    response: RecommendationsList
-    // user facing error message
-    errorCode: string
-}
-
-export const recommendations: Recommendations = {
-    response: [],
-    requestId: '',
-    errorCode: '',
-}
-
-interface InvocationContext {
+// unavoidable global variables
+interface VsCodeState {
     /**
      * Flag indicates intelli sense pop up is active or not
+     * Adding this since VS Code intelliSense API does not expose this variable
      */
     isIntelliSenseActive: boolean
     /**
-     * Flag indicates invocation is in progress
-     */
-    isPendingResponse: boolean
-    /**
-     * Last invocation time
-     */
-    lastInvocationTime: number
-    /**
-     * Invocation start position
-     */
-    startPos: vscode.Position
-    /**
-     * Flag indicates whether consolas is doing text edit
+     * Flag indicates whether consolas is doing vscode.TextEditor.edit
      */
     isConsolasEditing: boolean
-    /**
-     * Flag indicates whether typeahead of current inline recommendation is in progress
-     */
-    isTypeaheadInProgress: boolean
 }
 
-export const invocationContext: InvocationContext = {
+export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
-    isPendingResponse: false,
     isConsolasEditing: false,
-    isTypeaheadInProgress: false,
-    /**
-     * Initialize lastInvocationTime (ms) by performance.now() - "duration threshold" x 1000 ms
-     */
-    lastInvocationTime: performance.now() - ConsolasConstants.invocationTimeIntervalThreshold * 1000,
-    startPos: new vscode.Position(0, 0),
-}
-
-interface TelemetryContext {
-    /**
-     * to record each recommendation is prefix matched or not with
-     * left context before 'editor.action.triggerSuggest'
-     */
-    isPrefixMatched: boolean[]
-    /**
-     * Trigger type for getting Consolas recommendation
-     */
-    triggerType: telemetry.ConsolasTriggerType
-    /**
-     * Auto Trigger Type for getting event of Automated Trigger
-     */
-    ConsolasAutomatedtriggerType: telemetry.ConsolasAutomatedtriggerType
-    /**
-     * completion Type of the consolas recommendation, line vs block
-     */
-    completionType: telemetry.ConsolasCompletionType
-    /**
-     * the cursor offset location at invocation time
-     */
-    cursorOffset: number
-}
-
-export const telemetryContext: TelemetryContext = {
-    isPrefixMatched: [],
-    triggerType: 'OnDemand',
-    ConsolasAutomatedtriggerType: 'KeyStrokeCount',
-    completionType: 'Line',
-    cursorOffset: 0,
-}
-
-interface AutomatedTriggerContext {
-    /**
-     * Speical character which automated triggers consolas
-     */
-    specialChar: string
-    /**
-     * Key stroke count for automated trigger
-     */
-    keyStrokeCount: number
-}
-
-export const automatedTriggerContext: AutomatedTriggerContext = {
-    specialChar: '',
-    keyStrokeCount: 0,
 }
 
 export interface AcceptedSuggestionEntry {
@@ -121,6 +31,7 @@ export interface AcceptedSuggestionEntry {
     readonly startPosition: vscode.Position
     readonly endPosition: vscode.Position
     readonly requestId: string
+    readonly sessionId: string
     readonly index: number
     readonly triggerType: telemetry.ConsolasTriggerType
     readonly completionType: telemetry.ConsolasCompletionType
@@ -135,6 +46,7 @@ export interface OnRecommendationAcceptanceEntry {
     readonly acceptIndex: number
     readonly recommendation: string
     readonly requestId: string
+    readonly sessionId: string
     readonly triggerType: telemetry.ConsolasTriggerType
     readonly completionType: telemetry.ConsolasCompletionType
     readonly language: telemetry.ConsolasLanguage
@@ -153,13 +65,55 @@ export interface InlineCompletionItem {
     index: number
 }
 
-interface InlineCompletion {
-    items: InlineCompletionItem[]
-    origin: RecommendationDetail[]
-    position: number
+/**
+ * Security Scan Interfaces
+ */
+
+export interface RawCodeScanIssue {
+    repoName: string
+    filePath: string
+    startLine: number
+    endLine: number
+    lineToHighlight: number
+    comment: string
+    detectorId: string
+    confidenceScore: number
+    recommendationId: string
+    recommendationType: string
+    ruleManifestId: string
+    filePathType: string
+    recommendationMetadata: {
+        ruleId: string
+        ruleManifestId: string
+        name: string
+        longDescription: string
+        tags: string
+        cwes: string
+    }
 }
-export const inlineCompletion: InlineCompletion = {
-    items: [],
-    origin: [],
-    position: 0,
+
+export interface CodeScanIssue {
+    startLine: number
+    endLine: number
+    comment: string
+}
+
+export interface AggregatedCodeScanIssue {
+    filePath: string
+    issues: CodeScanIssue[]
+}
+
+export interface SecurityPanelItem {
+    path: string
+    range: vscode.Range
+    severity: vscode.DiagnosticSeverity
+    message: string
+    issue: CodeScanIssue
+    decoration: vscode.DecorationOptions
+}
+
+export interface SecurityPanelSet {
+    path: string
+    uri: vscode.Uri
+    items: SecurityPanelItem[]
 }

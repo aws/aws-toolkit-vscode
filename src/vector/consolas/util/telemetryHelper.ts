@@ -3,62 +3,94 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as telemetry from '../../../shared/telemetry/telemetry'
-import { recommendations, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
+import { RecommendationsList } from '../client/consolas'
 
 export class TelemetryHelper {
     /**
+     * to record each recommendation is prefix matched or not with
+     * left context before 'editor.action.triggerSuggest'
+     */
+    public isPrefixMatched: boolean[]
+
+    /**
+     * Trigger type for getting Consolas recommendation
+     */
+    public triggerType: telemetry.ConsolasTriggerType
+    /**
+     * Auto Trigger Type for getting event of Automated Trigger
+     */
+    public ConsolasAutomatedtriggerType: telemetry.ConsolasAutomatedtriggerType
+    /**
+     * completion Type of the consolas recommendation, line vs block
+     */
+    public completionType: telemetry.ConsolasCompletionType
+    /**
+     * the cursor offset location at invocation time
+     */
+    public cursorOffset: number
+
+    constructor() {
+        this.isPrefixMatched = []
+        this.triggerType = 'OnDemand'
+        this.ConsolasAutomatedtriggerType = 'KeyStrokeCount'
+        this.completionType = 'Line'
+        this.cursorOffset = 0
+    }
+
+    static #instance: TelemetryHelper
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    /**
      * This function is to record the user decision on each of the suggestion in the list of Consolas recommendations.
+     * @param recommendations the recommendations
      * @param acceptIndex the index of the accepted suggestion in the corresponding list of Consolas response.
      * If this function is not called on acceptance, then acceptIndex == -1
      * @param languageId the language ID of the current document in current active editor
      * @param filtered whether this user decision is to filter the recommendation due to license
      */
-    public static async recordUserDecisionTelemetry(
+
+    public async recordUserDecisionTelemetry(
+        requestId: string,
+        sessionId: string,
+        recommendations: RecommendationsList,
         acceptIndex: number,
         languageId: string | undefined,
-        filtered = false
+        filtered = false,
+        paginationIndex: number
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         // emit user decision telemetry
-        recommendations.response.forEach((_elem, i) => {
+        recommendations.forEach((_elem, i) => {
             telemetry.recordConsolasUserDecision({
-                consolasRequestId: recommendations.requestId ? recommendations.requestId : undefined,
-                consolasTriggerType: telemetryContext.triggerType,
+                consolasRequestId: requestId,
+                consolasSessionId: sessionId ? sessionId : undefined,
+                consolasPaginationProgress: paginationIndex,
+                consolasTriggerType: this.triggerType,
                 consolasSuggestionIndex: i,
-                consolasSuggestionState: this.getSuggestionState(
-                    telemetryContext.isPrefixMatched,
-                    i,
-                    acceptIndex,
-                    filtered
-                ),
+                consolasSuggestionState: this.getSuggestionState(i, acceptIndex, filtered),
                 consolasSuggestionReferences: JSON.stringify(_elem.references),
-                consolasCompletionType: telemetryContext.completionType,
+                consolasCompletionType: this.completionType,
                 consolasLanguage: languageContext.language,
                 consolasRuntime: languageContext.runtimeLanguage,
                 consolasRuntimeSource: languageContext.runtimeLanguageSource,
             })
         })
-
-        /**
-         * Clear recommendation queue
-         */
-        recommendations.response = []
-        recommendations.errorCode = ''
-        recommendations.requestId = ''
     }
 
-    public static getSuggestionState(
-        isPrefixMatched: boolean[],
+    public getSuggestionState(
         i: number,
         acceptIndex: number,
         filtered: boolean = false
     ): telemetry.ConsolasSuggestionState {
         if (filtered) return 'Filter'
         if (acceptIndex == -1) {
-            return isPrefixMatched[i] ? 'Reject' : 'Discard'
+            return this.isPrefixMatched[i] ? 'Reject' : 'Discard'
         }
-        if (!isPrefixMatched[i]) {
+        if (!this.isPrefixMatched[i]) {
             return 'Discard'
         } else {
             if (i == acceptIndex) {

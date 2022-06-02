@@ -8,8 +8,8 @@ import * as vscode from 'vscode'
 
 import { getCompletionItems, getCompletionItem, getLabel } from '../../../../vector/consolas/service/completionProvider'
 import { createMockDocument, resetConsolasGlobalVariables } from '../testUtil'
-import { recommendations } from '../../../../vector/consolas/models/model'
 import { RecommendationDetail } from '../../../../vector/consolas/client/consolas'
+import { RecommendationHandler } from '../../../../vector/consolas/service/recommendationHandler'
 
 describe('completionProviderService', function () {
     beforeEach(function () {
@@ -60,6 +60,7 @@ describe('completionProviderService', function () {
                         1,
                         "\n\t\tconsole.log('Hello world!');\n\t}",
                         '',
+                        '',
                         'OnDemand',
                         'Line',
                         'javascript',
@@ -86,7 +87,10 @@ describe('completionProviderService', function () {
 
     describe('getCompletionItems', function () {
         it('should return completion items for each non-empty recommendation', async function () {
-            recommendations.response = [{ content: "\n\t\tconsole.log('Hello world!');\n\t}" }, { content: '' }]
+            RecommendationHandler.instance.recommendations = [
+                { content: "\n\t\tconsole.log('Hello world!');\n\t}" },
+                { content: '' },
+            ]
             const mockPosition = new vscode.Position(0, 0)
             const mockDocument = createMockDocument('', 'test.ts', 'typescript')
             const actual = getCompletionItems(mockDocument, mockPosition)
@@ -94,7 +98,7 @@ describe('completionProviderService', function () {
         })
 
         it('should return empty completion items when recommendation is empty', async function () {
-            recommendations.response = []
+            RecommendationHandler.instance.recommendations = []
             const mockPosition = new vscode.Position(14, 83)
             const mockDocument = createMockDocument()
             const actual = getCompletionItems(mockDocument, mockPosition)

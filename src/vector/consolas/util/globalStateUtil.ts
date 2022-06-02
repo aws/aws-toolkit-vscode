@@ -3,9 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { recommendations, invocationContext } from '../models/model'
+import { vsCodeState } from '../models/model'
 
-export function resetIntelliSenseState(isManualTriggerEnabled: boolean, isAutomatedTriggerEnabled: boolean) {
+export function resetIntelliSenseState(
+    isManualTriggerEnabled: boolean,
+    isAutomatedTriggerEnabled: boolean,
+    hasResponse: boolean
+) {
     /**
      * Skip when Consolas service is turned off
      */
@@ -13,7 +17,7 @@ export function resetIntelliSenseState(isManualTriggerEnabled: boolean, isAutoma
         return
     }
 
-    if (invocationContext.isIntelliSenseActive && recommendations.response.length > 0) {
-        invocationContext.isIntelliSenseActive = false
+    if (vsCodeState.isIntelliSenseActive && hasResponse) {
+        vsCodeState.isIntelliSenseActive = false
     }
 }

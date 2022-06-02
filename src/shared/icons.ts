@@ -44,6 +44,16 @@ export function initializeIconPaths(context: vscode.ExtensionContext) {
     globals.iconPaths.dark.pause = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/pause.svg')
     globals.iconPaths.light.pause = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/pause.svg')
 
+    globals.iconPaths.dark.email = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/email.svg')
+    globals.iconPaths.light.email = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/email.svg')
+
+    globals.iconPaths.dark.megaphone = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/dark/megaphone.svg'
+    )
+    globals.iconPaths.light.megaphone = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/light/megaphone.svg'
+    )
+
     globals.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
     globals.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
 
@@ -125,4 +135,15 @@ export function initializeIconPaths(context: vscode.ExtensionContext) {
 
     cdk.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cdk/cloudformation.svg')
     cdk.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cdk/cloudformation.svg')
+    globals.iconPaths.dark.securityScan = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/dark/debug-alt-small.svg'
+    )
+    globals.iconPaths.light.securityScan = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/light/debug-alt-small.svg'
+    )
+
+    globals.iconPaths.dark.loading = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/loading.svg')
+    globals.iconPaths.light.loading = context.asAbsolutePath(
+        'third-party/resources/from-vscode-icons/light/loading.svg'
+    )
 }

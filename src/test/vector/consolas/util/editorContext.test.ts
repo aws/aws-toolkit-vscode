@@ -120,11 +120,6 @@ describe('editorContext', function () {
             assert.ok(!EditorContext.validateRequest(req))
         })
 
-        it('Should return false if req maxRecommendations is out of range', function () {
-            assert.ok(!EditorContext.validateRequest(createMockClientRequest(0)))
-            assert.ok(!EditorContext.validateRequest(createMockClientRequest(11)))
-        })
-
         it('Should return true if above conditions are not met', function () {
             const req = createMockClientRequest()
             assert.ok(EditorContext.validateRequest(req))

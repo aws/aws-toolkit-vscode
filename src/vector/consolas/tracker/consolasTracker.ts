@@ -80,16 +80,21 @@ export class ConsolasTracker {
         let percentage = 1.0
         try {
             getLogger().verbose(`Getting the file for content: ${suggestion.fileUrl}`)
-            const document = await vscode.workspace.openTextDocument(suggestion.fileUrl)
-            if (document) {
-                const currString = document.getText(new vscode.Range(suggestion.startPosition, suggestion.endPosition))
-                percentage = this.checkDiff(currString, suggestion.originalString)
+            if (suggestion.fileUrl?.scheme !== '') {
+                const document = await vscode.workspace.openTextDocument(suggestion.fileUrl)
+                if (document) {
+                    const currString = document.getText(
+                        new vscode.Range(suggestion.startPosition, suggestion.endPosition)
+                    )
+                    percentage = this.checkDiff(currString, suggestion.originalString)
+                }
             }
         } catch (e) {
             getLogger().verbose(`Exception Thrown from ConsolasTracker: ${e}`)
         } finally {
             telemetry.recordConsolasUserModification({
                 consolasRequestId: suggestion.requestId ? suggestion.requestId : undefined,
+                consolasSessionId: suggestion.sessionId ? suggestion.sessionId : undefined,
                 consolasTriggerType: suggestion.triggerType,
                 consolasSuggestionIndex: suggestion.index,
                 consolasModificationPercentage: percentage,

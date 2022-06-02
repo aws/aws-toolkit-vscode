@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { invocationContext, recommendations } from '../../../../vector/consolas/models/model'
+import { vsCodeState } from '../../../../vector/consolas/models/model'
 import { resetIntelliSenseState } from '../../../../vector/consolas/util/globalStateUtil'
 import { resetConsolasGlobalVariables } from '../testUtil'
 import { getLogger } from '../../../../shared/logger/logger'
@@ -15,7 +15,7 @@ describe('globalStateUtil', function () {
 
     beforeEach(function () {
         resetConsolasGlobalVariables()
-        invocationContext.isIntelliSenseActive = true
+        vsCodeState.isIntelliSenseActive = true
         loggerSpy = sinon.spy(getLogger(), 'info')
     })
 
@@ -26,38 +26,18 @@ describe('globalStateUtil', function () {
     it('Should skip when consolas is turned off', async function () {
         const isManualTriggerEnabled = false
         const isAutomatedTriggerEnabled = false
-        resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled)
+        resetIntelliSenseState(isManualTriggerEnabled, isAutomatedTriggerEnabled, true)
         assert.ok(!loggerSpy.called)
     })
 
     it('Should skip when invocationContext is not active', async function () {
-        invocationContext.isIntelliSenseActive = false
-        resetIntelliSenseState(false, false)
+        vsCodeState.isIntelliSenseActive = false
+        resetIntelliSenseState(false, false, true)
         assert.ok(!loggerSpy.called)
     })
 
     it('Should skip when no valid recommendations', async function () {
-        recommendations.response = []
-        resetIntelliSenseState(true, true)
+        resetIntelliSenseState(true, true, false)
         assert.ok(!loggerSpy.called)
     })
-
-    //TODO: comment out until we have better listner for onRejection event
-    // it('Should log rejected suggestions for one valid response', async function () {
-    //     recommendations.response = [{ content: "print('Hello World!')" }]
-    //     await onRejection(true, true)
-    //     assert.ok(loggerSpy.calledOnce)
-    //     const actual = loggerSpy.getCall(0).args[0]
-    //     assert.strictEqual(actual, "Rejected 0 recommendation : print('Hello World!')")
-    // })
-
-    // it('Should log rejected suggestions for two valid responses', async function () {
-    //     recommendations.response = [{ content: "print('Hello!')" }, { content: "print('Hello World!')" }]
-    //     await onRejection(true, true)
-    //     assert.ok(loggerSpy.calledTwice)
-    //     const actual0 = loggerSpy.getCall(0).args[0]
-    //     const actual1 = loggerSpy.getCall(1).args[0]
-    //     assert.strictEqual(actual0, "Rejected 0 recommendation : print('Hello!')")
-    //     assert.strictEqual(actual1, "Rejected 1 recommendation : print('Hello World!')")
-    // })
 })

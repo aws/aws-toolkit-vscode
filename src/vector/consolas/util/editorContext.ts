@@ -8,9 +8,10 @@ import * as consolasClient from '../client/consolas'
 import * as path from 'path'
 import { ConsolasConstants } from '../models/constants'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
-import { invocationContext, telemetryContext } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { UnsupportedLanguagesCache } from './unsupportedLanguagesCache'
+import { TelemetryHelper } from './telemetryHelper'
+import { getLogger } from '../../../shared/logger/logger'
 
 let tabSize: number = getTabSizeSetting()
 export function extractContextForConsolas(editor: vscode.TextEditor): consolasClient.ConsolasFileContext {
@@ -20,9 +21,8 @@ export function extractContextForConsolas(editor: vscode.TextEditor): consolasCl
     }
     const document = editor.document
     const curPos = editor.selection.active
-    invocationContext.startPos = curPos
     const offset = document.offsetAt(curPos)
-    telemetryContext.cursorOffset = offset
+    TelemetryHelper.instance.cursorOffset = offset
 
     const caretLeftFileContext = editor.document.getText(
         new vscode.Range(document.positionAt(offset - ConsolasConstants.charactersLimit), document.positionAt(offset))
@@ -63,8 +63,11 @@ export function getProgrammingLanguage(editor: vscode.TextEditor | undefined): c
     return programmingLanguage
 }
 
-export function buildRequest(editor: vscode.TextEditor): consolasClient.ConsolasGenerateRecommendationsReq {
-    let req: consolasClient.ConsolasGenerateRecommendationsReq = {
+export function buildListRecommendationRequest(
+    editor: vscode.TextEditor,
+    nextToken: string
+): consolasClient.ListRecommendationsRequest {
+    let req: consolasClient.ListRecommendationsRequest = {
         contextInfo: {
             filename: '',
             naturalLanguageCode: '',
@@ -77,6 +80,43 @@ export function buildRequest(editor: vscode.TextEditor): consolasClient.Consolas
             leftFileContent: '',
             rightFileContent: '',
         },
+        nextToken: '',
+    }
+    if (editor !== undefined) {
+        const fileContext = extractContextForConsolas(editor)
+        const fileName = getFileName(editor)
+        const pLanguage = getProgrammingLanguage(editor)
+        const contextInfo = {
+            filename: fileName.toString(),
+            naturalLanguageCode: ConsolasConstants.naturalLanguage,
+            programmingLanguage: pLanguage,
+        }
+        req = {
+            contextInfo: contextInfo,
+            fileContext: fileContext,
+            nextToken: nextToken,
+        }
+    }
+    return req
+}
+
+export function buildGenerateRecommendationRequest(
+    editor: vscode.TextEditor
+): consolasClient.GenerateRecommendationsRequest {
+    let req: consolasClient.GenerateRecommendationsRequest = {
+        contextInfo: {
+            filename: '',
+            naturalLanguageCode: '',
+            programmingLanguage: {
+                languageName: '',
+                runtimeVersion: '',
+            },
+        },
+        fileContext: {
+            leftFileContent: '',
+            rightFileContent: '',
+        },
+        maxResults: ConsolasConstants.maxRecommendations,
         maxRecommendations: ConsolasConstants.maxRecommendations,
     }
     if (editor !== undefined) {
@@ -91,13 +131,16 @@ export function buildRequest(editor: vscode.TextEditor): consolasClient.Consolas
         req = {
             contextInfo: contextInfo,
             fileContext: fileContext,
+            maxResults: ConsolasConstants.maxRecommendations,
             maxRecommendations: ConsolasConstants.maxRecommendations,
         }
     }
     return req
 }
 
-export function validateRequest(req: consolasClient.ConsolasGenerateRecommendationsReq): boolean {
+export function validateRequest(
+    req: consolasClient.ListRecommendationsRequest | consolasClient.GenerateRecommendationsRequest
+): boolean {
     const isRuntimeVersionValid = !(
         req.contextInfo.programmingLanguage.runtimeVersion == undefined ||
         req.contextInfo.programmingLanguage.runtimeVersion.length < 1 ||
@@ -121,18 +164,12 @@ export function validateRequest(req: consolasClient.ConsolasGenerateRecommendati
         req.fileContext.rightFileContent.length > ConsolasConstants.charactersLimit
     )
 
-    const isMaxRecommendationsValid = !(
-        req.maxRecommendations == undefined ||
-        req.maxRecommendations < 1 ||
-        req.maxRecommendations > 10
-    )
     if (
         isFileNameValid &&
         isLanguageNameValid &&
         isRuntimeVersionValid &&
         isNaturalLangaugeCodeValid &&
-        isFileContextValid &&
-        isMaxRecommendationsValid
+        isFileContextValid
     ) {
         return true
     }
@@ -149,13 +186,18 @@ export function getTabSize(): number {
 
 export function getLeftContext(editor: vscode.TextEditor, line: number): string {
     let lineText = ''
-    if (editor && editor.document.lineAt(line)) {
-        lineText = editor.document.lineAt(line).text
-        if (lineText.length > ConsolasConstants.contextPreviewLen) {
-            lineText =
-                '...' +
-                lineText.substring(lineText.length - ConsolasConstants.contextPreviewLen - 1, lineText.length - 1)
+    try {
+        if (editor && editor.document.lineAt(line)) {
+            lineText = editor.document.lineAt(line).text
+            if (lineText.length > ConsolasConstants.contextPreviewLen) {
+                lineText =
+                    '...' +
+                    lineText.substring(lineText.length - ConsolasConstants.contextPreviewLen - 1, lineText.length - 1)
+            }
         }
+    } catch (error) {
+        getLogger().error(`Error when getting left context ${error}`)
     }
+
     return lineText
 }
