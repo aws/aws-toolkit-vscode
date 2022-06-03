@@ -197,11 +197,15 @@ export class AwsResourceManager {
             }
         }
 
-        globals.schemaService.registerMapping({
-            path: file.fsPath,
-            type: 'json',
-            schema: location,
-        })
+        globals.schemaService.registerMapping(
+            {
+                path: file.fsPath,
+                type: 'json',
+                schema: location,
+            },
+            // Flush immediately so the onDidOpenTextDocument handler can work.
+            true
+        )
     }
 }
 

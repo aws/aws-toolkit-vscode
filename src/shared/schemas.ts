@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import globals from './extensionGlobals'
 import { activateYamlExtension, YamlExtension } from './extensions/yaml'
 import * as filesystemUtilities from './filesystemUtilities'
+import * as pathutil from '../shared/utilities/pathUtils'
 import { getLogger } from './logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
@@ -29,7 +30,10 @@ export interface SchemaMapping {
 }
 
 export interface SchemaHandler {
+    /** Adds or removes a schema mapping to the given `schemas` collection. */
     handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void>
+    /** Returns true if the given file path is handled by this `SchemaHandler`. */
+    isMapped(f: vscode.Uri | string): boolean
 }
 
 /**
@@ -64,13 +68,31 @@ export class SchemaService {
             ])
     }
 
+    public isMapped(uri: vscode.Uri): boolean {
+        for (const h of this.handlers.values()) {
+            if (h.isMapped(uri)) {
+                return true
+            }
+        }
+        return false
+    }
+
     public async start(): Promise<void> {
         getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
         await this.startTimer()
     }
 
-    public registerMapping(mapping: SchemaMapping): void {
+    /**
+     * Registers a schema mapping in the schema service.
+     *
+     * @param mapping
+     * @param flush Flush immediately instead of waiting for timer.
+     */
+    public registerMapping(mapping: SchemaMapping, flush?: boolean): void {
         this.updateQueue.push(mapping)
+        if (flush === true) {
+            this.processUpdates()
+        }
     }
 
     public async processUpdates(): Promise<void> {
@@ -259,6 +281,15 @@ async function addCustomTags(config = Settings.instance): Promise<void> {
 export class YamlSchemaHandler implements SchemaHandler {
     public constructor(private yamlExtension?: YamlExtension) {}
 
+    isMapped(file: string | vscode.Uri): boolean {
+        if (!this.yamlExtension) {
+            return false
+        }
+        const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
+        const exists = !!this.yamlExtension?.getSchema(uri)
+        return exists
+    }
+
     async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
         if (!this.yamlExtension) {
             const ext = await activateYamlExtension()
@@ -286,6 +317,31 @@ export class JsonSchemaHandler implements SchemaHandler {
 
     public constructor(private readonly config = Settings.instance) {}
 
+    public isMapped(file: string | vscode.Uri): boolean {
+        const setting = this.getSettingBy({ file: file })
+        return !!setting
+    }
+
+    /**
+     * Gets a json schema setting by filtering on schema path and/or file path.
+     * @param args.schemaPath Path to the schema file
+     * @param args.file Path to the file being edited by the user
+     */
+    private getSettingBy(args: {
+        schemaPath?: string | vscode.Uri
+        file?: string | vscode.Uri
+    }): JSONSchemaSettings | undefined {
+        const path = typeof args.file === 'string' ? args.file : args.file?.fsPath
+        const schm = typeof args.schemaPath === 'string' ? args.schemaPath : args.schemaPath?.fsPath
+        const settings = this.getJsonSettings()
+        const setting = settings.find(schema => {
+            const schmMatch = schm && schema.url && pathutil.normalize(schema.url) === pathutil.normalize(schm)
+            const fileMatch = path && schema.fileMatch && schema.fileMatch.includes(path)
+            return (!path || fileMatch) && (!schm || schmMatch)
+        })
+        return setting
+    }
+
     async handleUpdate(mapping: SchemaMapping, schemas: Schemas): Promise<void> {
         await this.clean()
 
@@ -293,7 +349,7 @@ export class JsonSchemaHandler implements SchemaHandler {
 
         if (mapping.schema) {
             const uri = resolveSchema(mapping.schema, schemas).toString()
-            const existing = settings.find(schema => schema.url === uri)
+            const existing = this.getSettingBy({ schemaPath: uri })
 
             if (existing) {
                 if (!existing.fileMatch) {

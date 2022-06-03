@@ -21,6 +21,7 @@ import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
 import { installFakeClock } from '../../testUtil'
 import { TelemetryLogger } from '../../../shared/telemetry/telemetryLogger'
 import globals from '../../../shared/extensionGlobals'
+import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
 
 type Metric = { [P in keyof ClientTelemetry.MetricDatum as Uncapitalize<P>]: ClientTelemetry.MetricDatum[P] }
 
@@ -112,6 +113,47 @@ describe('DefaultTelemetryService', function () {
         await service.shutdown()
     })
 
+    it('findIter() queries pending metric items', async function () {
+        await service.start()
+        const m1 = fakeMetric({ value: 1, passive: true })
+        const m2 = fakeMetric({ value: 2, passive: true })
+        const m3 = fakeMetric({ value: 4, passive: false })
+        const m4 = fakeMetric({ value: 5, passive: false })
+        const m5 = fakeMetric({ value: 6, passive: true })
+        service.record(m1)
+        service.record(m2)
+        service.record(m3)
+        service.record(m4)
+        service.record(m5)
+
+        assert.deepStrictEqual(
+            await toArrayAsync(
+                service.findIter(m => {
+                    return m.MetricName === 'bogus'
+                })
+            ),
+            []
+        )
+        assert.deepStrictEqual(
+            await toArrayAsync(
+                service.findIter(m => {
+                    return m.MetricName === 'metric1'
+                })
+            ),
+            [m1]
+        )
+        assert.deepStrictEqual(
+            await toArrayAsync(
+                service.findIter(m => {
+                    return !!m.Passive
+                })
+            ),
+            [m1, m2, m5]
+        )
+
+        await service.shutdown()
+    })
+
     it('publishes periodically if user has said ok', async function () {
         stubGlobal()
 
@@ -144,7 +186,7 @@ describe('DefaultTelemetryService', function () {
         await service.start()
         await service.shutdown()
 
-        assert.strictEqual(logger.metricCount, 2)
+        assert.strictEqual(logger.metricCount, 1)
         const startEvents = logger.queryFull({ metricName: 'session_start' })
         assertMetadataContainsTestAccount(startEvents[0], AccountStatus.NotApplicable)
 
