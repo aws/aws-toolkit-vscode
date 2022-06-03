@@ -3,18 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import * as vscode from 'vscode'
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { RecommendationsList, DefaultConsolasClient, RecommendationDetail } from '../client/consolas'
 import * as EditorContext from '../util/editorContext'
 import { ConsolasConstants } from '../models/constants'
-import { ConfigurationEntry } from '../models/model'
+import { ConfigurationEntry, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { TelemetryHelper } from '../util/telemetryHelper'
@@ -186,7 +181,7 @@ export class RecommendationHandler {
                 reason = `Consolas Invocation Exception: ${awsError?.code ?? awsError?.name ?? 'unknown'}`
             } else {
                 errorCode = error as string
-                reason = error as string
+                reason = error ? String(error) : 'unknown'
             }
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -240,7 +235,7 @@ export class RecommendationHandler {
                     if (r.references === undefined || r.references.length === 0) {
                         filteredRecommendationList.push(r)
                     } else {
-                        this.reportUserDecisionOfCurrentRecommendation(index, editor?.document?.languageId, true)
+                        this.reportUserDecisionOfCurrentRecommendation(editor, index, true)
                     }
                 })
                 recommendation = filteredRecommendationList
@@ -279,56 +274,23 @@ export class RecommendationHandler {
         this.nextToken = ''
         this.errorMessagePrompt = ''
     }
-    /**
-     * VScode IntelliSense has native matching for recommendation.
-     * This is only to check if the recommendation match the updated left context when
-     * user keeps typing before getting consolas response back.
-     * @param newConsolasRequest if newConsolasRequest, then we need to reset the invocationContext.isPrefixMatched, which is used as
-     *                           part of user decision telemetry (see models.ts for more details)
-     * @param editor the current VSCode editor
-     *
-     * @returns
-     */
-    updatePrefixMatchArray(newConsolasRequest: boolean, editor: vscode.TextEditor | undefined) {
-        if (!editor || !this.isValidResponse() || !newConsolasRequest) {
-            return
-        }
-        // Only works for cloud9, as it works for completion items
-        if (isCloud9() && this.startPos.line !== editor.selection.active.line) {
-            return
-        }
-
-        let typedPrefix = ''
-        if (newConsolasRequest) {
-            TelemetryHelper.instance.isPrefixMatched = []
-        }
-
-        typedPrefix = editor.document.getText(new vscode.Range(this.startPos, editor.selection.active))
-
-        this.recommendations.forEach(recommendation => {
-            if (recommendation.content.startsWith(typedPrefix)) {
-                /**
-                 * TODO: seems like VScode has native prefix matching for completion items
-                 * if this behavior is changed, then we need to update the string manually
-                 * e.g., recommendation.content = recommendation.content.substring(changedContextLength)
-                 */
-                if (newConsolasRequest) {
-                    TelemetryHelper.instance.isPrefixMatched.push(true)
-                }
-            } else {
-                if (newConsolasRequest) {
-                    TelemetryHelper.instance.isPrefixMatched.push(false)
-                }
-            }
-        })
-    }
-    reportUserDecisionOfCurrentRecommendation(acceptIndex: number, languageId: string | undefined, filtered = false) {
+    reportUserDecisionOfCurrentRecommendation(
+        editor: vscode.TextEditor | undefined,
+        acceptIndex: number,
+        filtered = false
+    ) {
+        TelemetryHelper.instance.updatePrefixMatchArray(
+            this.recommendations,
+            this.startPos,
+            !vsCodeState.isIntelliSenseActive,
+            editor
+        )
         TelemetryHelper.instance.recordUserDecisionTelemetry(
             this.requestId,
             this.sessionId,
             this.recommendations,
             acceptIndex,
-            languageId,
+            editor?.document.languageId,
             filtered,
             this.recommendations.length
         )

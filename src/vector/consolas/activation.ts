@@ -193,8 +193,9 @@ export async function activate(context: ExtContext): Promise<void> {
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
             RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+                vscode.window.activeTextEditor,
                 -1,
-                vscode.window.activeTextEditor?.document.languageId
+                false
             )
             RecommendationHandler.instance.clearRecommendations()
         }),
@@ -437,10 +438,7 @@ export async function activate(context: ExtContext): Promise<void> {
 }
 
 export async function shutdown() {
-    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
-        -1,
-        vscode.window.activeTextEditor?.document.languageId
-    )
+    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1, false)
     ConsolasTracker.getTracker().shutdown()
 }
 

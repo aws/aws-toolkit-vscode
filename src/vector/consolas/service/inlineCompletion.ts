@@ -136,14 +136,8 @@ export class InlineCompletion {
                 await this.resetInlineStates(editor)
 
                 RecommendationHandler.instance.cancelPaginatedRequest()
-                // update prefix match array
-                RecommendationHandler.instance.updatePrefixMatchArray(true, editor)
                 // report all recommendation as rejected
-                RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
-                    -1,
-                    editor.document.languageId,
-                    false
-                )
+                RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1, false)
             })
     }
 
@@ -232,7 +226,12 @@ export class InlineCompletion {
                             editor.selection = newSelection
 
                             await vscode.commands.executeCommand('setContext', ConsolasConstants.serviceActiveKey, true)
-                            this._referenceProvider.setInlineReference(RecommendationHandler.instance.startPos.line)
+                            const curItem = this.items[this.position]
+                            this._referenceProvider.setInlineReference(
+                                RecommendationHandler.instance.startPos.line,
+                                curItem,
+                                this.origin[curItem.index].references
+                            )
                         })
                 }
             })

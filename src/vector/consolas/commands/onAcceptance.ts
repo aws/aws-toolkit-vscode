@@ -35,10 +35,9 @@ export async function onAcceptance(
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
         const languageId = acceptanceEntry.editor.document.languageId
-        RecommendationHandler.instance.updatePrefixMatchArray(true, acceptanceEntry.editor)
         RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
+            acceptanceEntry.editor,
             acceptanceEntry.acceptIndex,
-            acceptanceEntry.editor?.document.languageId,
             false
         )
         // consolas will be doing editing while formatting.

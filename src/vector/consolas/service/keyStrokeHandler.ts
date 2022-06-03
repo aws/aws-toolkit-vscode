@@ -122,7 +122,12 @@ export class KeyStrokeHandler {
          * Pause automated trigger when typed input matches recommendation prefix
          * for both intelliSense and inline
          */
-        RecommendationHandler.instance.updatePrefixMatchArray(true, editor)
+        TelemetryHelper.instance.updatePrefixMatchArray(
+            RecommendationHandler.instance.recommendations,
+            RecommendationHandler.instance.startPos,
+            true,
+            editor
+        )
         if (vsCodeState.isIntelliSenseActive && TelemetryHelper.instance.isPrefixMatched.length > 0) {
             return ''
         }
@@ -174,7 +179,6 @@ export class KeyStrokeHandler {
                         autoTriggerType,
                         false
                     )
-                    RecommendationHandler.instance.updatePrefixMatchArray(!vsCodeState.isIntelliSenseActive, editor)
                     if (RecommendationHandler.instance.isValidResponse()) {
                         vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                             vsCodeState.isIntelliSenseActive = true

@@ -3169,11 +3169,5 @@
         "bracketSpacing": true,
         "arrowParens": "avoid",
         "endOfLine": "lf"
-    },
-    "__metadata": {
-        "id": "ac5787df-9b2d-441c-abf0-977d62bc66f0",
-        "publisherDisplayName": "Amazon Web Services",
-        "publisherId": "e5177ad8-ec3b-4d49-aefd-3d3331129b54",
-        "isPreReleaseVersion": false
     }
 }

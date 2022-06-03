@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as telemetry from '../../../shared/telemetry/telemetry'
+import * as vscode from 'vscode'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { RecommendationsList } from '../client/consolas'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 
 export class TelemetryHelper {
     /**
@@ -42,6 +44,57 @@ export class TelemetryHelper {
 
     public static get instance() {
         return (this.#instance ??= new this())
+    }
+
+    /**
+     * VScode IntelliSense has native matching for recommendation.
+     * This is only to check if the recommendation match the updated left context when
+     * user keeps typing before getting consolas response back.
+     * @param recommendations the recommendations of current invocation
+     * @param startPos the invocation position of current invocation
+     * @param newConsolasRequest if newConsolasRequest, then we need to reset the invocationContext.isPrefixMatched, which is used as
+     *                           part of user decision telemetry (see models.ts for more details)
+     * @param editor the current VSCode editor
+     *
+     * @returns
+     */
+    public updatePrefixMatchArray(
+        recommendations: RecommendationsList,
+        startPos: vscode.Position,
+        newConsolasRequest: boolean,
+        editor: vscode.TextEditor | undefined
+    ) {
+        if (!editor || !newConsolasRequest) {
+            return
+        }
+        // Only works for cloud9, as it works for completion items
+        if (isCloud9() && startPos.line !== editor.selection.active.line) {
+            return
+        }
+
+        let typedPrefix = ''
+        if (newConsolasRequest) {
+            this.isPrefixMatched = []
+        }
+
+        typedPrefix = editor.document.getText(new vscode.Range(startPos, editor.selection.active))
+
+        recommendations.forEach(recommendation => {
+            if (recommendation.content.startsWith(typedPrefix)) {
+                /**
+                 * TODO: seems like VScode has native prefix matching for completion items
+                 * if this behavior is changed, then we need to update the string manually
+                 * e.g., recommendation.content = recommendation.content.substring(changedContextLength)
+                 */
+                if (newConsolasRequest) {
+                    this.isPrefixMatched.push(true)
+                }
+            } else {
+                if (newConsolasRequest) {
+                    this.isPrefixMatched.push(false)
+                }
+            }
+        })
     }
 
     /**

@@ -65,7 +65,6 @@ export async function invokeConsolas(
                     undefined,
                     false
                 )
-                RecommendationHandler.instance.updatePrefixMatchArray(!vsCodeState.isIntelliSenseActive, editor)
                 if (RecommendationHandler.instance.isValidResponse()) {
                     vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                         vsCodeState.isIntelliSenseActive = true
