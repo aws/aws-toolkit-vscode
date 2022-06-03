@@ -41,6 +41,7 @@ import { activate as activateEcr } from './ecr/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
+import * as awsFiletypes from './shared/awsFiletypes'
 import * as telemetry from './shared/telemetry/telemetry'
 import { activate as activateVector, shutdown as consolasShutdown } from './vector/consolas/activation'
 import { ExtContext } from './shared/extensions'
@@ -119,6 +120,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateTelemetry(context, awsContext, settings)
         await globals.telemetry.start()
         await globals.schemaService.start()
+        awsFiletypes.activate()
 
         const extContext: ExtContext = {
             extensionContext: context,

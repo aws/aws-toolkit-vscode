@@ -7,23 +7,20 @@
  * Before/After hooks for all "unit" tests
  */
 import * as assert from 'assert'
-import { format } from 'util'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
-import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
+import { format } from 'util'
 import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
-import { getLogger, LogLevel } from '../shared/logger'
-import { setLogger } from '../shared/logger/logger'
-import { DefaultTelemetryService } from '../shared/telemetry/telemetryService'
-import * as fakeTelemetry from './fake/fakeTelemetryService'
-import { TestLogger } from './testLogger'
-import { FakeAwsContext } from './utilities/fakeAwsContext'
-import { createTestWorkspaceFolder, deleteTestTempDirs } from './testUtil'
 import globals from '../shared/extensionGlobals'
-import { activateExtension } from '../shared/utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { initializeIconPaths } from '../shared/icons'
+import { getLogger, LogLevel } from '../shared/logger'
+import { setLogger } from '../shared/logger/logger'
+import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
+import { activateExtension } from '../shared/utilities/vsCodeUtils'
 import { FakeExtensionContext } from './fakeExtensionContext'
+import { TestLogger } from './testLogger'
+import * as testUtil from './testUtil'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -44,21 +41,27 @@ before(async function () {
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false, activationLogger)
 
     const fakeContext = await FakeExtensionContext.create()
-    fakeContext.globalStorageUri = (await createTestWorkspaceFolder('globalStoragePath')).uri
+    fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
     initializeIconPaths(fakeContext)
     Object.assign(globals, { context: fakeContext })
 })
 
 after(async function () {
-    deleteTestTempDirs()
+    testUtil.deleteTestTempDirs()
 })
 
-beforeEach(function () {
+beforeEach(async function () {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
     globals.templateRegistry = new CloudFormationTemplateRegistry()
     globals.codelensRootRegistry = new CodelensRootRegistry()
-    globals.telemetry = initTelemetry()
+
+    // Enable telemetry features for tests. The metrics won't actually be posted.
+    globals.telemetry.telemetryEnabled = true
+    globals.telemetry.clearRecords()
+    globals.telemetry.logger.clear()
+
+    await testUtil.closeAllEditors()
 })
 
 afterEach(function () {
@@ -122,14 +125,4 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
             ),
         `Expected to find "${text}" in the logs as type "${severity}"`
     )
-}
-
-// This reset the global since extension activation will replace our test version at test time.
-function initTelemetry(): DefaultTelemetryService {
-    const fakeAws = new FakeAwsContext()
-    const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
-    const service = new DefaultTelemetryService(globals.context, fakeAws, undefined, fakeTelemetryPublisher)
-    service.telemetryEnabled = true
-
-    return service
 }
