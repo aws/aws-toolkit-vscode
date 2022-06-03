@@ -5,9 +5,6 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { getDefaultSchemas } from '../../../shared/schemas'
-import { fromFile } from '../../testUtil'
 import { GitExtension } from '../../../shared/extensions/git'
 
 export type JSONValue = string | boolean | number | null | JSONValue[] | JSONObject
@@ -21,7 +18,7 @@ export interface TestSchemas {
     cfnSchema: JSONObject
 }
 
-async function getCITestSchemas(): Promise<TestSchemas> {
+export async function getCITestSchemas(): Promise<TestSchemas> {
     const fetchUrl = 'https://github.com/awslabs/goformation'
     const repo = await GitExtension.instance.listAllRemoteFiles({
         fetchUrl,
@@ -44,29 +41,6 @@ async function getCITestSchemas(): Promise<TestSchemas> {
     repo.dispose()
 
     const samSchema = JSON.parse(samSchemaFile)
-    const cfnSchema = JSON.parse(cfnSchemaFile)
-    return {
-        samSchema,
-        cfnSchema,
-    }
-}
-
-export async function getTestSchemas(): Promise<TestSchemas> {
-    if (process.env.GITHUB_ACTIONS) {
-        return getCITestSchemas()
-    }
-
-    const fakeContext = await FakeExtensionContext.create()
-
-    const schemas = await getDefaultSchemas(fakeContext)
-    if (schemas === undefined) {
-        throw new Error('An error occured when fetching the schemas. View the logs for more information.')
-    }
-
-    const samSchemaFile = fromFile(schemas.sam.fsPath)
-    const samSchema = JSON.parse(samSchemaFile)
-
-    const cfnSchemaFile = fromFile(schemas.cfn.fsPath)
     const cfnSchema = JSON.parse(cfnSchemaFile)
     return {
         samSchema,

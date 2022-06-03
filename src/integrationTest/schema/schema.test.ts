@@ -4,7 +4,7 @@
  */
 
 import {
-    getTestSchemas,
+    getCITestSchemas,
     JSONObject,
     unmarshal,
     assertDefinitionProperty,
@@ -17,7 +17,7 @@ describe('Sam Schema Regression', function () {
     let samSchema: JSONObject
 
     before(async function () {
-        ;({ samSchema } = await getTestSchemas())
+        ;({ samSchema } = await getCITestSchemas())
     })
 
     it('has Policy Templates', function () {
