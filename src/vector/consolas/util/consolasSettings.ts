@@ -6,7 +6,7 @@ import { Experiments, fromExtensionManifest } from '../../../shared/settings'
 
 const description = {
     includeSuggestionsWithCodeReferences: Boolean,
-    dataCollection: Boolean,
+    doNotSendConsolasServiceMetrics: Boolean,
 }
 export class ConsolasSettings extends fromExtensionManifest('aws.consolas', description) {
     public async isEnabled(): Promise<boolean> {
@@ -17,8 +17,8 @@ export class ConsolasSettings extends fromExtensionManifest('aws.consolas', desc
         return this.get(`includeSuggestionsWithCodeReferences`, false)
     }
 
-    public isdataCollectionEnabled(): boolean {
-        return this.get('dataCollection', true)
+    public isOptoutEnabled(): boolean {
+        return this.get('doNotSendConsolasServiceMetrics', false)
     }
 
     static #instance: ConsolasSettings

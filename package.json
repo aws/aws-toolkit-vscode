@@ -260,11 +260,10 @@
                     "description": "%AWS.configuration.description.consolas%",
                     "default": true
                 },
-
-                "aws.consolas.dataCollection": {
+                "aws.consolas.doNotSendConsolasServiceMetrics": {
                     "type": "boolean",
-                    "description": "%AWS.configuration.description.consolas.dataCollection%",
-                    "default": true
+                    "description": "%AWS.configuration.description.consolas.doNotSendConsolasServiceMetrics%",
+                    "default": false
                 },
                 "aws.consolas.java.compile.output": {
                     "type": "string",

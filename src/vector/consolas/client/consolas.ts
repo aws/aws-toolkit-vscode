@@ -35,7 +35,7 @@ export class DefaultConsolasClient {
     private async createSdkClient(): Promise<ConsolasClient> {
         const credentials = isCloud9() ? await globals.awsContext.getCredentials() : await getCognitoCredentials()
         const accessToken = globals.context.globalState.get<string | undefined>(ConsolasConstants.accessToken)
-        const isOptedOut = !ConsolasSettings.instance.isdataCollectionEnabled()
+        const isOptedOut = ConsolasSettings.instance.isOptoutEnabled()
 
         return (await globals.sdkClientBuilder.createAwsService(
             Service,

@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as telemetry from '../../../shared/telemetry/telemetry'
 import globals from '../../../shared/extensionGlobals'
 import { ConsolasConstants } from '../models/constants'
 import {
@@ -29,9 +30,15 @@ export class ConsolasNode implements RootNode {
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
 
     constructor() {
-        Experiments.instance.onDidChange(({ key }) => {
+        Experiments.instance.onDidChange(async ({ key }) => {
             if (key === 'Consolas') {
                 this.onDidChangeVisibilityEmitter.fire()
+                const consolasEnabled = await Experiments.instance.isExperimentEnabled('Consolas')
+                telemetry.recordAwsExperimentActivation({
+                    experimentId: ConsolasConstants.experimentId,
+                    experimentState: consolasEnabled ? 'activated' : 'deactivated',
+                    passive: false,
+                })
             }
         })
     }

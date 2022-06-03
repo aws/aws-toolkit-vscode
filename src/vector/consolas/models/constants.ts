@@ -130,4 +130,7 @@ export const ConsolasConstants = {
     codeScanJobPollingInterval: 5, // Seconds
     artifactTypeSource: 'SourceCode',
     artifactTypeBuild: 'BuiltJars',
+
+    // telemetry experiment id
+    experimentId: 'vectorConsolas',
 }
