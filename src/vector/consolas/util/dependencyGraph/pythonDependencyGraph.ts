@@ -58,7 +58,7 @@ export class PythonDependencyGraph extends DependencyGraph {
             const extractImportStr = importStr.substring(pos + IMPORT.length).trim()
             const allImports: string[] = extractImportStr.split(',')
             allImports.forEach(singleImport => {
-                pos = singleImport.indexOf(AS)
+                pos = singleImport.indexOf(' ' + AS + ' ')
                 if (pos !== -1) {
                     const importPath = singleImport.substring(0, pos)
                     importPaths.push(importPath.trim())
@@ -71,7 +71,7 @@ export class PythonDependencyGraph extends DependencyGraph {
     }
 
     private getModulePath(modulePathStr: string) {
-        const pos = modulePathStr.indexOf(AS)
+        const pos = modulePathStr.indexOf(' ' + AS + ' ')
         if (pos !== -1) modulePathStr = modulePathStr.substring(0, pos)
         return modulePathStr.trim()
     }

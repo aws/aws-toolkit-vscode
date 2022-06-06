@@ -223,7 +223,7 @@ export class JavaDependencyGraph extends DependencyGraph {
         })
         if (oneBuildFilePaths.length == 0) {
             throw new Error(
-                `${buildFileRelativePath} is not found. Please compile the project or specify 'aws.consolas.java.compile.output' in Settings.`
+                `${buildFileRelativePath} is not found. Please compile the project or specify 'aws.consolas.javaCompilationOutput' in Settings.`
             )
         }
         return oneBuildFilePaths
@@ -249,7 +249,7 @@ export class JavaDependencyGraph extends DependencyGraph {
             })
             if (!findBuildFile) {
                 throw new Error(
-                    `${relativePath} is not found. Please compile the project or specify 'aws.consolas.java.compile.output' in Settings.`
+                    `${relativePath} is not found. Please compile the project or specify 'aws.consolas.javaCompilationOutput' in Settings.`
                 )
             }
         })
@@ -257,7 +257,7 @@ export class JavaDependencyGraph extends DependencyGraph {
     }
 
     private autoDetectClasspath(projectPath: string, projectName: string, extension: string) {
-        const compileOutput = vscode.workspace.getConfiguration('aws.consolas.java.compile').get('output')
+        const compileOutput = vscode.workspace.getConfiguration('aws.consolas').get('javaCompilationOutput')
         if (compileOutput && typeof compileOutput === 'string') {
             this._outputDirs.add(compileOutput)
         }
@@ -358,7 +358,7 @@ export class JavaDependencyGraph extends DependencyGraph {
             this.autoDetectClasspath(projectPath, projectName, BUILD_EXT)
             if (this._outputDirs.size === 0 && this._outputNonStrictDirs.size === 0) {
                 throw new Error(
-                    "Can't detect Classpath, please specify 'aws.consolas.java.compile.output' in Settings."
+                    "Can't detect Classpath, please specify 'aws.consolas.javaCompilationOutput' in Settings."
                 )
             }
             let buildFiles: string[] = []

@@ -265,7 +265,7 @@
                     "description": "%AWS.configuration.description.consolas.doNotSendConsolasServiceMetrics%",
                     "default": false
                 },
-                "aws.consolas.java.compile.output": {
+                "aws.consolas.javaCompilationOutput": {
                     "type": "string",
                     "default": "",
                     "description": "Provide the ABSOLUTE path which is used to store java project compilation results."

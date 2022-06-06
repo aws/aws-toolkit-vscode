@@ -94,12 +94,16 @@ export async function startSecurityScan(
             return accumulator + current.issues.length
         }, 0)
         getLogger().info(`Security scan for '${vscode.workspace.name}' totally found ${total} issues.`)
-        if (isCloud9()) {
-            securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
-            vscode.commands.executeCommand('workbench.view.extension.aws-consolas-security-panel')
+        if (total > 0) {
+            if (isCloud9()) {
+                securityPanelViewProvider.addLines(securityRecommendationCollection, editor)
+                vscode.commands.executeCommand('workbench.view.extension.aws-consolas-security-panel')
+            } else {
+                initSecurityScanRender(securityRecommendationCollection, context)
+                vscode.commands.executeCommand('workbench.action.problems.focus')
+            }
         } else {
-            initSecurityScanRender(securityRecommendationCollection, context)
-            vscode.commands.executeCommand('workbench.action.problems.focus')
+            vscode.window.showInformationMessage(`Security scan completed and no security issues.`)
         }
         getLogger().info(`Security scan completed.`)
     } catch (error) {

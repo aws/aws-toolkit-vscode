@@ -25,7 +25,10 @@ export async function listScanResults(client: DefaultConsolasClient, jobId: stri
     const collection = pageableToCollection(requester, { jobId }, 'nextToken')
     const issues = await collection
         .flatten()
-        .map(i => i.securityIssues)
+        .map(resp => {
+            getLogger().verbose(`Request id: ${resp.$response.requestId}`)
+            return resp.securityIssues
+        })
         .promise()
     issues.forEach(issue => {
         mapToAggregatedList(codeScanIssueMap, aggregatedCodeScanIssueList, issue, projectPath)
@@ -88,6 +91,7 @@ export async function pollScanJobStatus(client: DefaultConsolasClient, jobId: st
             jobId: jobId,
         }
         const resp = await client.getSecurityScan(req)
+        getLogger().verbose(`Request id: ${resp.$response.requestId}`)
         if (resp.status !== 'Pending') {
             status = resp.status
             getLogger().verbose(`Scan job status: ${status}`)
@@ -116,7 +120,9 @@ export async function createScanJob(
         language: languageId,
         clientToken: uuid.v1(),
     }
-    return await client.createSecurityScan(req)
+    const resp = await client.createSecurityScan(req)
+    getLogger().verbose(`Request id: ${resp.$response.requestId}`)
+    return resp
 }
 
 export async function getPresignedUrlAndUpload(client: DefaultConsolasClient, truncPaths: TruncPaths) {
@@ -128,6 +134,7 @@ export async function getPresignedUrlAndUpload(client: DefaultConsolasClient, tr
     }
     getLogger().verbose(`Getting presigned Url for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq)
+    getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
     await uploadArtifactToS3(srcResp.uploadUrl, truncPaths.src.zip)
@@ -143,6 +150,7 @@ export async function getPresignedUrlAndUpload(client: DefaultConsolasClient, tr
         }
         getLogger().verbose(`Getting presigned Url for uploading build context...`)
         const buildResp = await client.createUploadUrl(buildReq)
+        getLogger().verbose(`Request id: ${buildResp.$response.requestId}`)
         getLogger().verbose(`Complete Getting presigned Url for uploading build context.`)
         getLogger().verbose(`Uploading build context...`)
         await uploadArtifactToS3(buildResp.uploadUrl, truncPaths.build.zip)

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Service } from 'aws-sdk'
+import { AWSError, Service } from 'aws-sdk'
 import apiConfig = require('./service-2.json')
 import globals from '../../../shared/extensionGlobals'
 import * as ConsolasClient from './consolasclient'
@@ -13,6 +13,7 @@ import { invalidateAccessToken } from '../util/invalidateToken'
 import { isCloud9 } from '../../../shared/extensionUtilities'
 import { ConsolasSettings } from '../util/consolasSettings'
 import { getCognitoCredentials } from '../util/cognitoIdentity'
+import { PromiseResult } from 'aws-sdk/lib/request'
 
 export type ConsolasProgLang = Readonly<ConsolasClient.ProgrammingLanguage>
 export type ConsolasContextInfo = Readonly<ConsolasClient.ContextInfo>
@@ -92,25 +93,25 @@ export class DefaultConsolasClient {
 
     public async createUploadUrl(
         request: ConsolasClient.CreateUploadUrlRequest
-    ): Promise<ConsolasClient.CreateUploadUrlResponse> {
+    ): Promise<PromiseResult<ConsolasClient.CreateUploadUrlResponse, AWSError>> {
         return (await this.createSdkClient()).createUploadUrl(request).promise()
     }
 
     public async createSecurityScan(
         request: ConsolasClient.CreateSecurityScanRequest
-    ): Promise<ConsolasClient.CreateSecurityScanResponse> {
+    ): Promise<PromiseResult<ConsolasClient.CreateSecurityScanResponse, AWSError>> {
         return (await this.createSdkClient()).createSecurityScan(request).promise()
     }
 
     public async getSecurityScan(
         request: ConsolasClient.GetSecurityScanRequest
-    ): Promise<ConsolasClient.GetSecurityScanResponse> {
+    ): Promise<PromiseResult<ConsolasClient.GetSecurityScanResponse, AWSError>> {
         return (await this.createSdkClient()).getSecurityScan(request).promise()
     }
 
     public async listSecurityIssues(
         request: ConsolasClient.ListSecurityIssuesRequest
-    ): Promise<ConsolasClient.ListSecurityIssuesResponse> {
+    ): Promise<PromiseResult<ConsolasClient.ListSecurityIssuesResponse, AWSError>> {
         return (await this.createSdkClient()).listSecurityIssues(request).promise()
     }
 }
