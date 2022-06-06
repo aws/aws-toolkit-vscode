@@ -23,9 +23,10 @@ describe('DefaultAwsClientBuilder', function () {
             const service = await builder.createAwsService(Service)
 
             assert.strictEqual(!!service.config.customUserAgent, true)
-            assert.strictEqual(
-                service.config.customUserAgent!.replace('---Insiders', ''),
-                `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version}`
+            assert.ok(
+                service.config
+                    .customUserAgent!.replace('---Insiders', '')
+                    .startsWith(`AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version}`)
             )
         })
 

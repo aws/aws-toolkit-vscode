@@ -29,7 +29,7 @@ export class DefaultTelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
     public static readonly TELEMETRY_CLIENT_ID_KEY = 'telemetryClientId'
 
-    private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 5 // 5 minutes in milliseconds
+    private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
 
     public startTime: Date
     public readonly persistFilePath: string
