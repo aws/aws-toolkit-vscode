@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix: syntax support (JSON schemas) for CloudFormation/SAM yaml sometimes doesn't work"
-}

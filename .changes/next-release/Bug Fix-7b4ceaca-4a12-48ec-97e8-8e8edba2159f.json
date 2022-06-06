@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Credential profiles that do not require user-input now correctly refresh when expired"
-}
