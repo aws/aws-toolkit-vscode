@@ -72,7 +72,11 @@ export class ToolkitError extends Error implements ErrorMetadata {
     public get cancelled(): boolean {
         const cause = this.metadata.cause
 
-        return CancellationError.isUserCancelled(cause) || (cause instanceof ToolkitError && cause.cancelled)
+        return (
+            this.metadata.cancelled ||
+            CancellationError.isUserCancelled(cause) ||
+            (cause instanceof ToolkitError && cause.cancelled)
+        )
     }
 }
 

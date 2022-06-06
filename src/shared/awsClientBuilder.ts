@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Request, AWSError } from 'aws-sdk'
+import { Request, AWSError, Credentials } from 'aws-sdk'
+import { CredentialsOptions } from 'aws-sdk/lib/credentials'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
@@ -60,11 +61,7 @@ export interface AWSClientBuilder {
 }
 
 export class DefaultAWSClientBuilder implements AWSClientBuilder {
-    private readonly _awsContext: AwsContext
-
-    public constructor(awsContext: AwsContext) {
-        this._awsContext = awsContext
-    }
+    public constructor(private readonly awsContext: AwsContext) {}
 
     public async createAwsService<T extends AWS.Service>(
         type: new (o: ServiceConfigurationOptions) => T,
@@ -78,7 +75,46 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         delete opt.onRequestSetup
 
         if (!opt.credentials) {
-            opt.credentials = await this._awsContext.getCredentials()
+            const shim = this.awsContext.credentialsShim
+
+            if (!shim) {
+                throw new Error('Toolkit is not logged-in.')
+            }
+
+            opt.credentials = new (class extends Credentials {
+                public constructor() {
+                    // The class doesn't like being instantiated with empty creds
+                    super({ accessKeyId: '???', secretAccessKey: '???' })
+                }
+
+                public override get(callback: (err?: AWSError) => void): void {
+                    // Always try to fetch the latest creds first, attempting a refresh if needed
+                    // A 'passive' refresh is attempted first, before trying an 'active' one if certain criteria are met
+                    shim.get()
+                        .then(creds => {
+                            this.loadCreds(creds)
+                            this.needsRefresh() ? this.refresh(callback) : callback()
+                        })
+                        .catch(callback)
+                }
+
+                public override refresh(callback: (err?: AWSError) => void): void {
+                    shim.refresh()
+                        .then(creds => {
+                            this.loadCreds(creds)
+                            callback()
+                        })
+                        .catch(callback)
+                }
+
+                private loadCreds(creds: CredentialsOptions & { expiration?: Date }) {
+                    this.expired = false
+                    this.accessKeyId = creds.accessKeyId
+                    this.secretAccessKey = creds.secretAccessKey
+                    this.sessionToken = creds.sessionToken ?? this.sessionToken
+                    this.expireTime = creds.expiration ?? this.expireTime
+                }
+            })()
         }
 
         if (!opt.region && region) {
