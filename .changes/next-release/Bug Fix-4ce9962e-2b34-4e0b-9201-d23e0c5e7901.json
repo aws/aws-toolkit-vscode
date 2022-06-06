@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fix issue where occasionally yaml schemas weren't getting loaded for cfn/sam"
+	"description": "Fix: syntax support (JSON schemas) for CloudFormation/SAM yaml sometimes doesn't work"
 }
