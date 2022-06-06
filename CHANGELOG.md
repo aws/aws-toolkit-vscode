@@ -1,3 +1,14 @@
+## 1.39.0 2022-06-06
+
+- **Bug Fix** StepFunctions: allow state machines with non-object values for Parameters property
+- **Bug Fix** Fix incorrect use of Markdown in new SAM application READMEs
+- **Bug Fix** Fix: syntax support (JSON schemas) for CloudFormation/SAM yaml sometimes doesn't work
+- **Bug Fix** Credential profiles that do not require user-input now correctly refresh when expired
+- **Feature** "Upload Lambda" from any folder in VS Code File Explorer
+- **Feature** "Send Feedback" form always enables Send button and doesn't require text input
+- **Feature** SAM: create, run and debug nodejs16.x Lambdas
+- **Feature** CDK features are now found in the _Developer Tools_ view. This view will contain more ways to work with local project resources in future releases.
+
 ## 1.38.0 2022-05-12
 
 - **Breaking Change** Removed the `aws.onDefaultRegionMissing` setting

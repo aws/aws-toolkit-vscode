@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "StepFunctions: allow state machines with non-object values for Parameters property"
-}
