@@ -129,6 +129,7 @@
         {
             "name": "aws_refreshCredentials",
             "description": "Emitted when credentials are automatically refreshed by the AWS SDK",
+            "passive": true,
             "metadata": [
                 {
                     "type": "result"
