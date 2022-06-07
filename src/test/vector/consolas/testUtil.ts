@@ -13,6 +13,7 @@ import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLan
 
 export function resetConsolasGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
+    vsCodeState.isConsolasEditing = false
     runtimeLanguageContext.setRuntimeLanguageContext('python', 'python2', '2.7.16')
     runtimeLanguageContext.setRuntimeLanguageContext('java', 'java11', '11.0.13')
     runtimeLanguageContext.setRuntimeLanguageContext('javascript', 'javascript', '12.22.9')
