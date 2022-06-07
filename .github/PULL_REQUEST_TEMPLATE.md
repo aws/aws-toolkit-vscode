@@ -1,17 +1,13 @@
-<!---
-    REMINDER:
-    - Read CONTRIBUTING.md first.
-    - Add test coverage for your changes.
-    - Update the changelog using `npm run newChange`.
--->
-
 ## Problem
 
 ## Solution
 
 <!---
-    Other details:
-    - Related issues: link to any related issues/commits.
+    REMINDER:
+    - Read CONTRIBUTING.md first.
+    - Add test coverage for your changes.
+    - Update the changelog using `npm run newChange`.
+    - Link to related issues/commits.
     - Testing: how did you test your changes?
     - Screenshots
 -->

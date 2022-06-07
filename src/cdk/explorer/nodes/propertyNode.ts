@@ -4,45 +4,45 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { getIcon } from '../../../shared/icons'
+import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 
 /*
  * Represents a property of a CDK construct. Properties can be simple key-value pairs, Arrays,
  * or objects that are nested deeply
  */
-export class PropertyNode extends AWSTreeNodeBase {
-    public constructor(
-        label: string,
-        collapsibleState: vscode.TreeItemCollapsibleState,
-        private readonly subProperties?: { [key: string]: any }
-    ) {
-        super(label, collapsibleState)
-        this.contextValue = 'awsCdkPropertyNode'
-        this.iconPath = getIcon('vscode-gear')
+export class PropertyNode implements TreeNode {
+    public readonly id = this.key
+    public readonly resource = this.value
+    public readonly treeItem: vscode.TreeItem
+
+    public constructor(private readonly key: string, private readonly value: unknown) {
+        this.treeItem = this.createTreeItem()
     }
 
-    public async getChildren(): Promise<PropertyNode[]> {
-        if (!this.subProperties) {
+    public async getChildren(): Promise<TreeNode[]> {
+        if (this.value instanceof Array || this.value instanceof Object) {
+            return generatePropertyNodes(this.value)
+        } else {
             return []
         }
+    }
 
-        return generatePropertyNodes(this.subProperties)
+    private createTreeItem() {
+        const item = new vscode.TreeItem(`${this.key}: ${this.value}`)
+
+        item.contextValue = 'awsCdkPropertyNode'
+        item.iconPath = getIcon('vscode-gear')
+
+        if (this.value instanceof Array || this.value instanceof Object) {
+            item.label = this.key
+            item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
+        }
+
+        return item
     }
 }
 
-export function generatePropertyNodes(properties: { [key: string]: any }): PropertyNode[] {
-    const propertyNodes: PropertyNode[] = []
-
-    for (const property of Object.keys(properties)) {
-        const value = properties[property]
-
-        if (value instanceof Array || value instanceof Object) {
-            propertyNodes.push(new PropertyNode(property, vscode.TreeItemCollapsibleState.Collapsed, value))
-        } else {
-            propertyNodes.push(new PropertyNode(`${property}: ${value}`, vscode.TreeItemCollapsibleState.None))
-        }
-    }
-
-    return propertyNodes
+export function generatePropertyNodes(properties: { [key: string]: any }): TreeNode[] {
+    return Object.entries(properties).map(([k, v]) => new PropertyNode(k, v))
 }

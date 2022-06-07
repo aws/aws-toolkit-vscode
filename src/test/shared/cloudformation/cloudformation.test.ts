@@ -151,6 +151,24 @@ describe('CloudFormation', function () {
             const template = await CloudFormation.load(filename)
             assert.strictEqual(template.Resources!['TestResource']?.Properties?.CodeUri, '')
         })
+
+        it('Loads invalid YAML when validation is disabled', async function () {
+            // handler is missing
+            const invalidYamlStr: string = `AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Resources:
+    TestResource:
+        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+        Properties:
+            CodeUri: asdf
+            Runtime: runtime
+            Timeout: 1
+            Environment:
+                Variables:
+                    ENVVAR: envvar`
+            await strToYamlFile(invalidYamlStr, filename)
+            await assert.doesNotReject(CloudFormation.load(filename, false))
+        })
     })
 
     describe('save', async function () {

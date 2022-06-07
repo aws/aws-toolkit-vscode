@@ -34,6 +34,7 @@ function evaluate(schema: vscode.Uri | (() => vscode.Uri)): vscode.Uri {
 export interface YamlExtension {
     assignSchema(path: vscode.Uri, schema: vscode.Uri | (() => vscode.Uri)): void
     removeSchema(path: vscode.Uri): void
+    getSchema(path: vscode.Uri): vscode.Uri | undefined
 }
 
 export async function activateYamlExtension(): Promise<YamlExtension | undefined> {
@@ -61,5 +62,6 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
     return {
         assignSchema: (path, schema) => schemaMap.set(path.toString(), applyScheme(AWS_SCHEME, evaluate(schema))),
         removeSchema: path => schemaMap.delete(path.toString()),
+        getSchema: path => schemaMap.get(path.toString()),
     }
 }

@@ -72,8 +72,10 @@ export const debugNewSamAppUrl: string = isCloud9()
 export const ecsDocumentationUrl: string = 'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html'
 export const ecsExecToolkitGuideUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html'
-export const ecsRequiredPermissionsUrl: string =
+export const ecsRequiredTaskPermissionsUrl: string =
     'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using'
+export const ecsRequiredIamPermissionsUrl: string =
+    'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command'
 
 /**
  * Moment format for rendering readable dates.

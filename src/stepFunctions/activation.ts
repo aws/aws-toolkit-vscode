@@ -16,6 +16,8 @@ import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
 
 import * as nls from 'vscode-nls'
 import globals from '../shared/extensionGlobals'
+import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
+import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -39,16 +41,31 @@ async function registerStepFunctionCommands(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     const visualizationManager = new AslVisualizationManager(extensionContext)
+    const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
 
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.previewStateMachine', async (input?: vscode.TextEditor | vscode.Uri) => {
+        /*
+         * TODO: Determine behaviour when command is run against bad input, or
+         * non-json files. Determine if we want to limit the command to only a
+         * specifc subset of file types ( .json only, custom .states extension, etc...)
+         * Ensure tests are written for this use case as well.
+         */
+        vscode.commands.registerCommand('aws.previewStateMachine', async (arg?: vscode.TextEditor | vscode.Uri) => {
             try {
+                arg ??= vscode.window.activeTextEditor
+                const input = arg instanceof vscode.Uri ? arg : arg?.document
+
+                if (!input) {
+                    throw new TypeError(`Received "undefined", expected TextEditor or Uri`)
+                }
+
                 return await visualizationManager.visualizeStateMachine(extensionContext.globalState, input)
             } finally {
                 // TODO: Consider making the metric reflect the success/failure of the above call
                 telemetry.recordStepfunctionsPreviewstatemachine()
             }
-        })
+        }),
+        renderCdkStateMachineGraph.register(extensionContext.globalState, cdkVisualizationManager)
     )
 
     extensionContext.subscriptions.push(

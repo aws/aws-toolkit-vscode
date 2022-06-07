@@ -171,7 +171,7 @@ export class ChildProcess {
                 this.childProcess = crossSpawn.spawn(this.command, args, options.spawnOptions)
                 this.registerLifecycleListeners(this.childProcess, errorHandler, timeout)
             } catch (err) {
-                return errorHandler(err as Error)
+                return reject(err)
             }
 
             // Emitted whenever:

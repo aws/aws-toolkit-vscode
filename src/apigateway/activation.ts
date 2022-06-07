@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RestApiNode } from './explorer/apiNodes'
-import { invokeRemoteRestApi } from './commands/invokeRemoteRestApi'
+import { invokeRemoteRestApi } from './vue/invokeRemoteRestApi'
 import { copyUrlCommand } from './commands/copyUrl'
 import { ExtContext } from '../shared/extensions'
 

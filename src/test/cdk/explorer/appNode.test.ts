@@ -10,46 +10,53 @@ import * as vscode from 'vscode'
 import * as app from '../../../cdk/explorer/cdkProject'
 import * as appNode from '../../../cdk/explorer/nodes/appNode'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
+import { getIcon } from '../../../shared/icons'
 import * as treeUtils from '../treeTestUtils'
 
-let sandbox: sinon.SinonSandbox
 describe('AppNode', function () {
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
-
     afterEach(function () {
-        sandbox.restore()
+        sinon.restore()
     })
 
-    const workspaceFolderPath = 'rootcdk-project'
+    const workspaceFolderPath = getTestWorkspaceFolder()
     const workspaceFolderName = 'cdk-test-folder'
-    const cdkJsonPath = path.join(workspaceFolderPath, workspaceFolderName, 'cdk.json')
+    const cdkJsonPath = path.join(getTestWorkspaceFolder(), workspaceFolderName, 'cdk.json')
     const treePath = path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json')
 
-    it('initializes label and tooltip', async function () {
+    it('uses the `cdk.json` uri as its id', async function () {
         const testNode = getTestNode()
 
-        assert.strictEqual(testNode.label, path.relative(path.dirname(workspaceFolderPath), path.dirname(cdkJsonPath)))
-        assert.strictEqual(testNode.tooltip, `${cdkJsonPath}`)
+        assert.strictEqual(testNode.id, vscode.Uri.file(cdkJsonPath).toString())
+    })
+
+    it('initializes label, tooltip, and icon', async function () {
+        const testNode = getTestNode()
+
+        assert.strictEqual(testNode.treeItem.label, path.relative(workspaceFolderPath, path.dirname(cdkJsonPath)))
+        assert.strictEqual(testNode.treeItem.tooltip, vscode.Uri.file(cdkJsonPath).path)
+        assert.strictEqual(testNode.treeItem.iconPath, getIcon('aws-cdk-logo'))
     })
 
     it('returns placeholder node when app contains no stacks', async function () {
         const testNode = getTestNode()
-        const mockApp: app.CdkApp = { metadata: treeUtils.getTreeWithNoStack(), location: testNode.app }
-        sandbox.stub(app, 'getApp').resolves(mockApp)
+        sinon.stub(app, 'getApp').resolves({
+            constructTree: treeUtils.getTreeWithNoStack(),
+            location: testNode.resource,
+        })
 
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof PlaceholderNode, true)
+        assert.ok(childNodes[0].treeItem.label?.includes('No stacks'))
     })
 
     it('returns construct node when app has stacks', async function () {
         const testNode = getTestNode()
-        const mockApp: app.CdkApp = { metadata: treeUtils.getTree(), location: testNode.app }
-        sandbox.stub(app, 'getApp').resolves(mockApp)
+        sinon.stub(app, 'getApp').resolves({
+            constructTree: treeUtils.getTree(),
+            location: testNode.resource,
+        })
 
         const childNodes = await testNode.getChildren()
 
@@ -59,22 +66,18 @@ describe('AppNode', function () {
 
     it('returns placeholder node when tree.json cannot be loaded', async function () {
         const testNode = getTestNode()
-        sandbox.stub(app, 'getApp').throws()
+        sinon.stub(app, 'getApp').throws()
 
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0] instanceof PlaceholderNode, true)
+        assert.ok(childNodes[0].treeItem.label?.includes('Unable to load construct tree'))
     })
 
     function getTestNode(): appNode.AppNode {
-        const mockUri = sandbox.createStubInstance(vscode.Uri)
-        sandbox.stub(mockUri, 'fsPath').value(workspaceFolderPath)
-        const mockWorkspaceFolder: vscode.WorkspaceFolder = { uri: mockUri, index: 0, name: workspaceFolderName }
         const appLocation: app.CdkAppLocation = {
-            cdkJsonPath: cdkJsonPath,
-            treePath: treePath,
-            workspaceFolder: mockWorkspaceFolder,
+            cdkJsonUri: vscode.Uri.file(cdkJsonPath),
+            treeUri: vscode.Uri.file(treePath),
         }
 
         return new appNode.AppNode(appLocation)

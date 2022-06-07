@@ -10,14 +10,13 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
-import { DefaultTelemetryService } from './defaultTelemetryService'
+import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { fromExtensionManifest, openSettings, Settings } from '../settings'
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
-const TELEMETRY_SETTING_DEFAULT = true
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -37,7 +36,13 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2
 export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
     globals.telemetry = new DefaultTelemetryService(extensionContext, awsContext, getComputeRegion())
 
-    const config = new TelemetryConfig(settings)
+    const config = new TelemetryConfig(
+        settings,
+        // Disable `throwInvalid` because:
+        //   1. Telemetry must never prevent normal Toolkit operation.
+        //   2. For tests, bad data is intentional, so these errors add unwanted noise in the test logs.
+        false
+    )
     globals.telemetry.telemetryEnabled = config.isEnabled()
 
     extensionContext.subscriptions.push(
@@ -50,7 +55,7 @@ export async function activate(extensionContext: vscode.ExtensionContext, awsCon
 
     // Prompt user about telemetry if they haven't been
     if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
-        showTelemetryNotice(extensionContext, config)
+        showTelemetryNotice(extensionContext)
     }
 }
 
@@ -71,17 +76,7 @@ export function convertLegacy(value: unknown): boolean {
 
 export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: convertLegacy }) {
     public isEnabled(): boolean {
-        try {
-            return this.get('telemetry', TELEMETRY_SETTING_DEFAULT)
-        } catch (error) {
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.message.error.settings.telemetry.invalid_type',
-                    'The aws.telemetry value must be a boolean'
-                )
-            )
-            return TELEMETRY_SETTING_DEFAULT
-        }
+        return this.get('telemetry', true)
     }
 }
 
@@ -101,7 +96,7 @@ export async function setHasUserSeenTelemetryNotice(extensionContext: vscode.Ext
  * Prompts user to Enable/Disable/Defer on Telemetry, then
  * handles the response appropriately.
  */
-function showTelemetryNotice(extensionContext: vscode.ExtensionContext, config: TelemetryConfig) {
+function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
     getLogger().verbose('Showing telemetry notice')
 
     const telemetryNoticeText: string = localize(

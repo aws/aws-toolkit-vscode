@@ -64,6 +64,7 @@ import {
 import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 import { resolve } from 'path'
 import globals from '../../extensionGlobals'
+import { LoginManager } from '../../../credentials/loginManager'
 
 const localize = nls.loadMessageBundle()
 
@@ -617,6 +618,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * Performs the EXECUTE phase of SAM run/debug.
      */
     public async invokeConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
+        await LoginManager.tryAutoConnect()
         switch (config.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 config.type = 'node'

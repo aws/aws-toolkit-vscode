@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { SSO } from '@aws-sdk/client-sso'
+import { SSO, UnauthorizedException } from '@aws-sdk/client-sso'
 import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
 import { SsoCredentialProvider } from '../../../credentials/providers/ssoCredentialProvider'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
@@ -43,7 +43,7 @@ describe('SsoCredentialProvider', () => {
             const stubAccessToken = sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
 
-            stubSsoClient.rejects({ code: 'UnauthorizedException' })
+            stubSsoClient.rejects(new UnauthorizedException({ $metadata: {} }))
 
             const stubInvalidate = sandbox.stub(ssoAccessTokenProvider, 'invalidate').returns()
 

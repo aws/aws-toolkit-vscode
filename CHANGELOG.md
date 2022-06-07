@@ -1,3 +1,29 @@
+## 1.39.0 2022-06-06
+
+- **Bug Fix** StepFunctions: allow state machines with non-object values for Parameters property
+- **Bug Fix** Fix incorrect use of Markdown in new SAM application READMEs
+- **Bug Fix** Fix: syntax support (JSON schemas) for CloudFormation/SAM yaml sometimes doesn't work
+- **Bug Fix** Credential profiles that do not require user-input now correctly refresh when expired
+- **Feature** "Upload Lambda" from any folder in VS Code File Explorer
+- **Feature** "Send Feedback" form always enables Send button and doesn't require text input
+- **Feature** SAM: create, run and debug nodejs16.x Lambdas
+- **Feature** CDK features are now found in the _Developer Tools_ view. This view will contain more ways to work with local project resources in future releases.
+
+## 1.38.0 2022-05-12
+
+- **Breaking Change** Removed the `aws.onDefaultRegionMissing` setting
+- **Bug Fix** SAM template.yaml syntax support for condition, requestmodel, requestparameters, custom resources, SSMParameterReadPolicy and AWSSecretsManagerGetSecretValuePolicy
+- **Bug Fix** Fixed issue with API Gateway 'Invoke on AWS' resource names always showing 'resource.path'
+- **Bug Fix** S3 File Viewer: file paths containing reserved URI characters are now handled correctly
+- **Feature** `Edit SAM Debug Configuration` and `View Toolkit Logs` commands are now shown in the AWS Explorer main menu
+- **Feature** Lambda: Use Upload Lambda from a folder, template file, or the command palette.
+- **Feature** renamed `SAM Debug Configuration Editor` command to `Edit SAM Debug Configuration`
+- **Feature** SAM run/debug now uses the current active credentials (if the `aws.credentials` launch-config field is not set)
+- **Feature** Show "Add Debug Config" codelens in JS/TS files even if package.json is missing #2579
+- **Feature** "Show or Hide Regions" is now one command that supports multiple selections
+- **Feature** added `Show AWS Commands...` command to AWS Explorer menu
+- **Feature** Open schemas directly when clicking on schema item nodes
+
 ## 1.37.0 2022-03-25
 
 - **Bug Fix** SAM run/debug: slow debugger attachment for API configurations now shows a cancellable notification instead of automatically failing

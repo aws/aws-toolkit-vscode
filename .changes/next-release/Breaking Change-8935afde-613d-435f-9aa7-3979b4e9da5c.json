@@ -1,4 +1,0 @@
-{
-	"type": "Breaking Change",
-	"description": "Removed the `aws.onDefaultRegionMissing` setting"
-}

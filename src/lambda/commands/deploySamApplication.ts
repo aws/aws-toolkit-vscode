@@ -56,10 +56,15 @@ export async function deploySamApplication(
         awsContext,
         settings,
         window = getDefaultWindowFunctions(),
+        refreshFn = () => {
+            // no need to await, doesn't need to block further execution (true -> no telemetry)
+            vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+        },
     }: {
         awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
         settings: SamCliSettings
         window?: WindowFunctions
+        refreshFn?: () => void
     }
 ): Promise<void> {
     let deployResult: Result = 'Succeeded'
@@ -112,8 +117,7 @@ export async function deploySamApplication(
         )
 
         await deployApplicationPromise
-        // no need to await, doesn't need to block further execution (true -> no telemetry)
-        vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
+        refreshFn()
 
         // successful deploy: retain S3 bucket for quick future access
         const profile = awsContext.getCredentialProfileName()

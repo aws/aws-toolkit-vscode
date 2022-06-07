@@ -35,7 +35,7 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
 // note: this refers to the _test_ timeout, not the invocation timeout
-const DEBUG_TIMEOUT: number = 120000
+const DEBUG_TIMEOUT: number = 240000
 const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
 
@@ -70,6 +70,15 @@ const scenarios: TestScenario[] = [
     {
         runtime: 'nodejs14.x',
         displayName: 'nodejs14.x (ZIP)',
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.50.0',
+    },
+    {
+        runtime: 'nodejs16.x',
+        displayName: 'nodejs16.x (ZIP)',
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
@@ -166,6 +175,16 @@ const scenarios: TestScenario[] = [
         runtime: 'nodejs14.x',
         displayName: 'nodejs14.x (Image)',
         baseImage: `amazon/nodejs14.x-base`,
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+        dependencyManager: 'npm',
+        vscodeMinimum: '1.50.0',
+    },
+    {
+        runtime: 'nodejs16.x',
+        displayName: 'nodejs16.x (Image)',
+        baseImage: `amazon/nodejs16.x-base`,
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
@@ -597,6 +616,9 @@ describe('SAM Integration Tests', async function () {
                             // Resource defined in `src/testFixtures/.../template.yaml`.
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
+                        },
+                        sam: {
+                            containerBuild: true,
                         },
                         ...extraConfig,
                     } as AwsSamDebuggerConfiguration
