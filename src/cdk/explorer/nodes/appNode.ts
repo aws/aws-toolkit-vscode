@@ -60,9 +60,10 @@ export class AppNode implements TreeNode {
     }
 
     private createTreeItem() {
-        const item = new vscode.TreeItem(this.location.cdkJsonUri, vscode.TreeItemCollapsibleState.Collapsed)
+        const label = vscode.workspace.asRelativePath(vscode.Uri.joinPath(this.location.cdkJsonUri, '..'))
+        const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.Collapsed)
+
         item.contextValue = 'awsCdkAppNode'
-        item.label = vscode.workspace.asRelativePath(vscode.Uri.joinPath(this.location.cdkJsonUri, '..'))
         item.iconPath = getIcon('aws-cdk-logo')
         item.tooltip = this.location.cdkJsonUri.path
 
