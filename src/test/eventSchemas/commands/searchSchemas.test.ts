@@ -9,7 +9,6 @@ import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 import * as vscode from 'vscode'
@@ -22,6 +21,7 @@ import {
     SearchSchemasWebview,
 } from '../../../eventSchemas/vue/searchSchemas'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
+import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 
 describe('Search Schemas', function () {
     let sandbox: sinon.SinonSandbox
@@ -34,12 +34,11 @@ describe('Search Schemas', function () {
         sandbox.restore()
     })
 
-    const schemaClient = new MockSchemaClient()
+    const schemaClient = new DefaultSchemaClient('')
     const TEST_REGISTRY = 'testRegistry'
     const TEST_REGISTRY2 = 'testRegistry2'
     const FAIL_REGISTRY = 'failRegistry'
     const FAIL_REGISTRY2 = 'failRegistry2'
-    const fakeRegion = 'testRegion'
 
     const versionSummary1: Schemas.SearchSchemaVersionSummary = {
         SchemaVersion: '1',
@@ -266,14 +265,14 @@ describe('Search Schemas', function () {
                 RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry',
             }
 
-            const registryItemNode = new RegistryItemNode(fakeRegion, fakeRegistryNew)
+            const registryItemNode = new RegistryItemNode(fakeRegistryNew, schemaClient)
 
             const result = await getRegistryNames(registryItemNode, schemaClient)
             assert.deepStrictEqual(result, [TEST_REGISTRY], 'should have a single registry name in it')
         })
 
         it('should return list with multiple registry names for schemasNode', async function () {
-            const schemasNode = new SchemasNode(fakeRegion)
+            const schemasNode = new SchemasNode(schemaClient)
             const registrySummary1 = { RegistryArn: 'arn:aws:registry/' + TEST_REGISTRY, RegistryName: TEST_REGISTRY }
             const registrySummary2 = { RegistryArn: 'arn:aws:registry/' + TEST_REGISTRY2, RegistryName: TEST_REGISTRY2 }
 
@@ -287,7 +286,7 @@ describe('Search Schemas', function () {
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = 'Error loading Schemas resources'
 
-            const schemasNode = new SchemasNode(fakeRegion)
+            const schemasNode = new SchemasNode(schemaClient)
             sandbox.stub(schemaClient, 'listRegistries')
 
             const results = await getRegistryNames(schemasNode, schemaClient)
