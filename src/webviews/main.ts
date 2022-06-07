@@ -361,9 +361,10 @@ function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, pa
     }
 
     const libs = resolveRelative(webview, vscode.Uri.joinPath(dist, 'libs'), [
+        'vscode.js',
         'vue.min.js',
         ...(params.libFiles ?? []),
-    ]).concat(vscode.Uri.joinPath(resources, 'javascript', 'vscode.js'))
+    ])
 
     const css = resolveRelative(webview, vscode.Uri.joinPath(resources, 'stylesheets'), [
         isCloud9() ? 'base-cloud9.css' : 'base.css',

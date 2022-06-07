@@ -9,7 +9,7 @@ A [build script](../../scripts/build/generateIcons.ts) generates Toolkit artifac
 -   `resources/stylesheets/icons.css`
 -   `contributes.icons` in [package.json](../../package.json)
 
-Any changes made to `package.json` should be committed with the relevant icons.
+This script should be ran using `npm run generatePackage` after making updates. Any changes made to `package.json` should be committed with the relevant icons.
 
 ## Fonts
 
@@ -23,12 +23,13 @@ The benefits of doing this include:
 
 -   `ThemeIcon` support
 -   Automatic generation of CSS classes for webviews
+-   Static validation of icon identifiers
 
 If your desired icon does not work well as a font, see [Theme Overrides](#theme-overrides) for adding icons as standalone images.
 
 ## Identifiers
 
-All icons (except those in `cloud9`) can be referenced within the Toolkit by concatenating the icon path with hyphens, omitting the 'theme' if applicable.
+Icons (except those in `cloud9`) can be referenced within the Toolkit by concatenating the icon path with hyphens, omitting the 'theme' if applicable.
 
 Examples:
 

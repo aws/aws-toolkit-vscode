@@ -10,7 +10,7 @@
                 v-if="collapseable || startCollapsed"
                 v-model="collapsed"
             />
-            <label :for="buttonId" style="display: flex; width: 100%">
+            <label :for="buttonId" class="panel-header">
                 <i class="preload-transition collapse-button icon icon-vscode-chevron-up" ref="icon"></i>
                 <span class="settings-title">{{ title }}</span>
             </label>
@@ -150,5 +150,11 @@ input[type='checkbox']:checked ~ label .collapse-button {
 .settings-panel {
     background: var(--vscode-menu-background);
     margin: 16px 0;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
 }
 </style>

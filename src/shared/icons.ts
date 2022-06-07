@@ -12,6 +12,7 @@ import { Uri, ThemeIcon } from 'vscode'
 import { isCloud9 } from './extensionUtilities'
 import { memoize } from './utilities/functionUtils'
 import { getLogger } from './logger/logger'
+import { UnknownError } from './toolkitError'
 
 // Animation:
 // https://code.visualstudio.com/api/references/icons-in-labels#animation
@@ -37,13 +38,38 @@ type IconId = `vscode-${string}` | ContributedIcon
 export const getIcon = memoize(resolveIconId)
 
 /**
+ * Convenient way to add icons provided by {@link getIcon} into a string.
+ *
+ * Invalid icons are simply omitted. This function also removes any leading
+ * or trailing white space from the final result.
+ *
+ * #### Example:
+ * ```ts
+ * vscode.window.setStatusBarMessage(codicon`${getIcon('vscode-clippy')} Copied to clipboard`)
+ * ```
+ */
+export function codicon(parts: TemplateStringsArray, ...components: (string | IconPath)[]): string {
+    const canUse = (sub: string | IconPath) => typeof sub === 'string' || (!isCloud9() && sub instanceof Icon)
+    const resolved = components.filter(canUse).map(String)
+
+    return parts
+        .map((v, i) => `${v}${i < resolved.length ? resolved[i] : ''}`)
+        .join('')
+        .trim()
+}
+
+/**
  * See {@link ThemeIcon}.
  *
- * Mostly used for testing.
+ * Used to expose the icon identifier which is otherwise hidden.
  */
 export class Icon extends ThemeIcon {
     public constructor(public readonly id: string) {
         super(id)
+    }
+
+    public toString() {
+        return `$(${this.id})`
     }
 }
 
@@ -84,6 +110,7 @@ function resolvePathsSync(rootDir: string, target: string): { light: Uri; dark: 
             return { dark: Uri.file(darkPath), light: Uri.file(lightPath) }
         }
     } catch (error) {
-        getLogger().warn(`icons: path resolution failed for "${target}"`)
+        const message = UnknownError.cast(error).message
+        getLogger().warn(`icons: path resolution failed for "${target}": ${message}`)
     }
 }
