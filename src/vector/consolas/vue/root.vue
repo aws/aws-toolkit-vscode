@@ -1,74 +1,67 @@
 <template id="consolasTOSTemplate">
     <div>
         <p class="amazon-confidential">Amazon confidential</p>
-        <h1>Consolas Terms of Service</h1>
-        <h3>Effective Date: January 1, 2022</h3>
+        <h1 class="consolas-preview-terms">Consolas Preview Terms</h1>
         <div style="width: 100%">
             <p>
-                The Consolas service is provided as a Beta Service and an ‘AI Service’ as defined in the AWS Service
+                The Consolas service is provided as a ‘Beta Service’ and an ‘AI Service’ as defined in the AWS Service
                 Terms. Usage of the Consolas Beta Service is governed by your Agreement with AWS and the
                 <a href="https://aws.amazon.com/service-terms/">AWS Service Terms</a>, as supplemented by these
-                additional terms, which are made part of Section 2 (‘Betas and Previews’) of the Service Terms. Any term
-                undefined in these Consolas beta terms will have the meaning assigned to it in the Agreement and Service
-                Terms.
-            </p>
-            <p>
-                Before using the Consolas Beta Service, please review the Betas and Previews terms found
-                <a href="https://aws.amazon.com/service-terms/">here</a>. In particular, please note that the Beta
-                Service is confidential and you may not discuss any aspect of the service (for example, features,
-                functionality, or documentation) with any parties that are not authorized by AWS. For clarity, even if
-                you distribute Consolas output, you may not disclose Consolas as the source of that output.
+                additional terms, which are made part of Section 2 ('Betas and Previews') of the Service Terms. Any term
+                undefined in these Consolas preview terms will have the meaning assigned to it in the Agreement and
+                Service Terms.
             </p>
             <div>
-                The Consolas Beta Service uses certain information to provide the service, including:<br />
+                Before using the Consolas Beta Service, please review the Betas and Previews terms found
+                <a href="https://aws.amazon.com/service-terms/">here</a>. The Consolas Beta Service uses certain
+                information to provide the service, including:<br />
                 <ul>
                     <li>
                         Contextual information (file content, filename, programming language, cursor location, active
-                        line number)
+                        line number);
                     </li>
                     <li>
                         Feedback (acceptance or rejection of recommendations, modifications to recommendations, user
-                        settings)
+                        settings);
                     </li>
-                    <li>Telemetry metrics (latency, errors, Consolas API interactions)</li>
-                    <li>User environment information (which IDE is being used, OS information, transfer protocols)</li>
+                    <li>Telemetry metrics (latency, errors, Consolas API interactions); and</li>
+                    <li>User environment information (which IDE is being used, OS information, transfer protocols).</li>
                 </ul>
             </div>
             <p>
-                The Consolas beta period will help us conduct key testing and research in order to improve the Consolas
-                Beta Service and prepare Consolas for general availability. For Your Content processed by the Consolas
-                Beta Service, you agree and instruct that (a) we may use and store the Content to maintain and provide
-                the Consolas service (including development and improvement) and to develop and improve AWS and
-                affiliate machine-learning and artificial-intelligence technologies; and (b) solely in connection with
-                the development and improvement described in clause (a), we may store the Content in an AWS region
-                outside of the AWS region where you are using Consolas.
-            </p>
-            <p>
-                If you have participated in the Consolas beta and would like Your Content deleted, please contact us at
-                <a href="mailto:consolas-feedback@amazon.com">consolas-feedback@amazon.com</a>. For more information
-                about the Consolas machine learning practices, please review the
-                <a href="https://aws.amazon.com/service-terms/">AWS Service Terms</a>.
+                The Consolas preview period will help us conduct key testing and research in order to improve Consolas
+                and prepare it for general availability. For Your Content processed by the Consolas Beta Service (the
+                “Consolas Content”), you agree and instruct that (a) we may use and store the Consolas Content to
+                maintain and provide the Consolas services (including development and improvement of the Consolas
+                services and underlying technology); (b) we may use and store the Consolas Content that is not personal
+                data to develop and improve AWS and affiliate machine-learning and artificial-intelligence technologies;
+                and (c) solely in connection with the development and improvement described in clauses (a) and (b), we
+                may store the Content in an AWS region outside of the AWS region where you are using Consolas. If you
+                have participated in the Consolas preview and would like Your Content deleted, please contact us at
+                <a href="mailto:consolas-feedback@amazon.com">consolas-feedback@amazon.com</a>. As part of the Consolas
+                preview, we may offer you the option to toggle this data sharing on or off through the Beta Service. If
+                you decline data sharing through the Beta Service for an account or set of credentials, we will refrain
+                from collecting the applicable Consolas Content for this purpose and will delete any of that Consolas
+                Content that we have collected for this purpose.
             </p>
             <div>
                 Notwithstanding any other term to the contrary in any agreement between you (or your affiliates) and
                 AWS, and without limitation: <br />
                 <ul>
                     <li>
-                        you acknowledge that Consolas output is a calculated response to the input you provide to the
-                        Beta Service, and that multiple users may receive the same or similar output. These same or
-                        similar outputs are independently created, and AWS will not be restricted from providing the
-                        same or similar output to other customers.
-                    </li>
-                    <li>
-                        any obligations of AWS to indemnify, defend, hold harmless, reimburse for losses, or pay amounts
-                        for adverse judgments or settlements (or any AWS obligations similar to any of the foregoing) do
-                        not apply in connection with the Consolas Beta Service (including, without limitation, as
-                        applied to Consolas output), and you agree not to assert any such claims;
+                        you acknowledge that Consolas output is a computational result based on the input you provide to
+                        the Beta Service, and that multiple users may receive the same or similar output. For clarity,
+                        although these computational results are Your Content, the same or similar outputs are
+                        independently created, and AWS will not be restricted from providing the same or similar output
+                        to other customers. In addition, the Consolas Beta Service may produce computational results
+                        that are attributed to AWS, and AWS retains the underlying intellectual property rights in that
+                        Content;
                     </li>
                     <li>
                         if you would like to instruct AWS to refrain from using collected data for service improvement,
-                        you must submit a request at the deletion link identified in these beta terms and refrain from
-                        further usage of the Consolas Beta Service.
+                        you must either: (a) submit a request at the deletion link identified in these beta terms and
+                        refrain from further usage of the Consolas Beta Service; or (b) if available, leverage one or
+                        more of the data sharing toggle options within the Consolas Beta Service.
                     </li>
                 </ul>
             </div>
@@ -160,5 +153,10 @@ export default defineComponent({
 .amazon-confidential {
     text-align: right;
     font-weight: bold;
+}
+.consolas-preview-terms {
+    text-align: center;
+    font-weight: bold;
+    text-decoration-line: underline;
 }
 </style>
