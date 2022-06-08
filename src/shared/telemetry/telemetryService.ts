@@ -7,9 +7,9 @@ import * as fs from 'fs'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { ExtensionContext } from 'vscode'
+import { ExtensionContext, Memento } from 'vscode'
 import { AwsContext } from '../awsContext'
-import { isReleaseVersion } from '../vscode/env'
+import { isAutomation, isReleaseVersion } from '../vscode/env'
 import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
@@ -22,6 +22,7 @@ import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { shared } from '../utilities/functionUtils'
+import { TelemetryConfig } from './activation'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
@@ -172,7 +173,7 @@ export class DefaultTelemetryService {
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
         try {
             // grab our clientId and generate one if it doesn't exist
-            const clientId = await getClientId(this.context)
+            const clientId = await getClientId(this.context.globalState)
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = this.context.globalState.get<string>(
@@ -341,17 +342,25 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
             return true
         })
 }
-export const getClientId = shared(async (context: ExtensionContext) => {
-    try {
-        let clientId = context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
-        if (!clientId || clientId == '00000000-0000-0000-0000-0000000000000000') {
-            clientId = uuidv4()
-            await context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
+export const getClientId = shared(
+    async (globalState: Memento, isTelemetryEnabled = new TelemetryConfig().isEnabled(), isTest?: false) => {
+        if (isTest ?? isAutomation()) {
+            return 'ffffffff-ffff-ffff-ffff-ffffffffffff'
         }
-        return clientId
-    } catch (error) {
-        const clientId = '00000000-0000-0000-0000-0000000000000000'
-        console.log(`Could not create a client id. Reason: ${error}.`)
-        return clientId
+        if (!isTelemetryEnabled) {
+            return '11111111-1111-1111-1111-111111111111'
+        }
+        try {
+            let clientId = globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
+            if (!clientId) {
+                clientId = uuidv4()
+                await globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
+            }
+            return clientId
+        } catch (error) {
+            const clientId = '00000000-0000-0000-0000-000000000000'
+            getLogger().error('Could not create a client id. Reason: %O ', error)
+            return clientId
+        }
     }
-})
+)

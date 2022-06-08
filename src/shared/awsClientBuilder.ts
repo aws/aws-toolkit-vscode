@@ -89,7 +89,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         if (userAgent && !opt.customUserAgent) {
             const platformName = env.appName.replace(/\s/g, '-')
-            const clientId = await getClientId(globals.context)
+            const clientId = await getClientId(globals.context.globalState)
             opt.customUserAgent = `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${version} ClientId/${clientId}`
         }
 
