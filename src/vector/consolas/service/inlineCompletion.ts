@@ -178,7 +178,8 @@ export class InlineCompletion {
             this.isTypeaheadInProgress = false
             return
         }
-        if (RecommendationHandler.instance.startPos != editor.selection.active) {
+        // run typeahead logic only when user typed something after the invocation start position
+        if (editor.selection.active.isAfter(RecommendationHandler.instance.startPos)) {
             const typedPrefix = this.getTypedPrefix(editor)
             this.items = []
             this.origin.forEach((item, index) => {
@@ -353,6 +354,16 @@ export class InlineCompletion {
             if (delay < showSuggestionDelay) {
                 this._timer?.refresh()
             } else {
+                // do not show recommendation if cursor is before invocation position
+                // and cancel paginated request
+                if (editor.selection.active.isBefore(RecommendationHandler.instance.startPos)) {
+                    if (this._timer !== undefined) {
+                        clearTimeout(this._timer)
+                        this._timer = undefined
+                    }
+                    RecommendationHandler.instance.cancelPaginatedRequest()
+                    return
+                }
                 vsCodeState.isConsolasEditing = true
                 this.items = []
                 this.origin = this.getCompletionItems()
