@@ -29,10 +29,38 @@ export interface CancelEvent {
     readonly agent: CancellationAgent
 }
 
-/** A {@link CancellationToken} that provides a reason for the cancellation event. */
-interface TypedCancellationToken extends CancellationToken {
+export function isCancelEvent(event: unknown): event is CancelEvent {
+    const values: CancellationAgent[] = ['timeout', 'user']
+    if (typeof event !== 'object' || !event) {
+        return false
+    }
+    return values.includes((event as CancelEvent).agent)
+}
+
+const typedCancellationToken = Symbol('typedCancellationToken')
+
+export function isTypedCancellationToken(token: CancellationToken): token is TypedCancellationToken {
+    return typedCancellationToken in token
+}
+
+interface BaseCancellationToken extends Omit<CancellationToken, 'isCancellationRequested'> {
+    readonly [typedCancellationToken]: true
     readonly onCancellationRequested: Event<CancelEvent>
 }
+
+interface ActiveToken extends BaseCancellationToken {
+    readonly isCancellationRequested: false
+}
+
+interface CancelledToken extends BaseCancellationToken {
+    readonly isCancellationRequested: true
+    readonly cancellationReason: CancelEvent
+}
+
+/**
+ * A {@link CancellationToken} that provides a reason for the cancellation event.
+ */
+type TypedCancellationToken = ActiveToken | CancelledToken
 
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations. Timeouts
@@ -46,7 +74,7 @@ export class Timeout {
     private readonly _timeoutLength: number
     private _timerTimeout: NodeJS.Timeout
     private _completionReason?: CancellationAgent | 'completed'
-    private readonly _token: TypedCancellationToken
+    private readonly _token: TypedCancellationToken & { cancellationReason?: CancelEvent }
     private readonly _onCancellationRequestedEmitter = new EventEmitter<CancelEvent>()
     private readonly _onCompletionEmitter = new EventEmitter<void>()
     public readonly onCompletion = this._onCompletionEmitter.event
@@ -57,12 +85,20 @@ export class Timeout {
         this._timeoutLength = timeoutLength
 
         this._token = {
+            [typedCancellationToken]: true,
             isCancellationRequested: false,
             onCancellationRequested: this._onCancellationRequestedEmitter.event,
         }
 
         Object.defineProperty(this._token, 'isCancellationRequested', {
             get: () => this._completionReason === 'user' || this._completionReason === 'timeout',
+        })
+
+        // Assumption: event handlers are guaranteed to be called in the order of registration
+        this._token.onCancellationRequested(event => {
+            if (this._token.isCancellationRequested) {
+                this._token.cancellationReason ??= event
+            }
         })
 
         this._timerTimeout = globals.clock.setTimeout(() => this.stop('timeout'), timeoutLength)

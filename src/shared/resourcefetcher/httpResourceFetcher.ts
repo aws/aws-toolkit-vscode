@@ -4,35 +4,27 @@
  */
 
 import * as fs from 'fs'
-import * as http from 'http'
-import * as https from 'https'
 import * as stream from 'stream'
-import got, { Response, RequestError, CancelError } from 'got'
-import urlToOptions from 'got/dist/source/core/utils/url-to-options'
 import Request from 'got/dist/source/core'
-import { VSCODE_EXTENSION_ID } from '../extensions'
+import { RequestError, CancelError } from 'got'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
-import { Timeout, CancellationError, CancelEvent } from '../utilities/timeoutUtils'
-import { isCloud9 } from '../extensionUtilities'
+import { Timeout, CancelEvent, TIMEOUT_CANCELLED_MESSAGE, CancellationError } from '../utilities/timeoutUtils'
+import { withCancellationToken, patchedGot } from '../utilities/gotUtils'
 
-// XXX: patched Got module for compatability with older VS Code versions (e.g. Cloud9)
-// `got` has also deprecated `urlToOptions`
-const patchedGot = got.extend({
-    request: (url, options, callback) => {
-        if (url.protocol === 'https:') {
-            return https.request({ ...options, ...urlToOptions(url) }, callback)
-        }
-        return http.request({ ...options, ...urlToOptions(url) }, callback)
-    },
-})
-
-/** Promise that resolves/rejects when all streams close. Can also access streams directly. */
+/**
+ * Promise that resolves/rejects when all streams close. Can also access streams directly.
+ */
 type FetcherResult = Promise<void> & {
-    /** Download stream piped to `fsStream`. */
-    requestStream: Request // `got` doesn't add the correct types to 'on' for some reason
-    /** Stream writing to the file system. */
-    fsStream: fs.WriteStream
+    /**
+     * Download stream piped to `fsStream`.
+     */
+    readonly requestStream: Request
+
+    /**
+     * Stream writing to the file system.
+     */
+    readonly fsStream: fs.WriteStream
 }
 
 export class HttpResourceFetcher implements ResourceFetcher {
@@ -81,8 +73,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
     private async downloadRequest(): Promise<string | undefined> {
         try {
-            // HACK(?): receiving JSON as a string without `toString` makes it so we can't deserialize later
-            const contents = (await this.getResponseFromGetRequest(this.params.timeout)).body.toString()
+            const contents = await this.getResponseFromGetRequest(this.params.timeout)
             if (this.params.onSuccess) {
                 this.params.onSuccess(contents)
             }
@@ -108,43 +99,36 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
     // TODO: make pipeLocation a vscode.Uri
     private pipeGetRequest(pipeLocation: string, timeout?: Timeout): FetcherResult {
-        const requester = isCloud9() ? patchedGot : got
-        const requestStream = requester.stream(this.url, { headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit } })
+        const requester = withCancellationToken(timeout?.token, patchedGot())
+        const requestStream = requester.stream(this.url)
         const fsStream = fs.createWriteStream(pipeLocation)
 
         const done = new Promise<void>((resolve, reject) => {
             const pipe = stream.pipeline(requestStream, fsStream, err => {
-                if (err instanceof RequestError) {
-                    return reject(Object.assign(new Error('Failed to download file'), { code: err.code }))
+                if (err instanceof RequestError && err.message === TIMEOUT_CANCELLED_MESSAGE) {
+                    return reject(new CancellationError('user'))
                 }
                 err ? reject(err) : resolve()
             })
 
-            const cancelListener = timeout?.token.onCancellationRequested(event => {
-                this.logCancellation(event)
-                pipe.destroy(new CancellationError(event.agent))
-            })
-
+            const cancelListener = timeout?.token.onCancellationRequested(event => this.logCancellation(event))
             pipe.on('close', () => cancelListener?.dispose())
         })
 
         return Object.assign(done, { requestStream, fsStream })
     }
 
-    private async getResponseFromGetRequest(timeout?: Timeout): Promise<Response<string>> {
-        const requester = isCloud9() ? patchedGot : got
-        const promise = requester(this.url, {
-            headers: { 'User-Agent': VSCODE_EXTENSION_ID.awstoolkit },
-        })
+    private async getResponseFromGetRequest(timeout?: Timeout): Promise<string> {
+        const requester = withCancellationToken(timeout?.token, patchedGot())
+        const promise = requester(this.url).text()
 
-        const cancelListener = timeout?.token.onCancellationRequested(event => {
-            this.logCancellation(event)
-            promise.cancel(new CancellationError(event.agent).message)
-        })
-
+        const cancelListener = timeout?.token.onCancellationRequested(event => this.logCancellation(event))
         promise.finally(() => cancelListener?.dispose())
 
         return promise.catch((err: RequestError | CancelError) => {
+            if (err.message === TIMEOUT_CANCELLED_MESSAGE) {
+                throw new CancellationError('user')
+            }
             // Cancel error has no sensitive info
             if (err instanceof CancelError) {
                 throw err

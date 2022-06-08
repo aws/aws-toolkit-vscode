@@ -65,6 +65,7 @@ import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
+import { activate as activateDeepLinks } from './shared/deeplinks/activation'
 
 let localize: nls.LocalizeFunc
 
@@ -235,6 +236,8 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+
+        activateDeepLinks(extContext)
 
         showWelcomeMessage(context)
 

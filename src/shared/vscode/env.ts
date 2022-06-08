@@ -95,3 +95,9 @@ export function getMinVscodeVersion(): string {
 export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
+
+export function userAgent() {
+    const platformName = vscode.env.appName.replace(/\s/g, '-')
+
+    return `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${vscode.version}`
+}

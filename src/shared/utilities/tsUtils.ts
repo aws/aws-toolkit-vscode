@@ -3,12 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const getPropAs = <T>(obj: any, key: string) => {
-    return (
-        obj as any as {
-            [key: string]: T
+export function hasStringProps<T extends Record<string, any>, K extends string[]>(
+    obj: T,
+    ...props: K
+): obj is T & { [P in K[number]]: string } {
+    for (const p of props) {
+        if (typeof obj[p] !== 'string') {
+            return false
         }
-    )[key]
+    }
+    return true
 }
 
 export function isNonNullable<T>(obj: T): obj is NonNullable<T> {

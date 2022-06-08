@@ -23,7 +23,7 @@ describe('getAccountId', function () {
         assumeRole: () => {
             throw new Error('This test was not initialized')
         },
-    }
+    } as any
 
     const clientBuilder = {
         createStsClient: (): StsClient => {
