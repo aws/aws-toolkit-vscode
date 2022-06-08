@@ -6,7 +6,7 @@
 import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as admZip from 'adm-zip'
-import { existsSync } from 'fs'
+import { existsSync, statSync } from 'fs'
 import { asyncCallWithTimeout } from '../commonUtil'
 import path = require('path')
 import { tempDirPath } from '../../../../shared/filesystemUtilities'
@@ -16,12 +16,14 @@ import { getLogger } from '../../../../shared/logger'
 export interface Truncation {
     dir: string
     zip: string
+    size: number
 }
 
 export interface TruncPaths {
     root: string
     src: Truncation
     build: Truncation
+    lines: number
 }
 
 export abstract class DependencyGraph {
@@ -32,6 +34,7 @@ export abstract class DependencyGraph {
     protected _totalSize: number = 0
     protected _tmpDir: string = tempDirPath
     protected _truncDir: string = ''
+    protected _totalLines: number = 0
 
     public getRootFile(editor: vscode.TextEditor) {
         return editor.document.uri
@@ -109,6 +112,10 @@ export abstract class DependencyGraph {
 
     protected getTruncBuildDirPath(uri: vscode.Uri) {
         return path.join(this.getTruncDirPath(uri), 'build')
+    }
+
+    protected getFilesTotalSize(files: string[]) {
+        return files.map(file => statSync(file)).reduce((accumulator, { size }) => accumulator + size, 0)
     }
 
     public removeTmpFiles(truncation: TruncPaths) {

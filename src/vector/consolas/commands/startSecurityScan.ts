@@ -17,6 +17,13 @@ import {
     pollScanJobStatus,
     listScanResults,
 } from '../service/securityScanHandler'
+import * as telemetry from '../../../shared/telemetry/telemetry'
+import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
+import { CodeScanTelemetryEntry } from '../models/model'
+
+//if this is browser it uses browser and if it's node then it uses nodes
+//TODO remove when node version >= 16
+const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export function startSecurityScanWithProgress(
     securityPanelViewProvider: SecurityPanelViewProvider,
@@ -42,6 +49,18 @@ export async function startSecurityScan(
     client: DefaultConsolasClient,
     context: vscode.ExtensionContext
 ) {
+    /**
+     * Step 0: Initial Code Scan telemetry
+     */
+    const codeScanStartTime = performance.now()
+    const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
+        consolasLanguage: runtimeLanguageContext.getLanguageContext(editor.document.languageId).language,
+        consolasCodeScanPayloadSize: 0,
+        consolasCodeScanLines: 0,
+        duration: 0,
+        result: 'Succeeded',
+        consolasCodeScanTotalIssues: 0,
+    }
     try {
         getLogger().info(`Starting security scan for '${vscode.workspace.name}' ...`)
         /**
@@ -62,6 +81,8 @@ export async function startSecurityScan(
             ConsolasConstants.contextTruncationTimeout
         )
         getLogger().info(`Complete project context processing.`)
+        codeScanTelemetryEntry.consolasCodeScanPayloadSize = truncation.src.size + truncation.build.size
+        codeScanTelemetryEntry.consolasCodeScanLines = truncation.lines
 
         /**
          * Step 2: Get presigned Url, upload and clean up
@@ -78,6 +99,7 @@ export async function startSecurityScan(
             throw new Error(scanJob.errorMessage)
         }
         getLogger().info(`Created security scan job.`)
+        codeScanTelemetryEntry.consolasCodeScanJobId = scanJob.jobId
 
         /**
          * Step 4:  Polling mechanism on scan job status
@@ -93,6 +115,7 @@ export async function startSecurityScan(
         const total = securityRecommendationCollection.reduce((accumulator, current) => {
             return accumulator + current.issues.length
         }, 0)
+        codeScanTelemetryEntry.consolasCodeScanTotalIssues = total
         getLogger().info(`Security scan for '${vscode.workspace.name}' totally found ${total} issues.`)
         if (total > 0) {
             if (isCloud9()) {
@@ -109,9 +132,13 @@ export async function startSecurityScan(
     } catch (error) {
         getLogger().error('Security scan failed:', error)
         vscode.window.showWarningMessage(`Security scan failed: ${error}`)
+        codeScanTelemetryEntry.result = 'Failed'
+        codeScanTelemetryEntry.reason = (error as Error).message
     } finally {
         context.globalState.update(ConsolasConstants.codeScanStartedKey, false).then(async () => {
             await vscode.commands.executeCommand('aws.consolas.refresh')
         })
+        codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
+        telemetry.recordConsolasSecurityScan(codeScanTelemetryEntry)
     }
 }

@@ -152,6 +152,7 @@ export class JavaDependencyGraph extends DependencyGraph {
         this._pickedSourceFiles.add(filePath)
         this._totalSize = statSync(filePath).size
         const content = await readFileAsString(uri.fsPath)
+        this._totalLines = content.split('\n').length
         const javaStatement = this.extractStatement(content)
         this._buildFileRelativePaths.clear()
         const buildFileRelativePath = this.generateBuildFileRelativePath(uri, projectPath, javaStatement.packages)
@@ -175,6 +176,7 @@ export class JavaDependencyGraph extends DependencyGraph {
                 this._totalSize += statSync(currentFilePath).size
                 const uri = vscode.Uri.file(currentFilePath)
                 const content = await readFileAsString(uri.fsPath)
+                this._totalLines += content.split('\n').length
                 const javaStatement = this.extractStatement(content)
                 const buildFileRelativePath = this.generateBuildFileRelativePath(
                     uri,
@@ -198,7 +200,11 @@ export class JavaDependencyGraph extends DependencyGraph {
                 if (file.isDirectory()) {
                     await this.traverseDir(fileAbsPath)
                 } else if (file.isFile()) {
-                    if (fileAbsPath.endsWith(FILE_EXT)) {
+                    if (
+                        file.name.endsWith(FILE_EXT) &&
+                        !this.reachSizeLimit(this._totalSize) &&
+                        !this._pickedSourceFiles.has(fileAbsPath)
+                    ) {
                         await this.searchDependency(vscode.Uri.file(fileAbsPath))
                     }
                 }
@@ -381,11 +387,13 @@ export class JavaDependencyGraph extends DependencyGraph {
                 getLogger().debug(buildFilePath)
                 this.copyFileToTmp(vscode.Uri.file(buildFilePath), truncBuildDirPath)
             })
+            const totalBuildSize = this.getFilesTotalSize(Array.from(buildFiles.values()))
             const zipSourcePath = this.zipDir(truncSourceDirPath, truncSourceDirPath, ConsolasConstants.codeScanZipExt)
             const zipBuildPath = this.zipDir(truncBuildDirPath, truncBuildDirPath, ConsolasConstants.codeScanZipExt)
             getLogger().debug(`Complete Java dependency graph.`)
             getLogger().debug(`File count: ${this._pickedSourceFiles.size}`)
-            getLogger().debug(`Total size: ${(this._totalSize / 1000).toFixed(2)}kb`)
+            getLogger().debug(`Total size: ${((this._totalSize + totalBuildSize) / 1024).toFixed(2)}kb`)
+            getLogger().debug(`Total lines: ${this._totalLines}`)
             getLogger().debug(`Source zip file: ${zipSourcePath}`)
             getLogger().debug(`Build zip file: ${zipBuildPath}`)
             return {
@@ -393,11 +401,14 @@ export class JavaDependencyGraph extends DependencyGraph {
                 src: {
                     dir: truncSourceDirPath,
                     zip: zipSourcePath,
+                    size: this._totalSize,
                 },
                 build: {
                     dir: truncBuildDirPath,
                     zip: zipBuildPath,
+                    size: totalBuildSize,
                 },
+                lines: this._totalLines,
             }
         } catch (error) {
             getLogger().error('Java dependency graph error:', error)

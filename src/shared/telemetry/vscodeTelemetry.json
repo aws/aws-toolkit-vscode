@@ -123,6 +123,26 @@
             "name": "consolasPercentage",
             "type": "int",
             "description": "The percentage of acceptance on suggested consolas code on the overall code"
+        },
+        {
+            "name": "consolasCodeScanJobId",
+            "type": "string",
+            "description": "The ID of the security scan job"
+        },
+        {
+            "name": "consolasCodeScanPayloadSize",
+            "type": "int",
+            "description": "The payload size of customer project context sent for security scan"
+        },
+        {
+            "name": "consolasCodeScanLines",
+            "type": "int",
+            "description": "How many lines of code being sent for security scan"
+        },
+        {
+            "name": "consolasCodeScanTotalIssues",
+            "type": "int",
+            "description": "The number of security issues been detected"
         }
     ],
     "metrics": [
@@ -454,6 +474,38 @@
                 {
                     "type": "reason",
                     "required": false
+                }
+            ]
+        },
+        {
+            "name": "consolas_securityScan",
+            "description": "Client side invocation of the Consolas Security Scan",
+            "metadata": [
+                {
+                    "type": "consolasCodeScanJobId",
+                    "required": false
+                },
+                {
+                    "type": "consolasLanguage"
+                },
+                {
+                    "type": "consolasCodeScanPayloadSize"
+                },
+                {
+                    "type": "consolasCodeScanLines"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "consolasCodeScanTotalIssues"
                 }
             ]
         }

@@ -69,6 +69,17 @@ export interface InlineCompletionItem {
  * Security Scan Interfaces
  */
 
+export interface CodeScanTelemetryEntry {
+    consolasCodeScanJobId?: string
+    consolasLanguage: telemetry.ConsolasLanguage
+    consolasCodeScanPayloadSize: number
+    consolasCodeScanLines: number
+    duration: number
+    result: telemetry.Result
+    reason?: string
+    consolasCodeScanTotalIssues: number
+}
+
 export interface RawCodeScanIssue {
     repoName: string
     filePath: string

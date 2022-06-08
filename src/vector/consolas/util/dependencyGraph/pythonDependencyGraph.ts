@@ -9,6 +9,7 @@ import { getLogger } from '../../../../shared/logger'
 import { readFileAsString } from '../../../../shared/filesystemUtilities'
 import { ConsolasConstants } from '../../models/constants'
 import path = require('path')
+import { sleep } from '../../../../shared/utilities/timeoutUtils'
 
 export const IMPORT = 'import'
 export const FROM = 'from'
@@ -21,6 +22,7 @@ export const IMPORT_REGEX =
 export class PythonDependencyGraph extends DependencyGraph {
     private async readImports(uri: vscode.Uri) {
         const content: string = await readFileAsString(uri.fsPath)
+        this._totalLines += content.split('\n').length
         const regExp = new RegExp(IMPORT_REGEX)
         return content.match(regExp) ?? []
     }
@@ -172,6 +174,7 @@ export class PythonDependencyGraph extends DependencyGraph {
                 await this.searchDependency(uri)
                 await this.traverseDir(this.getProjectPath(uri))
             }
+            await sleep(10)
             const truncDirPath = this.getTruncDirPath(uri)
             this._pickedSourceFiles.forEach(sourceFilePath => {
                 getLogger().debug(sourceFilePath)
@@ -180,18 +183,22 @@ export class PythonDependencyGraph extends DependencyGraph {
             const zipFilePath = this.zipDir(truncDirPath, truncDirPath, ConsolasConstants.codeScanZipExt)
             getLogger().debug(`Complete Python dependency graph.`)
             getLogger().debug(`File count: ${this._pickedSourceFiles.size}`)
-            getLogger().debug(`Total size: ${(this._totalSize / 1000).toFixed(2)}kb`)
+            getLogger().debug(`Total size: ${(this._totalSize / 1024).toFixed(2)}kb`)
+            getLogger().debug(`Total lines: ${this._totalLines}`)
             getLogger().debug(`Zip file: ${zipFilePath}`)
             return {
                 root: truncDirPath,
                 src: {
                     dir: truncDirPath,
                     zip: zipFilePath,
+                    size: this._totalSize,
                 },
                 build: {
                     dir: '',
                     zip: '',
+                    size: 0,
                 },
+                lines: this._totalLines,
             }
         } catch (error) {
             getLogger().error('Python dependency graph error caused by:', error)
