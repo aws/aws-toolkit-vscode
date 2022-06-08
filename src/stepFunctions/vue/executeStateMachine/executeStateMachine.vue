@@ -1,8 +1,15 @@
 /*! * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <template>
-    <h1>Start Execution: {{ initialData.name }}</h1>
     <div id="app">
+        <div class="container button-container" style="justify-content: space-between">
+            <div style="float: left">
+                <b>{{ initialData.name }}</b>
+            </div>
+            <div>
+                <input type="submit" v-on:click="sendInput" value="Execute" />
+            </div>
+        </div>
         <div>
             <label class="input-header"> Execution Input </label>
         </div>
@@ -26,7 +33,7 @@
         </div>
         <br />
         <br />
-        <div :style="{ visibility: textAreaVisible ? 'visible' : 'hidden' }">
+        <div :style="{ visibility: textAreaVisible ? 'visible' : 'hidden', marginBottom: '10px' }">
             <textarea
                 rows="10"
                 v-model="executionInput"
@@ -34,9 +41,6 @@
                 v-bind:placeholder="placeholderJson"
             ></textarea>
         </div>
-        <br />
-        <input type="submit" v-on:click="sendInput" value="Execute" />
-        <br />
     </div>
 </template>
 

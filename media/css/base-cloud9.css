@@ -169,7 +169,7 @@ body.vscode-dark .settings-panel {
 body.vscode-light .settings-panel {
     background: rgba(var(--shade), 0.02) !important;
 }
-#invoke-button-container {
+.button-container {
     border: none !important;
     background: none !important;
 }

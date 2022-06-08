@@ -1,8 +1,17 @@
 <template>
-    <h1>
-        {{ initialData.Header }}
-    </h1>
     <div id="app">
+        <div class="container button-container" style="justify-content: space-between">
+            <h1>{{ initialData.Header }}</h1>
+            <div>
+                <input
+                    type="submit"
+                    :disabled="downloadDisabled"
+                    v-on:click="downloadClicked"
+                    value="Download Code Bindings"
+                />
+            </div>
+        </div>
+
         <div id="search_input">
             <input type="search" v-model="searchText" :placeholder="initialData.SearchInputPlaceholder" />
         </div>
@@ -23,8 +32,6 @@
                 <textarea readonly v-model="schemaContent"></textarea>
             </div>
         </div>
-
-        <input type="submit" :disabled="downloadDisabled" v-on:click="downloadClicked" value="Download Code Bindings" />
     </div>
 </template>
 
