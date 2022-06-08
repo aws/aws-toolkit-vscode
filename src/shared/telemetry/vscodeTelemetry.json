@@ -1,42 +1,48 @@
 {
     "types": [
         {
-            "name": "ssmOperation",
-            "type": "string",
-            "allowedValues": ["Create", "Update"],
-            "description": "SSM Publish Document operation type"
-        },
-        {
-            "name": "documentFormat",
-            "type": "string",
-            "allowedValues": ["JSON, YAML"],
-            "description": "SSM Create document format selection"
-        },
-        {
-            "name": "starterTemplate",
-            "type": "string",
-            "description": "Starter template chosen during create document"
-        },
-        {
             "name": "architecture",
             "type": "string",
             "description": "SAM Application architecture",
             "allowedValues": ["x86_64", "arm64"]
         },
         {
-            "name": "consolasRequestId",
-            "type": "string",
-            "description": "The ID of the request to Consolas service"
-        },
-        {
-            "name": "consolasSessionId",
-            "type": "string",
-            "description": "The ID of the session to Consolas service"
-        },
-        {
-            "name": "consolasLineNumber",
+            "name": "consolasAcceptedTokens",
             "type": "int",
-            "description": "The line number of the cursor when the event happens"
+            "description": "The metrics accepted on suggested consolas code"
+        },
+        {
+            "name": "consolasAutomatedtriggerType",
+            "type": "string",
+            "description": "The type of the Automated trigger to send request to Consolas service",
+            "allowedValues": ["KeyStrokeCount", "SpecialCharacters", "Enter"]
+        },
+
+        {
+            "name": "consolasCodeScanJobId",
+            "type": "string",
+            "description": "The ID of the security scan job"
+        },
+        {
+            "name": "consolasCodeScanLines",
+            "type": "int",
+            "description": "How many lines of code being sent for security scan"
+        },
+        {
+            "name": "consolasCodeScanPayloadSize",
+            "type": "int",
+            "description": "The payload size of customer project context sent for security scan"
+        },
+        {
+            "name": "consolasCodeScanTotalIssues",
+            "type": "int",
+            "description": "The number of security issues been detected"
+        },
+        {
+            "name": "consolasCompletionType",
+            "type": "string",
+            "description": "Completion Type of the inference results returned from Consolas model layer",
+            "allowedValues": ["Line", "Block"]
         },
         {
             "name": "consolasCursorOffset",
@@ -50,6 +56,31 @@
             "allowedValues": ["java", "python", "javascript", "plaintext"]
         },
         {
+            "name": "consolasLineNumber",
+            "type": "int",
+            "description": "The line number of the cursor when the event happens"
+        },
+        {
+            "name": "consolasModificationPercentage",
+            "type": "double",
+            "description": "The percentage of user modifications on the suggested code"
+        },
+        {
+            "name": "consolasPaginationProgress",
+            "type": "int",
+            "description": "The last index of recommendation that is received in a particular paginated response."
+        },
+        {
+            "name": "consolasPercentage",
+            "type": "int",
+            "description": "The percentage of acceptance on suggested consolas code on the overall code"
+        },
+        {
+            "name": "consolasRequestId",
+            "type": "string",
+            "description": "The ID of the request to Consolas service"
+        },
+        {
             "name": "consolasRuntime",
             "type": "string",
             "allowedValues": ["java8", "java11", "java16", "python2", "python3", "javascript", "unknown"],
@@ -61,16 +92,24 @@
             "description": "the original (free-text) of the runtime version of the language of Consolas recomendation"
         },
         {
-            "name": "consolasTriggerType",
+            "name": "consolasSessionId",
             "type": "string",
-            "description": "The type of the user trigger to send request to Consolas service",
-            "allowedValues": ["OnDemand", "AutoTrigger"]
+            "description": "The ID of the session to Consolas service"
         },
         {
-            "name": "consolasAutomatedtriggerType",
+            "name": "consolasStartTime",
             "type": "string",
-            "description": "The type of the Automated trigger to send request to Consolas service",
-            "allowedValues": ["KeyStrokeCount", "SpecialCharacters", "Enter"]
+            "description": "The start time of user typed code in minutes"
+        },
+        {
+            "name": "consolasSuggestionIndex",
+            "type": "int",
+            "description": "The index for each suggestion, respectively, in the list of suggestions returned from service invocation."
+        },
+        {
+            "name": "consolasSuggestionReferences",
+            "type": "string",
+            "description": "The references of the suggestion."
         },
         {
             "name": "consolasSuggestionState",
@@ -79,73 +118,46 @@
             "allowedValues": ["Accept", "Reject", "Discard", "Ignore", "Filter"]
         },
         {
-            "name": "consolasModificationPercentage",
-            "type": "double",
-            "description": "The percentage of user modifications on the suggested code"
-        },
-        {
-            "name": "consolasSuggestionIndex",
-            "type": "int",
-            "description": "The index for each suggestion, respectively, in the list of suggestions returned from service invocation."
-        },
-        {
-            "name": "consolasPaginationProgress",
-            "type": "int",
-            "description": "The last index of recommendation that is received in a particular paginated response."
-        },
-        {
-            "name": "consolasSuggestionReferences",
-            "type": "string",
-            "description": "The references of the suggestion."
-        },
-        {
-            "name": "consolasCompletionType",
-            "type": "string",
-            "description": "Completion Type of the inference results returned from Consolas model layer",
-            "allowedValues": ["Line", "Block"]
-        },
-        {
             "name": "consolasTotalTokens",
             "type": "int",
             "description": "The metrics generated by the user and acceptance of suggested consolas code in the language consolas supports."
         },
         {
-            "name": "consolasAcceptedTokens",
-            "type": "int",
-            "description": "The metrics accepted on suggested consolas code"
-        },
-        {
-            "name": "consolasStartTime",
+            "name": "consolasTriggerType",
             "type": "string",
-            "description": "The start time of user typed code in minutes"
+            "description": "The type of the user trigger to send request to Consolas service",
+            "allowedValues": ["OnDemand", "AutoTrigger"]
         },
         {
-            "name": "consolasPercentage",
-            "type": "int",
-            "description": "The percentage of acceptance on suggested consolas code on the overall code"
-        },
-        {
-            "name": "consolasCodeScanJobId",
+            "name": "documentFormat",
             "type": "string",
-            "description": "The ID of the security scan job"
+            "allowedValues": ["JSON, YAML"],
+            "description": "SSM Create document format selection"
         },
         {
-            "name": "consolasCodeScanPayloadSize",
-            "type": "int",
-            "description": "The payload size of customer project context sent for security scan"
+            "name": "ssmOperation",
+            "type": "string",
+            "allowedValues": ["Create", "Update"],
+            "description": "SSM Publish Document operation type"
         },
         {
-            "name": "consolasCodeScanLines",
-            "type": "int",
-            "description": "How many lines of code being sent for security scan"
-        },
-        {
-            "name": "consolasCodeScanTotalIssues",
-            "type": "int",
-            "description": "The number of security issues been detected"
+            "name": "starterTemplate",
+            "type": "string",
+            "description": "Starter template chosen during create document"
         }
     ],
     "metrics": [
+        {
+            "name": "apigateway_invokeLocal",
+            "description": "Invoking one simulated API Gateway call using the SAM cli",
+            "metadata": [
+                { "type": "runtime", "required": false },
+                { "type": "httpMethod", "required": false },
+                { "type": "result" },
+                { "type": "debug" },
+                { "type": "architecture", "required": false }
+            ]
+        },
         {
             "name": "aws_refreshCredentials",
             "description": "Emitted when credentials are automatically refreshed by the AWS SDK",
@@ -165,155 +177,60 @@
             ]
         },
         {
-            "name": "stepfunctions_previewstatemachine",
-            "description": ""
-        },
-        {
-            "name": "stepfunctions_createStateMachineFromTemplate",
-            "description": ""
-        },
-        {
-            "name": "stepfunctions_downloadStateMachineDefinition",
-            "description": "",
-            "unit": "None",
+            "name": "consolas_codePercentage",
+            "description": "Percentage of user tokens against suggestions until 5 mins of time",
             "metadata": [
                 {
-                    "type": "result"
-                }
-            ]
-        },
-        {
-            "name": "stepfunctions_executeStateMachineView",
-            "description": ""
-        },
-        {
-            "name": "stepfunctions_executeStateMachine",
-            "description": "",
-            "unit": "None",
-            "metadata": [
-                {
-                    "type": "result"
-                }
-            ]
-        },
-        {
-            "name": "ssm_createDocument",
-            "description": "An SSM Document is created locally",
-            "unit": "None",
-            "metadata": [
-                {
-                    "type": "result"
+                    "type": "consolasStartTime"
                 },
                 {
-                    "type": "documentFormat",
-                    "required": false
+                    "type": "consolasTotalTokens"
                 },
                 {
-                    "type": "starterTemplate",
+                    "type": "consolasLanguage"
+                },
+                {
+                    "type": "consolasAcceptedTokens"
+                },
+                {
+                    "type": "consolasPercentage"
+                },
+                {
+                    "type": "reason",
                     "required": false
                 }
             ]
         },
         {
-            "name": "ssm_deleteDocument",
-            "description": "An SSM Document is deleted",
-            "unit": "None",
+            "name": "consolas_securityScan",
+            "description": "Client side invocation of the Consolas Security Scan",
             "metadata": [
                 {
-                    "type": "result"
-                }
-            ]
-        },
-        {
-            "name": "ssm_executeDocument",
-            "description": "An SSM Document is deleted",
-            "unit": "None",
-            "metadata": [
+                    "type": "consolasCodeScanJobId",
+                    "required": false
+                },
                 {
-                    "type": "result"
-                }
-            ]
-        },
-        {
-            "name": "ssm_openDocument",
-            "description": "An SSM Document is opened locally",
-            "unit": "None",
-            "metadata": [
+                    "type": "consolasLanguage"
+                },
                 {
-                    "type": "result"
-                }
-            ]
-        },
-        {
-            "name": "ssm_publishDocument",
-            "description": "SSM Document related metrics for create and update",
-            "unit": "None",
-            "metadata": [
+                    "type": "consolasCodeScanPayloadSize"
+                },
+                {
+                    "type": "consolasCodeScanLines"
+                },
+                {
+                    "type": "duration"
+                },
                 {
                     "type": "result"
                 },
                 {
-                    "type": "ssmOperation"
-                }
-            ]
-        },
-        {
-            "name": "ssm_updateDocumentVersion",
-            "description": "SSM Document related metrics for updating document default version",
-            "unit": "None",
-            "metadata": [
+                    "type": "reason",
+                    "required": false
+                },
                 {
-                    "type": "result"
+                    "type": "consolasCodeScanTotalIssues"
                 }
-            ]
-        },
-        {
-            "name": "sam_init",
-            "description": "Called when initing a sam application",
-            "metadata": [
-                { "type": "result" },
-                { "type": "runtime", "required": false },
-                { "type": "templateName", "required": false },
-                { "type": "version", "required": false },
-                { "type": "lambdaPackageType", "required": false },
-                { "type": "reason", "required": false },
-                { "type": "eventBridgeSchema", "required": false },
-                { "type": "architecture", "required": false }
-            ]
-        },
-        {
-            "name": "apigateway_invokeLocal",
-            "description": "Invoking one simulated API Gateway call using the SAM cli",
-            "metadata": [
-                { "type": "runtime", "required": false },
-                { "type": "httpMethod", "required": false },
-                { "type": "result" },
-                { "type": "debug" },
-                { "type": "architecture", "required": false }
-            ]
-        },
-        {
-            "name": "lambda_invokeLocal",
-            "description": "Called when invoking lambdas locally (with SAM in most toolkits)",
-            "metadata": [
-                { "type": "runtime", "required": false },
-                { "type": "version", "required": false },
-                { "type": "lambdaPackageType" },
-                { "type": "result" },
-                { "type": "debug" },
-                { "type": "architecture", "required": false }
-            ]
-        },
-        {
-            "name": "sam_attachDebugger",
-            "description": "Called after trying to attach a debugger to a local sam invoke",
-            "metadata": [
-                { "type": "result" },
-                { "type": "lambdaPackageType" },
-                { "type": "runtime" },
-                { "type": "attempts" },
-                { "type": "duration" },
-                { "type": "architecture", "required": false }
             ]
         },
         {
@@ -453,61 +370,145 @@
             ]
         },
         {
-            "name": "consolas_codePercentage",
-            "description": "Percentage of user tokens against suggestions until 5 mins of time",
+            "name": "lambda_invokeLocal",
+            "description": "Called when invoking lambdas locally (with SAM in most toolkits)",
+            "metadata": [
+                { "type": "runtime", "required": false },
+                { "type": "version", "required": false },
+                { "type": "lambdaPackageType" },
+                { "type": "result" },
+                { "type": "debug" },
+                { "type": "architecture", "required": false }
+            ]
+        },
+        {
+            "name": "sam_attachDebugger",
+            "description": "Called after trying to attach a debugger to a local sam invoke",
+            "metadata": [
+                { "type": "result" },
+                { "type": "lambdaPackageType" },
+                { "type": "runtime" },
+                { "type": "attempts" },
+                { "type": "duration" },
+                { "type": "architecture", "required": false }
+            ]
+        },
+        {
+            "name": "sam_init",
+            "description": "Called when initing a sam application",
+            "metadata": [
+                { "type": "result" },
+                { "type": "runtime", "required": false },
+                { "type": "templateName", "required": false },
+                { "type": "version", "required": false },
+                { "type": "lambdaPackageType", "required": false },
+                { "type": "reason", "required": false },
+                { "type": "eventBridgeSchema", "required": false },
+                { "type": "architecture", "required": false }
+            ]
+        },
+        {
+            "name": "ssm_createDocument",
+            "description": "An SSM Document is created locally",
+            "unit": "None",
             "metadata": [
                 {
-                    "type": "consolasStartTime"
+                    "type": "result"
                 },
                 {
-                    "type": "consolasTotalTokens"
+                    "type": "documentFormat",
+                    "required": false
                 },
                 {
-                    "type": "consolasLanguage"
-                },
-                {
-                    "type": "consolasAcceptedTokens"
-                },
-                {
-                    "type": "consolasPercentage"
-                },
-                {
-                    "type": "reason",
+                    "type": "starterTemplate",
                     "required": false
                 }
             ]
         },
         {
-            "name": "consolas_securityScan",
-            "description": "Client side invocation of the Consolas Security Scan",
+            "name": "ssm_deleteDocument",
+            "description": "An SSM Document is deleted",
+            "unit": "None",
             "metadata": [
                 {
-                    "type": "consolasCodeScanJobId",
-                    "required": false
-                },
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_executeDocument",
+            "description": "An SSM Document is deleted",
+            "unit": "None",
+            "metadata": [
                 {
-                    "type": "consolasLanguage"
-                },
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_openDocument",
+            "description": "An SSM Document is opened locally",
+            "unit": "None",
+            "metadata": [
                 {
-                    "type": "consolasCodeScanPayloadSize"
-                },
-                {
-                    "type": "consolasCodeScanLines"
-                },
-                {
-                    "type": "duration"
-                },
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_publishDocument",
+            "description": "SSM Document related metrics for create and update",
+            "unit": "None",
+            "metadata": [
                 {
                     "type": "result"
                 },
                 {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "consolasCodeScanTotalIssues"
+                    "type": "ssmOperation"
                 }
             ]
+        },
+        {
+            "name": "ssm_updateDocumentVersion",
+            "description": "SSM Document related metrics for updating document default version",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_createStateMachineFromTemplate",
+            "description": ""
+        },
+        {
+            "name": "stepfunctions_downloadStateMachineDefinition",
+            "description": "",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_executeStateMachine",
+            "description": "",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_executeStateMachineView",
+            "description": ""
+        },
+        {
+            "name": "stepfunctions_previewstatemachine",
+            "description": ""
         }
     ]
 }
