@@ -14,6 +14,11 @@ import { RecommendationHandler } from './recommendationHandler'
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { showTimedMessage } from '../../../shared/utilities/messages'
 import { getLogger } from '../../../shared/logger/logger'
+import globals from '../../../shared/extensionGlobals'
+
+//if this is browser it uses browser and if it's node then it uses nodes
+//TODO remove when node version >= 16
+const performance = globalThis.performance ?? require('perf_hooks').performance
 
 interface InlineCompletionItem {
     content: string
@@ -35,13 +40,15 @@ export class InlineCompletion {
             color: '#DDDDDD',
         },
     })
-
+    private _maxPage = 100
+    private _pollPeriod = 25
     public items: InlineCompletionItem[]
     public origin: RecommendationDetail[]
     public position: number
     private typeAhead: string
     private consolasStatusBar: vscode.StatusBarItem
     public isTypeaheadInProgress: boolean
+    private _timer?: NodeJS.Timer
 
     constructor() {
         this.items = []
@@ -140,9 +147,10 @@ export class InlineCompletion {
                 RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1, false)
             })
     }
-
+    // get the typeahead since user invocation position
+    // ignore leading white spaces and TAB
     getTypedPrefix(editor: vscode.TextEditor): string {
-        return editor.document.getText(
+        const typedPrefix = editor.document.getText(
             new vscode.Range(
                 RecommendationHandler.instance.startPos.line,
                 RecommendationHandler.instance.startPos.character,
@@ -150,6 +158,19 @@ export class InlineCompletion {
                 editor.selection.active.character
             )
         )
+        let move = 0
+        for (let i = 0; i < typedPrefix.length; i++) {
+            if (typedPrefix[i] === ' ' || typedPrefix[i] === '\t') {
+                move++
+            } else {
+                break
+            }
+        }
+        RecommendationHandler.instance.startPos = new vscode.Position(
+            RecommendationHandler.instance.startPos.line,
+            RecommendationHandler.instance.startPos.character + move
+        )
+        return typedPrefix.substring(move)
     }
 
     async setTypeAheadRecommendations(editor: vscode.TextEditor | undefined, event: vscode.TextDocumentChangeEvent) {
@@ -268,12 +289,27 @@ export class InlineCompletion {
     ) {
         RecommendationHandler.instance.clearRecommendations()
         this.setConsolasStatusBarLoading()
+        const isManualTrigger = triggerType === 'OnDemand'
+        this.startShowRecommendationTimer(
+            isManualTrigger,
+            ConsolasConstants.suggestionShowDelay,
+            this._pollPeriod,
+            editor
+        )
         let page = 0
-        let showed = false
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         try {
-            while (page < 100) {
-                if (triggerType === 'OnDemand' && page === 0) {
+            while (page < this._maxPage) {
+                const getRecommendationPromise = RecommendationHandler.instance.getRecommendations(
+                    client,
+                    editor,
+                    triggerType,
+                    config,
+                    autoTriggerType,
+                    true,
+                    page
+                )
+                if (page === 0 && isManualTrigger) {
                     await vscode.window.withProgress(
                         {
                             location: vscode.ProgressLocation.Notification,
@@ -281,47 +317,15 @@ export class InlineCompletion {
                             cancellable: false,
                         },
                         async () => {
-                            await RecommendationHandler.instance.getRecommendations(
-                                client,
-                                editor,
-                                triggerType,
-                                config,
-                                autoTriggerType,
-                                true,
-                                page
-                            )
+                            await getRecommendationPromise
                         }
                     )
                 } else {
-                    await RecommendationHandler.instance.getRecommendations(
-                        client,
-                        editor,
-                        triggerType,
-                        config,
-                        autoTriggerType,
-                        true,
-                        page
-                    )
+                    await getRecommendationPromise
                 }
-
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.clearRecommendations()
                     break
-                }
-
-                vsCodeState.isConsolasEditing = true
-                this.items = []
-                this.origin = this.getCompletionItems()
-                // handle the typeahead before first response shows
-                if (page === 0) {
-                    this.typeAhead = this.getTypedPrefix(editor)
-                }
-                this.setCompletionItemsUnderTypeAhead()
-                vsCodeState.isConsolasEditing = false
-                if (this.items.length > 0 && page === 0) {
-                    this.setRange(new vscode.Range(editor.selection.active, editor.selection.active))
-                    await this.showRecommendation(editor)
-                    showed = true
                 }
                 if (!RecommendationHandler.instance.hasNextToken()) break
                 page++
@@ -329,15 +333,58 @@ export class InlineCompletion {
         } catch (error) {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }
-
         this.setConsolasStatusBarOk()
-        if (!showed && triggerType === 'OnDemand') {
-            if (RecommendationHandler.instance.errorMessagePrompt !== '') {
-                showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
-            } else {
-                showTimedMessage('No suggestions from Consolas', 2000)
-            }
+    }
+    /*
+     * This startShowRecommendationTimer function is to enforce Consolas to only show recommendation
+     * after a delay since user last keystroke input
+     */
+    private async startShowRecommendationTimer(
+        isManualTrigger: boolean,
+        showSuggestionDelay: number,
+        pollPeriod: number,
+        editor: vscode.TextEditor
+    ): Promise<void> {
+        if (this._timer !== undefined) {
+            return
         }
+        this._timer = globals.clock.setTimeout(async () => {
+            const delay = performance.now() - vsCodeState.lastUserModificationTime
+            if (delay < showSuggestionDelay) {
+                this._timer?.refresh()
+            } else {
+                vsCodeState.isConsolasEditing = true
+                this.items = []
+                this.origin = this.getCompletionItems()
+                this.typeAhead = this.getTypedPrefix(editor)
+                this.setCompletionItemsUnderTypeAhead()
+                vsCodeState.isConsolasEditing = false
+                if (this.items.length > 0) {
+                    this.setRange(new vscode.Range(editor.selection.active, editor.selection.active))
+                    await this.showRecommendation(editor)
+                    if (this._timer !== undefined) {
+                        clearTimeout(this._timer)
+                        this._timer = undefined
+                    }
+                } else {
+                    if (this.isPaginationRunning()) {
+                        this._timer?.refresh()
+                    } else {
+                        if (this._timer !== undefined) {
+                            clearTimeout(this._timer)
+                            this._timer = undefined
+                            if (isManualTrigger) {
+                                if (RecommendationHandler.instance.errorMessagePrompt !== '') {
+                                    showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
+                                } else {
+                                    showTimedMessage('No suggestions from Consolas', 2000)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }, pollPeriod)
     }
 
     setCompletionItemsUnderTypeAhead() {

@@ -140,7 +140,6 @@ export class RecommendationHandler {
                 const resp = await this.getServerResponse(triggerType, config.isManualTriggerEnabled, consolasPromise)
                 latency = startTime !== 0 ? performance.now() - startTime : 0
                 recommendation = (resp && resp.recommendations) || []
-                getLogger().verbose('Consolas Recommendations : ', recommendation[0].content)
                 invocationResult = 'Succeeded'
                 TelemetryHelper.instance.triggerType = triggerType
                 TelemetryHelper.instance.ConsolasAutomatedtriggerType =
@@ -163,6 +162,9 @@ export class RecommendationHandler {
             }
             getLogger().error('Consolas Invocation Exception : ', error)
             getLogger().verbose(`Consolas Invocation Exception : ${error}`)
+            const invalidCredentialPrompt = isCloud9()
+                ? `Your AWS account is not authorized to use Consolas`
+                : `Your access token is not authorized to use Consolas`
             if (isAwsError(error)) {
                 const awsError = error as AWSError
                 if (
@@ -174,7 +176,7 @@ export class RecommendationHandler {
                     languageName = `${languageName.charAt(0).toUpperCase()}${languageName.slice(1)}`
                     this.errorMessagePrompt = `Programming language ${languageName} is currently not supported by Consolas`
                 } else if (awsError.code === 'CredentialsError') {
-                    this.errorMessagePrompt = `Invalid AWS credential. Please use a valid AWS credential`
+                    this.errorMessagePrompt = invalidCredentialPrompt
                 }
                 requestId = awsError.requestId || ''
                 errorCode = awsError.code
@@ -182,6 +184,9 @@ export class RecommendationHandler {
             } else {
                 errorCode = error as string
                 reason = error ? String(error) : 'unknown'
+                if (reason.includes(`account is not authorized`)) {
+                    this.errorMessagePrompt = invalidCredentialPrompt
+                }
             }
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -241,8 +246,7 @@ export class RecommendationHandler {
                 recommendation = filteredRecommendationList
             }
         }
-
-        this.recommendations = this.recommendations.concat(recommendation)
+        if (recommendation.length > 0) this.recommendations = this.recommendations.concat(recommendation)
         this.requestId = requestId
         this.sessionId = sessionId
         this.nextToken = nextToken

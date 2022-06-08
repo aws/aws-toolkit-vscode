@@ -102,10 +102,23 @@ export class KeyStrokeHandler {
                 return 'SpecialCharacters'
             }
         }
-        if (this.keyStrokeCount === ConsolasConstants.invocationKeyThreshold) {
+        /**
+         * Time duration between 2 invocations should be greater than the threshold
+         * This threshold does not applies to Enter | SpecialCharacters type auto trigger.
+         */
+        const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
+        if (duration < ConsolasConstants.invocationTimeIntervalThreshold) {
+            return ''
+        }
+        if (this.keyStrokeCount >= ConsolasConstants.invocationKeyThreshold) {
             return 'KeyStrokeCount'
         } else {
             this.keyStrokeCount += 1
+        }
+        // Below condition is very likely a multi character insert when user accept native intelliSense suggestion
+        // VS Code does not provider API for intelliSense suggestion acceptance
+        if (changedText.length > 1 && !changedText.includes(' ') && changedText.length < 40) {
+            return 'Enter'
         }
         return ''
     }
@@ -116,6 +129,12 @@ export class KeyStrokeHandler {
         editor: vscode.TextEditor
     ): string {
         if (!isAutomatedTriggerEnabled) {
+            return ''
+        }
+        /**
+         * Skip when output channel gains focus and invoke
+         */
+        if (editor.document.languageId === 'Log') {
             return ''
         }
         /**
@@ -142,14 +161,6 @@ export class KeyStrokeHandler {
         const changedText = event.contentChanges[0].text
         const changedRange = event.contentChanges[0].range
         if (!changedRange.isSingleLine || changedText === '') {
-            return ''
-        }
-
-        /**
-         * Time duration between 2 invocations should be greater than the threshold
-         */
-        const duration = Math.floor((performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000)
-        if (duration < ConsolasConstants.invocationTimeIntervalThreshold) {
             return ''
         }
         return changedText

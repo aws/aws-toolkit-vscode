@@ -16,7 +16,7 @@ import { onAcceptance } from './commands/onAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { ConsolasSettings } from './util/consolasSettings'
 import { ExtContext } from '../../shared/extensions'
-import { TextEditorSelectionChangeKind } from 'vscode'
+import { Disposable, TextEditorSelectionChangeKind } from 'vscode'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { ConsolasTracker } from './tracker/consolasTracker'
 import * as consolasClient from './client/consolas'
@@ -33,6 +33,7 @@ import {
     enterAccessToken,
     requestAccess,
     showSecurityScan,
+    safeType,
 } from './commands/basicCommands'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -41,6 +42,8 @@ import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
+
+const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
     /**
@@ -70,6 +73,8 @@ export async function activate(context: ExtContext): Promise<void> {
     const referenceCodeLensProvider = new ReferenceInlineProvider()
     InlineCompletion.instance.setReferenceInlineProvider(referenceCodeLensProvider)
 
+    let safeTypeDisposable: Disposable | undefined = undefined
+
     context.extensionContext.subscriptions.push(
         /**
          * Configuration change
@@ -83,7 +88,18 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (!consolasEnabled) {
                     set(ConsolasConstants.termsAcceptedKey, false, context)
                     set(ConsolasConstants.autoTriggerEnabledKey, false, context)
-                    if (!isCloud9()) InlineCompletion.instance.hideConsolasStatusBar()
+                    if (!isCloud9()) {
+                        InlineCompletion.instance.hideConsolasStatusBar()
+                        if (safeTypeDisposable !== undefined) {
+                            safeTypeDisposable.dispose()
+                            safeTypeDisposable = undefined
+                        }
+                    }
+                } else if (!isCloud9()) {
+                    if (safeTypeDisposable === undefined) {
+                        safeTypeDisposable = safeType.register()
+                        context.extensionContext.subscriptions.push(safeTypeDisposable)
+                    }
                 }
                 vscode.commands.executeCommand('aws.consolas.refresh')
             }
@@ -148,6 +164,7 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.consolas', async () => {
             invokeConsolas(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
+
         /**
          * On recommendation acceptance
          */
@@ -258,10 +275,10 @@ export async function activate(context: ExtContext): Promise<void> {
     if (isCloud9()) {
         setSubscriptionsforCloud9()
     } else {
-        setSubscriptionsforVsCodeInline()
+        await setSubscriptionsforVsCodeInline()
     }
 
-    function setSubscriptionsforVsCodeInline() {
+    async function setSubscriptionsforVsCodeInline() {
         /**
          * Automated trigger
          */
@@ -278,12 +295,21 @@ export async function activate(context: ExtContext): Promise<void> {
                     }
                 }
 
+                /**
+                 * Handle this keystroke event only when
+                 * 1. It is in current non plaintext active editor
+                 * 2. It is not a backspace
+                 * 3. It is not caused by Consolas editing
+                 * 4. It is not from undo/redo.
+                 */
                 if (
                     e.document === vscode.window.activeTextEditor?.document &&
                     runtimeLanguageContext.convertLanguage(e.document.languageId) !== 'plaintext' &&
                     e.contentChanges.length != 0 &&
-                    !vsCodeState.isConsolasEditing
+                    !vsCodeState.isConsolasEditing &&
+                    !JSON.stringify(e).includes('reason')
                 ) {
+                    vsCodeState.lastUserModificationTime = performance.now()
                     /**
                      * Important:  Doing this sleep(10) is to make sure
                      * 1. this event is processed by vs code first
@@ -339,10 +365,11 @@ export async function activate(context: ExtContext): Promise<void> {
             })
         )
         // If the vscode is refreshed we need to maintain the status bar
-        const acceptedTerms: boolean =
-            context.extensionContext.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey) || false
-        if (acceptedTerms) {
+        const acceptedTermsAndEnabledConsolas: boolean = await getManualTriggerStatus()
+        if (acceptedTermsAndEnabledConsolas) {
             InlineCompletion.instance.setConsolasStatusBarOk()
+            safeTypeDisposable = safeType.register()
+            context.extensionContext.subscriptions.push(safeTypeDisposable)
         }
     }
 

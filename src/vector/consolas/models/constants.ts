@@ -18,7 +18,7 @@ export const ConsolasConstants = {
      */
     invocationTimeIntervalThreshold: 2, // seconds
     promiseTimeoutLimit: 15, // seconds
-    invocationKeyThreshold: 30,
+    invocationKeyThreshold: 15,
     specialCharactersList: ['{', '[', '(', ':', '\t', '\n'],
     normalTextChangeRegex: /[A-Za-z0-9]/g,
 
@@ -102,6 +102,8 @@ export const ConsolasConstants = {
      */
     defaultCheckPeriodMillis: 1000 * 60 * 5,
 
+    // suggestion show delay, in milliseconds
+    suggestionShowDelay: 250,
     // origin tracker
     referenceLog: 'Consolas Reference Log',
     includeSuggestionsWithLicensedCode: 'Include suggestions with licensed code',

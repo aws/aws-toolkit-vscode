@@ -17,11 +17,16 @@ interface VsCodeState {
      * Flag indicates whether consolas is doing vscode.TextEditor.edit
      */
     isConsolasEditing: boolean
+    /**
+     * Timestamp of previous user edit
+     */
+    lastUserModificationTime: number
 }
 
 export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isConsolasEditing: false,
+    lastUserModificationTime: 0,
 }
 
 export interface AcceptedSuggestionEntry {

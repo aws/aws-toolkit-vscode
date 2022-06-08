@@ -93,12 +93,13 @@ describe('keyStrokeHandler', function () {
             assert.ok(!invokeSpy.called)
         })
 
-        it('Should not call invokeAutomatedTrigger if previous text input is within 2 seconds \n', async function () {
+        it('Should not call invokeAutomatedTrigger if previous text input is within 2 seconds and it is not a specialcharacter trigger \n', async function () {
+            KeyStrokeHandler.instance.keyStrokeCount = 14
             const mockEditor = createMockTextEditor()
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                '\n'
+                'a'
             )
             RecommendationHandler.instance.lastInvocationTime = performance.now() - 1500
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
