@@ -9,15 +9,14 @@ import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
-import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { MockEcrClient } from '../../shared/clients/mockClients'
+import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { deleteTag } from '../../../ecr/commands/deleteTag'
 
 describe('deleteTag', function () {
     const repositoryName = 'reponame'
     const tagName = 'tag'
     const parentNode = {} as EcrRepositoryNode
-    const ecr: EcrClient = new MockEcrClient({})
+    const ecr = new DefaultEcrClient('')
     let node: EcrTagNode
     let sandbox: sinon.SinonSandbox
 

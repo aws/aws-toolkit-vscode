@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
+import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { MockLambdaClient } from '../../shared/clients/mockClients'
 
 describe('deleteLambda', async function () {
     it('should do nothing if function name is not provided', async function () {
@@ -84,8 +84,8 @@ describe('deleteLambda', async function () {
     }) => {
         let deleteCallCount = 0
         let refreshCallCount = 0
-        const lambdaClient = new MockLambdaClient({
-            deleteFunction: async name => {
+        const lambdaClient = {
+            deleteFunction: async (name: string) => {
                 deleteCallCount += 1
                 assert.strictEqual(
                     name,
@@ -96,7 +96,8 @@ describe('deleteLambda', async function () {
                     throw params.errorToThrowDuringDelete
                 }
             },
-        })
+        } as unknown as LambdaClient
+
         const outputChannel = new MockOutputChannel()
 
         try {
