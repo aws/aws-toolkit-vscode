@@ -342,10 +342,16 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
         })
 }
 export const getClientId = shared(async (context: ExtensionContext) => {
-    let clientId = context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
-    if (!clientId) {
-        clientId = uuidv4()
-        await context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
+    try {
+        let clientId = context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
+        if (!clientId || clientId == '00000000-0000-0000-0000-0000000000000000') {
+            clientId = uuidv4()
+            await context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
+        }
+        return clientId
+    } catch (error) {
+        const clientId = '00000000-0000-0000-0000-0000000000000000'
+        console.log(`Could not create a client id. Reason: ${error}.`)
+        return clientId
     }
-    return clientId
 })
