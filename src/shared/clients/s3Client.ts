@@ -631,18 +631,17 @@ export class DefaultS3Client {
     /**
      * Looks up the region for the given bucket
      *
-     * Use the getBucketLocation API to avoid cross region lookups.
+     * Use the getBucketLocation API to avoid cross region lookups. #1806
      */
     private async lookupRegion(bucketName: string, s3: S3): Promise<string | undefined> {
-        getLogger().debug('LookupRegion called for bucketName: %s', bucketName)
-
         try {
             const response = await s3.getBucketLocation({ Bucket: bucketName }).promise()
             // getBucketLocation returns an explicit empty string location contraint for us-east-1
             const region = response.LocationConstraint === '' ? 'us-east-1' : response.LocationConstraint
-            getLogger().debug('LookupRegion returned region: %s', region)
+            getLogger().debug('LookupRegion(%s) returned: %s', bucketName, region)
             return region
         } catch (e) {
+            getLogger().error('LookupRegion(%s) failed: %s', bucketName, (e as Error).message ?? '?')
             // Try to recover region from the error
             return (e as AWSError).region
         }
