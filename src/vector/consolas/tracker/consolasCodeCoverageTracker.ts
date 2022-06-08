@@ -34,6 +34,10 @@ export class ConsolasCodeCoverageTracker {
         this._acceptedTokens.push(...recommendation)
     }
 
+    public get AcceptedTokensLength(): number {
+        return this._acceptedTokens.length
+    }
+
     public setTotalTokens(content: string) {
         if (this._totalTokens.length === 0 && this._timer == undefined) {
             const currentDate = new globals.clock.Date()
@@ -109,9 +113,9 @@ export class ConsolasCodeCoverageTracker {
         }
     }
 
-    private static readonly instances = new Map<telemetry.ConsolasLanguage, ConsolasCodeCoverageTracker>()
+    public static readonly instances = new Map<telemetry.ConsolasLanguage, ConsolasCodeCoverageTracker>()
     public static getTracker(
-        language: telemetry.ConsolasLanguage,
+        language: telemetry.ConsolasLanguage = 'plaintext',
         memento: vscode.Memento
     ): ConsolasCodeCoverageTracker {
         const instance = this.instances.get(language) ?? new this(language, memento)
