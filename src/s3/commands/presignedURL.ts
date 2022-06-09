@@ -5,7 +5,8 @@
 
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
-import { copyToClipboard, Env } from '../../shared/vscode/env'
+import { Env } from '../../shared/vscode/env'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'

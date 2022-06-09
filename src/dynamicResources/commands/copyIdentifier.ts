@@ -4,7 +4,8 @@
  */
 
 import { Window } from '../../shared/vscode/window'
-import { copyToClipboard, Env } from '../../shared/vscode/env'
+import { Env } from '../../shared/vscode/env'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { recordDynamicresourceCopyIdentifier } from '../../shared/telemetry/telemetry'
 
 export async function copyIdentifier(

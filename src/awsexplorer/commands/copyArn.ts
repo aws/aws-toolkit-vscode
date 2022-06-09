@@ -9,7 +9,8 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
-import { copyToClipboard, Env } from '../../shared/vscode/env'
+import { Env } from '../../shared/vscode/env'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import { getIdeProperties } from '../../shared/extensionUtilities'

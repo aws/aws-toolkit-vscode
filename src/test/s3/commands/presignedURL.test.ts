@@ -4,7 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { copyToClipboard } from '../../../shared/vscode/env'
+import {} from '../../../shared/vscode/env'
+import { copyToClipboard } from '../../../shared/utilities/messages'
 import { presignedURLCommand } from '../../../s3/commands/presignedURL'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'

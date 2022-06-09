@@ -4,7 +4,8 @@
  */
 
 import { Window } from '../../shared/vscode/window'
-import { copyToClipboard, Env } from '../../shared/vscode/env'
+import { Env } from '../../shared/vscode/env'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { RestApiNode } from '../explorer/apiNodes'

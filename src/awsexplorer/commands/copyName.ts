@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyToClipboard, Env } from '../../shared/vscode/env'
+import { Env } from '../../shared/vscode/env'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 

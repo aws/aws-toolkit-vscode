@@ -6,7 +6,8 @@
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { IotNode } from '../explorer/iotNodes'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { copyToClipboard, Env } from '../../shared/vscode/env'
+import { Env } from '../../shared/vscode/env'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger'
 

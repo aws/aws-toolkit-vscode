@@ -100,15 +100,3 @@ export function getMinVscodeVersion(): string {
 export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
-
-export async function copyToClipboard(
-    data: string,
-    label?: string,
-    window: Window = vscode.window,
-    env: Env = vscode.env
-): Promise<void> {
-    await env.clipboard.writeText(data)
-    const message = localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', label)
-    window.setStatusBarMessage(addCodiconToString('clippy', message), 5000)
-    getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)
-}
