@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../shared/logger'
 import { copyToClipboard, Env } from '../../shared/vscode/env'
 import { Window } from '../../shared/vscode/window'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -20,7 +19,6 @@ export async function copyPathCommand(
     window = Window.vscode(),
     env = Env.vscode()
 ): Promise<void> {
-    getLogger().debug('CopyPath called for %O', node)
-    copyToClipboard(node.path, 'URL')
-    telemetry.recordS3CopyPath
+    copyToClipboard(node.path, 'URL', window, env)
+    telemetry.recordS3CopyPath()
 }
