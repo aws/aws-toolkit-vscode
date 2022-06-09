@@ -4,7 +4,7 @@
  */
 
 import { Window } from '../../shared/vscode/window'
-import { copyUrl, Env } from '../../shared/vscode/env'
+import { copyToClipboard, Env } from '../../shared/vscode/env'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { RestApiNode } from '../explorer/apiNodes'
@@ -68,9 +68,8 @@ export async function copyUrlCommand(
         return
     } else if (quickPickItems.length === 1) {
         const url = quickPickItems[0].detail
-        await copyUrl(window, env, url, () => {
-            recordApigatewayCopyUrl({ result: 'Succeeded' })
-        })
+        await copyToClipboard(url, 'URL')
+        recordApigatewayCopyUrl({ result: 'Succeeded' })
         return
     }
 
@@ -98,9 +97,8 @@ export async function copyUrlCommand(
     }
 
     const url = pickerResponse.detail
-    await copyUrl(window, env, url, () => {
-        recordApigatewayCopyUrl({ result: 'Succeeded' })
-    })
+    await copyToClipboard(url, 'URL')
+    recordApigatewayCopyUrl({ result: 'Succeeded' })
 }
 
 export function buildDefaultApiInvokeUrl(apiId: string, region: string, dnsSuffix: string, stage: string): string {

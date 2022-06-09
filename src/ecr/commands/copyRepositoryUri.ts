@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyUrl, Env } from '../../shared/vscode/env'
+import { copyToClipboard, Env } from '../../shared/vscode/env'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger'
 import { EcrRepositoryNode } from '../explorer/ecrRepositoryNode'
@@ -16,7 +16,6 @@ export async function copyRepositoryUri(
 ): Promise<void> {
     getLogger().debug('copyRepositoryUri called for %O', node)
     const uri = node.repository.repositoryUri
-    copyUrl(window, env, uri, () => {
-        recordEcrCopyRepositoryUri()
-    })
+    copyToClipboard(uri, 'URL')
+    recordEcrCopyRepositoryUri()
 }

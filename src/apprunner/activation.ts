@@ -14,6 +14,7 @@ import { pauseService } from './commands/pauseService'
 import { deleteService } from './commands/deleteService'
 import { createFromEcr } from './commands/createServiceFromEcr'
 import { ExtContext } from '../shared/extensions'
+import { copyToClipboard } from 'src/shared/vscode/env'
 
 const localize = nls.loadMessageBundle()
 
@@ -35,7 +36,7 @@ const DEPLOY_SERVICE_FAILED = localize(
 const DELETE_SERVICE_FAILED = localize('aws.apprunner.deleteService.failed', 'Failed to delete App Runner service')
 
 const copyUrl = async (node: AppRunnerServiceNode) => {
-    await vscode.env.clipboard.writeText(node.url)
+    copyToClipboard(node.url, 'URL')
     telemetry.recordApprunnerCopyServiceUrl({ passive: false })
 }
 const openUrl = async (node: AppRunnerServiceNode) => {

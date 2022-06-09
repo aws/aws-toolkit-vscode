@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../shared/logger'
-import { copyUrl, Env } from '../../shared/vscode/env'
+import { copyToClipboard, Env } from '../../shared/vscode/env'
 import { Window } from '../../shared/vscode/window'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -21,5 +21,6 @@ export async function copyPathCommand(
     env = Env.vscode()
 ): Promise<void> {
     getLogger().debug('CopyPath called for %O', node)
-    copyUrl(window, env, node.path, telemetry.recordS3CopyPath)
+    copyToClipboard(node.path, 'URL')
+    telemetry.recordS3CopyPath
 }

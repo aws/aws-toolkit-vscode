@@ -6,7 +6,7 @@
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { IotNode } from '../explorer/iotNodes'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { copyUrl, Env } from '../../shared/vscode/env'
+import { copyToClipboard, Env } from '../../shared/vscode/env'
 import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger'
 
@@ -27,5 +27,5 @@ export async function copyEndpointCommand(node: IotNode, window = Window.vscode(
         return
     }
 
-    copyUrl(window, env, endpoint)
+    copyToClipboard(endpoint, 'URL')
 }

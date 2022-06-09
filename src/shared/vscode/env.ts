@@ -102,16 +102,14 @@ export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
 
-export async function copyUrl(window = Window.vscode(), env = Env.vscode(), url: string, onSuccess?: () => void) {
-    await env.clipboard.writeText(url)
-    getLogger().verbose(`copied URI to clipboard: ${url}`)
-    window.setStatusBarMessage(
-        addCodiconToString(
-            'clippy',
-            `${localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'URL')}: ${url}`
-        ),
-        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
-    )
-
-    onSuccess?.()
+export async function copyToClipboard(
+    data: string,
+    label?: string,
+    window = vscode.window,
+    env = vscode.env
+): Promise<void> {
+    await env.clipboard.writeText(data)
+    const message = localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', label)
+    window.setStatusBarMessage(addCodiconToString('clippy', message), COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS)
+    getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)
 }

@@ -5,7 +5,7 @@
 
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
-import { copyUrl, Env } from '../../shared/vscode/env'
+import { copyToClipboard, Env } from '../../shared/vscode/env'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -44,7 +44,7 @@ export async function presignedURLCommand(
         return
     }
 
-    await copyUrl(url, window, env)
+    await copyToClipboard(url, 'URL')
     telemetry.recordS3CopyUrl({ result: 'Succeeded', presigned: true })
 }
 
