@@ -310,7 +310,7 @@ export class DefaultS3Client {
         const operation = request.operation ? request.operation : 'getObject'
         const s3 = await this.createS3()
 
-        const url = s3.getSignedUrl(operation, {
+        const url = await s3.getSignedUrlPromise(operation, {
             Bucket: request.bucketName,
             Key: request.key,
             Body: request.body,
