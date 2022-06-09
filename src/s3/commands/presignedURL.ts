@@ -5,12 +5,10 @@
 
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
-import { Env } from '../../shared/vscode/env'
+import { copyUrl, Env } from '../../shared/vscode/env'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
-import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { invalidNumberWarning } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger/logger'
 
@@ -69,17 +67,6 @@ export async function promptTime(fileName: string, window = Window.vscode()): Pr
     }
 
     return Promise.resolve(time)
-}
-
-export async function copyUrl(url: string, window = Window.vscode(), env = Env.vscode()) {
-    await env.clipboard.writeText(url)
-    window.setStatusBarMessage(
-        addCodiconToString(
-            'clippy',
-            `${localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'URL')}: ${url}`
-        ),
-        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
-    )
 }
 
 function validateTime(time: string): string | undefined {

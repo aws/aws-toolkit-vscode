@@ -6,6 +6,12 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+import { Window } from '../vscode/window'
+import { addCodiconToString } from '../utilities/textUtilities'
+import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
+import { getLogger } from '../logger'
 
 /**
  * Components associated with {@link module:vscode.env}.
@@ -94,4 +100,18 @@ export function getMinVscodeVersion(): string {
  */
 export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
+}
+
+export async function copyUrl(window = Window.vscode(), env = Env.vscode(), url: string, onSuccess?: () => void) {
+    await env.clipboard.writeText(url)
+    getLogger().verbose(`copied URI to clipboard: ${url}`)
+    window.setStatusBarMessage(
+        addCodiconToString(
+            'clippy',
+            `${localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'URL')}: ${url}`
+        ),
+        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
+    )
+
+    onSuccess?.()
 }

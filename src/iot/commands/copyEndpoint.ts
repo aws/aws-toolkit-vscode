@@ -3,15 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../shared/logger'
-import { Env } from '../../shared/vscode/env'
-import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { IotNode } from '../explorer/iotNodes'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-
-const COPY_PATH_DISPLAY_TIMEOUT_MS = 2000
+import { copyUrl, Env } from '../../shared/vscode/env'
+import { Window } from '../../shared/vscode/window'
+import { getLogger } from '../../shared/logger'
 
 /**
  * Copies the path to the folder or file represented by the given node.
@@ -30,15 +27,5 @@ export async function copyEndpointCommand(node: IotNode, window = Window.vscode(
         return
     }
 
-    await env.clipboard.writeText(endpoint)
-
-    getLogger().info(`Copied path ${endpoint} to clipboard`)
-
-    window.setStatusBarMessage(
-        addCodiconToString(
-            'clippy',
-            localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'endpoint')
-        ),
-        COPY_PATH_DISPLAY_TIMEOUT_MS
-    )
+    copyUrl(window, env, endpoint)
 }

@@ -4,8 +4,9 @@
  */
 
 import { Window } from '../../shared/vscode/window'
-import { Env } from '../../shared/vscode/env'
-import { localize } from '../../shared/utilities/vsCodeUtils'
+import { copyUrl, Env } from '../../shared/vscode/env'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 import { RestApiNode } from '../explorer/apiNodes'
 import * as picker from '../../shared/ui/picker'
 import * as vscode from 'vscode'
@@ -15,10 +16,8 @@ import { Stage } from 'aws-sdk/clients/apigateway'
 import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { DEFAULT_DNS_SUFFIX } from '../../shared/regions/regionUtilities'
-import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
-import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import globals from '../../shared/extensionGlobals'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
@@ -69,7 +68,9 @@ export async function copyUrlCommand(
         return
     } else if (quickPickItems.length === 1) {
         const url = quickPickItems[0].detail
-        await copyUrl(window, env, url)
+        await copyUrl(window, env, url, () => {
+            recordApigatewayCopyUrl({ result: 'Succeeded' })
+        })
         return
     }
 
@@ -97,22 +98,11 @@ export async function copyUrlCommand(
     }
 
     const url = pickerResponse.detail
-    await copyUrl(window, env, url)
+    await copyUrl(window, env, url, () => {
+        recordApigatewayCopyUrl({ result: 'Succeeded' })
+    })
 }
 
 export function buildDefaultApiInvokeUrl(apiId: string, region: string, dnsSuffix: string, stage: string): string {
     return `https://${apiId}.execute-api.${region}.${dnsSuffix}/${stage}`
-}
-
-async function copyUrl(window: Window, env: Env, url: string) {
-    await env.clipboard.writeText(url)
-    window.setStatusBarMessage(
-        addCodiconToString(
-            'clippy',
-            `${localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'URL')}: ${url}`
-        ),
-        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
-    )
-
-    recordApigatewayCopyUrl({ result: 'Succeeded' })
 }
