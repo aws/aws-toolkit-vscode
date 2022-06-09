@@ -16,10 +16,10 @@ const STYLESHEETS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'stylesheets')
 const ICON_SOURCES = [`${ICONS_ROOT_DIR}/**/*.svg`, '!**/{cloud9,dark,light}/**']
 
 interface PackageIcon {
-    description: string
-    default: {
-        fontPath: string
-        fontCharacter: string
+    readonly description: string
+    readonly default: {
+        readonly fontPath: string
+        readonly fontCharacter: string
     }
 }
 
@@ -70,10 +70,7 @@ const themes = {
     light: '#424242',
 }
 
-export async function generateCloud9Icons(
-    targets: { name: string; path: string }[],
-    destination: string
-): Promise<void> {
+async function generateCloud9Icons(targets: { name: string; path: string }[], destination: string): Promise<void> {
     console.log('Generating icons for Cloud9')
 
     async function replaceColor(file: string, color: string, dst: string): Promise<void> {
@@ -93,6 +90,7 @@ async function generate() {
     const dest = path.join(FONT_ROOT_DIR, `${FONT_ID}.woff`)
     const relativeDest = path.relative(ROOT_DIR, dest)
     const icons: { name: string; path: string; data?: PackageIcon }[] = []
+    const generated = new GeneratedFilesManifest()
 
     const result = await webfont({
         files: ICON_SOURCES,
@@ -145,15 +143,39 @@ async function generate() {
 ${result.template}
 `.trim()
 
+    const stylesheetPath = path.join(STYLESHEETS_ROOT_DIR, 'icons.css')
+    const cloud9Dest = path.join(ICONS_ROOT_DIR, 'cloud9', 'generated')
+    const isValidIcon = (i: typeof icons[number]): i is Required<typeof i> => i.data !== undefined
+
     await fs.mkdirp(FONT_ROOT_DIR)
     await fs.writeFile(dest, result.woff)
-    await fs.writeFile(path.join(STYLESHEETS_ROOT_DIR, 'icons.css'), template)
-
+    await fs.writeFile(stylesheetPath, template)
     await updatePackage(
         `./${relativeDest}`,
-        icons.filter(i => i.data !== undefined).map(i => [i.name, i.data!])
+        icons.filter(isValidIcon).map(i => [i.name, i.data])
     )
-    await generateCloud9Icons(icons, path.join(ICONS_ROOT_DIR, 'cloud9', 'generated'))
+    await generateCloud9Icons(icons, cloud9Dest)
+
+    generated.addEntry(dest)
+    generated.addEntry(stylesheetPath)
+    generated.addEntry(cloud9Dest)
+
+    await generated.emit(path.join(ROOT_DIR, 'dist'))
+}
+
+class GeneratedFilesManifest {
+    private readonly files: string[] = []
+
+    public addEntry(file: string): void {
+        this.files.push(file)
+    }
+
+    public async emit(dir: string): Promise<void> {
+        const dest = path.join(dir, 'generated.buildinfo')
+        const data = JSON.stringify(this.files, undefined, 4)
+        await fs.mkdirp(dir)
+        await fs.writeFile(dest, data)
+    }
 }
 
 generate().catch(error => {
