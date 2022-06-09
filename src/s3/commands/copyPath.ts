@@ -19,6 +19,6 @@ export async function copyPathCommand(
     window = Window.vscode(),
     env = Env.vscode()
 ): Promise<void> {
-    copyToClipboard(node.path, 'URL', window, env)
+    copyToClipboard(node.path, 'path', window, env)
     telemetry.recordS3CopyPath()
 }
