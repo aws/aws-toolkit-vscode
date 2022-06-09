@@ -10,7 +10,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { Window } from '../vscode/window'
 import { addCodiconToString } from '../utilities/textUtilities'
-import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { getLogger } from '../logger'
 
 /**
@@ -105,11 +104,11 @@ export function getMinNodejsVersion(): string {
 export async function copyToClipboard(
     data: string,
     label?: string,
-    window = vscode.window,
-    env = vscode.env
+    window: Window = vscode.window,
+    env: Env = vscode.env
 ): Promise<void> {
     await env.clipboard.writeText(data)
     const message = localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', label)
-    window.setStatusBarMessage(addCodiconToString('clippy', message), COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS)
+    window.setStatusBarMessage(addCodiconToString('clippy', message), 5000)
     getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)
 }

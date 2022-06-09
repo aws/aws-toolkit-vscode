@@ -4,10 +4,7 @@
  */
 
 import { Window } from '../../shared/vscode/window'
-import { Env } from '../../shared/vscode/env'
-import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { localize } from '../../shared/utilities/vsCodeUtils'
-import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
+import { copyToClipboard, Env } from '../../shared/vscode/env'
 import { recordDynamicresourceCopyIdentifier } from '../../shared/telemetry/telemetry'
 
 export async function copyIdentifier(
@@ -16,14 +13,6 @@ export async function copyIdentifier(
     window = Window.vscode(),
     env = Env.vscode()
 ) {
-    await env.clipboard.writeText(identifier)
-    window.setStatusBarMessage(
-        addCodiconToString(
-            'clippy',
-            `${localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'Identifier')}: ${identifier}`
-        ),
-        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
-    )
-
+    copyToClipboard(identifier, 'identifier', window, env)
     recordDynamicresourceCopyIdentifier({ resourceType: typeName })
 }
