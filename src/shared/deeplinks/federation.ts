@@ -11,7 +11,7 @@ import { withCancellationToken } from '../utilities/gotUtils'
  * The proxy URI automatically redirects to the correct console endpoint based off region.
  */
 export function consoleProxyUri(region: string, path = '/'): Uri {
-    return Uri.parse(`https://${region}.console.${consoleTld()}`).with({ path })
+    return Uri.parse(consoleUrl(region)).with({ path })
 }
 
 /**
@@ -35,11 +35,10 @@ export function buildLoginUri(token: string, region: string, path = '/'): Uri {
     // TODO: we should discover the correct partition from the region
 
     const url = new URL(federationUrl(region))
-    const destination = `https://${region}.console.${consoleTld()}${path}`
 
     url.searchParams.set('Action', 'login')
     url.searchParams.set('SigninToken', token)
-    url.searchParams.set('Destination', destination)
+    url.searchParams.set('Destination', `${consoleUrl(region)}${path}`)
 
     return Uri.parse(url.href)
 }
@@ -95,7 +94,12 @@ function consoleTld(partition: SupportedPartition = 'aws'): string {
 
 function federationUrl(region: string, partition: SupportedPartition = 'aws'): string {
     const topLevelDomain = partition === 'aws-cn' ? 'signin.amazonaws.cn' : `signin.${consoleTld(partition)}`
-    const subDomain = ['us-east-1', 'us-gov-west-1', 'cn-north-1'].includes(region) ? '' : `${region}.`
+    const subDomain = ['', 'us-east-1', 'us-gov-west-1', 'cn-north-1'].includes(region) ? '' : `${region}.`
 
     return `https://${subDomain}${topLevelDomain}/federation`
+}
+
+// TODO(sijaden): find the console proxy TLDs for other partitions
+function consoleUrl(region: string): string {
+    return `https://${region ? `${region}.` : ''}console.${consoleTld()}`
 }

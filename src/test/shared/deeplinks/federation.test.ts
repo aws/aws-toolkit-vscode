@@ -31,4 +31,10 @@ describe('buildLoginUri', function () {
         const destination = consoleProxyUri(region).toString(true)
         assert.strictEqual(uri.query, `Action=login&SigninToken=${token}&Destination=${destination}`)
     })
+
+    it('routes region-less ARNs to the global console proxy', function () {
+        const uri = buildLoginUri(token, '')
+        const expected = 'https://console.aws.amazon.com/'
+        assert.strictEqual(uri.query, `Action=login&SigninToken=${token}&Destination=${expected}`)
+    })
 })
