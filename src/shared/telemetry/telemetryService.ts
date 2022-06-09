@@ -6,8 +6,7 @@
 import * as fs from 'fs'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
-import { v4 as uuidv4 } from 'uuid'
-import { ExtensionContext, Memento } from 'vscode'
+import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
 import { isReleaseVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
@@ -21,14 +20,12 @@ import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telem
 import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { shared } from '../utilities/functionUtils'
-import { TelemetryConfig } from './activation'
+import { getClientId } from './util'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
 export class DefaultTelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
-    public static readonly TELEMETRY_CLIENT_ID_KEY = 'telemetryClientId'
 
     private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
 
@@ -359,25 +356,3 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
             return true
         })
 }
-export const getClientId = shared(
-    async (globalState: Memento, isTelemetryEnabled = new TelemetryConfig().isEnabled(), isTest?: false) => {
-        if (isTest ?? isAutomation()) {
-            return 'ffffffff-ffff-ffff-ffff-ffffffffffff'
-        }
-        if (!isTelemetryEnabled) {
-            return '11111111-1111-1111-1111-111111111111'
-        }
-        try {
-            let clientId = globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
-            if (!clientId) {
-                clientId = uuidv4()
-                await globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
-            }
-            return clientId
-        } catch (error) {
-            const clientId = '00000000-0000-0000-0000-000000000000'
-            getLogger().error('Could not create a client id. Reason: %O ', error)
-            return clientId
-        }
-    }
-)

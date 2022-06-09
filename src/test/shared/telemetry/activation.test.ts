@@ -15,10 +15,9 @@ import {
     TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED,
     hasUserSeenTelemetryNotice,
     setHasUserSeenTelemetryNotice,
-    TelemetryConfig,
-    convertLegacy,
 } from '../../../shared/telemetry/activation'
 import { Settings } from '../../../shared/settings'
+import { convertLegacy, TelemetryConfig } from '../../../shared/telemetry/util'
 
 describe('handleTelemetryNoticeResponse', function () {
     let extensionContext: vscode.ExtensionContext

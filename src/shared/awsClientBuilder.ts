@@ -9,7 +9,7 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
 import globals from './extensionGlobals'
-import { getClientId } from './telemetry/telemetryService'
+import { getClientId } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 
 // These are not on the public API but are very useful for logging purposes.

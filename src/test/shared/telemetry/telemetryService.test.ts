@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as fs from 'fs-extra'
-import { DefaultTelemetryService, getClientId } from '../../../shared/telemetry/telemetryService'
+import { DefaultTelemetryService } from '../../../shared/telemetry/telemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
 import { FakeExtensionContext, FakeMemento } from '../../fakeExtensionContext'
 
@@ -23,6 +23,7 @@ import { TelemetryLogger } from '../../../shared/telemetry/telemetryLogger'
 import globals from '../../../shared/extensionGlobals'
 import { Memento } from 'vscode'
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
+import { getClientId } from '../../../shared/telemetry/util'
 
 type Metric = { [P in keyof ClientTelemetry.MetricDatum as Uncapitalize<P>]: ClientTelemetry.MetricDatum[P] }
 
