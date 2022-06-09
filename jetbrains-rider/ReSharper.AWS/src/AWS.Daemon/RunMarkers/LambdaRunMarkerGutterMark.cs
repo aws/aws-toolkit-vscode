@@ -13,12 +13,7 @@ using JetBrains.UI.Icons;
 using JetBrains.UI.RichText;
 using JetBrains.Util;
 using JetBrains.Util.Logging;
-
-#if (PROFILE_2021_1) // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_212
-using JetBrains.ReSharper.Host.Features.RunMarkers;
-#else
 using JetBrains.Rider.Backend.Features.RunMarkers;
-#endif
 
 using IconGutterMarkType = JetBrains.TextControl.DocumentMarkup.IconGutterMarkType;
 

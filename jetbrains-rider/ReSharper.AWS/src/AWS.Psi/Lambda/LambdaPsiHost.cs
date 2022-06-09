@@ -13,16 +13,9 @@ using JetBrains.ReSharper.Psi.Caches;
 using JetBrains.ReSharper.Psi.Modules;
 using JetBrains.ReSharper.Resources.Shell;
 using JetBrains.Util;
-
-#if (PROFILE_2021_1) // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_212
-using JetBrains.ReSharper.Host.Features;
-using JetBrains.ReSharper.Host.Features.ProjectModel.View;
-using JetBrains.ReSharper.Host.Platform.Icons;
-#else
 using JetBrains.RdBackend.Common.Features;
 using JetBrains.RdBackend.Common.Features.ProjectModel.View;
 using JetBrains.Rider.Backend.Platform.Icons;
-#endif
 
 namespace AWS.Psi.Lambda
 {
@@ -70,11 +63,8 @@ namespace AWS.Psi.Lambda
 
         private bool IsHandlerExists(Lifetime lifetime, int projectId, string className, string methodName)
         {
-#if (PROFILE_2021_1) // FIX_WHEN_MIN_IS_212
-            var indicator = NullProgressIndicator.Create();
-#else
             var indicator = NullProgressIndicator.CreateCancellable(lifetime);
-#endif
+
             using (TryReadLockCookie.Create(indicator, _locks,
                 () => !lifetime.IsAlive || _locks.ContentModelLocks.IsWriteLockRequested))
             {
