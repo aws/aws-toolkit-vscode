@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 import { RecommendationsList } from '../client/consolas'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { LicenseUtil } from './licenseUtil'
 
 export class TelemetryHelper {
     /**
@@ -123,6 +124,11 @@ export class TelemetryHelper {
             if (showedRecommendations !== undefined) {
                 unseen = !showedRecommendations.has(i)
             }
+            let uniqueSuggestionReferences: string | undefined = undefined
+            const uniqueLicenseSet = LicenseUtil.getUniqueLicenseNames(_elem.references)
+            if (uniqueLicenseSet.size > 0) {
+                uniqueSuggestionReferences = JSON.stringify(Array.from(uniqueLicenseSet))
+            }
             telemetry.recordConsolasUserDecision({
                 consolasRequestId: requestId,
                 consolasSessionId: sessionId ? sessionId : undefined,
@@ -130,7 +136,8 @@ export class TelemetryHelper {
                 consolasTriggerType: this.triggerType,
                 consolasSuggestionIndex: i,
                 consolasSuggestionState: this.getSuggestionState(i, acceptIndex, filtered, unseen),
-                consolasSuggestionReferences: JSON.stringify(_elem.references),
+                consolasSuggestionReferences: uniqueSuggestionReferences,
+                consolasSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
                 consolasCompletionType: this.completionType,
                 consolasLanguage: languageContext.language,
                 consolasRuntime: languageContext.runtimeLanguage,

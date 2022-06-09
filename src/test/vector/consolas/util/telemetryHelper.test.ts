@@ -64,6 +64,7 @@ describe('telemetryHelper', function () {
                 consolasTriggerType: 'AutoTrigger',
                 consolasSuggestionIndex: 0,
                 consolasSuggestionState: 'Discard',
+                consolasSuggestionReferenceCount: 0,
                 consolasCompletionType: 'Line',
                 consolasLanguage: 'python',
                 consolasRuntime: 'python2',

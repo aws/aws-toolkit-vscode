@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { References } from '../client/consolas'
+
 export class LicenseUtil {
     private static _licenseLookup: { [name: string]: string } = {
         '0BSD': 'https://spdx.org/licenses/0BSD.html',
@@ -465,5 +467,15 @@ export class LicenseUtil {
             return this._licenseLookup[licenseName]
         }
         return `https://spdx.org/licenses`
+    }
+
+    public static getUniqueLicenseNames(references: References | undefined): Set<string> {
+        const n = new Set<string>()
+        references?.forEach(r => {
+            if (r.licenseName) {
+                n.add(r.licenseName)
+            }
+        })
+        return n
     }
 }

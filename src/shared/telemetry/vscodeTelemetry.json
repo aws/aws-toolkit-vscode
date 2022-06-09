@@ -117,6 +117,11 @@
             "description": "The references of the suggestion."
         },
         {
+            "name": "consolasSuggestionReferenceCount",
+            "type": "int",
+            "description": "Number of references the particular suggestion is referenced with."
+        },
+        {
             "name": "consolasSuggestionState",
             "type": "string",
             "description": "User decision of each of the suggestion returned from Consolas",
@@ -321,6 +326,9 @@
                 {
                     "type": "consolasSuggestionReferences",
                     "required": false
+                },
+                {
+                    "type": "consolasSuggestionReferenceCount"
                 },
                 {
                     "type": "consolasCompletionType"

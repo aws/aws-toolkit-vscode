@@ -160,6 +160,7 @@ describe('onAcceptance', function () {
                 consolasTriggerType: 'OnDemand',
                 consolasSuggestionIndex: 0,
                 consolasSuggestionState: 'Accept',
+                consolasSuggestionReferenceCount: 0,
                 consolasCompletionType: 'Line',
                 consolasLanguage: 'python',
                 consolasRuntime: 'python2',
