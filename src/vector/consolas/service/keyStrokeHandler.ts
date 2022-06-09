@@ -118,7 +118,7 @@ export class KeyStrokeHandler {
         // Below condition is very likely a multi character insert when user accept native intelliSense suggestion
         // VS Code does not provider API for intelliSense suggestion acceptance
         if (changedText.length > 1 && !changedText.includes(' ') && changedText.length < 40) {
-            return 'Enter'
+            return 'IntelliSenseAcceptance'
         }
         return ''
     }

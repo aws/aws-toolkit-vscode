@@ -15,7 +15,7 @@
             "name": "consolasAutomatedtriggerType",
             "type": "string",
             "description": "The type of the Automated trigger to send request to Consolas service",
-            "allowedValues": ["KeyStrokeCount", "SpecialCharacters", "Enter"]
+            "allowedValues": ["KeyStrokeCount", "SpecialCharacters", "Enter", "IntelliSenseAcceptance"]
         },
 
         {
