@@ -6,11 +6,6 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-import { Window } from '../vscode/window'
-import { addCodiconToString } from '../utilities/textUtilities'
-import { getLogger } from '../logger'
 
 /**
  * Components associated with {@link module:vscode.env}.
