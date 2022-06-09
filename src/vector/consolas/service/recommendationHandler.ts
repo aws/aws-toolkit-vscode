@@ -220,7 +220,7 @@ export class RecommendationHandler {
             telemetry.recordConsolasServiceInvocation({
                 consolasRequestId: requestId,
                 consolasSessionId: sessionId ? sessionId : undefined,
-                consolasSuggestionIndex: this.recommendations.length,
+                consolasLastSuggestionIndex: this.recommendations.length - 1,
                 consolasTriggerType: triggerType,
                 consolasAutomatedtriggerType: autoTriggerType,
                 consolasCompletionType:

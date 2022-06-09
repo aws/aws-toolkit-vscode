@@ -118,7 +118,7 @@ describe('recommendationHandler', function () {
             assertTelemetry({
                 consolasRequestId: 'test_request',
                 consolasSessionId: 'test_request',
-                consolasSuggestionIndex: 0,
+                consolasLastSuggestionIndex: -1,
                 consolasTriggerType: 'AutoTrigger',
                 consolasAutomatedtriggerType: 'Enter',
                 consolasCompletionType: 'Line',

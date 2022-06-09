@@ -68,7 +68,7 @@
         {
             "name": "consolasPaginationProgress",
             "type": "int",
-            "description": "The last index of recommendation that is received in a particular paginated response."
+            "description": "The number of recommendations received so far when user makes a decision."
         },
         {
             "name": "consolasPercentage",
@@ -105,6 +105,11 @@
             "name": "consolasSuggestionIndex",
             "type": "int",
             "description": "The index for each suggestion, respectively, in the list of suggestions returned from service invocation."
+        },
+        {
+            "name": "consolasLastSuggestionIndex",
+            "type": "int",
+            "description": "The last index of recommendation from a particular response."
         },
         {
             "name": "consolasSuggestionReferences",
@@ -246,7 +251,8 @@
                     "required": false
                 },
                 {
-                    "type": "consolasSuggestionIndex"
+                    "type": "consolasLastSuggestionIndex",
+                    "required": false
                 },
                 {
                     "type": "consolasTriggerType"
@@ -293,15 +299,15 @@
             "description": "User acceptance or rejection of each suggestion returned by the Consolas service request",
             "metadata": [
                 {
-                    "type": "consolasRequestId",
-                    "required": false
+                    "type": "consolasRequestId"
                 },
                 {
                     "type": "consolasSessionId",
                     "required": false
                 },
                 {
-                    "type": "consolasPaginationProgress"
+                    "type": "consolasPaginationProgress",
+                    "required": false
                 },
                 {
                     "type": "consolasTriggerType"
