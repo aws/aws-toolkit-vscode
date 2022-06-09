@@ -61,7 +61,8 @@ async function updatePackage(fontPath: string, icons: [id: string, icon: Package
         iconsContribution[id] = icon
     }
 
-    await fs.writeFile(path.join(ROOT_DIR, 'package.json'), JSON.stringify(packageJson, undefined, 4))
+    const newPackage = JSON.stringify(packageJson, undefined, 4).trim()
+    await fs.writeFile(path.join(ROOT_DIR, 'package.json'), newPackage)
     console.log('Updated package.json')
 }
 

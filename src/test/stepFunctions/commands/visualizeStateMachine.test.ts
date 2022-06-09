@@ -142,7 +142,6 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         const fakeExtCtx = await FakeExtensionContext.create()
         fakeExtCtx.globalState = mockGlobalStorage
         fakeExtCtx.workspaceState = mockGlobalStorage
-        fakeExtCtx.asAbsolutePath = sinon.spy()
         aslVisualizationManager = new AslVisualizationManager(fakeExtCtx)
     })
 
