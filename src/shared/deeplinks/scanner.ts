@@ -9,9 +9,6 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { parseAll, Arn } from './arn'
 
-/**
- * Provides links in a document, derived from ARNs.
- */
 export class ArnScanner implements vscode.DocumentLinkProvider {
     public constructor(private readonly redirect: (target: Arn) => vscode.Uri) {}
 

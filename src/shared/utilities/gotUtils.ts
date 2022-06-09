@@ -8,7 +8,7 @@ import * as https from 'https'
 import got, { Got, GotReturn } from 'got'
 import urlToOptions from 'got/dist/source/core/utils/url-to-options'
 import { userAgent } from '../vscode/env'
-import { CancellationError, isCancelEvent } from './timeoutUtils'
+import { CancellationError, isCancelEvent, isTypedCancellationToken } from './timeoutUtils'
 import { CancellationToken } from 'vscode'
 import { isCloud9 } from '../extensionUtilities'
 
@@ -30,6 +30,16 @@ export function patchedGot(): Got {
 }
 
 export function withCancellationToken(cancellationToken?: CancellationToken, target = got): Got {
+    if (cancellationToken?.isCancellationRequested) {
+        const token = cancellationToken
+
+        if (isTypedCancellationToken(token) && token.isCancellationRequested) {
+            throw new CancellationError(token.cancellationReason.agent)
+        } else {
+            throw new CancellationError('user')
+        }
+    }
+
     function isCancellable(obj: unknown): obj is { cancel(): void } {
         return typeof obj === 'object' && !!obj && typeof (obj as any).cancel === 'function'
     }
