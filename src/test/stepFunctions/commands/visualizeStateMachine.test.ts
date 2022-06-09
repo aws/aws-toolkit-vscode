@@ -15,6 +15,7 @@ import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { closeAllEditors } from '../../testUtil'
+import { getLogger } from '../../../shared/logger'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
@@ -64,7 +65,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
     after(async function () {
         sinon.restore()
-        await closeAllEditors()
+        await closeAllEditors().catch(e => getLogger().warn(`closeAllEditors failed: ${e}`))
     })
 
     it('Test AslVisualization on setup all properties are correct', async function () {
