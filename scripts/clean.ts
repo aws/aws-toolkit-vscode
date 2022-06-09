@@ -40,9 +40,7 @@ async function tryDeleteRelative(p: string) {
     try {
         const target = path.resolve(process.cwd(), p)
 
-        try {
-            fs.accessSync(target)
-        } catch (e) {
+        if (!exists(target)) {
             console.log(
                 `Could not access '${target}', probably because it does not exist. Skipping clean for this path.`
             )
@@ -55,7 +53,20 @@ async function tryDeleteRelative(p: string) {
     }
 }
 
+function exists(p: string): boolean {
+    try {
+        fs.accessSync(p)
+        return true
+    } catch {
+        return false
+    }
+}
+
 async function getGenerated(): Promise<string[]> {
+    if (!exists(path.join(process.cwd(), 'dist'))) {
+        return []
+    }
+
     const p = path.join(process.cwd(), 'dist', 'generated.buildinfo')
 
     try {

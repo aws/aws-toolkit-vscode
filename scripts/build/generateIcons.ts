@@ -13,7 +13,7 @@ const ROOT_DIR = process.cwd()
 const ICONS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'icons')
 const FONT_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'fonts')
 const STYLESHEETS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'stylesheets')
-const ICON_SOURCES = [`${ICONS_ROOT_DIR}/**/*.svg`, '!**/{cloud9,dark,light}/**']
+const ICON_SOURCES = [`resources/icons/**/*.svg`, '!**/{cloud9,dark,light}/**']
 
 interface PackageIcon {
     readonly description: string
@@ -61,7 +61,8 @@ async function updatePackage(fontPath: string, icons: [id: string, icon: Package
         iconsContribution[id] = icon
     }
 
-    const newPackage = JSON.stringify(packageJson, undefined, 4).trim()
+    // prettier adds a newline to JSON files
+    const newPackage = `${JSON.stringify(packageJson, undefined, 4)}\n`
     await fs.writeFile(path.join(ROOT_DIR, 'package.json'), newPackage)
     console.log('Updated package.json')
 }
