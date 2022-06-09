@@ -8,6 +8,8 @@ import { CredentialsOptions } from 'aws-sdk/lib/credentials'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { env, version } from 'vscode'
 import { AwsContext } from './awsContext'
+import globals from './extensionGlobals'
+import { getClientId } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 
 // These are not on the public API but are very useful for logging purposes.
@@ -123,7 +125,8 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         if (userAgent && !opt.customUserAgent) {
             const platformName = env.appName.replace(/\s/g, '-')
-            opt.customUserAgent = `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${version}`
+            const clientId = await getClientId(globals.context.globalState)
+            opt.customUserAgent = `AWS-Toolkit-For-VSCode/${extensionVersion} ${platformName}/${version} ClientId/${clientId}`
         }
 
         const service = new type(opt)
