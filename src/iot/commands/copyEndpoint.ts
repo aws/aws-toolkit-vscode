@@ -27,5 +27,5 @@ export async function copyEndpointCommand(node: IotNode, window = Window.vscode(
         return
     }
 
-    copyToClipboard(endpoint, 'URL')
+    copyToClipboard(endpoint, 'URL', window, env)
 }

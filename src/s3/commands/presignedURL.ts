@@ -44,7 +44,7 @@ export async function presignedURLCommand(
         return
     }
 
-    await copyToClipboard(url, 'URL')
+    await copyToClipboard(url, 'URL', window, env)
     telemetry.recordS3CopyUrl({ result: 'Succeeded', presigned: true })
 }
 
