@@ -14,7 +14,7 @@ import { pauseService } from './commands/pauseService'
 import { deleteService } from './commands/deleteService'
 import { createFromEcr } from './commands/createServiceFromEcr'
 import { ExtContext } from '../shared/extensions'
-import { copyToClipboard } from 'src/shared/vscode/env'
+import { copyToClipboard } from '../shared/vscode/env'
 
 const localize = nls.loadMessageBundle()
 
