@@ -112,19 +112,24 @@ export class TelemetryHelper {
         recommendations: RecommendationsList,
         acceptIndex: number,
         languageId: string | undefined,
-        filtered = false,
-        paginationIndex: number
+        filtered: boolean,
+        paginationIndex: number,
+        showedRecommendations?: Set<number>
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         // emit user decision telemetry
         recommendations.forEach((_elem, i) => {
+            let unseen = false
+            if (showedRecommendations !== undefined) {
+                unseen = !showedRecommendations.has(i)
+            }
             telemetry.recordConsolasUserDecision({
                 consolasRequestId: requestId,
                 consolasSessionId: sessionId ? sessionId : undefined,
                 consolasPaginationProgress: paginationIndex,
                 consolasTriggerType: this.triggerType,
                 consolasSuggestionIndex: i,
-                consolasSuggestionState: this.getSuggestionState(i, acceptIndex, filtered),
+                consolasSuggestionState: this.getSuggestionState(i, acceptIndex, filtered, unseen),
                 consolasSuggestionReferences: JSON.stringify(_elem.references),
                 consolasCompletionType: this.completionType,
                 consolasLanguage: languageContext.language,
@@ -137,8 +142,10 @@ export class TelemetryHelper {
     public getSuggestionState(
         i: number,
         acceptIndex: number,
-        filtered: boolean = false
+        filtered: boolean = false,
+        unseen: boolean = false
     ): telemetry.ConsolasSuggestionState {
+        if (unseen) return 'Unseen'
         if (filtered) return 'Filter'
         if (acceptIndex == -1) {
             return this.isPrefixMatched[i] ? 'Reject' : 'Discard'

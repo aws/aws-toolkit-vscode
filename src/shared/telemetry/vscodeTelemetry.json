@@ -120,7 +120,7 @@
             "name": "consolasSuggestionState",
             "type": "string",
             "description": "User decision of each of the suggestion returned from Consolas",
-            "allowedValues": ["Accept", "Reject", "Discard", "Ignore", "Filter"]
+            "allowedValues": ["Accept", "Reject", "Discard", "Ignore", "Filter", "Unseen"]
         },
         {
             "name": "consolasTotalTokens",

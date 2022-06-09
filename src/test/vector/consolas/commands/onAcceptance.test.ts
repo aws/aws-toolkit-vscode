@@ -132,6 +132,7 @@ describe('onAcceptance', function () {
             RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
             mockEditor.selection = new vscode.Selection(new vscode.Position(1, 0), new vscode.Position(1, 0))
             RecommendationHandler.instance.recommendations = [{ content: "print('Hello World!')" }]
+            RecommendationHandler.instance.showedRecommendations = new Set([0])
             TelemetryHelper.instance.triggerType = 'OnDemand'
             TelemetryHelper.instance.completionType = 'Line'
             const assertTelemetry = assertTelemetryCurried('consolas_userDecision')

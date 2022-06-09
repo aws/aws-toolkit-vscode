@@ -65,7 +65,7 @@ describe('recommendationHandler', function () {
                 false
             )
             const actual = recommendationHandler.recommendations
-            const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
+            const expected: RecommendationsList = [{ content: "print('Hello World!')" }]
             assert.deepStrictEqual(actual, expected)
         })
 

@@ -254,6 +254,7 @@ export class InlineCompletion {
                                 curItem,
                                 this.origin[curItem.index].references
                             )
+                            RecommendationHandler.instance.showedRecommendations.add(curItem.index)
                         })
                 }
             })
