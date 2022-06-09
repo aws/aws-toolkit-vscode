@@ -10,34 +10,41 @@ import {
     credentialsRegionDataListMap,
     SchemasDataProvider,
 } from '../../../eventSchemas/providers/schemasDataProvider'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
+import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 describe('schemasDataProvider', function () {
-    let sandbox: sinon.SinonSandbox
     let dataProviderObject: SchemasDataProvider
     let cacheData: Cache
+    let schemaClient: SchemaClient
 
     beforeEach(async function () {
-        sandbox = sinon.createSandbox()
         const regionDataWithCredentials: credentialsRegionDataListMap = {
             credentials: testCredentials,
             regionDataList: [],
         }
         cacheData = new Cache([regionDataWithCredentials])
         dataProviderObject = new SchemasDataProvider(cacheData)
+        schemaClient = {
+            listRegistries() {
+                throw new Error('Not Implemented')
+            },
+            listSchemas() {
+                throw new Error('Not Implemented')
+            },
+        } as unknown as SchemaClient
 
-        const clientStubRegistry = sandbox.stub(schemaClient, 'listRegistries')
+        const clientStubRegistry = sinon.stub(schemaClient, 'listRegistries')
         clientStubRegistry.onCall(0).returns(asyncGenerator([registrySummary1, registrySummary2]))
         clientStubRegistry.onCall(1).returns(asyncGenerator([registrySummary1]))
 
-        const clientStubSchema = sandbox.stub(schemaClient, 'listSchemas')
+        const clientStubSchema = sinon.stub(schemaClient, 'listSchemas')
         clientStubSchema.onCall(0).returns(asyncGenerator([schemaSummary, schemaSummary2]))
         clientStubSchema.onCall(1).returns(asyncGenerator([schemaSummary]))
     })
 
     afterEach(function () {
-        sandbox.restore()
+        sinon.restore()
     })
 
     const TEST_REGION = 'testRegion'
@@ -50,9 +57,8 @@ describe('schemasDataProvider', function () {
     const registrySummary2 = { RegistryName: TEST_REGISTRY2 }
     const schemaSummary = { SchemaName: TEST_SCHEMA }
     const schemaSummary2 = { SchemaName: TEST_SCHEMA2 }
-    const schemaClient = new MockSchemaClient(TEST_REGION)
-    const testCredentials = ({} as any) as AWS.Credentials
-    const testCredentials2 = ({} as any) as AWS.Credentials
+    const testCredentials = {} as any as AWS.Credentials
+    const testCredentials2 = {} as any as AWS.Credentials
 
     describe('getRegistries', function () {
         it('should return registries for given region', async function () {
@@ -129,8 +135,8 @@ describe('schemasDataProvider', function () {
         })
 
         it('should return undefined when error occurs', async function () {
-            sandbox.restore()
-            sandbox.stub(schemaClient, 'listRegistries').throws(new Error('Custom error'))
+            sinon.restore()
+            sinon.stub(schemaClient, 'listRegistries').throws(new Error('Custom error'))
             const result = await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
 
             assert.strictEqual(result, undefined)
@@ -219,8 +225,8 @@ describe('schemasDataProvider', function () {
         })
 
         it('should return undefined when error occurs ', async function () {
-            sandbox.restore()
-            sandbox.stub(schemaClient, 'listSchemas').throws(new Error('Custom error'))
+            sinon.restore()
+            sinon.stub(schemaClient, 'listSchemas').throws(new Error('Custom error'))
             const result = await dataProviderObject.getSchemas(
                 TEST_REGION,
                 TEST_REGISTRY,

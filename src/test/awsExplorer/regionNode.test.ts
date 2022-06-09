@@ -29,6 +29,7 @@ describe('RegionNode', function () {
             createAppRunnerClient: sandbox.stub().returns({}),
             createCloudControlClient: sandbox.stub().returns({}),
             createIotClient: sandbox.stub().returns({}),
+            createSchemaClient: sandbox.stub().returns({}),
         }
         globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 

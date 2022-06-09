@@ -12,8 +12,6 @@ import * as vscode from 'vscode'
 
 import { listSchemaItems } from '../utils'
 
-import { SchemaClient } from '../../shared/clients/schemaClient'
-
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
@@ -21,17 +19,22 @@ import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtil
 import { SchemaItemNode } from './schemaItemNode'
 import { getIcon } from '../../shared/icons'
 import globals from '../../shared/extensionGlobals'
+import { SchemaClient } from '../../shared/clients/schemaClient'
 
 export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly schemaNodes: Map<string, SchemaItemNode>
 
-    public constructor(public readonly regionCode: string, private registryItemOutput: Schemas.RegistrySummary) {
+    public constructor(private registryItemOutput: Schemas.RegistrySummary, private readonly client: SchemaClient) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(registryItemOutput)
         this.contextValue = 'awsRegistryItemNode'
         this.schemaNodes = new Map<string, SchemaItemNode>()
         this.iconPath = getIcon('aws-schemas-registry')
+    }
+
+    public get regionCode() {
+        return this.client.regionCode
     }
 
     public get registryName(): string {
@@ -65,14 +68,13 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(this.regionCode)
-        const schemas = await toMapAsync(listSchemaItems(client, this.registryName), schema => schema.SchemaName)
+        const schemas = await toMapAsync(listSchemaItems(this.client, this.registryName), schema => schema.SchemaName)
 
         updateInPlace(
             this.schemaNodes,
             schemas.keys(),
             key => this.schemaNodes.get(key)!.update(schemas.get(key)!),
-            key => new SchemaItemNode(schemas.get(key)!, client, this.registryName)
+            key => new SchemaItemNode(schemas.get(key)!, this.client, this.registryName)
         )
     }
 }

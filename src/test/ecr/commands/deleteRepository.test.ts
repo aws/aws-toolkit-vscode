@@ -7,8 +7,7 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
-import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { MockEcrClient } from '../../shared/clients/mockClients'
+import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { deleteRepository } from '../../../ecr/commands/deleteRepository'
@@ -16,7 +15,7 @@ import { deleteRepository } from '../../../ecr/commands/deleteRepository'
 describe('deleteRepositoryCommand', function () {
     const repositoryName = 'reponame'
     const parentNode: EcrNode = {} as EcrNode
-    const ecr: EcrClient = new MockEcrClient({})
+    const ecr = new DefaultEcrClient('')
     let node: EcrRepositoryNode
     let sandbox: sinon.SinonSandbox
 
