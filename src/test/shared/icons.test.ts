@@ -6,8 +6,8 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { ThemeIcon } from 'vscode'
-import { getIcon } from '../../shared/icons'
+import { Uri, ThemeIcon } from 'vscode'
+import { codicon, getIcon } from '../../shared/icons'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 
 describe('getIcon', function () {
@@ -75,10 +75,27 @@ describe('getIcon', function () {
             const icon = getIcon('aws-cdk-logo', false, tempDir)
 
             assert.ok(!(icon instanceof ThemeIcon))
-            assert.ok(icon.dark.fsPath.endsWith(paths[1]))
-            assert.ok(icon.light.fsPath.endsWith(paths[2]))
+            assert.strictEqual(icon.dark.fsPath, Uri.file(paths[1]).fsPath)
+            assert.strictEqual(icon.light.fsPath, Uri.file(paths[2]).fsPath)
         } finally {
             await tryRemoveFolder(tempDir)
         }
+    })
+})
+
+describe('codicon', function () {
+    it('inserts icon ids', function () {
+        const result = codicon`my icon: ${getIcon('vscode-gear')}`
+        assert.strictEqual(result, 'my icon: $(gear)')
+    })
+
+    it('skips adding icons if no icon font is available', function () {
+        const result = codicon`my icon: ${getIcon('vscode-help')}`
+        assert.strictEqual(result, 'my icon:')
+    })
+
+    it('trims the resulting string', function () {
+        const result = codicon`  some text ${getIcon('vscode-help')}      `
+        assert.strictEqual(result, 'some text')
     })
 })

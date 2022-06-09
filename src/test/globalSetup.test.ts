@@ -40,6 +40,7 @@ before(async function () {
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false, activationLogger)
     const fakeContext = await FakeExtensionContext.create()
     fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
+    fakeContext.extensionPath = globals.context.extensionPath
     Object.assign(globals, { context: fakeContext })
 })
 

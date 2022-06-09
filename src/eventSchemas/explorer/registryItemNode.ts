@@ -18,7 +18,6 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { SchemaItemNode } from './schemaItemNode'
 import { getIcon } from '../../shared/icons'
-import globals from '../../shared/extensionGlobals'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
 export class RegistryItemNode extends AWSTreeNodeBase {
