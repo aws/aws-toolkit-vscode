@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { Arn, parse, parseAll, ParseResult, toString } from '../../../shared/deeplinks/arn'
+import { Arn, parseFirst, parseAll, ParseResult, toString } from '../../../shared/deeplinks/arn'
 
 describe('ARNs', function () {
     interface TestCase {
@@ -56,7 +56,7 @@ describe('ARNs', function () {
 
         for (const [name, { input, expected }] of Object.entries(cases)) {
             it(`can parse ARNs with ${name}`, function () {
-                const result = parse(input)
+                const result = parseFirst(input)
                 assert.strictEqual(toString(result), expected ?? input)
             })
         }
@@ -74,7 +74,7 @@ describe('ARNs', function () {
 
         for (const [name, { input }] of Object.entries(cases)) {
             it(`throws on ARNs with ${name}`, function () {
-                assert.throws(() => parse(input))
+                assert.throws(() => parseFirst(input))
             })
         }
     })

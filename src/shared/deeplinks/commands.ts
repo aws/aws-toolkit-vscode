@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { AWSResourceNode, isAwsResourceNode } from '../treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { showMessageWithCancel, showViewLogsMessage } from '../utilities/messages'
-import { Arn, isArn, parse, toString } from './arn'
+import { Arn, isArn, parseFirst, toString } from './arn'
 import { getLogger } from '../logger'
 import { ConsoleLinkBuilder } from './builder'
 import { Commands } from '../vscode/commands2'
@@ -27,7 +27,7 @@ export async function openArn(
     let result: telemetry.Result = 'Succeeded'
 
     try {
-        const arn = typeof input === 'string' ? parse(input) : input
+        const arn = typeof input === 'string' ? parseFirst(input) : input
         const linkPromise = builder.getLinkFromArn(arn, timeout.token)
 
         const statusMessage = localize('aws.deepLinks.opening', 'Opening ARN...')

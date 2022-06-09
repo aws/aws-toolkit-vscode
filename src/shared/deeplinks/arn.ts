@@ -32,8 +32,8 @@ export function isArn(obj: unknown): obj is Arn {
     return typeof obj === 'object' && !!obj && hasStringProps(obj, ...props)
 }
 
-export function parse(text: string): Arn {
-    const { value, done } = parseAll(text).next() // FIXME: we should only match exactly
+export function parseFirst(text: string): Arn {
+    const { value, done } = parseAll(text).next()
 
     if (done) {
         throw new Error('Not a valid ARN') // We can obviously do better
