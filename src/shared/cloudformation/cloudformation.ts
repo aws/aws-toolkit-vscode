@@ -365,7 +365,7 @@ export namespace CloudFormation {
         [key: string]: Resource | undefined
     }
 
-    export async function load(filename: string): Promise<Template> {
+    export async function load(filename: string, validate: boolean = true): Promise<Template> {
         if (!(await SystemUtilities.fileExists(filename))) {
             throw new Error(`Template file not found: ${filename}`)
         }
@@ -374,7 +374,10 @@ export namespace CloudFormation {
         const template = yaml.load(templateAsYaml, {
             schema: schema as any,
         }) as Template
-        validateTemplate(template)
+
+        if (validate) {
+            validateTemplate(template)
+        }
 
         return template
     }

@@ -166,18 +166,26 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
     type Inner = FromDescriptor<T>
 
     // Class names are not always stable, especially when bundling
-    function makeLogger(name = 'Settings') {
+    function makeLogger(name = 'Settings', loglevel: 'debug' | 'error') {
         const prefix = `${isNameMangled() ? 'Settings' : name} (${section})`
-        return (message: string) => getLogger().debug(`${prefix}: ${message}`)
+        return (message: string) =>
+            loglevel === 'debug'
+                ? getLogger().debug(`${prefix}: ${message}`)
+                : getLogger().error(`${prefix}: ${message}`)
     }
 
     return class AnonymousSettings implements TypedSettings<Inner> {
         private readonly config = this.settings.getSection(section)
         private readonly disposables: vscode.Disposable[] = []
         // TODO(sijaden): add metadata prop to `Logger` so we don't need to make one-off log functions
-        protected readonly log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name)
+        protected readonly log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'debug')
+        protected readonly logErr = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'error')
 
-        public constructor(private readonly settings: ClassToInterfaceType<Settings> = Settings.instance) {}
+        public constructor(
+            private readonly settings: ClassToInterfaceType<Settings> = Settings.instance,
+            /** Throw an exception if the user config is invalid or the caller type doesn't match the stored type. */
+            private readonly throwInvalid: boolean = isAutomation()
+        ) {}
 
         public get onDidChange() {
             return this.getChangedEmitter().event
@@ -186,14 +194,11 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
         public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
             try {
                 return this.getOrThrow(key, defaultValue)
-            } catch (error) {
-                this.log(`failed to read key "${key}": ${error}`)
-
-                if (isAutomation() || defaultValue === undefined) {
-                    throw new Error(`Failed to read key "${key}": ${error}`)
+            } catch (e) {
+                if (this.throwInvalid || defaultValue === undefined) {
+                    throw new Error(`Failed to read key "${key}": ${e}`)
                 }
-
-                this.log(`using default value for "${key}"`)
+                this.logErr(`using default for key "${key}", read failed: ${(e as Error).message ?? '?'}`)
 
                 return defaultValue
             }
@@ -248,11 +253,20 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             //
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
             const props = keys(descriptor)
+            const store = toRecord(props, p => this.get(p))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
-                for (const key of props.filter(p => event.affectsConfiguration(p))) {
+                const isDifferent = (p: keyof T & string) => event.affectsConfiguration(p) || store[p] !== this.get(p)
+
+                for (const key of props.filter(isDifferent)) {
                     this.log(`key "${key}" changed`)
-                    emitter.fire({ key })
+                    try {
+                        store[key] = this.get(key)
+                        emitter.fire({ key })
+                    } catch {
+                        // getChangedEmitter() can't provide a default value so
+                        // we must silence errors here. Logging is done by this.get().
+                    }
                 }
             })
 

@@ -45,6 +45,10 @@ export class TelemetryLogger {
         return this._metrics.length
     }
 
+    public clear(): void {
+        this._metrics.length = 0
+    }
+
     public log(metric: MetricDatum): void {
         const msg = `telemetry: emitted metric "${metric.MetricName}"`
         if (!isReleaseVersion()) {

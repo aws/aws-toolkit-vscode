@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
-import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
@@ -42,6 +41,7 @@ import { activate as activateEcr } from './ecr/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
+import * as awsFiletypes from './shared/awsFiletypes'
 import * as telemetry from './shared/telemetry/telemetry'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
@@ -64,6 +64,7 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
+import { isReleaseVersion } from './shared/vscode/env'
 
 let localize: nls.LocalizeFunc
 
@@ -118,6 +119,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateTelemetry(context, awsContext, settings)
         await globals.telemetry.start()
         await globals.schemaService.start()
+        awsFiletypes.activate()
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -194,10 +196,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
-        await activateCdk({
-            extensionContext: extContext.extensionContext,
-        })
-
         await activateAwsExplorer({
             context: extContext,
             awsContextTrees,
@@ -242,7 +240,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        if (!isReleaseVersion()) {
+            globals.telemetry.assertPassiveTelemetry(globals.didReload)
+        }
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long

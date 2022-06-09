@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { buildSchemaTemplateParameters } from '../../../eventSchemas/templates/schemasAppTemplateUtils'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
+import { SchemaClient } from '../../../shared/clients/schemaClient'
 import {
     AWS_EVENT_SCHEMA_CONTENT,
     CUSTOMER_UPLOADED_SCHEMA,
@@ -33,23 +33,24 @@ const CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME = 'someCustomer.multipleTypes
 const CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME =
     'schema.somecustomer_multipletypes.someotherawesomeschema'
 
-const schemaClient = new MockSchemaClient()
+const schemaClient = {
+    describeSchema() {
+        throw new Error('Not Implemented')
+    },
+} as unknown as SchemaClient
 
 describe('Build template parameters for AwsEventSchema', async function () {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
+    afterEach(function () {
+        sinon.restore()
     })
 
-    afterEach(function () {
-        sandbox.restore()
-    })
     it('should build correct template parameters for aws event schema', async function () {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: AWS_EVENT_SCHEMA_CONTENT,
             SchemaVersion: SCHEMA_VERSION,
         }
-        sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
+
+        sinon.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
         const result = await buildSchemaTemplateParameters(AWS_SCHEMA_NAME, REGISTRY_NAME, schemaClient)
 
@@ -136,13 +137,8 @@ describe('Build template parameters for PartnerSchema', async function () {
 })
 
 describe('Build template parameters for CustomerUploadedSchema', async function () {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
-
     afterEach(function () {
-        sandbox.restore()
+        sinon.restore()
     })
 
     it('should build correct template parameters for customer uploaded schema with single type', async function () {
@@ -150,7 +146,7 @@ describe('Build template parameters for CustomerUploadedSchema', async function 
             Content: CUSTOMER_UPLOADED_SCHEMA,
             SchemaVersion: SCHEMA_VERSION,
         }
-        sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
+        sinon.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
         const result = await buildSchemaTemplateParameters(CUSTOMER_UPLOADED_SCHEMA_NAME, REGISTRY_NAME, schemaClient)
 
@@ -183,20 +179,16 @@ describe('Build template parameters for CustomerUploadedSchema', async function 
 })
 
 describe('Build template parameters for CustomerUploadedSchemaMultipleTypes', async function () {
-    let sandbox: sinon.SinonSandbox
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
+    afterEach(function () {
+        sinon.restore()
     })
 
-    afterEach(function () {
-        sandbox.restore()
-    })
     it('should  build correct template parameters for customer uploaded schema with multiple types', async function () {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES,
             SchemaVersion: SCHEMA_VERSION,
         }
-        sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
+        sinon.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
         const result = await buildSchemaTemplateParameters(
             CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME,

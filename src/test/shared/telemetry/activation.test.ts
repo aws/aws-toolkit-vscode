@@ -79,7 +79,12 @@ describe('Telemetry on activation', function () {
     let sut: TelemetryConfig
 
     beforeEach(function () {
-        sut = new TelemetryConfig(settings)
+        sut = new TelemetryConfig(
+            settings,
+            // Disable `throwInvalid`. These tests intentionally try invalid
+            // data, so the errors are unwanted noise in the test logs.
+            false
+        )
     })
 
     afterEach(async function () {

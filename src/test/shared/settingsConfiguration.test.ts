@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as env from '../../shared/vscode/env'
 import { DevSettings, Experiments, fromExtensionManifest, PromptSettings, Settings } from '../../shared/settings'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
@@ -208,14 +207,9 @@ describe('DevSetting', function () {
     })
 
     it('only throws in automation', async function () {
-        const previousDesc = Object.getOwnPropertyDescriptor(env, 'isAutomation')
-        assert.ok(previousDesc)
-
+        const noAutomation = new DevSettings(settings, false)
         await settings.update(`aws.dev.${TEST_SETTING}`, 'junk')
-        Object.defineProperty(env, 'isAutomation', { value: () => false })
-        assert.strictEqual(sut.get(TEST_SETTING, true), true)
-
-        Object.defineProperty(env, 'isAutomation', previousDesc)
+        assert.strictEqual(noAutomation.get(TEST_SETTING, true), true)
     })
 })
 
@@ -327,5 +321,26 @@ describe('Experiments', function () {
     it('returns true when the flag is set', async function () {
         await sut.update('jsonResourceModification', true)
         assert.strictEqual(await sut.isExperimentEnabled('jsonResourceModification'), true)
+    })
+
+    it('fires events from nested settings', async function () {
+        const info = vscode.workspace.getConfiguration().inspect('aws.experiments.jsonResourceModification')
+        if (info?.globalValue) {
+            this.skip()
+        }
+
+        const experiments = new Experiments(new Settings(vscode.ConfigurationTarget.Workspace))
+
+        try {
+            const key = new Promise<string>((resolve, reject) => {
+                experiments.onDidChange(event => resolve(event.key))
+                setTimeout(() => reject(new Error('Timed out waiting for settings event')), 5000)
+            })
+
+            await experiments.update('jsonResourceModification', true)
+            assert.strictEqual(await key, 'jsonResourceModification')
+        } finally {
+            await experiments.reset()
+        }
     })
 })

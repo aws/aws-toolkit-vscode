@@ -9,7 +9,7 @@ import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { ExtensionContext, Memento } from 'vscode'
 import { AwsContext } from '../awsContext'
-import { isAutomation, isReleaseVersion } from '../vscode/env'
+import { isReleaseVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
@@ -90,11 +90,15 @@ export class DefaultTelemetryService {
             globals.clock.clearTimeout(this._timer)
             this._timer = undefined
         }
-        const currTime = new globals.clock.Date()
-        recordSessionEnd({ value: currTime.getTime() - this.startTime.getTime() })
 
-        // only write events to disk if telemetry is enabled at shutdown time
-        if (this.telemetryEnabled) {
+        // Only write events to disk at shutdown time if:
+        //   1. telemetry is enabled
+        //   2. we are not in CI or a test suite run
+        if (this.telemetryEnabled && !isAutomation()) {
+            const currTime = new globals.clock.Date()
+            // This is noisy when running tests in vscode.
+            recordSessionEnd({ value: currTime.getTime() - this.startTime.getTime() })
+
             try {
                 await writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
             } catch {}
@@ -296,6 +300,19 @@ export class DefaultTelemetryService {
                 getLogger().error(msg)
             } else {
                 throw Error(msg)
+            }
+        }
+    }
+
+    /**
+     * Queries the current pending (not flushed) metrics.
+     *
+     * @note The underlying metrics queue may be updated or flushed at any time while this iterates.
+     */
+    public async *findIter(predicate: (m: MetricDatum) => boolean): AsyncIterable<MetricDatum> {
+        for (const m of this._eventQueue) {
+            if (predicate(m)) {
+                yield m
             }
         }
     }
