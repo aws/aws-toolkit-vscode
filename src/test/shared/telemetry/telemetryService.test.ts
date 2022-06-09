@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import * as fs from 'fs-extra'
 import { DefaultTelemetryService } from '../../../shared/telemetry/telemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
-import { FakeExtensionContext, FakeMemento } from '../../fakeExtensionContext'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 import {
     DEFAULT_TEST_ACCOUNT_ID,
@@ -21,9 +21,7 @@ import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
 import { installFakeClock } from '../../testUtil'
 import { TelemetryLogger } from '../../../shared/telemetry/telemetryLogger'
 import globals from '../../../shared/extensionGlobals'
-import { Memento } from 'vscode'
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
-import { getClientId } from '../../../shared/telemetry/util'
 
 type Metric = { [P in keyof ClientTelemetry.MetricDatum as Uncapitalize<P>]: ClientTelemetry.MetricDatum[P] }
 
@@ -246,65 +244,4 @@ describe('DefaultTelemetryService', function () {
             'Expected metadata to contain the test account'
         )
     }
-})
-
-describe('getClientId', function () {
-    it('should generate a unique id', async function () {
-        const c1 = await getClientId(new FakeMemento(), true, false)
-        const c2 = await getClientId(new FakeMemento(), true, false)
-        assert.notStrictEqual(c1, c2)
-    })
-
-    it('returns the same value across the calls', async function () {
-        const memento = new FakeMemento()
-        const c1 = getClientId(memento, true, false)
-        const c2 = getClientId(memento, true, false)
-        assert.strictEqual(await c1, await c2, 'Expected client ids to be same')
-    })
-
-    it('returns the same value across the calls sequentially', async function () {
-        const memento = new FakeMemento()
-        const c1 = await getClientId(memento, true, false)
-        const c2 = await getClientId(memento, true, false)
-        assert.strictEqual(c1, c2)
-    })
-
-    it('returns the nil UUID if it fails to save generated UUID', async function () {
-        const mememto: Memento = {
-            get(key) {
-                return undefined
-            },
-            update(key, value) {
-                throw new Error()
-            },
-        }
-        const clientId = await getClientId(mememto, true, false)
-        assert.strictEqual(clientId, '00000000-0000-0000-0000-000000000000')
-    })
-
-    it('returns the nil UUID if fails to retrive a saved UUID.', async function () {
-        const mememto: Memento = {
-            get(key) {
-                throw new Error()
-            },
-            async update(key, value) {},
-        }
-        const clientId = await getClientId(mememto, true, false)
-        assert.strictEqual(clientId, '00000000-0000-0000-0000-000000000000')
-    })
-
-    it('should be ffffffff-ffff-ffff-ffff-ffffffffffff if in test enviroment', async function () {
-        const clientId = await getClientId(new FakeMemento(), true)
-        assert.strictEqual(clientId, 'ffffffff-ffff-ffff-ffff-ffffffffffff')
-    })
-
-    it('should be ffffffff-ffff-ffff-ffff-ffffffffffff if telemetry is not enabled in test enviroment', async function () {
-        const clientId = await getClientId(new FakeMemento(), false)
-        assert.strictEqual(clientId, 'ffffffff-ffff-ffff-ffff-ffffffffffff')
-    })
-
-    it('should be 11111111-1111-1111-1111-111111111111 if telemetry is not enabled', async function () {
-        const clientId = await getClientId(new FakeMemento(), false, false)
-        assert.strictEqual(clientId, '11111111-1111-1111-1111-111111111111')
-    })
 })
