@@ -29,7 +29,7 @@ export function patchedGot(): Got {
     })
 }
 
-export function withCancellationToken(cancellationToken?: CancellationToken, target = got): Got {
+export function withCancellationToken(cancellationToken?: CancellationToken, target = patchedGot()): Got {
     if (cancellationToken?.isCancellationRequested) {
         const token = cancellationToken
 

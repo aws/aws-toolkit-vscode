@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ExtContext } from '../extensions'
+import { isCloud9 } from '../extensionUtilities'
 import { ConsoleLinkBuilder } from './builder'
 import { DeepLinkCommands, openArnCommand } from './commands'
 import { ArnScanner } from './scanner'
@@ -20,11 +21,17 @@ import { ArnScanner } from './scanner'
 export function activate(context: ExtContext): void {
     const builder = new ConsoleLinkBuilder()
     const commands = new DeepLinkCommands(builder)
-    const scanner = new ArnScanner(target => openArnCommand.build(target).asUri())
+    const subscriptions = context.extensionContext.subscriptions
 
-    context.extensionContext.subscriptions.push(
-        vscode.languages.registerDocumentLinkProvider({ pattern: '**/*' }, scanner),
+    subscriptions.push(
         context.awsContext.onDidChangeContext(() => builder.clearCache()),
         openArnCommand.register(commands)
     )
+
+    // Link providers do not work on Cloud9 but they do change the cursor when hovering over a link
+    // This should be disabled until they implement the API
+    if (!isCloud9()) {
+        const scanner = new ArnScanner(target => openArnCommand.build(target).asUri())
+        subscriptions.push(vscode.languages.registerDocumentLinkProvider({ pattern: '**/*' }, scanner))
+    }
 }
