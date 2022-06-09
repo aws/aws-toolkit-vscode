@@ -121,7 +121,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
     public static create(severity: SeverityLevel, callback?: (message: ShownMessage) => void): ShowMessage {
         return async <T extends vscode.MessageItem>(
             message: string,
-            ...rest: [string | T | vscode.MessageOptions, ...(string | T)[]]
+            ...rest: [string | T | vscode.MessageOptions | undefined, ...(string | T)[]]
         ) => {
             const firstRest = rest[0]
             const stringMode = typeof firstRest === 'string'
@@ -130,7 +130,7 @@ export class TestMessage<T extends vscode.MessageItem = vscode.MessageItem> {
             const mappedItems = items.map(i => (typeof i === 'string' ? { title: i } : i))
             const testMessage = new TestMessage(message, {
                 severity,
-                modal: opt.modal,
+                modal: opt?.modal,
                 items: mappedItems,
             })
 

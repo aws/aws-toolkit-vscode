@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "You can now open certain AWS resources directly in the AWS Console. Resources may be opened via the explorer or through ARNs in text documents."
+}

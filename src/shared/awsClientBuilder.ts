@@ -6,15 +6,16 @@
 import { Request, AWSError, Credentials } from 'aws-sdk'
 import { CredentialsOptions } from 'aws-sdk/lib/credentials'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import { env, version } from 'vscode'
+import { env, version, CancellationToken } from 'vscode'
 import { AwsContext } from './awsContext'
+import { CancellationError, isCancelEvent, isTypedCancellationToken } from './utilities/timeoutUtils'
 import { extensionVersion } from './vscode/env'
 
 // These are not on the public API but are very useful for logging purposes.
 // Tests guard against the possibility that these values change unexpectedly.
 // Since the field names are not prepended with `_` to signify visibility, the
 // fact that they're not in the API may have been an oversight.
-interface RequestExtras {
+export interface RequestExtras {
     readonly service: AWS.Service
     readonly operation: string
     readonly params?: any
@@ -135,5 +136,31 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         }
 
         return service
+    }
+}
+
+type Token = CancellationToken | ((request: AWS.Request<any, AWSError> & RequestExtras) => CancellationToken)
+export function addCancellationToken(input: Token, logger?: (msg: string) => void): RequestListener {
+    return request => {
+        const token = typeof input === 'function' ? input(request) : input
+
+        request.on('error', error => {
+            if (isTypedCancellationToken(token) && token.isCancellationRequested) {
+                Object.assign(error, { cancellationReason: token.cancellationReason })
+            }
+        })
+
+        const abort = (event?: unknown) => {
+            const error = isCancelEvent(event) ? new CancellationError(event.agent) : undefined
+            request.abort()
+            logger?.(`aborted operation "${request.operation}"${error ? `: ${error.message}` : ''}`)
+        }
+
+        if (token.isCancellationRequested) {
+            return abort()
+        } else {
+            const listener = token.onCancellationRequested(abort)
+            request.on('complete', () => listener.dispose())
+        }
     }
 }

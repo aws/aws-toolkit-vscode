@@ -1016,6 +1016,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.deepLinks.openResource",
+                    "when": "false"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode"
                 }
@@ -1648,6 +1652,11 @@
                     "command": "aws.cdk.viewDocs",
                     "when": "viewItem == awsCdkRootNode",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.deepLinks.openResource",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FileNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
+                    "group": "2@3"
                 }
             ]
         },
@@ -2764,6 +2773,11 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.deepLinks.openResource",
+                "title": "%AWS.command.deepLinks.openResource%",
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.dev.openMenu",

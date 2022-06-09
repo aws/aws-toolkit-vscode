@@ -160,6 +160,7 @@
     "AWS.command.apprunner.copyServiceUrl": "Copy Service URL",
     "AWS.command.apprunner.open": "Open in Browser",
     "AWS.command.apprunner.startDeployment": "Start Deployment",
+    "AWS.command.deepLinks.openResource": "Open resource in browser...",
     "AWS.command.resources.copyIdentifier": "Copy Identifier",
     "AWS.command.resources.configure": "Show Resources...",
     "AWS.lambda.explorerTitle": "Explorer",

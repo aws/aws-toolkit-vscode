@@ -108,7 +108,7 @@ describe('Settings', function () {
 
         it('scopes the event to the affected section', async function () {
             const changedEvent = new Promise<vscode.ConfigurationChangeEvent>((resolve, reject) => {
-                setTimeout(() => reject(new Error('Timed out')), 1000)
+                setTimeout(() => reject(new Error('Timed out')), 5000)
                 sut.onDidChangeSection(rootSection, resolve)
             })
 

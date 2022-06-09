@@ -23,6 +23,9 @@ describe('getAccountId', function () {
         assumeRole: () => {
             throw new Error('This test was not initialized')
         },
+        getFederationToken: () => {
+            throw new Error('This test was not initialized')
+        },
     }
 
     const clientBuilder = {
