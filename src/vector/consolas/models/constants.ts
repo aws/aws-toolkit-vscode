@@ -106,7 +106,6 @@ export const ConsolasConstants = {
     suggestionShowDelay: 250,
     // origin tracker
     referenceLog: 'Consolas Reference Log',
-    includeSuggestionsWithLicensedCode: 'Include suggestions with licensed code',
 
     suggestionDetailReferenceText: (licenses: string) =>
         `Reference code under license ${licenses}. View full details in Consolas reference log.`,
@@ -118,8 +117,7 @@ export const ConsolasConstants = {
         `with code ${code} provided with reference under ${license} from ${repository}. Added to ${filePath} ${lineInfo}.`,
 
     referenceLogPromptText: `Don\'t want suggestions that include code from other sources? Uncheck this option in 
-    <a href="#" onclick="openSettings();return false;">AWS Toolkit settings</a> 
-    (Settings / Extensions / AWS Toolkit / Aws: Consolas / Include suggestions with licensed code).`,
+    <a href="#" onclick="openSettings();return false;">Consolas Settings</a>`,
     /**
      * Security Scan
      */

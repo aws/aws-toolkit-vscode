@@ -54,7 +54,7 @@ export class ReferenceHoverProvider implements vscode.HoverProvider {
         return undefined
     }
 
-    public addLicensedCode(code: string, references: References) {
+    public addCodeReferences(code: string, references: References) {
         this._codeReferenceCache.push({ code, references })
         if (this._codeReferenceCache.length > 1000) {
             getLogger().warn(`_codeReferenceCache has size ${this._codeReferenceCache.length} more than 1k`)

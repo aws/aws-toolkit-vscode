@@ -17,7 +17,7 @@ describe('referenceHoverProvider', function () {
         it('Should return a hover object that contains license name and repo name when reference code exists in document ', function () {
             const referenceHoverProvider = new ReferenceHoverProvider()
             const mockDocoument = createMockDocument('def two_sum(nums, target):\nfor', 'test.py', 'python')
-            referenceHoverProvider.addLicensedCode(`def two_sum(nums, target)`, [
+            referenceHoverProvider.addCodeReferences(`def two_sum(nums, target)`, [
                 {
                     message: '',
                     licenseName: 'TEST_LICENSE',
@@ -39,7 +39,7 @@ describe('referenceHoverProvider', function () {
         it('Should return undefined if reference code does not exist in document', function () {
             const referenceHoverProvider = new ReferenceHoverProvider()
             const mockDocoument = createMockDocument("print('Hello World')\nfor", 'test.py', 'python')
-            referenceHoverProvider.addLicensedCode(`def two_sum(nums, target)`, [
+            referenceHoverProvider.addCodeReferences(`def two_sum(nums, target)`, [
                 {
                     message: '',
                     licenseName: 'TEST_LICENSE',

@@ -203,7 +203,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (references != undefined && editor != undefined) {
                     const referenceLog = ReferenceLogViewProvider.getReferenceLog(recommendation, references, editor)
                     referenceLogViewProvider.addReferenceLog(referenceLog)
-                    referenceHoverProvider.addLicensedCode(recommendation, references)
+                    referenceHoverProvider.addCodeReferences(recommendation, references)
                 }
             }
         ),
