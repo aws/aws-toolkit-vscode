@@ -20,7 +20,7 @@ For the Toolkit, common command functionality is implemented in [Commands](../sr
 -   Commands with parameters:
 
     ```ts
-    const showMessage = (message: string) => vscode.window.showInformationMessage(message)
+    const showMessage = async (message: string) => vscode.window.showInformationMessage(message)
     const command = Commands.register('aws.showMessage', showMessage)
     command.execute('Hello, World!')
     ```
@@ -36,7 +36,7 @@ For the Toolkit, common command functionality is implemented in [Commands](../sr
 
 ### Advanced Uses
 
-Complex programs often require more than just simple functions to act as entry-points. Large amounts of state may be involved, which can be very difficult to test without proper management. One way to make it easier to isolate state from a given command is by 'declaring' it. This associates a command with all the required dependencies while still making it look like any other command.
+Complex programs often require more than just simple functions to act as entry-points. Large amounts of state may be involved, which can be very difficult to test and reason about without proper management. One way to make it easier to isolate state from a given command is by 'declaring' it. This associates a command with all the required dependencies while still making it look like any other command.
 
 -   Command declaration and registration:
 
@@ -58,8 +58,11 @@ Complex programs often require more than just simple functions to act as entry-p
         public constructor(private readonly state: Record<string, string>) {}
 
         public showMessage(key: string) {
-            const promise = this.shown.get(key) ?? showMessage(state[key] ?? 'Message not found')
-            this.shown.set(key, promise)
+            const promise = this.shown.get(key) ?? showMessage(this.state[key] ?? 'Message not found')
+            this.shown.set(
+                key,
+                promise.finally(() => this.shown.delete(key))
+            )
 
             return promise
         }
