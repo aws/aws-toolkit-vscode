@@ -70,7 +70,11 @@ export async function invokeConsolas(
                         vsCodeState.isIntelliSenseActive = true
                     })
                 } else {
-                    showTimedMessage('No suggestions from Consolas', 2000)
+                    if (RecommendationHandler.instance.errorMessagePrompt !== '') {
+                        showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
+                    } else {
+                        showTimedMessage('No suggestions from Consolas', 2000)
+                    }
                 }
             }
         } else {
