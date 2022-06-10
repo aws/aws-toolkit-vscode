@@ -143,6 +143,7 @@
     "AWS.command.copyLogStreamName": "Copy Log Stream Name",
     "AWS.command.saveCurrentLogStreamContent": "Save Current Log Content to File",
     "AWS.command.viewLogStream": "View Log Stream...",
+    "AWS.command.searchLogGroup": "Search Log Group",
     "AWS.command.ssmDocument.createLocalDocument": "Create a new Systems Manager Document locally",
     "AWS.command.ssmDocument.deleteDocument": "Delete Document",
     "AWS.command.ssmDocument.updateDocumentVersion": "Set Default Version",

@@ -44,7 +44,7 @@ describe('convertUriToLogGroupInfo', async function () {
 describe('convertLogGroupInfoToUri', function () {
     it('converts components to a valid URI', function () {
         assert.deepStrictEqual(
-            convertLogGroupInfoToUri(goodComponents.groupName, goodComponents.streamName, goodComponents.regionName),
+            convertLogGroupInfoToUri(goodComponents.groupName, goodComponents.regionName, goodComponents.streamName),
             goodUri
         )
     })

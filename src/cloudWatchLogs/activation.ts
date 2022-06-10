@@ -11,6 +11,7 @@ import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
 import { saveCurrentLogStreamContent } from './commands/saveCurrentLogStreamContent'
 import { viewLogStream } from './commands/viewLogStream'
+import { searchLogGroup } from './commands/searchLogGroup'
 import { LogStreamCodeLensProvider } from './document/logStreamCodeLensProvider'
 import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
@@ -70,6 +71,15 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         vscode.commands.registerCommand(
             'aws.cloudWatchLogs.viewLogStream',
             async (node: LogGroupNode) => await viewLogStream(node, registry)
+        )
+    )
+
+    // AWS Explore right-click action
+    // Copying flow of viewLogStream
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.cloudWatchLogs.searchLogGroup',
+            async (node: LogGroupNode) => await searchLogGroup(node, registry)
         )
     )
 }

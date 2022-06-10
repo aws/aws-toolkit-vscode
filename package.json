@@ -60,6 +60,7 @@
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
+        "onCommand:aws.cloudWatchLogs.searchLogGroup",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -804,6 +805,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.cloudWatchLogs.searchLogGroup",
+                    "when": "false"
+                },
+                {
                     "command": "aws.ecr.deleteRepository",
                     "when": "false"
                 },
@@ -1496,6 +1501,11 @@
                 },
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
+                },
+                {
+                    "command": "aws.cloudWatchLogs.searchLogGroup",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
@@ -2395,6 +2405,16 @@
             {
                 "command": "aws.cloudWatchLogs.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cloudWatchLogs.searchLogGroup",
+                "title": "%AWS.command.searchLogGroup%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

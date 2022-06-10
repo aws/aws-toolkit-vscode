@@ -40,6 +40,14 @@ export class DefaultCloudWatchLogsClient {
         return sdkClient.getLogEvents(request).promise()
     }
 
+    public async filterLogEvents(
+        request: CloudWatchLogs.FilterLogEventsRequest
+    ): Promise<CloudWatchLogs.FilterLogEventsResponse> {
+        const sdkClient = await this.createSdkClient()
+
+        return sdkClient.filterLogEvents(request).promise()
+    }
+
     protected async invokeDescribeLogGroups(
         request: CloudWatchLogs.DescribeLogGroupsRequest,
         sdkClient: CloudWatchLogs

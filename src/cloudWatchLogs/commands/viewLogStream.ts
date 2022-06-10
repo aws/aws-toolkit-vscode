@@ -33,10 +33,16 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
     if (logStreamResponse) {
         const uri = convertLogGroupInfoToUri(
             logStreamResponse.logGroupName,
-            logStreamResponse.logStreamName,
-            logStreamResponse.region
+            logStreamResponse.region,
+            logStreamResponse.logStreamName
         )
-        await registry.registerLog(uri)
+
+        const logGroupInfo = {
+            groupName: logStreamResponse.logGroupName,
+            regionName: logStreamResponse.region,
+            streamName: logStreamResponse.logStreamName,
+        }
+        await registry.registerLog(uri, logGroupInfo)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
         await vscode.window.showTextDocument(doc, { preview: false })

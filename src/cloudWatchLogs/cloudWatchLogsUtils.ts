@@ -36,8 +36,10 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): { groupName: string; st
  * @param streamName Log stream name
  * @param regionName AWS region
  */
-export function convertLogGroupInfoToUri(groupName: string, streamName: string, regionName: string): vscode.Uri {
-    return vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${streamName}:${regionName}`)
+export function convertLogGroupInfoToUri(groupName: string, regionName: string, streamName?: string): vscode.Uri {
+    return streamName
+        ? vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${streamName}:${regionName}`)
+        : vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${regionName}`)
 }
 
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cloudWatchLogs', { limit: Number }) {}
