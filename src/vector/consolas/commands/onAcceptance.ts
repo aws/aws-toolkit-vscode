@@ -37,8 +37,7 @@ export async function onAcceptance(
         const languageId = acceptanceEntry.editor.document.languageId
         RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
             acceptanceEntry.editor,
-            acceptanceEntry.acceptIndex,
-            false
+            acceptanceEntry.acceptIndex
         )
         // consolas will be doing editing while formatting.
         // formatting should not trigger consoals auto trigger

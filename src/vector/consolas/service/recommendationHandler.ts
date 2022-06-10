@@ -35,7 +35,7 @@ export class RecommendationHandler {
     private nextToken: string
     public errorCode: string
     public recommendations: RecommendationDetail[]
-    public showedRecommendations: Set<number>
+    public recommendationSuggestionState: Map<number, string>
     public startPos: vscode.Position
     private cancellationToken: vscode.CancellationTokenSource
     public errorMessagePrompt: string
@@ -50,7 +50,7 @@ export class RecommendationHandler {
         this.startPos = new vscode.Position(0, 0)
         this.cancellationToken = new vscode.CancellationTokenSource()
         this.errorMessagePrompt = ''
-        this.showedRecommendations = new Set()
+        this.recommendationSuggestionState = new Map<number, string>()
     }
 
     static #instance: RecommendationHandler
@@ -239,19 +239,11 @@ export class RecommendationHandler {
             recommendation = recommendation.filter(r => r.content.length > 0)
 
             if (config.isIncludeSuggestionsWithCodeReferencesEnabled === false) {
-                recommendation = recommendation.filter(r => r.references === undefined || r.references.length === 0)
-                const recommendationWithoutReference = recommendation.filter(
-                    r => r.references !== undefined && r.references.length > 0
-                )
-                TelemetryHelper.instance.recordUserDecisionTelemetry(
-                    this.requestId,
-                    this.sessionId,
-                    recommendationWithoutReference,
-                    -1,
-                    editor?.document.languageId,
-                    true,
-                    this.recommendations.length
-                )
+                recommendation.forEach((r, index) => {
+                    if (r.references !== undefined && r.references.length) {
+                        this.recommendationSuggestionState.set(index + this.recommendations.length, 'Filtered')
+                    }
+                })
             }
         }
         if (recommendation.length > 0) this.recommendations = this.recommendations.concat(recommendation)
@@ -280,18 +272,14 @@ export class RecommendationHandler {
      */
     clearRecommendations() {
         this.recommendations = []
-        this.showedRecommendations = new Set()
+        this.recommendationSuggestionState = new Map<number, string>()
         this.errorCode = ''
         this.requestId = ''
         this.sessionId = ''
         this.nextToken = ''
         this.errorMessagePrompt = ''
     }
-    reportUserDecisionOfCurrentRecommendation(
-        editor: vscode.TextEditor | undefined,
-        acceptIndex: number,
-        filtered: boolean
-    ) {
+    reportUserDecisionOfCurrentRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
         TelemetryHelper.instance.updatePrefixMatchArray(
             this.recommendations,
             this.startPos,
@@ -304,9 +292,8 @@ export class RecommendationHandler {
             this.recommendations,
             acceptIndex,
             editor?.document.languageId,
-            filtered,
             this.recommendations.length,
-            this.showedRecommendations
+            this.recommendationSuggestionState
         )
     }
 

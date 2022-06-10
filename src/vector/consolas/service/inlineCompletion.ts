@@ -139,7 +139,7 @@ export class InlineCompletion {
 
         RecommendationHandler.instance.cancelPaginatedRequest()
         // report all recommendation as rejected
-        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1, false)
+        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
     }
 
     async rejectRecommendation(
@@ -284,7 +284,7 @@ export class InlineCompletion {
                                 curItem,
                                 this.origin[curItem.index].references
                             )
-                            RecommendationHandler.instance.showedRecommendations.add(curItem.index)
+                            RecommendationHandler.instance.recommendationSuggestionState.set(curItem.index, 'Showed')
                         })
                 }
             })
@@ -438,7 +438,10 @@ export class InlineCompletion {
         this.items = []
         if (this.typeAhead.length > 0) {
             this.origin.forEach((item, index) => {
-                if (item.content.startsWith(this.typeAhead)) {
+                if (
+                    item.content.startsWith(this.typeAhead) &&
+                    RecommendationHandler.instance.recommendationSuggestionState.get(index) !== 'Filtered'
+                ) {
                     this.items.push({
                         content: item.content.substring(this.typeAhead.length),
                         index: index,
@@ -446,8 +449,13 @@ export class InlineCompletion {
                 }
             })
         } else {
-            this.items = this.origin.map((a, i) => {
-                return { content: a.content, index: i }
+            this.origin.forEach((item, index) => {
+                if (RecommendationHandler.instance.recommendationSuggestionState.get(index) !== 'Filtered') {
+                    this.items.push({
+                        content: item.content,
+                        index: index,
+                    })
+                }
             })
         }
     }

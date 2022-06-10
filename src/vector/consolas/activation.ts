@@ -197,11 +197,7 @@ export async function activate(context: ExtContext): Promise<void> {
         ),
         // on text document close.
         vscode.workspace.onDidCloseTextDocument(e => {
-            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(
-                vscode.window.activeTextEditor,
-                -1,
-                false
-            )
+            RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
             RecommendationHandler.instance.clearRecommendations()
         }),
         // origin tracker related providers
@@ -451,7 +447,7 @@ export async function activate(context: ExtContext): Promise<void> {
 }
 
 export async function shutdown() {
-    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1, false)
+    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(vscode.window.activeTextEditor, -1)
     ConsolasTracker.getTracker().shutdown()
 }
 

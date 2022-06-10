@@ -56,7 +56,16 @@ describe('telemetryHelper', function () {
             telemetryHelper.completionType = 'Line'
             telemetryHelper.triggerType = 'AutoTrigger'
             const assertTelemetry = assertTelemetryCurried('consolas_userDecision')
-            await telemetryHelper.recordUserDecisionTelemetry(requestId, sessionId, response, 0, 'python', false, 0)
+            const suggestionState = new Map<number, string>([[0, 'Showed']])
+            await telemetryHelper.recordUserDecisionTelemetry(
+                requestId,
+                sessionId,
+                response,
+                0,
+                'python',
+                0,
+                suggestionState
+            )
             assertTelemetry({
                 consolasRequestId: 'test_x',
                 consolasSessionId: 'test_x',

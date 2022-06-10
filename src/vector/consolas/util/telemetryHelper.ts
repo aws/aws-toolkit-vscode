@@ -113,16 +113,21 @@ export class TelemetryHelper {
         recommendations: RecommendationsList,
         acceptIndex: number,
         languageId: string | undefined,
-        filtered: boolean,
         paginationIndex: number,
-        showedRecommendations?: Set<number>
+        recommendationSuggestionState?: Map<number, string>
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         // emit user decision telemetry
         recommendations.forEach((_elem, i) => {
-            let unseen = false
-            if (showedRecommendations !== undefined) {
-                unseen = !showedRecommendations.has(i)
+            let unseen = true
+            let filtered = false
+            if (recommendationSuggestionState !== undefined) {
+                if (recommendationSuggestionState.get(i) === 'Filtered') {
+                    filtered = true
+                }
+                if (recommendationSuggestionState.get(i) === 'Showed') {
+                    unseen = false
+                }
             }
             let uniqueSuggestionReferences: string | undefined = undefined
             const uniqueLicenseSet = LicenseUtil.getUniqueLicenseNames(_elem.references)
@@ -152,8 +157,8 @@ export class TelemetryHelper {
         filtered: boolean = false,
         unseen: boolean = false
     ): telemetry.ConsolasSuggestionState {
-        if (unseen) return 'Unseen'
         if (filtered) return 'Filter'
+        if (unseen) return 'Unseen'
         if (acceptIndex == -1) {
             return this.isPrefixMatched[i] ? 'Reject' : 'Discard'
         }
