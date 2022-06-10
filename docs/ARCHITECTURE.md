@@ -25,10 +25,17 @@ For the Toolkit, common command functionality is implemented in [Commands](../sr
     command.execute('Hello, World!')
     ```
 
+-   Creating a CodeLens from a command:
+
+    ```ts
+    // The built CodeLens should be returned through a `vscode.CodeLensProvider` implementation
+    const range = new vscode.Range(0, 0, 0, 0)
+    const lens = command.build('Hello, World!').asCodeLens(range, { title: 'Click me!' })
+    ```
+
 -   Creating a tree node from a command:
 
     ```ts
-    const command = Commands.register('aws.showMessage', showMessage)
     // `node` will execute the command when clicked in the explorer tree
     // This object should be returned as a child of some other tree node
     const node = command.build('Hello, World!').asTreeNode({ label: 'Click me!' })
