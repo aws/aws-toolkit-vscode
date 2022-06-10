@@ -68,7 +68,7 @@
     "AWS.configuration.description.awssam.debug.snippets.api.label.cn": "Amazon SAM: API Gateway lambda invoke",
     "AWS.configuration.description.awssam.debug.snippets.api.description.cn": "A new configuration for invoking an Amazon Lambda in a CloudFormation template, simulating API Gateway",
     "AWS.configuration.description.consolas": "When checked, Consolas will include suggestions with code references",
-    "AWS.configuration.description.consolas.doNotSendConsolasServiceMetrics": "When checked, client will not send metrics to Consolas for service analysis",
+    "AWS.configuration.description.consolas.shareConsolasContentWithAWS": "When checked, your content processed by Consolas may be used for service improvement. Unchecking this box will cause AWS to delete any of your content used for that purpose. The information used to provide the Consolas service to you will not be affected. See the Preview terms and [Service Terms](https://aws.amazon.com/service-terms/) for more detail.",
     "AWS.command.apig.copyUrl": "Copy URL",
     "AWS.command.apig.invokeRemoteRestApi": "Invoke on AWS",
     "AWS.command.apig.invokeRemoteRestApi.cn": "Invoke on Amazon",

@@ -260,10 +260,10 @@
                     "description": "%AWS.configuration.description.consolas%",
                     "default": true
                 },
-                "aws.consolas.doNotSendConsolasServiceMetrics": {
+                "aws.consolas.shareConsolasContentWithAWS": {
                     "type": "boolean",
-                    "description": "%AWS.configuration.description.consolas.doNotSendConsolasServiceMetrics%",
-                    "default": false
+                    "markdownDescription": "%AWS.configuration.description.consolas.shareConsolasContentWithAWS%",
+                    "default": true
                 },
                 "aws.consolas.javaCompilationOutput": {
                     "type": "string",
