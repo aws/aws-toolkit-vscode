@@ -10,14 +10,14 @@ For the Toolkit, common command functionality is implemented in [Commands](../sr
 
 ### Examples
 
--   Registering and executing a command:
+-   Registering and execution:
 
     ```ts
-    const helloWorld = Commands.register('helloWorld', () => console.log('Hello, World!'))
-    helloWorld.execute()
+    const command = Commands.register('helloWorld', () => console.log('Hello, World!'))
+    command.execute()
     ```
 
--   Commands with parameters:
+-   Using parameters:
 
     ```ts
     const showMessage = async (message: string) => vscode.window.showInformationMessage(message)
@@ -25,7 +25,7 @@ For the Toolkit, common command functionality is implemented in [Commands](../sr
     command.execute('Hello, World!')
     ```
 
--   Creating a CodeLens from a command:
+-   Creating a CodeLens:
 
     ```ts
     // The built CodeLens should be returned through a `vscode.CodeLensProvider` implementation
@@ -33,7 +33,7 @@ For the Toolkit, common command functionality is implemented in [Commands](../sr
     const lens = command.build('Hello, World!').asCodeLens(range, { title: 'Click me!' })
     ```
 
--   Creating a tree node from a command:
+-   Creating a tree node:
 
     ```ts
     // `node` will execute the command when clicked in the explorer tree
