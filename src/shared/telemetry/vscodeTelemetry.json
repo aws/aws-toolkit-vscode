@@ -29,9 +29,9 @@
             "description": "How many lines of code being sent for security scan"
         },
         {
-            "name": "consolasCodeScanPayloadSize",
+            "name": "consolasCodeScanPayloadBytes",
             "type": "int",
-            "description": "The payload size of customer project context sent for security scan"
+            "description": "The payload size in bytes of customer project context sent for security scan"
         },
         {
             "name": "consolasCodeScanTotalIssues",
@@ -223,7 +223,7 @@
                     "type": "consolasLanguage"
                 },
                 {
-                    "type": "consolasCodeScanPayloadSize"
+                    "type": "consolasCodeScanPayloadBytes"
                 },
                 {
                     "type": "consolasCodeScanLines"

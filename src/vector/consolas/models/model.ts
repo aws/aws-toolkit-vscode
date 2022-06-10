@@ -77,7 +77,7 @@ export interface InlineCompletionItem {
 export interface CodeScanTelemetryEntry {
     consolasCodeScanJobId?: string
     consolasLanguage: telemetry.ConsolasLanguage
-    consolasCodeScanPayloadSize: number
+    consolasCodeScanPayloadBytes: number
     consolasCodeScanLines: number
     duration: number
     result: telemetry.Result

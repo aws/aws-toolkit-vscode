@@ -55,7 +55,7 @@ export async function startSecurityScan(
     const codeScanStartTime = performance.now()
     const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
         consolasLanguage: runtimeLanguageContext.getLanguageContext(editor.document.languageId).language,
-        consolasCodeScanPayloadSize: 0,
+        consolasCodeScanPayloadBytes: 0,
         consolasCodeScanLines: 0,
         duration: 0,
         result: 'Succeeded',
@@ -81,7 +81,7 @@ export async function startSecurityScan(
             ConsolasConstants.contextTruncationTimeout
         )
         getLogger().info(`Complete project context processing.`)
-        codeScanTelemetryEntry.consolasCodeScanPayloadSize = truncation.src.size + truncation.build.size
+        codeScanTelemetryEntry.consolasCodeScanPayloadBytes = truncation.src.size + truncation.build.size
         codeScanTelemetryEntry.consolasCodeScanLines = truncation.lines
 
         /**
