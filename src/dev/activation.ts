@@ -17,16 +17,10 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { promisify } from 'util'
 import * as manifest from '../../package.json'
-import {
-    createBoundProcess,
-    ensureDependencies,
-    getMdeSsmEnv,
-    startSshController,
-    startVscodeRemote,
-} from '../mde/mdeModel'
+import { createBoundProcess, ensureDependencies, getMdeSsmEnv, startVscodeRemote } from '../mde/mdeModel'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
-import { createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
+import { createCawsEnvProvider, createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { CawsCommands } from '../caws/commands'
@@ -182,7 +176,7 @@ async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<
     progress.report({ message: 'Opening terminal...' })
 
     const { ssh, ssm } = deps
-    const provider = createCawsSessionProvider(client, ssm, ssh)
+    const provider = createCawsSessionProvider(client, ssm)
     const envVars = getMdeSsmEnv(client.regionCode, ssm, await provider.getDetails(env))
 
     const options: vscode.TerminalOptions = {
@@ -355,8 +349,9 @@ async function installVsix(
         return
     }
 
-    const provider = createCawsSessionProvider(client, ssm, ssh)
-    const SessionProcess = createBoundProcess(provider, env).extend({
+    const provider = createCawsSessionProvider(client, ssm)
+    const envProvider = createCawsEnvProvider(provider, env)
+    const SessionProcess = createBoundProcess(envProvider).extend({
         timeout: progress.getToken(),
         onStdout: logOutput(`install: ${env.id}:`),
         onStderr: logOutput(`install (stderr): ${env.id}:`),
@@ -366,7 +361,6 @@ async function installVsix(
     const hostName = getHostNameFromEnv(env)
 
     progress.report({ message: 'Starting controller...' })
-    await startSshController(SessionProcess, ssh, hostName)
 
     const EXT_ID = VSCODE_EXTENSION_ID.awstoolkit
     const EXT_PATH = `/home/mde-user/.vscode-server/extensions`

@@ -96,8 +96,9 @@ export async function mdeConnectCommand(args: Pick<mde.MdeEnvironment, 'id'>, re
         return
     }
 
-    const provider = mdeModel.createMdeSessionProvider(mdeClient, region, deps.ssm, deps.ssh)
-    const SessionProcess = mdeModel.createBoundProcess(provider, args).extend({
+    const sessionProvider = mdeModel.createMdeSessionProvider(mdeClient, region, deps.ssm)
+    const envProvider = mdeModel.createMdeEnvProvider(sessionProvider, args)
+    const SessionProcess = mdeModel.createBoundProcess(envProvider).extend({
         onStdout(stdout) {
             getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
         },
