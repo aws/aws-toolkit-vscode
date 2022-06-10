@@ -17,6 +17,7 @@ import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
 import { CloudWatchLogsLogStreams } from 'aws-sdk/clients/opsworks'
 import { integer } from 'aws-sdk/clients/backup'
+import { int } from 'aws-sdk/clients/datapipeline'
 
 // TODO: Add debug logging statements
 
@@ -44,11 +45,8 @@ export class LogStreamRegistry {
      */
     public async registerLog(
         uri: vscode.Uri,
-        logGroupInfo: CloudWatchLogsLogGroupInfo,
-        filterParameters?: {
-            filterPattern: string
-            startTime: integer
-        }
+        logGroupInfo: CloudWatchLogsGroupInfo,
+        filterParameters?: CloudWatchAPIParameters
     ): Promise<void> {
         // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
         // parseCloudWatchLogsUri(uri)
@@ -332,7 +330,7 @@ export class LogStreamRegistry {
     }
 
     private async getLogEventsFromUriComponents(
-        logGroupInfo: CloudWatchLogsLogGroupInfo,
+        logGroupInfo: CloudWatchLogsGroupInfo,
         nextToken?: string
     ): Promise<CloudWatchAPIResponse> {
         const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
@@ -355,12 +353,9 @@ export class LogStreamRegistry {
         }
     }
     public async filterLogEventsFromUriComponents(
-        logGroupInfo: CloudWatchLogsLogGroupInfo,
+        logGroupInfo: CloudWatchLogsGroupInfo,
         nextToken?: string,
-        filterParameters?: {
-            filterPattern: string
-            startTime: integer
-        }
+        filterParameters?: CloudWatchAPIParameters
     ): Promise<CloudWatchAPIResponse> {
         const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
             logGroupInfo.regionName
@@ -386,7 +381,7 @@ export class LogStreamRegistry {
 
 export class CloudWatchLogData {
     data: CloudWatchLogs.OutputLogEvents = []
-    logGroupInfo!: CloudWatchLogsLogGroupInfo
+    logGroupInfo!: CloudWatchLogsGroupInfo
     next?: {
         token: CloudWatchLogs.NextToken | undefined
     }
@@ -394,10 +389,11 @@ export class CloudWatchLogData {
         token: CloudWatchLogs.NextToken | undefined
     }
     busy: boolean = false
-    filterParameters?: {
-        filterPattern: string
-        startTime: integer
-    }
+    filterParameters?: CloudWatchAPIParameters
+    // {
+    //     filterPattern: string
+    //     startTime: integer
+    // }
     logEventsAPICall?: CloudWatchAPICall
 }
 
@@ -407,17 +403,19 @@ export interface CloudWatchAPIResponse {
     nextBackwardToken?: CloudWatchLogs.NextToken
 }
 
-export interface CloudWatchLogsLogGroupInfo {
+export interface CloudWatchLogsGroupInfo {
     groupName: string
     regionName: string
     streamName?: string
 }
 
+export interface CloudWatchAPIParameters {
+    filterPattern?: string
+    startTime: number
+}
+
 export type CloudWatchAPICall = (
-    logGroupInfo: CloudWatchLogsLogGroupInfo,
+    logGroupInfo: CloudWatchLogsGroupInfo,
     nextToken?: string,
-    filterParameters?: {
-        filterPattern: string
-        startTime: integer
-    }
+    filterParameters?: CloudWatchAPIParameters
 ) => Promise<CloudWatchAPIResponse>

@@ -17,7 +17,7 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { CloudWatchAPIParameters, LogStreamRegistry } from '../registry/logStreamRegistry'
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
 import globals from '../../shared/extensionGlobals'
 import { nodeModuleNameResolver } from 'typescript'
@@ -31,7 +31,6 @@ export interface SearchLogGroup {
 
 export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
-    console.log('The search log group button has been clicked.')
 
     const keywordSearchTerms = await vscode.window.showInputBox({
         placeHolder: 'Enter keyword search here.',
@@ -54,16 +53,7 @@ export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegi
     })
 
     const dateQuickPick = createQuickPick(timeOptions)
-
     const datetime = await dateQuickPick.prompt()
-
-    if (isValidResponse(datetime)) {
-        console.log('Log group  is: ' + node.name)
-        console.log('Region is: ' + node.regionCode)
-        console.log('Keywords are: ' + keywordSearchTerms)
-        console.log('Datetime frame is: ' + datetime)
-    }
-
     const logGroupInfo = {
         groupName: node.name,
         regionName: node.regionCode,
@@ -76,15 +66,13 @@ export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegi
         filterPattern: keywordSearchTerms ? keywordSearchTerms : '',
         startTime: datetime === '0' ? 0 : curTime - timeToSubtract,
     }
-
-    const uri = convertLogGroupInfoToUri(node.name, node.regionCode)
+    const uri = convertLogGroupInfoToUri(node.name, node.regionCode, { filterParameters: filterParameters })
     await registry.registerLog(uri, logGroupInfo, filterParameters)
     //await registry.registerLogFilter(uri, filterParameters, logGroupInfo)
     const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
     vscode.languages.setTextDocumentLanguage(doc, 'log')
     await vscode.window.showTextDocument(doc, { preview: false })
-
-    //telemetry.recordCloudwatchlogsOpenStream({ result })
+    telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
 // export interface SelectLogStreamWizardContext {

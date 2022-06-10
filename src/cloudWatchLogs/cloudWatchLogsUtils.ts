@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { integer } from 'aws-sdk/clients/cloudfront'
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
@@ -36,10 +37,27 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): { groupName: string; st
  * @param streamName Log stream name
  * @param regionName AWS region
  */
-export function convertLogGroupInfoToUri(groupName: string, regionName: string, streamName?: string): vscode.Uri {
-    return streamName
-        ? vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${streamName}:${regionName}`)
-        : vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${regionName}`)
+export function convertLogGroupInfoToUri(
+    groupName: string,
+    regionName: string,
+    optionalArgs?: {
+        streamName?: string
+        filterParameters?: {
+            filterPattern: string
+            startTime: integer
+        }
+    }
+): vscode.Uri {
+    var uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${regionName}`
+    if (optionalArgs) {
+        if (optionalArgs.streamName) {
+            uriStr += `:${optionalArgs.streamName}`
+        }
+        if (optionalArgs.filterParameters) {
+            uriStr += `:${optionalArgs.filterParameters.filterPattern}:${optionalArgs.filterParameters.startTime}`
+        }
+    }
+    return vscode.Uri.parse(uriStr)
 }
 
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cloudWatchLogs', { limit: Number }) {}
