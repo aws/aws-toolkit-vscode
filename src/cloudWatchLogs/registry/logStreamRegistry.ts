@@ -46,17 +46,17 @@ export class LogStreamRegistry {
     public async registerLog(
         uri: vscode.Uri,
         logGroupInfo: CloudWatchLogsGroupInfo,
-        filterParameters?: CloudWatchAPIParameters
+        apiParameters?: CloudWatchAPIParameters
     ): Promise<void> {
         // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
         // parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
-            if (filterParameters) {
+            if (apiParameters) {
                 this.setLog(uri, {
                     data: [],
                     logGroupInfo: logGroupInfo,
                     busy: false,
-                    filterParameters: filterParameters,
+                    apiParameters: apiParameters,
                 })
             } else {
                 this.setLog(uri, {
@@ -237,18 +237,14 @@ export class LogStreamRegistry {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
             // Set default API call depending on parameters passed in.
             var logEvents
-            if (stream.filterParameters) {
+            if (stream.apiParameters) {
                 // If we are trying to go backwards on filterLogEvents, just don't do anything
                 if (headOrTail === 'head') {
                     return
                 }
                 logEvents = stream.logEventsAPICall
-                    ? await stream.logEventsAPICall(stream.logGroupInfo, nextToken, stream.filterParameters)
-                    : await this.filterLogEventsFromUriComponents(
-                          stream.logGroupInfo,
-                          nextToken,
-                          stream.filterParameters
-                      )
+                    ? await stream.logEventsAPICall(stream.logGroupInfo, nextToken, stream.apiParameters)
+                    : await this.filterLogEventsFromUriComponents(stream.logGroupInfo, nextToken, stream.apiParameters)
             } else {
                 logEvents = stream.logEventsAPICall
                     ? await stream.logEventsAPICall(stream.logGroupInfo, nextToken)
@@ -279,7 +275,7 @@ export class LogStreamRegistry {
                 data: newData,
                 logGroupInfo: stream.logGroupInfo,
                 logEventsAPICall: stream.logEventsAPICall,
-                filterParameters: stream.filterParameters,
+                apiParameters: stream.apiParameters,
             })
 
             this._onDidChange.fire(uri)
@@ -389,11 +385,7 @@ export class CloudWatchLogData {
         token: CloudWatchLogs.NextToken | undefined
     }
     busy: boolean = false
-    filterParameters?: CloudWatchAPIParameters
-    // {
-    //     filterPattern: string
-    //     startTime: integer
-    // }
+    apiParameters?: CloudWatchAPIParameters
     logEventsAPICall?: CloudWatchAPICall
 }
 
@@ -417,5 +409,5 @@ export interface CloudWatchAPIParameters {
 export type CloudWatchAPICall = (
     logGroupInfo: CloudWatchLogsGroupInfo,
     nextToken?: string,
-    filterParameters?: CloudWatchAPIParameters
+    apiParameters?: CloudWatchAPIParameters
 ) => Promise<CloudWatchAPIResponse>
