@@ -331,7 +331,7 @@ export async function activate(context: ExtContext): Promise<void> {
              * On recommendation rejection
              */
             vscode.window.onDidChangeVisibleTextEditors(async e => {
-                await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
+                await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor, false, true)
             }),
             vscode.window.onDidChangeActiveTextEditor(async e => {
                 await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)

@@ -74,7 +74,11 @@ export async function invokeConsolas(
                 }
             }
         } else {
-            if (!vsCodeState.isConsolasEditing && !InlineCompletion.instance.isPaginationRunning()) {
+            if (
+                !vsCodeState.isConsolasEditing &&
+                !InlineCompletion.instance.isPaginationRunning() &&
+                !InlineCompletion.instance.getIsActive
+            ) {
                 await InlineCompletion.instance.resetInlineStates(editor)
                 InlineCompletion.instance.setConsolasStatusBarLoading()
                 InlineCompletion.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)

@@ -49,6 +49,11 @@ export class InlineCompletion {
     private consolasStatusBar: vscode.StatusBarItem
     public isTypeaheadInProgress: boolean
     private _timer?: NodeJS.Timer
+    private documentUri: vscode.Uri | undefined
+    /**
+     * Set whenever a document has active inline recommendations
+     */
+    private isInlineActive = false
 
     constructor() {
         this.items = []
@@ -57,6 +62,7 @@ export class InlineCompletion {
         this.typeAhead = ''
         this.consolasStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
         this.isTypeaheadInProgress = false
+        this.documentUri = undefined
     }
 
     static #instance: InlineCompletion
@@ -71,8 +77,10 @@ export class InlineCompletion {
         this.position = 0
         this.typeAhead = ''
         await vscode.commands.executeCommand('setContext', ConsolasConstants.serviceActiveKey, false)
+        this.isInlineActive = false
         editor.setDecorations(this.dimDecoration, [])
         this.setConsolasStatusBarOk()
+        this.documentUri = vscode.Uri.file('')
     }
 
     setRange(range: vscode.Range) {
@@ -125,27 +133,44 @@ export class InlineCompletion {
                 await this.resetInlineStates(editor)
             })
     }
+    async resetRejectStates(editor: vscode.TextEditor) {
+        vsCodeState.isConsolasEditing = false
+        await this.resetInlineStates(editor)
 
-    async rejectRecommendation(editor: vscode.TextEditor | undefined, isTypeAheadRejection: boolean = false) {
+        RecommendationHandler.instance.cancelPaginatedRequest()
+        // report all recommendation as rejected
+        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1, false)
+    }
+
+    async rejectRecommendation(
+        editor: vscode.TextEditor | undefined,
+        isTypeAheadRejection: boolean = false,
+        onDidChangeVisibleTextEditors: boolean = false
+    ) {
         if (!editor || vsCodeState.isConsolasEditing) return
         if (!isTypeAheadRejection && this.items.length === 0) return
         vsCodeState.isConsolasEditing = true
         this._referenceProvider.removeInlineReference()
-        await editor
-            ?.edit(
-                builder => {
-                    builder.delete(this._range)
-                },
-                { undoStopAfter: false, undoStopBefore: false }
-            )
-            .then(async () => {
-                vsCodeState.isConsolasEditing = false
-                await this.resetInlineStates(editor)
-
-                RecommendationHandler.instance.cancelPaginatedRequest()
-                // report all recommendation as rejected
-                RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1, false)
-            })
+        if (onDidChangeVisibleTextEditors && this.documentUri && this.documentUri.fsPath.length > 0) {
+            const workEdits = new vscode.WorkspaceEdit()
+            workEdits.set(this.documentUri, [vscode.TextEdit.delete(this._range)])
+            try {
+                await vscode.workspace.applyEdit(workEdits)
+            } finally {
+                await this.resetRejectStates(editor)
+            }
+        } else {
+            await editor
+                ?.edit(
+                    builder => {
+                        builder.delete(this._range)
+                    },
+                    { undoStopAfter: false, undoStopBefore: false }
+                )
+                .then(async () => {
+                    await this.resetRejectStates(editor)
+                })
+        }
     }
     // get the typeahead since user invocation position
     // ignore leading white spaces and TAB
@@ -248,6 +273,7 @@ export class InlineCompletion {
                             editor.selection = newSelection
 
                             await vscode.commands.executeCommand('setContext', ConsolasConstants.serviceActiveKey, true)
+                            this.isInlineActive = true
                             const curItem = this.items[this.position]
                             this._referenceProvider.setInlineReference(
                                 RecommendationHandler.instance.startPos.line,
@@ -300,6 +326,7 @@ export class InlineCompletion {
         )
         let page = 0
         RecommendationHandler.instance.checkAndResetCancellationTokens()
+        this.documentUri = editor.document.uri
         try {
             while (page < this._maxPage) {
                 const getRecommendationPromise = RecommendationHandler.instance.getRecommendations(
@@ -432,5 +459,9 @@ export class InlineCompletion {
 
     isPaginationRunning() {
         return this.consolasStatusBar.text === ` $(loading~spin)Consolas`
+    }
+
+    get getIsActive() {
+        return this.isInlineActive
     }
 }
