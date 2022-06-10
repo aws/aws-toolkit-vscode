@@ -25,7 +25,6 @@ import { integer } from 'aws-sdk/clients/backup'
  */
 export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
-
     public constructor(
         private readonly configuration: CloudWatchLogsSettings,
         private readonly activeStreams: Map<string, CloudWatchLogData> = new Map<string, CloudWatchLogData>()
@@ -49,20 +48,17 @@ export class LogStreamRegistry {
         filterParameters?: {
             filterPattern: string
             startTime: integer
-        },
-        APICallFunc?: CloudWatchAPICall
+        }
     ): Promise<void> {
         // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
         // parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
-            // If we pass in API parameters and APICallFunction, we should register it to the stream.
-            if (filterParameters && APICallFunc) {
+            if (filterParameters) {
                 this.setLog(uri, {
                     data: [],
                     logGroupInfo: logGroupInfo,
                     busy: false,
                     filterParameters: filterParameters,
-                    logEventsAPICall: APICallFunc,
                 })
             } else {
                 this.setLog(uri, {
@@ -244,6 +240,10 @@ export class LogStreamRegistry {
             // Set default API call depending on parameters passed in.
             var logEvents
             if (stream.filterParameters) {
+                // If we are trying to go backwards on filterLogEvents, just don't do anything
+                if (headOrTail === 'head') {
+                    return
+                }
                 logEvents = stream.logEventsAPICall
                     ? await stream.logEventsAPICall(stream.logGroupInfo, nextToken, stream.filterParameters)
                     : await this.filterLogEventsFromUriComponents(
@@ -371,6 +371,7 @@ export class LogStreamRegistry {
             nextToken: nextToken,
             filterPattern: filterParameters ? filterParameters.filterPattern : '',
             startTime: filterParameters ? filterParameters.startTime : 0,
+            limit: this.configuration.get('limit', 1000),
         })
 
         // NOTE: We make the assumption here that the previous next token would allow us to move backwards in the search.
