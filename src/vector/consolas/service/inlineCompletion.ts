@@ -184,17 +184,21 @@ export class InlineCompletion {
             )
         )
         let move = 0
-        for (let i = 0; i < typedPrefix.length; i++) {
-            if (typedPrefix[i] === ' ' || typedPrefix[i] === '\t') {
-                move++
-            } else {
-                break
+        // when inline is not active, user input space and \t won't be considered as typeahead
+        if (!this.isInlineActive) {
+            for (let i = 0; i < typedPrefix.length; i++) {
+                if (typedPrefix[i] === ' ' || typedPrefix[i] === '\t') {
+                    move++
+                } else {
+                    break
+                }
             }
+            RecommendationHandler.instance.startPos = new vscode.Position(
+                RecommendationHandler.instance.startPos.line,
+                RecommendationHandler.instance.startPos.character + move
+            )
         }
-        RecommendationHandler.instance.startPos = new vscode.Position(
-            RecommendationHandler.instance.startPos.line,
-            RecommendationHandler.instance.startPos.character + move
-        )
+
         return typedPrefix.substring(move)
     }
 
