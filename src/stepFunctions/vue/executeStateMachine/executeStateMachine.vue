@@ -30,8 +30,6 @@
                 <span class="custom-file-name">{{ selectedFile }}</span>
             </div>
         </div>
-        <br />
-        <br />
         <div :style="{ visibility: textAreaVisible ? 'visible' : 'hidden', marginBottom: '10px' }">
             <textarea
                 rows="10"
