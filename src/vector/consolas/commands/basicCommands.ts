@@ -13,7 +13,6 @@ import { DefaultConsolasClient } from '../client/consolas'
 import { showAccessTokenPrompt } from '../util/showAccessTokenPrompt'
 import { startSecurityScanWithProgress } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { vsCodeState } from '../models/model'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.consolas.toggleCodeSuggestion',
@@ -75,25 +74,6 @@ export const showSecurityScan = Commands.declare(
             }
         }
 )
-/* This is overriding vscode type command
- *  It contains reference code under MIT license from https://github.com/VSCodeVim
- *  This safe type command is to avoid user and consolas making edits to same file at same time
- *  It can be removed when migrate to VSC native inline suggestion API later
- *  This command will only be registered when Consolas enabled,
- *  and it gets disposed when Consolas is disabled
- */
-export const safeType = Commands.declare({ id: 'type', logging: false }, () => async args => {
-    if (!vscode.window.activeTextEditor) {
-        return
-    }
-
-    // disable user key input when consolas is editing to avoid race condition
-    if (!vsCodeState.isConsolasEditing || vscode.window.activeTextEditor?.document?.uri?.toString() === 'debug:input') {
-        return vscode.commands.executeCommand('default:type', args)
-    }
-
-    return
-})
 
 export function get(key: string, context: ExtContext): any {
     return context.extensionContext.globalState.get(key)

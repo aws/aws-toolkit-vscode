@@ -10,8 +10,8 @@ export const ConsolasConstants = {
     alphaEndpoint: 'https://conso-conso-2ql1n3f7bqyy-1380812087.us-west-2.elb.amazonaws.com/',
     betaEndpoint: 'https://conso-conso-1gaw7rhj4gx1w-a813d3d32546185b.elb.us-west-2.amazonaws.com/',
     gammaEndpoint: 'https://conso-conso-1ohz4gfxol2wj-1382674778.us-west-2.elb.amazonaws.com/',
-    prodEndpoint: 'https://conso-conso-eh28s3s7lpja-dc3892a3fd48c07f.elb.us-west-2.amazonaws.com/',
-    region: 'us-west-2',
+    prodEndpoint: 'https://conso-conso-1c63ei62o0h5k-497433310.us-east-1.elb.amazonaws.com/',
+    region: 'us-east-1',
 
     /**
      * Automated and manual trigger
@@ -93,7 +93,7 @@ export const ConsolasConstants = {
     // TODO: Update the portal url
     previewSignupPortal: 'https://docs.aws.amazon.com/',
 
-    prodIdentityPoolID: 'us-west-2:1ec95da4-4533-48a5-aafb-fcac96a9bbc6',
+    prodIdentityPoolID: 'us-east-1:299a155e-8104-4fc7-9a3e-9c12a11a8ec3',
     alphaIdentityPoolID: 'us-west-2:c84f4c4c-e283-469f-a1d4-bf43c44f48c1',
     betaIdentityPoolID: 'us-west-2:b4e4d976-f042-4347-9d89-299b8f9787f3',
     gammaIdentityPoolID: 'us-west-2:97e13e76-921d-4298-8a5d-614dd3039585',

@@ -16,7 +16,7 @@ import { onAcceptance } from './commands/onAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
 import { ConsolasSettings } from './util/consolasSettings'
 import { ExtContext } from '../../shared/extensions'
-import { Disposable, TextEditorSelectionChangeKind } from 'vscode'
+import { TextEditorSelectionChangeKind } from 'vscode'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { ConsolasTracker } from './tracker/consolasTracker'
 import * as consolasClient from './client/consolas'
@@ -33,7 +33,6 @@ import {
     enterAccessToken,
     requestAccess,
     showSecurityScan,
-    safeType,
 } from './commands/basicCommands'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -73,8 +72,6 @@ export async function activate(context: ExtContext): Promise<void> {
     const referenceCodeLensProvider = new ReferenceInlineProvider()
     InlineCompletion.instance.setReferenceInlineProvider(referenceCodeLensProvider)
 
-    let safeTypeDisposable: Disposable | undefined = undefined
-
     context.extensionContext.subscriptions.push(
         /**
          * Configuration change
@@ -90,15 +87,6 @@ export async function activate(context: ExtContext): Promise<void> {
                     set(ConsolasConstants.autoTriggerEnabledKey, false, context)
                     if (!isCloud9()) {
                         InlineCompletion.instance.hideConsolasStatusBar()
-                        if (safeTypeDisposable !== undefined) {
-                            safeTypeDisposable.dispose()
-                            safeTypeDisposable = undefined
-                        }
-                    }
-                } else if (!isCloud9()) {
-                    if (safeTypeDisposable === undefined) {
-                        safeTypeDisposable = safeType.register()
-                        context.extensionContext.subscriptions.push(safeTypeDisposable)
                     }
                 }
                 vscode.commands.executeCommand('aws.consolas.refresh')
@@ -368,8 +356,6 @@ export async function activate(context: ExtContext): Promise<void> {
         const acceptedTermsAndEnabledConsolas: boolean = await getManualTriggerStatus()
         if (acceptedTermsAndEnabledConsolas) {
             InlineCompletion.instance.setConsolasStatusBarOk()
-            safeTypeDisposable = safeType.register()
-            context.extensionContext.subscriptions.push(safeTypeDisposable)
         }
     }
 

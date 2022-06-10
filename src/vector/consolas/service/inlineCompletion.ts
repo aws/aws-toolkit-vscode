@@ -352,6 +352,7 @@ export class InlineCompletion {
                 } else {
                     await getRecommendationPromise
                 }
+                this.setCompletionItems(editor)
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
                     RecommendationHandler.instance.clearRecommendations()
                     break
@@ -392,12 +393,7 @@ export class InlineCompletion {
                     RecommendationHandler.instance.cancelPaginatedRequest()
                     return
                 }
-                vsCodeState.isConsolasEditing = true
-                this.items = []
-                this.origin = this.getCompletionItems()
-                this.typeAhead = this.getTypedPrefix(editor)
-                this.setCompletionItemsUnderTypeAhead()
-                vsCodeState.isConsolasEditing = false
+                this.setCompletionItems(editor)
                 if (this.items.length > 0) {
                     this.setRange(new vscode.Range(editor.selection.active, editor.selection.active))
                     await this.showRecommendation(editor)
@@ -426,7 +422,16 @@ export class InlineCompletion {
         }, pollPeriod)
     }
 
-    setCompletionItemsUnderTypeAhead() {
+    private setCompletionItems(editor: vscode.TextEditor) {
+        vsCodeState.isConsolasEditing = true
+        this.origin = this.getCompletionItems()
+        this.typeAhead = this.getTypedPrefix(editor)
+        this.setCompletionItemsUnderTypeAhead()
+        vsCodeState.isConsolasEditing = false
+    }
+
+    private setCompletionItemsUnderTypeAhead() {
+        this.items = []
         if (this.typeAhead.length > 0) {
             this.origin.forEach((item, index) => {
                 if (item.content.startsWith(this.typeAhead)) {
