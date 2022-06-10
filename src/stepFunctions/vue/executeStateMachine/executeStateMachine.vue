@@ -3,13 +3,12 @@
 <template>
     <div id="app">
         <div class="container button-container" style="justify-content: space-between">
-            <div style="float: left">
-                <b>{{ initialData.name }}</b>
-            </div>
+            <h1>{{ initialData.name }}</h1>
             <div>
                 <input type="submit" v-on:click="sendInput" value="Execute" />
             </div>
         </div>
+        <br />
         <div>
             <label class="input-header"> Execution Input </label>
         </div>
