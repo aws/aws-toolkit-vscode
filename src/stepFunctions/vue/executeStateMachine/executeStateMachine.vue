@@ -20,18 +20,20 @@
         <div>
             <input type="radio" v-model="inputChoice" value="file" />
             <label for="file"> Select a file </label>
-            <br />
-            <br />
-            <div :style="{ visibility: fileInputVisible ? 'visible' : 'hidden' }">
-                <label class="custom-file-upload">
-                    <input type="file" @change="processFile($event)" />
-                    Choose File
-                </label>
-                <span class="custom-file-name">{{ selectedFile }}</span>
-            </div>
         </div>
-        <div :style="{ visibility: textAreaVisible ? 'visible' : 'hidden', marginBottom: '10px' }">
+        <div :style="{ visibility: fileInputVisible ? 'visible' : 'hidden' }">
+            <br />
+            <label class="custom-file-upload">
+                <input type="file" @change="processFile($event)" />
+                Choose File
+            </label>
+            <span class="custom-file-name">{{ selectedFile }}</span>
+            <br />
+            <br />
+        </div>
+        <div :style="{ visibility: textAreaVisible ? 'visible' : 'hidden' }">
             <textarea
+                style="width: 100%; margin-bottom: 10px"
                 rows="10"
                 v-model="executionInput"
                 v-bind:readonly="inputChoice == 'file'"
