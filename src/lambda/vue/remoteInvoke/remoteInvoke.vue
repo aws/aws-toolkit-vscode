@@ -1,8 +1,12 @@
 /*! * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <template>
-    <h1>Invoke function {{ initialData.FunctionName }}</h1>
-    <p style="margin-bottom: 5px; margin-top: 0; margin-right: 5px">ARN: {{ initialData.FunctionArn }}</p>
+    <div class="container button-container" style="justify-content: space-between">
+        <h1>Function {{ initialData.FunctionName }}</h1>
+        <div><button v-on:click="sendInput">Invoke</button></div>
+    </div>
+
+    <p style="margin-bottom: 5px; margin-top: 10px; margin-right: 5px">ARN: {{ initialData.FunctionArn }}</p>
 
     <p style="margin-top: 0">Region: {{ initialData.FunctionRegion }}</p>
 
@@ -21,9 +25,7 @@
     </select>
     <br />
     <br />
-    <textarea rows="20" cols="90" v-model="sampleText"></textarea>
-    <br />
-    <button class="mt-16 mb-16" v-on:click="sendInput">Invoke</button>
+    <textarea style="width: 100%; margin-bottom: 10px" rows="10" cols="90" v-model="sampleText"></textarea>
 </template>
 
 <script lang="ts">
