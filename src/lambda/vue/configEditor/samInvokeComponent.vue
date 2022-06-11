@@ -6,11 +6,16 @@
 <template>
     <form class="invoke-lambda-form">
         <h1>Edit SAM Debug Configuration</h1>
+        <div class="container button-container" id="invoke-button-container">
+            <button class="" v-on:click.prevent="launch">Invoke</button>
+            <button class="form-buttons" v-on:click.prevent="loadConfig">Load Existing Config</button>
+            <button class="form-buttons" v-on:click.prevent="save">Save</button>
+        </div>
         <p>
             <em>
-                Using this form you can create, edit, and run launch configs of <code>type:aws-sam</code>. When you
+                Using this form you can create, edit, and run launch-configs of <code>type:aws-sam</code>. When you
                 <strong>Invoke</strong> the launch config, {{ company }} Toolkit calls SAM CLI and attaches the debugger
-                to the code runing in a local Docker container.
+                to the code running in a local Docker container.
             </em>
         </p>
         <settings-panel id="config-panel" title="Configuration" description="">
@@ -271,10 +276,5 @@
             <span class="data-view">payload from data: {{ payload }} </span>
             <div class="input-validation" v-if="payload.errorMsg">Error parsing JSON: {{ payload.errorMsg }}</div>
         </settings-panel>
-        <div class="container" id="invoke-button-container">
-            <button class="" v-on:click.prevent="launch">Invoke</button>
-            <button class="form-buttons" v-on:click.prevent="loadConfig">Load Existing Config</button>
-            <button class="form-buttons" v-on:click.prevent="save">Save</button>
-        </div>
     </form>
 </template>

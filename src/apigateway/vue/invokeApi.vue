@@ -1,10 +1,20 @@
 /*! * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <template>
-    <h1>Invoke methods on {{ initialData.ApiName }} ({{ initialData.ApiId }})</h1>
-    <pre>{{ initialData.ApiArn }}</pre>
-    <br />
     <div id="app">
+        <div class="container button-container" style="justify-content: space-between">
+            <h1>API: {{ initialData.ApiName }} ({{ initialData.ApiId }})</h1>
+            <div v-if="errors.length">
+                <b>Validation error(s):</b>
+                <ul>
+                    <li v-for="error in errors" :key="error">{{ error }}</li>
+                </ul>
+            </div>
+            <div>
+                <button class="" @click="sendInput" :disabled="isLoading">{{ invokeText }}</button>
+            </div>
+        </div>
+        <pre>{{ initialData.ApiArn }}</pre>
         <h3>Select a resource:</h3>
         <select v-model="selectedApiResource" v-on:change="setApiResource">
             <option disabled value="">Select a resource</option>
@@ -32,16 +42,7 @@
         <input type="text" v-model="queryString" />
         <br />
         <br />
-        <textarea rows="20" cols="90" v-model="jsonInput"></textarea>
-        <br />
-        <button class="mt-16 mb-16" @click="sendInput" :disabled="isLoading">{{ invokeText }}</button>
-        <br />
-        <div v-if="errors.length">
-            <b>Please correct the following error(s):</b>
-            <ul>
-                <li v-for="error in errors" :key="error">{{ error }}</li>
-            </ul>
-        </div>
+        <textarea style="width: 100%; margin-bottom: 10px" rows="10" cols="90" v-model="jsonInput"></textarea>
     </div>
 </template>
 

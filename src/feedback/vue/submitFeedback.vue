@@ -2,7 +2,16 @@
 
 <template>
     <div>
-        <h1>Feedback for AWS Toolkit</h1>
+        <div class="container button-container" style="justify-content: space-between">
+            <h1>Feedback for AWS Toolkit</h1>
+            <div id="error" v-if="error !== ''" style="margin-right: 10px">
+                <strong>{{ error }}</strong>
+            </div>
+            <div>
+                <input v-if="isSubmitting" type="submit" value="Submitting..." disabled />
+                <input v-else type="submit" @click="submitFeedback" :disabled="comment.length > 2000" value="Send" />
+            </div>
+        </div>
 
         <h3 id="sentiment-heading">How was your experience?</h3>
         <div>
@@ -15,33 +24,27 @@
         <h3 id="feedback-heading">Feedback</h3>
 
         <div>
-            <textarea style="width: 100%" rows="10" cols="90" v-model="comment"></textarea>
             <div>
-                <div
-                    style="float: right; font-size: smaller"
-                    id="remaining"
-                    :class="comment.length > 2000 ? 'exceeds-max-length' : ''"
-                >
-                    {{ 2000 - comment.length }} characters remaining
-                </div>
-                <div>
-                    <em
-                        >Feedback is <b>anonymous</b>. If you need a reply,
-                        <a href="https://github.com/aws/aws-toolkit-vscode/issues/new/choose">contact us on GitHub</a
-                        >.</em
+                <div style="margin-bottom: 10px">
+                    <div
+                        style="float: right; font-size: smaller"
+                        id="remaining"
+                        :class="comment.length > 2000 ? 'exceeds-max-length' : ''"
                     >
+                        {{ 2000 - comment.length }} characters remaining
+                    </div>
+                    <div>
+                        <em
+                            >Feedback is <b>anonymous</b>. If you need a reply,
+                            <a href="https://github.com/aws/aws-toolkit-vscode/issues/new/choose"
+                                >contact us on GitHub</a
+                            >.</em
+                        >
+                    </div>
                 </div>
             </div>
+            <textarea style="width: 100%; margin-bottom: 10px" rows="10" cols="90" v-model="comment"></textarea>
         </div>
-
-        <div id="error" v-if="error !== ''" style="float: right">
-            <strong>{{ error }}</strong>
-        </div>
-
-        <p>
-            <input v-if="isSubmitting" type="submit" value="Submitting..." disabled />
-            <input v-else type="submit" @click="submitFeedback" :disabled="comment.length > 2000" value="Send" />
-        </p>
     </div>
 </template>
 
