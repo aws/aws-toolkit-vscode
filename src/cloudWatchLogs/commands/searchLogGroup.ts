@@ -52,7 +52,9 @@ export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegi
         regionName: node.regionCode,
     }
 
-    const uri = convertLogGroupInfoToUri(node.name, node.regionCode, { filterParameters: filterParameters })
+    const uri = convertLogGroupInfoToUri('filterLogEvents', node.name, node.regionCode, {
+        filterParameters: filterParameters,
+    })
     await registry.registerLog(uri, logGroupInfo, filterParameters)
     //await registry.registerLogFilter(uri, filterParameters, logGroupInfo)
     const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider

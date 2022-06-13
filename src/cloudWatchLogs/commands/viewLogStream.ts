@@ -31,7 +31,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
-        const uri = convertLogGroupInfoToUri(logStreamResponse.logGroupName, logStreamResponse.region, {
+        const uri = convertLogGroupInfoToUri('getLogEvents', logStreamResponse.logGroupName, logStreamResponse.region, {
             streamName: logStreamResponse.logStreamName,
         })
 

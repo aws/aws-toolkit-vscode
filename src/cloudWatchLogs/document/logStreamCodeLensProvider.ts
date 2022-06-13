@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { needsBackwardButton, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 
 export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
     public constructor(private readonly registry: LogStreamRegistry) {}
@@ -24,41 +25,45 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
     ): vscode.ProviderResult<vscode.CodeLens[]> {
         const uri = document.uri
         const isBusy = this.registry.getBusyStatus(uri)
-
         const busyCommand: vscode.Command = {
             title: localize('AWS.message.loading', 'Loading...'),
             command: 'aws.doNothingCommand',
         }
-
-        const codelenses = [
-            // first line of virtual doc: always show "Load Older"
-            {
-                range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
-                isResolved: true,
-                command: isBusy
-                    ? busyCommand
-                    : {
-                          title: localize('AWS.cloudWatchLogs.codeLens.loadOlder', 'Load older events...'),
-                          command: 'aws.addLogEvents',
-                          arguments: [document, this.registry, 'head', this._onDidChangeCodeLenses],
-                      },
-            },
-            // last line of virtual doc: always show "Load Newer"
-            {
-                range: new vscode.Range(
-                    new vscode.Position(document.lineCount - 1, 0),
-                    new vscode.Position(document.lineCount - 1, 0)
-                ),
-                isResolved: true,
-                command: isBusy
-                    ? busyCommand
-                    : {
-                          title: localize('AWS.cloudWatchLogs.codeLens.loadNewer', 'Load newer events...'),
-                          command: 'aws.addLogEvents',
-                          arguments: [document, this.registry, 'tail', this._onDidChangeCodeLenses],
-                      },
-            },
-        ]
+        // first line of virtual doc: always show "Load Older"
+        const backwardCodelense = {
+            range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
+            isResolved: true,
+            command: isBusy
+                ? busyCommand
+                : {
+                      title: localize('AWS.cloudWatchLogs.codeLens.loadOlder', 'Load older events...'),
+                      command: 'aws.addLogEvents',
+                      arguments: [document, this.registry, 'head', this._onDidChangeCodeLenses],
+                  },
+        }
+        // last line of virtual doc: always show "Load Newer"
+        const forwardCodelense = {
+            range: new vscode.Range(
+                new vscode.Position(document.lineCount - 1, 0),
+                new vscode.Position(document.lineCount - 1, 0)
+            ),
+            isResolved: true,
+            command: isBusy
+                ? busyCommand
+                : {
+                      title: localize('AWS.cloudWatchLogs.codeLens.loadNewer', 'Load newer events...'),
+                      command: 'aws.addLogEvents',
+                      arguments: [document, this.registry, 'tail', this._onDidChangeCodeLenses],
+                  },
+        }
+        const codelenses = [forwardCodelense]
+        // Checks if the URI is valif for getLogEvents
+        console.log('Here')
+        if (needsBackwardButton(uri)) {
+            codelenses.unshift(backwardCodelense)
+        } else {
+            console.log('No Backward button')
+        }
 
         return uri.scheme === CLOUDWATCH_LOGS_SCHEME ? codelenses : []
     }
