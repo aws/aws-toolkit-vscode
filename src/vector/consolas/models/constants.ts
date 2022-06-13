@@ -134,4 +134,7 @@ export const ConsolasConstants = {
 
     // telemetry experiment id
     experimentId: 'vectorConsolas',
+
+    // wait time for editor to update editor.selection.active (in milliseconds)
+    vsCodeCursorUpdateDelay: 3,
 }

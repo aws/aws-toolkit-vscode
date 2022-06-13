@@ -299,14 +299,17 @@ export async function activate(context: ExtContext): Promise<void> {
                      * 2. editor.selection.active has been successfully updated by VS Code
                      * Then this event can be processed by our code.
                      */
-                    await sleep(10)
-                    await InlineCompletion.instance.setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
-                    await KeyStrokeHandler.instance.processKeyStroke(
-                        e,
-                        vscode.window.activeTextEditor,
-                        client,
-                        await getConfigEntry()
-                    )
+                    await sleep(ConsolasConstants.vsCodeCursorUpdateDelay)
+                    if (InlineCompletion.instance.getIsActive) {
+                        await InlineCompletion.instance.setTypeAheadRecommendations(vscode.window.activeTextEditor, e)
+                    } else {
+                        await KeyStrokeHandler.instance.processKeyStroke(
+                            e,
+                            vscode.window.activeTextEditor,
+                            client,
+                            await getConfigEntry()
+                        )
+                    }
                 }
             }),
 
@@ -397,7 +400,7 @@ export async function activate(context: ExtContext): Promise<void> {
                      * 2. editor.selection.active has been successfully updated by VS Code
                      * Then this event can be processed by our code.
                      */
-                    await sleep(10)
+                    await sleep(ConsolasConstants.vsCodeCursorUpdateDelay)
                     await KeyStrokeHandler.instance.processKeyStroke(
                         e,
                         vscode.window.activeTextEditor,
