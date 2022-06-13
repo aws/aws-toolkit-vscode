@@ -11,6 +11,7 @@ import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { getLogger } from '../../../shared/logger'
 import { ConsolasConstants } from '../models/constants'
 import { DependencyGraphFactory } from '../util/dependencyGraph/dependencyGraphFactory'
+import { JavaDependencyGraphError } from '../util/dependencyGraph/javaDependencyGraph'
 import {
     getPresignedUrlAndUpload,
     createScanJob,
@@ -20,6 +21,8 @@ import {
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { CodeScanTelemetryEntry } from '../models/model'
+import { openSettings } from '../../../shared/settings'
+import { ok, viewSettings } from '../../../shared/localizedText'
 
 //if this is browser it uses browser and if it's node then it uses nodes
 //TODO remove when node version >= 16
@@ -68,7 +71,7 @@ export async function startSecurityScan(
          */
         const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor.document.languageId)
         if (dependencyGraph === undefined) {
-            throw new Error(`${editor.document.languageId} is not supported for security scan.`)
+            throw new Error(`"${editor.document.languageId}" is not supported for security scan.`)
         }
         const uri = dependencyGraph.getRootFile(editor)
         const projectPath = dependencyGraph.getProjectPath(uri)
@@ -111,7 +114,12 @@ export async function startSecurityScan(
          * Step 5: Process and render scan results
          */
         getLogger().info(`Security scan job succeeded and start processing result.`)
-        const securityRecommendationCollection = await listScanResults(client, scanJob.jobId, projectPath)
+        const securityRecommendationCollection = await listScanResults(
+            client,
+            scanJob.jobId,
+            ConsolasConstants.codeScanFindingsSchema,
+            projectPath
+        )
         const total = securityRecommendationCollection.reduce((accumulator, current) => {
             return accumulator + current.issues.length
         }, 0)
@@ -131,7 +139,7 @@ export async function startSecurityScan(
         getLogger().info(`Security scan completed.`)
     } catch (error) {
         getLogger().error('Security scan failed:', error)
-        vscode.window.showWarningMessage(`Security scan failed: ${error}`)
+        errorPromptHelper(error as Error)
         codeScanTelemetryEntry.result = 'Failed'
         codeScanTelemetryEntry.reason = (error as Error).message
     } finally {
@@ -140,5 +148,23 @@ export async function startSecurityScan(
         })
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
         telemetry.recordConsolasSecurityScan(codeScanTelemetryEntry)
+    }
+}
+
+export function errorPromptHelper(error: Error) {
+    if (error instanceof JavaDependencyGraphError) {
+        vscode.window
+            .showWarningMessage(
+                'Try rebuilding the Java project or specify compilation output in Settings.',
+                viewSettings,
+                ok
+            )
+            .then(async resp => {
+                if (resp === viewSettings) {
+                    openSettings('aws.consolas.javaCompilationOutput')
+                }
+            })
+    } else {
+        vscode.window.showWarningMessage(`Security scan failed: ${error}`, ok)
     }
 }

@@ -91,8 +91,6 @@ describe('consolasTracker', function () {
                 consolasModificationPercentage: 1,
                 consolasCompletionType: 'Line',
                 consolasLanguage: 'java',
-                consolasRuntime: 'java11',
-                consolasRuntimeSource: '11.0.13',
             })
         })
     })

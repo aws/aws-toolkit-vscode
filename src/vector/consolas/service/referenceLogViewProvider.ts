@@ -54,18 +54,24 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         let text = ``
         for (const reference of references) {
             if (
-                reference.contentSpan == undefined ||
-                reference.contentSpan.start == undefined ||
-                reference.contentSpan.end == undefined
+                reference.recommendationContentSpan == undefined ||
+                reference.recommendationContentSpan.start == undefined ||
+                reference.recommendationContentSpan.end == undefined
             ) {
                 continue
             }
-            const code = recommendation.substring(reference.contentSpan.start, reference.contentSpan.end)
+            const code = recommendation.substring(
+                reference.recommendationContentSpan.start,
+                reference.recommendationContentSpan.end
+            )
             const firstCharLineNumber =
-                editor.document.positionAt(TelemetryHelper.instance.cursorOffset + reference.contentSpan.start).line + 1
+                editor.document.positionAt(
+                    TelemetryHelper.instance.cursorOffset + reference.recommendationContentSpan.start
+                ).line + 1
             const lastCharLineNumber =
-                editor.document.positionAt(TelemetryHelper.instance.cursorOffset + reference.contentSpan.end - 1).line +
-                1
+                editor.document.positionAt(
+                    TelemetryHelper.instance.cursorOffset + reference.recommendationContentSpan.end - 1
+                ).line + 1
             const license = `<a href=${LicenseUtil.getLicenseHtml(reference.licenseName)}>${reference.licenseName}</a>`
             let lineInfo = ``
             if (firstCharLineNumber === lastCharLineNumber) {

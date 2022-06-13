@@ -16,20 +16,19 @@ import { getCognitoCredentials } from '../util/cognitoIdentity'
 import { PromiseResult } from 'aws-sdk/lib/request'
 
 export type ConsolasProgLang = Readonly<ConsolasClient.ProgrammingLanguage>
-export type ConsolasContextInfo = Readonly<ConsolasClient.ContextInfo>
 export type ConsolasFileContext = Readonly<ConsolasClient.FileContext>
 export type ListRecommendationsRequest = Readonly<ConsolasClient.ListRecommendationsRequest>
 export type GenerateRecommendationsRequest = Readonly<ConsolasClient.GenerateRecommendationsRequest>
 export type RecommendationsList = ConsolasClient.RecommendationsList
 export type ListRecommendationsResponse = ConsolasClient.ListRecommendationsResponse
 export type GenerateRecommendationsResponse = ConsolasClient.GenerateRecommendationsResponse
-export type RecommendationDetail = ConsolasClient.RecommendationDetail
+export type Recommendation = ConsolasClient.Recommendation
 export type Reference = ConsolasClient.Reference
 export type References = ConsolasClient.References
 export type CreateUploadUrlRequest = Readonly<ConsolasClient.CreateUploadUrlRequest>
-export type CreateSecurityScanRequest = Readonly<ConsolasClient.CreateSecurityScanRequest>
-export type GetSecurityScanRequest = Readonly<ConsolasClient.GetSecurityScanRequest>
-export type ListSecurityIssuesRequest = Readonly<ConsolasClient.ListSecurityIssuesRequest>
+export type CreateCodeScanRequest = Readonly<ConsolasClient.CreateCodeScanRequest>
+export type GetCodeScanRequest = Readonly<ConsolasClient.GetCodeScanRequest>
+export type ListCodeScanFindingsRequest = Readonly<ConsolasClient.ListCodeScanFindingsRequest>
 export type ArtifactType = Readonly<ConsolasClient.ArtifactType>
 export type ArtifactMap = Readonly<ConsolasClient.ArtifactMap>
 export class DefaultConsolasClient {
@@ -97,21 +96,21 @@ export class DefaultConsolasClient {
         return (await this.createSdkClient()).createUploadUrl(request).promise()
     }
 
-    public async createSecurityScan(
-        request: ConsolasClient.CreateSecurityScanRequest
-    ): Promise<PromiseResult<ConsolasClient.CreateSecurityScanResponse, AWSError>> {
-        return (await this.createSdkClient()).createSecurityScan(request).promise()
+    public async createCodeScan(
+        request: ConsolasClient.CreateCodeScanRequest
+    ): Promise<PromiseResult<ConsolasClient.CreateCodeScanResponse, AWSError>> {
+        return (await this.createSdkClient()).createCodeScan(request).promise()
     }
 
-    public async getSecurityScan(
-        request: ConsolasClient.GetSecurityScanRequest
-    ): Promise<PromiseResult<ConsolasClient.GetSecurityScanResponse, AWSError>> {
-        return (await this.createSdkClient()).getSecurityScan(request).promise()
+    public async getCodeScan(
+        request: ConsolasClient.GetCodeScanRequest
+    ): Promise<PromiseResult<ConsolasClient.GetCodeScanResponse, AWSError>> {
+        return (await this.createSdkClient()).getCodeScan(request).promise()
     }
 
-    public async listSecurityIssues(
-        request: ConsolasClient.ListSecurityIssuesRequest
-    ): Promise<PromiseResult<ConsolasClient.ListSecurityIssuesResponse, AWSError>> {
-        return (await this.createSdkClient()).listSecurityIssues(request).promise()
+    public async listCodeScanFindings(
+        request: ConsolasClient.ListCodeScanFindingsRequest
+    ): Promise<PromiseResult<ConsolasClient.ListCodeScanFindingsResponse, AWSError>> {
+        return (await this.createSdkClient()).listCodeScanFindings(request).promise()
     }
 }

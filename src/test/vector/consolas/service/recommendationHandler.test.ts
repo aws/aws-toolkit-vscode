@@ -127,8 +127,6 @@ describe('recommendationHandler', function () {
                 consolasLineNumber: 1,
                 consolasCursorOffset: 38,
                 consolasLanguage: 'python',
-                consolasRuntime: 'python2',
-                consolasRuntimeSource: '2.7.16',
             })
         })
 

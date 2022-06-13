@@ -108,8 +108,6 @@ export async function onAcceptance(
             triggerType: acceptanceEntry.triggerType,
             completionType: acceptanceEntry.completionType,
             language: languageContext.language,
-            languageRuntime: languageContext.runtimeLanguage,
-            languageRuntimeSource: languageContext.runtimeLanguageSource,
         })
         ConsolasCodeCoverageTracker.getTracker(languageContext.language, globalStorage).setAcceptedTokens(
             acceptanceEntry.recommendation

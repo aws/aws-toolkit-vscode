@@ -19,10 +19,9 @@ describe('referenceHoverProvider', function () {
             const mockDocoument = createMockDocument('def two_sum(nums, target):\nfor', 'test.py', 'python')
             referenceHoverProvider.addCodeReferences(`def two_sum(nums, target)`, [
                 {
-                    message: '',
                     licenseName: 'TEST_LICENSE',
                     repository: 'http://github.com/fake',
-                    contentSpan: {
+                    recommendationContentSpan: {
                         start: 0,
                         end: 10,
                     },
@@ -41,10 +40,9 @@ describe('referenceHoverProvider', function () {
             const mockDocoument = createMockDocument("print('Hello World')\nfor", 'test.py', 'python')
             referenceHoverProvider.addCodeReferences(`def two_sum(nums, target)`, [
                 {
-                    message: '',
                     licenseName: 'TEST_LICENSE',
                     repository: 'http://github.com/fake',
-                    contentSpan: {
+                    recommendationContentSpan: {
                         start: 0,
                         end: 10,
                     },

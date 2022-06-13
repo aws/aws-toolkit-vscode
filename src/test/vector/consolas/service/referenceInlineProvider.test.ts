@@ -23,7 +23,7 @@ describe('referenceInlineProvider', function () {
                     message: '',
                     licenseName: 'TEST_LICENSE',
                     repository: 'http://github.com/fake',
-                    contentSpan: {
+                    recommendationContentSpan: {
                         start: 0,
                         end: 10,
                     },

@@ -76,8 +76,6 @@ describe('telemetryHelper', function () {
                 consolasSuggestionReferenceCount: 0,
                 consolasCompletionType: 'Line',
                 consolasLanguage: 'python',
-                consolasRuntime: 'python2',
-                consolasRuntimeSource: '2.7.16',
             })
         })
     })

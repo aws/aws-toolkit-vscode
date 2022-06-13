@@ -100,8 +100,6 @@ export class ConsolasTracker {
                 consolasModificationPercentage: percentage ? percentage : 0,
                 consolasCompletionType: suggestion.completionType,
                 consolasLanguage: suggestion.language,
-                consolasRuntime: suggestion.languageRuntime,
-                consolasRuntimeSource: suggestion.languageRuntimeSource,
             })
         }
     }

@@ -145,8 +145,6 @@ export class TelemetryHelper {
                 consolasSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
                 consolasCompletionType: this.completionType,
                 consolasLanguage: languageContext.language,
-                consolasRuntime: languageContext.runtimeLanguage,
-                consolasRuntimeSource: languageContext.runtimeLanguageSource,
             })
         })
     }

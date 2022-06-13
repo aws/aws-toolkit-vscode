@@ -41,8 +41,6 @@ export interface AcceptedSuggestionEntry {
     readonly triggerType: telemetry.ConsolasTriggerType
     readonly completionType: telemetry.ConsolasCompletionType
     readonly language: telemetry.ConsolasLanguage
-    readonly languageRuntime: telemetry.ConsolasRuntime
-    readonly languageRuntimeSource: string
 }
 
 export interface OnRecommendationAcceptanceEntry {
@@ -86,25 +84,13 @@ export interface CodeScanTelemetryEntry {
 }
 
 export interface RawCodeScanIssue {
-    repoName: string
-    filePath: string
+    fileName: string
     startLine: number
     endLine: number
-    lineToHighlight: number
-    comment: string
-    detectorId: string
-    confidenceScore: number
-    recommendationId: string
-    recommendationType: string
-    ruleManifestId: string
-    filePathType: string
-    recommendationMetadata: {
-        ruleId: string
-        ruleManifestId: string
-        name: string
-        longDescription: string
-        tags: string
-        cwes: string
+    title: string
+    description: {
+        text: string
+        markdown: string
     }
 }
 

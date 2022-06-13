@@ -13,17 +13,17 @@
         "uid": "consolas-2022-04-27"
     },
     "operations": {
-        "CreateSecurityScan": {
-            "name": "CreateSecurityScan",
+        "CreateCodeScan": {
+            "name": "CreateCodeScan",
             "http": {
                 "method": "POST",
                 "requestUri": "/"
             },
             "input": {
-                "shape": "CreateSecurityScanRequest"
+                "shape": "CreateCodeScanRequest"
             },
             "output": {
-                "shape": "CreateSecurityScanResponse"
+                "shape": "CreateCodeScanResponse"
             },
             "errors": [
                 {
@@ -45,7 +45,7 @@
                     "shape": "ConflictException"
                 }
             ],
-            "documentation": "<p>Create a security scan job</p>",
+            "documentation": "<p>Create a code scan job</p>",
             "idempotent": true
         },
         "CreateUploadUrl": {
@@ -130,17 +130,17 @@
             ],
             "documentation": "<p>API to vend AccessToken in exchange of Identity token to access Consolas Recommendations API.</p>"
         },
-        "GetSecurityScan": {
-            "name": "GetSecurityScan",
+        "GetCodeScan": {
+            "name": "GetCodeScan",
             "http": {
                 "method": "POST",
                 "requestUri": "/"
             },
             "input": {
-                "shape": "GetSecurityScanRequest"
+                "shape": "GetCodeScanRequest"
             },
             "output": {
-                "shape": "GetSecurityScanResponse"
+                "shape": "GetCodeScanResponse"
             },
             "errors": [
                 {
@@ -159,7 +159,38 @@
                     "shape": "ValidationException"
                 }
             ],
-            "documentation": "<p>Get metadata of a security scan job.</p>"
+            "documentation": "<p>Get metadata of a code scan job.</p>"
+        },
+        "ListCodeScanFindings": {
+            "name": "ListCodeScanFindings",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "ListCodeScanFindingsRequest"
+            },
+            "output": {
+                "shape": "ListCodeScanFindingsResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ],
+            "documentation": "<p>List CodeScan Findings</p>"
         },
         "ListRecommendations": {
             "name": "ListRecommendations",
@@ -188,37 +219,6 @@
                 }
             ],
             "documentation": "<p>List recommendations according to the file context and return to the user, will support pagination</p>"
-        },
-        "ListSecurityIssues": {
-            "name": "ListSecurityIssues",
-            "http": {
-                "method": "POST",
-                "requestUri": "/"
-            },
-            "input": {
-                "shape": "ListSecurityIssuesRequest"
-            },
-            "output": {
-                "shape": "ListSecurityIssuesResponse"
-            },
-            "errors": [
-                {
-                    "shape": "InternalServerException"
-                },
-                {
-                    "shape": "AccessDeniedException"
-                },
-                {
-                    "shape": "ResourceNotFoundException"
-                },
-                {
-                    "shape": "ThrottlingException"
-                },
-                {
-                    "shape": "ValidationException"
-                }
-            ],
-            "documentation": "<p>List security issues</p>"
         }
     },
     "shapes": {
@@ -239,14 +239,26 @@
                 "shape": "ArtifactType"
             },
             "value": {
-                "shape": "ImportId"
+                "shape": "UploadId"
             },
-            "documentation": "<p>Specifies the artifact map used for security scan.</p>"
+            "documentation": "<p>Specifies the artifact map used for security scan.</p>",
+            "max": 64,
+            "min": 1
         },
         "ArtifactType": {
             "type": "string",
             "documentation": "<p>Specifies the artifact type used for security scan.</p>",
             "enum": ["SourceCode", "BuiltJars"]
+        },
+        "CodeScanFindingsSchema": {
+            "type": "string",
+            "documentation": "<p>Specifies schema of CodeScan findings</p>",
+            "enum": ["codescan/findings/1.0"]
+        },
+        "CodeScanStatus": {
+            "type": "string",
+            "documentation": "<p>CodeScan job status</p>",
+            "enum": ["Completed", "Pending", "Failed"]
         },
         "ConflictException": {
             "type": "structure",
@@ -259,165 +271,122 @@
             "documentation": "<p>This exception is thrown when the action to perform could not be completed because the resource is in a conflicting state.</p>",
             "exception": true
         },
-        "ContextInfo": {
+        "CreateCodeScanRequest": {
             "type": "structure",
-            "required": ["filename", "programmingLanguage"],
-            "members": {
-                "filename": {
-                    "shape": "ContextInfoFilenameString"
-                },
-                "naturalLanguageCode": {
-                    "shape": "ContextInfoNaturalLanguageCodeString",
-                    "deprecated": true
-                },
-                "programmingLanguage": {
-                    "shape": "ProgrammingLanguage"
-                }
-            }
-        },
-        "ContextInfoFilenameString": {
-            "type": "string",
-            "max": 1024,
-            "min": 1
-        },
-        "ContextInfoNaturalLanguageCodeString": {
-            "type": "string",
-            "max": 5,
-            "min": 2,
-            "pattern": "[a-zA-Z]{2}(-[a-zA-Z]{2})?"
-        },
-        "CreateSecurityScanRequest": {
-            "type": "structure",
-            "required": ["artifacts", "language", "clientToken"],
+            "required": ["artifacts", "programmingLanguage"],
             "members": {
                 "artifacts": {
                     "shape": "ArtifactMap"
                 },
-                "language": {
-                    "shape": "CreateSecurityScanRequestLanguageString"
+                "programmingLanguage": {
+                    "shape": "ProgrammingLanguage"
                 },
                 "clientToken": {
-                    "shape": "String",
+                    "shape": "CreateCodeScanRequestClientTokenString",
                     "idempotencyToken": true
                 }
             }
         },
-        "CreateSecurityScanRequestLanguageString": {
+        "CreateCodeScanRequestClientTokenString": {
             "type": "string",
-            "max": 20,
-            "min": 1,
-            "pattern": ".*(python|javascript|java)"
+            "max": 256,
+            "min": 1
         },
-        "CreateSecurityScanResponse": {
+        "CreateCodeScanResponse": {
             "type": "structure",
             "required": ["jobId", "status"],
             "members": {
                 "jobId": {
-                    "shape": "CreateSecurityScanResponseJobIdString"
+                    "shape": "CreateCodeScanResponseJobIdString"
                 },
                 "status": {
-                    "shape": "SecurityScanStatus"
+                    "shape": "CodeScanStatus"
                 },
                 "errorMessage": {
                     "shape": "String"
                 }
             }
         },
-        "CreateSecurityScanResponseJobIdString": {
+        "CreateCodeScanResponseJobIdString": {
             "type": "string",
             "max": 256,
             "min": 1
         },
         "CreateUploadUrlRequest": {
             "type": "structure",
-            "required": ["contentMd5", "artifactType", "clientToken"],
+            "required": ["contentMd5", "artifactType"],
             "members": {
                 "contentMd5": {
                     "shape": "CreateUploadUrlRequestContentMd5String"
                 },
-                "kmsArn": {
-                    "shape": "CreateUploadUrlRequestKmsArnString"
-                },
                 "artifactType": {
                     "shape": "ArtifactType"
-                },
-                "clientToken": {
-                    "shape": "String",
-                    "idempotencyToken": true
                 }
             }
         },
         "CreateUploadUrlRequestContentMd5String": {
             "type": "string",
-            "max": 63,
-            "min": 1
-        },
-        "CreateUploadUrlRequestKmsArnString": {
-            "type": "string",
             "max": 128,
-            "min": 1,
-            "pattern": "arn:aws:kms:([a-z0-9][-.a-z0-9]{0,62})?:[0-9]{12}?:[^/].{0,1023}"
+            "min": 1
         },
         "CreateUploadUrlResponse": {
             "type": "structure",
-            "required": ["importId", "uploadUrl"],
+            "required": ["uploadId", "uploadUrl"],
             "members": {
-                "importId": {
-                    "shape": "ImportId"
+                "uploadId": {
+                    "shape": "UploadId"
                 },
                 "uploadUrl": {
-                    "shape": "Url"
+                    "shape": "PreSignedUrl"
                 }
             }
         },
         "FileContext": {
             "type": "structure",
-            "required": ["leftFileContent", "rightFileContent"],
+            "required": ["leftFileContent", "rightFileContent", "filename", "programmingLanguage"],
             "members": {
                 "leftFileContent": {
                     "shape": "FileContextLeftFileContentString"
                 },
                 "rightFileContent": {
                     "shape": "FileContextRightFileContentString"
+                },
+                "filename": {
+                    "shape": "FileContextFilenameString"
+                },
+                "programmingLanguage": {
+                    "shape": "ProgrammingLanguage"
                 }
             }
         },
+        "FileContextFilenameString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
         "FileContextLeftFileContentString": {
             "type": "string",
-            "max": 25600,
+            "max": 10240,
             "min": 0,
             "sensitive": true
         },
         "FileContextRightFileContentString": {
             "type": "string",
-            "max": 25600,
+            "max": 10240,
             "min": 0,
             "sensitive": true
         },
         "GenerateRecommendationsRequest": {
             "type": "structure",
-            "required": ["fileContext", "contextInfo"],
+            "required": ["fileContext"],
             "members": {
                 "fileContext": {
                     "shape": "FileContext"
-                },
-                "contextInfo": {
-                    "shape": "ContextInfo"
-                },
-                "maxRecommendations": {
-                    "shape": "GenerateRecommendationsRequestMaxRecommendationsInteger",
-                    "deprecated": true
                 },
                 "maxResults": {
                     "shape": "GenerateRecommendationsRequestMaxResultsInteger"
                 }
             }
-        },
-        "GenerateRecommendationsRequestMaxRecommendationsInteger": {
-            "type": "integer",
-            "box": true,
-            "max": 10,
-            "min": 1
         },
         "GenerateRecommendationsRequestMaxResultsInteger": {
             "type": "integer",
@@ -455,37 +424,31 @@
                 }
             }
         },
-        "GetSecurityScanRequest": {
+        "GetCodeScanRequest": {
             "type": "structure",
             "required": ["jobId"],
             "members": {
                 "jobId": {
-                    "shape": "GetSecurityScanRequestJobIdString"
+                    "shape": "GetCodeScanRequestJobIdString"
                 }
             }
         },
-        "GetSecurityScanRequestJobIdString": {
+        "GetCodeScanRequestJobIdString": {
             "type": "string",
             "max": 256,
             "min": 1
         },
-        "GetSecurityScanResponse": {
+        "GetCodeScanResponse": {
             "type": "structure",
             "required": ["status"],
             "members": {
                 "status": {
-                    "shape": "SecurityScanStatus"
+                    "shape": "CodeScanStatus"
                 },
                 "errorMessage": {
                     "shape": "String"
                 }
             }
-        },
-        "ImportId": {
-            "type": "string",
-            "documentation": "<p>Artifact Import Id</p>",
-            "max": 100,
-            "min": 1
         },
         "InternalServerException": {
             "type": "structure",
@@ -502,15 +465,44 @@
                 "throttling": false
             }
         },
+        "ListCodeScanFindingsRequest": {
+            "type": "structure",
+            "required": ["jobId", "codeScanFindingsSchema"],
+            "members": {
+                "jobId": {
+                    "shape": "ListCodeScanFindingsRequestJobIdString"
+                },
+                "nextToken": {
+                    "shape": "PaginationToken"
+                },
+                "codeScanFindingsSchema": {
+                    "shape": "CodeScanFindingsSchema"
+                }
+            }
+        },
+        "ListCodeScanFindingsRequestJobIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "ListCodeScanFindingsResponse": {
+            "type": "structure",
+            "required": ["codeScanFindings"],
+            "members": {
+                "nextToken": {
+                    "shape": "PaginationToken"
+                },
+                "codeScanFindings": {
+                    "shape": "String"
+                }
+            }
+        },
         "ListRecommendationsRequest": {
             "type": "structure",
-            "required": ["fileContext", "contextInfo"],
+            "required": ["fileContext"],
             "members": {
                 "fileContext": {
                     "shape": "FileContext"
-                },
-                "contextInfo": {
-                    "shape": "ContextInfo"
                 },
                 "maxResults": {
                     "shape": "ListRecommendationsRequestMaxResultsInteger"
@@ -545,36 +537,18 @@
             },
             "documentation": "<p>In response path, RTS will JSON serialize, encrypt using KMS and base64 encode NextToken to produce one string and send it to plugin</p>"
         },
-        "ListSecurityIssuesRequest": {
-            "type": "structure",
-            "required": ["jobId"],
-            "members": {
-                "jobId": {
-                    "shape": "String"
-                },
-                "nextToken": {
-                    "shape": "PaginationToken"
-                }
-            }
-        },
-        "ListSecurityIssuesResponse": {
-            "type": "structure",
-            "required": ["securityIssues"],
-            "members": {
-                "nextToken": {
-                    "shape": "PaginationToken"
-                },
-                "securityIssues": {
-                    "shape": "String"
-                }
-            }
-        },
         "PaginationToken": {
             "type": "string",
-            "documentation": "<p>Security issues pagination token</p>",
+            "documentation": "<p>CodeScan issues pagination token</p>",
             "max": 2048,
             "min": 1,
             "pattern": "\\S+"
+        },
+        "PreSignedUrl": {
+            "type": "string",
+            "documentation": "<p>S3 PreSignedURL</p>",
+            "max": 2048,
+            "min": 1
         },
         "ProgrammingLanguage": {
             "type": "structure",
@@ -582,9 +556,6 @@
             "members": {
                 "languageName": {
                     "shape": "ProgrammingLanguageLanguageNameString"
-                },
-                "runtimeVersion": {
-                    "shape": "ProgrammingLanguageRuntimeVersionString"
                 }
             }
         },
@@ -594,24 +565,19 @@
             "min": 1,
             "pattern": "(python|javascript|java)"
         },
-        "ProgrammingLanguageRuntimeVersionString": {
-            "type": "string",
-            "max": 128,
-            "min": 1
-        },
-        "RecommendationDetail": {
+        "Recommendation": {
             "type": "structure",
             "required": ["content"],
             "members": {
                 "content": {
-                    "shape": "RecommendationDetailContentString"
+                    "shape": "RecommendationContentString"
                 },
                 "references": {
                     "shape": "References"
                 }
             }
         },
-        "RecommendationDetailContentString": {
+        "RecommendationContentString": {
             "type": "string",
             "max": 5120,
             "min": 1,
@@ -620,7 +586,7 @@
         "RecommendationsList": {
             "type": "list",
             "member": {
-                "shape": "RecommendationDetail"
+                "shape": "Recommendation"
             },
             "max": 10,
             "min": 0
@@ -628,16 +594,13 @@
         "Reference": {
             "type": "structure",
             "members": {
-                "message": {
-                    "shape": "ReferenceMessageString"
-                },
                 "licenseName": {
                     "shape": "ReferenceLicenseNameString"
                 },
                 "repository": {
                     "shape": "ReferenceRepositoryString"
                 },
-                "contentSpan": {
+                "recommendationContentSpan": {
                     "shape": "Span"
                 }
             }
@@ -645,11 +608,6 @@
         "ReferenceLicenseNameString": {
             "type": "string",
             "max": 1024,
-            "min": 1
-        },
-        "ReferenceMessageString": {
-            "type": "string",
-            "max": 5120,
             "min": 1
         },
         "ReferenceRepositoryString": {
@@ -675,11 +633,6 @@
             },
             "documentation": "<p>This exception is thrown when describing a resource that does not exist.</p>",
             "exception": true
-        },
-        "SecurityScanStatus": {
-            "type": "string",
-            "documentation": "<p>Security scan job status</p>",
-            "enum": ["Completed", "Pending", "Failed"]
         },
         "Span": {
             "type": "structure",
@@ -719,10 +672,10 @@
                 "throttling": false
             }
         },
-        "Url": {
+        "UploadId": {
             "type": "string",
-            "documentation": "<p>S3 PreSignedURL</p>",
-            "max": 1024,
+            "documentation": "<p>Artifact Upload Id</p>",
+            "max": 128,
             "min": 1
         },
         "ValidationException": {

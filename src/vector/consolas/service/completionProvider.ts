@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { ConsolasConstants } from '../models/constants'
 import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
-import { RecommendationDetail } from '../client/consolas'
+import { Recommendation } from '../client/consolas'
 import { LicenseUtil } from '../util/licenseUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
@@ -26,7 +26,7 @@ export function getCompletionItems(document: vscode.TextDocument, position: vsco
 export function getCompletionItem(
     document: vscode.TextDocument,
     position: vscode.Position,
-    recommendationDetail: RecommendationDetail,
+    recommendationDetail: Recommendation,
     recommendationIndex: number
 ) {
     const start = document.lineAt(position.line).range.start

@@ -56,7 +56,7 @@ describe('onAcceptance', function () {
                     message: '',
                     licenseName: 'MIT',
                     repository: 'http://github.com/fake',
-                    contentSpan: {
+                    recommendationContentSpan: {
                         start: 0,
                         end: 10,
                     },
@@ -90,7 +90,7 @@ describe('onAcceptance', function () {
                     message: '',
                     licenseName: 'MIT',
                     repository: 'http://github.com/fake',
-                    contentSpan: {
+                    recommendationContentSpan: {
                         start: 0,
                         end: 10,
                     },
@@ -163,8 +163,6 @@ describe('onAcceptance', function () {
                 consolasSuggestionReferenceCount: 0,
                 consolasCompletionType: 'Line',
                 consolasLanguage: 'python',
-                consolasRuntime: 'python2',
-                consolasRuntimeSource: '2.7.16',
             })
         })
     })

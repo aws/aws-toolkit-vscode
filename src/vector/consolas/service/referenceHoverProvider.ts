@@ -27,12 +27,15 @@ export class ReferenceHoverProvider implements vscode.HoverProvider {
                 let refLength = codeRef.code.length
                 let refCode = codeRef.code
                 if (
-                    reference.contentSpan != undefined &&
-                    reference.contentSpan.start != undefined &&
-                    reference.contentSpan.end != undefined
+                    reference.recommendationContentSpan != undefined &&
+                    reference.recommendationContentSpan.start != undefined &&
+                    reference.recommendationContentSpan.end != undefined
                 ) {
-                    refLength = reference.contentSpan.end - reference.contentSpan.start
-                    refCode = codeRef.code.substring(reference.contentSpan.start, reference.contentSpan.end)
+                    refLength = reference.recommendationContentSpan.end - reference.recommendationContentSpan.start
+                    refCode = codeRef.code.substring(
+                        reference.recommendationContentSpan.start,
+                        reference.recommendationContentSpan.end
+                    )
                 }
                 const leftOffset = Math.max(cursorOffset - refLength, 0)
                 const rightOffset = cursorOffset + refLength

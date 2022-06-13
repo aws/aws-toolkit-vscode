@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 
 import { getCompletionItems, getCompletionItem, getLabel } from '../../../../vector/consolas/service/completionProvider'
 import { createMockDocument, resetConsolasGlobalVariables } from '../testUtil'
-import { RecommendationDetail } from '../../../../vector/consolas/client/consolas'
+import { Recommendation } from '../../../../vector/consolas/client/consolas'
 import { RecommendationHandler } from '../../../../vector/consolas/service/recommendationHandler'
 
 describe('completionProviderService', function () {
@@ -35,7 +35,7 @@ describe('completionProviderService', function () {
     describe('getCompletionItem', function () {
         it('should return targetCompletionItem given input', function () {
             const mockPosition = new vscode.Position(0, 83)
-            const mockRecommendationDetail: RecommendationDetail = {
+            const mockRecommendationDetail: Recommendation = {
                 content: "\n\t\tconsole.log('Hello world!');\n\t}",
             }
             const mockRecommendationIndex = 1

@@ -25,7 +25,7 @@ export const ConsolasConstants = {
     /**
      * EditorCon context
      */
-    charactersLimit: 25600,
+    charactersLimit: 10240,
     filenameCharsLimit: 1024,
     naturalLanguage: 'en-US',
     maxRecommendations: 1,
@@ -93,8 +93,8 @@ export const ConsolasConstants = {
     // TODO: Update the portal url
     previewSignupPortal: 'https://docs.aws.amazon.com/',
 
-    prodIdentityPoolID: 'us-east-1:299a155e-8104-4fc7-9a3e-9c12a11a8ec3',
-    alphaIdentityPoolID: 'us-west-2:c84f4c4c-e283-469f-a1d4-bf43c44f48c1',
+    prodIdentityPoolID: 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9',
+    alphaIdentityPoolID: 'us-west-2:7588beec-c8d8-4ce4-a817-126fb0441a6a',
     betaIdentityPoolID: 'us-west-2:b4e4d976-f042-4347-9d89-299b8f9787f3',
     gammaIdentityPoolID: 'us-west-2:97e13e76-921d-4298-8a5d-614dd3039585',
     /**
@@ -122,14 +122,15 @@ export const ConsolasConstants = {
      * Security Scan
      */
     codeScanStartedKey: 'CONSOLAS_SECURITY_SCAN_STARTED',
-    codeScanPayloadSizeLimit: 1e6, // 1 MB
+    codeScanPayloadSizeLimit: 5e5, // 500 KB
     codeScanTruncDirPrefix: 'consolas_scan',
     codeScanZipExt: '.zip',
-    contextTruncationTimeout: 100, // Seconds
-    codeScanJobTimeout: 300, // Seconds
+    contextTruncationTimeout: 10, // Seconds
+    codeScanJobTimeout: 30, // Seconds
     codeScanJobPollingInterval: 5, // Seconds
     artifactTypeSource: 'SourceCode',
     artifactTypeBuild: 'BuiltJars',
+    codeScanFindingsSchema: 'codescan/findings/1.0',
 
     // telemetry experiment id
     experimentId: 'vectorConsolas',

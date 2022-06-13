@@ -9,14 +9,10 @@ import * as consolasClient from '../../../vector/consolas/client/consolas'
 import { vsCodeState, AcceptedSuggestionEntry } from '../../../vector/consolas/models/model'
 import { MockDocument } from '../../fake/fakeDocument'
 import { getLogger } from '../../../shared/logger'
-import { runtimeLanguageContext } from '../../../vector/consolas/util/runtimeLanguageContext'
 
 export function resetConsolasGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isConsolasEditing = false
-    runtimeLanguageContext.setRuntimeLanguageContext('python', 'python2', '2.7.16')
-    runtimeLanguageContext.setRuntimeLanguageContext('java', 'java11', '11.0.13')
-    runtimeLanguageContext.setRuntimeLanguageContext('javascript', 'javascript', '12.22.9')
 }
 
 export function createMockDocument(
@@ -86,15 +82,11 @@ export function createMockSelection(line: number, character: number): vscode.Sel
 
 export function createMockClientRequest(): consolasClient.ListRecommendationsRequest {
     const req: consolasClient.ListRecommendationsRequest = {
-        contextInfo: {
+        fileContext: {
             filename: 'test.py',
-            naturalLanguageCode: 'en-US',
             programmingLanguage: {
                 languageName: 'python',
-                runtimeVersion: '2.7.10',
             },
-        },
-        fileContext: {
             leftFileContent: 'def add',
             rightFileContent: '',
         },
@@ -124,8 +116,6 @@ export function createAcceptedSuggestionEntry(time = new Date()): AcceptedSugges
         triggerType: 'OnDemand',
         completionType: 'Line',
         language: 'java',
-        languageRuntime: 'java11',
-        languageRuntimeSource: '11.0.13',
     }
 }
 

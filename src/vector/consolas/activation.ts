@@ -49,7 +49,6 @@ export async function activate(context: ExtContext): Promise<void> {
      * Enable essential intellisense default settings
      */
     await enableDefaultConfig()
-    await runtimeLanguageContext.initLanguageRuntimeContexts()
 
     /**
      * Consolas security panel

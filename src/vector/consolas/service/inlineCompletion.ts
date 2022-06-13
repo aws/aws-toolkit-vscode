@@ -9,7 +9,7 @@ import { ConsolasConstants } from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
-import { DefaultConsolasClient, RecommendationDetail } from '../client/consolas'
+import { DefaultConsolasClient, Recommendation } from '../client/consolas'
 import { RecommendationHandler } from './recommendationHandler'
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { showTimedMessage } from '../../../shared/utilities/messages'
@@ -43,7 +43,7 @@ export class InlineCompletion {
     private _maxPage = 100
     private _pollPeriod = 25
     public items: InlineCompletionItem[]
-    public origin: RecommendationDetail[]
+    public origin: Recommendation[]
     public position: number
     private typeAhead: string
     private consolasStatusBar: vscode.StatusBarItem
@@ -92,7 +92,7 @@ export class InlineCompletion {
     }
 
     getCompletionItems() {
-        const completionItems: RecommendationDetail[] = []
+        const completionItems: Recommendation[] = []
         RecommendationHandler.instance.recommendations.forEach(r => {
             if (r.content.length > 0) {
                 completionItems.push(r)

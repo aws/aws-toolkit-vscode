@@ -31,14 +31,14 @@ export const createAutoSuggestionsNode = (pause: boolean) =>
     toggleCodeSuggestions.build().asTreeNode(
         pause
             ? {
-                  label: localize('AWS.explorerNode.pauseConsolasNode.label', 'Pause auto-suggestions'),
+                  label: localize('AWS.explorerNode.pauseConsolasNode.label', 'Pause Auto-suggestions'),
                   iconPath: {
                       dark: vscode.Uri.file(globals.iconPaths.dark.pause),
                       light: vscode.Uri.file(globals.iconPaths.light.pause),
                   },
               }
             : {
-                  label: localize('AWS.explorerNode.resumeConsolasNode.label', 'Resume auto-suggestions'),
+                  label: localize('AWS.explorerNode.resumeConsolasNode.label', 'Resume Auto-suggestions'),
                   iconPath: {
                       dark: vscode.Uri.file(globals.iconPaths.dark.run),
                       light: vscode.Uri.file(globals.iconPaths.light.run),
@@ -77,14 +77,14 @@ export const createRequestAccessNode = () =>
 
 export const createOpenReferenceLogNode = () =>
     showReferenceLog.build().asTreeNode({
-        label: localize('AWS.explorerNode.consolasOpenReferenceLogNode.label', 'Open Consolas code reference panel'),
+        label: localize('AWS.explorerNode.consolasOpenReferenceLogNode.label', 'Open Code Reference Panel'),
         iconPath: {
             dark: vscode.Uri.file(globals.iconPaths.dark.file),
             light: vscode.Uri.file(globals.iconPaths.light.file),
         },
         tooltip: localize(
             'AWS.explorerNode.consolasOpenReferenceLogNode.tooltip',
-            'Click to open Consolas code reference panel'
+            'Click to open Code Reference Panel'
         ),
         contextValue: 'awsConsolasOpenReferenceLogNode',
     })
@@ -93,7 +93,7 @@ export const createSecurityScanNode = () => {
     const running = globals.context.globalState.get<boolean>(ConsolasConstants.codeScanStartedKey)
     const prefix = running ? 'Running' : 'Start'
     return showSecurityScan.build().asTreeNode({
-        label: `${prefix} security scan`,
+        label: `${prefix} Security Scan`,
         iconPath: running
             ? {
                   dark: vscode.Uri.file(globals.iconPaths.dark.loading),
@@ -103,7 +103,7 @@ export const createSecurityScanNode = () => {
                   dark: vscode.Uri.file(globals.iconPaths.dark.securityScan),
                   light: vscode.Uri.file(globals.iconPaths.light.securityScan),
               },
-        tooltip: `${prefix} security scan`,
+        tooltip: `${prefix} Security Scan`,
         contextValue: `awsConsolas${prefix}SecurityScanNode`,
     })
 }

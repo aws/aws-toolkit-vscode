@@ -412,7 +412,9 @@ export class JavaDependencyGraph extends DependencyGraph {
             }
         } catch (error) {
             getLogger().error('Java dependency graph error:', error)
-            throw new Error('Java context processing failed.')
+            throw new JavaDependencyGraphError('Java context processing failed.')
         }
     }
 }
+
+export class JavaDependencyGraphError extends Error {}

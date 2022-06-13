@@ -14,20 +14,24 @@ import { RawCodeScanIssue } from '../models/model'
 import got from 'got'
 import * as consolasClient from '../client/consolas'
 import * as crypto from 'crypto'
-import * as uuid from 'uuid'
 import path = require('path')
 import { pageableToCollection } from '../../../shared/utilities/collectionUtils'
 
-export async function listScanResults(client: DefaultConsolasClient, jobId: string, projectPath: string) {
+export async function listScanResults(
+    client: DefaultConsolasClient,
+    jobId: string,
+    codeScanFindingsSchema: string,
+    projectPath: string
+) {
     const codeScanIssueMap: Map<string, RawCodeScanIssue[]> = new Map()
     const aggregatedCodeScanIssueList: AggregatedCodeScanIssue[] = []
-    const requester = (request: consolasClient.ListSecurityIssuesRequest) => client.listSecurityIssues(request)
-    const collection = pageableToCollection(requester, { jobId }, 'nextToken')
+    const requester = (request: consolasClient.ListCodeScanFindingsRequest) => client.listCodeScanFindings(request)
+    const collection = pageableToCollection(requester, { jobId, codeScanFindingsSchema }, 'nextToken')
     const issues = await collection
         .flatten()
         .map(resp => {
             getLogger().verbose(`Request id: ${resp.$response.requestId}`)
-            return resp.securityIssues
+            return resp.codeScanFindings
         })
         .promise()
     issues.forEach(issue => {
@@ -44,17 +48,16 @@ function mapToAggregatedList(
 ) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
     codeScanIssues.forEach(issue => {
-        if (issue.recommendationType === 'POSITIVE') return
-        if (codeScanIssueMap.has(issue.filePath)) {
-            const list = codeScanIssueMap.get(issue.filePath)
+        if (codeScanIssueMap.has(issue.fileName)) {
+            const list = codeScanIssueMap.get(issue.fileName)
             if (list === undefined) {
-                codeScanIssueMap.set(issue.filePath, [issue])
+                codeScanIssueMap.set(issue.fileName, [issue])
             } else {
                 list.push(issue)
-                codeScanIssueMap.set(issue.filePath, list)
+                codeScanIssueMap.set(issue.fileName, list)
             }
         } else {
-            codeScanIssueMap.set(issue.filePath, [issue])
+            codeScanIssueMap.set(issue.fileName, [issue])
         }
     })
 
@@ -72,14 +75,13 @@ function mapToAggregatedList(
                                     : 0
                                 : issue.endLine,
                         endLine: issue.endLine,
-                        comment: issue.comment.trim(),
+                        comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
                     }
                 }),
             }
             aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
         }
     })
-    return aggregatedCodeScanIssueList
 }
 
 export async function pollScanJobStatus(client: DefaultConsolasClient, jobId: string) {
@@ -87,10 +89,10 @@ export async function pollScanJobStatus(client: DefaultConsolasClient, jobId: st
     let status: string = 'Pending'
     let timer: number = 0
     while (true) {
-        const req: consolasClient.GetSecurityScanRequest = {
+        const req: consolasClient.GetCodeScanRequest = {
             jobId: jobId,
         }
-        const resp = await client.getSecurityScan(req)
+        const resp = await client.getCodeScan(req)
         getLogger().verbose(`Request id: ${resp.$response.requestId}`)
         if (resp.status !== 'Pending') {
             status = resp.status
@@ -115,12 +117,13 @@ export async function createScanJob(
     languageId: string
 ) {
     getLogger().verbose(`Creating scan job...`)
-    const req: consolasClient.CreateSecurityScanRequest = {
+    const req: consolasClient.CreateCodeScanRequest = {
         artifacts: artifactMap,
-        language: languageId,
-        clientToken: uuid.v1(),
+        programmingLanguage: {
+            languageName: languageId,
+        },
     }
-    const resp = await client.createSecurityScan(req)
+    const resp = await client.createCodeScan(req)
     getLogger().verbose(`Request id: ${resp.$response.requestId}`)
     return resp
 }
@@ -130,7 +133,6 @@ export async function getPresignedUrlAndUpload(client: DefaultConsolasClient, tr
     const srcReq: consolasClient.CreateUploadUrlRequest = {
         artifactType: ConsolasConstants.artifactTypeSource,
         contentMd5: getMd5(truncPaths.src.zip),
-        clientToken: uuid.v1(),
     }
     getLogger().verbose(`Getting presigned Url for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq)
@@ -140,13 +142,12 @@ export async function getPresignedUrlAndUpload(client: DefaultConsolasClient, tr
     await uploadArtifactToS3(srcResp.uploadUrl, truncPaths.src.zip)
     getLogger().verbose(`Complete uploading src context.`)
     let artifactMap: consolasClient.ArtifactMap = {
-        SourceCode: srcResp.importId,
+        SourceCode: srcResp.uploadId,
     }
     if (truncPaths.build.zip !== '') {
         const buildReq: consolasClient.CreateUploadUrlRequest = {
             artifactType: ConsolasConstants.artifactTypeBuild,
             contentMd5: getMd5(truncPaths.build.zip),
-            clientToken: uuid.v1(),
         }
         getLogger().verbose(`Getting presigned Url for uploading build context...`)
         const buildResp = await client.createUploadUrl(buildReq)
@@ -156,25 +157,25 @@ export async function getPresignedUrlAndUpload(client: DefaultConsolasClient, tr
         await uploadArtifactToS3(buildResp.uploadUrl, truncPaths.build.zip)
         getLogger().verbose(`Complete uploading build context.`)
         artifactMap = {
-            SourceCode: srcResp.importId,
-            BuiltJars: buildResp.importId,
+            SourceCode: srcResp.uploadId,
+            BuiltJars: buildResp.uploadId,
         }
     }
     return artifactMap
 }
 
-function getMd5(filePath: string) {
+function getMd5(fileName: string) {
     const hasher = crypto.createHash('md5')
-    hasher.update(readFileSync(filePath))
+    hasher.update(readFileSync(fileName))
     return hasher.digest('base64')
 }
 
-export async function uploadArtifactToS3(presignedUrl: string, filePath: string) {
+export async function uploadArtifactToS3(presignedUrl: string, fileName: string) {
     const response = await got(presignedUrl, {
         method: 'PUT',
-        body: readFileSync(filePath),
+        body: readFileSync(fileName),
         headers: {
-            'Content-MD5': getMd5(filePath),
+            'Content-MD5': getMd5(fileName),
             'x-amz-server-side-encryption': 'AES256',
             'Content-Type': 'application/zip',
         },

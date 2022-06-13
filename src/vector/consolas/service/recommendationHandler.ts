@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as telemetry from '../../../shared/telemetry/telemetry'
 import { extensionVersion } from '../../../shared/vscode/env'
-import { RecommendationsList, DefaultConsolasClient, RecommendationDetail } from '../client/consolas'
+import { RecommendationsList, DefaultConsolasClient, Recommendation } from '../client/consolas'
 import * as EditorContext from '../util/editorContext'
 import { ConsolasConstants } from '../models/constants'
 import { ConfigurationEntry, vsCodeState } from '../models/model'
@@ -34,7 +34,7 @@ export class RecommendationHandler {
     public sessionId: string
     private nextToken: string
     public errorCode: string
-    public recommendations: RecommendationDetail[]
+    public recommendations: Recommendation[]
     public recommendationSuggestionState: Map<number, string>
     public startPos: vscode.Position
     private cancellationToken: vscode.CancellationTokenSource
@@ -173,7 +173,7 @@ export class RecommendationHandler {
                     awsError.code === 'ValidationException' &&
                     awsError.message.includes(`contextInfo.programmingLanguage.languageName`)
                 ) {
-                    let languageName = req.contextInfo.programmingLanguage.languageName
+                    let languageName = req.fileContext.programmingLanguage.languageName
                     UnsupportedLanguagesCache.addUnsupportedProgrammingLanguage(languageName)
                     languageName = `${languageName.charAt(0).toUpperCase()}${languageName.slice(1)}`
                     this.errorMessagePrompt = `Programming language ${languageName} is currently not supported by Consolas`
@@ -232,8 +232,6 @@ export class RecommendationHandler {
                 consolasLineNumber: this.startPos.line ? this.startPos.line : 0,
                 consolasCursorOffset: TelemetryHelper.instance.cursorOffset ? TelemetryHelper.instance.cursorOffset : 0,
                 consolasLanguage: languageContext.language,
-                consolasRuntime: languageContext.runtimeLanguage,
-                consolasRuntimeSource: languageContext.runtimeLanguageSource,
                 reason: reason ? reason : undefined,
             })
             recommendation = recommendation.filter(r => r.content.length > 0)
