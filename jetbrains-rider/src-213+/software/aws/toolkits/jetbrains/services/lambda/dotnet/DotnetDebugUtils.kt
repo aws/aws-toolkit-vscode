@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.filters.TextConsoleBuilderFactory
+import com.intellij.execution.process.CapturingProcessAdapter
 import com.intellij.execution.process.OSProcessHandler
+import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.rd.defineNestedLifetime
@@ -31,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
@@ -52,6 +55,7 @@ object DotnetDebugUtils {
     private const val DEBUGGER_MODE = "server"
 
     private const val REMOTE_DEBUGGER_DIR = "/tmp/lambci_debug_files"
+    private const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
     const val NUMBER_OF_DEBUG_PORTS = 2
 
     fun createDebugProcess(
@@ -93,6 +97,22 @@ object DotnetDebugUtils {
                 val dockerContainer = context.getRequiredAttribute(DOCKER_CONTAINER)
                 val pid = context.getRequiredAttribute(DOTNET_PID)
                 val riderDebuggerProcessHandler = startDebugWorker(dockerContainer, backendPort, frontendPort)
+                riderDebuggerProcessHandler.addProcessListener(object : CapturingProcessAdapter() {
+                    override fun processTerminated(event: ProcessEvent) {
+                        super.processTerminated(event)
+                        // if we don't get this message, we can assume the debugger terminated prematurely
+                        // TODO: can we detect this without waiting for the timeout task to kick in?
+                        LOG.debug {
+                            """
+                                Rider debugger worker exited with code: ${output.exitCode}
+                                stdout: ${output.stdout}
+                                stderr: ${output.stderr}
+                            """.trimIndent()
+                        }
+                    }
+                })
+
+                LOG.debug { "Waiting for debug process worker to be available" }
 
                 withContext(edtContext) {
                     protocol.wire.connected.adviseUntil(debuggerLifetime) connected@{ isConnected ->
@@ -176,12 +196,12 @@ object DotnetDebugUtils {
         val runDebuggerCommand = GeneralCommandLine(
             "docker",
             "exec",
+            "--env",
+            "RIDER_DEBUGGER_LOG_DIR=/tmp/log",
             "-i",
             dockerContainer,
-            // use dotnet binary bundled with worker since Lambda netcore2.1 image seems to be missing:
-            // System.Runtime.CompilerServices.TupleElementNamesAttribute' from assembly 'mscorlib, Version=4.0.0.0
-            // and therefore cannot debug netcore2.1 under Rider 2021.2+
-            "$REMOTE_DEBUGGER_DIR/linux-x64/dotnet/dotnet",
+            // ideally we'd use the dotnet binary bundled with Rider, but linux-x64/dotnet is no longer guaranteed to exist in 2022.1.1+
+            REMOTE_NETCORE_CLI_PATH,
             "$REMOTE_DEBUGGER_DIR/${DotNetDebuggerUtils.debuggerAssemblyFile.name}",
             "--mode=$DEBUGGER_MODE",
             "--frontend-port=$frontendPort",
