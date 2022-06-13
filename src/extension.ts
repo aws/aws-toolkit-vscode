@@ -202,7 +202,7 @@ export async function activate(context: vscode.ExtensionContext) {
             remoteInvokeOutputChannel,
         })
 
-        await activateAppRunner(extContext)
+        activateAppRunner(extContext)
 
         await activateApiGateway({
             extContext: extContext,

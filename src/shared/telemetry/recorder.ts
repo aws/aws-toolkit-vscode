@@ -7,6 +7,9 @@ import * as telemetry from './telemetry'
 import { getLogger, Logger } from '../logger'
 import { AsyncLocalStorage } from 'async_hooks'
 
+const performance = globalThis.performance ?? require('perf_hooks')
+const now = () => new Date(performance.now())
+
 interface Metric<T> {
     start(): ActiveMetric<T>
     record(data: T): void
@@ -19,10 +22,10 @@ interface Has<T> {
 }
 
 interface TelemetryEvent<T = unknown> {
+    readonly value: T
     readonly name: string
     readonly source: string
-    readonly value: T
-    readonly timestamp: Date // could use `perf_hooks`
+    readonly timestamp: Date
 }
 
 interface RecordFunction<T, K extends keyof T> {
@@ -59,7 +62,7 @@ function createRecorder<T, U extends Record<string, any>>(
             }
 
             return <U>(value: U) => {
-                queue.push({ value, source, name, timestamp: new Date() })
+                queue.push({ value, source, name, timestamp: now() })
                 Reflect.set(target, name, value, receiver)
 
                 return proxy
@@ -72,7 +75,7 @@ function createRecorder<T, U extends Record<string, any>>(
 
 function startMetric<T>(id: string, record: (data: T) => void): ActiveMetric<T> {
     const queue = storage.getStore()?.telemetry.queue ?? []
-    const createTime = new Date()
+    const createTime = now()
 
     function stop() {
         const result: Record<string, any> = { createTime }

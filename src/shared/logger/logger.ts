@@ -107,7 +107,7 @@ export class ConsoleLogger implements Logger {
         return false
     }
     public debug(message: string | Error, ...meta: any[]): number {
-        console.trace(message, meta)
+        console.debug(message, meta)
         return 0
     }
     public verbose(message: string | Error, ...meta: any[]): number {

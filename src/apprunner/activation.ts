@@ -7,12 +7,12 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { AppRunnerServiceNode } from './explorer/apprunnerServiceNode'
-import { getLogger } from '../shared/logger/logger'
 import { createAppRunnerService } from './commands/createService'
 import { createFromEcr } from './commands/createServiceFromEcr'
 import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
 import { instrument, MetricName } from '../shared/telemetry/recorder'
+import { deleteService } from './commands/deleteService'
 
 const localize = nls.loadMessageBundle()
 
@@ -66,22 +66,22 @@ commandMap.set('aws.apprunner.startDeployment', {
 })
 
 commandMap.set('aws.apprunner.deleteService', {
-    command: (node: AppRunnerServiceNode) => node.delete(),
+    command: (node: AppRunnerServiceNode) => deleteService(node),
     metricName: 'ApprunnerDeleteService',
     errorMessage: localize('aws.apprunner.deleteService.failed', 'Failed to delete App Runner service'),
 })
 
-/**
- * Activates App Runner
- */
-export async function activate(context: ExtContext): Promise<void> {
+export function activate(context: ExtContext): void {
     function register(id: string, fn: (...args: any[]) => unknown, metadata: CommandMetadata) {
         const withTelem = instrument(metadata.metricName, async (...args: any[]) => {
             try {
                 await fn(...args)
             } catch (err) {
-                getLogger().error(`${metadata.errorMessage}: %O`, err)
                 showViewLogsMessage(metadata.errorMessage)
+                // FIXME: this makes VSC show an error message which we don't always want
+                // generally speaking, whenever VSC calls us we want to present our own error message
+                // we should bubble the error for all other cases
+                throw err
             }
         })
 
