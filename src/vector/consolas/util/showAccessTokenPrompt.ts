@@ -29,13 +29,25 @@ export const showAccessTokenPrompt = async (
         picker.busy = false
     }
 
-    const displayError = async (isServerError: boolean) => {
-        inputBox.validationMessage = isServerError
-            ? localize(
-                  'AWS.consolas.enterAccessToken.serverError',
-                  'There was an error validating Consolas Access Code, check log for details.'
-              )
-            : localize('AWS.consolas.enterAccessToken.invalidToken', 'Invalid access code. Please re-enter.')
+    const displayError = async (isServerError: boolean, statusCode: number = 0, errorMessage: string = '') => {
+        if (!isServerError) {
+            inputBox.validationMessage = localize(
+                'AWS.consolas.enterAccessToken.invalidToken',
+                'Invalid access code. Please re-enter.'
+            )
+        } else {
+            if (statusCode !== 400) {
+                inputBox.validationMessage = localize(
+                    'AWS.consolas.enterAccessToken.serverError',
+                    'There was an error validating Consolas Access Code, check log for details.'
+                )
+            } else {
+                inputBox.validationMessage = errorMessage
+                    ? errorMessage
+                    : localize('AWS.consolas.enterAccessToken.invalidToken', 'Invalid access code. Please re-enter.')
+            }
+        }
+
         inputBox.value = picker.value
         inputBox.enabled = false
         inputBox.ignoreFocusOut = true
@@ -64,13 +76,12 @@ export const showAccessTokenPrompt = async (
                 }
                 picker.dispose()
             } catch (e) {
+                const err = e as AWSError
                 getLogger().verbose(
-                    `failed to get Consolas access token: ${(e as AWSError).message} RequestID: ${
-                        (e as AWSError).requestId
-                    }`
+                    `failed to get Consolas access token: ${err.message}, status ${err.statusCode}, code ${err.code} RequestID: ${err.requestId}`
                 )
-                const statusCode = (e as AWSError).statusCode
-                statusCode && statusCode > 499 ? displayError(true) : displayError(false)
+                const errorMessage = err.code === 'ValidationException' ? err.message : ''
+                displayError(true, err.statusCode, errorMessage)
             }
         }
     }
