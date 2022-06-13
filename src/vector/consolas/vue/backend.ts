@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 import { VueWebview } from '../../../webviews/main'
 
 export class ConsolasWebview extends VueWebview {
@@ -22,6 +23,10 @@ export class ConsolasWebview extends VueWebview {
         await vscode.commands.executeCommand('aws.consolas.cancelTermsOfService')
         this.dispose()
     }
+
+    public isCloud9() {
+        return isCloud9()
+    }
 }
 
 const Panel = VueWebview.compilePanel(ConsolasWebview)
@@ -29,7 +34,7 @@ let activeWebview: vscode.WebviewPanel | undefined
 
 export async function showView(context: vscode.ExtensionContext) {
     if (!activeWebview) {
-        activeWebview = await new Panel(context).show({ title: 'Terms And Conditions' })
+        activeWebview = await new Panel(context).show({ title: 'Terms of Service' })
         activeWebview.onDidDispose(() => (activeWebview = undefined))
     } else {
         activeWebview.reveal()
