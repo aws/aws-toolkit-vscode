@@ -402,7 +402,7 @@ export interface CloudWatchLogsGroupInfo {
 }
 
 export interface CloudWatchAPIParameters {
-    filterPattern?: string
+    filterPattern: string
     startTime: number
 }
 

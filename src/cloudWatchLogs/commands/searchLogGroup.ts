@@ -21,8 +21,11 @@ import { CloudWatchAPIParameters, LogStreamRegistry } from '../registry/logStrea
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
 import globals from '../../shared/extensionGlobals'
 import { nodeModuleNameResolver } from 'typescript'
-import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { isValidResponse } from '../../shared/wizards/wizard'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
+import { isValidResponse, WIZARD_BACK } from '../../shared/wizards/wizard'
+import { Wizard } from '../../shared/wizards/wizard'
+import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
+import { integer } from 'vscode-languageserver-types'
 
 export interface SearchLogGroup {
     region: string
@@ -31,11 +34,60 @@ export interface SearchLogGroup {
 
 export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
+    const filterParameters = await new SearchLogGroupWizard().run()
+    console.log(filterParameters)
+    // const keywordSearchTerms = await vscode.window.showInputBox({
+    //     placeHolder: 'Enter keyword search here.',
+    //     prompt: 'Search for keyword among log group',
+    // })
+    // const strTimeOptions: string[] = ['1', '3', '6', '12', '24']
+    // const timeOptions: DataQuickPickItem<string>[] = []
 
-    const keywordSearchTerms = await vscode.window.showInputBox({
-        placeHolder: 'Enter keyword search here.',
-        prompt: 'Search for keyword among log group',
+    // for (var timeOption of strTimeOptions) {
+    //     timeOptions.push({
+    //         label: timeOption + ' hour',
+    //         data: timeOption,
+    //         description: 'Search all logs within the past ' + timeOption + ' hour',
+    //     })
+    // }
+    // timeOptions.push({
+    //     label: 'All time',
+    //     data: '0',
+    //     description: 'Search all log events.',
+    // })
+
+    // const dateQuickPick = createQuickPick(timeOptions)
+    // const datetime = await dateQuickPick.prompt()
+
+    // const curTime = new Date().getTime()
+    // const timeToSubtract = Number(datetime) * 10 ** 6 * 3.6
+
+    // const filterParameters = {
+    //     filterPattern: keywordSearchTerms ? keywordSearchTerms : '',
+    //     startTime: datetime === '0' ? 0 : curTime - timeToSubtract,
+    // }
+    const logGroupInfo = {
+        groupName: node.name,
+        regionName: node.regionCode,
+    }
+    const uri = convertLogGroupInfoToUri(node.name, node.regionCode, { filterParameters: filterParameters })
+    await registry.registerLog(uri, logGroupInfo, filterParameters)
+    //await registry.registerLogFilter(uri, filterParameters, logGroupInfo)
+    const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+    vscode.languages.setTextDocumentLanguage(doc, 'log')
+    await vscode.window.showTextDocument(doc, { preview: false })
+    telemetry.recordCloudwatchlogsOpenStream({ result })
+}
+
+function createKeywordPrompter() {
+    return createInputBox({
+        title: 'keyword search',
+        placeholder: 'Enter keyword search here',
     })
+}
+
+function createDatetimePrompter() {
+    // TODO: Make it so this doesn't have to be run everytime a user wants to search something.
     const strTimeOptions: string[] = ['1', '3', '6', '12', '24']
     const timeOptions: DataQuickPickItem<string>[] = []
 
@@ -52,27 +104,15 @@ export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegi
         description: 'Search all log events.',
     })
 
-    const dateQuickPick = createQuickPick(timeOptions)
-    const datetime = await dateQuickPick.prompt()
-    const logGroupInfo = {
-        groupName: node.name,
-        regionName: node.regionCode,
-    }
+    return createQuickPick(timeOptions)
+}
 
-    const curTime = new Date().getTime()
-    const timeToSubtract = Number(datetime) * 10 ** 6 * 3.6
-
-    const filterParameters = {
-        filterPattern: keywordSearchTerms ? keywordSearchTerms : '',
-        startTime: datetime === '0' ? 0 : curTime - timeToSubtract,
+export class SearchLogGroupWizard extends Wizard<CloudWatchAPIParameters> {
+    public constructor() {
+        super()
+        this.form.filterPattern.bindPrompter(createKeywordPrompter)
+        this.form.startTime.bindPrompter(createDatetimePrompter)
     }
-    const uri = convertLogGroupInfoToUri(node.name, node.regionCode, { filterParameters: filterParameters })
-    await registry.registerLog(uri, logGroupInfo, filterParameters)
-    //await registry.registerLogFilter(uri, filterParameters, logGroupInfo)
-    const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
-    vscode.languages.setTextDocumentLanguage(doc, 'log')
-    await vscode.window.showTextDocument(doc, { preview: false })
-    telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
 // export interface SelectLogStreamWizardContext {
