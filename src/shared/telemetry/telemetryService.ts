@@ -6,7 +6,6 @@
 import * as fs from 'fs'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
-import { v4 as uuidv4 } from 'uuid'
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
 import { isReleaseVersion, isAutomation } from '../vscode/env'
@@ -21,12 +20,12 @@ import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telem
 import { TelemetryLogger } from './telemetryLogger'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { getClientId } from './util'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
 export class DefaultTelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
-    public static readonly TELEMETRY_CLIENT_ID_KEY = 'telemetryClientId'
 
     private static readonly DEFAULT_FLUSH_PERIOD_MILLIS = 1000 * 60 * 5 // 5 minutes in milliseconds
 
@@ -175,12 +174,7 @@ export class DefaultTelemetryService {
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {
         try {
             // grab our clientId and generate one if it doesn't exist
-            let clientId = this.context.globalState.get<string>(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY)
-            if (!clientId) {
-                clientId = uuidv4()
-                await this.context.globalState.update(DefaultTelemetryService.TELEMETRY_CLIENT_ID_KEY, clientId)
-            }
-
+            const clientId = await getClientId(this.context.globalState)
             // grab our Cognito identityId
             const poolId = DefaultTelemetryClient.config.identityPool
             const identityMapJson = this.context.globalState.get<string>(

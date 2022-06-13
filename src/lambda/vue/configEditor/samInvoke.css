@@ -30,17 +30,6 @@ textarea {
     color: rgb(218, 31, 31);
 }
 
-#invoke-button-container {
-    padding: 15px 15px;
-    position: sticky;
-    bottom: 20px;
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-end;
-    border: 1px solid var(--vscode-menu-separatorBackground);
-    margin-top: 32px;
-}
-
 .required {
     color: red;
 }

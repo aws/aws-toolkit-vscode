@@ -13,10 +13,8 @@ import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
 import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
-import { fromExtensionManifest, openSettings, Settings } from '../settings'
-
-const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
-const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
+import { openSettings, Settings } from '../settings'
+import { TelemetryConfig } from './util'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -56,27 +54,6 @@ export async function activate(extensionContext: vscode.ExtensionContext, awsCon
     // Prompt user about telemetry if they haven't been
     if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
         showTelemetryNotice(extensionContext)
-    }
-}
-
-export function convertLegacy(value: unknown): boolean {
-    if (typeof value === 'boolean') {
-        return value
-    }
-
-    // Set telemetry value to boolean if the current value matches the legacy value
-    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
-        return false
-    } else if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE) {
-        return true
-    } else {
-        throw new TypeError(`Unknown telemetry setting: ${value}`)
-    }
-}
-
-export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: convertLegacy }) {
-    public isEnabled(): boolean {
-        return this.get('telemetry', true)
     }
 }
 

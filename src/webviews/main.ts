@@ -17,9 +17,7 @@ interface WebviewParams {
     webviewJs: string
 
     /**
-     * Styling sheets to use, applied to the entire webview.
-     *
-     * If none are provided, `base.css` is used by default.
+     * Stylesheets to use in addition to "base.css".
      */
     cssFiles?: string[]
 
@@ -372,7 +370,8 @@ function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, pa
         webview
     ).concat(ExtensionUtilities.getFilesAsVsCodeResources(jsPath, ['loadVsCodeApi.js'], webview))
 
-    const cssFiles = params.cssFiles ?? [isCloud9() ? 'base-cloud9.css' : 'base.css']
+    const baseCss = isCloud9() ? 'base-cloud9.css' : 'base.css'
+    const cssFiles = [baseCss, ...(params.cssFiles ?? [])]
     const loadCss = ExtensionUtilities.getFilesAsVsCodeResources(cssPath, [...cssFiles], webview)
 
     let scripts: string = ''
