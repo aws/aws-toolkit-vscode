@@ -17,7 +17,7 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
-import { CloudWatchAPIParameters, LogStreamRegistry } from '../registry/logStreamRegistry'
+import { CloudWatchAPIParameters, CloudWatchLogsGroupInfo, LogStreamRegistry } from '../registry/logStreamRegistry'
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
 import globals from '../../shared/extensionGlobals'
 import { nodeModuleNameResolver } from 'typescript'
@@ -34,42 +34,24 @@ export interface SearchLogGroup {
 
 export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
+
     const filterParameters = await new SearchLogGroupWizard().run()
-    console.log(filterParameters)
-    // const keywordSearchTerms = await vscode.window.showInputBox({
-    //     placeHolder: 'Enter keyword search here.',
-    //     prompt: 'Search for keyword among log group',
-    // })
-    // const strTimeOptions: string[] = ['1', '3', '6', '12', '24']
-    // const timeOptions: DataQuickPickItem<string>[] = []
 
-    // for (var timeOption of strTimeOptions) {
-    //     timeOptions.push({
-    //         label: timeOption + ' hour',
-    //         data: timeOption,
-    //         description: 'Search all logs within the past ' + timeOption + ' hour',
-    //     })
-    // }
-    // timeOptions.push({
-    //     label: 'All time',
-    //     data: '0',
-    //     description: 'Search all log events.',
-    // })
+    // If no input is given, skip over?
+    // TODO: Most likely better option here.
+    if (!filterParameters) {
+        return
+    }
 
-    // const dateQuickPick = createQuickPick(timeOptions)
-    // const datetime = await dateQuickPick.prompt()
+    if (filterParameters.startTime !== 0) {
+        filterParameters.startTime = makeTimeAbsolute(filterParameters)
+    }
 
-    // const curTime = new Date().getTime()
-    // const timeToSubtract = Number(datetime) * 10 ** 6 * 3.6
-
-    // const filterParameters = {
-    //     filterPattern: keywordSearchTerms ? keywordSearchTerms : '',
-    //     startTime: datetime === '0' ? 0 : curTime - timeToSubtract,
-    // }
     const logGroupInfo = {
         groupName: node.name,
         regionName: node.regionCode,
     }
+
     const uri = convertLogGroupInfoToUri(node.name, node.regionCode, { filterParameters: filterParameters })
     await registry.registerLog(uri, logGroupInfo, filterParameters)
     //await registry.registerLogFilter(uri, filterParameters, logGroupInfo)
@@ -77,6 +59,12 @@ export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegi
     vscode.languages.setTextDocumentLanguage(doc, 'log')
     await vscode.window.showTextDocument(doc, { preview: false })
     telemetry.recordCloudwatchlogsOpenStream({ result })
+}
+
+function makeTimeAbsolute(filterParameters: CloudWatchAPIParameters) {
+    const curTime = new Date().getTime()
+    const timeToSubtract = Number(filterParameters.startTime) * 10 ** 6 * 3.6
+    return curTime - timeToSubtract
 }
 
 function createKeywordPrompter() {
@@ -88,8 +76,8 @@ function createKeywordPrompter() {
 
 function createDatetimePrompter() {
     // TODO: Make it so this doesn't have to be run everytime a user wants to search something.
-    const strTimeOptions: string[] = ['1', '3', '6', '12', '24']
-    const timeOptions: DataQuickPickItem<string>[] = []
+    const strTimeOptions: integer[] = [1, 3, 6, 12, 24]
+    const timeOptions: DataQuickPickItem<integer>[] = []
 
     for (var timeOption of strTimeOptions) {
         timeOptions.push({
@@ -98,9 +86,10 @@ function createDatetimePrompter() {
             description: 'Search all logs within the past ' + timeOption + ' hour',
         })
     }
+
     timeOptions.push({
         label: 'All time',
-        data: '0',
+        data: 0,
         description: 'Search all log events.',
     })
 
