@@ -66,14 +66,15 @@ export class ConsolasCodeCoverageTracker {
     public emitConsolasCodeContribution() {
         const totalTokens = this._totalTokens
         const acceptedTokens = this._acceptedTokens
-        const percentage = ((acceptedTokens.length / totalTokens.length) * 100).toFixed(2)
+        const percentCount = ((acceptedTokens.length / totalTokens.length) * 100).toFixed(2)
+        const percentage = Math.round(parseInt(percentCount))
         const date = new globals.clock.Date(this._startTime)
         telemetry.recordConsolasCodePercentage({
-            consolasTotalTokens: totalTokens.length,
+            consolasTotalTokens: totalTokens.length ? totalTokens.length : 0,
             consolasStartTime: date.toString(),
             consolasLanguage: this._language,
-            consolasAcceptedTokens: acceptedTokens.length,
-            consolasPercentage: Math.round(parseInt(percentage)),
+            consolasAcceptedTokens: acceptedTokens.length ? acceptedTokens.length : 0,
+            consolasPercentage: percentage ? percentage : 0,
         })
     }
 

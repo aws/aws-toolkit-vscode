@@ -12,7 +12,7 @@
             "description": "The metrics accepted on suggested consolas code"
         },
         {
-            "name": "consolasAutomatedtriggerType",
+            "name": "consolasAutomatedTriggerType",
             "type": "string",
             "description": "The type of the Automated trigger to send request to Consolas service",
             "allowedValues": ["KeyStrokeCount", "SpecialCharacters", "Enter", "IntelliSenseAcceptance"]
@@ -56,6 +56,11 @@
             "allowedValues": ["java", "python", "javascript", "plaintext"]
         },
         {
+            "name": "consolasLastSuggestionIndex",
+            "type": "int",
+            "description": "The last index of recommendation from a particular response"
+        },
+        {
             "name": "consolasLineNumber",
             "type": "int",
             "description": "The line number of the cursor when the event happens"
@@ -68,7 +73,7 @@
         {
             "name": "consolasPaginationProgress",
             "type": "int",
-            "description": "The number of recommendations received so far when user makes a decision."
+            "description": "The number of recommendations received so far when user makes a decision"
         },
         {
             "name": "consolasPercentage",
@@ -89,12 +94,12 @@
         {
             "name": "consolasRuntimeSource",
             "type": "string",
-            "description": "the original (free-text) of the runtime version of the language of Consolas recomendation"
+            "description": "the original (free-text) of the runtime version of the language of Consolas recommendation"
         },
         {
             "name": "consolasSessionId",
             "type": "string",
-            "description": "The ID of the session to Consolas service"
+            "description": "The unique identifier for a Consolas session(which can contain multiple requests)"
         },
         {
             "name": "consolasStartTime",
@@ -104,17 +109,12 @@
         {
             "name": "consolasSuggestionIndex",
             "type": "int",
-            "description": "The index for each suggestion, respectively, in the list of suggestions returned from service invocation."
-        },
-        {
-            "name": "consolasLastSuggestionIndex",
-            "type": "int",
-            "description": "The last index of recommendation from a particular response."
+            "description": "The index for each suggestion, respectively, in the list of suggestions returned from service invocation"
         },
         {
             "name": "consolasSuggestionReferences",
             "type": "string",
-            "description": "The references of the suggestion."
+            "description": "The list of unique license names for a particular suggestion"
         },
         {
             "name": "consolasSuggestionReferenceCount",
@@ -191,19 +191,19 @@
             "description": "Percentage of user tokens against suggestions until 5 mins of time",
             "metadata": [
                 {
-                    "type": "consolasStartTime"
-                },
-                {
-                    "type": "consolasTotalTokens"
+                    "type": "consolasAcceptedTokens"
                 },
                 {
                     "type": "consolasLanguage"
                 },
                 {
-                    "type": "consolasAcceptedTokens"
+                    "type": "consolasPercentage"
                 },
                 {
-                    "type": "consolasPercentage"
+                    "type": "consolasStartTime"
+                },
+                {
+                    "type": "consolasTotalTokens"
                 },
                 {
                     "type": "reason",
@@ -216,30 +216,30 @@
             "description": "Client side invocation of the Consolas Security Scan",
             "metadata": [
                 {
-                    "type": "consolasCodeScanJobId",
-                    "required": false
+                    "type": "consolasCodeScanLines"
                 },
                 {
-                    "type": "consolasLanguage"
+                    "type": "consolasCodeScanJobId",
+                    "required": false
                 },
                 {
                     "type": "consolasCodeScanPayloadBytes"
                 },
                 {
-                    "type": "consolasCodeScanLines"
+                    "type": "consolasCodeScanTotalIssues"
+                },
+                {
+                    "type": "consolasLanguage"
                 },
                 {
                     "type": "duration"
-                },
-                {
-                    "type": "result"
                 },
                 {
                     "type": "reason",
                     "required": false
                 },
                 {
-                    "type": "consolasCodeScanTotalIssues"
+                    "type": "result"
                 }
             ]
         },
@@ -248,36 +248,12 @@
             "description": "Client side invocation of the Consolas service for suggestion",
             "metadata": [
                 {
-                    "type": "consolasRequestId",
-                    "required": false
-                },
-                {
-                    "type": "consolasSessionId",
-                    "required": false
-                },
-                {
-                    "type": "consolasLastSuggestionIndex",
-                    "required": false
-                },
-                {
-                    "type": "consolasTriggerType"
-                },
-                {
-                    "type": "consolasAutomatedtriggerType",
+                    "type": "consolasAutomatedTriggerType",
                     "required": false
                 },
                 {
                     "type": "consolasCompletionType",
                     "required": false
-                },
-                {
-                    "type": "result"
-                },
-                {
-                    "type": "duration"
-                },
-                {
-                    "type": "consolasLineNumber"
                 },
                 {
                     "type": "consolasCursorOffset"
@@ -286,6 +262,17 @@
                     "type": "consolasLanguage"
                 },
                 {
+                    "type": "consolasLastSuggestionIndex",
+                    "required": false
+                },
+                {
+                    "type": "consolasLineNumber"
+                },
+                {
+                    "type": "consolasRequestId",
+                    "required": false
+                },
+                {
                     "type": "consolasRuntime",
                     "required": false
                 },
@@ -294,8 +281,21 @@
                     "required": false
                 },
                 {
+                    "type": "consolasSessionId",
+                    "required": false
+                },
+                {
+                    "type": "consolasTriggerType"
+                },
+                {
+                    "type": "duration"
+                },
+                {
                     "type": "reason",
                     "required": false
+                },
+                {
+                    "type": "result"
                 }
             ]
         },
@@ -304,37 +304,17 @@
             "description": "User acceptance or rejection of each suggestion returned by the Consolas service request",
             "metadata": [
                 {
-                    "type": "consolasRequestId"
+                    "type": "consolasCompletionType"
                 },
                 {
-                    "type": "consolasSessionId",
-                    "required": false
+                    "type": "consolasLanguage"
                 },
                 {
                     "type": "consolasPaginationProgress",
                     "required": false
                 },
                 {
-                    "type": "consolasTriggerType"
-                },
-                {
-                    "type": "consolasSuggestionIndex"
-                },
-                {
-                    "type": "consolasSuggestionState"
-                },
-                {
-                    "type": "consolasSuggestionReferences",
-                    "required": false
-                },
-                {
-                    "type": "consolasSuggestionReferenceCount"
-                },
-                {
-                    "type": "consolasCompletionType"
-                },
-                {
-                    "type": "consolasLanguage"
+                    "type": "consolasRequestId"
                 },
                 {
                     "type": "consolasRuntime",
@@ -343,6 +323,26 @@
                 {
                     "type": "consolasRuntimeSource",
                     "required": false
+                },
+                {
+                    "type": "consolasSessionId",
+                    "required": false
+                },
+                {
+                    "type": "consolasSuggestionIndex"
+                },
+                {
+                    "type": "consolasSuggestionReferenceCount"
+                },
+                {
+                    "type": "consolasSuggestionReferences",
+                    "required": false
+                },
+                {
+                    "type": "consolasSuggestionState"
+                },
+                {
+                    "type": "consolasTriggerType"
                 }
             ]
         },
@@ -351,27 +351,16 @@
             "description": "Percentage of user modifications for the selected suggestion until a fixed period of time",
             "metadata": [
                 {
-                    "type": "consolasRequestId",
-                    "required": false
+                    "type": "consolasCompletionType"
                 },
                 {
-                    "type": "consolasSessionId",
-                    "required": false
-                },
-                {
-                    "type": "consolasTriggerType"
-                },
-                {
-                    "type": "consolasSuggestionIndex"
+                    "type": "consolasLanguage"
                 },
                 {
                     "type": "consolasModificationPercentage"
                 },
                 {
-                    "type": "consolasCompletionType"
-                },
-                {
-                    "type": "consolasLanguage"
+                    "type": "consolasRequestId"
                 },
                 {
                     "type": "consolasRuntime",
@@ -380,6 +369,16 @@
                 {
                     "type": "consolasRuntimeSource",
                     "required": false
+                },
+                {
+                    "type": "consolasSessionId",
+                    "required": false
+                },
+                {
+                    "type": "consolasSuggestionIndex"
+                },
+                {
+                    "type": "consolasTriggerType"
                 }
             ]
         },

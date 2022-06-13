@@ -104,7 +104,7 @@ export class RecommendationHandler {
         editor: vscode.TextEditor,
         triggerType: telemetry.ConsolasTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: telemetry.ConsolasAutomatedtriggerType,
+        autoTriggerType?: telemetry.ConsolasAutomatedTriggerType,
         pagination: boolean = true,
         page: number = 0
     ) {
@@ -220,17 +220,17 @@ export class RecommendationHandler {
              * TODO: fill in runtime fields after solution is found to access runtime in vscode
              */
             telemetry.recordConsolasServiceInvocation({
-                consolasRequestId: requestId,
+                consolasRequestId: requestId ? requestId : undefined,
                 consolasSessionId: sessionId ? sessionId : undefined,
                 consolasLastSuggestionIndex: this.recommendations.length - 1,
                 consolasTriggerType: triggerType,
-                consolasAutomatedtriggerType: autoTriggerType,
+                consolasAutomatedTriggerType: autoTriggerType,
                 consolasCompletionType:
                     invocationResult == 'Succeeded' ? TelemetryHelper.instance.completionType : undefined,
                 result: invocationResult,
-                duration: latency,
-                consolasLineNumber: this.startPos.line,
-                consolasCursorOffset: TelemetryHelper.instance.cursorOffset,
+                duration: latency ? latency : 0,
+                consolasLineNumber: this.startPos.line ? this.startPos.line : 0,
+                consolasCursorOffset: TelemetryHelper.instance.cursorOffset ? TelemetryHelper.instance.cursorOffset : 0,
                 consolasLanguage: languageContext.language,
                 consolasRuntime: languageContext.runtimeLanguage,
                 consolasRuntimeSource: languageContext.runtimeLanguageSource,

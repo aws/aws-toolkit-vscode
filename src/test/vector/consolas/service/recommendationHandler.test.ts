@@ -120,7 +120,7 @@ describe('recommendationHandler', function () {
                 consolasSessionId: 'test_request',
                 consolasLastSuggestionIndex: -1,
                 consolasTriggerType: 'AutoTrigger',
-                consolasAutomatedtriggerType: 'Enter',
+                consolasAutomatedTriggerType: 'Enter',
                 consolasCompletionType: 'Line',
                 result: 'Succeeded',
                 duration: 0.0,

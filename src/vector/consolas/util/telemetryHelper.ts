@@ -23,7 +23,7 @@ export class TelemetryHelper {
     /**
      * Auto Trigger Type for getting event of Automated Trigger
      */
-    public ConsolasAutomatedtriggerType: telemetry.ConsolasAutomatedtriggerType
+    public ConsolasAutomatedtriggerType: telemetry.ConsolasAutomatedTriggerType
     /**
      * completion Type of the consolas recommendation, line vs block
      */

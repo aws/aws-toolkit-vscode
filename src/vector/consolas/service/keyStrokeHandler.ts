@@ -68,7 +68,7 @@ export class KeyStrokeHandler {
             if (autoTriggerType === '') {
                 return
             }
-            const triggerTtype = autoTriggerType as telemetry.ConsolasAutomatedtriggerType
+            const triggerTtype = autoTriggerType as telemetry.ConsolasAutomatedTriggerType
             this.invokeAutomatedTrigger(triggerTtype, editor, client, config)
         } catch (error) {
             getLogger().error('Automated Trigger Exception : ', error)
@@ -166,7 +166,7 @@ export class KeyStrokeHandler {
         return changedText
     }
     async invokeAutomatedTrigger(
-        autoTriggerType: telemetry.ConsolasAutomatedtriggerType,
+        autoTriggerType: telemetry.ConsolasAutomatedTriggerType,
         editor: vscode.TextEditor,
         client: DefaultConsolasClient,
         config: ConfigurationEntry

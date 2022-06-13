@@ -317,7 +317,7 @@ export class InlineCompletion {
         editor: vscode.TextEditor,
         triggerType: telemetry.ConsolasTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: telemetry.ConsolasAutomatedtriggerType
+        autoTriggerType?: telemetry.ConsolasAutomatedTriggerType
     ) {
         RecommendationHandler.instance.clearRecommendations()
         this.setConsolasStatusBarLoading()
