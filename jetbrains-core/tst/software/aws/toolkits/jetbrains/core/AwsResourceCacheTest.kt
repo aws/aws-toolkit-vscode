@@ -7,7 +7,9 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.RuleChain
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runBlockingTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
@@ -485,7 +487,11 @@ class AwsResourceCacheTest {
     fun concurrentlyRunningExceptionalResourcesGetTheSameException() {
         val latch = CountDownLatch(1)
         whenever(mockResource.fetch(any(), any())).then {
-            latch.await(500, TimeUnit.MILLISECONDS)
+            latch.await()
+            // exception gets thrown fast enough where the second fetchIfNeeded check occurs after the first call throws
+            runBlockingTest {
+                delay(500)
+            }
             throw RuntimeException("Boom")
         }
 
