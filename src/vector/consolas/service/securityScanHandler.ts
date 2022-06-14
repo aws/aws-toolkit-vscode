@@ -48,16 +48,16 @@ function mapToAggregatedList(
 ) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
     codeScanIssues.forEach(issue => {
-        if (codeScanIssueMap.has(issue.fileName)) {
-            const list = codeScanIssueMap.get(issue.fileName)
+        if (codeScanIssueMap.has(issue.filePath)) {
+            const list = codeScanIssueMap.get(issue.filePath)
             if (list === undefined) {
-                codeScanIssueMap.set(issue.fileName, [issue])
+                codeScanIssueMap.set(issue.filePath, [issue])
             } else {
                 list.push(issue)
-                codeScanIssueMap.set(issue.fileName, list)
+                codeScanIssueMap.set(issue.filePath, list)
             }
         } else {
-            codeScanIssueMap.set(issue.fileName, [issue])
+            codeScanIssueMap.set(issue.filePath, [issue])
         }
     })
 

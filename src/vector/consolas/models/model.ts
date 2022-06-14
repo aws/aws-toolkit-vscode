@@ -84,7 +84,7 @@ export interface CodeScanTelemetryEntry {
 }
 
 export interface RawCodeScanIssue {
-    fileName: string
+    filePath: string
     startLine: number
     endLine: number
     title: string
