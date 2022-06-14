@@ -50,6 +50,11 @@ tasks.jar {
     }
 }
 
+tasks.testJar {
+    // classpath.index is a duplicated
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
 tasks.processTestResources {
     // TODO how can we remove this. Fails due to:
     // "customerUploadedEventSchemaMultipleTypes.json.txt is a duplicate but no duplicate handling strategy has been set"

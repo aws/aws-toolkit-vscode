@@ -28,10 +28,7 @@ dependencyResolutionManagement {
             url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
             content {
                 // only allowed to pull snapshots of gradle-intellij-plugin from here
-                includeModule("org.jetbrains.intellij.plugins", "gradle-intellij-plugin")
-            }
-            mavenContent {
-                snapshotsOnly()
+                includeModule("org.jetbrains.intellij", "org.jetbrains.intellij.gradle.plugin")
             }
         }
     }

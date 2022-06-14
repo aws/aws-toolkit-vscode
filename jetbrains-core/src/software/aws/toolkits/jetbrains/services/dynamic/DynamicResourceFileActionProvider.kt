@@ -59,9 +59,11 @@ class DynamicResourceFileActionProvider :
             }
 
             val action = ActionManager.getInstance().getAction(actionId)
-            createActionLabel(action.templateText) {
-                executeAction(actionId)
-                EditorNotifications.getInstance(project).updateNotifications(file)
+            action.templateText?.let {
+                createActionLabel(it) {
+                    executeAction(actionId)
+                    EditorNotifications.getInstance(project).updateNotifications(file)
+                }
             }
         }
     }

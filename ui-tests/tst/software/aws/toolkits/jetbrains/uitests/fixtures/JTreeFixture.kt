@@ -10,6 +10,7 @@ import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.Locators
 import com.intellij.remoterobot.utils.waitFor
 import org.assertj.swing.timing.Pause
+import software.aws.toolkits.resources.message
 import java.time.Duration
 import javax.swing.JTree
 
@@ -212,7 +213,7 @@ fun JTreeFixture.waitUntilLoaded() {
         Pause.pause(100)
         waitFor(duration = Duration.ofMinutes(1)) {
             // FIX_WHEN_MIN_IS_213: changed to unicode ellipses in IDEA-270680
-            !hasText("loading...") && !hasText("loading…")
+            !hasText("loading...") && !hasText("loading…") && !hasText(message("loading_resource.loading"))
         }
         Pause.pause(100)
     }

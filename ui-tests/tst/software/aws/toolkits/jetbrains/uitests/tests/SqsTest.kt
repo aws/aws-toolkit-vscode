@@ -4,8 +4,8 @@
 package software.aws.toolkits.jetbrains.uitests.tests
 
 import com.intellij.remoterobot.fixtures.ComponentFixture
+import com.intellij.remoterobot.fixtures.JTableFixture
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
-import com.intellij.remoterobot.fixtures.JTreeFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.log
 import com.intellij.remoterobot.stepsProcessing.step
@@ -122,7 +122,7 @@ class SqsTest {
                 step("View messages") {
                     findAndClick("//div[@accessiblename='View Messages' and @class='JButton']")
                     recheckAssert(timeout = Duration.ofSeconds(10)) {
-                        assertThat(find<JTreeFixture>(byXpath("//div[@class='TableView']")).findAllText()).anySatisfy {
+                        assertThat(find<JTableFixture>(byXpath("//div[@class='TableView']")).findAllText()).anySatisfy {
                             assertThat(it.text).contains("bmessage")
                         }
                     }

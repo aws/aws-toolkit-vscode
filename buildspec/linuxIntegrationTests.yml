@@ -2,7 +2,7 @@ version: 0.2
 
 cache:
   paths:
-    - '/root/.gradle/caches/**/*'
+#    - '/root/.gradle/caches/**/*'
     - '/root/.gradle/wrapper/**/*'
 
 env:

@@ -4,8 +4,8 @@ assertJ = "3.20.2" # Upgrading leads to SAM errors: https://youtrack.jetbrains.c
 awsSdk = "2.17.138"
 commonmark = "0.17.1"
 detekt = "1.20.0"
-intellijGradle = "1.5.2"
-intellijRemoteRobot = "0.11.11"
+intellijGradle = "1.7.0-20220613.010908-17"
+intellijRemoteRobot = "0.11.14"
 jackson = "2.11.1"
 jacoco = "0.8.7"
 jgit = "5.11.0.202103091610-r"
@@ -55,7 +55,7 @@ detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = 
 detekt-formattingRules = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 gradlePlugin-detekt = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
-gradlePlugin-intellij = { module = "org.jetbrains.intellij.plugins:gradle-intellij-plugin", version.ref = "intellijGradle" }
+gradlePlugin-intellij = { module = "org.jetbrains.intellij:org.jetbrains.intellij.gradle.plugin", version.ref = "intellijGradle" }
 gradlePlugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 gradlePlugin-testLogger = { module = "com.adarshr:gradle-test-logger-plugin", version.ref = "testLogger" }
 gradlePlugin-testRetry = { module = "org.gradle:test-retry-gradle-plugin", version.ref = "testRetry" }
