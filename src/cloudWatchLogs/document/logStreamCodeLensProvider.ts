@@ -58,11 +58,8 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
         }
         const codelenses = [forwardCodelense]
         // Checks if the URI is valif for getLogEvents
-        console.log('Here')
         if (needsBackwardButton(uri)) {
             codelenses.unshift(backwardCodelense)
-        } else {
-            console.log('No Backward button')
         }
 
         return uri.scheme === CLOUDWATCH_LOGS_SCHEME ? codelenses : []

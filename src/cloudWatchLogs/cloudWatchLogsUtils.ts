@@ -50,7 +50,6 @@ parsingURIMap.set('filterLogEvents', function (parts) {
 
 export function needsBackwardButton(uri: vscode.Uri): Boolean {
     const parseInfo = parseCloudWatchLogsUri(uri)
-    console.log(parseInfo)
     if (parseInfo.filterParameters) {
         return false
     } else {
@@ -68,9 +67,7 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
     }
 } {
     const parts = uri.path.split(':')
-    console.log(parsingURIMap.get(parts[0]))
     const parsingFunction = parsingURIMap.get(parts[0])
-    console.log(parsingFunction, parts)
     if (parsingFunction) {
         return parsingFunction(parts)
     } else {
