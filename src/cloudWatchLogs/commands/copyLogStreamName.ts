@@ -20,6 +20,9 @@ export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
             }
         }
         const parsedUri = parseCloudWatchLogsUri(uri)
+        if (!parsedUri.streamName) {
+            throw new Error('Could not determine stream name of log stream.')
+        }
         await vscode.env.clipboard.writeText(parsedUri.streamName)
     } catch (e) {
         vscode.window.showErrorMessage(

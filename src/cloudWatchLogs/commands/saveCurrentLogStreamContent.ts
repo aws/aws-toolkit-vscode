@@ -38,6 +38,9 @@ export async function saveCurrentLogStreamContent(
         const uriComponents = parseCloudWatchLogsUri(uri)
 
         const localizedLogFile = localize('AWS.command.saveCurrentLogStreamContent.logfile', 'Log File')
+        if (!uriComponents.streamName) {
+            throw new Error('Unable to determine stream name.')
+        }
         const selectedUri = await window.showSaveDialog({
             defaultUri: vscode.Uri.parse(path.join(workspaceDir.toString(), uriComponents.streamName)),
             filters: {

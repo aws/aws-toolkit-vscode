@@ -79,7 +79,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.cloudWatchLogs.searchLogGroup',
-            async (node: LogGroupNode) => await searchLogGroup(node, registry)
+            async (node?: LogGroupNode) => await searchLogGroup(registry, node)
         )
     )
 }

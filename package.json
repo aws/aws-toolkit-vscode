@@ -806,7 +806,7 @@
                 },
                 {
                     "command": "aws.cloudWatchLogs.searchLogGroup",
-                    "when": "false"
+                    "when": "true"
                 },
                 {
                     "command": "aws.ecr.deleteRepository",

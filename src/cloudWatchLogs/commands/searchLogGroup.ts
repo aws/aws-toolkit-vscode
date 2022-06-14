@@ -26,35 +26,39 @@ import { isValidResponse, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { integer } from 'vscode-languageserver-types'
+import { CloudWatchLogsNode } from '../explorer/cloudWatchLogsNode'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export interface SearchLogGroup {
     region: string
     logGroupName: string
 }
 
-export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
+export async function searchLogGroup(registry: LogStreamRegistry, node?: LogGroupNode): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
-
-    const filterParameters = await new SearchLogGroupWizard().run()
+    const filterParameters = await new SearchLogGroupWizard(node).run()
 
     // If no input is given, skip over?
     // TODO: Most likely better option here.
     if (!filterParameters) {
         return
     }
+    const logGroupName = node ? node.name : filterParameters.logGroup
+    const regionCode = node ? node.regionCode : filterParameters.regionCode
 
     if (filterParameters.startTime !== 0) {
         filterParameters.startTime = makeTimeAbsolute(filterParameters)
     }
 
     const logGroupInfo = {
-        groupName: node.name,
-        regionName: node.regionCode,
+        groupName: logGroupName,
+        regionName: regionCode,
     }
 
-    const uri = convertLogGroupInfoToUri('filterLogEvents', node.name, node.regionCode, {
+    const uri = convertLogGroupInfoToUri('filterLogEvents', logGroupInfo.groupName, logGroupInfo.regionName, {
         filterParameters: filterParameters,
     })
+    console.log(logGroupInfo)
     await registry.registerLog(uri, logGroupInfo, filterParameters)
     //await registry.registerLogFilter(uri, filterParameters, logGroupInfo)
     const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
@@ -98,9 +102,48 @@ function createDatetimePrompter() {
     return createQuickPick(timeOptions)
 }
 
-export class SearchLogGroupWizard extends Wizard<CloudWatchAPIParameters> {
-    public constructor() {
+function createLogGroupPrompter() {
+    const hardCoded = 'us-west-2'
+    const logGroups = getLogGroupsFromRegion(hardCoded)
+
+    const options: Promise<DataQuickPickItem<string>[]> = loadLogGroups([], logGroups)
+    return createQuickPick(options)
+}
+
+export interface SearchLogGroupWizardResponse {
+    filterPattern: string
+    startTime: number
+    logGroup: string
+    regionCode: string
+}
+
+async function loadLogGroups(options: DataQuickPickItem<string>[], logGroups: Promise<AWSTreeNodeBase[]>) {
+    const logGroupsResult = await logGroups
+    let logGroup
+    for (logGroup of logGroupsResult) {
+        if (logGroup.label) {
+            options.push({
+                label: logGroup.label,
+                data: logGroup.label,
+            })
+        }
+    }
+    return options
+}
+
+async function getLogGroupsFromRegion(region: string) {
+    const node = new CloudWatchLogsNode(region)
+    const logGroups: AWSTreeNodeBase[] = await node.getChildren()
+    return logGroups
+}
+
+export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
+    public constructor(node?: LogGroupNode) {
         super()
+        if (!node) {
+            const hardCoded = 'us-west-2'
+            this.form.logGroup.bindPrompter(createLogGroupPrompter)
+        }
         this.form.filterPattern.bindPrompter(createKeywordPrompter)
         this.form.startTime.bindPrompter(createDatetimePrompter)
     }
