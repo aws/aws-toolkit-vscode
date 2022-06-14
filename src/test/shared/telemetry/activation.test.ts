@@ -15,10 +15,7 @@ import {
     TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED,
     hasUserSeenTelemetryNotice,
     setHasUserSeenTelemetryNotice,
-    TelemetryConfig,
-    convertLegacy,
 } from '../../../shared/telemetry/activation'
-import { Settings } from '../../../shared/settings'
 
 describe('handleTelemetryNoticeResponse', function () {
     let extensionContext: vscode.ExtensionContext
@@ -67,101 +64,6 @@ describe('handleTelemetryNoticeResponse', function () {
             2,
             'Expected opt out shown state to be set'
         )
-    })
-})
-
-describe('Telemetry on activation', function () {
-    const SETTING_KEY = 'aws.telemetry'
-
-    const target = vscode.ConfigurationTarget.Workspace
-    const settings = new Settings(target)
-
-    let sut: TelemetryConfig
-
-    beforeEach(function () {
-        sut = new TelemetryConfig(
-            settings,
-            // Disable `throwInvalid`. These tests intentionally try invalid
-            // data, so the errors are unwanted noise in the test logs.
-            false
-        )
-    })
-
-    afterEach(async function () {
-        await sut.reset()
-    })
-
-    const scenarios = [
-        {
-            initialSettingValue: 'Enable',
-            expectedIsEnabledValue: true,
-            desc: 'Original opt-in value',
-            expectedSanitizedValue: true,
-        },
-        {
-            initialSettingValue: 'Disable',
-            expectedIsEnabledValue: false,
-            desc: 'Original opt-out value',
-            expectedSanitizedValue: false,
-        },
-        {
-            initialSettingValue: 'Use IDE settings',
-            expectedIsEnabledValue: true,
-            desc: 'Original deferral value',
-            expectedSanitizedValue: 'Use IDE settings',
-        },
-        { initialSettingValue: true, expectedIsEnabledValue: true, desc: 'Opt in', expectedSanitizedValue: true },
-        { initialSettingValue: false, expectedIsEnabledValue: false, desc: 'Opt out', expectedSanitizedValue: false },
-        {
-            initialSettingValue: 1234,
-            expectedIsEnabledValue: true,
-            desc: 'Unexpected numbers',
-            expectedSanitizedValue: 1234,
-        },
-        {
-            initialSettingValue: { label: 'garbageData' },
-            expectedIsEnabledValue: true,
-            desc: 'Unexpected object',
-            expectedSanitizedValue: { label: 'garbageData' },
-        },
-        {
-            initialSettingValue: [{ label: 'garbageDataList' }],
-            expectedIsEnabledValue: true,
-            desc: 'Unexpected array',
-            expectedSanitizedValue: [{ label: 'garbageDataList' }],
-        },
-        {
-            initialSettingValue: undefined,
-            expectedIsEnabledValue: true,
-            desc: 'Unset value',
-            expectedSanitizedValue: undefined,
-        },
-    ]
-
-    describe('isTelemetryEnabled', function () {
-        scenarios.forEach(scenario => {
-            it(scenario.desc, async () => {
-                await settings.update(SETTING_KEY, scenario.initialSettingValue)
-
-                assert.strictEqual(sut.isEnabled(), scenario.expectedIsEnabledValue)
-            })
-        })
-    })
-
-    describe('sanitizeTelemetrySetting', function () {
-        scenarios.forEach(scenario => {
-            it(scenario.desc, () => {
-                const tryConvert = () => {
-                    try {
-                        return convertLegacy(scenario.initialSettingValue)
-                    } catch {
-                        return scenario.initialSettingValue
-                    }
-                }
-
-                assert.deepStrictEqual(tryConvert(), scenario.expectedSanitizedValue)
-            })
-        })
     })
 })
 

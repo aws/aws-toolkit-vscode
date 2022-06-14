@@ -128,7 +128,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     }
 }
 
-class FakeMemento implements vscode.Memento {
+export class FakeMemento implements vscode.Memento {
     public constructor(private readonly _storage: FakeMementoStorage = {}) {}
     public get<T>(key: string): T | undefined
     public get<T>(key: string, defaultValue: T): T

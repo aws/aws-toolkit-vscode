@@ -2,6 +2,88 @@
 
 An overview of the architecture for various components within the Toolkit.
 
+## Commands
+
+Many parts of the VS Code API relies on the use of 'commands' which are simply functions bound to a global ID. For small projects, this simplicity is great. But the base API doesn't offer a lot of common functionality that a large project might want: logging, error handling, etc.
+
+For the Toolkit, common command functionality is implemented in [Commands](../src/shared/vscode/commands2.ts). The goal with this abstraction is to increase consistency across the Toolkit for anything related to commands.
+
+### Examples
+
+-   Registering and execution:
+
+    ```ts
+    const command = Commands.register('helloWorld', () => console.log('Hello, World!'))
+    command.execute()
+    ```
+
+-   Using parameters:
+
+    ```ts
+    const showMessage = async (message: string) => vscode.window.showInformationMessage(message)
+    const command = Commands.register('aws.showMessage', showMessage)
+    command.execute('Hello, World!')
+    ```
+
+-   Creating a CodeLens:
+
+    ```ts
+    // The built CodeLens should be returned through a `vscode.CodeLensProvider` implementation
+    const range = new vscode.Range(0, 0, 0, 0)
+    const lens = command.build('Hello, World!').asCodeLens(range, { title: 'Click me!' })
+    ```
+
+-   Creating a tree node:
+
+    ```ts
+    // `node` will execute the command when clicked in the explorer tree
+    // This object should be returned as a child of some other tree node
+    const node = command.build('Hello, World!').asTreeNode({ label: 'Click me!' })
+    ```
+
+### Advanced Uses
+
+Complex programs often require more than just simple functions to act as entry-points. Large amounts of state may be involved, which can be very difficult to test and reason about without proper management. One way to make it easier to isolate state from a given command is by 'declaring' it. This associates a command with all the required dependencies while still making it look like any other command.
+
+-   Command declaration and registration:
+
+    ```ts
+    const command = Commands.declare('aws.showMessage2', (state: Record<string, string>) => (key: string) => {
+        return showMessage(state[key] ?? 'Message not found')
+    })
+
+    command.register({ hello: 'Hello, World!', goodbye: 'Goodbye, World!' })
+    command.execute('goodbye')
+    ```
+
+-   Prototype binding:
+
+    ```ts
+    // This class won't show duplicate messages that use the same key unlike the previous example
+    class Messages {
+        private readonly shown = new Map<string, Promise<unknown>>()
+        public constructor(private readonly state: Record<string, string>) {}
+
+        public showMessage(key: string) {
+            const promise = this.shown.get(key) ?? showMessage(this.state[key] ?? 'Message not found')
+            this.shown.set(
+                key,
+                promise.finally(() => this.shown.delete(key))
+            )
+
+            return promise
+        }
+    }
+
+    const command = Commands.from(Messages).declareShowMessage('aws.showMessage3')
+    const messages = new Messages({ hello: 'Hello, World!', goodbye: 'Goodbye, World!' })
+
+    command.register(messages)
+    command.execute('goodbye')
+    command.execute('hello')
+    command.execute('goodbye')
+    ```
+
 ## Webviews (Vue framework)
 
 The current implementation uses Vue 3 with Single File Components (SFCs) for modularity. Each webview

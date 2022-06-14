@@ -7,10 +7,12 @@ import * as vscode from 'vscode'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
+import { Env } from '../../shared/vscode/env'
 import globals from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
+import { addCodiconToString } from './textUtilities'
 
 export function makeFailedWriteMessage(filename: string): string {
     const message = localize('AWS.failedToWrite', '{0}: Failed to write "{1}".', getIdeProperties().company, filename)
@@ -152,4 +154,16 @@ export async function showTimedMessage(message: string, duration: number) {
             await sleep(duration)
         }
     )
+}
+
+export async function copyToClipboard(
+    data: string,
+    label?: string,
+    window: Window = vscode.window,
+    env: Env = vscode.env
+): Promise<void> {
+    await env.clipboard.writeText(data)
+    const message = localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', label)
+    window.setStatusBarMessage(addCodiconToString('clippy', message), 5000)
+    getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)
 }
