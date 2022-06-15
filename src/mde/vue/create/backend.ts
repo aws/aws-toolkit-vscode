@@ -13,7 +13,7 @@ import { CreateEnvironmentRequest } from '../../../../types/clientmde'
 import { getDevFiles, getRegistryDevFiles, promptDevFiles, PUBLIC_REGISTRY_URI } from '../../wizards/devfiles'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import { GitExtension } from '../../../shared/extensions/git'
-import { MdeEnvironment } from '../../../shared/clients/mdeClient'
+import { MdeClient, MdeEnvironment } from '../../../shared/clients/mdeClient'
 import { VSCODE_MDE_TAGS } from '../../constants'
 import { productName } from '../../../shared/constants'
 import { cloneToMde } from '../../mdeCommands'
@@ -178,7 +178,7 @@ async function submit(data: CreateEnvironmentRequest) {
  * But realistically it should belong somewhere else.
  */
 async function createMdeWithTags(request: CreateEnvironmentRequest): Promise<MdeEnvironment | undefined> {
-    const mdeClient = globals.mde
+    const mdeClient = await MdeClient.create()
 
     const repo = request?.sourceCode?.[0]
     // We will always perform the clone
