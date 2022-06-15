@@ -130,6 +130,11 @@ export interface ConnectedCawsClient extends ClassToInterfaceType<CawsClientInte
     readonly connected: true
     readonly regionCode: string
     readonly identity: { readonly id: string; readonly name: string }
+    readonly token: string
+}
+
+export function isConnectedCawsClient(client: CawsClient): client is ConnectedCawsClient {
+    return client.connected
 }
 
 export type CawsClient = ConnectedCawsClient | DisconnectedCawsClient
@@ -172,6 +177,14 @@ class CawsClientInternal {
         }
 
         return { id: this.userDetails.userId, name: this.userDetails.userName }
+    }
+
+    public get token(): ConnectedCawsClient['token'] {
+        if (!this.connected) {
+            throw new Error('CAWS client is not connected')
+        }
+
+        return this.bearerToken as string
     }
 
     /**

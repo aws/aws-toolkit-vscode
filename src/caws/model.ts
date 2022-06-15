@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { HOST_NAME_PREFIX } from '../mde/constants'
-import { EnvProvider, SessionProvider, SSH_AGENT_SOCKET_VARIABLE, startSshAgent, SessionDetails } from '../mde/mdeModel'
+import { EnvProvider, SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../mde/mdeModel'
 import {
     CawsClient,
     CawsDevEnv,
@@ -14,6 +14,7 @@ import {
     ConnectedCawsClient,
     createClient,
     getCawsConfig,
+    isConnectedCawsClient,
 } from '../shared/clients/cawsClient'
 import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { getLogger } from '../shared/logger'
@@ -24,62 +25,34 @@ import { writeFile } from 'fs-extra'
 import globals from '../shared/extensionGlobals'
 
 export type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
-export function createCawsSessionProvider(
-    client: ConnectedCawsClient,
-    ssmPath: string
-): SessionProvider<DevEnvId, CawsSessionDetails> {
-    return {
-        getDetails: async env => {
-            const session = await client.startDevEnvSession({
-                projectName: env.project.name,
-                organizationName: env.org.name,
-                developmentWorkspaceId: env.developmentWorkspaceId,
-                sessionConfiguration: { sessionType: 'SSH' },
-            })
 
-            return {
-                ssmPath,
-                region: client.regionCode,
-                host: getHostNameFromEnv(env),
-                id: session.sessionId,
-                organizationName: env.org.name,
-                projectName: env.project.name,
-                workspaceId: session.developmentWorkspaceId,
-                ...session,
-            }
-        },
-    }
-}
-
-interface CawsSessionDetails extends SessionDetails {
-    organizationName: string
-    projectName: string
-    workspaceId: string
-}
-
-export function getCawsSsmEnv(session: CawsSessionDetails): NodeJS.ProcessEnv {
+export function getCawsSsmEnv(region: string, ssmPath: string, envs: CawsDevEnv): NodeJS.ProcessEnv {
     return Object.assign(
         {
-            AWS_REGION: session.region,
-            AWS_SSM_CLI: session.ssmPath,
+            AWS_REGION: region,
+            AWS_SSM_CLI: ssmPath,
             CAWS_ENDPOINT: getCawsConfig().endpoint,
             BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(),
-            ORGANIZATION_NAME: session.organizationName,
-            PROJECT_NAME: session.projectName,
-            WORKSPACE_ID: session.workspaceId,
+            ORGANIZATION_NAME: envs.org.name,
+            PROJECT_NAME: envs.project.name,
+            WORKSPACE_ID: envs.developmentWorkspaceId,
         },
         process.env
     )
 }
 
 export function createCawsEnvProvider(
-    provider: SessionProvider<CawsDevEnv, CawsSessionDetails>,
+    client: ConnectedCawsClient,
+    ssmPath: string,
     env: CawsDevEnv,
     useSshAgent: boolean = true
 ): EnvProvider {
     return async () => {
-        const session = await provider.getDetails(env)
-        const vars = getCawsSsmEnv(session)
+        if (isConnectedCawsClient(client)) {
+            await cacheBearerToken(client.token)
+        }
+
+        const vars = getCawsSsmEnv(client.regionCode, ssmPath, env)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
     }
@@ -119,7 +92,6 @@ export function createClientFactory(authProvider: CawsAuthenticationProvider): (
 
         if (creds) {
             await client.setCredentials(creds.accessDetails, creds.accountDetails.metadata)
-            await cacheBearerToken(creds.accessDetails)
         }
 
         return client

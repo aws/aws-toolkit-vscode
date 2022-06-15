@@ -454,41 +454,34 @@ export interface SessionDetails {
     }
 }
 
-export function createMdeSessionProvider(
+async function createMdeSessionProvider(
     client: mde.MdeClient,
-    region: string,
-    ssmPath: string
-): SessionProvider<Pick<mde.MdeEnvironment, 'id'>> {
-    return {
-        getDetails: async env => {
-            const session = await client.startSession({ id: env.id })
+    ssmPath: string,
+    env: Pick<mde.MdeEnvironment, 'id'>
+): Promise<SessionDetails> {
+    const session = await client.startSession({ id: env.id })
 
-            return {
-                region,
-                ssmPath,
-                host: `${HOST_NAME_PREFIX}${env.id}`,
-                ...session,
-            }
-        },
+    return {
+        region: client.regionCode,
+        ssmPath,
+        ...session,
     }
 }
 
 export type EnvProvider = () => Promise<NodeJS.ProcessEnv>
 
-export function createMdeEnvProvider<T>(provider: SessionProvider<T>, env: T, useSshAgent = true): EnvProvider {
+export function createMdeEnvProvider(
+    client: mde.MdeClient,
+    ssmPath: string,
+    env: Pick<mde.MdeEnvironment, 'id'>,
+    useSshAgent = true
+): EnvProvider {
     return async () => {
-        const session = await provider.getDetails(env)
-        const vars = getMdeSsmEnv(session.region, session.ssmPath, session)
+        const session = await createMdeSessionProvider(client, ssmPath, env)
+        const vars = getMdeSsmEnv(client.regionCode, ssmPath, session)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
     }
-}
-
-/**
- * Simple interface to decouple MDE/CAWS from SSM/SSH
- */
-export interface SessionProvider<T = unknown, U extends SessionDetails = SessionDetails> {
-    getDetails: (env: T) => Promise<U>
 }
 
 /**
@@ -515,7 +508,6 @@ export async function startVscodeRemote(
     ProcessClass: typeof ChildProcess,
     hostname: string,
     targetDirectory: string,
-    sshPath: string,
     vscPath: string
 ): Promise<void> {
     const workspaceUri = `vscode-remote://ssh-remote+${hostname}${targetDirectory}`
