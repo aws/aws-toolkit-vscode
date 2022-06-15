@@ -22,7 +22,6 @@ import * as mdeModel from './mdeModel'
 import { localizedDelete } from '../shared/localizedText'
 import { HOST_NAME_PREFIX, MDE_RESTART_KEY } from './constants'
 import { parse } from '@aws-sdk/util-arn-parser'
-import globals from '../shared/extensionGlobals'
 import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
 import { getMdeEnvArn } from '../shared/vscode/env'
@@ -123,7 +122,8 @@ export async function mdeDeleteCommand(
         if (node) {
             node.startPolling()
         }
-        const r = await globals.mde.deleteEnvironment({ environmentId: env.id })
+        const client = await mde.MdeClient.create()
+        const r = await client.deleteEnvironment({ environmentId: env.id })
         getLogger().info('%O', r?.status)
         if (node) {
             node.refresh()
@@ -230,7 +230,8 @@ export async function resumeEnvironments(ctx: ExtContext) {
     // TODO: write some utility code for mementos
     const activeEnvironments: mde.MdeEnvironment[] = []
     const ids = new Set<string>()
-    for await (const env of globals.mde.listEnvironments({})) {
+    const client = await mde.MdeClient.create()
+    for await (const env of client.listEnvironments({})) {
         env && activeEnvironments.push(env) && ids.add(env.id)
     }
     Object.keys(pendingRestarts).forEach(k => {
@@ -256,7 +257,8 @@ export async function resumeEnvironments(ctx: ExtContext) {
 }
 
 export async function tagMde(arn: string, tagMap: TagMap) {
-    await globals.mde.tagResource(arn, tagMap)
+    const client = await mde.MdeClient.create()
+    await client.tagResource(arn, tagMap)
 }
 
 /**

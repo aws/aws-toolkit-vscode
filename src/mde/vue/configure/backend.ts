@@ -16,10 +16,10 @@ import { compare } from 'fast-json-patch'
 import { mdeConnectCommand, mdeDeleteCommand, tryRestart } from '../../mdeCommands'
 import { getLogger } from '../../../shared/logger/logger'
 import { parse } from '@aws-sdk/util-arn-parser'
-import globals from '../../../shared/extensionGlobals'
 import { checkUnsavedChanges } from '../../../shared/utilities/workspaceUtils'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { VueWebview } from '../../../webviews/main'
+import { MdeClient } from '../../../shared/clients/mdeClient'
 
 const localize = nls.loadMessageBundle()
 export interface DefinitionTemplate {
@@ -91,15 +91,16 @@ export class MdeConfigureWebview extends VueWebview {
     }
 
     public async toggleMdeState(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'status'> & { connected?: boolean }) {
+        const client = await MdeClient.create()
         if (mde.status === 'RUNNING') {
             if (mde.connected && checkUnsavedChanges()) {
                 // TODO: show confirmation prompt instead?
                 vscode.window.showErrorMessage('Cannot stop current environment with unsaved changes')
                 throw new Error('Cannot stop environment with unsaved changes')
             }
-            return globals.mde.stopEnvironment({ environmentId: mde.id })
+            return client.stopEnvironment({ environmentId: mde.id })
         } else if (mde.status === 'STOPPED') {
-            return globals.mde.startEnvironment({ environmentId: mde.id })
+            return client.startEnvironment({ environmentId: mde.id })
         } else {
             throw new Error('Environment is still in a pending state')
         }
@@ -124,8 +125,9 @@ export class MdeConfigureWebview extends VueWebview {
     }
 
     public async restartEnvironment(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'arn'>) {
+        const client = await MdeClient.create()
         return tryRestart(mde.arn, async () => {
-            await globals.mde.stopEnvironment({ environmentId: mde.id })
+            await client.stopEnvironment({ environmentId: mde.id })
         })
     }
 
@@ -189,7 +191,8 @@ function parseIdFromArn(arn: string) {
 
 async function getEnvironmentSummary(id: string): Promise<GetEnvironmentMetadataResponse & { connected: boolean }> {
     const envClient = new RemoteEnvironmentClient()
-    const summary = await globals.mde.getEnvironmentMetadata({ environmentId: id })
+    const client = await MdeClient.create()
+    const summary = await client.getEnvironmentMetadata({ environmentId: id })
     if (!summary) {
         throw new Error('No env found')
     }
@@ -208,8 +211,10 @@ async function pollStatus<T, K extends keyof T>(prop: K, target: T[K], provider:
 }
 
 async function pollDelete(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'status'>) {
+    const client = await MdeClient.create()
+
     const provider = () =>
-        globals.mde
+        client
             .getEnvironmentMetadata({ environmentId: mde.id })
             .then(resp => {
                 if (!resp) {
@@ -230,11 +235,13 @@ async function pollDelete(mde: Pick<GetEnvironmentMetadataResponse, 'id' | 'stat
 // Easier to compute the object diff here than on the frontend, although it requires one extra API call
 async function computeTagDiff(arn: string, tags: Record<string, string>): Promise<Record<string, string | undefined>> {
     const environmentId = parseIdFromArn(arn)
+    const client = await MdeClient.create()
+
     if (!environmentId) {
         throw new Error('Could not parse environment id from arn')
     }
 
-    const env = await globals.mde.getEnvironmentMetadata({ environmentId })
+    const env = await client.getEnvironmentMetadata({ environmentId })
     if (!env) {
         throw new Error('Could not retrieve environment tags')
     }
@@ -274,8 +281,10 @@ async function updateTags(arn: string, tags: Record<string, string | undefined>)
             }
         })
 
+    const client = await MdeClient.create()
+
     await Promise.all([
-        deletedTags.length > 0 ? globals.mde.untagResource(arn, deletedTags) : Promise.resolve(),
-        Object.keys(filteredTags).length > 0 ? globals.mde.tagResource(arn, filteredTags) : Promise.resolve(),
+        deletedTags.length > 0 ? client.untagResource(arn, deletedTags) : Promise.resolve(),
+        Object.keys(filteredTags).length > 0 ? client.tagResource(arn, filteredTags) : Promise.resolve(),
     ])
 }

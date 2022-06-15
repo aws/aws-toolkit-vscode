@@ -83,7 +83,15 @@ export class RegionNode extends AWSTreeNodeBase {
                 serviceId: 's3',
                 createFn: () => new S3Node(globals.toolkitClientBuilder.createS3Client(this.regionCode)),
             },
-            ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
+            ...(isCloud9()
+                ? []
+                : [
+                      {
+                          serviceId: 'schemas',
+                          createFn: () =>
+                              new SchemasNode(globals.toolkitClientBuilder.createSchemaClient(this.regionCode)),
+                      },
+                  ]),
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
             { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
         ]

@@ -7,6 +7,8 @@ import * as assert from 'assert'
 import { AWSError, Request, Service } from 'aws-sdk'
 import { version } from 'vscode'
 import { AWSClientBuilder, DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
+import { getClientId } from '../../shared/telemetry/util'
+import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 
 describe('DefaultAwsClientBuilder', function () {
@@ -19,12 +21,20 @@ describe('DefaultAwsClientBuilder', function () {
     describe('createAndConfigureSdkClient', function () {
         it('includes Toolkit user-agent if no options are specified', async function () {
             const service = await builder.createAwsService(Service)
+            const clientId = await getClientId(new FakeMemento())
 
             assert.strictEqual(!!service.config.customUserAgent, true)
             assert.strictEqual(
                 service.config.customUserAgent!.replace('---Insiders', ''),
-                `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version}`
+                `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version} ClientId/${clientId}`
             )
+        })
+
+        it('adds Client-Id to user agent', async function () {
+            const service = await builder.createAwsService(Service)
+            const clientId = await getClientId(new FakeMemento())
+            const regex = new RegExp(`ClientId/${clientId}`)
+            assert.ok(service.config.customUserAgent?.match(regex))
         })
 
         it('does not override custom user-agent if specified in options', async function () {

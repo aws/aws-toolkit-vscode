@@ -70,6 +70,17 @@ export class FakeAwsContext implements AwsContext {
         this.awsContextCredentials = params?.contextCredentials
     }
 
+    public credentialsShim = {
+        get: async () => ({
+            accessKeyId: '',
+            secretAccessKey: '',
+            ...this.awsContextCredentials?.credentials,
+        }),
+        async refresh() {
+            return this.get()
+        },
+    }
+
     public async setDeveloperMode(enable: boolean, settingName: string | undefined): Promise<void> {}
 
     public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {

@@ -5,7 +5,6 @@
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
-import { MdeClient } from './clients/mdeClient'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
@@ -73,7 +72,6 @@ interface ToolkitGlobals {
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
-    mde: MdeClient
     uriHandler: UriHandler
 
     /**

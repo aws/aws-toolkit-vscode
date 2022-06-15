@@ -8,6 +8,7 @@ import * as AWS from '@aws-sdk/types'
 import { regionSettingKey } from './constants'
 import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
+import { CredentialsShim } from '../credentials/loginManager'
 
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
@@ -44,6 +45,7 @@ const DEFAULT_REGION = 'us-east-1'
 export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
+    private shim?: CredentialsShim
 
     // the collection of regions the user has expressed an interest in working with in
     // the current workspace
@@ -57,6 +59,14 @@ export class DefaultAwsContext implements AwsContext {
 
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
+    }
+
+    public get credentialsShim(): CredentialsShim | undefined {
+        return this.shim
+    }
+
+    public set credentialsShim(shim: CredentialsShim | undefined) {
+        this.shim = shim
     }
 
     /**
@@ -79,7 +89,12 @@ export class DefaultAwsContext implements AwsContext {
      * @description Gets the Credentials currently used by the Toolkit.
      */
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
-        return this.currentCredentials?.credentials
+        return (
+            this.shim?.get().catch(error => {
+                getLogger().warn(`credentials: failed to retrieve latest credentials: ${error.message}`)
+                return undefined
+            }) ?? this.currentCredentials?.credentials
+        )
     }
 
     // returns the configured profile, if any

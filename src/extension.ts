@@ -42,9 +42,9 @@ import { activate as activateEcr } from './ecr/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
+import * as awsFiletypes from './shared/awsFiletypes'
 import * as telemetry from './shared/telemetry/telemetry'
 import { ExtContext } from './shared/extensions'
-import { MdeClient } from './shared/clients/mdeClient'
 import * as mde from './mde/activation'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
@@ -114,7 +114,6 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
-        globals.mde = await MdeClient.create()
 
         const settings = Settings.instance
 
@@ -123,6 +122,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateTelemetry(context, awsContext, settings)
         await globals.telemetry.start()
         await globals.schemaService.start()
+        awsFiletypes.activate()
 
         globals.uriHandler = new UriHandler()
         context.subscriptions.push(vscode.window.registerUriHandler(globals.uriHandler))

@@ -45,7 +45,9 @@ export function exposeEmitters<T, K extends EventEmitters<T>>(obj: T, keys: K[])
     })
 
     if (keys.length > 0) {
-        throw new Error(`exposeEmitters(): failed to find emitters for keys ${keys.map(k => `"${k}"`).join(', ')}`)
+        throw new Error(
+            `exposeEmitters(): failed to find emitters for keys ${keys.map(k => `"${String(k)}"`).join(', ')}`
+        )
     }
 
     return obj as any

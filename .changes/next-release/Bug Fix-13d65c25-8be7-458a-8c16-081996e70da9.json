@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Bump amazon-states-language-service dependency to ^1.7.2 to allow state machines with non-object values for Parameters property"
-}

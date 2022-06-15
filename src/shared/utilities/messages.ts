@@ -8,9 +8,11 @@ import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { Window } from '../../shared/vscode/window'
+import { Env } from '../../shared/vscode/env'
 import globals from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { Timeout } from './timeoutUtils'
+import { addCodiconToString } from './textUtilities'
 
 export const localize = nls.loadMessageBundle()
 
@@ -138,4 +140,16 @@ export async function showMessageWithCancel(
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout, window)
+}
+
+export async function copyToClipboard(
+    data: string,
+    label?: string,
+    window: Window = vscode.window,
+    env: Env = vscode.env
+): Promise<void> {
+    await env.clipboard.writeText(data)
+    const message = localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', label)
+    window.setStatusBarMessage(addCodiconToString('clippy', message), 5000)
+    getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)
 }
