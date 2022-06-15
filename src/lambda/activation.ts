@@ -13,6 +13,7 @@ import { ExtContext } from '../shared/extensions'
 import globals from '../shared/extensionGlobals'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
 import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
+import { Commands } from '../shared/vscode/commands2'
 
 /**
  * Activates Lambda components.
@@ -48,7 +49,7 @@ export async function activate(context: ExtContext): Promise<void> {
             'aws.downloadLambda',
             async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)
         ),
-        vscode.commands.registerCommand('aws.uploadLambda', async arg => {
+        Commands.register({ id: 'aws.uploadLambda', autoconnect: true }, async (arg?: unknown) => {
             if (arg instanceof LambdaFunctionNode) {
                 await uploadLambdaCommand({
                     name: arg.functionName,
