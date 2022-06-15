@@ -9,6 +9,7 @@ import com.intellij.remoterobot.fixtures.CommonContainerFixture
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.DefaultXpath
 import com.intellij.remoterobot.fixtures.FixtureName
+import com.intellij.remoterobot.fixtures.JMenuBarFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.waitFor
@@ -25,6 +26,11 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
     init {
         waitForProjectToBeAssigned()
     }
+
+    val menuBar: JMenuBarFixture
+        get() = step("Menu...") {
+            return@step remoteRobot.find(JMenuBarFixture::class.java, JMenuBarFixture.byType())
+        }
 
     private fun waitForProjectToBeAssigned() {
         waitFor(duration = Duration.ofSeconds(30)) {

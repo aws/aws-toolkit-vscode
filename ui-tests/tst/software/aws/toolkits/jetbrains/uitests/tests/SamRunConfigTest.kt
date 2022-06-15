@@ -54,7 +54,13 @@ class SamRunConfigTest {
 
             idea {
                 waitForBackgroundTasks()
-                findAndClick("//div[contains(@accessiblename,'Add Configuration')]")
+                // JB can't decide if they want ellipsis or not
+                try {
+                    menuBar.select("Run", "Edit Configurations...")
+                } catch (e: Exception) {
+                    findAndClick("//div[@class='IdeRootPane']")
+                    menuBar.select("Run", "Edit Configurations…")
+                }
                 step("Create and populate template based run configuration") {
                     addRunConfig()
                     step("Populate run configuration") {
