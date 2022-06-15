@@ -60,6 +60,15 @@
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
+        "onCommand:aws.caws.listCommands",
+        "onCommand:aws.caws.connect",
+        "onCommand:aws.caws.logout",
+        "onCommand:aws.caws.openOrg",
+        "onCommand:aws.caws.openProject",
+        "onCommand:aws.caws.openRepo",
+        "onCommand:aws.caws.openDevEnv",
+        "onCommand:aws.caws.cloneRepo",
+        "onCommand:aws.caws.createDevEnv",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -689,6 +698,13 @@
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "aws.developerTools",
+                "contents": "[Connect to CODE.AWS](command:aws.caws.connect)\n[Clone Repository](command:aws.caws.cloneRepo)\n[Create Development Environment](command:aws.caws.createDevEnv)\n[CODE.AWS Commands](command:aws.caws.listCommands)\n",
+                "when": "true"
+            }
+        ],
         "menus": {
             "commandPalette": [
                 {
@@ -725,6 +741,10 @@
                 },
                 {
                     "command": "aws.listCommands",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.caws.listCommands",
                     "when": "false"
                 },
                 {
@@ -1012,6 +1032,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.mde.delete",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.mde.configure",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.mde.configure.current",
+                    "when": "aws.isMde"
+                },
+                {
                     "command": "aws.renderStateMachineGraph",
                     "when": "false"
                 },
@@ -1139,6 +1171,31 @@
                     "command": "aws.viewLogs",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
+                },
+                {
+                    "command": "aws.caws.connect",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.cloneRepo",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.createDevEnv",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.listCommands",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.openDevEnv",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
                 }
             ],
             "explorer/context": [
@@ -1262,6 +1319,36 @@
                 {
                     "command": "aws.ecr.createRepository",
                     "when": "view == aws.explorer && viewItem == awsEcrNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.mde.connect",
+                    "when": "view == aws.explorer && viewItem =~ /^awsMdeInstanceNode.(RUNNING|PENDING|STARTING|STOPPING|STOPPED|FAILED)$/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.mde.create",
+                    "when": "view == aws.explorer && viewItem == awsMdeNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.mde.connect",
+                    "when": "view == aws.explorer && viewItem =~ /^awsMdeInstanceNode.(RUNNING|PENDING|STARTING|STOPPING|STOPPED|FAILED)$/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.mde.configure",
+                    "when": "view == aws.explorer && viewItem =~ /^awsMdeInstanceNode.(RUNNING|PENDING|STARTING|STOPPING|STOPPED)$/",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.mde.delete",
+                    "when": "view == aws.explorer && viewItem =~ /^awsMdeInstanceNode.(PENDING|RUNNING|STARTING|STOPPING|STOPPED|FAILED)$/",
+                    "group": "z@1"
+                },
+                {
+                    "command": "aws.mde.create",
+                    "when": "view == aws.explorer && viewItem == awsMdeNode",
                     "group": "0@1"
                 },
                 {
@@ -1431,7 +1518,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode)/",
                     "group": "2@2"
                 },
                 {
@@ -1703,6 +1790,51 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.caws.openOrg",
+                "title": "%AWS.command.caws.openOrg%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openProject",
+                "title": "%AWS.command.caws.openProject%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openRepo",
+                "title": "%AWS.command.caws.openRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openDevEnv",
+                "title": "%AWS.command.caws.openDevEnv%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.listCommands",
+                "title": "%AWS.command.caws.listCommands%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.connect",
+                "title": "%AWS.command.caws.connect%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.logout",
+                "title": "%AWS.command.caws.logout%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.cloneRepo",
+                "title": "%AWS.command.caws.cloneRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.createDevEnv",
+                "title": "%AWS.command.caws.createDevEnv%",
+                "category": "AWS"
             },
             {
                 "command": "aws.credential.profile.create",
@@ -2649,6 +2781,60 @@
                 "title": "%AWS.command.resources.configure%",
                 "category": "%AWS.title%",
                 "icon": "$(gear)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.mde.connect",
+                "title": "%AWS.command.mde.connect%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.mde.create",
+                "title": "%AWS.command.mde.create%",
+                "category": "%AWS.title%",
+                "icon": {
+                    "light": "resources/light/plus.svg",
+                    "dark": "resources/dark/plus.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.mde.configure",
+                "title": "%AWS.command.mde.configure%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.mde.configure.current",
+                "title": "%AWS.command.mde.configure.current%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.mde.delete",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

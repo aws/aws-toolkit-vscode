@@ -5,72 +5,122 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { SSO, UnauthorizedException } from '@aws-sdk/client-sso'
-import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
-import { SsoCredentialProvider } from '../../../credentials/providers/ssoCredentialProvider'
+import * as messages from '../../../shared/utilities/messages'
+import { SSO, SSOServiceException, UnauthorizedException } from '@aws-sdk/client-sso'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
-import { DiskCache } from '../../../credentials/sso/diskCache'
-import { GetRoleCredentialsResponse } from 'aws-sdk/clients/sso'
+import { instance, mock, when, reset, anything, verify } from '../../utilities/mockito'
+import { SsoClient } from '../../../credentials/sso/clients'
+import { SsoProvider } from '../../../credentials/providers/ssoCredentialProvider'
 
-describe('SsoCredentialProvider', () => {
-    describe('refreshCredentials', () => {
-        const sandbox = sinon.createSandbox()
+describe('SsoProvider', () => {
+    const profileName = 'sso' as const
+    const ssoClient = mock(SSO)
+    const tokenProvider = mock(SsoAccessTokenProvider)
 
-        const ssoRegion = 'dummyRegion'
-        const ssoUrl = '123abc.com/start'
-        const ssoOidcClient = new SSOOIDC({ region: ssoRegion })
-        const cache = new DiskCache()
-        const ssoAccessTokenProvider = new SsoAccessTokenProvider(ssoRegion, ssoUrl, ssoOidcClient, cache)
+    const profile = {
+        ['sso_start_url']: 'https://d-92a70fe14d.awsapps.com/start',
+        ['sso_region']: 'us-east-1',
+        ['sso_account_id']: '01234567890',
+        ['sso_role_name']: 'AssumeRole',
+    }
 
-        const ssoAccount = 'dummyAccount'
-        const ssoRole = 'dummyRole'
-        const ssoClient = new SSO({ region: ssoRegion })
-        const sut = new SsoCredentialProvider(ssoAccount, ssoRole, ssoClient, ssoAccessTokenProvider)
+    let provider: SsoProvider
 
-        const HOUR_IN_MS = 3600000
-        const validAccessToken = {
-            startUrl: ssoUrl,
-            region: ssoRegion,
-            accessToken: 'dummyAccessToken',
-            expiresAt: new Date(HOUR_IN_MS).toISOString(),
-        }
+    function createToken() {
+        return { accessToken: 'token', expiresAt: new Date() }
+    }
 
-        afterEach(() => {
-            sandbox.restore()
+    before(function () {
+        const tokenProviderInstance = instance(tokenProvider)
+        const ssoClientInstance = instance(ssoClient)
+        ssoClientInstance.middlewareStack = { add: () => {} } as any
+
+        sinon.stub(SsoClient, 'create').returns(new SsoClient(ssoClientInstance, tokenProviderInstance))
+        sinon.stub(SsoAccessTokenProvider, 'create').returns(tokenProviderInstance)
+        sinon.stub(messages, 'showConfirmationMessage').resolves(true)
+    })
+
+    after(function () {
+        sinon.restore()
+    })
+
+    beforeEach(function () {
+        provider = new SsoProvider(profileName, { ...profile })
+    })
+
+    afterEach(function () {
+        reset(ssoClient)
+        reset(tokenProvider)
+    })
+
+    describe('getCredentials', () => {
+        it('invalidates cached access token if denied', async function () {
+            const exception = new UnauthorizedException({ $metadata: {} })
+
+            when(ssoClient.getRoleCredentials(anything())).thenReject(exception)
+            when(tokenProvider.getToken()).thenResolve(createToken())
+            when(tokenProvider.invalidate()).thenResolve()
+
+            await assert.rejects(provider.getCredentials(), exception)
+            verify(tokenProvider.invalidate()).once()
         })
 
-        it('invalidates cached access token if denied', async () => {
-            const stubAccessToken = sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
-            const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
+        it('keeps cached token on server faults', async function () {
+            const exception = new SSOServiceException({ name: 'ServerError', $fault: 'server', $metadata: {} })
+            const provider = new SsoProvider(profileName, profile)
 
-            stubSsoClient.rejects(new UnauthorizedException({ $metadata: {} }))
+            when(ssoClient.getRoleCredentials(anything())).thenReject(exception)
+            when(tokenProvider.getToken()).thenResolve(createToken())
 
-            const stubInvalidate = sandbox.stub(ssoAccessTokenProvider, 'invalidate').returns()
-
-            await assert.rejects(sut.refreshCredentials())
-
-            assert.strictEqual(stubAccessToken.callCount, 1, 'accessToken not called')
-            assert.strictEqual(stubSsoClient.callCount, 1, 'getRoleCredentials not called')
-            assert.strictEqual(stubInvalidate.callCount, 1, 'invalidate not called')
+            await assert.rejects(provider.getCredentials(), exception)
+            verify(tokenProvider.invalidate()).never()
         })
 
         it('returns valid credentials', async () => {
-            sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
-            const response: GetRoleCredentialsResponse = {
-                roleCredentials: {
-                    accessKeyId: 'dummyAccessKeyId',
-                    secretAccessKey: 'dummySecretAccessKey',
-                    sessionToken: 'dummySessionToken',
-                },
+            const roleCredentials = {
+                expiration: 999,
+                accessKeyId: 'id',
+                secretAccessKey: 'secret',
+                sessionToken: 'session',
             }
-            const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
-            stubSsoClient.resolves(response)
 
-            const receivedCredentials = await sut.refreshCredentials()
+            when(ssoClient.getRoleCredentials(anything())).thenResolve({ $metadata: {}, roleCredentials })
+            when(tokenProvider.getToken()).thenResolve(createToken())
 
-            assert.strictEqual(receivedCredentials.accessKeyId, response.roleCredentials?.accessKeyId)
-            assert.strictEqual(receivedCredentials.secretAccessKey, response.roleCredentials?.secretAccessKey)
-            assert.strictEqual(receivedCredentials.sessionToken, response.roleCredentials?.sessionToken)
+            assert.deepStrictEqual(await provider.getCredentials(), {
+                ...roleCredentials,
+                expiration: new Date(roleCredentials.expiration),
+            })
+        })
+    })
+
+    describe('auto-connect', function () {
+        it('can auto-connect if a valid token is available', async function () {
+            when(tokenProvider.getToken()).thenResolve(createToken())
+            assert.strictEqual(await provider.canAutoConnect(), true)
+        })
+
+        it('does not auto-connect when no token is present', async function () {
+            when(tokenProvider.getToken()).thenResolve(undefined)
+            assert.strictEqual(await provider.canAutoConnect(), false)
+        })
+
+        it('does not auto-connect when `sso_start_url` is missing', async function () {
+            when(tokenProvider.getToken()).thenResolve(createToken())
+
+            const profileCopy = { ...profile, ['sso_start_url']: undefined }
+            const provider = new SsoProvider(profileName, profileCopy)
+
+            assert.strictEqual(await provider.canAutoConnect(), false)
+        })
+
+        it('does not auto-connect when `sso_region` is missing', async function () {
+            when(tokenProvider.getToken()).thenResolve(createToken())
+
+            const profileCopy = { ...profile, ['sso_region']: undefined }
+            const provider = new SsoProvider(profileName, profileCopy)
+
+            assert.strictEqual(await provider.canAutoConnect(), false)
         })
     })
 })

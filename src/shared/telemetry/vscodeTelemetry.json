@@ -22,6 +22,11 @@
             "type": "string",
             "description": "SAM Application architecture",
             "allowedValues": ["x86_64", "arm64"]
+        },
+        {
+            "name": "cli",
+            "type": "string",
+            "description": "Installed CLI"
         }
     ],
     "metrics": [
@@ -194,6 +199,11 @@
                 { "type": "duration" },
                 { "type": "architecture", "required": false }
             ]
+        },
+        {
+            "name": "aws_installCli",
+            "description": "Called after attempting to install a local copy of a missing CLI",
+            "metadata": [{ "type": "result" }, { "type": "cli" }]
         }
     ]
 }
