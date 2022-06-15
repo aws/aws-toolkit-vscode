@@ -249,6 +249,14 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             return cast<Inner[K]>(value, descriptor[key])
         }
 
+        protected getSafe<K extends keyof Inner>(key: K & string): Inner[K] | undefined {
+            try {
+                return this.get(key)
+            } catch {
+                // Logging is done by this.get().
+            }
+        }
+
         private readonly getChangedEmitter = once(() => {
             // For a setting `aws.foo.bar`:
             //   - the "section" is `aws.foo`
@@ -256,20 +264,15 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             //
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
             const props = keys(descriptor)
-            const store = toRecord(props, p => this.get(p, undefined))
+            const store = toRecord(props, p => this.getSafe(p))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
                 const isDifferent = (p: keyof T & string) => event.affectsConfiguration(p) || store[p] !== this.get(p)
 
                 for (const key of props.filter(isDifferent)) {
                     this.log(`key "${key}" changed`)
-                    try {
-                        store[key] = this.get(key, undefined)
-                        emitter.fire({ key })
-                    } catch {
-                        // Errors bubble up into the extension host so we must silence
-                        // them here. Logging is done by this.get().
-                    }
+                    store[key] = this.getSafe(key)
+                    emitter.fire({ key })
                 }
             })
 
