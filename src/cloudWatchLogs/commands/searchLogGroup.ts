@@ -28,15 +28,22 @@ import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { integer } from 'vscode-languageserver-types'
 import { CloudWatchLogsNode } from '../explorer/cloudWatchLogsNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { AwsContext } from '../../shared/awsContext'
 
 export interface SearchLogGroup {
     region: string
     logGroupName: string
 }
 
-export async function searchLogGroup(registry: LogStreamRegistry, node?: LogGroupNode): Promise<void> {
+export async function searchLogGroup(
+    AWSContext: AwsContext,
+    registry: LogStreamRegistry,
+    node?: LogGroupNode
+): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
-    const filterParameters = await new SearchLogGroupWizard(node).run()
+    const regionOptions = await AWSContext.getExplorerRegions()
+    const defaultRegion = await AWSContext.getCredentialDefaultRegion()
+    const filterParameters = await new SearchLogGroupWizard(node, regionOptions, defaultRegion).run()
 
     // If no input is given, skip over?
     // TODO: Most likely better option here.
@@ -44,7 +51,7 @@ export async function searchLogGroup(registry: LogStreamRegistry, node?: LogGrou
         return
     }
     const logGroupName = node ? node.name : filterParameters.logGroup
-    const regionCode = node ? node.regionCode : filterParameters.regionCode
+    // const regionCode = node ? node.regionCode : filterParameters.regionCode
 
     if (filterParameters.startTime !== 0) {
         filterParameters.startTime = makeTimeAbsolute(filterParameters)
@@ -52,7 +59,7 @@ export async function searchLogGroup(registry: LogStreamRegistry, node?: LogGrou
 
     const logGroupInfo = {
         groupName: logGroupName,
-        regionName: regionCode,
+        regionName: filterParameters.regionCode,
     }
 
     const uri = convertLogGroupInfoToUri('filterLogEvents', logGroupInfo.groupName, logGroupInfo.regionName, {
@@ -102,12 +109,23 @@ function createDatetimePrompter() {
     return createQuickPick(timeOptions)
 }
 
-function createLogGroupPrompter() {
-    const hardCoded = 'us-west-2'
-    const logGroups = getLogGroupsFromRegion(hardCoded)
+function createLogGroupPrompter(regionCode: string) {
+    const logGroups = getLogGroupsFromRegion(regionCode)
 
     const options: Promise<DataQuickPickItem<string>[]> = loadLogGroups([], logGroups)
     return createQuickPick(options)
+}
+
+function createRegionPrompter(regionOptions: Array<string>) {
+    let quickPickOptions: DataQuickPickItem<string>[] = []
+    for (var option of regionOptions) {
+        quickPickOptions.push({
+            label: option,
+            data: option,
+        })
+    }
+
+    return createQuickPick(quickPickOptions)
 }
 
 export interface SearchLogGroupWizardResponse {
@@ -138,11 +156,21 @@ async function getLogGroupsFromRegion(region: string) {
 }
 
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
-    public constructor(node?: LogGroupNode) {
+    public constructor(node: LogGroupNode | undefined, regionOptions: Array<string>, defaultRegion: string) {
         super()
+        // If we don't get a node, we aren't working in the explorer => We must select region + log group by hand.
         if (!node) {
-            const hardCoded = 'us-west-2'
-            this.form.logGroup.bindPrompter(createLogGroupPrompter)
+            // If they only have a single region on their explorer, default to that one.
+            // Otherwise default to the one that is linked with their account.
+
+            this.form.regionCode.setDefault(regionOptions.length === 1 ? regionOptions[0] : defaultRegion)
+            this.form.regionCode.bindPrompter(() => createRegionPrompter(regionOptions), {
+                showWhen: () => regionOptions.length !== 1,
+            })
+            this.form.logGroup.bindPrompter(({ regionCode }) => createLogGroupPrompter(regionCode!))
+        } else {
+            this.form.logGroup.setDefault(node.name)
+            this.form.regionCode.setDefault(node.regionCode)
         }
         this.form.filterPattern.bindPrompter(createKeywordPrompter)
         this.form.startTime.bindPrompter(createDatetimePrompter)

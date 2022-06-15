@@ -16,19 +16,22 @@ import { LogStreamCodeLensProvider } from './document/logStreamCodeLensProvider'
 import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
 import { LogStreamRegistry } from './registry/logStreamRegistry'
+import { ExtContext } from '../shared/extensions'
 
-export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
+export async function activate(context: ExtContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
     const registry = new LogStreamRegistry(settings)
 
-    context.subscriptions.push(
+    // Pushing to globals.context and ExtContext?
+
+    context.extensionContext.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider(
             CLOUDWATCH_LOGS_SCHEME,
             new LogStreamDocumentProvider(registry)
         )
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.workspace.onDidCloseTextDocument(doc => {
             if (doc.isClosed && doc.uri.scheme === CLOUDWATCH_LOGS_SCHEME) {
                 registry.deregisterLog(doc.uri)
@@ -36,7 +39,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         })
     )
 
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.languages.registerCodeLensProvider(
             {
                 language: 'log',
@@ -46,8 +49,10 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         )
     )
 
-    context.subscriptions.push(vscode.commands.registerCommand('aws.copyLogStreamName', copyLogStreamName))
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('aws.copyLogStreamName', copyLogStreamName)
+    )
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.addLogEvents',
             async (
@@ -58,7 +63,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             ) => addLogEvents(document, registry, headOrTail, onDidChangeCodeLensEvent)
         )
     )
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.saveCurrentLogStreamContent',
             async (uri?: vscode.Uri) => await saveCurrentLogStreamContent(uri, registry)
@@ -67,7 +72,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
     // AWS Explorer right-click action
     // Here instead of in ../awsexplorer/activation due to dependence on the registry.
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.cloudWatchLogs.viewLogStream',
             async (node: LogGroupNode) => await viewLogStream(node, registry)
@@ -76,10 +81,10 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
     // AWS Explore right-click action
     // Copying flow of viewLogStream
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.cloudWatchLogs.searchLogGroup',
-            async (node?: LogGroupNode) => await searchLogGroup(registry, node)
+            async (node?: LogGroupNode) => await searchLogGroup(context.awsContext, registry, node)
         )
     )
 }
