@@ -34,13 +34,7 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2
 export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
     globals.telemetry = new DefaultTelemetryService(extensionContext, awsContext, getComputeRegion())
 
-    const config = new TelemetryConfig(
-        settings,
-        // Disable `throwInvalid` because:
-        //   1. Telemetry must never prevent normal Toolkit operation.
-        //   2. For tests, bad data is intentional, so these errors add unwanted noise in the test logs.
-        false
-    )
+    const config = new TelemetryConfig(settings)
     globals.telemetry.telemetryEnabled = config.isEnabled()
 
     extensionContext.subscriptions.push(

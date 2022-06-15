@@ -11,6 +11,7 @@ import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isAutomation, isNameMangled } from './vscode/env'
 import { once } from './utilities/functionUtils'
+import { UnknownError } from './toolkitError'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -195,10 +196,12 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             try {
                 return this.getOrThrow(key, defaultValue)
             } catch (e) {
+                const message = UnknownError.cast(e)
                 if (this.throwInvalid || defaultValue === undefined) {
-                    throw new Error(`Failed to read key "${key}": ${e}`)
+                    throw new Error(`Failed to read key "${section}.${key}": ${message}`)
                 }
-                this.logErr(`using default for key "${key}", read failed: ${(e as Error).message ?? '?'}`)
+
+                this.logErr(`using default for key "${key}", read failed: ${message}`)
 
                 return defaultValue
             }
@@ -253,7 +256,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             //
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
             const props = keys(descriptor)
-            const store = toRecord(props, p => this.get(p))
+            const store = toRecord(props, p => this.get(p, undefined))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
                 const isDifferent = (p: keyof T & string) => event.affectsConfiguration(p) || store[p] !== this.get(p)
@@ -261,11 +264,11 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 for (const key of props.filter(isDifferent)) {
                     this.log(`key "${key}" changed`)
                     try {
-                        store[key] = this.get(key)
+                        store[key] = this.get(key, undefined)
                         emitter.fire({ key })
                     } catch {
-                        // getChangedEmitter() can't provide a default value so
-                        // we must silence errors here. Logging is done by this.get().
+                        // Errors bubble up into the extension host so we must silence
+                        // them here. Logging is done by this.get().
                     }
                 }
             })

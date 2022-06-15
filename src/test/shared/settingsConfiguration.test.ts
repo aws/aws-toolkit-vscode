@@ -15,7 +15,7 @@ describe('Settings', function () {
     // These tests use an actual extension setting, because vscode.WorkspaceConfiguration fails when
     // you attempt to update one that isn't defined in package.json. We will restore the setting value
     // at the end of the tests.
-    const SETTING_KEY = 'aws.telemetry'
+    const SETTING_KEY = 'aws.samcli.lambdaTimeout'
 
     let sut: Settings
 
@@ -67,11 +67,10 @@ describe('Settings', function () {
             //
             // Setting exists but has wrong type:
             //
-            await settings.update(SETTING_KEY, true, SETTINGS_TARGET)
+            await settings.update(SETTING_KEY, 123, SETTINGS_TARGET)
             assert.throws(() => sut.get(SETTING_KEY, String))
-            assert.throws(() => sut.get(SETTING_KEY, Number))
             assert.throws(() => sut.get(SETTING_KEY, Object))
-            assert.throws(() => sut.get(SETTING_KEY, Number))
+            assert.throws(() => sut.get(SETTING_KEY, Boolean))
         })
     })
 

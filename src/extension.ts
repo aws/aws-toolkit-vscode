@@ -64,7 +64,8 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
-import { isReleaseVersion } from './shared/vscode/env'
+import { isAutomation, isReleaseVersion } from './shared/vscode/env'
+import { UnknownError } from './shared/toolkitError'
 
 let localize: nls.LocalizeFunc
 
@@ -116,8 +117,21 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await initializeCredentials(context, awsContext, settings)
 
-        await activateTelemetry(context, awsContext, settings)
-        await globals.telemetry.start()
+        try {
+            await activateTelemetry(context, awsContext, settings)
+            await globals.telemetry.start()
+        } catch (e) {
+            // Only throw in a production build because:
+            //   1. Telemetry must never prevent normal Toolkit operation.
+            //   2. We want to know if something is not working ASAP during development.
+            if (isAutomation() || !isReleaseVersion()) {
+                throw e
+            }
+
+            const message = UnknownError.cast(e)
+            getLogger().error(`Toolkit telemetry failed to activate: ${message}`)
+        }
+
         await globals.schemaService.start()
         awsFiletypes.activate()
 
