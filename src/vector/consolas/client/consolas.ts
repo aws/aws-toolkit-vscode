@@ -33,7 +33,7 @@ export type ArtifactType = Readonly<ConsolasClient.ArtifactType>
 export type ArtifactMap = Readonly<ConsolasClient.ArtifactMap>
 export class DefaultConsolasClient {
     private async createSdkClient(): Promise<ConsolasClient> {
-        const credentials = isCloud9() ? await globals.awsContext.getCredentials() : await getCognitoCredentials()
+        const credentials = !isCloud9() ? await getCognitoCredentials() : undefined
         const accessToken = globals.context.globalState.get<string | undefined>(ConsolasConstants.accessToken)
         const isOptedOut = ConsolasSettings.instance.isOptoutEnabled()
 
