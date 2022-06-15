@@ -29,8 +29,8 @@ class LambdaGutterMarkHighlightingTest : BaseTestWithMarkup() {
         setUpCustomToolset(msBuild, host)
     }
 
-    // FIX_WHEN_MIN_IS_212: backendShellLoadedTimeout is the one we actually need to override
     override val backendLoadedTimeout: Duration = backendStartTimeout
+    override val backendShellLoadTimeout: Duration = backendStartTimeout
 
     override fun getSolutionDirectoryName(): String = "SamHelloWorldApp"
 
