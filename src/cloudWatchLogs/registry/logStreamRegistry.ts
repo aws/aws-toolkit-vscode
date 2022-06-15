@@ -8,16 +8,13 @@ const localize = nls.loadMessageBundle()
 
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import { CloudWatch, CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { CloudWatchLogs } from 'aws-sdk'
+import { CloudWatchLogsSettings } from '../cloudWatchLogsUtils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
-import { CloudWatchLogsLogStreams } from 'aws-sdk/clients/opsworks'
-import { integer } from 'aws-sdk/clients/backup'
-import { int } from 'aws-sdk/clients/datapipeline'
 
 // TODO: Add debug logging statements
 
@@ -70,35 +67,6 @@ export class LogStreamRegistry {
         }
     }
 
-    // public async registerLogFilter(
-    //     uri: vscode.Uri,
-    //     filterParameters: {
-    //         filterPattern: string,
-    //         startTime: integer
-    //     },
-    //     logGroupInfo: {
-    //         groupName: string
-    //         regionName: string
-    //     },
-    //     filterLogEventsFromUriComponentsFn?: (
-    //         logGroupInfo: {
-    //             groupName: string,
-    //             regionName: string,
-    //         },
-    //         filterParameters: {
-    //             filterPattern: string,
-    //             startTime: integer
-    //         },
-    //         nextToken?: string,
-    //     ) => Promise<CloudWatchLogs.FilterLogEventsResponse>):Promise<void> {
-    //         parseCloudWatchLogsUri(uri)
-    //         if(!this.hasLog(uri)) {
-    //             this.setLog(uri, new CloudWatchLogStreamData())
-    //             await this.updateLogFilter(uri, 'tail', filterParameters, logGroupInfo, filterLogEventsFromUriComponentsFn
-    //             )
-    //         }
-    //     }
-
     /**
      * Returns whether or not the log is registered.
      * @param uri Document URI
@@ -144,85 +112,6 @@ export class LogStreamRegistry {
 
         return output
     }
-
-    /**
-     * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log (`'head'`) or end (`'tail'`)
-     * @param uri Document URI
-     * @param headOrTail Determines update behavior: `'head'` retrieves the most recent previous token and appends data to the top of the log, `'tail'` does the opposite. Default: `'tail'`
-     * @param getLogEventsFromUriComponentsFn Override for testing purposes.
-     */
-
-    // public async updateLogFilter(
-    //     uri: vscode.Uri,
-    //     headOrTail: 'head' | 'tail' = 'tail',
-    //     filterParameters: {
-    //         filterPattern: string,
-    //         startTime: integer
-    //     },
-    //     logGroupInfo: {
-    //         groupName: string
-    //         regionName: string
-    //     },
-    //     filterLogEventsFromUriComponentsFn?: (
-    //         logGroupInfo: {
-    //             groupName: string
-    //             regionName: string
-    //         },
-    //         filterParameters: {
-    //             filterPattern: string,
-    //             startTime: integer
-    //         },
-    //         nextToken?: string)
-    //         => Promise<CloudWatchLogs.FilterLogEventsResponse>
-    // ): Promise<void> {
-    //     const stream = this.getLog(uri)
-    //     if (!stream) {
-    //         getLogger().debug('No registry entry for ${uri.path}')
-    //         return
-    //     }
-    //     const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
-    //     try {
-    //         // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-    //         const logEvents = filterLogEventsFromUriComponentsFn
-    //             ? await filterLogEventsFromUriComponentsFn(logGroupInfo, filterParameters, nextToken)
-    //             : await this.filterLogEventsFromUriComponents(logGroupInfo, filterParameters, nextToken)
-    //         const newData =
-    //             headOrTail === 'head'
-    //                 ? (logEvents.events ?? []).concat(stream.data)
-    //                 : stream.data.concat(logEvents.events ?? [])
-
-    //         const tokens: Pick<CloudWatchLogStreamData, 'next' | 'previous'> = {}
-    //         // update if no token exists or if the token is updated in the correct direction.
-    //         if (!stream.previous || headOrTail === 'head') {
-    //             tokens.previous = {
-    //                 token: logEvents.nextToken,
-    //             }
-    //         }
-    //         if (!stream.next || headOrTail === 'tail') {
-    //             tokens.next = {
-    //                 token: logEvents.nextToken,
-    //             }
-    //         }
-
-    //         this.setLog(uri, {
-    //             ...stream,
-    //             ...tokens,
-    //             data: newData,
-    //         })
-
-    //         this._onDidChange.fire(uri)
-    //     } catch (e) {
-    //         const err = e as Error
-    //         vscode.window.showErrorMessage(
-    //             localize(
-    //                 'AWS.cloudWatchLogs.viewLogStream.errorRetrievingLogs',
-    //                 'Error retrieving logs for Log Stream {0} : {1}',
-    //                 logGroupInfo.groupName,
-    //                 err.message
-    //             )
-    //         )
-    //     }
-    // }
 
     public async updateLog(uri: vscode.Uri, headOrTail: 'head' | 'tail' = 'tail'): Promise<void> {
         const stream = this.getLog(uri)
