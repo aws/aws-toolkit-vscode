@@ -133,10 +133,6 @@ export interface ConnectedCawsClient extends ClassToInterfaceType<CawsClientInte
     readonly token: string
 }
 
-export function isConnectedCawsClient(client: CawsClient): client is ConnectedCawsClient {
-    return client.connected
-}
-
 export type CawsClient = ConnectedCawsClient | DisconnectedCawsClient
 export type CawsClientFactory = () => Promise<CawsClient>
 

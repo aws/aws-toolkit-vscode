@@ -14,7 +14,6 @@ import {
     ConnectedCawsClient,
     createClient,
     getCawsConfig,
-    isConnectedCawsClient,
 } from '../shared/clients/cawsClient'
 import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
 import { getLogger } from '../shared/logger'
@@ -32,7 +31,7 @@ export function getCawsSsmEnv(region: string, ssmPath: string, envs: CawsDevEnv)
             AWS_REGION: region,
             AWS_SSM_CLI: ssmPath,
             CAWS_ENDPOINT: getCawsConfig().endpoint,
-            BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(),
+            BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(envs.developmentWorkspaceId),
             ORGANIZATION_NAME: envs.org.name,
             PROJECT_NAME: envs.project.name,
             WORKSPACE_ID: envs.developmentWorkspaceId,
@@ -48,22 +47,23 @@ export function createCawsEnvProvider(
     useSshAgent: boolean = true
 ): EnvProvider {
     return async () => {
-        if (isConnectedCawsClient(client)) {
-            await cacheBearerToken(client.token)
+        if (!client.connected) {
+            throw new Error('Unable to provide CAWS environment variables for disconnected environment')
         }
 
+        await cacheBearerToken(client.token, env.developmentWorkspaceId)
         const vars = getCawsSsmEnv(client.regionCode, ssmPath, env)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
     }
 }
 
-export async function cacheBearerToken(bearerToken: string): Promise<void> {
-    await writeFile(bearerTokenCacheLocation(), `${bearerToken}`, 'utf8')
+export async function cacheBearerToken(bearerToken: string, workspaceId: string): Promise<void> {
+    await writeFile(bearerTokenCacheLocation(workspaceId), `${bearerToken}`, 'utf8')
 }
 
-export function bearerTokenCacheLocation(): string {
-    return path.join(globals.context.globalStorageUri.fsPath, 'caws-token.txt')
+export function bearerTokenCacheLocation(workspaceId: string): string {
+    return path.join(globals.context.globalStorageUri.fsPath, `${workspaceId}.txt`)
 }
 
 export function getHostNameFromEnv(env: DevEnvId): string {
