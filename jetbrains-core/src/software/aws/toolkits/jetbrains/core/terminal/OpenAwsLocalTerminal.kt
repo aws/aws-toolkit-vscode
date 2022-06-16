@@ -55,7 +55,7 @@ class OpenAwsLocalTerminal : DumbAwareAction(
                         return@executeOnPooledThread
                     }
                     runInEdt {
-                        val runner = AwsLocalTerminalRunner(project) { envs ->
+                        val runner = AwsLocalTerminalRunner(project, connection.shortName) { envs ->
                             connection.region.mergeWithExistingEnvironmentVariables(envs, replace = true)
                             when (val identifier = connection.credentials.identifier) {
                                 is ProfileCredentialsIdentifier -> envs[ProfileFileSystemSetting.AWS_PROFILE.environmentVariable()] = identifier.profileName
