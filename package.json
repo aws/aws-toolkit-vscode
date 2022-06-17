@@ -3045,7 +3045,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.49",
+        "@aws-toolkits/telemetry": "^1.0.54",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",
@@ -3070,7 +3070,7 @@
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^5.15.0",
         "@typescript-eslint/parser": "^5.15.0",
-        "@vscode/test-electron": "^2.1.3",
+        "@vscode/test-electron": "^2.1.4",
         "@vue/compiler-sfc": "^3.2.26",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.5.1",

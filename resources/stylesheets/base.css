@@ -121,6 +121,7 @@ button,
 button,
 .button-theme-primary:hover:not(:disabled) {
     background: var(--vscode-button-hoverBackground);
+    cursor: pointer;
 }
 .button-theme-secondary {
     color: var(--vscode-button-secondaryForeground);
@@ -129,6 +130,7 @@ button,
 }
 .button-theme-secondary:hover:not(:disabled) {
     background: var(--vscode-button-secondaryHoverBackground);
+    cursor: pointer;
 }
 .button-theme-soft {
     color: var(--vscode-settings-textInputForeground);
@@ -255,9 +257,24 @@ textarea {
 .display-contents {
     display: contents;
 }
+
 .button-container {
     display: flex;
     align-items: flex-start;
     flex-direction: row;
-    margin: 16px 0 0 0;
+    /* margin: 16px 0 0 0; */
+    padding: 10px;
+    position: sticky;
+    top: 10px;
+    justify-content: flex-end;
+    border-bottom: 1px solid var(--vscode-menu-separatorBackground);
+    /**
+     * HACK: Using background-color alpha as a workaround because "opacity" affects children.
+     * TODO: Is there a way to use alpha with var(--vscode-menu-background) ?
+     */
+    /* background-color: rgba(0, 0, 0, 0.1); */
+}
+
+.button-container h1 {
+    margin: 0px;
 }
