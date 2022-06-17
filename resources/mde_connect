@@ -18,7 +18,7 @@ elif command > /dev/null 2>&1 -v /bin/date; then
 fi
 
 _log() {
-    echo "$("$_DATE_CMD" '+%Y%m%d')" "$@"
+    echo "$("$_DATE_CMD" '+%Y/%m/%d %H:%M:%S')" "$@" >> "${LOG_FILE_LOCATION}" 2>&1
 }
 
 _require_nolog() {
@@ -92,7 +92,7 @@ _caws() {
 
     # Errors happen when you have invalid token etc
     # ValidationExceptions happen when the Development workspace is not running
-    if [[ "$START_SESSION_RESPONSE" == *"errors"* || "$START_SESSION_RESPONSE" == *"ValidationException"* ]]; then
+    if [[ "$START_SESSION_RESPONSE" == *"errors"* || "$START_SESSION_RESPONSE" == *"ValidationException"* || "$START_SESSION_RESPONSE" == *"NotValidException"* ]]; then
         _log "Failed to start the session with error:" "$START_SESSION_RESPONSE"
         exit 1
     fi
@@ -117,6 +117,7 @@ _mde() {
 _main() {
     _log "=============================================================================="
 
+    _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
     _require AWS_REGION "${AWS_REGION:-}"
     _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
 

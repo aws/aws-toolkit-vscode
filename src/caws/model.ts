@@ -32,6 +32,7 @@ export function getCawsSsmEnv(region: string, ssmPath: string, envs: CawsDevEnv)
             AWS_SSM_CLI: ssmPath,
             CAWS_ENDPOINT: getCawsConfig().endpoint,
             BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(envs.developmentWorkspaceId),
+            LOG_FILE_LOCATION: sshLogFileLocation(envs.developmentWorkspaceId),
             ORGANIZATION_NAME: envs.org.name,
             PROJECT_NAME: envs.project.name,
             WORKSPACE_ID: envs.developmentWorkspaceId,
@@ -63,7 +64,11 @@ export async function cacheBearerToken(bearerToken: string, workspaceId: string)
 }
 
 export function bearerTokenCacheLocation(workspaceId: string): string {
-    return path.join(globals.context.globalStorageUri.fsPath, `${workspaceId}.txt`)
+    return path.join(globals.context.globalStorageUri.fsPath, `caws.${workspaceId}.token`)
+}
+
+export function sshLogFileLocation(workspaceId: string): string {
+    return path.join(globals.context.globalStorageUri.fsPath, `caws.${workspaceId}.log`)
 }
 
 export function getHostNameFromEnv(env: DevEnvId): string {
