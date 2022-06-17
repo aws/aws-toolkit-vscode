@@ -107,12 +107,10 @@ export async function resumeCreateNewSamApp(
         getLogger().error('Error resuming new SAM Application: %O', err as Error)
     } finally {
         activationReloadState.clearSamInitState()
-        const arch = samInitState?.architecture as telemetry.Architecture
+        const arch = samInitState?.architecture as telemetry.LambdaArchitecture
         telemetry.recordSamInit({
             lambdaPackageType: samInitState?.isImage ? 'Image' : 'Zip',
             lambdaArchitecture: arch,
-            // Legacy field, redundant with lambdaArchitecture. #2676
-            architecture: arch,
             result: createResult,
             reason: reason,
             runtime: samInitState?.runtime as telemetry.Runtime,
@@ -344,8 +342,6 @@ export async function createNewSamApplication(
         telemetry.recordSamInit({
             lambdaPackageType: lambdaPackageType,
             lambdaArchitecture: initArguments?.architecture,
-            // Legacy field, redundant with lambdaArchitecture. #2676
-            architecture: initArguments?.architecture,
             result: createResult,
             reason: reason,
             runtime: createRuntime as telemetry.Runtime,
