@@ -1,12 +1,12 @@
 # Icons
 
-All icons are used in the Toolkit can be found in this directory.
+All icons that are used in the Toolkit can be found in `resources/icons`.
 
 A [build script](../../scripts/build/generateIcons.ts) generates Toolkit artifacts:
 
 -   `resources/icons/cloud9/generated`
 -   `resources/fonts/aws-toolkit-icons.woff`
--   `resources/stylesheets/icons.css`
+-   `resources/css/icons.css`
 -   `contributes.icons` in [package.json](../../package.json)
 
 This script should be ran using `npm run generatePackage` after making updates. Any changes made to `package.json` should be committed with the relevant icons.

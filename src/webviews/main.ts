@@ -364,7 +364,7 @@ function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, pa
         ...(params.libFiles ?? []),
     ])
 
-    const css = resolveRelative(webview, vscode.Uri.joinPath(resources, 'stylesheets'), [
+    const css = resolveRelative(webview, vscode.Uri.joinPath(resources, 'css'), [
         isCloud9() ? 'base-cloud9.css' : 'base.css',
         ...(params.cssFiles ?? []),
     ])

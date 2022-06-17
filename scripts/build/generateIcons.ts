@@ -12,7 +12,7 @@ const FONT_ID = 'aws-toolkit-icons'
 const ROOT_DIR = process.cwd()
 const ICONS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'icons')
 const FONT_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'fonts')
-const STYLESHEETS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'stylesheets')
+const STYLESHEETS_ROOT_DIR = path.join(ROOT_DIR, 'resources', 'css')
 const ICON_SOURCES = [`resources/icons/**/*.svg`, '!**/{cloud9,dark,light}/**']
 
 interface PackageIcon {
