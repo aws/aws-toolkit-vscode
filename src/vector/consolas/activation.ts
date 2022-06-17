@@ -9,7 +9,7 @@ import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import { ConsolasConstants } from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { vsCodeState, ConfigurationEntry } from './models/model'
+import { vsCodeState, ConfigurationEntry, Cloud9AccessState } from './models/model'
 import { InlineCompletion } from './service/inlineCompletion'
 import { invokeConsolas } from './commands/invokeConsolas'
 import { onAcceptance } from './commands/onAcceptance'
@@ -33,6 +33,7 @@ import {
     enterAccessToken,
     requestAccess,
     showSecurityScan,
+    requestAccessCloud9,
 } from './commands/basicCommands'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -151,7 +152,8 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.consolas', async () => {
             invokeConsolas(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
-
+        // request access C9
+        requestAccessCloud9.register(context),
         /**
          * On recommendation acceptance
          */
@@ -256,11 +258,66 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     if (isCloud9()) {
+        updateCloud9TreeNodes()
         setSubscriptionsforCloud9()
     } else {
         await setSubscriptionsforVsCodeInline()
     }
 
+    async function updateCloud9TreeNodes() {
+        const state = context.extensionContext.globalState.get<number | undefined>(
+            ConsolasConstants.cloud9AccessStateKey
+        )
+        if (state === Cloud9AccessState.HasAccess) {
+            return
+        }
+        const testApiCall = async () => {
+            try {
+                await client.generateRecommendations({
+                    fileContext: {
+                        filename: 'c9.py',
+                        programmingLanguage: {
+                            languageName: 'python',
+                        },
+                        leftFileContent: 'print(',
+                        rightFileContent: '',
+                    },
+                    maxResults: ConsolasConstants.maxRecommendations,
+                })
+            } catch (e) {
+                getLogger().verbose(`Encountered error ${e} when running test API call`)
+                return false
+            }
+            return true
+        }
+
+        try {
+            for (let i = 0; i < 3; i++) {
+                const result = await testApiCall()
+                if (result) {
+                    context.extensionContext.globalState.update(
+                        ConsolasConstants.cloud9AccessStateKey,
+                        Cloud9AccessState.HasAccess
+                    )
+                    await vscode.commands.executeCommand('aws.consolas.refresh')
+                    break
+                }
+                sleep(1000)
+            }
+            if (state !== Cloud9AccessState.RequestedAccess) {
+                context.extensionContext.globalState.update(
+                    ConsolasConstants.cloud9AccessStateKey,
+                    Cloud9AccessState.NoAccess
+                )
+            }
+        } catch (e) {
+            getLogger().error(`Error when updateCloud9TreeNodes ${e}`)
+            context.extensionContext.globalState.update(
+                ConsolasConstants.cloud9AccessStateKey,
+                Cloud9AccessState.NoAccess
+            )
+        }
+    }
     async function setSubscriptionsforVsCodeInline() {
         /**
          * Automated trigger

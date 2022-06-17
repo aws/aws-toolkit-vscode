@@ -13,6 +13,8 @@ import { DefaultConsolasClient } from '../client/consolas'
 import { showAccessTokenPrompt } from '../util/showAccessTokenPrompt'
 import { startSecurityScanWithProgress } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
+import { showTimedMessage } from '../../../shared/utilities/messages'
+import { Cloud9AccessState } from '../models/model'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.consolas.toggleCodeSuggestion',
@@ -48,6 +50,24 @@ export const enterAccessToken = Commands.declare(
 export const requestAccess = Commands.declare('aws.consolas.requestAccess', (context: ExtContext) => async () => {
     vscode.env.openExternal(vscode.Uri.parse(ConsolasConstants.previewSignupPortal))
 })
+
+export const requestAccessCloud9 = Commands.declare(
+    'aws.consolas.requestAccessCloud9',
+    (context: ExtContext) => async () => {
+        if (get(ConsolasConstants.cloud9AccessStateKey, context) === Cloud9AccessState.RequestedAccess) {
+            showTimedMessage(ConsolasConstants.cloud9AccessAlreadySent, 3000)
+        } else {
+            try {
+                await vscode.commands.executeCommand('cloud9.codeWhispererRequestAccess')
+                showTimedMessage(ConsolasConstants.cloud9AccessSent, 3000)
+                set(ConsolasConstants.cloud9AccessStateKey, Cloud9AccessState.RequestedAccess, context)
+            } catch (e) {
+                getLogger().error(`Encountered error when requesting cloud9 access ${e}`)
+                set(ConsolasConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess, context)
+            }
+        }
+    }
+)
 
 export const showReferenceLog = Commands.declare(
     'aws.consolas.openReferencePanel',

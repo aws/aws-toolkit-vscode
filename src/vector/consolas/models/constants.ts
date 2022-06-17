@@ -137,4 +137,8 @@ export const ConsolasConstants = {
 
     // wait time for editor to update editor.selection.active (in milliseconds)
     vsCodeCursorUpdateDelay: 3,
+    // cloud9 access state
+    cloud9AccessStateKey: 'cloud9AccessStateKey',
+    cloud9AccessSent: 'Access requested!',
+    cloud9AccessAlreadySent: 'Access has already been requested, we are still processing it.',
 }

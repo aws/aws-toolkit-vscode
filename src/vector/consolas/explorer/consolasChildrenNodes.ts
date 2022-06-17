@@ -14,6 +14,7 @@ import {
     toggleCodeSuggestions,
     showReferenceLog,
     showSecurityScan,
+    requestAccessCloud9,
 } from '../commands/basicCommands'
 import { ConsolasConstants } from '../models/constants'
 
@@ -105,5 +106,17 @@ export const createSecurityScanNode = () => {
               },
         tooltip: `${prefix} Security Scan`,
         contextValue: `awsConsolas${prefix}SecurityScanNode`,
+    })
+}
+
+export const createRequestAccessNodeCloud9 = () => {
+    return requestAccessCloud9.build().asTreeNode({
+        label: `Request Access`,
+        iconPath: {
+            dark: vscode.Uri.file(globals.iconPaths.dark.megaphone),
+            light: vscode.Uri.file(globals.iconPaths.light.megaphone),
+        },
+        tooltip: `Request Access`,
+        contextValue: `awsConsolasRequestAccessNodeCloud9`,
     })
 }

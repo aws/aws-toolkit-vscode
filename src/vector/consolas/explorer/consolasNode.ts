@@ -15,11 +15,14 @@ import {
     createRequestAccessNode,
     createOpenReferenceLogNode,
     createSecurityScanNode,
+    createRequestAccessNodeCloud9,
 } from './consolasChildrenNodes'
 import { Commands } from '../../../shared/vscode/commands2'
 import { RootNode } from '../../../awsexplorer/localExplorer'
 import { Experiments } from '../../../shared/settings'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { Cloud9AccessState } from '../models/model'
+
 export class ConsolasNode implements RootNode {
     public readonly id = 'consolas'
     public readonly treeItem = this.createTreeItem()
@@ -47,7 +50,6 @@ export class ConsolasNode implements RootNode {
         const item = new vscode.TreeItem('Consolas (Preview)')
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = 'awsConsolasNode'
-
         return item
     }
 
@@ -56,19 +58,42 @@ export class ConsolasNode implements RootNode {
     }
 
     public getChildren() {
-        if (globals.context.globalState.get<string | undefined>(ConsolasConstants.accessToken) || isCloud9()) {
-            if (globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)) {
-                const enabled =
-                    globals.context.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) || false
-                if (isCloud9()) {
-                    return [createAutoSuggestionsNode(enabled), createOpenReferenceLogNode()]
-                }
-                return [createAutoSuggestionsNode(enabled), createOpenReferenceLogNode(), createSecurityScanNode()]
+        const termsAccepted = globals.context.globalState.get<boolean>(ConsolasConstants.termsAcceptedKey)
+        const autoTriggerEnabled =
+            globals.context.globalState.get<boolean>(ConsolasConstants.autoTriggerEnabledKey) || false
+
+        if (isCloud9()) {
+            const cloud9AccessState = globals.context.globalState.get<number | undefined>(
+                ConsolasConstants.cloud9AccessStateKey
+            )
+            if (cloud9AccessState === undefined) {
+                return [createIntroductionNode()]
+            } else if (
+                cloud9AccessState === Cloud9AccessState.NoAccess ||
+                cloud9AccessState === Cloud9AccessState.RequestedAccess
+            ) {
+                return [createIntroductionNode(), createRequestAccessNodeCloud9()]
             } else {
-                return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
+                if (termsAccepted) {
+                    return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
+                } else {
+                    return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
+                }
             }
         } else {
-            return [createIntroductionNode(), createEnterAccessCodeNode(), createRequestAccessNode()]
+            if (globals.context.globalState.get<string | undefined>(ConsolasConstants.accessToken)) {
+                if (termsAccepted) {
+                    return [
+                        createAutoSuggestionsNode(autoTriggerEnabled),
+                        createOpenReferenceLogNode(),
+                        createSecurityScanNode(),
+                    ]
+                } else {
+                    return [createIntroductionNode(), createEnableCodeSuggestionsNode()]
+                }
+            } else {
+                return [createIntroductionNode(), createEnterAccessCodeNode(), createRequestAccessNode()]
+            }
         }
     }
 

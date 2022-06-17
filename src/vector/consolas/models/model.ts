@@ -119,3 +119,9 @@ export interface SecurityPanelSet {
     uri: vscode.Uri
     items: SecurityPanelItem[]
 }
+
+export enum Cloud9AccessState {
+    NoAccess,
+    RequestedAccess,
+    HasAccess,
+}
