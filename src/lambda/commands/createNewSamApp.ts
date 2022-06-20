@@ -107,13 +107,14 @@ export async function resumeCreateNewSamApp(
         getLogger().error('Error resuming new SAM Application: %O', err as Error)
     } finally {
         activationReloadState.clearSamInitState()
+        const arch = samInitState?.architecture as telemetry.LambdaArchitecture
         telemetry.recordSamInit({
             lambdaPackageType: samInitState?.isImage ? 'Image' : 'Zip',
+            lambdaArchitecture: arch,
             result: createResult,
             reason: reason,
             runtime: samInitState?.runtime as telemetry.Runtime,
             version: samVersion,
-            architecture: samInitState?.architecture as telemetry.Architecture,
         })
     }
 }
@@ -340,11 +341,11 @@ export async function createNewSamApplication(
     } finally {
         telemetry.recordSamInit({
             lambdaPackageType: lambdaPackageType,
+            lambdaArchitecture: initArguments?.architecture,
             result: createResult,
             reason: reason,
             runtime: createRuntime as telemetry.Runtime,
             version: samVersion,
-            architecture: initArguments?.architecture,
         })
     }
 }

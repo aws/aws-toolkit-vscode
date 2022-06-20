@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "The `Upload Lambda` command now automatically causes the Toolkit to login"
-}
