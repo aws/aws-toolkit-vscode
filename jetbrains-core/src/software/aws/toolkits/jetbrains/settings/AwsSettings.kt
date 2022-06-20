@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.settings
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
@@ -83,8 +84,18 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
         }
 
     override val clientId: UUID
-        @Synchronized get() = UUID.fromString(preferences.get(CLIENT_ID_KEY, UUID.randomUUID().toString())).also {
-            preferences.put(CLIENT_ID_KEY, it.toString())
+        @Synchronized get() {
+            val id = when {
+                ApplicationManager.getApplication().isUnitTestMode || System.getProperty("robot-server.port") != null -> "ffffffff-ffff-ffff-ffff-ffffffffffff"
+                isTelemetryEnabled == false -> "11111111-1111-1111-1111-111111111111"
+                else -> {
+                    preferences.get(CLIENT_ID_KEY, UUID.randomUUID().toString()).also {
+                        preferences.put(CLIENT_ID_KEY, it.toString())
+                    }
+                }
+            }
+
+            return UUID.fromString(id)
         }
 
     companion object {

@@ -24,6 +24,7 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.settings.AwsSettings
 
 open class AwsClientManager : ToolkitClientManager(), Disposable {
     init {
@@ -59,7 +60,7 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
         val userAgent: String by lazy {
             val platformName = tryOrNull { ApplicationNamesInfo.getInstance().fullProductNameWithEdition.replace(' ', '-') }
             val platformVersion = tryOrNull { ApplicationInfoEx.getInstanceEx().fullVersion.replace(' ', '-') }
-            "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion"
+            "AWS-Toolkit-For-JetBrains/${AwsToolkit.PLUGIN_VERSION} $platformName/$platformVersion ClientId/${AwsSettings.getInstance().clientId}"
         }
 
         internal val CUSTOMIZER_EP = ExtensionPointName<AwsClientCustomizer>("aws.toolkit.sdk.clientCustomizer")
