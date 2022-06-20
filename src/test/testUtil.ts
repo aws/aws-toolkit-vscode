@@ -160,7 +160,7 @@ type Namespace =
     | 'cloudfront'
     | 'apigateway'
     | 'vscode'
-    | 'consolas'
+    | 'codewhisperer'
 type NameFromFunction<T extends keyof Telemetry> = T extends `record${infer P}`
     ? Uncapitalize<P> extends `${Namespace}${infer L}`
         ? Uncapitalize<P> extends `${infer N}${L}`

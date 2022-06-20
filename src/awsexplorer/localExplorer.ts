@@ -10,14 +10,14 @@ import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceT
 import { once } from '../shared/utilities/functionUtils'
 import { AppNode } from '../cdk/explorer/nodes/appNode'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { consolasNode } from '../vector/consolas/explorer/consolasNode'
+import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 
 export interface RootNode extends TreeNode {
     canShow?(): Promise<boolean> | boolean
     readonly onDidChangeVisibility?: vscode.Event<void>
 }
 
-const roots: readonly RootNode[] = [cdkNode, consolasNode]
+const roots: readonly RootNode[] = [cdkNode, codewhispererNode]
 
 async function getChildren(roots: readonly RootNode[]) {
     const nodes: TreeNode[] = []

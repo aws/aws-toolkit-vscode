@@ -211,8 +211,8 @@ ${fileContents}
             serviceName: 'ClientTelemetry',
         },
         {
-            serviceJsonPath: 'src/vector/consolas/client/service-2.json',
-            serviceName: 'ConsolasClient',
+            serviceJsonPath: 'src/codewhisperer/client/service-2.json',
+            serviceName: 'CodeWhispererClient',
         },
     ]
     await generateServiceClients(serviceClientDefinitions)
