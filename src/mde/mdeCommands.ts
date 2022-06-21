@@ -95,8 +95,8 @@ export async function mdeConnectCommand(args: Pick<mde.MdeEnvironment, 'id'>, re
         return
     }
 
-    const provider = mdeModel.createMdeSessionProvider(mdeClient, region, deps.ssm, deps.ssh)
-    const SessionProcess = mdeModel.createBoundProcess(provider, args).extend({
+    const envProvider = mdeModel.createMdeEnvProvider(mdeClient, deps.ssm, args)
+    const SessionProcess = mdeModel.createBoundProcess(envProvider).extend({
         onStdout(stdout) {
             getLogger().verbose(`MDE connect: ${args.id}: ${stdout}`)
         },
@@ -106,7 +106,7 @@ export async function mdeConnectCommand(args: Pick<mde.MdeEnvironment, 'id'>, re
         rejectOnErrorCode: true,
     })
 
-    await mdeModel.startVscodeRemote(SessionProcess, `${HOST_NAME_PREFIX}${args.id}`, '/projects', deps.ssh, deps.vsc)
+    await mdeModel.startVscodeRemote(SessionProcess, `${HOST_NAME_PREFIX}${args.id}`, '/projects', deps.vsc)
 }
 
 export async function mdeDeleteCommand(

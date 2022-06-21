@@ -17,16 +17,10 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { promisify } from 'util'
 import * as manifest from '../../package.json'
-import {
-    createBoundProcess,
-    ensureDependencies,
-    getMdeSsmEnv,
-    startSshController,
-    startVscodeRemote,
-} from '../mde/mdeModel'
+import { createBoundProcess, ensureDependencies, startVscodeRemote } from '../mde/mdeModel'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
-import { createCawsSessionProvider, getHostNameFromEnv } from '../caws/model'
+import { createCawsEnvProvider, getCawsSsmEnv, getHostNameFromEnv } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { CawsCommands } from '../caws/commands'
@@ -182,8 +176,7 @@ async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<
     progress.report({ message: 'Opening terminal...' })
 
     const { ssh, ssm } = deps
-    const provider = createCawsSessionProvider(client, ssm, ssh)
-    const envVars = getMdeSsmEnv(client.regionCode, ssm, await provider.getDetails(env))
+    const envVars = getCawsSsmEnv(client.regionCode, ssm, env)
 
     const options: vscode.TerminalOptions = {
         name: `Remote Connection (${env.id})`,
@@ -355,8 +348,8 @@ async function installVsix(
         return
     }
 
-    const provider = createCawsSessionProvider(client, ssm, ssh)
-    const SessionProcess = createBoundProcess(provider, env).extend({
+    const envProvider = createCawsEnvProvider(client, ssm, env)
+    const SessionProcess = createBoundProcess(envProvider).extend({
         timeout: progress.getToken(),
         onStdout: logOutput(`install: ${env.id}:`),
         onStderr: logOutput(`install (stderr): ${env.id}:`),
@@ -366,7 +359,6 @@ async function installVsix(
     const hostName = getHostNameFromEnv(env)
 
     progress.report({ message: 'Starting controller...' })
-    await startSshController(SessionProcess, ssh, hostName)
 
     const EXT_ID = VSCODE_EXTENSION_ID.awstoolkit
     const EXT_PATH = `/home/mde-user/.vscode-server/extensions`
@@ -417,7 +409,7 @@ async function installVsix(
     }
 
     progress.report({ message: 'Launching instance...' })
-    await startVscodeRemote(SessionProcess, hostName, '/projects', ssh, vsc)
+    await startVscodeRemote(SessionProcess, hostName, '/projects', vsc)
 }
 
 function isSecrets(obj: vscode.Memento | vscode.SecretStorage): obj is vscode.SecretStorage {

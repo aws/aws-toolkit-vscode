@@ -19,7 +19,7 @@ import { CawsAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
 import { CawsClient, CawsDevEnv, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
 import {
-    createCawsSessionProvider,
+    createCawsEnvProvider,
     createClientFactory,
     DevEnvId,
     getConnectedWorkspace,
@@ -162,8 +162,8 @@ export async function openDevEnv(client: ConnectedCawsClient, env: CawsDevEnv): 
         return
     }
 
-    const provider = createCawsSessionProvider(client, deps.ssm, deps.ssh)
-    const SessionProcess = mdeModel.createBoundProcess(provider, env).extend({
+    const cawsEnvProvider = createCawsEnvProvider(client, deps.ssm, env)
+    const SessionProcess = mdeModel.createBoundProcess(cawsEnvProvider).extend({
         onStdout(stdout) {
             getLogger().verbose(`CAWS connect: ${env.id}: ${stdout}`)
         },
@@ -173,7 +173,7 @@ export async function openDevEnv(client: ConnectedCawsClient, env: CawsDevEnv): 
         rejectOnErrorCode: true,
     })
 
-    await mdeModel.startVscodeRemote(SessionProcess, getHostNameFromEnv(env), '/projects', deps.ssh, deps.vsc)
+    await mdeModel.startVscodeRemote(SessionProcess, getHostNameFromEnv(env), '/projects', deps.vsc)
 }
 
 /**
