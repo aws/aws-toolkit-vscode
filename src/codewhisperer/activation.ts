@@ -221,9 +221,9 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     async function showCodeWhispererWelcomeMessage(): Promise<void> {
-        const filePath = context.extensionContext.asAbsolutePath(
-            CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource
-        )
+        const filePath = isCloud9()
+            ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9ReadmeFileSource)
+            : context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)
         const readmeUri = vscode.Uri.file(filePath)
         await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
     }

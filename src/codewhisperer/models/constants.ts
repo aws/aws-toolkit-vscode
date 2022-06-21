@@ -62,6 +62,7 @@ export const CodeWhispererConstants = {
      * Beta landing page file
      */
     welcomeCodeWhispererReadmeFileSource: 'resources/markdown/WelcomeToCodeWhisperer.md',
+    welcomeCodeWhispererCloud9ReadmeFileSource: 'resources/markdown/WelcomeToCodeWhispererCloud9.md',
     welcomeMessageKey: 'CODEWHISPERER_WELCOME_MESSAGE',
 
     /**
