@@ -253,9 +253,11 @@ export type ApplicationJson = {
 }
 
 function createApplicationJson(lambdaFunc: Lambda.GetFunctionResponse, region: string): ApplicationJson {
+    const physicalId =
+        lambdaFunc.Configuration?.FunctionName !== undefined ? lambdaFunc.Configuration?.FunctionName : ''
     const logicalId = lambdaFunc.Tags?.['aws:cloudformation:logical-id']
         ? lambdaFunc.Tags['aws:cloudformation:logical-id']
-        : lambdaFunc.Configuration?.FunctionName!
+        : physicalId
     const stackName = lambdaFunc.Tags?.['aws:cloudformation:stack-name']
         ? lambdaFunc.Tags['aws:cloudformation:stack-name']
         : undefined
@@ -265,7 +267,7 @@ function createApplicationJson(lambdaFunc: Lambda.GetFunctionResponse, region: s
         Functions: {
             [logicalId]: {
                 PhysicalId: {
-                    [region]: lambdaFunc.Configuration?.FunctionName!,
+                    [region]: physicalId,
                 },
             },
         },
