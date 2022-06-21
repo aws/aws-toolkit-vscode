@@ -19,6 +19,7 @@ import { normalizeSeparator } from './utilities/pathUtils'
 import { Any, ArrayConstructor } from './utilities/typeConstructors'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
+const SCHEMA_PREFIX = 'aws://aws-toolkit-vscode/'
 
 export type Schemas = { [key: string]: vscode.Uri }
 export type SchemaType = 'yaml' | 'json'
@@ -154,6 +155,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/cloudformation.schema.json`,
             cacheKey: 'cfnSchemaVersion',
             extensionContext,
+            title: SCHEMA_PREFIX + 'cloudformation.schema.json',
         })
         await getRemoteOrCachedFile({
             filepath: samSchemaUri.fsPath,
@@ -161,6 +163,7 @@ export async function getDefaultSchemas(extensionContext: vscode.ExtensionContex
             url: `https://raw.githubusercontent.com/awslabs/goformation/${goformationSchemaVersion}/schema/sam.schema.json`,
             cacheKey: 'samSchemaVersion',
             extensionContext,
+            title: SCHEMA_PREFIX + 'sam.schema.json',
         })
         return {
             cfn: cfnSchemaUri,
@@ -189,6 +192,7 @@ export async function getRemoteOrCachedFile(params: {
     url: string
     cacheKey: string
     extensionContext: vscode.ExtensionContext
+    title: string
 }): Promise<string> {
     const dir = path.parse(params.filepath).dir
     if (!(await filesystemUtilities.fileExists(dir))) {
@@ -211,7 +215,9 @@ export async function getRemoteOrCachedFile(params: {
         showUrl: true,
         // updates curr version
         onSuccess: contents => {
-            writeFileSync(params.filepath, contents)
+            const parsedFile = JSON.parse(contents)
+            parsedFile.title = params.title
+            writeFileSync(params.filepath, JSON.stringify(parsedFile))
             params.extensionContext.globalState.update(params.cacheKey, params.version)
         },
     })
