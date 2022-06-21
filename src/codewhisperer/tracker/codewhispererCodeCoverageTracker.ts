@@ -32,6 +32,7 @@ export class CodeWhispererCodeCoverageTracker {
 
         // generate accepted recoomendation token and stored in collection
         this._acceptedTokens.push(...recommendation)
+        this._totalTokens.push(...recommendation)
     }
 
     public get AcceptedTokensLength(): number {

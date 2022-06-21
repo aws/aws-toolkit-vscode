@@ -67,13 +67,11 @@ describe('codewhispererCodecoverageTracker', function () {
             const sample = "print('Hello World!)"
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language, mockGlobalStorage)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
-            tracker.setTotalTokens(sample)
             tracker.setAcceptedTokens(sample)
             tracker.emitCodeWhispererCodeContribution()
-            const date = new globals.clock.Date(new globals.clock.Date().getTime())
             assertTelemetry({
                 codewhispererTotalTokens: 20,
-                codewhispererStartTime: date.toString(),
+                codewhispererStartTime: 'Thu Jan 01 1970 00:00:00 GMT+0000 (Coordinated Universal Time)',
                 codewhispererLanguage: language,
                 codewhispererAcceptedTokens: 20,
                 codewhispererPercentage: 100,
