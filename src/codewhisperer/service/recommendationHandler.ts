@@ -230,7 +230,7 @@ export class RecommendationHandler {
                     ? TelemetryHelper.instance.cursorOffset
                     : 0,
                 codewhispererLanguage: languageContext.language,
-                reason: reason ? reason : undefined,
+                reason: reason ? reason.substring(0, 200) : undefined,
             })
             recommendation = recommendation.filter(r => r.content.length > 0)
 
