@@ -312,9 +312,14 @@ export function getMdeSsmEnv(region: string, ssmPath: string, session: mde.MdeSe
             AWS_MDE_SESSION: session.id,
             AWS_MDE_STREAMURL: session.accessDetails.streamUrl,
             AWS_MDE_TOKEN: session.accessDetails.tokenValue,
+            LOG_FILE_LOCATION: sshLogFileLocation(session.id),
         },
         process.env
     )
+}
+
+function sshLogFileLocation(sessionId: string): string {
+    return path.join(globals.context.globalStorageUri.fsPath, `mde.${sessionId}.log`)
 }
 
 export const SSH_AGENT_SOCKET_VARIABLE = 'SSH_AUTH_SOCK'
