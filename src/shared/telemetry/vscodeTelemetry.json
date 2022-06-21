@@ -1,12 +1,6 @@
 {
     "types": [
         {
-            "name": "architecture",
-            "type": "string",
-            "description": "SAM Application architecture",
-            "allowedValues": ["x86_64", "arm64"]
-        },
-        {
             "name": "codewhispererAcceptedTokens",
             "type": "int",
             "description": "The metrics accepted on suggested CodeWhisperer code"
@@ -157,17 +151,6 @@
         }
     ],
     "metrics": [
-        {
-            "name": "apigateway_invokeLocal",
-            "description": "Invoking one simulated API Gateway call using the SAM cli",
-            "metadata": [
-                { "type": "runtime", "required": false },
-                { "type": "httpMethod", "required": false },
-                { "type": "result" },
-                { "type": "debug" },
-                { "type": "architecture", "required": false }
-            ]
-        },
         {
             "name": "aws_refreshCredentials",
             "description": "Emitted when credentials are automatically refreshed by the AWS SDK",
@@ -380,44 +363,6 @@
                 {
                     "type": "codewhispererTriggerType"
                 }
-            ]
-        },
-        {
-            "name": "lambda_invokeLocal",
-            "description": "Called when invoking lambdas locally (with SAM in most toolkits)",
-            "metadata": [
-                { "type": "runtime", "required": false },
-                { "type": "version", "required": false },
-                { "type": "lambdaPackageType" },
-                { "type": "result" },
-                { "type": "debug" },
-                { "type": "architecture", "required": false }
-            ]
-        },
-        {
-            "name": "sam_attachDebugger",
-            "description": "Called after trying to attach a debugger to a local sam invoke",
-            "metadata": [
-                { "type": "result" },
-                { "type": "lambdaPackageType" },
-                { "type": "runtime" },
-                { "type": "attempts" },
-                { "type": "duration" },
-                { "type": "architecture", "required": false }
-            ]
-        },
-        {
-            "name": "sam_init",
-            "description": "Called when initing a sam application",
-            "metadata": [
-                { "type": "result" },
-                { "type": "runtime", "required": false },
-                { "type": "templateName", "required": false },
-                { "type": "version", "required": false },
-                { "type": "lambdaPackageType", "required": false },
-                { "type": "reason", "required": false },
-                { "type": "eventBridgeSchema", "required": false },
-                { "type": "architecture", "required": false }
             ]
         },
         {
