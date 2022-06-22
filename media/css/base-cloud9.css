@@ -64,7 +64,9 @@ input[type='number'] {
     border: 1px solid var(--vscode-settings-textInputBorder);
     padding: 4px 4px;
 }
-body.vscode-dark input {
+
+/* "Cloud9 gray" in input boxes (not buttons). */
+body.vscode-dark input:not([type='submit']) {
     background: rgba(var(--shade), 0.1);
 }
 
@@ -95,9 +97,6 @@ option {
     color: var(--vscode-settings-dropdownForeground);
     background: var(--vscode-settings-dropdownBackground);
 }
-body.vscode-dark select {
-    background: rgba(var(--shade), 0.1);
-}
 
 /* Header (for settings) (TODO: move to different sheet) */
 .header {
@@ -122,16 +121,18 @@ button,
     padding: 8px;
 }
 button,
-.button-theme-primary:hover {
+.button-theme-primary:hover:not(:disabled) {
     background: var(--vscode-button-hoverBackground);
+    cursor: pointer;
 }
 .button-theme-secondary {
     color: var(--vscode-button-secondaryForeground);
     background: var(--vscode-button-secondaryBackground);
     border: 1px solid var(--vscode-button-border);
 }
-.button-theme-secondary:hover {
+.button-theme-secondary:hover:not(:disabled) {
     background: var(--vscode-button-secondaryHoverBackground);
+    cursor: pointer;
 }
 .button-theme-soft {
     color: var(--vscode-settings-textInputForeground);
@@ -162,14 +163,31 @@ body.vscode-dark textarea {
     display: contents;
 }
 
+.button-container {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: row;
+    /* margin: 16px 0 0 0; */
+    padding: 10px;
+    position: sticky;
+    top: 10px;
+    justify-content: flex-end;
+    border-bottom: 1px solid var(--vscode-menu-separatorBackground);
+    /**
+     * HACK: Using background-color alpha as a workaround because "opacity" affects children.
+     * TODO: Is there a way to use alpha with var(--vscode-menu-background) ?
+     */
+    /* background-color: rgba(0, 0, 0, 0.1); */
+}
+
+.button-container h1 {
+    margin: 0px;
+}
+
 /* Overrides */
 body.vscode-dark .settings-panel {
     background: rgba(var(--tint), 0.02) !important;
 }
 body.vscode-light .settings-panel {
     background: rgba(var(--shade), 0.02) !important;
-}
-.button-container {
-    border: none !important;
-    background: none !important;
 }
