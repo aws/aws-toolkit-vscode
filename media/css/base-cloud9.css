@@ -65,8 +65,8 @@ input[type='number'] {
     padding: 4px 4px;
 }
 
-/* "Cloud9 gray" in input boxes (not buttons). */
-body.vscode-dark input:not([type='submit']) {
+/* "Cloud9 gray" in input boxes (not buttons/radios). */
+body.vscode-dark input:not([type='submit']):not([type='radio']) {
     background: rgba(var(--shade), 0.1);
 }
 
@@ -97,7 +97,7 @@ option {
     color: var(--vscode-settings-dropdownForeground);
     background: var(--vscode-settings-dropdownBackground);
 }
-body.vscode-dark select:not([type='radio']) {
+body.vscode-dark select {
     background: rgba(var(--shade), 0.1);
 }
 
