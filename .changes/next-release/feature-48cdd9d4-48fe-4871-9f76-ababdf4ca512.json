@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "[CodeWhisperer](https://aws.amazon.com/codewhisperer) uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript."
+}

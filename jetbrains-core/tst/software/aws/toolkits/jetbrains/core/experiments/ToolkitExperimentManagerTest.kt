@@ -298,6 +298,73 @@ class ToolkitExperimentManagerTest {
         val conn = ApplicationManager.getApplication().messageBus.connect(disposableRule.disposable)
         conn.subscribe(EXPERIMENT_CHANGED, listener)
     }
+
+    @Test
+    fun `Enabling experiments will emit event`() {
+        val anExperiment = DummyExperiment()
+        assertThat(anExperiment.isEnabled()).isFalse
+        val mockListener: ToolkitExperimentStateChangedListener = mock()
+        val conn = ApplicationManager.getApplication().messageBus.connect()
+        conn.subscribe(ToolkitExperimentManager.EXPERIMENT_CHANGED, mockListener)
+        anExperiment.setState(true)
+
+        argumentCaptor<ToolkitExperiment>().apply {
+            verify(mockListener).enableSettingsStateChanged(capture())
+            assertThat(allValues).hasSize(1)
+            assertThat(firstValue.id).isEqualTo(anExperiment.id)
+        }
+
+        conn.dispose()
+    }
+
+    @Test
+    fun `Disabling experiments will emit event`() {
+        val experiment = DummyExperiment(default = true)
+        ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
+        assertThat(experiment.isEnabled()).isTrue
+        val mockListener: ToolkitExperimentStateChangedListener = mock()
+        val conn = ApplicationManager.getApplication().messageBus.connect()
+        conn.subscribe(ToolkitExperimentManager.EXPERIMENT_CHANGED, mockListener)
+        experiment.setState(false)
+
+        argumentCaptor<ToolkitExperiment>().apply {
+            verify(mockListener).enableSettingsStateChanged(capture())
+            assertThat(allValues).hasSize(1)
+            assertThat(firstValue.id).isEqualTo(experiment.id)
+        }
+
+        conn.dispose()
+    }
+
+    @Test
+    fun `Setting experiments ineffectively will not emit message - true`() {
+        val experiment = DummyExperiment(default = true)
+        ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
+        assertThat(experiment.isEnabled()).isTrue
+        val mockListener: ToolkitExperimentStateChangedListener = mock()
+        val conn = ApplicationManager.getApplication().messageBus.connect()
+        conn.subscribe(ToolkitExperimentManager.EXPERIMENT_CHANGED, mockListener)
+
+        experiment.setState(true)
+        verifyNoInteractions(mockListener)
+
+        conn.dispose()
+    }
+
+    @Test
+    fun `Setting experiments ineffectively will not emit message - false`() {
+        val experiment = DummyExperiment(default = false)
+        ExtensionTestUtil.maskExtensions(ToolkitExperimentManager.EP_NAME, listOf(experiment), disposableRule.disposable)
+        assertThat(experiment.isEnabled()).isFalse
+        val mockListener: ToolkitExperimentStateChangedListener = mock()
+        val conn = ApplicationManager.getApplication().messageBus.connect()
+        conn.subscribe(ToolkitExperimentManager.EXPERIMENT_CHANGED, mockListener)
+
+        experiment.setState(false)
+        verifyNoInteractions(mockListener)
+
+        conn.dispose()
+    }
 }
 
 class DummyExperiment(

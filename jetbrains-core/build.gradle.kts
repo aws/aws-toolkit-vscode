@@ -84,6 +84,7 @@ dependencies {
 
     implementation(libs.bundles.jackson)
     implementation(libs.zjsonpatch)
+    implementation(libs.commonmark)
 
     testImplementation(project(path = ":core", configuration = "testArtifacts"))
     testImplementation(libs.wiremock)

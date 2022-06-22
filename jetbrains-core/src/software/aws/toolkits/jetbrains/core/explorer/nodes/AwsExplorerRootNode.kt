@@ -8,7 +8,6 @@ import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 /**
  * The root node of the AWS explorer tree.
@@ -17,10 +16,9 @@ class AwsExplorerRootNode(private val nodeProject: Project) : AbstractTreeNode<A
     override fun getChildren(): List<AwsExplorerNode<*>> {
         val settings = AwsConnectionManager.getInstance(nodeProject)
         val region = settings.selectedRegion ?: return emptyList()
-        val regionProvider = AwsRegionProvider.getInstance()
 
         return EP_NAME.extensionList
-            .filter { it.enabled() && regionProvider.isServiceSupported(region, it.serviceId) }
+            .filter { it.enabled(region) }
             .map { it.buildServiceRootNode(nodeProject) }
     }
 

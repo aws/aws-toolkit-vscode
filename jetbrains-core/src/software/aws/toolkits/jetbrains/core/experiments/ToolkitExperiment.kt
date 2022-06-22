@@ -154,7 +154,8 @@ internal class ToolkitExperimentManager : PersistentStateComponent<ExperimentSta
 
     companion object {
         internal val EP_NAME = ExtensionPointName.create<ToolkitExperiment>("aws.toolkit.experiment")
-        internal val EXPERIMENT_CHANGED = Topic.create("experiment service enable state changed", ToolkitExperimentStateChangedListener::class.java)
+        internal val EXPERIMENT_CHANGED =
+            Topic.create("experiment service enable state changed", ToolkitExperimentStateChangedListener::class.java)
         internal fun getInstance(): ToolkitExperimentManager = service()
         internal fun visibleExperiments(): List<ToolkitExperiment> = EP_NAME.extensionList.filterNot { it.hidden }
         internal fun enabledExperiments(): List<ToolkitExperiment> = EP_NAME.extensionList.filter { it.isEnabled() }

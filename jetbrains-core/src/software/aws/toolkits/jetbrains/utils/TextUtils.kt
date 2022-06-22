@@ -9,6 +9,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.codeStyle.CodeStyleManager
+import org.commonmark.node.Node
+import org.commonmark.parser.Parser
+import org.commonmark.renderer.html.HtmlRenderer
 
 fun formatText(project: Project, language: Language, content: String): String {
     var result = content
@@ -20,6 +23,13 @@ fun formatText(project: Project, language: Language, content: String): String {
     }
 
     return result
+}
+
+fun convertMarkdownToHTML(markdown: String): String {
+    val parser: Parser = Parser.builder().build()
+    val document: Node = parser.parse(markdown)
+    val htmlRenderer: HtmlRenderer = HtmlRenderer.builder().build()
+    return htmlRenderer.render(document)
 }
 
 /**

@@ -9,6 +9,7 @@ import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.credentials.getConnectionSettingsOrThrow
+import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 
 fun Project.refreshAwsTree(resource: Resource<*>? = null, connectionSettings: ConnectionSettings = getConnectionSettingsOrThrow()) {
     if (resource == null) {
@@ -21,4 +22,8 @@ fun Project.refreshAwsTree(resource: Resource<*>? = null, connectionSettings: Co
         // redraw explorer
         ExplorerToolWindow.getInstance(this).invalidateTree()
     }
+}
+
+fun Project.refreshDevToolTree() {
+    DevToolsToolWindow.getInstance(this).redrawTree()
 }

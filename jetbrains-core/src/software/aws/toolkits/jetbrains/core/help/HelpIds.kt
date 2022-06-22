@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.core.help
 
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+
 enum class HelpIds(shortId: String, val url: String) {
     // App Runner
     APPRUNNER_PAUSE_RESUME(
@@ -100,6 +102,12 @@ enum class HelpIds(shortId: String, val url: String) {
     ECS_EXEC_PERMISSIONS_REQUIRED(
         "ecsExecPermissions",
         "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using"
+    ),
+
+    // CodeWhisperer
+    CODEWHISPERER_TOKEN(
+        "CodeWhispererToken",
+        CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI
     )
     ;
 

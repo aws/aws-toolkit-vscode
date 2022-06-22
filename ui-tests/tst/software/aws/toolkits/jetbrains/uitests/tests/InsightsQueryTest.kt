@@ -157,7 +157,9 @@ class InsightsQueryTest {
                 }
 
                 step("Verify new result tab selected") {
-                    findAndClick("//div[@class='ContentTabLabel' and @visible_text!='Query: $currentQueryId'][last()]")
+                    findAndClick(
+                        "//div[@class='ContentTabLabel' and starts-with(@accessiblename, 'Query:') and @visible_text!='Query: $currentQueryId'][last()]"
+                    )
                 }
 
                 val logResults = find<JTreeFixture>(byXpath("//div[@class='TableView']"), Duration.ofSeconds(5))
