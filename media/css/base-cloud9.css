@@ -97,6 +97,9 @@ option {
     color: var(--vscode-settings-dropdownForeground);
     background: var(--vscode-settings-dropdownBackground);
 }
+body.vscode-dark select:not([type='radio']) {
+    background: rgba(var(--shade), 0.1);
+}
 
 /* Header (for settings) (TODO: move to different sheet) */
 .header {
