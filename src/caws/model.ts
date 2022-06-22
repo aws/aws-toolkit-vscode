@@ -75,7 +75,7 @@ export function getHostNameFromEnv(env: DevEnvId): string {
     return `${HOST_NAME_PREFIX}${env.developmentWorkspaceId}`
 }
 
-async function autoConnect(authProvider: CawsAuthenticationProvider) {
+export async function autoConnect(authProvider: CawsAuthenticationProvider) {
     for (const account of authProvider.listAccounts().filter(({ metadata }) => metadata.canAutoConnect)) {
         getLogger().info(`CAWS: trying to auto-connect with user: ${account.label}`)
 

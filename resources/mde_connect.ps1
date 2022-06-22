@@ -39,6 +39,7 @@ function StartSessionDevelopmentWorkspace {
 
     $startSessionQuery = @"
 {
+    "id": "$WorkspaceId", 
     "projectName": "$Project", 
     "organizationName": "$Organization", 
     "developmentWorkspaceId": "$WorkspaceId", 

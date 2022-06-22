@@ -21,6 +21,7 @@ import { assertHasProps, ClassToInterfaceType, RequiredProps } from '../utilitie
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
+import { Credentials } from 'aws-sdk'
 
 // XXX: remove signing from the CAWS model until Bearer token auth is added to the SDKs
 delete (apiConfig.metadata as Partial<typeof apiConfig['metadata']>)['signatureVersion']
@@ -100,6 +101,10 @@ async function createCawsClient(
         region: regionCode,
         correctClockSkew: true,
         endpoint: endpoint,
+        // XXX: Toolkit logic on mainline does not have the concept of being 'logged-in'
+        // in more than one place. So we add fake credentials here until the two concepts
+        // can be combined into one.
+        credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
     } as ServiceConfigurationOptions)) as caws
     c.setupRequestListeners = r => {
         if (authCookie) {
@@ -476,7 +481,13 @@ class CawsClientInternal {
     public async startDevEnv(
         args: caws.StartDevelopmentWorkspaceRequest
     ): Promise<caws.StartDevelopmentWorkspaceResponse | undefined> {
-        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args), false)
+        const r = await this.call(
+            this.sdkClient.startDevelopmentWorkspace({
+                ...args,
+                id: args.developmentWorkspaceId,
+            }),
+            false
+        )
         return r
     }
 
@@ -484,7 +495,13 @@ class CawsClientInternal {
     public async startDevEnvSession(
         args: caws.StartSessionDevelopmentWorkspaceRequest
     ): Promise<caws.StartSessionDevelopmentWorkspaceResponse & { sessionId: string }> {
-        const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args), false)
+        const r = await this.call(
+            this.sdkClient.startSessionDevelopmentWorkspace({
+                ...args,
+                id: args.developmentWorkspaceId,
+            }),
+            false
+        )
         if (!r.sessionId) {
             throw new TypeError('Received falsy CAWS workspace "sessionId"')
         }
@@ -494,12 +511,18 @@ class CawsClientInternal {
     public async stopDevEnv(
         args: caws.StopDevelopmentWorkspaceRequest
     ): Promise<caws.StopDevelopmentWorkspaceResponse> {
-        return this.call(this.sdkClient.stopDevelopmentWorkspace(args), false)
+        return this.call(
+            this.sdkClient.stopDevelopmentWorkspace({
+                ...args,
+                id: args.developmentWorkspaceId,
+            }),
+            false
+        )
     }
 
     /** CAWS-MDE */
     public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<CawsDevEnv> {
-        const a = { ...args }
+        const a = { ...args, id: args.developmentWorkspaceId }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
         const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a), false)
@@ -521,7 +544,13 @@ class CawsClientInternal {
     public async deleteDevEnv(
         args: caws.DeleteDevelopmentWorkspaceRequest
     ): Promise<caws.DeleteDevelopmentWorkspaceResponse | undefined> {
-        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
+        const r = await this.call(
+            this.sdkClient.deleteDevelopmentWorkspace({
+                ...args,
+                id: args.developmentWorkspaceId,
+            }),
+            false
+        )
         return r
     }
 

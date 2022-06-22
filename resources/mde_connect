@@ -54,6 +54,7 @@ _start_session_development_workspace() {
     START_SESSION_QUERY=$(
         cat << EOF
 {
+    "id": "$WORKSPACE_ID", 
     "projectName": "$PROJECT_NAME", 
     "organizationName": "$ORGANIZATION_NAME", 
     "developmentWorkspaceId": "$WORKSPACE_ID", 

@@ -119,7 +119,7 @@ export class SsoClient {
     public listAccounts(
         request: Omit<ListAccountsRequest, OmittedProps> = {}
     ): AsyncCollection<RequiredProps<AccountInfo, 'accountId'>[]> {
-        const method = this.client.listAccounts.bind(this)
+        const method = this.client.listAccounts.bind(this.client)
         const requester = (request: Omit<ListAccountsRequest, 'accessToken'>) =>
             this.call(method as ExtractOverload<typeof method>, request)
 
@@ -131,7 +131,7 @@ export class SsoClient {
     public listAccountRoles(
         request: Omit<ListAccountRolesRequest, OmittedProps>
     ): AsyncCollection<Required<RoleInfo>[]> {
-        const method = this.client.listAccountRoles.bind(this)
+        const method = this.client.listAccountRoles.bind(this.client)
         const requester = (request: Omit<ListAccountRolesRequest, 'accessToken'>) =>
             this.call(method as ExtractOverload<typeof method>, request)
 
@@ -143,7 +143,7 @@ export class SsoClient {
     }
 
     public async getRoleCredentials(request: Omit<GetRoleCredentialsRequest, OmittedProps>) {
-        const method = this.client.getRoleCredentials.bind(this)
+        const method = this.client.getRoleCredentials.bind(this.client)
         const response = await this.call(method as ExtractOverload<typeof method>, request)
 
         assertHasProps(response, 'roleCredentials')
