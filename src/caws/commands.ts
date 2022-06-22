@@ -126,7 +126,7 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     try {
         await client.startEnvironmentWithProgress(
             {
-                developmentWorkspaceId: env.developmentWorkspaceId,
+                id: env.id,
                 ...args,
             },
             'RUNNING'
@@ -146,14 +146,14 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
 export async function openDevEnv(client: ConnectedCawsClient, env: CawsDevEnv): Promise<void> {
     const runningEnv = await client.startEnvironmentWithProgress(
         {
-            developmentWorkspaceId: env.developmentWorkspaceId,
+            id: env.id,
             organizationName: env.org.name,
             projectName: env.project.name,
         },
         'RUNNING'
     )
     if (!runningEnv) {
-        getLogger().error('openDevEnv: failed to start environment: %s', env.developmentWorkspaceId)
+        getLogger().error('openDevEnv: failed to start environment: %s', env.id)
         return
     }
 
@@ -202,7 +202,7 @@ export async function openCawsResource(client: ConnectedCawsClient, kind: CawsRe
             localize(
                 'AWS.command.caws.createDevEnv.failed',
                 'Failed to start CODE.AWS development environment "{0}": {1}',
-                resource.developmentWorkspaceId,
+                resource.id,
                 (err as Error).message
             )
         )
@@ -211,7 +211,7 @@ export async function openCawsResource(client: ConnectedCawsClient, kind: CawsRe
 
 export async function stopWorkspace(client: ConnectedCawsClient, workspace: DevEnvId): Promise<void> {
     await client.stopDevEnv({
-        developmentWorkspaceId: workspace.developmentWorkspaceId,
+        id: workspace.id,
         projectName: workspace.project.name,
         organizationName: workspace.org.name,
     })
@@ -219,7 +219,7 @@ export async function stopWorkspace(client: ConnectedCawsClient, workspace: DevE
 
 export async function deleteWorkspace(client: ConnectedCawsClient, workspace: DevEnvId): Promise<void> {
     await client.deleteDevEnv({
-        developmentWorkspaceId: workspace.developmentWorkspaceId,
+        id: workspace.id,
         projectName: workspace.project.name,
         organizationName: workspace.org.name,
     })
@@ -237,10 +237,9 @@ export async function updateWorkspace(
 ): Promise<void> {
     await client.updateDevelopmentWorkspace({
         ...settings,
-        id: workspace.developmentWorkspaceId,
+        id: workspace.id,
         projectName: workspace.project.name,
         organizationName: workspace.org.name,
-        updateBehavior: 'restart',
     })
 }
 

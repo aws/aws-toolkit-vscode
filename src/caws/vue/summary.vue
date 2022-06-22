@@ -52,13 +52,13 @@ import { CawsDevEnv } from '../../shared/clients/cawsClient'
 
 const client = WebviewClientFactory.create<CawsConfigureWebview>()
 
-type PartialModel = Pick<CawsDevEnv, 'alias' | 'org' | 'project' | 'repositories' | 'status' | 'developmentWorkspaceId'>
+type PartialModel = Pick<CawsDevEnv, 'alias' | 'org' | 'project' | 'repositories' | 'status' | 'id'>
 export const VueModel = createClass<PartialModel>({
     org: { name: '' },
     project: { name: '' },
     repositories: [],
     status: '',
-    developmentWorkspaceId: '',
+    id: '',
 })
 
 export default defineComponent({

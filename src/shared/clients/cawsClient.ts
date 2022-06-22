@@ -374,8 +374,7 @@ class CawsClientInternal {
         const makeDescription = (env: caws.DevelopmentWorkspaceSummary) => {
             return env.repositories
                 .map(r => {
-                    const pr = r.pullRequestNumber ? `#${r.pullRequestNumber}` : ''
-                    return `${r.repositoryName}:${r.branchName ?? ''} ${pr}`
+                    return `${r.repositoryName}:${r.branchName ?? ''}`
                 })
                 .join(', ')
         }
@@ -383,8 +382,7 @@ class CawsClientInternal {
         return collection.map(envs =>
             envs.map(env => ({
                 type: 'env',
-                id: env.developmentWorkspaceId,
-                name: env.developmentWorkspaceId,
+                name: env.id,
                 org: proj.org,
                 project: proj,
                 description: makeDescription(env),
@@ -457,8 +455,12 @@ class CawsClientInternal {
             throw Error('missing ideRuntimes')
         }
         const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
+        if (!r.developmentWorkspaceId && !r.id) {
+            throw new Error('unable to get the id of the workspace')
+        }
+        const workspaceId = r.id ?? (r.developmentWorkspaceId as string)
         const env = await this.getDevEnv({
-            developmentWorkspaceId: r.developmentWorkspaceId,
+            id: workspaceId,
             organizationName: args.organizationName,
             projectName: args.projectName,
         })
@@ -468,7 +470,7 @@ class CawsClientInternal {
 
         return {
             ...env,
-            id: r.developmentWorkspaceId,
+            id: workspaceId,
             creatorId: '',
             ide: args.ideRuntimes[0],
             lastUpdatedTime: new Date(),
@@ -481,13 +483,7 @@ class CawsClientInternal {
     public async startDevEnv(
         args: caws.StartDevelopmentWorkspaceRequest
     ): Promise<caws.StartDevelopmentWorkspaceResponse | undefined> {
-        const r = await this.call(
-            this.sdkClient.startDevelopmentWorkspace({
-                ...args,
-                id: args.developmentWorkspaceId,
-            }),
-            false
-        )
+        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args), false)
         return r
     }
 
@@ -495,13 +491,7 @@ class CawsClientInternal {
     public async startDevEnvSession(
         args: caws.StartSessionDevelopmentWorkspaceRequest
     ): Promise<caws.StartSessionDevelopmentWorkspaceResponse & { sessionId: string }> {
-        const r = await this.call(
-            this.sdkClient.startSessionDevelopmentWorkspace({
-                ...args,
-                id: args.developmentWorkspaceId,
-            }),
-            false
-        )
+        const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args), false)
         if (!r.sessionId) {
             throw new TypeError('Received falsy CAWS workspace "sessionId"')
         }
@@ -511,29 +501,20 @@ class CawsClientInternal {
     public async stopDevEnv(
         args: caws.StopDevelopmentWorkspaceRequest
     ): Promise<caws.StopDevelopmentWorkspaceResponse> {
-        return this.call(
-            this.sdkClient.stopDevelopmentWorkspace({
-                ...args,
-                id: args.developmentWorkspaceId,
-            }),
-            false
-        )
+        return this.call(this.sdkClient.stopDevelopmentWorkspace(args), false)
     }
 
     /** CAWS-MDE */
     public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<CawsDevEnv> {
-        const a = { ...args, id: args.developmentWorkspaceId }
+        const a = { ...args }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
         const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a), false)
-        const desc = r.labels?.join(', ')
 
         return {
             type: 'env',
-            id: a.developmentWorkspaceId,
-            name: a.developmentWorkspaceId,
+            name: a.id,
             developmentWorkspaceId: a.developmentWorkspaceId,
-            description: desc,
             org: { name: args.organizationName },
             project: { name: args.projectName },
             ...r,
@@ -544,13 +525,7 @@ class CawsClientInternal {
     public async deleteDevEnv(
         args: caws.DeleteDevelopmentWorkspaceRequest
     ): Promise<caws.DeleteDevelopmentWorkspaceResponse | undefined> {
-        const r = await this.call(
-            this.sdkClient.deleteDevelopmentWorkspace({
-                ...args,
-                id: args.developmentWorkspaceId,
-            }),
-            false
-        )
+        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
         return r
     }
 
@@ -624,11 +599,7 @@ class CawsClientInternal {
         return waitTimeout(pollMde, timeout, {
             onExpire: () => (
                 vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.caws.startFailed',
-                        'Timeout waiting for MDE environment: {0}',
-                        args.developmentWorkspaceId
-                    )
+                    localize('AWS.caws.startFailed', 'Timeout waiting for MDE environment: {0}', args.id)
                 ),
                 undefined
             ),

@@ -155,7 +155,7 @@ async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<
 
     const runningEnv = await client.startEnvironmentWithProgress(
         {
-            developmentWorkspaceId: env.developmentWorkspaceId,
+            id: env.id,
             organizationName: env.org.name,
             projectName: env.project.name,
         },
@@ -337,7 +337,7 @@ async function installVsix(
     progress.report({ message: 'Waiting...' })
     const runningEnv = await client.startEnvironmentWithProgress(
         {
-            developmentWorkspaceId: env.developmentWorkspaceId,
+            id: env.id,
             organizationName: env.org.name,
             projectName: env.project.name,
         },

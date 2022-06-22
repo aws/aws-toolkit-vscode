@@ -23,7 +23,7 @@ import { getCawsOrganizationName, getCawsProjectName } from '../shared/vscode/en
 import { writeFile } from 'fs-extra'
 import globals from '../shared/extensionGlobals'
 
-export type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
+export type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'id'>
 
 export function getCawsSsmEnv(region: string, ssmPath: string, envs: CawsDevEnv): NodeJS.ProcessEnv {
     return Object.assign(
@@ -31,11 +31,11 @@ export function getCawsSsmEnv(region: string, ssmPath: string, envs: CawsDevEnv)
             AWS_REGION: region,
             AWS_SSM_CLI: ssmPath,
             CAWS_ENDPOINT: getCawsConfig().endpoint,
-            BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(envs.developmentWorkspaceId),
-            LOG_FILE_LOCATION: sshLogFileLocation(envs.developmentWorkspaceId),
+            BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(envs.id),
+            LOG_FILE_LOCATION: sshLogFileLocation(envs.id),
             ORGANIZATION_NAME: envs.org.name,
             PROJECT_NAME: envs.project.name,
-            WORKSPACE_ID: envs.developmentWorkspaceId,
+            WORKSPACE_ID: envs.id,
         },
         process.env
     )
@@ -52,7 +52,7 @@ export function createCawsEnvProvider(
             throw new Error('Unable to provide CAWS environment variables for disconnected environment')
         }
 
-        await cacheBearerToken(client.token, env.developmentWorkspaceId)
+        await cacheBearerToken(client.token, env.id)
         const vars = getCawsSsmEnv(client.regionCode, ssmPath, env)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
@@ -72,7 +72,7 @@ export function sshLogFileLocation(workspaceId: string): string {
 }
 
 export function getHostNameFromEnv(env: DevEnvId): string {
-    return `${HOST_NAME_PREFIX}${env.developmentWorkspaceId}`
+    return `${HOST_NAME_PREFIX}${env.id}`
 }
 
 export async function autoConnect(authProvider: CawsAuthenticationProvider) {
@@ -138,7 +138,7 @@ export async function getConnectedWorkspace(
     const summary = await cawsClient.getDevEnv({
         projectName,
         organizationName,
-        developmentWorkspaceId: workspaceId,
+        id: workspaceId,
     })
 
     return { summary, environmentClient }

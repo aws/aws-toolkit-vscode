@@ -20,9 +20,9 @@ function createCloneUri(target: string): vscode.Uri {
     return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/clone?url=${encodeURIComponent(target)}`)
 }
 
-function createConnectUri(env: Pick<CawsDevEnv, 'developmentWorkspaceId' | 'org' | 'project'>): vscode.Uri {
+function createConnectUri(env: Pick<CawsDevEnv, 'id' | 'org' | 'project'>): vscode.Uri {
     const params = {
-        developmentWorkspaceId: env.developmentWorkspaceId,
+        developmentWorkspaceId: env.id,
         organizationName: env.org.name,
         projectName: env.project.name,
     }
@@ -76,7 +76,7 @@ describe('CAWS handlers', function () {
 
     describe('connect', function () {
         const env = {
-            developmentWorkspaceId: 'somefoo',
+            id: 'somefoo',
             org: { name: 'org' },
             project: { name: 'project' },
         }
@@ -95,7 +95,7 @@ describe('CAWS handlers', function () {
             const fullEnv = {
                 ...env,
                 type: 'env' as const,
-                id: env.developmentWorkspaceId,
+                id: env.id,
                 creatorId: '',
                 ide: '',
                 lastUpdatedTime: new Date(),
