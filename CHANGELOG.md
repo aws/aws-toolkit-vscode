@@ -1,3 +1,7 @@
+## 1.41.0 2022-06-22
+
+- **Bug Fix** Credentials are now automatically refreshed on certain AWS API errors
+
 ## 1.40.0 2022-06-17
 
 - **Bug Fix** The `Upload Lambda` command now automatically causes the Toolkit to login
