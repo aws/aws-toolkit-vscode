@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Credentials are now automatically refreshed on certain AWS API errors"
-}
