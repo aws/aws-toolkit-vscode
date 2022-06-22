@@ -135,4 +135,13 @@ export interface IconPaths {
     sync: string
     syncIgnore: string
     refresh: string
+    run: string
+    pause: string
+    question: string
+    email: string
+    megaphone: string
+    check: string
+    chromeMaximize: string
+    securityScan: string
+    loading: string
 }
