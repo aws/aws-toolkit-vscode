@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as model from '../../mde/mdeModel'
+import * as mdeSSH from '../../mde/mdeSSHConfig'
 import { Repository } from '../../../types/git'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { ChildProcess } from '../../shared/utilities/childProcess'
@@ -104,7 +105,7 @@ describe('SSH Agent', function () {
 
         await runCommand('Stop-Service ssh-agent')
         assert.strictEqual(await getStatus(), 'Stopped')
-        await model.startSshAgent()
+        await mdeSSH.startSshAgent()
         assert.strictEqual(await getStatus(), 'Running')
     })
 })
@@ -123,13 +124,13 @@ describe('Connect Script', function () {
     })
 
     it('can get a connect script path, adding a copy to global storage', async function () {
-        const script = await model.ensureConnectScript(context)
+        const script = await mdeSSH.ensureConnectScript(context)
         assert.ok(await fileExists(script))
         assert.ok(isWithin(context.globalStoragePath, script))
     })
 
     it('can run the script with environment variables', async function () {
-        const script = await model.ensureConnectScript(context)
+        const script = await mdeSSH.ensureConnectScript(context)
         const env = model.getMdeSsmEnv('us-weast-1', 'echo', {
             id: '01234567890',
             accessDetails: { streamUrl: '123', tokenValue: '456' },

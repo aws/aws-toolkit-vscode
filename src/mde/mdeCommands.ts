@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as awsArn from '@aws-sdk/util-arn-parser'
 import * as mde from '../shared/clients/mdeClient'
+import * as mdeSSH from './mdeSSHConfig'
 import * as nls from 'vscode-nls'
 import * as path from 'path'
 import { getLogger } from '../shared/logger/logger'
@@ -190,7 +191,7 @@ export async function createMdeSshCommand(
     options: MdeSshCommandOptions = {}
 ): Promise<ChildProcess> {
     const useAgent = options.useAgent ?? false
-    const agentSock = useAgent ? await mdeModel.startSshAgent() : undefined
+    const agentSock = useAgent ? await mdeSSH.startSshAgent() : undefined
     const ssmPath = await mdeModel.ensureSsmCli()
 
     if (!ssmPath.ok) {
@@ -203,7 +204,7 @@ export async function createMdeSshCommand(
 
     // TODO: check SSH version to verify 'accept-new' is available
     const mdeEnvVars = mdeModel.getMdeSsmEnv(region, ssmPath.result, session)
-    const env = { [mdeModel.SSH_AGENT_SOCKET_VARIABLE]: agentSock, ...mdeEnvVars }
+    const env = { [mdeSSH.SSH_AGENT_SOCKET_VARIABLE]: agentSock, ...mdeEnvVars }
 
     const sshPath = await SystemUtilities.findSshPath()
     if (!sshPath) {
