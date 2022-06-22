@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix issue where some http errors were logging undefined on error"
-}

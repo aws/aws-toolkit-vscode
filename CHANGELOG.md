@@ -1,3 +1,10 @@
+## 1.40.0 2022-06-17
+
+- **Bug Fix** The `Upload Lambda` command now automatically causes the Toolkit to login
+- **Bug Fix** S3 "Presigned URL" feature may silently fail #2687
+- **Bug Fix** Fix issue where some http errors were logging undefined on error
+- **Feature** UI: buttons for Lambda invoke, API invoke, and other forms are now always visible at the top of the form
+
 ## 1.39.0 2022-06-06
 
 - **Bug Fix** StepFunctions: allow state machines with non-object values for Parameters property
