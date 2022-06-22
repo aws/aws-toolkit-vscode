@@ -170,7 +170,7 @@ function getSshConfigPath(): string {
 }
 
 /**
- * Checks if the "aws-mde-*" SSH config hostname pattern is working, else prompts user to add it.
+ * Checks if the "aws-*" SSH config hostname pattern is working, else prompts user to add it.
  *
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
@@ -229,7 +229,7 @@ Host ${configHostName}
     ProxyCommand ${proxyCommand}
 `
 
-    // Check if the "aws-mde-*" hostname pattern is working.
+    // Check if the "aws-*" hostname pattern is working.
     const proc = new ChildProcess(sshPath, ['-G', `${HOST_NAME_PREFIX}test`])
     const r = await proc.run()
     if (r.exitCode !== 0) {
@@ -522,7 +522,7 @@ export async function startVscodeRemote(
 
         await Promise.all([
             // TODO(sijaden): we should periodically clean this setting up, maybe
-            // by removing all hostnames that use the `aws-mde-` prefix
+            // by removing all hostnames that use the `aws-` prefix
             await settings.setRemotePlatform(hostname, 'linux'),
 
             // TODO(sijaden): revert this setting back to normal after the user connects
