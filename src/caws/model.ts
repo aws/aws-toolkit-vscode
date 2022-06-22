@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { HOST_NAME_PREFIX } from '../mde/constants'
-import { EnvProvider, SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../mde/mdeModel'
+import { EnvProvider } from '../mde/mdeModel'
 import {
     CawsClient,
     CawsDevEnv,
@@ -22,6 +22,7 @@ import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollecti
 import { getCawsOrganizationName, getCawsProjectName } from '../shared/vscode/env'
 import { writeFile } from 'fs-extra'
 import globals from '../shared/extensionGlobals'
+import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../shared/extensions/ssh'
 
 export type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'developmentWorkspaceId'>
 

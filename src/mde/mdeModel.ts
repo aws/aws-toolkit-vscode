@@ -20,8 +20,9 @@ import { getLogger } from '../shared/logger/logger'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isExtensionInstalledMsg } from '../shared/utilities/vsCodeUtils'
 import { RemoteSshSettings } from '../shared/settings'
-import { ensureMdeSshConfig, getSshConfigPath, SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from './mdeSSHConfig'
 import globals from '../shared/extensionGlobals'
+import { ensureMdeSshConfig } from './mdeSSHConfig'
+import { getSshConfigPath, SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../shared/extensions/ssh'
 
 const localize = nls.loadMessageBundle()
 

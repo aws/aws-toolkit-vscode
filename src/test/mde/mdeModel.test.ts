@@ -11,6 +11,7 @@ import { Repository } from '../../../types/git'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../fakeExtensionContext'
+import { startSshAgent } from '../../shared/extensions/ssh'
 
 describe('mdeModel', async function () {
     describe('getEmailHash', async function () {
@@ -105,7 +106,7 @@ describe('SSH Agent', function () {
 
         await runCommand('Stop-Service ssh-agent')
         assert.strictEqual(await getStatus(), 'Stopped')
-        await mdeSSH.startSshAgent()
+        await startSshAgent()
         assert.strictEqual(await getStatus(), 'Running')
     })
 })
