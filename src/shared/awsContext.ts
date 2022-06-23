@@ -10,6 +10,8 @@ import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { CredentialsShim } from '../credentials/loginManager'
 import { AWSTreeNodeBase } from './treeview/nodes/awsTreeNodeBase'
+import globals from '../shared/extensionGlobals'
+import { Region } from './regions/endpoints'
 
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
@@ -64,6 +66,7 @@ export class DefaultAwsContext implements AwsContext {
         Checks in order of precedence
        1. the node passed to the current command
        2. last-expanded AWS Explorer service / etc
+       3. last selection region in RegionProvider of Wizard. 
        3. final fallback is the credentials default region
         */
         if (this.explorerRegions.length === 1) {
@@ -73,7 +76,12 @@ export class DefaultAwsContext implements AwsContext {
         } else if (this.lastTouchedRegion !== 'None') {
             return this.lastTouchedRegion
         } else {
-            return this.getCredentialDefaultRegion()
+            const lastWizardResponse = globals.context.globalState.get<Region>('lastSelectedRegion')
+            if (lastWizardResponse && lastWizardResponse.id) {
+                return lastWizardResponse.id
+            } else {
+                return this.getCredentialDefaultRegion()
+            }
         }
     }
 
