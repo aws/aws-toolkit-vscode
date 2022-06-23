@@ -9,7 +9,6 @@ import { regionSettingKey } from './constants'
 import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { CredentialsShim } from '../credentials/loginManager'
-import { Region } from 'aws-sdk/clients/budgets'
 import { AWSTreeNodeBase } from './treeview/nodes/awsTreeNodeBase'
 
 export interface AwsContextCredentials {
@@ -63,10 +62,9 @@ export class DefaultAwsContext implements AwsContext {
     public guessDefaultRegion(node?: AWSTreeNodeBase): string {
         /*
         Checks in order of precedence
-        1. Check if there is only one region on side bar. 
-        2. Check the lastTouchedRegion from the nodes. 
-        3. Check if the node passed in has region. 
-        4. 
+       1. the node passed to the current command
+       2. last-expanded AWS Explorer service / etc
+       3. final fallback is the credentials default region
         */
         if (this.explorerRegions.length === 1) {
             return this.explorerRegions[0]
