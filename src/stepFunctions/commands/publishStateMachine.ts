@@ -10,7 +10,6 @@ import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { sfnCreateStateMachineUrl } from '../../shared/constants'
-
 import { getLogger, Logger } from '../../shared/logger'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createRegionPrompter } from '../../shared/ui/common/region'

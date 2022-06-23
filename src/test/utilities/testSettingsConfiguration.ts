@@ -87,4 +87,10 @@ export class TestSettings implements ClassToInterfaceType<Settings> {
             }
         })
     }
+
+    public async disabledExperiments(pluginName: string): Promise<void> {}
+    public async enabledExperiments(pluginName: string): Promise<void> {}
+    public async getExperimentsSetting(promptName: string): Promise<{ [prompt: string]: boolean } | undefined> {
+        return {}
+    }
 }
