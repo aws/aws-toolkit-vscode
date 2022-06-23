@@ -22,7 +22,7 @@ with what features/services are supported.
 
 <ul>
     <li>
-       <a href="https://aws.amazon.com/codewhisperer">AWS CodeWhisperer</a> - CodeWhisperer uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
+       <a href="https://aws.amazon.com/codewhisperer">Amazon CodeWhisperer</a> - CodeWhisperer uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
        <br> In addition to providing code suggestions within your current file, CodeWhisperer can scan your code package to identify security issues.
     </li>
     <li>
