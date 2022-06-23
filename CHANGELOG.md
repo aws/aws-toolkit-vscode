@@ -1,3 +1,7 @@
+## 1.42.0 2022-06-23
+
+- **Feature** [CodeWhisperer](https://aws.amazon.com/codewhisperer) uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
+
 ## 1.41.0 2022-06-22
 
 - **Bug Fix** Credentials are now automatically refreshed on certain AWS API errors
