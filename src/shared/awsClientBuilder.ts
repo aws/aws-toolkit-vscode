@@ -23,7 +23,7 @@ interface RequestExtras {
 }
 
 type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
-type ServiceOptions = ServiceConfigurationOptions & {
+export type ServiceOptions = ServiceConfigurationOptions & {
     /**
      * The frequency and (lack of) idempotency of events is highly dependent on the SDK implementation
      * For example, 'error' may fire more than once for a single request

@@ -44,6 +44,7 @@ import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
 import * as telemetry from './shared/telemetry/telemetry'
+import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { ExtContext } from './shared/extensions'
 import * as mde from './mde/activation'
 import { activate as activateApiGateway } from './apigateway/activation'
@@ -229,6 +230,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(extContext)
 
+        await activateCodeWhisperer(extContext)
+
         await activateEcr(context)
 
         await activateCloudWatchLogs(context, settings)
@@ -273,6 +276,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
+    await codewhispererShutdown()
     await globals.telemetry.shutdown()
     await globals.resourceManager.dispose()
 }
