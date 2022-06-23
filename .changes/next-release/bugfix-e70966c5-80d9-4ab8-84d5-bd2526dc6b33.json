@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix .NET Lambda debugging regression in 2022.1.1"
-}

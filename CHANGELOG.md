@@ -1,3 +1,9 @@
+# _1.45_ (2022-06-23)
+- **(Feature)** [CodeWhisperer](https://aws.amazon.com/codewhisperer) uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
+- **(Feature)** Added 2022.2 support
+- **(Bug Fix)** Fix .NET Lambda debugging regression in 2022.1.1
+- **(Removal)** Removed support for 2021.1.x IDEs
+
 # _1.44_ (2022-06-01)
 - **(Feature)** Add warning to indicate time delay in SQS queue deletion
 - **(Bug Fix)** Fixed issue with uncaught exception in resource cache ([#3098](https://github.com/aws/aws-toolkit-jetbrains/issues/3098))

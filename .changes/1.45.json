@@ -1,0 +1,17 @@
+{
+  "date" : "2022-06-23",
+  "version" : "1.45",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "[CodeWhisperer](https://aws.amazon.com/codewhisperer) uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript."
+  }, {
+    "type" : "feature",
+    "description" : "Added 2022.2 support"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix .NET Lambda debugging regression in 2022.1.1"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for 2021.1.x IDEs"
+  } ]
+}
