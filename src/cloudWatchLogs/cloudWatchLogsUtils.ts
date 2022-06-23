@@ -73,17 +73,6 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
     } else {
         throw new Error(`URI' ${uri} is not parseable for CloudWatch Logs`)
     }
-
-    // splits into <CLOUDWATCH_LOGS_SCHEME>:"<groupName>:<streamName>:<regionName>"
-    // if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME || parts.length !== 3) {
-    //     throw new Error(`URI ${uri} is not parseable for CloudWatch Logs`)
-    // }
-
-    // return {
-    //     groupName: parts[0],
-    //     regionName: parts[1],
-    //     streamName: parts[2],
-    // }
 }
 
 /**

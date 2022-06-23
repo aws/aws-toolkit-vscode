@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { CloudWatchAPIParameters, LogStreamRegistry } from '../registry/logStreamRegistry'
-import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
+import { convertLogGroupInfoToUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createInputBox } from '../../shared/ui/inputPrompter'
@@ -31,6 +31,8 @@ export async function searchLogGroup(
     const defaultRegion = await AWSContext.getCredentialDefaultRegion()
     const filterParameters = await new SearchLogGroupWizard(node, regionOptions, defaultRegion).run()
 
+    // const recentNode = AWSContext.mostRecentNode
+    // console.log(recentNode)
     // If no input is given, skip over?
     // TODO: Most likely better option here.
     if (!filterParameters) {
@@ -51,12 +53,14 @@ export async function searchLogGroup(
     const uri = convertLogGroupInfoToUri('filterLogEvents', logGroupInfo.groupName, logGroupInfo.regionName, {
         filterParameters: filterParameters,
     })
-    console.log(logGroupInfo)
     await registry.registerLog(uri, logGroupInfo, filterParameters)
-    //await registry.registerLogFilter(uri, filterParameters, logGroupInfo)
+
     const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+
     vscode.languages.setTextDocumentLanguage(doc, 'log')
-    await vscode.window.showTextDocument(doc, { preview: false })
+    const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+    registry.addTextEditor(uri, textEditor)
+    registry.highlightDocument(uri)
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
@@ -110,8 +114,8 @@ function createRegionPrompter(regionOptions: Array<string>) {
             data: option,
         })
     }
-
-    return createQuickPick(quickPickOptions)
+    const prompter = createQuickPick(quickPickOptions)
+    return prompter
 }
 
 export interface SearchLogGroupWizardResponse {

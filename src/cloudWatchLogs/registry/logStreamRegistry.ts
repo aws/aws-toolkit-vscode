@@ -21,12 +21,43 @@ import globals from '../../shared/extensionGlobals'
 /**
  * Class which contains CRUD operations and persistence for CloudWatch Logs streams.
  */
+
+function findOccurencesOf(document: vscode.TextDocument, keyword: string): vscode.Range[] {
+    var ranges: vscode.Range[] = []
+    let lineNum = 0
+
+    keyword = keyword.toLowerCase()
+
+    while (lineNum < document.lineCount) {
+        let currentLine = document.lineAt(lineNum)
+        let currentLineText = currentLine.text.toLowerCase()
+        let indexOccurrence = currentLineText.indexOf(keyword, 0)
+
+        while (indexOccurrence >= 0) {
+            ranges.push(
+                new vscode.Range(
+                    new vscode.Position(lineNum, indexOccurrence),
+                    new vscode.Position(lineNum, indexOccurrence + keyword.length)
+                )
+            )
+            indexOccurrence = currentLineText.indexOf(keyword, indexOccurrence + 1)
+        }
+        lineNum += 1
+    }
+    return ranges
+}
+
 export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
     public constructor(
         private readonly configuration: CloudWatchLogsSettings,
-        private readonly activeStreams: Map<string, CloudWatchLogData> = new Map<string, CloudWatchLogData>()
+        private readonly activeStreams: Map<string, CloudWatchLogData> = new Map<string, CloudWatchLogData>(),
+        private textEditors: Map<string, vscode.TextEditor> = new Map<string, vscode.TextEditor>()
     ) {}
+
+    public addTextEditor(uri: vscode.Uri, textEditor: vscode.TextEditor) {
+        this.textEditors.set(uri.path, textEditor)
+    }
 
     /**
      * Event fired on log content change
@@ -113,6 +144,22 @@ export class LogStreamRegistry {
         return output
     }
 
+    public getHighlighter() {
+        return vscode.window.createTextEditorDecorationType({ backgroundColor: 'yellow' })
+    }
+
+    public highlightDocument(uri: vscode.Uri): void {
+        const textEditor = this.textEditors.get(uri.path)
+        const filterPattern = this.activeStreams.get(uri.path)?.apiParameters?.filterPattern
+
+        if (textEditor && filterPattern) {
+            const highlighter = this.getHighlighter()
+            const ranges = findOccurencesOf(textEditor.document, filterPattern)
+            textEditor.setDecorations(highlighter, ranges)
+            console.log('Updated decorations')
+        }
+    }
+
     public async updateLog(uri: vscode.Uri, headOrTail: 'head' | 'tail' = 'tail'): Promise<void> {
         const stream = this.getLog(uri)
 
@@ -157,7 +204,7 @@ export class LogStreamRegistry {
                     token: logEvents.nextForwardToken,
                 }
             }
-
+            this.highlightDocument(uri)
             this.setLog(uri, {
                 ...stream,
                 ...tokens,
