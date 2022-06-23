@@ -26,6 +26,10 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
         this.registryNodes = new Map<string, RegistryItemNode>()
     }
 
+    public determineRegion(): string {
+        return this.regionCode
+    }
+
     private setLabel() {
         this.label = `${this.documentType}` + ' Documents'
     }

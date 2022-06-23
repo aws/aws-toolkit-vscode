@@ -16,9 +16,7 @@ export abstract class AWSTreeNodeBase extends TreeItem {
     }
 
     public determineRegion(): string {
-        console.log('No Implemented Method to Determine region.')
-        console.log(this)
-        return ''
+        return 'None'
     }
 
     public refresh(): void {

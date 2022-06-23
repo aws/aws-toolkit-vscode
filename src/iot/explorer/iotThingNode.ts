@@ -43,6 +43,10 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         this.contextValue = 'awsIotThingNode'
     }
 
+    public determineRegion(): string {
+        return this.iot.determineRegion()
+    }
+
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),

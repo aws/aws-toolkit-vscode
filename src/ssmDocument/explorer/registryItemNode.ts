@@ -34,6 +34,10 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         this.documentNodes = new Map<string, DocumentItemNode>()
     }
 
+    public determineRegion(): string {
+        return this.regionCode
+    }
+
     private setLabel() {
         this.label = this.registryName
         this.iconPath = ''

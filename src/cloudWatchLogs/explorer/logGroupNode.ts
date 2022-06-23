@@ -24,6 +24,10 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
         this.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG
     }
 
+    public determineRegion(): string {
+        return this.regionCode
+    }
+
     public update(logGroup: CloudWatchLogs.LogGroup): void {
         this.logGroup = logGroup
         this.label = this.logGroup.logGroupName || ''

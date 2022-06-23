@@ -12,4 +12,12 @@ export class PlaceholderNode extends AWSTreeNodeBase {
         super(label)
         this.tooltip = tooltip
     }
+
+    public determineRegion(): string {
+        if (parent) {
+            return this.parent.determineRegion()
+        } else {
+            return 'None'
+        }
+    }
 }
