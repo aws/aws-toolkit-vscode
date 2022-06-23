@@ -6,7 +6,6 @@
 import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, QuickInputToggleButton } from '../../shared/ui/buttons'
-
 import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
 import { Prompter } from '../../shared/ui/prompter'

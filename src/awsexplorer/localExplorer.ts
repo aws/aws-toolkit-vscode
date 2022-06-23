@@ -11,13 +11,14 @@ import { once } from '../shared/utilities/functionUtils'
 import { AppNode } from '../cdk/explorer/nodes/appNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { initNodes } from '../caws/explorer'
+import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 
 export interface RootNode extends TreeNode {
     canShow?(): Promise<boolean> | boolean
     readonly onDidChangeVisibility?: vscode.Event<void>
 }
 
-const roots: RootNode[] = [cdkNode]
+const roots: RootNode[] = [cdkNode, codewhispererNode]
 
 async function getChildren(roots: RootNode[]) {
     const nodes: TreeNode[] = []

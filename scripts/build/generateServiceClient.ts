@@ -218,6 +218,10 @@ ${fileContents}
             serviceJsonPath: 'types/REMOVED.normal.json',
             serviceName: 'ClientMde',
         },
+        {
+            serviceJsonPath: 'src/codewhisperer/client/service-2.json',
+            serviceName: 'CodeWhispererClient',
+        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()
