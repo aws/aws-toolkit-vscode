@@ -10,6 +10,7 @@ import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { CredentialsShim } from '../credentials/loginManager'
 import { Region } from 'aws-sdk/clients/budgets'
+import { AWSTreeNodeBase } from './treeview/nodes/awsTreeNodeBase'
 
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
@@ -57,6 +58,25 @@ export class DefaultAwsContext implements AwsContext {
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
         this.lastTouchedRegion = 'None'
+    }
+
+    public guessDefaultRegion(node?: AWSTreeNodeBase): string {
+        /*
+        Checks in order of precedence
+        1. Check if there is only one region on side bar. 
+        2. Check the lastTouchedRegion from the nodes. 
+        3. Check if the node passed in has region. 
+        4. 
+        */
+        if (this.explorerRegions.length === 1) {
+            return this.explorerRegions[0]
+        } else if (node) {
+            return node.determineRegion()
+        } else if (this.lastTouchedRegion !== 'None') {
+            return this.lastTouchedRegion
+        } else {
+            return this.getCredentialDefaultRegion()
+        }
     }
 
     public setLastTouchedRegion(region: string) {
