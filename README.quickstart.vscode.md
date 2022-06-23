@@ -71,7 +71,7 @@ For full details see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit-
 
 Once enabled, CodeWhisperer will provide code suggestions automatically and can also be requested manually using option+c (mac) / alt+c (PC). CodeWhisperer may provide multiple suggestions; use the left- and right-arrow to navigate between suggestions. To accept a suggestion and add it to your file, press Tab. To dismiss a suggestion, press escape or keep typing.
 
-In addition to providing code suggestions within your current file, CodeWhisperer can scan your entire package to identify security issues. To initiate a security scan, go to the AWS CodeWhisperer section in the **Developer Tools** panel and select “Run security scan”. Results will be listed in the Problems panel.
+In addition to providing code suggestions within your current file, CodeWhisperer can scan your entire package to identify security issues. To initiate a security scan, go to the CodeWhisperer section in the **Developer Tools** panel and select “Run security scan”. Results will be listed in the Problems panel.
 
 ![CodeWhisperer](./resources/marketplace/vscode/overview-codewhisperer.png)
 
