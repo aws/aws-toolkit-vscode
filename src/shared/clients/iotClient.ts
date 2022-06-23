@@ -41,6 +41,9 @@ export class DefaultIotClient {
         private readonly iotProvider: (regionCode: string) => Promise<Iot> = createSdkClient
     ) {}
 
+    public determineRegion(): string {
+        return this.regionCode
+    }
     /**
      * Lists Things owned by the client.
      *

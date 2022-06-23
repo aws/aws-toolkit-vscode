@@ -28,6 +28,10 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
         this.apiNodes = new Map<string, RestApiNode>()
     }
 
+    public determineRegion(): string {
+        return this.regionCode
+    }
+
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

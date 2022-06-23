@@ -69,6 +69,10 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
         )
     }
 
+    public determineRegion(): string {
+        return this.regionCode
+    }
+
     protected async getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
         return toMap(await toArrayAsync(client.describeLogGroups()), configuration => configuration.logGroupName)
     }

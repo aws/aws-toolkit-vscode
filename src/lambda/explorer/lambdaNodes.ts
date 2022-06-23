@@ -35,6 +35,10 @@ export class LambdaNode extends AWSTreeNodeBase {
         this.contextValue = 'awsLambdaNode'
     }
 
+    public determineRegion(): string {
+        return this.regionCode
+    }
+
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

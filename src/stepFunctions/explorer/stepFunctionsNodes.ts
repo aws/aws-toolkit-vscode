@@ -47,6 +47,10 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
         sfnNodeMap.set(regionCode, this)
     }
 
+    public determineRegion(): string {
+        return this.regionCode
+    }
+
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

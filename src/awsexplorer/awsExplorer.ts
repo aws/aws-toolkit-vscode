@@ -77,6 +77,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     }
 
     public getTreeItem(element: AWSTreeNodeBase): vscode.TreeItem {
+        element.determineRegion()
         return element
     }
 

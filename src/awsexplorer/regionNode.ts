@@ -37,8 +37,13 @@ export class RegionNode extends AWSTreeNodeBase {
     public get regionCode(): string {
         return this.region.id
     }
+
     public get regionName(): string {
         return this.region.name
+    }
+
+    public determineRegion(): string {
+        return this.regionCode
     }
 
     public constructor(region: Region, regionProvider: RegionProvider) {

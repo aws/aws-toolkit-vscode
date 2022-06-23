@@ -9,6 +9,7 @@ import { regionSettingKey } from './constants'
 import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { CredentialsShim } from '../credentials/loginManager'
+import { Region } from 'aws-sdk/clients/budgets'
 
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials

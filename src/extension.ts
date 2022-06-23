@@ -224,7 +224,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateEcr(context)
 
-        await activateCloudWatchLogs(context, settings)
+        await activateCloudWatchLogs(extContext, settings)
 
         await activateDynamicResources(context)
 
