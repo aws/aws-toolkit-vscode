@@ -16,6 +16,7 @@ export abstract class AWSTreeNodeBase extends TreeItem {
     }
 
     public determineRegion(): string {
+        console.log(this)
         return 'None'
     }
 

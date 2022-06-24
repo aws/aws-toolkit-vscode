@@ -64,6 +64,10 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
             : undefined
     }
 
+    public determineRegion(): string {
+        return this.parent.determineRegion()
+    }
+
     /**
      * See {@link S3Client.downloadFile}.
      */

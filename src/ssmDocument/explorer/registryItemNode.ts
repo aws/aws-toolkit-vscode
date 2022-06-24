@@ -34,10 +34,6 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         this.documentNodes = new Map<string, DocumentItemNode>()
     }
 
-    public determineRegion(): string {
-        return this.regionCode
-    }
-
     private setLabel() {
         this.label = this.registryName
         this.iconPath = ''
@@ -46,6 +42,10 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     public update(registryName: string): void {
         this.registryName = registryName
         this.setLabel()
+    }
+
+    public determineRegion(): string {
+        return this.regionCode
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {

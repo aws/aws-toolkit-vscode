@@ -88,6 +88,10 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
         this.versionNodes = new Map<string, IotPolicyVersionNode>()
     }
 
+    public determineRegion(): string {
+        return this.parent.determineRegion()
+    }
+
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
