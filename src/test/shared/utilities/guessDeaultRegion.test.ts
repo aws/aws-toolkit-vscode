@@ -33,8 +33,8 @@ describe('guessDefaultRegion', function () {
         })
         await tester.result(selection)
 
-        let fakeContext = { globalState: new FakeMemento() } as any as vscode.ExtensionContext
-        let semiFakeAwsContext: AwsContext = new DefaultAwsContext(fakeContext)
+        const fakeContext = { globalState: new FakeMemento() } as any as vscode.ExtensionContext
+        const semiFakeAwsContext: AwsContext = new DefaultAwsContext(fakeContext)
         const result = semiFakeAwsContext.guessDefaultRegion()
 
         if (result !== selection.id) {
