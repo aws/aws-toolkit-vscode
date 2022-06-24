@@ -1,10 +1,28 @@
 <template>
     <div>
         <div id="summary-grid">
+            <div id="alias" style="grid-area: alias">
+                <span class="label-context soft">Alias</span>
+                <b class="mb-8" style="display: block" v-if="!!summary.alias">
+                    {{ summary.alias }}
+                </b>
+                <button
+                    id="edit-alias"
+                    class="button-theme-secondary"
+                    type="button"
+                    :disabled="!isConnected"
+                    @click="$emit('editSettings', 'alias')"
+                >
+                    {{ summary.alias ? 'Edit Alias' : 'Add Alias' }}
+                </button>
+            </div>
             <div id="branch" style="grid-area: branch">
                 <span class="label-context soft">Branch</span>
-                <b>{{ branchName }}</b>
-                <!--TODO: add link here-->
+                <b class="mb-8" style="display: block">{{ branchName }}</b>
+                <button class="button-theme-secondary" @click="openBranch">
+                    <!--TODO: support 3P links?-->
+                    Open Branch in Code.AWS
+                </button>
             </div>
             <div id="project" style="grid-area: project">
                 <span class="label-context soft">Project</span>
@@ -25,8 +43,7 @@
             :disabled="!isConnected"
             @click="stopWorkspace"
         >
-            <i id="stop-icon" class="icon mr-2"></i>
-            {{ 'Stop' }}
+            <i id="stop-icon" class="icon mr-2"></i>Stop
         </button>
         <!--TODO: add generic 'delete thing' prompt then enable this-->
         <button
@@ -45,14 +62,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
-import saveData from '../../webviews/mixins/saveData'
 import { createClass, createType } from '../../webviews/util'
 import { CawsConfigureWebview } from './configure/backend'
-import { CawsDevEnv } from '../../shared/clients/cawsClient'
+import { DevelopmentWorkspace } from '../../shared/clients/cawsClient'
 
 const client = WebviewClientFactory.create<CawsConfigureWebview>()
 
-type PartialModel = Pick<CawsDevEnv, 'alias' | 'org' | 'project' | 'repositories' | 'status' | 'id'>
+type PartialModel = Pick<DevelopmentWorkspace, 'alias' | 'org' | 'project' | 'repositories' | 'status' | 'id'>
 export const VueModel = createClass<PartialModel>({
     org: { name: '' },
     project: { name: '' },
@@ -63,12 +79,15 @@ export const VueModel = createClass<PartialModel>({
 
 export default defineComponent({
     name: 'workspace-summary',
-    mixins: [saveData],
     props: {
         modelValue: {
             type: createType(VueModel),
             required: true,
         },
+    },
+    emits: {
+        editSettings: (key: 'alias') => key !== undefined,
+        'update:modelValue': (model: PartialModel) => model !== undefined,
     },
     computed: {
         status() {
@@ -85,7 +104,7 @@ export default defineComponent({
         },
     },
     methods: {
-        update(key: keyof InstanceType<typeof VueModel>, value: any) {
+        update<K extends keyof PartialModel>(key: K, value: PartialModel[K]) {
             this.$emit('update:modelValue', { ...this.modelValue, [key]: value })
         },
         // Need to move these two remote calls up into the root component.
@@ -105,6 +124,9 @@ export default defineComponent({
                 this.update('status', 'RUNNING')
             }
         },
+        async openBranch() {
+            return client.openBranch()
+        },
     },
 })
 </script>
@@ -114,9 +136,9 @@ export default defineComponent({
     display: grid;
     justify-content: left;
     grid-template-areas:
-        'branch project'
-        'status .';
-    gap: 16px 24px;
+        'alias branch'
+        'status project';
+    gap: 16px 160px;
 }
 #edit-compute-settings {
     margin-top: 16px;

@@ -9,10 +9,11 @@ import * as assert from 'assert'
 import { register } from '../../caws/uriHandlers'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { CawsDevEnv, ConnectedCawsClient } from '../../shared/clients/cawsClient'
+import { ConnectedCawsClient } from '../../shared/clients/cawsClient'
 import { anything, instance, mock, reset, verify, when } from 'ts-mockito'
 import { createTestWindow, TestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
+import { DevEnvId } from '../../caws/model'
 
 type Stub<T extends (...args: any[]) => any> = sinon.SinonStub<Parameters<T>, ReturnType<T>>
 
@@ -20,7 +21,7 @@ function createCloneUri(target: string): vscode.Uri {
     return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/clone?url=${encodeURIComponent(target)}`)
 }
 
-function createConnectUri(env: Pick<CawsDevEnv, 'id' | 'org' | 'project'>): vscode.Uri {
+function createConnectUri(env: DevEnvId): vscode.Uri {
     const params = {
         developmentWorkspaceId: env.id,
         organizationName: env.org.name,

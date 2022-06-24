@@ -57,7 +57,6 @@ _start_session_development_workspace() {
     "id": "$WORKSPACE_ID", 
     "projectName": "$PROJECT_NAME", 
     "organizationName": "$ORGANIZATION_NAME", 
-    "developmentWorkspaceId": "$WORKSPACE_ID", 
     "sessionConfiguration": { 
         "sessionType": "SSH" 
     }

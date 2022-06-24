@@ -21,7 +21,7 @@
         </div>
     </transition>
     <settings-panel id="summary-panel" title="Details">
-        <summary-panel v-model="details"></summary-panel>
+        <summary-panel v-model="details" @edit-settings="editCompute"></summary-panel>
     </settings-panel>
     <settings-panel
         id="dev-file-panel"
@@ -64,6 +64,7 @@ const model = {
     compute: new ComputeModel(),
     restarting: false,
     needsRestart: false,
+    branchUrl: '',
 }
 
 export default defineComponent({
@@ -108,9 +109,16 @@ export default defineComponent({
     methods: {
         async editCompute(key: keyof WorkspaceSettings) {
             const previous = this.compute[key as Exclude<typeof key, 'alias'>]
-            const resp = await client.editSetting(this.compute, key)
-            this.needsRestart = this.needsRestart || previous !== resp[key]
-            this.compute = new ComputeModel(resp as SettingsForm)
+            const current = { ...this.compute, alias: this.details.alias }
+            const resp = await client.editSetting(current, key)
+
+            if (key !== 'alias') {
+                this.needsRestart = this.needsRestart || previous !== resp[key]
+                this.compute = new ComputeModel(resp as SettingsForm)
+            } else if (resp.alias !== undefined) {
+                this.details.alias = resp.alias
+                await client.updateWorkspace(this.details, { alias: this.details.alias })
+            }
         },
         async restart() {
             this.restarting = true
@@ -121,6 +129,7 @@ export default defineComponent({
 
                 // SDK rejects extraneous fields
                 await client.updateWorkspace(this.details, {
+                    alias: this.details.alias,
                     instanceType: this.compute.instanceType,
                     inactivityTimeoutMinutes: this.compute.inactivityTimeoutMinutes,
                 })

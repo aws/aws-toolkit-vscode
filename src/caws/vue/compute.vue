@@ -11,7 +11,7 @@
                 <button
                     type="button"
                     id="edit-size"
-                    class="button-size button-theme-secondary mt-8"
+                    class="button-theme-secondary mt-8"
                     @click="$emit('editSettings', 'instanceType')"
                 >
                     Edit Size
@@ -25,7 +25,7 @@
                 <button
                     type="button"
                     id="edit-timeout"
-                    class="button-size button-theme-secondary mt-8"
+                    class="button-theme-secondary mt-8"
                     @click="$emit('editSettings', 'inactivityTimeoutMinutes')"
                 >
                     Edit Timeout Length

@@ -11,7 +11,7 @@ import { isValidResponse } from '../shared/wizards/wizard'
 
 // CAWS imports
 // Planning on splitting this file up.
-import { CawsDevEnv, ConnectedCawsClient } from '../shared/clients/cawsClient'
+import { DevelopmentWorkspace, ConnectedCawsClient } from '../shared/clients/cawsClient'
 import * as glob from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
@@ -224,14 +224,13 @@ async function promptVsix(
         Test = 3,
     }
 
-    const extPath =
-        ctx.extensionContext.extensionMode === ExtensionMode.Development
-            ? ctx.extensionContext.extensionPath
-            : folders[0].fsPath
+    const isDevelopmentWindow = ctx.extensionContext.extensionMode === ExtensionMode.Development
+    const extPath = isDevelopmentWindow ? ctx.extensionContext.extensionPath : folders[0].fsPath
 
     const packageNew = {
         label: 'Create new VSIX',
         detail: extPath,
+        description: 'Important: this currently breaks any running `watch` tasks',
         skipEstimate: true,
         data: async () => {
             progress?.report({ message: 'Running package script...' })
@@ -262,9 +261,6 @@ async function promptVsix(
 
                 reject(new Error('Did not get VSIX version from "npm run package"'))
             })
-
-            // post package 'clean-up'
-            new ChildProcess('npm', ['run', 'buildScripts']).run()
 
             return vsixUri
         },
@@ -319,7 +315,7 @@ async function installVsix(
     ctx: ExtContext,
     client: ConnectedCawsClient,
     progress: LazyProgress<{ message: string }>,
-    env: CawsDevEnv
+    env: DevelopmentWorkspace
 ): Promise<void> {
     const resp = await promptVsix(ctx, progress).then(r => r?.fsPath)
 

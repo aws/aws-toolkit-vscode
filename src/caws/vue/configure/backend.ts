@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import {
+    createAliasPrompter,
     createInstancePrompter,
     createTimeoutPrompter,
     getAllInstanceDescriptions,
@@ -19,6 +20,8 @@ import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { GetStatusResponse } from '../../../shared/clients/mdeEnvironmentClient'
 import { tryRestart } from '../../../mde/mdeCommands'
 import { getCawsWorkspaceArn } from '../../../shared/vscode/env'
+import { openCawsUrl } from '../../utils'
+import { assertHasProps } from '../../../shared/utilities/tsUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -93,12 +96,27 @@ export class CawsConfigureWebview extends VueWebview {
 
         switch (key) {
             case 'alias':
-                throw new Error('Not Implemented')
+                return prompt(createAliasPrompter())
             case 'instanceType':
                 return prompt(createInstancePrompter())
             case 'inactivityTimeoutMinutes':
                 return prompt(createTimeoutPrompter())
         }
+    }
+
+    public openBranch(): void {
+        const repo = this.workspace.summary.repositories?.[0]
+        assertHasProps(repo, 'branchName')
+        openCawsUrl({
+            type: 'branch',
+            name: repo.branchName,
+            repo: {
+                type: 'repo',
+                org: this.workspace.summary.org,
+                project: this.workspace.summary.project,
+                name: repo.repositoryName,
+            },
+        })
     }
 }
 

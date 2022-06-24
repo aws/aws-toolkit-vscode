@@ -116,14 +116,14 @@ export class SearchParams extends URLSearchParams {
         return this.getAs(name, mapper)!
     }
 
-    public getFromKeys<T extends readonly string[]>(keys: T): { [P in T[number]]: string | undefined } {
+    public getFromKeys<T extends readonly string[]>(...keys: T): { [P in T[number]]: string | undefined } {
         return keys.reduce(
             (a, b: T[number]) => ((a[b] = super.get(b) ?? undefined), a),
             {} as { [P in T[number]]: string | undefined }
         )
     }
 
-    public getFromKeysOrThrow<T extends readonly string[]>(keys: T): { [P in T[number]]: string } {
+    public getFromKeysOrThrow<T extends readonly string[]>(...keys: T): { [P in T[number]]: string } {
         return keys.reduce(
             (a, b: T[number]) => ((a[b] = this.getOrThrow(b, `"${b}" must be provided`)), a),
             {} as { [P in T[number]]: string }

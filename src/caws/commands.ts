@@ -17,7 +17,7 @@ import { getLogger } from '../shared/logger'
 import { openCawsUrl } from './utils'
 import { CawsAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
-import { CawsClient, CawsDevEnv, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
+import { CawsClient, DevelopmentWorkspace, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
 import {
     createCawsEnvProvider,
     createClientFactory,
@@ -124,13 +124,13 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     }
     const env = await client.createDevEnv(args)
     try {
-        await client.startEnvironmentWithProgress(
-            {
-                id: env.id,
-                ...args,
-            },
-            'RUNNING'
-        )
+        const request = {
+            ...env,
+            projectName: env.project.name,
+            organizationName: env.org.name,
+        }
+
+        await client.startEnvironmentWithProgress(request, 'RUNNING')
     } catch (err) {
         showViewLogsMessage(
             localize(
@@ -143,7 +143,7 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     }
 }
 
-export async function openDevEnv(client: ConnectedCawsClient, env: CawsDevEnv): Promise<void> {
+export async function openDevEnv(client: ConnectedCawsClient, env: DevelopmentWorkspace): Promise<void> {
     const runningEnv = await client.startEnvironmentWithProgress(
         {
             id: env.id,

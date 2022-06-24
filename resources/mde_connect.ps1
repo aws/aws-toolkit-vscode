@@ -42,7 +42,6 @@ function StartSessionDevelopmentWorkspace {
     "id": "$WorkspaceId", 
     "projectName": "$Project", 
     "organizationName": "$Organization", 
-    "developmentWorkspaceId": "$WorkspaceId", 
     "sessionConfiguration": { 
         "sessionType": "SSH" 
     }

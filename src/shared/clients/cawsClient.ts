@@ -54,17 +54,13 @@ export function getCawsConfig(): CawsConfig {
     }
 }
 
-/** CAWS-MDE developer environment. */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface CawsDevEnv extends caws.DevelopmentWorkspaceSummary {
+export interface DevelopmentWorkspace extends caws.DevelopmentWorkspaceSummary {
     readonly type: 'env'
-    readonly id: string // Alias of developmentWorkspaceId.
-    readonly name: string
-    readonly description?: string
-    readonly alias?: string // Not on the model yet
+    readonly id: string
     readonly org: Pick<CawsOrg, 'name'>
     readonly project: Pick<CawsProject, 'name'>
 }
+
 /** CAWS-MDE developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspaceResponse {}
@@ -89,10 +85,29 @@ export interface CawsRepo extends caws.SourceRepositorySummary {
     readonly project: Pick<CawsProject, 'name'>
 }
 
-export type CawsResource = CawsOrg | CawsProject | CawsRepo | CawsDevEnv
+export interface CawsBranch extends caws.SourceBranchSummary {
+    readonly type: 'branch'
+    readonly name: string
+    readonly repo: CawsRepo
+}
+
+export type CawsResource = CawsOrg | CawsProject | CawsRepo | CawsBranch | DevelopmentWorkspace
+
+function intoDevelopmentWorkspace(
+    organizationName: string,
+    projectName: string,
+    summary: caws.DevelopmentWorkspaceSummary
+): DevelopmentWorkspace {
+    return {
+        type: 'env',
+        org: { name: organizationName },
+        project: { name: projectName },
+        ...summary,
+    }
+}
 
 async function createCawsClient(
-    authCookie: string | undefined,
+    bearerToken: string | undefined,
     regionCode = getCawsConfig().region,
     endpoint = getCawsConfig().endpoint
 ): Promise<caws> {
@@ -107,9 +122,9 @@ async function createCawsClient(
         credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
     } as ServiceConfigurationOptions)) as caws
     c.setupRequestListeners = r => {
-        if (authCookie) {
+        if (bearerToken) {
             // TODO: remove this when using an SDK that supports bearer auth
-            r.httpRequest.headers['Authorization'] = `Bearer ${authCookie}`
+            r.httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
         }
     }
 
@@ -365,30 +380,13 @@ class CawsClientInternal {
      * CAWS-MDE
      * Gets a flat list of all workspaces for the given CAWS project.
      */
-    public listDevEnvs(proj: CawsProject): AsyncCollection<CawsDevEnv[]> {
+    public listDevEnvs(proj: CawsProject): AsyncCollection<DevelopmentWorkspace[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
         const requester = async (request: caws.ListDevelopmentWorkspaceRequest) =>
             this.call(this.sdkClient.listDevelopmentWorkspace(request), true, { items: [] })
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
 
-        const makeDescription = (env: caws.DevelopmentWorkspaceSummary) => {
-            return env.repositories
-                .map(r => {
-                    return `${r.repositoryName}:${r.branchName ?? ''}`
-                })
-                .join(', ')
-        }
-
-        return collection.map(envs =>
-            envs.map(env => ({
-                type: 'env',
-                name: env.id,
-                org: proj.org,
-                project: proj,
-                description: makeDescription(env),
-                ...env,
-            }))
-        )
+        return collection.map(envs => envs.map(s => intoDevelopmentWorkspace(proj.org.name, proj.name, s)))
     }
 
     /**
@@ -417,7 +415,7 @@ class CawsClientInternal {
     public listResources(resourceType: 'org'): AsyncCollection<CawsOrg[]>
     public listResources(resourceType: 'project'): AsyncCollection<CawsProject[]>
     public listResources(resourceType: 'repo'): AsyncCollection<CawsRepo[]>
-    public listResources(resourceType: 'env'): AsyncCollection<CawsDevEnv[]>
+    public listResources(resourceType: 'env'): AsyncCollection<DevelopmentWorkspace[]>
     public listResources(resourceType: CawsResource['type']): AsyncCollection<CawsResource[]> {
         // Don't really want to expose this apart of the `AsyncCollection` API yet
         // The semantics of concatenating async iterables is rather ambiguous
@@ -444,39 +442,26 @@ class CawsClientInternal {
                 return mapInner(this.listResources('project'), p =>
                     this.listRepos({ projectName: p.name, organizationName: p.org.name })
                 )
+            case 'branch':
+                throw new Error('Listing branches is not currently supported')
             case 'env':
                 return mapInner(this.listResources('project'), p => this.listDevEnvs(p))
         }
     }
 
     /** CAWS-MDE */
-    public async createDevEnv(args: caws.CreateDevelopmentWorkspaceRequest): Promise<CawsDevEnv> {
+    public async createDevEnv(args: caws.CreateDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
         if (!args.ideRuntimes || args.ideRuntimes.length === 0) {
-            throw Error('missing ideRuntimes')
+            throw new Error('missing ideRuntimes')
         }
         const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
-        if (!r.developmentWorkspaceId && !r.id) {
-            throw new Error('unable to get the id of the workspace')
-        }
-        const workspaceId = r.id ?? (r.developmentWorkspaceId as string)
-        const env = await this.getDevEnv({
-            id: workspaceId,
+        assertHasProps(r, 'id')
+
+        return this.getDevEnv({
+            id: r.id,
             organizationName: args.organizationName,
             projectName: args.projectName,
         })
-        if (!env) {
-            throw Error('created environment but failed to get it')
-        }
-
-        return {
-            ...env,
-            id: workspaceId,
-            creatorId: '',
-            ide: args.ideRuntimes[0],
-            lastUpdatedTime: new Date(),
-            repositories: args.repositories,
-            // status?: String // TODO: get status
-        }
     }
 
     /** CAWS-MDE */
@@ -505,20 +490,13 @@ class CawsClientInternal {
     }
 
     /** CAWS-MDE */
-    public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<CawsDevEnv> {
+    public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
         const a = { ...args }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
         const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a), false)
 
-        return {
-            type: 'env',
-            name: a.id,
-            developmentWorkspaceId: a.developmentWorkspaceId,
-            org: { name: args.organizationName },
-            project: { name: args.projectName },
-            ...r,
-        }
+        return intoDevelopmentWorkspace(args.organizationName, args.projectName, { ...args, ...r })
     }
 
     /** CAWS-MDE */
@@ -548,7 +526,7 @@ class CawsClientInternal {
         args: caws.StartDevelopmentWorkspaceRequest,
         status: string,
         timeout: Timeout = new Timeout(MDE_START_TIMEOUT)
-    ): Promise<CawsDevEnv | undefined> {
+    ): Promise<DevelopmentWorkspace | undefined> {
         let lastStatus: undefined | string
         try {
             const env = await this.getDevEnv(args)
@@ -599,7 +577,7 @@ class CawsClientInternal {
         return waitTimeout(pollMde, timeout, {
             onExpire: () => (
                 vscode.window.showErrorMessage(
-                    localize('AWS.caws.startFailed', 'Timeout waiting for MDE environment: {0}', args.id)
+                    localize('AWS.caws.startFailed', 'Timeout waiting for workspace: {0}', args.id)
                 ),
                 undefined
             ),

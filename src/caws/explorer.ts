@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
-import { CawsDevEnv } from '../shared/clients/cawsClient'
+import { DevelopmentWorkspace } from '../shared/clients/cawsClient'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createThemeIcon } from '../shared/treeview/utils'
 import { CawsAuthenticationProvider } from './auth'
@@ -27,7 +27,7 @@ const localCommands = [
     }),
 ]
 
-function getRemoteCommands(currentWorkspace: CawsDevEnv, devFileLocation: vscode.Uri) {
+function getRemoteCommands(currentWorkspace: DevelopmentWorkspace, devFileLocation: vscode.Uri) {
     return [
         CawsCommands.declared.stopWorkspace.build(currentWorkspace).asTreeNode({
             label: 'Stop Workspace',

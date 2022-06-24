@@ -17,7 +17,7 @@
                 <p v-if="type === 'configure'" class="mt-0 mb-0">{{ readonlyText }}</p>
             </div>
         </div>
-        <button id="edit-compute-settings" class="button-size button-theme-secondary" type="button" @click="emitEdit">
+        <button id="edit-compute-settings" class="button-theme-secondary" type="button" @click="emitEdit">
             Edit settings
         </button>
     </div>

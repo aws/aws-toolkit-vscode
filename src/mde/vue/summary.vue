@@ -19,7 +19,7 @@
         </div>
         <button
             id="toggle-state"
-            class="button-size button-theme-secondary mt-8"
+            class="button-theme-secondary mt-8"
             type="button"
             :disabled="!stable"
             @click="toggleState"
@@ -30,7 +30,7 @@
         </button>
         <button
             id="delete-environment"
-            class="button-size button-theme-secondary ml-8 mt-8"
+            class="button-theme-secondary ml-8 mt-8"
             type="button"
             :disabled="!stable"
             @click="deleteEnvironment"
@@ -39,7 +39,7 @@
         </button>
         <button
             id="connect-environment"
-            class="button-size button-theme-secondary ml-8 mt-8"
+            class="button-theme-secondary ml-8 mt-8"
             type="button"
             :disabled="!stable"
             v-if="!connected"

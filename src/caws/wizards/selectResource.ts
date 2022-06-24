@@ -25,26 +25,29 @@ export function createRepoLabel(r: caws.CawsRepo): string {
  * Maps CawsFoo objects to `vscode.QuickPickItem` objects.
  */
 export function asQuickpickItem<T extends caws.CawsResource>(resource: T): DataQuickPickItem<T> {
-    let label: string
-
-    if (resource.type === 'repo') {
-        label = createRepoLabel(resource)
-    } else if (resource.type === 'project') {
-        label = `${resource.org.name} / ${resource.name}`
-    } else if (resource.type === 'env') {
-        return { ...fromWorkspace(resource), data: resource }
-    } else {
-        label = `${resource.name}`
-    }
-
-    return {
-        label,
-        detail: resource.description,
-        data: resource,
+    switch (resource.type) {
+        case 'project':
+            return {
+                label: `${resource.org.name} / ${resource.name}`,
+                description: resource.description,
+                data: resource,
+            }
+        case 'repo':
+            return {
+                label: createRepoLabel(resource),
+                description: resource.description,
+                data: resource,
+            }
+        case 'env':
+            return { ...fromWorkspace(resource), data: resource }
+        case 'org':
+            return { label: resource.name, detail: resource.description, data: resource }
+        default:
+            return { label: resource.name, data: resource }
     }
 }
 
-function fromWorkspace(env: caws.CawsDevEnv): Omit<DataQuickPickItem<unknown>, 'data'> {
+function fromWorkspace(env: caws.DevelopmentWorkspace): Omit<DataQuickPickItem<unknown>, 'data'> {
     const repo = env.repositories[0]
 
     if (!repo) {
@@ -128,7 +131,7 @@ export function createRepoPrompter(
 export function createDevEnvPrompter(
     client: caws.ConnectedCawsClient,
     proj?: caws.CawsProject
-): QuickPickPrompter<caws.CawsDevEnv> {
+): QuickPickPrompter<caws.DevelopmentWorkspace> {
     const envs = proj ? client.listDevEnvs(proj) : client.listResources('env')
     const filtered = envs.map(arr => arr.filter(env => env.ide === 'VSCode'))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
@@ -166,6 +169,8 @@ export async function selectCawsResource<T extends ResourceType>(
                 return createProjectPrompter(client)
             case 'repo':
                 return createRepoPrompter(client)
+            case 'branch':
+                throw new Error('Picking a branch is not supported')
             case 'env':
                 return createDevEnvPrompter(client)
         }

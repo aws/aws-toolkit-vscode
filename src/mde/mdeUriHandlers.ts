@@ -30,7 +30,7 @@ export function activateUriHandlers(ctx: ExtContext, uriHandler: UriHandler): vo
 export function parseMdeUriParams(query: SearchParams): MdeUriParams {
     const result = {
         cloneUrl: query.getAs('cloneUrl', v => vscode.Uri.parse(v, true)),
-        ...query.getFromKeys(['id', 'branch'] as const),
+        ...query.getFromKeys('id', 'branch'),
     }
 
     if (result.branch !== undefined && result.cloneUrl === undefined) {

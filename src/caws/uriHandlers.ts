@@ -23,7 +23,7 @@ function parseCloneParams(query: SearchParams) {
 }
 
 function parseConnectParams(query: SearchParams) {
-    return query.getFromKeysOrThrow(['developmentWorkspaceId', 'organizationName', 'projectName'] as const)
+    return query.getFromKeysOrThrow('developmentWorkspaceId', 'organizationName', 'projectName')
 }
 
 async function handleCloneParams(
@@ -42,8 +42,9 @@ async function handleConnectParams(
     params: ReturnType<typeof parseConnectParams>
 ): Promise<void> {
     const env = await client.getDevEnv({
-        ...params,
+        projectName: params.projectName,
         id: params.developmentWorkspaceId,
+        organizationName: params.developmentWorkspaceId,
     })
 
     if (!env) {

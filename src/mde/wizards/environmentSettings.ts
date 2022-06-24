@@ -13,7 +13,7 @@ import {
     isDataQuickPickItem,
     QuickPickPrompter,
 } from '../../shared/ui/pickerPrompter'
-import { createInputBox } from '../../shared/ui/inputPrompter'
+import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { Prompter } from '../../shared/ui/prompter'
 import { applyOperation, compare, deepClone } from 'fast-json-patch'
 import { toTitleCase } from '../../shared/utilities/textUtilities'
@@ -74,6 +74,17 @@ export function createTimeoutPrompter(): Prompter<number> {
         placeholder: 'Timeout length in minutes',
         validateInput: resp => (Number.isNaN(Number(resp)) ? 'Timeout must be a number' : undefined),
     }).transform(r => Number(r))
+}
+
+export function createAliasPrompter(): InputBoxPrompter {
+    return createInputBox({
+        title: 'Edit Alias',
+        validateInput: value => {
+            if (value?.length > 128) {
+                return 'Workspace alias cannot be longer than 128 characters'
+            }
+        },
+    })
 }
 
 function createStoragePrompt(): QuickPickPrompter<typeof environmentOptions['persistentStorageSize'][number]> {

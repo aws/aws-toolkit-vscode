@@ -9,7 +9,7 @@ import { HOST_NAME_PREFIX } from '../mde/constants'
 import { EnvProvider, SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../mde/mdeModel'
 import {
     CawsClient,
-    CawsDevEnv,
+    DevelopmentWorkspace,
     CawsRepo,
     ConnectedCawsClient,
     createClient,
@@ -23,9 +23,9 @@ import { getCawsOrganizationName, getCawsProjectName } from '../shared/vscode/en
 import { writeFile } from 'fs-extra'
 import globals from '../shared/extensionGlobals'
 
-export type DevEnvId = Pick<CawsDevEnv, 'org' | 'project' | 'id'>
+export type DevEnvId = Pick<DevelopmentWorkspace, 'id' | 'org' | 'project'>
 
-export function getCawsSsmEnv(region: string, ssmPath: string, envs: CawsDevEnv): NodeJS.ProcessEnv {
+export function getCawsSsmEnv(region: string, ssmPath: string, envs: DevelopmentWorkspace): NodeJS.ProcessEnv {
     return Object.assign(
         {
             AWS_REGION: region,
@@ -44,7 +44,7 @@ export function getCawsSsmEnv(region: string, ssmPath: string, envs: CawsDevEnv)
 export function createCawsEnvProvider(
     client: ConnectedCawsClient,
     ssmPath: string,
-    env: CawsDevEnv,
+    env: DevelopmentWorkspace,
     useSshAgent: boolean = true
 ): EnvProvider {
     return async () => {
@@ -104,7 +104,7 @@ export function createClientFactory(authProvider: CawsAuthenticationProvider): (
 }
 
 export interface ConnectedWorkspace {
-    readonly summary: CawsDevEnv
+    readonly summary: DevelopmentWorkspace
     readonly environmentClient: RemoteEnvironmentClient
 }
 
@@ -179,7 +179,7 @@ export function toCawsGitUri(username: string, token: string, repo: RepoIdentifi
 export function associateWorkspace(
     client: ConnectedCawsClient,
     repos: AsyncCollection<CawsRepo>
-): AsyncCollection<CawsRepo & { developmentWorkspace?: CawsDevEnv }> {
+): AsyncCollection<CawsRepo & { developmentWorkspace?: DevelopmentWorkspace }> {
     return toCollection(async function* () {
         const workspaces = await client
             .listResources('env')

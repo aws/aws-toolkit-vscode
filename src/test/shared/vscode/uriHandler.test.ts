@@ -80,7 +80,7 @@ describe('SearchParams', function () {
     })
 
     it('can convert keys to an object', function () {
-        assert.deepStrictEqual(params.getFromKeys(['foo', 'baz', 'xyz']), { foo: 'bar', baz: 'qaz', xyz: undefined })
+        assert.deepStrictEqual(params.getFromKeys('foo', 'baz', 'xyz'), { foo: 'bar', baz: 'qaz', xyz: undefined })
     })
 
     it('can throw if the parameter does not exist', function () {
