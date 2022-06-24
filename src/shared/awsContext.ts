@@ -58,6 +58,7 @@ export class DefaultAwsContext implements AwsContext {
 
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
+
         this.lastTouchedRegion = 'None'
     }
 
