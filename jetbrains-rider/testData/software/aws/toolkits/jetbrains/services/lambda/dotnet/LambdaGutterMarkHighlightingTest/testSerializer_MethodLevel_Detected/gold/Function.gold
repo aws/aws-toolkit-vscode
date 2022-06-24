@@ -4,7 +4,7 @@ namespace HelloWorld
 {
     public class Function
     {
-        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
         public Product <AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>DescribeProduct</AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>(DescribeProductRequest request)
         {
             var catalogService = new CatalogService();

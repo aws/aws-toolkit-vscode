@@ -1,7 +1,7 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.CloudWatchLogsEvents;
 
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace HelloWorld
 {

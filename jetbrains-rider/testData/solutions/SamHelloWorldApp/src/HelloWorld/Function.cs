@@ -1,19 +1,17 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Threading.Tasks;
 
-using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace HelloWorld
 {
+
     public class Function
     {
 
@@ -24,25 +22,24 @@ namespace HelloWorld
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Add("User-Agent", "AWS Lambda .Net Client");
 
-            var stringTask = client.GetStringAsync("http://checkip.amazonaws.com/").ConfigureAwait(continueOnCapturedContext:false);
+            var msg = await client.GetStringAsync("http://checkip.amazonaws.com/").ConfigureAwait(continueOnCapturedContext:false);
 
-            var msg = await stringTask;
             return msg.Replace("\n","");
         }
 
-        public APIGatewayProxyResponse FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
+        public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
         {
 
-            string location = GetCallingIP().Result;
-            Dictionary<string, string> body = new Dictionary<string, string>
+            var location = await GetCallingIP();
+            var body = new Dictionary<string, string>
             {
                 { "message", "hello world" },
-                { "location", location },
+                { "location", location }
             };
 
             return new APIGatewayProxyResponse
             {
-                Body = JsonConvert.SerializeObject(body),
+                Body = JsonSerializer.Serialize(body),
                 StatusCode = 200,
                 Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
             };
