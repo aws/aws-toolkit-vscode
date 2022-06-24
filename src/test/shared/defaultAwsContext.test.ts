@@ -7,8 +7,11 @@ import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import { AwsContextCredentials } from '../../shared/awsContext'
 import { regionSettingKey } from '../../shared/constants'
-import { DefaultAwsContext } from '../../shared/awsContext'
+import { AwsContext, DefaultAwsContext } from '../../shared/awsContext'
 import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContext'
+import { createRegionPrompter } from '../../shared/ui/common/region'
+import { createCommonButtons } from '../../shared/ui/buttons'
+import { createQuickPickTester } from '../../test/shared/ui/testUtils'
 
 describe('DefaultAwsContext', function () {
     const testRegion1Value: string = 're-gion-1'
@@ -151,6 +154,39 @@ describe('DefaultAwsContext', function () {
 
             await testContext.setCredentials(awsCredentials)
         })
+    })
+
+    it('sets default region to last region from prompter', async function () {
+        const regions = [
+            { id: 'us-west-2', name: 'PDX' },
+            { id: 'us-east-1', name: 'IAD' },
+            { id: 'foo-bar-1', name: 'FOO' },
+        ]
+        const p = createRegionPrompter(regions, {
+            title: 'Select regionnnn',
+            buttons: createCommonButtons('https://aws.amazon.com/'),
+            defaultRegion: 'foo-bar-1',
+        })
+        const tester = createQuickPickTester(p)
+        const selection = regions[0]
+        tester.assertItems(['FOO', 'PDX', 'IAD'])
+        tester.acceptItem({
+            label: selection.name,
+            detail: selection.id,
+            data: selection,
+            skipEstimate: true,
+            description: '',
+        })
+        await tester.result(selection)
+
+        const testContext = await FakeExtensionContext.create()
+        const awsContext: AwsContext = new DefaultAwsContext(testContext)
+        const result = awsContext.guessDefaultRegion()
+
+        if (result !== selection.id) {
+            const errMsg = `guessDefaultRegion gave region ${result} while selection is region ${selection.id}`
+            throw new Error(errMsg)
+        }
     })
 
     function makeSampleAwsContextCredentials(): AwsContextCredentials {
