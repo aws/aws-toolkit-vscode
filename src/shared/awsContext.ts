@@ -44,7 +44,7 @@ export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
     private shim?: CredentialsShim
-    public lastTouchedRegion: string
+    public lastTouchedRegion: string | undefined
 
     // the collection of regions the user has expressed an interest in working with in
     // the current workspace
@@ -58,8 +58,6 @@ export class DefaultAwsContext implements AwsContext {
 
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
-
-        this.lastTouchedRegion = 'None'
     }
 
     public guessDefaultRegion(node?: AWSTreeNodeBase): string {
@@ -74,7 +72,7 @@ export class DefaultAwsContext implements AwsContext {
             return this.explorerRegions[0]
         } else if (node?.regionCode) {
             return node.regionCode
-        } else if (this.lastTouchedRegion !== 'None') {
+        } else if (this.lastTouchedRegion) {
             return this.lastTouchedRegion
         } else {
             const lastWizardResponse = globals.context.globalState.get<Region>('lastSelectedRegion')
