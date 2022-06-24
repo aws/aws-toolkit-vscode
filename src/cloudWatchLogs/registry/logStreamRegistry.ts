@@ -25,7 +25,7 @@ export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
 
     public constructor(
-        private readonly configuration: CloudWatchLogsSettings,
+        public readonly configuration: CloudWatchLogsSettings,
         private readonly activeStreams: Map<string, CloudWatchLogsData> = new Map<string, CloudWatchLogsData>()
     ) {}
 
@@ -112,7 +112,7 @@ export class LogStreamRegistry {
         const logGroupInfo = parseCloudWatchLogsUri(uri)
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-            const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, nextToken, stream.parameters)
+            const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
 
             const newData =
                 headOrTail === 'head'
@@ -186,25 +186,23 @@ export class LogStreamRegistry {
 
     public async getLogEventsFromUriComponents(
         logGroupInfo: CloudWatchLogsGroupInfo,
-        nextToken?: string,
-        parameters?: CloudWatchLogsParameters
+        parameters: CloudWatchLogsParameters,
+        nextToken?: string
     ): Promise<CloudWatchLogsResponse> {
         const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
             logGroupInfo.regionName
         )
-        console.log('client')
 
         if (!logGroupInfo.streamName) {
             throw new Error(
                 `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
             )
         }
-        const limit = this.configuration.get('limit', 1000)
         const response = await client.getLogEvents({
             logGroupName: logGroupInfo.groupName,
             logStreamName: logGroupInfo.streamName,
             nextToken,
-            limit: limit,
+            limit: parameters.limit,
         })
 
         return {
@@ -223,6 +221,7 @@ export type CloudWatchLogsGroupInfo = {
 export type CloudWatchLogsParameters = {
     filterPattern?: string
     startTime?: number
+    limit?: number
 }
 
 export type CloudWatchLogsResponse = {
@@ -233,8 +232,8 @@ export type CloudWatchLogsResponse = {
 
 export type CloudWatchLogsAction = (
     logGroupInfo: CloudWatchLogsGroupInfo,
-    nextToken?: string,
-    apiParameters?: CloudWatchLogsParameters
+    apiParameters: CloudWatchLogsParameters,
+    nextToken?: string
 ) => Promise<CloudWatchLogsResponse>
 
 export class CloudWatchLogsData {

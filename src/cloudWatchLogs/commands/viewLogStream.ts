@@ -39,7 +39,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
         const uri = convertLogGroupInfoToUri(logGroupInfo)
         const initialStreamData: CloudWatchLogsData = {
             data: [],
-            parameters: {},
+            parameters: { limit: registry.configuration.get('limit', 10000) },
             busy: false,
             logGroupInfo: logGroupInfo,
             retrieveLogsFunction: registry.getLogEventsFromUriComponents,
