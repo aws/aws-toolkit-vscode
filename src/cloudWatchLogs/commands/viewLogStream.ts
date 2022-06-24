@@ -17,7 +17,7 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { CloudWatchLogsData, LogStreamRegistry } from '../registry/logStreamRegistry'
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
 import globals from '../../shared/extensionGlobals'
 
@@ -31,12 +31,21 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
-        const uri = convertLogGroupInfoToUri(
-            logStreamResponse.logGroupName,
-            logStreamResponse.logStreamName,
-            logStreamResponse.region
-        )
-        await registry.registerLog(uri)
+        const logGroupInfo = {
+            groupName: logStreamResponse.logGroupName,
+            streamName: logStreamResponse.logStreamName,
+            regionName: logStreamResponse.region,
+        }
+        const uri = convertLogGroupInfoToUri(logGroupInfo)
+        const initialStreamData: CloudWatchLogsData = {
+            data: [],
+            parameters: {},
+            busy: false,
+            logGroupInfo: logGroupInfo,
+            retrieveLogsFunction: registry.getLogEventsFromUriComponents,
+        }
+
+        await registry.registerLog(uri, initialStreamData)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
         await vscode.window.showTextDocument(doc, { preview: false })
