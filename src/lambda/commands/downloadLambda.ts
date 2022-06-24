@@ -252,7 +252,7 @@ export type ApplicationJson = {
     StackName?: string
 }
 
-function createApplicationJson(lambdaFunc: Lambda.GetFunctionResponse, region: string): ApplicationJson {
+export function createApplicationJson(lambdaFunc: Lambda.GetFunctionResponse, region: string): ApplicationJson {
     const physicalId =
         lambdaFunc.Configuration?.FunctionName !== undefined ? lambdaFunc.Configuration?.FunctionName : ''
     const logicalId = lambdaFunc.Tags?.['aws:cloudformation:logical-id']
@@ -276,10 +276,11 @@ function createApplicationJson(lambdaFunc: Lambda.GetFunctionResponse, region: s
 }
 
 function writeAppJsonFile(destinationPath: string, appJson: ApplicationJson) {
+    // Should not block download lambda if there is an error writing .application.json file
     try {
         fs.writeFile(path.join(destinationPath, '.application.json'), JSON.stringify(appJson))
     } catch (e) {
         const err = e as Error
-        getLogger().error(err)
+        getLogger().error('download lambda: Error writing .application.json file, %O', err)
     }
 }
