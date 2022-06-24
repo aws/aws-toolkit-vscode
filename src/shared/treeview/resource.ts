@@ -28,6 +28,7 @@ export class ResourceTreeNode<T extends Resource> implements TreeNode<T> {
 
     public constructor(
         public readonly resource: T,
+        public readonly regionCode: string,
         private readonly content: TreeItemContent,
         private readonly children?: ResourceProvider<TreeNode>
     ) {}

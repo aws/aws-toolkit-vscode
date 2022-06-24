@@ -23,10 +23,6 @@ export class S3Node extends AWSTreeNodeBase {
         this.contextValue = 'awsS3Node'
     }
 
-    public determineRegion(): string {
-        return this.s3.determineRegion()
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

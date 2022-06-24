@@ -38,10 +38,6 @@ export class ResourcesNode extends AWSTreeNodeBase {
         this.contextValue = 'resourcesRootNode'
     }
 
-    public determineRegion(): string {
-        return this.region
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

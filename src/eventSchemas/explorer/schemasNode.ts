@@ -23,14 +23,7 @@ export class SchemasNode extends AWSTreeNodeBase {
         super('Schemas', vscode.TreeItemCollapsibleState.Collapsed)
         this.registryNodes = new Map<string, RegistryItemNode>()
         this.contextValue = 'awsSchemasNode'
-    }
-
-    public get regionCode() {
-        return this.client.regionCode
-    }
-
-    public determineRegion(): string {
-        return this.regionCode
+        this.regionCode = this.client.regionCode
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {

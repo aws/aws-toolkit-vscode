@@ -34,10 +34,6 @@ export class IotNode extends AWSTreeNodeBase {
         this.contextValue = 'awsIotNode'
     }
 
-    public determineRegion(): string {
-        return this.iot.determineRegion()
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

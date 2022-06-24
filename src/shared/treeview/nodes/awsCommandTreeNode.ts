@@ -23,13 +23,4 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
         this.tooltip = tooltip
         this.contextValue = 'awsCommandNode'
     }
-
-    public determineRegion(): string {
-        if (this.parent) {
-            return this.parent.determineRegion()
-        } else {
-            // Not sure what to return here since it doesn't have a regionCode.
-            return 'None'
-        }
-    }
 }

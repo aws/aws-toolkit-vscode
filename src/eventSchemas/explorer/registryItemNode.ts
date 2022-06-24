@@ -35,10 +35,6 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         }
     }
 
-    public get regionCode() {
-        return this.client.regionCode
-    }
-
     public get registryName(): string {
         return (
             this.registryItemOutput.RegistryName ||

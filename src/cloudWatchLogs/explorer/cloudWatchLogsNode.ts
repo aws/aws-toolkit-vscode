@@ -23,7 +23,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
 
     public constructor(
         label: string,
-        protected readonly regionCode: string,
+        public readonly regionCode: string,
         protected placeholderMessage: string = localize(
             'AWS.explorerNode.cloudWatchLogs.nologs',
             '[No log groups found]'
@@ -67,10 +67,6 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
             regionCode,
             localize('AWS.explorerNode.cloudWatchLogs.error', 'Error loading CloudWatch Logs resources')
         )
-    }
-
-    public determineRegion(): string {
-        return this.regionCode
     }
 
     protected async getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {

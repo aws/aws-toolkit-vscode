@@ -41,10 +41,6 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
         this.contextValue = 'awsIotPoliciesNode'
     }
 
-    public determineRegion(): string {
-        return this.iot.determineRegion()
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),

@@ -72,8 +72,8 @@ export class DefaultAwsContext implements AwsContext {
         */
         if (this.explorerRegions.length === 1) {
             return this.explorerRegions[0]
-        } else if (node) {
-            return node.determineRegion()
+        } else if (node?.regionCode) {
+            return node.regionCode
         } else if (this.lastTouchedRegion !== 'None') {
             return this.lastTouchedRegion
         } else {
@@ -86,8 +86,8 @@ export class DefaultAwsContext implements AwsContext {
         }
     }
 
-    public setLastTouchedRegion(region: string) {
-        if (region !== 'None') {
+    public setLastTouchedRegion(region: string | undefined) {
+        if (region) {
             this.lastTouchedRegion = region
         }
     }

@@ -35,10 +35,6 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
         this.regionCode = ecr.regionCode
     }
 
-    public determineRegion(): string {
-        return this.parent.determineRegion()
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

@@ -7,17 +7,14 @@ import { TreeItem, TreeItemCollapsibleState, commands } from 'vscode'
 import { isCloud9 } from '../../extensionUtilities'
 
 export abstract class AWSTreeNodeBase extends TreeItem {
+    public regionCode: string | undefined
+
     protected constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
         super(label, collapsibleState)
     }
 
     public getChildren(): Thenable<AWSTreeNodeBase[]> {
         return Promise.resolve([])
-    }
-
-    public determineRegion(): string {
-        console.log(this)
-        return 'None'
     }
 
     public refresh(): void {

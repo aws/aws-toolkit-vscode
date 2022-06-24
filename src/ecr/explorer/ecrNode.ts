@@ -24,10 +24,6 @@ export class EcrNode extends AWSTreeNodeBase {
         this.contextValue = 'awsEcrNode'
     }
 
-    public determineRegion(): string {
-        return this.ecr.regionCode
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

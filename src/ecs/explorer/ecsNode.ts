@@ -23,10 +23,6 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
         this.contextValue = 'awsEcsNode'
     }
 
-    public determineRegion(): string {
-        return this.ecs.regionCode
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
