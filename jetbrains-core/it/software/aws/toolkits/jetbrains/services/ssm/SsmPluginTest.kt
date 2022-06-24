@@ -11,6 +11,7 @@ import org.assertj.core.api.SoftAssertions
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.util.UUID
 
 class SsmPluginTest {
     @Rule
@@ -48,7 +49,10 @@ class SsmPluginTest {
 
         val latest = SsmPlugin.determineLatestVersion()
         val downloadDir = tempFolder.newFolder().toPath()
-        val installDir = tempFolder.newFolder().toPath()
+        val installDir = tempFolder.newFolder()
+            .resolve("nested1-${UUID.randomUUID()}")
+            .resolve("nested2-${UUID.randomUUID()}")
+            .toPath()
 
         val downloadedFile = SsmPlugin.downloadVersion(latest, downloadDir, null)
         SsmPlugin.installVersion(downloadedFile, installDir, null)
