@@ -109,7 +109,10 @@ export class LogStreamRegistry {
             return
         }
         const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
-        const logGroupInfo = parseCloudWatchLogsUri(uri)
+        const URIResults = parseCloudWatchLogsUri(uri)
+
+        const logGroupInfo = URIResults.logGroupInfo
+
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
             const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
@@ -144,8 +147,8 @@ export class LogStreamRegistry {
             vscode.window.showErrorMessage(
                 localize(
                     'AWS.cloudWatchLogs.viewLogStream.errorRetrievingLogs',
-                    'Error retrieving logs for Log Stream {0} : {1}',
-                    logGroupInfo.streamName,
+                    'Error retrieving logs for Log Group {0} : {1}',
+                    logGroupInfo.groupName,
                     err.message
                 )
             )
@@ -222,6 +225,25 @@ export type CloudWatchLogsParameters = {
     filterPattern?: string
     startTime?: number
     limit?: number
+}
+
+export function parametersStringValue(parameters: CloudWatchLogsParameters): string {
+    let value = ''
+
+    // There must be a cleaner waßy to do this.
+    if (parameters.filterPattern) {
+        value += `:${parameters.filterPattern}`
+    }
+
+    if (parameters.startTime) {
+        value += `:${parameters.startTime}`
+    }
+
+    if (parameters.limit) {
+        value += `:${parameters.limit}`
+    }
+
+    return value
 }
 
 export type CloudWatchLogsResponse = {

@@ -36,10 +36,16 @@ export async function saveCurrentLogStreamContent(
             ? vscode.workspace.workspaceFolders[0].uri
             : vscode.Uri.file(SystemUtilities.getHomeDirectory())
         const uriComponents = parseCloudWatchLogsUri(uri)
+        const logGroupInfo = uriComponents.logGroupInfo
 
         const localizedLogFile = localize('AWS.command.saveCurrentLogStreamContent.logfile', 'Log File')
         const selectedUri = await window.showSaveDialog({
-            defaultUri: vscode.Uri.parse(path.join(workspaceDir.toString(), uriComponents.streamName)),
+            defaultUri: vscode.Uri.parse(
+                path.join(
+                    workspaceDir.toString(),
+                    logGroupInfo.streamName ? logGroupInfo.streamName : logGroupInfo.groupName
+                )
+            ),
             filters: {
                 [localizedLogFile]: ['log'],
             },

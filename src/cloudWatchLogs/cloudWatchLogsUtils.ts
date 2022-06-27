@@ -6,29 +6,57 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
-import { CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
+import { CloudWatchLogsGroupInfo, parametersStringValue } from './registry/logStreamRegistry'
+import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
 // The following functions are used to structure and destructure relevant information to/from a URI.
 // Colons are not valid characters in either the group name or stream name and will be used as separators.
 
+let parsingURIMap = new Map<string, URIParsingFunction>()
+
+parsingURIMap.set('viewLogStream', function (parts) {
+    return {
+        logGroupInfo: {
+            groupName: parts[1],
+            regionName: parts[2],
+            streamName: parts[3],
+        },
+        parameters: {},
+    }
+})
+
+parsingURIMap.set('searchLogGroup', function (parts) {
+    return {
+        logGroupInfo: {
+            groupName: parts[1],
+            regionName: parts[2],
+        },
+        parameters: {
+            filterPattern: parts[3],
+            startTime: Number(parts[4]),
+        },
+    }
+})
+
 /**
  * Destructures an awsCloudWatchLogs URI into its component pieces.
  * @param uri URI for a Cloudwatch Logs file
  */
-export function parseCloudWatchLogsUri(uri: vscode.Uri): { groupName: string; streamName: string; regionName: string } {
+export function parseCloudWatchLogsUri(uri: vscode.Uri): {
+    logGroupInfo: CloudWatchLogsGroupInfo
+    parameters: CloudWatchLogsParameters
+} {
     const parts = uri.path.split(':')
+    const action = parts[0]
 
-    // splits into <CLOUDWATCH_LOGS_SCHEME>:"<groupName>:<streamName>:<regionName>"
-    if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME || parts.length !== 3) {
+    const parsingFunction = parsingURIMap.get(action)
+
+    if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME || !parsingFunction) {
         throw new Error(`URI ${uri} is not parseable for CloudWatch Logs`)
     }
 
-    return {
-        groupName: parts[0],
-        streamName: parts[1],
-        regionName: parts[2],
-    }
+    return parsingFunction(parts)
 }
 
 /**
@@ -37,10 +65,24 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): { groupName: string; st
  * @param streamName Log stream name
  * @param regionName AWS region
  */
-export function convertLogGroupInfoToUri(logGroupInfo: CloudWatchLogsGroupInfo): vscode.Uri {
-    return vscode.Uri.parse(
-        `${CLOUDWATCH_LOGS_SCHEME}:${logGroupInfo.groupName}:${logGroupInfo.streamName}:${logGroupInfo.regionName}`
-    )
+export function createURIFromArgs(
+    action: string,
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters
+): vscode.Uri {
+    let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${action}:${logGroupInfo.groupName}:${logGroupInfo.regionName}`
+
+    if (logGroupInfo.streamName) {
+        uriStr += `:${logGroupInfo.streamName}`
+    }
+
+    uriStr += parametersStringValue(parameters)
+    return vscode.Uri.parse(uriStr)
 }
 
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cloudWatchLogs', { limit: Number }) {}
+
+type URIParsingFunction = (parts: Array<string>) => {
+    logGroupInfo: CloudWatchLogsGroupInfo
+    parameters: CloudWatchLogsParameters
+}

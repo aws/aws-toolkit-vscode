@@ -17,8 +17,8 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
-import { CloudWatchLogsData, LogStreamRegistry } from '../registry/logStreamRegistry'
-import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsData, CloudWatchLogsParameters, LogStreamRegistry } from '../registry/logStreamRegistry'
+import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import globals from '../../shared/extensionGlobals'
 
 export interface SelectLogStreamResponse {
@@ -36,10 +36,13 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
             streamName: logStreamResponse.logStreamName,
             regionName: logStreamResponse.region,
         }
-        const uri = convertLogGroupInfoToUri(logGroupInfo)
+
+        const parameters: CloudWatchLogsParameters = { limit: registry.configuration.get('limit', 10000) }
+        const uri = createURIFromArgs('viewLogStream', logGroupInfo, parameters)
+
         const initialStreamData: CloudWatchLogsData = {
             data: [],
-            parameters: { limit: registry.configuration.get('limit', 10000) },
+            parameters: parameters,
             busy: false,
             logGroupInfo: logGroupInfo,
             retrieveLogsFunction: registry.getLogEventsFromUriComponents,

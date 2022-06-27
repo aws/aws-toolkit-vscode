@@ -20,7 +20,13 @@ export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
             }
         }
         const parsedUri = parseCloudWatchLogsUri(uri)
-        await vscode.env.clipboard.writeText(parsedUri.streamName)
+        const logGroupInfo = parsedUri.logGroupInfo
+
+        if (!logGroupInfo.streamName) {
+            throw new Error()
+        }
+
+        await vscode.env.clipboard.writeText(logGroupInfo.streamName)
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
