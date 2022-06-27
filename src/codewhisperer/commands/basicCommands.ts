@@ -47,6 +47,7 @@ export const enterAccessToken = Commands.declare(
         const setToken = async (token: string) => {
             set(CodeWhispererConstants.accessToken, token, context)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+            await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
         }
         await showAccessTokenPrompt(client, setToken)
     }
