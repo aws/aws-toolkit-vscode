@@ -56,28 +56,28 @@ export class RegionNode extends AWSTreeNodeBase {
                 serviceId: 'apprunner',
                 createFn: () =>
                     new AppRunnerNode(
-                        this.regionCode,
-                        globals.toolkitClientBuilder.createAppRunnerClient(this.regionCode)
+                        this.region.id,
+                        globals.toolkitClientBuilder.createAppRunnerClient(this.region.id)
                     ),
             },
-            { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
-            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
+            { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.region.id) },
+            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.region.id) },
             {
                 serviceId: 'ecr',
-                createFn: () => new EcrNode(globals.toolkitClientBuilder.createEcrClient(this.regionCode)),
+                createFn: () => new EcrNode(globals.toolkitClientBuilder.createEcrClient(this.region.id)),
             },
             {
                 serviceId: 'ecs',
-                createFn: () => new EcsNode(globals.toolkitClientBuilder.createEcsClient(this.regionCode)),
+                createFn: () => new EcsNode(globals.toolkitClientBuilder.createEcsClient(this.region.id)),
             },
             {
                 serviceId: 'iot',
-                createFn: () => new IotNode(globals.toolkitClientBuilder.createIotClient(this.regionCode)),
+                createFn: () => new IotNode(globals.toolkitClientBuilder.createIotClient(this.region.id)),
             },
-            { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
+            { serviceId: 'lambda', createFn: () => new LambdaNode(this.region.id) },
             {
                 serviceId: 's3',
-                createFn: () => new S3Node(globals.toolkitClientBuilder.createS3Client(this.regionCode)),
+                createFn: () => new S3Node(globals.toolkitClientBuilder.createS3Client(this.region.id)),
             },
             ...(isCloud9()
                 ? []
@@ -85,11 +85,11 @@ export class RegionNode extends AWSTreeNodeBase {
                       {
                           serviceId: 'schemas',
                           createFn: () =>
-                              new SchemasNode(globals.toolkitClientBuilder.createSchemaClient(this.regionCode)),
+                              new SchemasNode(globals.toolkitClientBuilder.createSchemaClient(this.region.id)),
                       },
                   ]),
-            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
-            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
+            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.region.id) },
+            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.region.id) },
         ]
 
         for (const serviceCandidate of serviceCandidates) {
@@ -133,7 +133,7 @@ export class RegionNode extends AWSTreeNodeBase {
         regionProvider: RegionProvider,
         childNodeProducer: () => AWSTreeNodeBase
     ) {
-        if (regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
+        if (regionProvider.isServiceInRegion(serviceId, this.region.id)) {
             this.childNodes.push(childNodeProducer())
         }
     }
