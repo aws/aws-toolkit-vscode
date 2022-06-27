@@ -15,7 +15,6 @@ import { LogStreamCodeLensProvider } from './document/logStreamCodeLensProvider'
 import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
 import { LogStreamRegistry } from './registry/logStreamRegistry'
-import { ExtContext } from '../shared/extensions'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
