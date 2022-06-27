@@ -10,7 +10,6 @@ import * as EditorContext from '../util/editorContext'
 import { CodeWhispererConstants } from '../models/constants'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
 import { InlineCompletion } from './inlineCompletion'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
@@ -149,17 +148,8 @@ export class KeyStrokeHandler {
         }
         /**
          * Pause automated trigger when typed input matches recommendation prefix
-         * for both intelliSense and inline
+         * for inline suggestion
          */
-        TelemetryHelper.instance.updatePrefixMatchArray(
-            RecommendationHandler.instance.recommendations,
-            RecommendationHandler.instance.startPos,
-            true,
-            editor
-        )
-        if (vsCodeState.isIntelliSenseActive && TelemetryHelper.instance.isPrefixMatched.length > 0) {
-            return ''
-        }
         if (InlineCompletion.instance.isTypeaheadInProgress) {
             return ''
         }
@@ -181,11 +171,13 @@ export class KeyStrokeHandler {
         client: DefaultCodeWhispererClient,
         config: ConfigurationEntry
     ): Promise<void> {
-        if (isCloud9()) vsCodeState.isIntelliSenseActive = false
         if (editor) {
             this.keyStrokeCount = 0
             if (isCloud9()) {
-                if (!vsCodeState.isIntelliSenseActive) {
+                if (RecommendationHandler.instance.isGenerateRecommendationInProgress) return
+                vsCodeState.isIntelliSenseActive = false
+                RecommendationHandler.instance.isGenerateRecommendationInProgress = true
+                try {
                     RecommendationHandler.instance.clearRecommendations()
                     await RecommendationHandler.instance.getRecommendations(
                         client,
@@ -195,11 +187,13 @@ export class KeyStrokeHandler {
                         autoTriggerType,
                         false
                     )
-                    if (RecommendationHandler.instance.isValidResponse()) {
-                        vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+                    if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, false)) {
+                        await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                             vsCodeState.isIntelliSenseActive = true
                         })
                     }
+                } finally {
+                    RecommendationHandler.instance.isGenerateRecommendationInProgress = false
                 }
             } else {
                 if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {

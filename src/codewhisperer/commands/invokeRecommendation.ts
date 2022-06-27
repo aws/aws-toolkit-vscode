@@ -6,13 +6,11 @@
 import * as vscode from 'vscode'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
-import { showTimedMessage } from '../../shared/utilities/messages'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { InlineCompletion } from '../service/inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { KeyStrokeHandler } from '../service/keyStrokeHandler'
-import { CodeWhispererConstants } from '../models/constants'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -52,7 +50,10 @@ export async function invokeRecommendation(
         }
         KeyStrokeHandler.instance.keyStrokeCount = 0
         if (isCloud9()) {
-            if (!vsCodeState.isIntelliSenseActive) {
+            if (RecommendationHandler.instance.isGenerateRecommendationInProgress) return
+            vsCodeState.isIntelliSenseActive = false
+            RecommendationHandler.instance.isGenerateRecommendationInProgress = true
+            try {
                 RecommendationHandler.instance.clearRecommendations()
                 await RecommendationHandler.instance.getRecommendations(
                     client,
@@ -62,17 +63,13 @@ export async function invokeRecommendation(
                     undefined,
                     false
                 )
-                if (RecommendationHandler.instance.isValidResponse()) {
-                    vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+                if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true)) {
+                    await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                         vsCodeState.isIntelliSenseActive = true
                     })
-                } else {
-                    if (RecommendationHandler.instance.errorMessagePrompt !== '') {
-                        showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
-                    } else {
-                        showTimedMessage(CodeWhispererConstants.noSuggestions, 2000)
-                    }
                 }
+            } finally {
+                RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else {
             if (
