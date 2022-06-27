@@ -14,8 +14,16 @@ import software.aws.toolkits.telemetry.CodewhispererTriggerType
 class CodeWhispererEnterHandler(private val originalHandler: EditorActionHandler) :
     EditorActionHandler(),
     CodeWhispererAutoTriggerHandler {
+    override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?) =
+        originalHandler.isEnabled(editor, caret, dataContext)
+
+    override fun executeInCommand(editor: Editor, dataContext: DataContext?) =
+        originalHandler.executeInCommand(editor, dataContext)
+
     override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
-        originalHandler.execute(editor, caret, dataContext)
+        if (originalHandler.isEnabled(editor, caret, dataContext)) {
+            originalHandler.execute(editor, caret, dataContext)
+        }
         if (!CodeWhispererService.getInstance().canDoInvocation(editor, CodewhispererTriggerType.AutoTrigger)) {
             return
         }

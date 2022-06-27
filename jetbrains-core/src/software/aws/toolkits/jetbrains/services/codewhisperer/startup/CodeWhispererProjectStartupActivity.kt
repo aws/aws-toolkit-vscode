@@ -51,7 +51,5 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
                 }
             }
         )
-
-        CodeWhispererStartupActionsManager.getInstance().registerEditorActions()
     }
 }
