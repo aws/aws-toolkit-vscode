@@ -29,10 +29,6 @@ export class SchemasNode extends AWSTreeNodeBase {
         return this.client.regionCode
     }
 
-    public determineRegion(): string {
-        return this.regionCode
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

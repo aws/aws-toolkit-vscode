@@ -19,10 +19,6 @@ export class EcrTagNode extends AWSTreeNodeBase {
         this.contextValue = 'awsEcrTagNode'
     }
 
-    public determineRegion(): string {
-        return this.parent.determineRegion()
-    }
-
     public async deleteTag(): Promise<void> {
         await this.ecr.deleteTag(this.repository.repositoryName, this.tag)
     }

@@ -26,10 +26,6 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         this.contextValue = 'awsAppRunnerNode'
     }
 
-    public determineRegion(): string {
-        return this.region
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

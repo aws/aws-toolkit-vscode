@@ -44,10 +44,6 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         this.setLabel()
     }
 
-    public determineRegion(): string {
-        return this.regionCode
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

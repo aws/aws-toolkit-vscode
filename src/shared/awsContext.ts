@@ -9,9 +9,6 @@ import { regionSettingKey } from './constants'
 import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { CredentialsShim } from '../credentials/loginManager'
-import { AWSTreeNodeBase } from './treeview/nodes/awsTreeNodeBase'
-import globals from '../shared/extensionGlobals'
-import { Region } from './regions/endpoints'
 
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
@@ -44,7 +41,6 @@ export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
     private shim?: CredentialsShim
-    public lastTouchedRegion: string
 
     // the collection of regions the user has expressed an interest in working with in
     // the current workspace
@@ -58,38 +54,6 @@ export class DefaultAwsContext implements AwsContext {
 
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
-
-        this.lastTouchedRegion = 'None'
-    }
-
-    public guessDefaultRegion(node?: AWSTreeNodeBase): string {
-        /*
-        Checks in order of precedence
-       1. the node passed to the current command
-       2. last-expanded AWS Explorer service / etc
-       3. last selection region in RegionProvider of Wizard. 
-       3. final fallback is the credentials default region
-        */
-        if (this.explorerRegions.length === 1) {
-            return this.explorerRegions[0]
-        } else if (node) {
-            return node.determineRegion()
-        } else if (this.lastTouchedRegion !== 'None') {
-            return this.lastTouchedRegion
-        } else {
-            const lastWizardResponse = globals.context.globalState.get<Region>('lastSelectedRegion')
-            if (lastWizardResponse && lastWizardResponse.id) {
-                return lastWizardResponse.id
-            } else {
-                return this.getCredentialDefaultRegion()
-            }
-        }
-    }
-
-    public setLastTouchedRegion(region: string) {
-        if (region !== 'None') {
-            this.lastTouchedRegion = region
-        }
     }
 
     public get credentialsShim(): CredentialsShim | undefined {

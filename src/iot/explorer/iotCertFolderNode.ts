@@ -35,10 +35,6 @@ export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
         this.contextValue = 'awsIotCertsNode'
     }
 
-    public determineRegion(): string {
-        return this.iot.determineRegion()
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),

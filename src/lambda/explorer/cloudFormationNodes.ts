@@ -32,10 +32,6 @@ export class CloudFormationNode extends AWSTreeNodeBase {
         this.contextValue = 'awsCloudFormationRootNode'
     }
 
-    public determineRegion(): string {
-        return this.regionCode
-    }
-
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {

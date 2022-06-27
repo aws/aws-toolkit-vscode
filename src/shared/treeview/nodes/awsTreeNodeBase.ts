@@ -15,11 +15,6 @@ export abstract class AWSTreeNodeBase extends TreeItem {
         return Promise.resolve([])
     }
 
-    public determineRegion(): string {
-        console.log(this)
-        return 'None'
-    }
-
     public refresh(): void {
         if (isCloud9()) {
             commands.executeCommand('aws.refreshAwsExplorer', true)

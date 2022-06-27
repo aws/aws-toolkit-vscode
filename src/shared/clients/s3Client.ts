@@ -139,10 +139,6 @@ export class DefaultS3Client {
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
     ) {}
 
-    public determineRegion(): string {
-        return this.regionCode
-    }
-
     private async createS3(): Promise<S3> {
         return this.s3Provider(this.regionCode)
     }
