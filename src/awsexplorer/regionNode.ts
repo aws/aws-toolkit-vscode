@@ -125,7 +125,7 @@ export class RegionNode extends AWSTreeNodeBase {
     public update(region: Region): void {
         this.region = region
         this.label = this.regionName
-        this.tooltip = `${this.regionName} [${this.regionCode}]`
+        this.tooltip = `${this.regionName} [${this.region.id}]`
     }
 
     private addChildNodeIfInRegion(
