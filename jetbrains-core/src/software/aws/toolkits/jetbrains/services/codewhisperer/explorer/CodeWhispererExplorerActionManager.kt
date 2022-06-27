@@ -100,7 +100,7 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
         BrowserUtil.browse(uri)
     }
 
-    private fun enableCodeWhisperer(project: Project) {
+    fun enableCodeWhisperer(project: Project) {
         showCodeWhispererToS(project)
     }
 

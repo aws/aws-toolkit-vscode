@@ -7,6 +7,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
@@ -94,6 +95,11 @@ class TokenDialog(private val project: Project) : DialogWrapper(project), Dispos
                     close(OK_EXIT_CODE)
                     CodeWhispererExplorerActionManager.getInstance().refreshCodeWhispererNode(project)
                     notifyInfo("Amazon CodeWhisperer", message("codewhisperer.explorer.token.success"), project)
+
+                    // Modal change
+                    ApplicationManager.getApplication().invokeLater {
+                        CodeWhispererExplorerActionManager.getInstance().enableCodeWhisperer(project)
+                    }
                 }
             } catch (e: CodeWhispererException) {
                 LOGGER.debug { e.message.toString() }
