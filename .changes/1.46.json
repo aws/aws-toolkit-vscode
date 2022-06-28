@@ -1,0 +1,14 @@
+{
+  "date" : "2022-06-28",
+  "version" : "1.46",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Nodejs16.x Lambda runtime support"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix broken user UI due to 'Enter' handler override (#3193)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix SSM plugin install on deb/rpm systems (#3130)"
+  } ]
+}

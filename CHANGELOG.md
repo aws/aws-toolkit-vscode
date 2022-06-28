@@ -1,3 +1,8 @@
+# _1.46_ (2022-06-28)
+- **(Feature)** Nodejs16.x Lambda runtime support
+- **(Bug Fix)** Fix broken user UI due to 'Enter' handler override ([#3193](https://github.com/aws/aws-toolkit-jetbrains/issues/3193))
+- **(Bug Fix)** Fix SSM plugin install on deb/rpm systems ([#3130](https://github.com/aws/aws-toolkit-jetbrains/issues/3130))
+
 # _1.45_ (2022-06-23)
 - **(Feature)** [CodeWhisperer](https://aws.amazon.com/codewhisperer) uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
 - **(Feature)** Added 2022.2 support

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix SSM plugin install on deb/rpm systems (#3130)"
-}
