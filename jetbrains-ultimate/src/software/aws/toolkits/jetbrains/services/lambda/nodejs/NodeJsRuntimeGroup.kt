@@ -25,7 +25,8 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
 
     override val supportedRuntimes = listOf(
         LambdaRuntime.NODEJS12_X,
-        LambdaRuntime.NODEJS14_X
+        LambdaRuntime.NODEJS14_X,
+        LambdaRuntime.NODEJS16_X
     )
 
     override fun determineRuntime(module: Module): LambdaRuntime? = determineRuntime(module.project)
@@ -35,6 +36,7 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
             when {
                 it.major <= 12 -> LambdaRuntime.NODEJS12_X
                 it.major <= 14 -> LambdaRuntime.NODEJS14_X
+                it.major <= 16 -> LambdaRuntime.NODEJS16_X
                 else -> null
             }
         }

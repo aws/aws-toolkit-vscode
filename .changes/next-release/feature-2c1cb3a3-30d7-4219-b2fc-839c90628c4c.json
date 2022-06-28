@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Nodejs16.x Lambda runtime support"
+}

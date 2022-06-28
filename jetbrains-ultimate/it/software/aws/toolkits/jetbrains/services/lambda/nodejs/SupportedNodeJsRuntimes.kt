@@ -7,5 +7,6 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 
 val SUPPORTED_NODE_RUNTIMES = listOf(
     arrayOf(Runtime.NODEJS12_X),
-    arrayOf(Runtime.NODEJS14_X)
+    arrayOf(Runtime.NODEJS14_X),
+    arrayOf(Runtime.NODEJS16_X)
 )
