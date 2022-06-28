@@ -73,7 +73,7 @@ export class DefaultCodeWhispererClient {
                         // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
                         if (isCloud9() && req.operation !== 'getAccessToken') {
                             req.on('error', e => {
-                                if (e.code === 'AccessDeniedException' && e.message.match(/expired/)) {
+                                if (e.code === 'AccessDeniedException' && e.message.match(/expired/i)) {
                                     refreshCredentials()
                                 }
                             })
