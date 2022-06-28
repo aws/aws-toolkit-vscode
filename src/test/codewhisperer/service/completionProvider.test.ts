@@ -34,7 +34,8 @@ describe('completionProviderService', function () {
 
     describe('getCompletionItem', function () {
         it('should return targetCompletionItem given input', function () {
-            const mockPosition = new vscode.Position(0, 83)
+            RecommendationHandler.instance.startPos = new vscode.Position(0, 0)
+            const mockPosition = new vscode.Position(0, 1)
             const mockRecommendationDetail: Recommendation = {
                 content: "\n\t\tconsole.log('Hello world!');\n\t}",
             }
@@ -89,12 +90,12 @@ describe('completionProviderService', function () {
         it('should return completion items for each non-empty recommendation', async function () {
             RecommendationHandler.instance.recommendations = [
                 { content: "\n\t\tconsole.log('Hello world!');\n\t}" },
-                { content: '' },
+                { content: '\nvar a = 10' },
             ]
             const mockPosition = new vscode.Position(0, 0)
             const mockDocument = createMockDocument('', 'test.ts', 'typescript')
             const actual = getCompletionItems(mockDocument, mockPosition)
-            assert.strictEqual(actual.length, 1)
+            assert.strictEqual(actual.length, 2)
         })
 
         it('should return empty completion items when recommendation is empty', async function () {
