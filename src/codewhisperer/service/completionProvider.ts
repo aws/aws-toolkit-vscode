@@ -16,9 +16,8 @@ import { RecommendationHandler } from './recommendationHandler'
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
     RecommendationHandler.instance.recommendations.forEach((recommendation, index) => {
-        if (recommendation.content.length > 0) {
-            completionItems.push(getCompletionItem(document, position, recommendation, index))
-        }
+        completionItems.push(getCompletionItem(document, position, recommendation, index))
+        RecommendationHandler.instance.recommendationSuggestionState.set(index, 'Showed')
     })
     return completionItems
 }
@@ -29,7 +28,7 @@ export function getCompletionItem(
     recommendationDetail: Recommendation,
     recommendationIndex: number
 ) {
-    const start = document.lineAt(position.line).range.start
+    const start = RecommendationHandler.instance.startPos
     const range = new vscode.Range(start, start)
     const recommendation = recommendationDetail.content
     const completionItem = new vscode.CompletionItem(recommendation)
@@ -41,6 +40,7 @@ export function getCompletionItem(
     completionItem.label = getLabel(recommendation)
     completionItem.preselect = true
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
+    completionItem.range = new vscode.Range(start, position)
     let languageId = document.languageId
     languageId = languageId === CodeWhispererConstants.typescript ? CodeWhispererConstants.javascript : languageId
     const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
