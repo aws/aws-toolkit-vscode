@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix broken user UI due to 'Enter' handler override (#3193)"
+}
