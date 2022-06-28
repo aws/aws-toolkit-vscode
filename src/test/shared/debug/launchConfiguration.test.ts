@@ -102,7 +102,7 @@ describe('LaunchConfiguration', function () {
     const templateUriPython37 = vscode.Uri.file(
         path.join(workspace.uri.fsPath, 'python3.7-plain-sam-app/template.yaml')
     )
-    const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp2.1-plain-sam-app/template.yaml'))
+    const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp6-zip/template.yaml'))
 
     beforeEach(async function () {
         await globals.templateRegistry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)

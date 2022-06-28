@@ -310,7 +310,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const config = await getConfig(
                 debugConfigProvider,
                 globals.templateRegistry,
-                'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/'
+                'testFixtures/workspaceFolder/csharp6-zip/'
             )
 
             // No workspace folder:
@@ -1586,7 +1586,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
         it('target=code: dotnet/csharp', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp6-zip/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1599,7 +1599,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'src/HelloWorld',
                 },
                 lambda: {
-                    runtime: 'dotnetcore3.1',
+                    runtime: 'dotnet6',
                 },
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
@@ -1608,7 +1608,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1675,7 +1675,7 @@ describe('SamDebugConfigurationProvider', async function () {
       Handler: HelloWorld::HelloWorld.Function::FunctionHandler
       CodeUri: >-
         ${input.invokeTarget.projectRoot}
-      Runtime: dotnetcore3.1
+      Runtime: dotnet6
 `
             )
 
@@ -1741,7 +1741,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
         it('target=template: dotnet/csharp', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp6-zip')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1774,7 +1774,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1796,7 +1796,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     ...input.lambda,
                 },
                 name: input.name,
-                architecture: undefined,
+                architecture: 'x86_64',
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
 
                 //
@@ -1893,7 +1893,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
         it('target=template: Image dotnet/csharp', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-image-sam-app')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp6-image')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1906,7 +1906,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     logicalId: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'dotnetcore3.1',
+                    runtime: 'dotnet6',
                     environmentVariables: {
                         'test-envvar-1': 'test value 1',
                     },
@@ -1927,7 +1927,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnetcore3.1', // lambdaModel.dotNetRuntimes[0],
+                runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
