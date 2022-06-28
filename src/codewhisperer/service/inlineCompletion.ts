@@ -44,7 +44,6 @@ export class InlineCompletion {
     public origin: Recommendation[]
     public position: number
     private typeAhead: string
-    private codewhispererStatusBar: vscode.StatusBarItem
     public isTypeaheadInProgress: boolean
     private _timer?: NodeJS.Timer
     private documentUri: vscode.Uri | undefined
@@ -58,7 +57,6 @@ export class InlineCompletion {
         this.origin = []
         this.position = 0
         this.typeAhead = ''
-        this.codewhispererStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
         this.isTypeaheadInProgress = false
         this.documentUri = undefined
     }
@@ -450,21 +448,19 @@ export class InlineCompletion {
     }
 
     setCodeWhispererStatusBarLoading() {
-        this.codewhispererStatusBar.text = ` $(loading~spin)CodeWhisperer`
-        this.codewhispererStatusBar.show()
+        globals.awsContext.setCodewhispererStatus('running')
     }
 
     setCodeWhispererStatusBarOk() {
-        this.codewhispererStatusBar.text = ` $(check)CodeWhisperer`
-        this.codewhispererStatusBar.show()
+        globals.awsContext.setCodewhispererStatus('enabled')
     }
 
     hideCodeWhispererStatusBar() {
-        this.codewhispererStatusBar.hide()
+        globals.awsContext.setCodewhispererStatus('disabled')
     }
 
     isPaginationRunning() {
-        return this.codewhispererStatusBar.text === ` $(loading~spin)CodeWhisperer`
+        return globals.awsContext.getCodewhispererStatus() === 'running'
     }
 
     get getIsActive() {

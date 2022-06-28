@@ -82,7 +82,11 @@ export async function activate(context: ExtContext): Promise<void> {
             }
             if (configurationChangeEvent.affectsConfiguration('aws.experiments')) {
                 const codewhispererEnabled = await codewhispererSettings.isEnabled()
-                if (!codewhispererEnabled) {
+                if (codewhispererEnabled) {
+                    if (!isCloud9()) {
+                        InlineCompletion.instance.setCodeWhispererStatusBarOk()
+                    }
+                } else {
                     set(CodeWhispererConstants.termsAcceptedKey, false, context)
                     set(CodeWhispererConstants.autoTriggerEnabledKey, false, context)
                     if (!isCloud9()) {

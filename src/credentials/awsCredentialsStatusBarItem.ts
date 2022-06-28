@@ -7,17 +7,16 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
+import { AwsContext } from '../shared/awsContext'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
 import { DevSettings } from '../shared/settings'
-
 const STATUSBAR_PRIORITY = 1
-const STATUSBAR_CONNECTED_MSG = localize('AWS.credentials.statusbar.connected', '(connected)')
+const STATUSBAR_CONNECTED_MSG = localize('AWS.statusbar.connected', '(connected)')
 const STATUSBAR_CONNECTED_DELAY = 1000
 
-// This is a module global since this code doesn't really warrant its own class
 let timeoutID: NodeJS.Timeout
+let lastCredentialsId: string | undefined
 
 export async function initializeAwsCredentialsStatusBarItem(
     awsContext: AwsContext,
@@ -34,8 +33,8 @@ export async function initializeAwsCredentialsStatusBarItem(
     handleDevSettings(devSettings, statusBarItem)
 
     context.subscriptions.push(
-        awsContext.onDidChangeContext(async (ev: ContextChangeEventsArgs) => {
-            updateCredentialsStatusBarItem(statusBarItem, ev.profileName)
+        awsContext.onDidChangeContext(async ev => {
+            updateCredentialsStatusBarItem(statusBarItem, ev.profileName, ev.status)
             handleDevSettings(devSettings, statusBarItem)
         }),
         devSettings.onDidChangeActiveSettings(() => handleDevSettings(devSettings, statusBarItem))
@@ -55,38 +54,44 @@ function handleDevSettings(devSettings: DevSettings, statusBarItem: vscode.Statu
     }
 }
 
-// Resolves when the status bar reaches its final state
+/**
+ * Sets the content of the statusbar item.
+ *
+ * @param statusBarItem
+ * @param credentialsId
+ * @param cwStatus Codewhisperer status
+ */
 export async function updateCredentialsStatusBarItem(
     statusBarItem: vscode.StatusBarItem,
-    credentialsId?: string
+    credentialsId?: string,
+    cwStatus: 'enabled' | 'running' | 'disabled' = 'disabled'
 ): Promise<void> {
+    const company = getIdeProperties().company
     globals.clock.clearTimeout(timeoutID)
-    const connectedMsg = localize(
-        'AWS.credentials.statusbar.connected',
-        'Connected to {0} with "{1}" (click to change)',
-        getIdeProperties().company,
-        credentialsId
-    )
-    const disconnectedMsg = localize(
-        'AWS.credentials.statusbar.disconnected',
-        'Click to connect to {0}',
-        getIdeProperties().company
-    )
+
+    const connectedMsg = localize('AWS.statusbar.connected', 'Connected to {0} with "{1}"', company, credentialsId)
+    const disconnectedMsg = localize('AWS.statusbar.disconnected', 'Connect to {0}', company)
+    const cwTooltip = localize('AWS.statusbar.codewhisperer', 'CodeWhisperer is {0}', cwStatus)
 
     statusBarItem.tooltip = credentialsId ? connectedMsg : disconnectedMsg
+    if (cwStatus !== 'disabled') {
+        statusBarItem.tooltip += `\n${cwTooltip}`
+    }
 
-    // Shows "connected" message briefly.
+    const statusIcon = cwStatus === 'disabled' ? '' : cwStatus === 'running' ? '$(loading~spin)' : '$(check)'
+
     let delay = 0
-    if (credentialsId) {
+    if (credentialsId && lastCredentialsId !== credentialsId) {
+        // Show "connected" message briefly.
         delay = STATUSBAR_CONNECTED_DELAY
-        statusBarItem.text = `${getIdeProperties().company}: ${STATUSBAR_CONNECTED_MSG}`
+        statusBarItem.text = `${statusIcon}${company}: ${STATUSBAR_CONNECTED_MSG}`
+        lastCredentialsId = credentialsId
     }
 
     return new Promise<void>(
         resolve =>
             (timeoutID = globals.clock.setTimeout(() => {
-                const company = getIdeProperties().company
-                ;(statusBarItem.text = credentialsId ? `${company}: ${credentialsId}` : company), resolve()
+                ;(statusBarItem.text = credentialsId ? `${statusIcon}${company}: ${credentialsId}` : company), resolve()
             }, delay))
     )
 }

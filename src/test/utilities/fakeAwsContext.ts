@@ -65,6 +65,7 @@ export class FakeAwsContext implements AwsContext {
     public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
         new vscode.EventEmitter<ContextChangeEventsArgs>().event
     private awsContextCredentials: AwsContextCredentials | undefined
+    private codewhispererStatus: 'enabled' | 'running' | 'disabled' = 'disabled'
 
     public constructor(params?: FakeAwsContextParams) {
         this.awsContextCredentials = params?.contextCredentials
@@ -113,6 +114,17 @@ export class FakeAwsContext implements AwsContext {
 
     public async removeExplorerRegion(...regions: string[]): Promise<void> {
         throw new Error('Method not implemented.')
+    }
+
+    public getCodewhispererStatus() {
+        return this.codewhispererStatus
+    }
+
+    public setCodewhispererStatus(status: 'enabled' | 'running' | 'disabled') {
+        if (this.codewhispererStatus === status) {
+            return
+        }
+        this.codewhispererStatus = status
     }
 }
 

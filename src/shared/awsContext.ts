@@ -17,10 +17,10 @@ export interface AwsContextCredentials {
     readonly defaultRegion?: string
 }
 
-// Carries the current context data on events
 export interface ContextChangeEventsArgs {
     readonly profileName?: string
     readonly accountId?: string
+    readonly status: 'enabled' | 'running' | 'disabled'
 }
 
 // Represents a credential profile and zero or more regions.
@@ -40,6 +40,8 @@ const DEFAULT_REGION = 'us-east-1'
 export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
+    // public readonly onDidChangeStatus: vscode.Event<StatusChangeEventArgs>
+    // private readonly _onDidChangeStatus: vscode.EventEmitter<StatusChangeEventArgs>
     private shim?: CredentialsShim
 
     // the collection of regions the user has expressed an interest in working with in
@@ -47,10 +49,14 @@ export class DefaultAwsContext implements AwsContext {
     private readonly explorerRegions: string[]
 
     private currentCredentials: AwsContextCredentials | undefined
+    private codewhispererStatus: 'enabled' | 'running' | 'disabled' = 'disabled'
 
     public constructor(private context: vscode.ExtensionContext) {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
         this.onDidChangeContext = this._onDidChangeContext.event
+
+        // this._onDidChangeStatus= new vscode.EventEmitter<StatusChangeEventArgs>()
+        // this.onDidChangeStatus = this._onDidChangeStatus.event
 
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
@@ -150,11 +156,24 @@ export class DefaultAwsContext implements AwsContext {
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
     }
 
+    public getCodewhispererStatus() {
+        return this.codewhispererStatus
+    }
+
+    public setCodewhispererStatus(status: 'enabled' | 'running' | 'disabled') {
+        // if (this.codewhispererStatus === status) {
+        //     return
+        // }
+        this.codewhispererStatus = status
+        this.emitEvent()
+    }
+
     private emitEvent() {
         // TODO(jmkeyes): skip this if the state did not actually change.
         this._onDidChangeContext.fire({
             profileName: this.currentCredentials?.credentialsId,
             accountId: this.currentCredentials?.accountId,
+            status: this.codewhispererStatus,
         })
     }
 }
