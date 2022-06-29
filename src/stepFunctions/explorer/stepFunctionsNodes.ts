@@ -43,7 +43,6 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
         super('Step Functions', vscode.TreeItemCollapsibleState.Collapsed)
         this.stateMachineNodes = new Map<string, StateMachineNode>()
         this.contextValue = 'awsStepFunctionsNode'
-        this.regionCode = regionCode
         sfnNodeMap.set(regionCode, this)
     }
 
