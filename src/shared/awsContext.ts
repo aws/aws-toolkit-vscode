@@ -71,13 +71,6 @@ export class DefaultAwsContext implements AwsContext {
      * @returns heuristic for default region.
      */
     public guessDefaultRegion(node?: AWSTreeNodeBase): string {
-        /*
-        Checks in order of precedence
-       1. the node passed to the current command
-       2. last-expanded AWS Explorer service / etc
-       3. last selection region in RegionProvider of Wizard. 
-       3. final fallback is the credentials default region
-        */
         if (this.explorerRegions.length === 1) {
             return this.explorerRegions[0]
         } else if (node?.regionCode) {
