@@ -44,7 +44,7 @@ export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
     private shim?: CredentialsShim
-    public lastTouchedRegion: string | undefined
+    public lastTouchedRegion?: string
 
     // the collection of regions the user has expressed an interest in working with in
     // the current workspace
