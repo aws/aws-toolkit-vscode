@@ -44,12 +44,11 @@ export class RegionNode extends AWSTreeNodeBase {
         this.region = region
         this.update(region)
 
-        this.regionCode = this.regionCode ? this.regionCode : this.region.id
         //  Services that are candidates to add to the region explorer.
         //  `serviceId`s are checked against ~/resources/endpoints.json to see whether or not the service is available in the given region.
         //  If the service is available, we use the `createFn` to generate the node for the region.
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
-        const partitionId = regionProvider.getPartitionId(this.regionCode) ?? DEFAULT_PARTITION
+        const partitionId = regionProvider.getPartitionId(this.region.id) ?? DEFAULT_PARTITION
         const serviceCandidates = [
             { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.region.id) },
             {
@@ -95,7 +94,7 @@ export class RegionNode extends AWSTreeNodeBase {
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
-        this.childNodes.push(new ResourcesNode(this.regionCode))
+        this.childNodes.push(new ResourcesNode(this.region.id))
     }
 
     private tryClearChildren(): void {
