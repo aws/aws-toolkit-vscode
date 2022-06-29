@@ -12,11 +12,7 @@ import * as fs from 'fs-extra'
 /**
  * @param initTests List of relative paths to test files to run before all discovered tests.
  */
-export async function runTests(
-    testFolder: string,
-    testFiles: string[] | undefined,
-    initTests: string[] = []
-): Promise<void> {
+export async function runTests(testFolder: string, initTests: string[] = [], testFiles?: string[]): Promise<void> {
     if (!process.env['AWS_TOOLKIT_AUTOMATION']) {
         throw new Error('Expected the "AWS_TOOLKIT_AUTOMATION" environment variable to be set for tests.')
     }

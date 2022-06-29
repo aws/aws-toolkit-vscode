@@ -18,7 +18,7 @@ import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
 import { activateExtension } from '../shared/utilities/vsCodeUtils'
-import { FakeExtensionContext } from './fakeExtensionContext'
+import { FakeExtensionContext, FakeMemento } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
 
@@ -60,6 +60,9 @@ beforeEach(async function () {
     globals.telemetry.telemetryEnabled = true
     globals.telemetry.clearRecords()
     globals.telemetry.logger.clear()
+
+    //Reset globalState to avoid tests messing eachother up.
+    ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
 
     await testUtil.closeAllEditors()
 })
