@@ -29,11 +29,6 @@ export interface TreeNode<T = unknown> {
      */
     readonly treeItem: vscode.TreeItem
 
-    // /**
-    //  * A tag marking which region the node is associated with.
-    // */
-    // readonly regionCode: string
-
     /**
      * Optional event to signal that this node's children has changed.
      */
