@@ -59,7 +59,17 @@ export class DefaultAwsContext implements AwsContext {
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
     }
+    /**
+    
+        Checks in order of precedence
+       1. the node passed to the current command
+       2. last-expanded AWS Explorer service / etc
+       3. last selection region in RegionProvider of Wizard. 
+       4. final fallback is the credentials default region
 
+     * @param node node on current command. 
+     * @returns heuristic for default region.
+     */
     public guessDefaultRegion(node?: AWSTreeNodeBase): string {
         /*
         Checks in order of precedence
