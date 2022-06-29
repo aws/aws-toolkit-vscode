@@ -66,11 +66,10 @@ export class FakeAwsContext implements AwsContext {
     public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
         new vscode.EventEmitter<ContextChangeEventsArgs>().event
     private awsContextCredentials: AwsContextCredentials | undefined
-    public lastTouchedRegion: string
+    public lastTouchedRegion = 'None'
 
     public constructor(params?: FakeAwsContextParams) {
         this.awsContextCredentials = params?.contextCredentials
-        this.lastTouchedRegion = 'None'
     }
 
     public guessDefaultRegion(node?: AWSTreeNodeBase): string {
