@@ -1,3 +1,7 @@
+## 1.44.0 2022-06-30
+
+- **Bug Fix** Fixed a bug where CodeWhisperer incorrectly changes the `snippetSuggestions` setting in VSCode
+
 ## 1.42.0 2022-06-23
 
 - **Feature** [CodeWhisperer](https://aws.amazon.com/codewhisperer) uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
