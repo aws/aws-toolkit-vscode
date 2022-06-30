@@ -47,6 +47,11 @@ import { RecommendationHandler } from './service/recommendationHandler'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
+    const codewhispererSettings = CodeWhispererSettings.instance
+    if (!codewhispererSettings.isEnabled()) {
+        return
+    }
+
     /**
      * Enable essential intellisense default settings for AWS C9 IDE
      */
@@ -63,7 +68,6 @@ export async function activate(context: ExtContext): Promise<void> {
     /**
      * Service control
      */
-    const codewhispererSettings = CodeWhispererSettings.instance
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     const referenceHoverProvider = new ReferenceHoverProvider()
