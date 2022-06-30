@@ -457,13 +457,13 @@ export async function shutdown() {
 }
 
 export async function enableDefaultConfig() {
+    if (!isCloud9()) return
     const editorSettings = vscode.workspace.getConfiguration('editor')
     try {
         await editorSettings.update('suggest.showMethods', true, vscode.ConfigurationTarget.Global)
         // suggest.preview is available in vsc 1.57+
         await editorSettings.update('suggest.preview', true, vscode.ConfigurationTarget.Global)
         await editorSettings.update('acceptSuggestionOnEnter', 'on', vscode.ConfigurationTarget.Global)
-        await editorSettings.update('snippetSuggestions', 'top', vscode.ConfigurationTarget.Global)
     } catch (error) {
         getLogger().error('codewhisperer: Failed to update user settings', error)
     }
