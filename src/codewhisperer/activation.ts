@@ -48,9 +48,11 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
     /**
-     * Enable essential intellisense default settings
+     * Enable essential intellisense default settings for AWS C9 IDE
      */
-    await enableDefaultConfig()
+    if (isCloud9()) {
+        await enableDefaultConfig()
+    }
 
     /**
      * CodeWhisperer security panel
