@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fix a bug when CodeWhisperer incorrectly sets snippetSuggestions in VSCode"
+	"description": "Fixed a bug where CodeWhisperer incorrectly changes the `snippetSuggestions` setting in VSCode"
 }
