@@ -12,6 +12,13 @@ import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContex
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createQuickPickTester } from '../../test/shared/ui/testUtils'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+
+class FakeNode extends AWSTreeNodeBase {
+    public constructor(public readonly regionCode: string) {
+        super('test')
+    }
+}
 
 describe('DefaultAwsContext', function () {
     const testRegion1Value: string = 're-gion-1'
@@ -194,6 +201,16 @@ describe('DefaultAwsContext', function () {
         await fakeContext.addExplorerRegion('us-east-2')
         fakeContext.setLastTouchedRegion('us-west-1')
         assert.strictEqual(fakeContext.guessDefaultRegion(), 'us-east-2')
+    })
+
+    it('chooses AWS node region when more than one exists in explorer', async function () {
+        const fakeContext = new DefaultAwsContext(await FakeExtensionContext.create())
+        await fakeContext.addExplorerRegion('us-east-1')
+        await fakeContext.addExplorerRegion('us-east-2')
+        fakeContext.setLastTouchedRegion('us-west-1')
+
+        const node = new FakeNode('us-east-1')
+        assert.strictEqual(fakeContext.guessDefaultRegion(node), 'us-east-1')
     })
 
     function makeSampleAwsContextCredentials(): AwsContextCredentials {

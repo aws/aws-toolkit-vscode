@@ -62,10 +62,11 @@ export class DefaultAwsContext implements AwsContext {
     /**
     
         Checks in order of precedence
-       1. the node passed to the current command
-       2. last-expanded AWS Explorer service / etc
-       3. last selection region in RegionProvider of Wizard. 
-       4. final fallback is the credentials default region
+       1. explorerRegion[0] if only one region exists.
+       2. the node passed to the current command
+       3. last-expanded AWS Explorer service / etc
+       4. last selection region in RegionProvider of Wizard. 
+       5. final fallback is the credentials default region
 
      * @param node node on current command. 
      * @returns heuristic for default region.
