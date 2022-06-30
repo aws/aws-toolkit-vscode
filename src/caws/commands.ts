@@ -91,7 +91,7 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
     }
 }
 
-/** "Create CODE.AWS Development Environment" (MDE) command. */
+/** "Create CODE.AWS Development Environment" command. */
 export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     // TODO: add telemetry
     const repo = await selectRepoForWorkspace(client)
@@ -108,7 +108,6 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
         ideRuntimes: ['VSCode'],
         repositories: [
             {
-                projectName,
                 repositoryName: repo.name,
                 branchName: repo.defaultBranch,
             },
@@ -117,7 +116,7 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     const env = await client.createDevEnv(args)
     try {
         const request = {
-            ...env,
+            id: env.id,
             projectName: env.project.name,
             organizationName: env.org.name,
         }

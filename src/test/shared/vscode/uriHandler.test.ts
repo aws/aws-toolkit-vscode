@@ -6,8 +6,6 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../../../shared/vscode/uriHandler'
-import * as mdeUriHandlers from '../../../mde/mdeUriHandlers'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('UriHandler', function () {
     const TEST_PATH = '/my/path'
@@ -86,24 +84,5 @@ describe('SearchParams', function () {
     it('can throw if the parameter does not exist', function () {
         assert.throws(() => params.getOrThrow('foob', ''))
         assert.throws(() => params.getOrThrow('foob', new Error()))
-    })
-})
-
-describe('MDE, CAWS UriHandlers', function () {
-    let uriHandler: UriHandler
-
-    beforeEach(function () {
-        uriHandler = new UriHandler()
-    })
-
-    it('xxx', async function () {
-        const ctx = await FakeExtensionContext.getFakeExtContext()
-        mdeUriHandlers.activateUriHandlers(ctx, uriHandler)
-        // TODO: this will open a prompt, causing tests to stall
-        uriHandler.handleUri(
-            vscode.Uri.parse(
-                'vscode://amazonwebservices.aws-toolkit-vscode/remote?url=https%3A%2F%2Fcode.aws%2Ffoo%2Fbar.git'
-            )
-        )
     })
 })

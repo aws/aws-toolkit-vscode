@@ -10,6 +10,8 @@ import { CawsCommands } from './commands'
 import { GitExtension } from '../shared/extensions/git'
 import { initStatusbar } from './cawsStatusbar'
 import { CawsAuthenticationProvider } from './auth'
+import { registerDevfileWatcher } from './devfile'
+import { DevelopmentWorkspaceClient } from '../shared/clients/developmentWorkspaceClient'
 import { watchRestartingWorkspaces } from './reconnect'
 
 /**
@@ -31,4 +33,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
     })
 
     watchRestartingWorkspaces(ctx, authProvider)
+
+    const workspaceClient = new DevelopmentWorkspaceClient()
+    if (workspaceClient.arn) {
+        ctx.extensionContext.subscriptions.push(registerDevfileWatcher(workspaceClient))
+    }
 }

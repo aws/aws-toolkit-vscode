@@ -30,7 +30,7 @@ import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
 import { showViewLogsMessage } from './utilities/messages'
 import globals from './extensionGlobals'
-import { getMdeEnvArn } from './vscode/env'
+import { getCawsWorkspaceArn } from './vscode/env'
 
 export class AwsContextCommands {
     private readonly _awsContext: AwsContext
@@ -196,7 +196,7 @@ export class AwsContextCommands {
     /**
      * @description Responsible for getting a profile from the user,
      * working with them to define one if necessary.
-     * Does not prompt the user if in an MDE.
+     * Does not prompt the user if in a CAWS development workspace.
      *
      * @returns User's selected Profile name, or undefined if none was selected.
      * undefined is also returned if we leave the user in a state where they are
@@ -215,7 +215,7 @@ export class AwsContextCommands {
             return state?.credentialProfile?.label
         }
 
-        if (getMdeEnvArn()) {
+        if (getCawsWorkspaceArn()) {
             return
         }
 

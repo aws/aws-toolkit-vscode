@@ -5,23 +5,22 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import {
-    createAliasPrompter,
-    createInstancePrompter,
-    createTimeoutPrompter,
-    getAllInstanceDescriptions,
-} from '../../../mde/wizards/environmentSettings'
 import { ConnectedWorkspace, DevEnvId, getDevfileLocation } from '../../model'
 import { CawsCommands, WorkspaceSettings } from '../../commands'
 import { VueWebview } from '../../../webviews/main'
 import { Prompter } from '../../../shared/ui/prompter'
 import { isValidResponse } from '../../../shared/wizards/wizard'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
-import { GetStatusResponse } from '../../../shared/clients/mdeEnvironmentClient'
-import { tryRestart } from '../../../mde/mdeCommands'
-import { getCawsWorkspaceArn } from '../../../shared/vscode/env'
+import { GetStatusResponse } from '../../../shared/clients/developmentWorkspaceClient'
 import { openCawsUrl } from '../../utils'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
+import {
+    createAliasPrompter,
+    createInstancePrompter,
+    createTimeoutPrompter,
+    getAllInstanceDescriptions,
+} from '../../wizards/workspaceSettings'
+import { updateDevfileCommand } from '../../devfile'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { isLongReconnect, removeReconnectionInformation, saveReconnectionInformation } from '../../reconnect'
 import { DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
@@ -60,17 +59,13 @@ export class CawsConfigureWebview extends VueWebview {
     }
 
     public async updateDevfile(location: string) {
-        // XXX: add arn to the workspace model
-        const arn = getCawsWorkspaceArn()
-
-        if (!arn) {
-            throw new Error('Expected workspace ARN to be defined')
+        // TODO(sijaden): we should be able to store the absolute URI somewhere?
+        const rootDirectory = vscode.workspace.workspaceFolders?.[0].uri
+        if (!rootDirectory) {
+            throw new Error('No workspace folder found')
         }
 
-        const title = localize('AWS.caws.container.restart', 'Restarting container...')
-        await vscode.window.withProgress({ title, location: vscode.ProgressLocation.Notification }, () =>
-            tryRestart(arn, () => this.workspace.environmentClient.startDevfile({ location }))
-        )
+        await updateDevfileCommand.execute(vscode.Uri.joinPath(rootDirectory, location))
     }
 
     public async stopWorkspace(id: DevEnvId) {
@@ -83,19 +78,19 @@ export class CawsConfigureWebview extends VueWebview {
 
     public async updateWorkspace(
         id: Pick<DevelopmentWorkspace, 'id' | 'org' | 'project' | 'alias'>,
-        oldSettings: WorkspaceSettings,
-        newSettings: WorkspaceSettings
+        settings: WorkspaceSettings
     ) {
-        if (isLongReconnect(oldSettings, newSettings)) {
+        if (isLongReconnect(this.workspace.summary, settings)) {
             try {
                 await saveReconnectionInformation(id)
-                await this.commands.updateWorkspace.execute(id, newSettings)
+                await this.commands.updateWorkspace.execute(id, settings)
                 reportClosingMessage()
-            } catch {
+            } catch (err) {
                 await removeReconnectionInformation(id)
+                throw err
             }
         } else {
-            return this.commands.updateWorkspace.execute(id, newSettings)
+            return this.commands.updateWorkspace.execute(id, settings)
         }
     }
 

@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../shared/extensionGlobals'
+
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as mdeModel from '../mde/mdeModel'
-import { HOST_NAME_PREFIX } from '../mde/constants'
-import { EnvProvider, SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../mde/mdeModel'
 import {
     CawsClient,
     DevelopmentWorkspace,
@@ -16,17 +15,19 @@ import {
     createClient,
     getCawsConfig,
 } from '../shared/clients/cawsClient'
-import { RemoteEnvironmentClient } from '../shared/clients/mdeEnvironmentClient'
+import { DevelopmentWorkspaceClient } from '../shared/clients/developmentWorkspaceClient'
 import { getLogger } from '../shared/logger'
 import { CawsAuthenticationProvider } from './auth'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { getCawsOrganizationName, getCawsProjectName } from '../shared/vscode/env'
 import { writeFile } from 'fs-extra'
-import globals from '../shared/extensionGlobals'
+import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
+import { ChildProcess } from '../shared/utilities/childProcess'
+import { ensureDependencies, HOST_NAME_PREFIX } from './tools'
 
 export type DevEnvId = Pick<DevelopmentWorkspace, 'id' | 'org' | 'project'>
 
-export function getCawsSsmEnv(region: string, ssmPath: string, envs: DevelopmentWorkspace): NodeJS.ProcessEnv {
+export function getCawsSsmEnv(region: string, ssmPath: string, envs: DevEnvId): NodeJS.ProcessEnv {
     return Object.assign(
         {
             AWS_REGION: region,
@@ -57,6 +58,28 @@ export function createCawsEnvProvider(
         const vars = getCawsSsmEnv(client.regionCode, ssmPath, env)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
+    }
+}
+
+type EnvProvider = () => Promise<NodeJS.ProcessEnv>
+
+/**
+ * Creates a new {@link ChildProcess} class bound to a specific CAWS workspace. All instances of this
+ * derived class will have SSM session information injected as environment variables as-needed.
+ */
+export function createBoundProcess(envProvider: EnvProvider): typeof ChildProcess {
+    type Run = ChildProcess['run']
+    return class SessionBoundProcess extends ChildProcess {
+        public override async run(...args: Parameters<Run>): ReturnType<Run> {
+            const options = args[0]
+            const envVars = await envProvider()
+            const spawnOptions = {
+                ...options?.spawnOptions,
+                env: { ...envVars, ...options?.spawnOptions?.env },
+            }
+
+            return super.run({ ...options, spawnOptions })
+        }
     }
 }
 
@@ -106,12 +129,12 @@ export function createClientFactory(authProvider: CawsAuthenticationProvider): (
 
 export interface ConnectedWorkspace {
     readonly summary: DevelopmentWorkspace
-    readonly environmentClient: RemoteEnvironmentClient
+    readonly environmentClient: DevelopmentWorkspaceClient
 }
 
 export async function getConnectedWorkspace(
     cawsClient: ConnectedCawsClient,
-    environmentClient = new RemoteEnvironmentClient()
+    environmentClient = new DevelopmentWorkspaceClient()
 ): Promise<ConnectedWorkspace | undefined> {
     const arn = environmentClient.arn
     if (!arn || !environmentClient.isCawsWorkspace()) {
@@ -148,7 +171,7 @@ export async function getConnectedWorkspace(
 export async function openDevEnv(
     client: ConnectedCawsClient,
     env: DevelopmentWorkspace,
-    projectPath: string = '/projects'
+    targetWorkspace = '/projects'
 ): Promise<void> {
     const runningEnv = await client.startEnvironmentWithProgress(
         {
@@ -163,13 +186,10 @@ export async function openDevEnv(
         return
     }
 
-    const deps = await mdeModel.ensureDependencies()
-    if (!deps) {
-        return
-    }
+    const deps = (await ensureDependencies()).unwrap()
 
     const cawsEnvProvider = createCawsEnvProvider(client, deps.ssm, env)
-    const SessionProcess = mdeModel.createBoundProcess(cawsEnvProvider).extend({
+    const SessionProcess = createBoundProcess(cawsEnvProvider).extend({
         onStdout(stdout) {
             getLogger().verbose(`CAWS connect: ${env.id}: ${stdout}`)
         },
@@ -179,11 +199,11 @@ export async function openDevEnv(
         rejectOnErrorCode: true,
     })
 
-    await mdeModel.startVscodeRemote(SessionProcess, getHostNameFromEnv(env), projectPath, deps.vsc)
+    await startVscodeRemote(SessionProcess, getHostNameFromEnv(env), targetWorkspace, deps.vsc)
 }
 
 // Should technically be with the MDE stuff
-export async function getDevfileLocation(client: RemoteEnvironmentClient, root?: vscode.Uri) {
+export async function getDevfileLocation(client: DevelopmentWorkspaceClient, root?: vscode.Uri) {
     const rootDirectory = root ?? vscode.workspace.workspaceFolders?.[0].uri
     if (!rootDirectory) {
         throw new Error('No root directory or workspace folder found')
@@ -193,7 +213,7 @@ export async function getDevfileLocation(client: RemoteEnvironmentClient, root?:
     // latency is very high for some reason
     const devfileLocation = await client.getStatus().then(r => r.location)
     if (!devfileLocation) {
-        throw new Error('DevFile location was not found')
+        throw new Error('Devfile location was not found')
     }
 
     return vscode.Uri.joinPath(rootDirectory, devfileLocation)
@@ -222,7 +242,7 @@ export function associateWorkspace(
         const workspaces = await client
             .listResources('env')
             .flatten()
-            .filter(env => env.repositories.length > 0)
+            .filter(env => env.repositories.length > 0 && env.ide === 'VSCode')
             .toMap(env => `${env.org.name}.${env.project.name}.${env.repositories[0].repositoryName}`)
 
         yield* repos.map(repo => ({

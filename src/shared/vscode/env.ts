@@ -96,10 +96,6 @@ export function getMinNodejsVersion(): string {
     return packageJson.devDependencies['@types/node'].replace(/[^~]/, '')
 }
 
-export function getMdeEnvArn(): string | undefined {
-    return process.env['__ENVIRONMENT_ARN']
-}
-
 export function getCawsWorkspaceArn(): string | undefined {
     return process.env['__DEVELOPMENT_WORKSPACE_ARN']
 }

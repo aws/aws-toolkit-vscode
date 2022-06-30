@@ -50,9 +50,8 @@ import { defineComponent } from 'vue'
 import { CawsConfigureWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
-import { Status } from '../../../shared/clients/mdeEnvironmentClient'
+import { Status } from '../../../shared/clients/developmentWorkspaceClient'
 import { WorkspaceSettings } from '../../commands'
-import { SettingsForm } from '../../../mde/wizards/environmentSettings'
 
 const client = WebviewClientFactory.create<CawsConfigureWebview>()
 
@@ -62,7 +61,6 @@ const model = {
     workspaceUrl: '',
     devfileStatus: 'STABLE' as Status,
     compute: new ComputeModel(),
-    initialCompute: new ComputeModel(),
     restarting: false,
     needsRestart: false,
     branchUrl: '',
@@ -96,8 +94,7 @@ export default defineComponent({
     created() {
         client.init().then(env => {
             this.details = env ? new EnvironmentDetailsModel(env) : this.details
-            this.compute = env ? new ComputeModel(env as any) : this.compute
-            this.initialCompute = this.compute
+            this.compute = env ? new ComputeModel(env) : this.compute
         })
 
         client.onDidChangeDevfile(data => {
@@ -116,10 +113,10 @@ export default defineComponent({
 
             if (key !== 'alias') {
                 this.needsRestart = this.needsRestart || previous !== resp[key]
-                this.compute = new ComputeModel(resp as SettingsForm)
+                this.compute = new ComputeModel(resp)
             } else if (resp.alias !== undefined) {
                 this.details.alias = resp.alias
-                await client.updateWorkspace(this.details, this.initialCompute, { alias: this.details.alias })
+                await client.updateWorkspace(this.details, { alias: this.details.alias })
             }
         },
         async restart() {
@@ -130,7 +127,7 @@ export default defineComponent({
                 }
 
                 // SDK rejects extraneous fields
-                await client.updateWorkspace(this.details, this.initialCompute, {
+                await client.updateWorkspace(this.details, {
                     instanceType: this.compute.instanceType,
                     inactivityTimeoutMinutes: this.compute.inactivityTimeoutMinutes,
                 })

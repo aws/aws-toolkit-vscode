@@ -4,16 +4,16 @@
  */
 
 import got from 'got'
-import { getCawsWorkspaceArn, getMdeEnvArn } from '../vscode/env'
+import { getCawsWorkspaceArn } from '../vscode/env'
 
 const ENVIRONMENT_AUTH_TOKEN = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
-export const MDE_ENVIRONMENT_ENDPOINT = 'http://127.0.0.1:1339'
+const ENVIRONMENT_ENDPOINT = 'http://127.0.0.1:1339'
 
-export class RemoteEnvironmentClient {
-    public constructor(private readonly endpoint: string = MDE_ENVIRONMENT_ENDPOINT) {}
+export class DevelopmentWorkspaceClient {
+    public constructor(private readonly endpoint: string = ENVIRONMENT_ENDPOINT) {}
 
     public get arn(): string | undefined {
-        return getCawsWorkspaceArn() ?? getMdeEnvArn()
+        return getCawsWorkspaceArn()
     }
 
     public isCawsWorkspace(): boolean {

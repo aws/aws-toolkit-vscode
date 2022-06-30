@@ -84,19 +84,23 @@ export function isExtensionActive(extId: string): boolean {
     return !!extension && extension.isActive
 }
 
+export function isExtensionInstalled(extId: string): boolean {
+    return !!vscode.extensions.getExtension(extId)
+}
+
 /**
  * Checks if an extension is installed, and shows a message if not.
  */
-export function isExtensionInstalledMsg(
+export function showInstallExtensionMsg(
     extId: string,
     extName: string,
-    feat?: string,
+    feat = `${getIdeProperties().company} Toolkit`,
     window: Window = globals.window
 ): boolean {
     if (vscode.extensions.getExtension(extId)) {
         return true
     }
-    feat = feat ? feat : `${getIdeProperties().company} Toolkit`
+
     const msg = localize(
         'AWS.missingExtension',
         '{0} requires the {1} extension ({2}) to be installed and enabled.',

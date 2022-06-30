@@ -1,8 +1,6 @@
 # Usage:
 #   When connecting to a CAWS workspace
-#       $Env:AWS_REGION=… $Env:AWS_SSM_CLI=… $Env:CAWS_ENDPOINT=… $Env:BEARER_TOKEN_LOCATION=… $Env:ORGANIZATION_NAME=… $Env:PROJECT_NAME=… $Env:WORKSPACE_ID=… ./mde_connect.ps1
-#   When connecting to an MDE workspace
-#       $Env:AWS_REGION=… $Env:AWS_SSM_CLI=… $Env:AWS_MDE_SESSION=… $Env:AWS_MDE_STREAMURL=… $Env:AWS_MDE_TOKEN=… ./mde_connect.ps1
+#       $Env:AWS_REGION=… $Env:AWS_SSM_CLI=… $Env:CAWS_ENDPOINT=… $Env:BEARER_TOKEN_LOCATION=… $Env:ORGANIZATION_NAME=… $Env:PROJECT_NAME=… $Env:WORKSPACE_ID=… ./caws_connect.ps1
 
 function Get-Timestamp {
     return Get-Date -format "[yyyy-MMM-dd HH:mm:ss]"
@@ -70,52 +68,30 @@ function ExecCaws {
         Exit 1
     }
 
-    $mdeStreamUrl = $startSessionResponse.accessDetails.streamUrl
-    $mdeToken = $startSessionResponse.accessDetails.tokenValue
-    $mdeSession = $startSessionResponse.sessionId
+    $streamUrl = $startSessionResponse.accessDetails.streamUrl
+    $tokenValue = $startSessionResponse.accessDetails.tokenValue
+    $sessionId = $startSessionResponse.sessionId
 
     & $SsmPath `
-        "{\`"streamUrl\`":\`"$mdeStreamUrl\`",\`"tokenValue\`":\`"$mdeToken\`",\`"sessionId\`":\`"$mdeSession\`"}" `
+        "{\`"streamUrl\`":\`"$streamUrl\`",\`"tokenValue\`":\`"$tokenValue\`",\`"sessionId\`":\`"$sessionId\`"}" `
         "$Region" `
         "StartSession"
 }
 
-function ExecMde {
-    param (
-        [string] $SessionId,  
-        [string] $StreamUrl,
-        [string] $TokenValue,
-        [string] $Region,
-        [string] $SsmPath
-    )
-    
-    & $SsmPath `
-        "{\`"streamUrl\`":\`"$StreamUrl\`",\`"tokenValue\`":\`"$TokenValue\`",\`"sessionId\`":\`"$SessionId\`"}" `
-        "$Region" `
-        "StartSession"
-}
 
 function Main {
     $region = Require -VariableName "AWS_REGION"
     $ssmPath = Require -VariableName "AWS_SSM_CLI"
 
-    if ($null -ne [Environment]::GetEnvironmentVariable("CAWS_ENDPOINT")) {
-        $cawsEndpoint = Require -VariableName "CAWS_ENDPOINT"
-        $bearerTokenLocation = Require -VariableName "BEARER_TOKEN_LOCATION"
-        $organizationName = Require -VariableName "ORGANIZATION_NAME"
-        $projectName = Require -VariableName "PROJECT_NAME"
-        $workspaceId = Require -VariableName "WORKSPACE_ID"
-        $cachedBearerToken = Get-Content -Path $bearerTokenLocation
+    $cawsEndpoint = Require -VariableName "CAWS_ENDPOINT"
+    $bearerTokenLocation = Require -VariableName "BEARER_TOKEN_LOCATION"
+    $organizationName = Require -VariableName "ORGANIZATION_NAME"
+    $projectName = Require -VariableName "PROJECT_NAME"
+    $workspaceId = Require -VariableName "WORKSPACE_ID"
+    
+    $cachedBearerToken = Get-Content -Path $bearerTokenLocation
 
-        ExecCaws -Endpoint $cawsEndpoint -Token $cachedBearerToken -Organization $organizationName -Project $projectName -WorkspaceId $workspaceId  -Region $region -SsmPath $ssmPath 
-    }
-    else {
-        $sessionId = Require -VariableName "AWS_MDE_SESSION"
-        $streamUrl = Require -VariableName "AWS_MDE_STREAMURL" -Silent
-        $tokenValue = Require -VariableName "AWS_MDE_TOKEN" -Silent
-
-        ExecMde -SessionId $sessionId -StreamUrl $streamUrl -TokenValue $tokenValue -Region $region -SsmPath $ssmPath
-    }
+    ExecCaws -Endpoint $cawsEndpoint -Token $cachedBearerToken -Organization $organizationName -Project $projectName -WorkspaceId $workspaceId  -Region $region -SsmPath $ssmPath 
 }
 
 Main

@@ -6,14 +6,7 @@
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
 import { getLogger } from './logger'
-import {
-    ArrayConstructor,
-    cast,
-    FromDescriptor,
-    NonNullObject,
-    TypeConstructor,
-    TypeDescriptor,
-} from './utilities/typeConstructors'
+import { cast, FromDescriptor, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isAutomation, isNameMangled } from './vscode/env'
@@ -656,39 +649,4 @@ export async function migrateSetting<T, U = T>(
  */
 export async function openSettings<K extends keyof SettingsProps>(key: K): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.openSettings', `@id:${key}`)
-}
-
-const remoteSshTypes = {
-    path: String,
-    defaultExtensions: ArrayConstructor(String),
-    remotePlatform: NonNullObject,
-    useLocalServer: Boolean,
-}
-
-export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTypes) {
-    public async ensureDefaultExtension(extensionId: string): Promise<boolean> {
-        const current = this.get('defaultExtensions', [])
-
-        if (!current.includes(extensionId)) {
-            this.log(`updating remote SSH "defaultExtensions" setting with "${extensionId}"`)
-
-            return this.update('defaultExtensions', [...current, extensionId])
-        }
-
-        return true
-    }
-
-    public async setRemotePlatform(hostname: string, platform: 'linux' | 'windows' | 'macOS'): Promise<boolean> {
-        try {
-            const current = this.getOrThrow('remotePlatform', {})
-            current[hostname] = platform
-            this.log(`updated remote SSH host "${hostname}" with platform "${platform}"`)
-
-            return this.update('remotePlatform', current)
-        } catch (error) {
-            this.log(`failed to read "remotePlatform", no updates will be made`)
-
-            return false
-        }
-    }
 }

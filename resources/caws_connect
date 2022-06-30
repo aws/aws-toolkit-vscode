@@ -2,9 +2,7 @@
 
 # Usage:
 #   When connecting to a CAWS workspace
-#       AWS_REGION=… AWS_SSM_CLI=… CAWS_ENDPOINT=… BEARER_TOKEN_LOCATION=… ORGANIZATION_NAME=… PROJECT_NAME=… WORKSPACE_ID=… ./mde_connect
-#   When connecting to an MDE workspace
-#       AWS_REGION=… AWS_SSM_CLI=… AWS_MDE_STREAMURL=… AWS_MDE_TOKEN=… AWS_MDE_SESSION=… ./mde_connect
+#       AWS_REGION=… AWS_SSM_CLI=… CAWS_ENDPOINT=… BEARER_TOKEN_LOCATION=… ORGANIZATION_NAME=… PROJECT_NAME=… WORKSPACE_ID=… ./caws_connect
 
 set -e
 set -u
@@ -104,16 +102,6 @@ _caws() {
     exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION\"}" "$AWS_REGION" "StartSession"
 }
 
-# For backwards compatibility
-_mde() {
-    local AWS_SSM_CLI=$1
-    local STREAM_URL=$2
-    local TOKEN=$3
-    local SESSION=$4
-    local AWS_REGION=$5
-    exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION\"}" "$AWS_REGION" "StartSession"
-}
-
 _main() {
     _log "=============================================================================="
 
@@ -121,25 +109,15 @@ _main() {
     _require AWS_REGION "${AWS_REGION:-}"
     _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
 
-    if [[ -n "${CAWS_ENDPOINT:-}" ]]; then
-        _require CAWS_ENDPOINT "${CAWS_ENDPOINT:-}"
-        _require BEARER_TOKEN_LOCATION "${BEARER_TOKEN_LOCATION:-}"
-        _require ORGANIZATION_NAME "${ORGANIZATION_NAME:-}"
-        _require PROJECT_NAME "${PROJECT_NAME:-}"
-        _require WORKSPACE_ID "${WORKSPACE_ID:-}"
+    _require CAWS_ENDPOINT "${CAWS_ENDPOINT:-}"
+    _require BEARER_TOKEN_LOCATION "${BEARER_TOKEN_LOCATION:-}"
+    _require ORGANIZATION_NAME "${ORGANIZATION_NAME:-}"
+    _require PROJECT_NAME "${PROJECT_NAME:-}"
+    _require WORKSPACE_ID "${WORKSPACE_ID:-}"
 
-        CACHED_BEARER_TOKEN=$(cat "$BEARER_TOKEN_LOCATION")
+    CACHED_BEARER_TOKEN=$(cat "$BEARER_TOKEN_LOCATION")
 
-        _caws "$AWS_SSM_CLI" "$CAWS_ENDPOINT" "$CACHED_BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$WORKSPACE_ID" "$AWS_REGION"
-    else
-        # Backwards Compatibility for MDE
-        _require AWS_MDE_STREAMURL "${AWS_MDE_STREAMURL:-}"
-        _require AWS_MDE_TOKEN "${AWS_MDE_TOKEN:-}"
-        _require AWS_MDE_SESSION "${AWS_MDE_SESSION:-}"
-
-        _mde "$AWS_SSM_CLI" "$AWS_MDE_STREAMURL" "$AWS_MDE_TOKEN" "$AWS_MDE_SESSION" "$AWS_REGION"
-    fi
-
+    _caws "$AWS_SSM_CLI" "$CAWS_ENDPOINT" "$CACHED_BEARER_TOKEN" "$ORGANIZATION_NAME" "$PROJECT_NAME" "$WORKSPACE_ID" "$AWS_REGION"
 }
 
 _main
