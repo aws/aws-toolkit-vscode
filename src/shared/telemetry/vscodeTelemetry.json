@@ -148,9 +148,19 @@
             "name": "starterTemplate",
             "type": "string",
             "description": "Starter template chosen during create document"
+        },
+        {
+            "name": "cli",
+            "type": "string",
+            "description": "Installed CLI"
         }
     ],
     "metrics": [
+        {
+            "name": "aws_installCli",
+            "description": "Called after attempting to install a local copy of a missing CLI",
+            "metadata": [{ "type": "result" }, { "type": "cli" }]
+        },
         {
             "name": "aws_refreshCredentials",
             "description": "Emitted when credentials are automatically refreshed by the AWS SDK",

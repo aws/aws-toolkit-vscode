@@ -380,4 +380,14 @@ export class GitExtension {
             throw err
         }
     }
+
+    public async registerRemoteSourceProvider(provider: GitTypes.RemoteSourceProvider): Promise<vscode.Disposable> {
+        const api = await this.validateApi('git: extension disabled, unable to register source provider')
+
+        if (!api) {
+            return { dispose: () => {} }
+        }
+
+        return api.registerRemoteSourceProvider(provider)
+    }
 }
