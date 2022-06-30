@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as mdeModel from '../mde/mdeModel'
 import { HOST_NAME_PREFIX } from '../mde/constants'
 import { EnvProvider, SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../mde/mdeModel'
 import {
@@ -135,13 +136,50 @@ export async function getConnectedWorkspace(
         throw new Error('No project or organization name found.')
     }
 
-    const summary = await cawsClient.getDevEnv({
+    const summary = await cawsClient.getDevelopmentWorkspace({
         projectName,
         organizationName,
         id: workspaceId,
     })
 
     return { summary, environmentClient }
+}
+
+export async function openDevEnv(
+    client: ConnectedCawsClient,
+    env: DevelopmentWorkspace,
+    projectPath: string = '/projects'
+): Promise<void> {
+    const runningEnv = await client.startEnvironmentWithProgress(
+        {
+            id: env.id,
+            organizationName: env.org.name,
+            projectName: env.project.name,
+        },
+        'RUNNING'
+    )
+    if (!runningEnv) {
+        getLogger().error('openDevEnv: failed to start environment: %s', env.id)
+        return
+    }
+
+    const deps = await mdeModel.ensureDependencies()
+    if (!deps) {
+        return
+    }
+
+    const cawsEnvProvider = createCawsEnvProvider(client, deps.ssm, env)
+    const SessionProcess = mdeModel.createBoundProcess(cawsEnvProvider).extend({
+        onStdout(stdout) {
+            getLogger().verbose(`CAWS connect: ${env.id}: ${stdout}`)
+        },
+        onStderr(stderr) {
+            getLogger().verbose(`CAWS connect: ${env.id}: ${stderr}`)
+        },
+        rejectOnErrorCode: true,
+    })
+
+    await mdeModel.startVscodeRemote(SessionProcess, getHostNameFromEnv(env), projectPath, deps.vsc)
 }
 
 // Should technically be with the MDE stuff
@@ -193,3 +231,20 @@ export function associateWorkspace(
         }))
     })
 }
+
+export interface EnvironmentMemento {
+    /** True if the environment is watching the status of the workspace to try and reconnect. */
+    attemptingReconnect?: boolean
+    /** Unix time of the most recent connection. */
+    previousConnectionTimestamp: number
+    /** Previous open workspace */
+    previousOpenWorkspace: string
+    /** CAWS Organization Name */
+    organizationName: string
+    /** CAWS Project name */
+    projectName: string
+    /** CAWS Alias */
+    alias: string | undefined
+}
+
+export const CAWS_RECONNECT_KEY = 'CAWS_RECONNECT'

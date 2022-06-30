@@ -22,6 +22,9 @@ import { tryRestart } from '../../../mde/mdeCommands'
 import { getCawsWorkspaceArn } from '../../../shared/vscode/env'
 import { openCawsUrl } from '../../utils'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
+import { showViewLogsMessage } from '../../../shared/utilities/messages'
+import { isLongReconnect, removeReconnectionInformation, saveReconnectionInformation } from '../../reconnect'
+import { DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
 
 const localize = nls.loadMessageBundle()
 
@@ -78,8 +81,26 @@ export class CawsConfigureWebview extends VueWebview {
         return this.commands.deleteWorkspace.execute(id)
     }
 
-    public async updateWorkspace(id: DevEnvId, settings: WorkspaceSettings) {
-        return this.commands.updateWorkspace.execute(id, settings)
+    public async updateWorkspace(
+        id: Pick<DevelopmentWorkspace, 'id' | 'org' | 'project' | 'alias'>,
+        oldSettings: WorkspaceSettings,
+        newSettings: WorkspaceSettings
+    ) {
+        if (isLongReconnect(oldSettings, newSettings)) {
+            try {
+                await saveReconnectionInformation(id)
+                await this.commands.updateWorkspace.execute(id, newSettings)
+                reportClosingMessage()
+            } catch {
+                await removeReconnectionInformation(id)
+            }
+        } else {
+            return this.commands.updateWorkspace.execute(id, newSettings)
+        }
+    }
+
+    public async showLogsMessage(title: string): Promise<string | undefined> {
+        return showViewLogsMessage(title)
     }
 
     public async editSetting(settings: WorkspaceSettings, key: keyof WorkspaceSettings): Promise<WorkspaceSettings> {
@@ -162,4 +183,17 @@ function pollDevfile(workspace: ConnectedWorkspace, server: CawsConfigureWebview
     })()
 
     return { dispose: () => (done = true) }
+}
+
+function reportClosingMessage(): void {
+    vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: 'VSCode will now close this session. When the workspace is available again it will re-open',
+        },
+        async (progress, token) => {
+            await sleep(2500)
+            vscode.commands.executeCommand('workbench.action.remote.close')
+        }
+    )
 }

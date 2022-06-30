@@ -62,6 +62,7 @@ const model = {
     workspaceUrl: '',
     devfileStatus: 'STABLE' as Status,
     compute: new ComputeModel(),
+    initialCompute: new ComputeModel(),
     restarting: false,
     needsRestart: false,
     branchUrl: '',
@@ -96,6 +97,7 @@ export default defineComponent({
         client.init().then(env => {
             this.details = env ? new EnvironmentDetailsModel(env) : this.details
             this.compute = env ? new ComputeModel(env as any) : this.compute
+            this.initialCompute = this.compute
         })
 
         client.onDidChangeDevfile(data => {
@@ -117,7 +119,7 @@ export default defineComponent({
                 this.compute = new ComputeModel(resp as SettingsForm)
             } else if (resp.alias !== undefined) {
                 this.details.alias = resp.alias
-                await client.updateWorkspace(this.details, { alias: this.details.alias })
+                await client.updateWorkspace(this.details, this.initialCompute, { alias: this.details.alias })
             }
         },
         async restart() {
@@ -128,15 +130,13 @@ export default defineComponent({
                 }
 
                 // SDK rejects extraneous fields
-                await client.updateWorkspace(this.details, {
-                    alias: this.details.alias,
+                await client.updateWorkspace(this.details, this.initialCompute, {
                     instanceType: this.compute.instanceType,
                     inactivityTimeoutMinutes: this.compute.inactivityTimeoutMinutes,
                 })
             } catch {
                 this.restarting = false
-
-                // We could render an error here or show a notification
+                client.showLogsMessage('Unable to update the workspace. View the logs for more information')
             }
         },
     },

@@ -10,6 +10,7 @@ import { CawsCommands } from './commands'
 import { GitExtension } from '../shared/extensions/git'
 import { initStatusbar } from './cawsStatusbar'
 import { CawsAuthenticationProvider } from './auth'
+import { watchRestartingWorkspaces } from './reconnect'
 
 /**
  * Activate CAWS functionality.
@@ -28,4 +29,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
     GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {
         ctx.extensionContext.subscriptions.push(disposable)
     })
+
+    watchRestartingWorkspaces(ctx, authProvider)
 }

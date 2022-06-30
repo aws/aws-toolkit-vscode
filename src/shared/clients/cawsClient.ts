@@ -457,7 +457,7 @@ class CawsClientInternal {
         const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
         assertHasProps(r, 'id')
 
-        return this.getDevEnv({
+        return this.getDevelopmentWorkspace({
             id: r.id,
             organizationName: args.organizationName,
             projectName: args.projectName,
@@ -490,7 +490,7 @@ class CawsClientInternal {
     }
 
     /** CAWS-MDE */
-    public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
+    public async getDevelopmentWorkspace(args: caws.GetDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
         const a = { ...args }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
@@ -529,7 +529,7 @@ class CawsClientInternal {
     ): Promise<DevelopmentWorkspace | undefined> {
         let lastStatus: undefined | string
         try {
-            const env = await this.getDevEnv(args)
+            const env = await this.getDevelopmentWorkspace(args)
             lastStatus = env?.status
             if (status === 'RUNNING' && lastStatus === 'RUNNING') {
                 // "Debounce" in case caller did not check if the environment was already running.
@@ -549,7 +549,7 @@ class CawsClientInternal {
                     return
                 }
 
-                const resp = await this.getDevEnv(args)
+                const resp = await this.getDevelopmentWorkspace(args)
                 if (lastStatus === 'STARTING' && (resp?.status === 'STOPPED' || resp?.status === 'STOPPING')) {
                     throw Error('Evironment failed to start')
                 }
