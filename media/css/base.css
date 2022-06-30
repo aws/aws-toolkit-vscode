@@ -154,7 +154,7 @@ textarea {
     white-space: nowrap;
 }
 
-/* Labels (TODO: move some over to MDE) */
+/* Labels */
 .label-context {
     display: block;
     padding: 0 0 4px 0;

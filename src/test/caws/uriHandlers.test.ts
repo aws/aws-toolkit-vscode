@@ -87,7 +87,7 @@ describe('CAWS handlers', function () {
                 message.assertSeverity(SeverityLevel.Error)
             })
 
-            when(client.getDevEnv(anything())).thenReject(new Error('No development workspace found'))
+            when(client.getDevelopmentWorkspace(anything())).thenReject(new Error('No development workspace found'))
             await handler.handleUri(createConnectUri(env))
             await errorMessage
         })
@@ -105,7 +105,7 @@ describe('CAWS handlers', function () {
                 status: '',
             }
 
-            when(client.getDevEnv(anything())).thenResolve(fullEnv)
+            when(client.getDevelopmentWorkspace(anything())).thenResolve(fullEnv)
             when(client.startEnvironmentWithProgress(anything(), 'RUNNING')).thenResolve(undefined)
 
             await handler.handleUri(createConnectUri(env))

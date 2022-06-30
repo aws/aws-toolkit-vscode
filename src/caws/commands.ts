@@ -9,7 +9,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import * as mdeModel from '../mde/mdeModel'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { LoginWizard } from './wizards/login'
 import { selectCawsResource, selectRepoForWorkspace } from './wizards/selectResource'
@@ -17,15 +16,8 @@ import { getLogger } from '../shared/logger'
 import { openCawsUrl } from './utils'
 import { CawsAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
-import { CawsClient, DevelopmentWorkspace, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
-import {
-    createCawsEnvProvider,
-    createClientFactory,
-    DevEnvId,
-    getConnectedWorkspace,
-    getHostNameFromEnv,
-    toCawsGitUri,
-} from './model'
+import { CawsClient, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
+import { createClientFactory, DevEnvId, getConnectedWorkspace, openDevEnv, toCawsGitUri } from './model'
 import { showConfigureWorkspace } from './vue/configure/backend'
 import { UpdateDevelopmentWorkspaceRequest } from '../../types/clientcodeaws'
 
@@ -99,7 +91,7 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
     }
 }
 
-/** "Create CODE.AWS Development Environment" (MDE) command. */
+/** "Create CODE.AWS Development Environment" command. */
 export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     // TODO: add telemetry
     const repo = await selectRepoForWorkspace(client)
@@ -116,7 +108,6 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
         ideRuntimes: ['VSCode'],
         repositories: [
             {
-                projectName,
                 repositoryName: repo.name,
                 branchName: repo.defaultBranch,
             },
@@ -125,7 +116,7 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     const env = await client.createDevEnv(args)
     try {
         const request = {
-            ...env,
+            id: env.id,
             projectName: env.project.name,
             organizationName: env.org.name,
         }
@@ -141,39 +132,6 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
             )
         )
     }
-}
-
-export async function openDevEnv(client: ConnectedCawsClient, env: DevelopmentWorkspace): Promise<void> {
-    const runningEnv = await client.startEnvironmentWithProgress(
-        {
-            id: env.id,
-            organizationName: env.org.name,
-            projectName: env.project.name,
-        },
-        'RUNNING'
-    )
-    if (!runningEnv) {
-        getLogger().error('openDevEnv: failed to start environment: %s', env.id)
-        return
-    }
-
-    const deps = await mdeModel.ensureDependencies()
-    if (!deps) {
-        return
-    }
-
-    const cawsEnvProvider = createCawsEnvProvider(client, deps.ssm, env)
-    const SessionProcess = mdeModel.createBoundProcess(cawsEnvProvider).extend({
-        onStdout(stdout) {
-            getLogger().verbose(`CAWS connect: ${env.id}: ${stdout}`)
-        },
-        onStderr(stderr) {
-            getLogger().verbose(`CAWS connect: ${env.id}: ${stderr}`)
-        },
-        rejectOnErrorCode: true,
-    })
-
-    await mdeModel.startVscodeRemote(SessionProcess, getHostNameFromEnv(env), '/projects', deps.vsc)
 }
 
 /**

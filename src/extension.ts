@@ -46,7 +46,6 @@ import * as awsFiletypes from './shared/awsFiletypes'
 import * as telemetry from './shared/telemetry/telemetry'
 import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { ExtContext } from './shared/extensions'
-import * as mde from './mde/activation'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
@@ -203,7 +202,6 @@ export async function activate(context: vscode.ExtensionContext) {
         )
 
         await caws.activate(extContext)
-        await mde.activate(extContext)
 
         await activateCloudFormationTemplateRegistry(context)
 

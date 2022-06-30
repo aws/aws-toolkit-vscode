@@ -47,7 +47,6 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { DEFAULT_COMPUTE_SETTINGS } from '../../mde/constants'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { createClass, createType } from '../../webviews/util'
@@ -55,6 +54,12 @@ import { WorkspaceSettings } from '../commands'
 import { CawsConfigureWebview } from './configure/backend'
 
 const client = WebviewClientFactory.create<CawsConfigureWebview>()
+
+const DEFAULT_COMPUTE_SETTINGS = {
+    inactivityTimeoutMinutes: 30,
+    instanceType: 'dev.standard1.medium',
+    persistentStorage: { sizeInGiB: 16 },
+}
 
 export const VueModel = createClass(DEFAULT_COMPUTE_SETTINGS)
 

@@ -15,7 +15,6 @@ import * as caws from '../../../types/clientcodeaws'
 import * as logger from '../logger/logger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
-import { MDE_START_TIMEOUT } from './mdeClient'
 import { showMessageWithCancel } from '../utilities/messages'
 import { assertHasProps, ClassToInterfaceType, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
@@ -61,7 +60,7 @@ export interface DevelopmentWorkspace extends caws.DevelopmentWorkspaceSummary {
     readonly project: Pick<CawsProject, 'name'>
 }
 
-/** CAWS-MDE developer environment session. */
+/** CAWS developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspaceResponse {}
 
@@ -377,7 +376,7 @@ class CawsClientInternal {
     }
 
     /**
-     * CAWS-MDE
+     * CAWS
      * Gets a flat list of all workspaces for the given CAWS project.
      */
     public listDevEnvs(proj: CawsProject): AsyncCollection<DevelopmentWorkspace[]> {
@@ -449,7 +448,7 @@ class CawsClientInternal {
         }
     }
 
-    /** CAWS-MDE */
+    /** CAWS */
     public async createDevEnv(args: caws.CreateDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
         if (!args.ideRuntimes || args.ideRuntimes.length === 0) {
             throw new Error('missing ideRuntimes')
@@ -457,14 +456,13 @@ class CawsClientInternal {
         const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
         assertHasProps(r, 'id')
 
-        return this.getDevEnv({
+        return this.getDevelopmentWorkspace({
             id: r.id,
             organizationName: args.organizationName,
             projectName: args.projectName,
         })
     }
 
-    /** CAWS-MDE */
     public async startDevEnv(
         args: caws.StartDevelopmentWorkspaceRequest
     ): Promise<caws.StartDevelopmentWorkspaceResponse | undefined> {
@@ -472,7 +470,6 @@ class CawsClientInternal {
         return r
     }
 
-    /** CAWS-MDE */
     public async startDevEnvSession(
         args: caws.StartSessionDevelopmentWorkspaceRequest
     ): Promise<caws.StartSessionDevelopmentWorkspaceResponse & { sessionId: string }> {
@@ -489,8 +486,7 @@ class CawsClientInternal {
         return this.call(this.sdkClient.stopDevelopmentWorkspace(args), false)
     }
 
-    /** CAWS-MDE */
-    public async getDevEnv(args: caws.GetDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
+    public async getDevelopmentWorkspace(args: caws.GetDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
         const a = { ...args }
         delete (a as any).ideRuntimes
         delete (a as any).repositories
@@ -499,7 +495,6 @@ class CawsClientInternal {
         return intoDevelopmentWorkspace(args.organizationName, args.projectName, { ...args, ...r })
     }
 
-    /** CAWS-MDE */
     public async deleteDevEnv(
         args: caws.DeleteDevelopmentWorkspaceRequest
     ): Promise<caws.DeleteDevelopmentWorkspaceResponse | undefined> {
@@ -514,22 +509,22 @@ class CawsClientInternal {
     }
 
     /**
-     * Best-effort attempt to start an MDE given an ID, showing a progress notifcation with a cancel button
+     * Best-effort attempt to start a workspace given an ID, showing a progress notifcation with a cancel button
      * TODO: may combine this progress stuff into some larger construct
      *
      * The cancel button does not abort the start, but rather alerts any callers that any operations that rely
-     * on the MDE starting should not progress.
+     * on the CAWS workspace starting should not progress.
      *
      * @returns the environment on success, undefined otherwise
      */
     public async startEnvironmentWithProgress(
         args: caws.StartDevelopmentWorkspaceRequest,
         status: string,
-        timeout: Timeout = new Timeout(MDE_START_TIMEOUT)
+        timeout: Timeout = new Timeout(180000)
     ): Promise<DevelopmentWorkspace | undefined> {
         let lastStatus: undefined | string
         try {
-            const env = await this.getDevEnv(args)
+            const env = await this.getDevelopmentWorkspace(args)
             lastStatus = env?.status
             if (status === 'RUNNING' && lastStatus === 'RUNNING') {
                 // "Debounce" in case caller did not check if the environment was already running.
@@ -549,7 +544,7 @@ class CawsClientInternal {
                     return
                 }
 
-                const resp = await this.getDevEnv(args)
+                const resp = await this.getDevelopmentWorkspace(args)
                 if (lastStatus === 'STARTING' && (resp?.status === 'STOPPED' || resp?.status === 'STOPPING')) {
                     throw Error('Evironment failed to start')
                 }

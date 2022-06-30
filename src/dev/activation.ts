@@ -17,10 +17,9 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { promisify } from 'util'
 import * as manifest from '../../package.json'
-import { createBoundProcess, ensureDependencies, startVscodeRemote } from '../mde/mdeModel'
 import { getLogger } from '../shared/logger'
 import { selectCawsResource } from '../caws/wizards/selectResource'
-import { createCawsEnvProvider, getCawsSsmEnv, getHostNameFromEnv } from '../caws/model'
+import { createBoundProcess, createCawsEnvProvider, getHostNameFromEnv } from '../caws/model'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { CawsCommands } from '../caws/commands'
@@ -30,6 +29,8 @@ import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
+import { ensureDependencies } from '../caws/tools'
+import { startVscodeRemote } from '../shared/extensions/ssh'
 
 interface MenuOption {
     readonly label: string
@@ -168,15 +169,12 @@ async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<
 
     progress.report({ message: 'Checking dependencies...' })
 
-    const deps = await ensureDependencies()
-    if (!deps) {
-        return
-    }
+    const deps = (await ensureDependencies()).unwrap()
 
     progress.report({ message: 'Opening terminal...' })
 
     const { ssh, ssm } = deps
-    const envVars = getCawsSsmEnv(client.regionCode, ssm, env)
+    const envVars = await createCawsEnvProvider(client, ssm, runningEnv)()
 
     const options: vscode.TerminalOptions = {
         name: `Remote Connection (${env.id})`,
@@ -323,12 +321,7 @@ async function installVsix(
         return
     }
 
-    const deps = await ensureDependencies()
-    if (!deps) {
-        return
-    }
-
-    const { vsc, ssh, ssm } = deps
+    const { vsc, ssh, ssm } = (await ensureDependencies()).unwrap()
 
     progress.report({ message: 'Waiting...' })
     const runningEnv = await client.startEnvironmentWithProgress(
@@ -391,11 +384,11 @@ async function installVsix(
             .slice(0, 2)
             .map(s => s.replace('.vsix', ''))
         const destName = [EXT_ID, ...suffixParts.reverse()].join('-')
+
         const installCmd = [
-            `mkdir -p ${EXT_PATH}/${destName}`,
+            `rm ${EXT_PATH}/.obsolete || true`,
+            `find ${EXT_PATH} -type d -name '${EXT_ID}*' -exec rm -rf {} +`,
             `unzip ${remoteVsix} "extension/*" "extension.vsixmanifest" -d ${EXT_PATH}`,
-            `rm -rf ${EXT_PATH}/${destName} || true`,
-            `rm -rf ${EXT_PATH}/${destName.split('-').slice(0, -1).join('-')} || true`,
             `mv ${EXT_PATH}/extension ${EXT_PATH}/${destName}`,
             `mv ${EXT_PATH}/extension.vsixmanifest ${EXT_PATH}/${destName}/.vsixmanifest`,
         ].join(' && ')

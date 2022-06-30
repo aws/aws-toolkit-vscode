@@ -6,7 +6,8 @@
 import * as vscode from 'vscode'
 import { SearchParams, UriHandler } from '../shared/vscode/uriHandler'
 import { ConnectedCawsClient, getCawsConfig } from '../shared/clients/cawsClient'
-import { cloneCawsRepo, openDevEnv, CawsCommands } from './commands'
+import { cloneCawsRepo, CawsCommands } from './commands'
+import { openDevEnv } from './model'
 
 export function register(handler: UriHandler, commands: Pick<CawsCommands, 'bindClient'>) {
     const tryHandleClone = commands.bindClient(handleCloneParams)
@@ -41,8 +42,8 @@ async function handleConnectParams(
     client: ConnectedCawsClient,
     params: ReturnType<typeof parseConnectParams>
 ): Promise<void> {
-    const env = await client.getDevEnv({
-        projectName: params.projectName,
+    const env = await client.getDevelopmentWorkspace({
+        ...params,
         id: params.developmentWorkspaceId,
         organizationName: params.developmentWorkspaceId,
     })

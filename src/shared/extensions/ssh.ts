@@ -9,6 +9,8 @@ import * as nls from 'vscode-nls'
 import { getLogger } from '../logger'
 import { ChildProcess } from '../utilities/childProcess'
 import { SystemUtilities } from '../systemUtilities'
+import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
+import { Settings } from '../settings'
 
 const localize = nls.loadMessageBundle()
 
@@ -79,4 +81,63 @@ exit !$?
         // go from there. Many users probably wouldn't care about the agent at all.
         getLogger().warn('ssh: failed to start SSH agent, clones may not work as expected: %O', err)
     }
+}
+
+const remoteSshTypes = {
+    path: String,
+    defaultExtensions: ArrayConstructor(String),
+    remotePlatform: NonNullObject,
+    useLocalServer: Boolean,
+}
+
+export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTypes) {
+    public async ensureDefaultExtension(extensionId: string): Promise<boolean> {
+        const current = this.get('defaultExtensions', [])
+
+        if (!current.includes(extensionId)) {
+            this.log(`updating remote SSH "defaultExtensions" setting with "${extensionId}"`)
+
+            return this.update('defaultExtensions', [...current, extensionId])
+        }
+
+        return true
+    }
+
+    public async setRemotePlatform(hostname: string, platform: 'linux' | 'windows' | 'macOS'): Promise<boolean> {
+        try {
+            const current = this.getOrThrow('remotePlatform', {})
+            current[hostname] = platform
+            this.log(`updated remote SSH host "${hostname}" with platform "${platform}"`)
+
+            return this.update('remotePlatform', current)
+        } catch (error) {
+            this.log(`failed to read "remotePlatform", no updates will be made`)
+
+            return false
+        }
+    }
+}
+
+export async function startVscodeRemote(
+    ProcessClass: typeof ChildProcess,
+    hostname: string,
+    targetDirectory: string,
+    vscPath: string
+): Promise<void> {
+    const workspaceUri = `vscode-remote://ssh-remote+${hostname}${targetDirectory}`
+
+    if (process.platform === 'win32') {
+        const settings = new RemoteSshSettings()
+
+        await Promise.all([
+            // TODO(sijaden): we should periodically clean this setting up, maybe
+            // by removing all hostnames that use the `aws-` prefix
+            await settings.setRemotePlatform(hostname, 'linux'),
+
+            // TODO(sijaden): revert this setting back to normal after the user connects
+            await settings.update('useLocalServer', false),
+        ])
+    }
+
+    await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run({ rejectOnErrorCode: true })
 }

@@ -5,23 +5,25 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import {
-    createAliasPrompter,
-    createInstancePrompter,
-    createTimeoutPrompter,
-    getAllInstanceDescriptions,
-} from '../../../mde/wizards/environmentSettings'
 import { ConnectedWorkspace, DevEnvId, getDevfileLocation } from '../../model'
 import { CawsCommands, WorkspaceSettings } from '../../commands'
 import { VueWebview } from '../../../webviews/main'
 import { Prompter } from '../../../shared/ui/prompter'
 import { isValidResponse } from '../../../shared/wizards/wizard'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
-import { GetStatusResponse } from '../../../shared/clients/mdeEnvironmentClient'
-import { tryRestart } from '../../../mde/mdeCommands'
-import { getCawsWorkspaceArn } from '../../../shared/vscode/env'
+import { GetStatusResponse } from '../../../shared/clients/developmentWorkspaceClient'
 import { openCawsUrl } from '../../utils'
 import { assertHasProps } from '../../../shared/utilities/tsUtils'
+import {
+    createAliasPrompter,
+    createInstancePrompter,
+    createTimeoutPrompter,
+    getAllInstanceDescriptions,
+} from '../../wizards/workspaceSettings'
+import { updateDevfileCommand } from '../../devfile'
+import { showViewLogsMessage } from '../../../shared/utilities/messages'
+import { isLongReconnect, removeReconnectionInformation, saveReconnectionInformation } from '../../reconnect'
+import { DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
 
 const localize = nls.loadMessageBundle()
 
@@ -57,17 +59,13 @@ export class CawsConfigureWebview extends VueWebview {
     }
 
     public async updateDevfile(location: string) {
-        // XXX: add arn to the workspace model
-        const arn = getCawsWorkspaceArn()
-
-        if (!arn) {
-            throw new Error('Expected workspace ARN to be defined')
+        // TODO(sijaden): we should be able to store the absolute URI somewhere?
+        const rootDirectory = vscode.workspace.workspaceFolders?.[0].uri
+        if (!rootDirectory) {
+            throw new Error('No workspace folder found')
         }
 
-        const title = localize('AWS.caws.container.restart', 'Restarting container...')
-        await vscode.window.withProgress({ title, location: vscode.ProgressLocation.Notification }, () =>
-            tryRestart(arn, () => this.workspace.environmentClient.startDevfile({ location }))
-        )
+        await updateDevfileCommand.execute(vscode.Uri.joinPath(rootDirectory, location))
     }
 
     public async stopWorkspace(id: DevEnvId) {
@@ -78,8 +76,26 @@ export class CawsConfigureWebview extends VueWebview {
         return this.commands.deleteWorkspace.execute(id)
     }
 
-    public async updateWorkspace(id: DevEnvId, settings: WorkspaceSettings) {
-        return this.commands.updateWorkspace.execute(id, settings)
+    public async updateWorkspace(
+        id: Pick<DevelopmentWorkspace, 'id' | 'org' | 'project' | 'alias'>,
+        settings: WorkspaceSettings
+    ) {
+        if (isLongReconnect(this.workspace.summary, settings)) {
+            try {
+                await saveReconnectionInformation(id)
+                await this.commands.updateWorkspace.execute(id, settings)
+                reportClosingMessage()
+            } catch (err) {
+                await removeReconnectionInformation(id)
+                throw err
+            }
+        } else {
+            return this.commands.updateWorkspace.execute(id, settings)
+        }
+    }
+
+    public async showLogsMessage(title: string): Promise<string | undefined> {
+        return showViewLogsMessage(title)
     }
 
     public async editSetting(settings: WorkspaceSettings, key: keyof WorkspaceSettings): Promise<WorkspaceSettings> {
@@ -162,4 +178,17 @@ function pollDevfile(workspace: ConnectedWorkspace, server: CawsConfigureWebview
     })()
 
     return { dispose: () => (done = true) }
+}
+
+function reportClosingMessage(): void {
+    vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: 'VSCode will now close this session. When the workspace is available again it will re-open',
+        },
+        async (progress, token) => {
+            await sleep(2500)
+            vscode.commands.executeCommand('workbench.action.remote.close')
+        }
+    )
 }
