@@ -17,6 +17,7 @@ import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { asyncCallWithTimeout, isAwsError } from '../util/commonUtil'
 import * as codewhispererClient from '../client/codewhisperer'
+import { showTimedMessage } from '../../shared/utilities/messages'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -36,6 +37,7 @@ export class RecommendationHandler {
     public startPos: vscode.Position
     private cancellationToken: vscode.CancellationTokenSource
     public errorMessagePrompt: string
+    public isGenerateRecommendationInProgress: boolean
 
     constructor() {
         this.requestId = ''
@@ -48,6 +50,7 @@ export class RecommendationHandler {
         this.cancellationToken = new vscode.CancellationTokenSource()
         this.errorMessagePrompt = ''
         this.recommendationSuggestionState = new Map<number, string>()
+        this.isGenerateRecommendationInProgress = false
     }
 
     static #instance: RecommendationHandler
@@ -245,7 +248,9 @@ export class RecommendationHandler {
                 }
             }
         }
-        if (recommendation.length > 0) this.recommendations = this.recommendations.concat(recommendation)
+        if (recommendation.length > 0) {
+            this.recommendations = isCloud9() ? recommendation : this.recommendations.concat(recommendation)
+        }
         this.requestId = requestId
         this.sessionId = sessionId
         this.nextToken = nextToken
@@ -298,5 +303,42 @@ export class RecommendationHandler {
 
     hasNextToken(): boolean {
         return this.nextToken !== ''
+    }
+
+    canShowRecommendationInIntelliSense(editor: vscode.TextEditor, showPrompt: boolean = false): boolean {
+        const reject = () => {
+            this.reportUserDecisionOfCurrentRecommendation(editor, -1)
+            this.clearRecommendations()
+        }
+        if (!this.isValidResponse()) {
+            if (showPrompt) {
+                showTimedMessage(
+                    this.errorMessagePrompt === '' ? CodeWhispererConstants.noSuggestions : this.errorMessagePrompt,
+                    3000
+                )
+            }
+            reject()
+            return false
+        }
+        // do not show recommendation if cursor is before invocation position
+        if (editor.selection.active.isBefore(this.startPos)) {
+            reject()
+            return false
+        }
+
+        // do not show recommendation if typeahead does not match
+        const typedPrefix = editor.document.getText(
+            new vscode.Range(
+                this.startPos.line,
+                this.startPos.character,
+                editor.selection.active.line,
+                editor.selection.active.character
+            )
+        )
+        if (!this.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
+            reject()
+            return false
+        }
+        return true
     }
 }
