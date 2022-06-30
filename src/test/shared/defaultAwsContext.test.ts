@@ -189,6 +189,13 @@ describe('DefaultAwsContext', function () {
         }
     })
 
+    it('prioritizes the AWS explorer region if there is only one', async function () {
+        const fakeContext = new DefaultAwsContext(await FakeExtensionContext.create())
+        await fakeContext.addExplorerRegion('us-east-2')
+        fakeContext.setLastTouchedRegion('us-west-1')
+        assert.strictEqual(fakeContext.guessDefaultRegion(), 'us-east-2')
+    })
+
     function makeSampleAwsContextCredentials(): AwsContextCredentials {
         return {
             credentials: {} as any as AWS.Credentials,
