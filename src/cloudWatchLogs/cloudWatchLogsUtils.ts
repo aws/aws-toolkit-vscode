@@ -13,32 +13,6 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 // The following functions are used to structure and destructure relevant information to/from a URI.
 // Colons are not valid characters in either the group name or stream name and will be used as separators.
 
-let parsingURIMap = new Map<string, URIParsingFunction>()
-
-parsingURIMap.set('viewLogStream', function (parts) {
-    return {
-        logGroupInfo: {
-            groupName: parts[1],
-            regionName: parts[2],
-            streamName: parts[3],
-        },
-        parameters: {},
-    }
-})
-
-parsingURIMap.set('searchLogGroup', function (parts) {
-    return {
-        logGroupInfo: {
-            groupName: parts[1],
-            regionName: parts[2],
-        },
-        parameters: {
-            filterPattern: parts[3],
-            startTime: Number(parts[4]),
-        },
-    }
-})
-
 /**
  * Destructures an awsCloudWatchLogs URI into its component pieces.
  * @param uri URI for a Cloudwatch Logs file
@@ -50,13 +24,34 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
     const parts = uri.path.split(':')
     const action = parts[0]
 
-    const parsingFunction = parsingURIMap.get(action)
-
-    if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME || !parsingFunction) {
+    if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME) {
         throw new Error(`URI ${uri} is not parseable for CloudWatch Logs`)
     }
 
-    return parsingFunction(parts)
+    switch (action) {
+        case 'viewLogStream':
+            return {
+                logGroupInfo: {
+                    groupName: parts[1],
+                    regionName: parts[2],
+                    streamName: parts[3],
+                },
+                parameters: {},
+            }
+        case 'searchLogGroup':
+            return {
+                logGroupInfo: {
+                    groupName: parts[1],
+                    regionName: parts[2],
+                },
+                parameters: {
+                    filterPattern: parts[3],
+                    startTime: Number(parts[4]),
+                },
+            }
+        default:
+            throw new Error(`Undefined action ${action}, do not know how to parse the URI: ${uri}.`)
+    }
 }
 
 /**
@@ -81,8 +76,3 @@ export function createURIFromArgs(
 }
 
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cloudWatchLogs', { limit: Number }) {}
-
-type URIParsingFunction = (parts: Array<string>) => {
-    logGroupInfo: CloudWatchLogsGroupInfo
-    parameters: CloudWatchLogsParameters
-}
