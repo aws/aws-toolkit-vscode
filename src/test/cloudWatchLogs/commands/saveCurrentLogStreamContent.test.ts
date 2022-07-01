@@ -23,11 +23,11 @@ describe('saveCurrentLogStreamContent', async function () {
     beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
         filename = path.join(tempDir, 'bobLoblawsLawB.log')
-        fakeRegistry = ({
+        fakeRegistry = {
             getLogContent: (uri: vscode.Uri, formatting?: { timestamps?: boolean }) => {
                 return logContent
             },
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
     })
 
     afterEach(async function () {
@@ -36,7 +36,7 @@ describe('saveCurrentLogStreamContent', async function () {
 
     it('saves log content to a file', async function () {
         await saveCurrentLogStreamContent(
-            vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:g:s:r`),
+            vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:viewLogStream:g:r:s`),
             fakeRegistry,
             new FakeWindow({
                 dialog: {

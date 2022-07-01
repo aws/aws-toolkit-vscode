@@ -6,13 +6,12 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import { CloudWatchLogs } from 'aws-sdk'
 import {
     CloudWatchLogsData,
     LogStreamRegistry,
     CloudWatchLogsResponse,
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
+import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 
