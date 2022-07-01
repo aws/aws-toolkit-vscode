@@ -1,3 +1,22 @@
+## 1.44.0 2022-06-30
+
+- **Bug Fix** Fixed a bug where CodeWhisperer incorrectly changes the `snippetSuggestions` setting in VSCode
+
+## 1.42.0 2022-06-23
+
+- **Feature** [CodeWhisperer](https://aws.amazon.com/codewhisperer) uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
+
+## 1.41.0 2022-06-22
+
+- **Bug Fix** Credentials are now automatically refreshed on certain AWS API errors
+
+## 1.40.0 2022-06-17
+
+- **Bug Fix** The `Upload Lambda` command now automatically causes the Toolkit to login
+- **Bug Fix** S3 "Presigned URL" feature may silently fail #2687
+- **Bug Fix** Fix issue where some http errors were logging undefined on error
+- **Feature** UI: buttons for Lambda invoke, API invoke, and other forms are now always visible at the top of the form
+
 ## 1.39.0 2022-06-06
 
 - **Bug Fix** StepFunctions: allow state machines with non-object values for Parameters property

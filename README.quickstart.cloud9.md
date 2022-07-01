@@ -17,6 +17,9 @@ Try the [AWS Code Sample Catalog](https://docs.aws.amazon.com/code-samples/lates
     -   IoT explorer
     -   Lambda functions
     -   S3 explorer
+-   [Developer Tools](#ui-components-dev-tools)
+    -   [CDK Explorer](#ui-components-cdk-expl)
+    -   [CodeWhisperer](#codewhisperer)
 -   [AWS Serverless Applications (SAM)](#sam-and-lambda)
 -   [`AWS:` Commands](#aws-commands)
 
@@ -27,6 +30,32 @@ Try the [AWS Code Sample Catalog](https://docs.aws.amazon.com/code-samples/lates
 The **AWS Explorer** provides access to the AWS services that you can work with when using the Toolkit. To see the **AWS Explorer**, choose the **AWS** icon in the **Activity bar**.
 
 ## ![Overview, AWS Explorer](./resources/marketplace/cloud9/overview-aws-explorer-en.png)
+
+## <a id="ui-components-dev-tools"></a>Developer Tools
+
+The **Developer Tools** panel is a section for developer-focused tooling curated for working in an IDE. The **Developer Tools** panel can be found underneath the **AWS Explorer** when the **AWS icon** is selected in the **Activity bar**.
+
+## { [Return to Top](#top) }
+
+## <a id="ui-components-cdk-expl"></a>CDK Explorer
+
+The **AWS CDK Explorer** enables you to work with [AWS Cloud Development Kit (CDK)](https://aws.amazon.com/cdk/) applications. It shows a top-level view of your CDK applications that have been sythesized in your workspace.
+
+With the CDK explorer, you can navigate the CDK application's infrastructure stacks, resources, and policies.
+
+For full details see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/cdk-explorer.html) in the user guide.
+
+{ [Return to Top](#top) }
+
+## <a id="codewhisperer"></a>Amazon CodeWhisperer
+
+**Amazon CodeWhisperer** provides inline code suggestions using machine learning and natural language processing on the contents of your current file. Supported languages include: Java, Python and Javascript.
+
+Once enabled, CodeWhisperer will provide code suggestions automatically and can also be requested manually using option+c (mac) / alt+c (PC). To accept a suggestion and add it to your file, press Tab, Enter or click on it. To dismiss a suggestion, press escape or keep typing.
+
+For more information, see [Amazon CodeWhisperer](https://aws.amazon.com/codewhisperer) in our user guide.
+
+## { [Return to Top](#top) }
 
 ## <a id="sam-and-lambda"></a> AWS Serverless Applications
 

@@ -43,6 +43,7 @@ import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { activate as activateS3 } from './s3/activation'
 import * as awsFiletypes from './shared/awsFiletypes'
 import * as telemetry from './shared/telemetry/telemetry'
+import { activate as activateCodeWhisperer, shutdown as codewhispererShutdown } from './codewhisperer/activation'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
@@ -64,6 +65,7 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
+import { Commands } from './shared/vscode/commands2'
 
 let localize: nls.LocalizeFunc
 
@@ -139,55 +141,40 @@ export async function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(
             // No-op command used for decoration-only codelenses.
             vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
-            vscode.commands.registerCommand('aws.login', () => globals.awsContextCommands.onCommandLogin()),
-            vscode.commands.registerCommand('aws.logout', () => globals.awsContextCommands.onCommandLogout()),
+            Commands.register('aws.login', () => globals.awsContextCommands.onCommandLogin()),
+            Commands.register('aws.logout', () => globals.awsContextCommands.onCommandLogout()),
             // "Show AWS Commands..."
-            vscode.commands.registerCommand('aws.listCommands', () =>
+            Commands.register('aws.listCommands', () =>
                 vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
-            )
-        )
-
-        context.subscriptions.push(
-            vscode.commands.registerCommand('aws.credential.profile.create', async () => {
+            ),
+            Commands.register('aws.credential.profile.create', async () => {
                 try {
                     await globals.awsContextCommands.onCommandCreateCredentialsProfile()
                 } finally {
                     telemetry.recordAwsCreateCredentials()
                 }
-            })
-        )
-
-        // register URLs in extension menu
-        context.subscriptions.push(
-            vscode.commands.registerCommand('aws.help', async () => {
+            }),
+            // register URLs in extension menu
+            Commands.register('aws.help', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
                 telemetry.recordAwsHelp()
-            })
-        )
-        context.subscriptions.push(
-            vscode.commands.registerCommand('aws.github', async () => {
+            }),
+            Commands.register('aws.github', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubUrl))
                 telemetry.recordAwsShowExtensionSource()
-            })
-        )
-        context.subscriptions.push(
-            vscode.commands.registerCommand('aws.createIssueOnGitHub', async () => {
+            }),
+            Commands.register('aws.createIssueOnGitHub', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubCreateIssueUrl))
                 telemetry.recordAwsReportPluginIssue()
-            })
-        )
-        context.subscriptions.push(
-            vscode.commands.registerCommand('aws.quickStart', async () => {
+            }),
+            Commands.register('aws.quickStart', async () => {
                 try {
                     await showQuickStartWebview(context)
                 } finally {
                     telemetry.recordAwsHelpQuickstart({ result: 'Succeeded' })
                 }
-            })
-        )
-
-        context.subscriptions.push(
-            vscode.commands.registerCommand('aws.aboutToolkit', async () => {
+            }),
+            Commands.register('aws.aboutToolkit', async () => {
                 await aboutToolkit()
             })
         )
@@ -216,6 +203,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSam(extContext)
 
         await activateS3(extContext)
+
+        await activateCodeWhisperer(extContext)
 
         await activateEcr(context)
 
@@ -261,6 +250,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
+    await codewhispererShutdown()
     await globals.telemetry.shutdown()
     await globals.resourceManager.dispose()
 }

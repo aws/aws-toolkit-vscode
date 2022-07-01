@@ -37,7 +37,6 @@ export class RegionNode extends AWSTreeNodeBase {
     public get regionCode(): string {
         return this.region.id
     }
-
     public get regionName(): string {
         return this.region.name
     }
@@ -98,7 +97,6 @@ export class RegionNode extends AWSTreeNodeBase {
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
-
         this.childNodes.push(new ResourcesNode(this.regionCode))
     }
 
@@ -112,9 +110,20 @@ export class RegionNode extends AWSTreeNodeBase {
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         this.tryClearChildren()
-        return this.childNodes
+        const nodes = this.childNodes
+        return this.sortNodes(nodes)
     }
 
+    private sortNodes(nodes: AWSTreeNodeBase[]) {
+        return nodes.sort((a, b) => {
+            // Always sort `ResourcesNode` at the bottom
+            return a instanceof ResourcesNode
+                ? 1
+                : b instanceof ResourcesNode
+                ? -1
+                : (a.label ?? '').localeCompare(b.label ?? '')
+        })
+    }
     public update(region: Region): void {
         this.region = region
         this.label = this.regionName

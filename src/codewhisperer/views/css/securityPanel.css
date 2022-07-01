@@ -1,0 +1,112 @@
+.accordion > input[type='checkbox'] {
+    position: absolute;
+    left: -100vw;
+}
+
+.accordion .content {
+    overflow-y: hidden;
+    height: 0;
+    transition: height 0.3s ease;
+}
+
+.accordion > input[type='checkbox']:checked ~ .content {
+    height: auto;
+    overflow: visible;
+}
+
+.accordion label {
+    display: block;
+}
+
+body {
+    background-color: var(--vscode-panel-background);
+    color: var(--vscode-terminal-foreground);
+    font-family: var(--vscode-editor-font-family);
+    font-size: 12px;
+    resize: none;
+}
+
+.accordion {
+    margin-bottom: 0.3em;
+    font-weight: normal;
+}
+
+.accordion > input[type='checkbox']:checked ~ .content {
+    border-top: 0;
+}
+
+.accordion .handle {
+    margin: 0;
+}
+
+.accordion .content {
+    cursor: pointer;
+}
+
+.accordion label {
+    cursor: pointer;
+}
+
+.accordion .handle label:before {
+    font-family: 'codicon';
+    content: '\eab6';
+    display: inline-block;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.accordion > input[type='checkbox']:checked ~ .handle label:before {
+    content: '\eab4';
+}
+
+.content {
+    margin-left: 1.5em;
+    margin-top: 0.3em;
+}
+
+.warning::before {
+    font-family: 'codicon';
+    content: '\ea6c';
+    display: inline-block;
+    vertical-align: middle;
+    color: goldenrod;
+    margin-right: 5px;
+}
+
+.info::before {
+    font-family: 'codicon';
+    content: '\eba8';
+    display: inline-block;
+    vertical-align: middle;
+    color: lightcoral;
+    margin-right: 5px;
+}
+
+.rerun::before {
+    font-family: 'codicon';
+    content: '\eba8';
+    display: inline-block;
+    vertical-align: middle;
+    color: lightgreen;
+    margin-right: 5px;
+}
+
+a {
+    text-decoration: none;
+}
+
+a,
+a:focus,
+a:hover {
+    display: inline-block;
+    color: lightgray;
+    outline: none;
+}
+
+span.packageName {
+    color: lightskyblue;
+}
+
+span.total {
+    color: goldenrod;
+}

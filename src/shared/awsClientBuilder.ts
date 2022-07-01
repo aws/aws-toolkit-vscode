@@ -23,7 +23,7 @@ interface RequestExtras {
 }
 
 type RequestListener = (request: AWS.Request<any, AWSError> & RequestExtras) => void
-type ServiceOptions = ServiceConfigurationOptions & {
+export type ServiceOptions = ServiceConfigurationOptions & {
     /**
      * The frequency and (lack of) idempotency of events is highly dependent on the SDK implementation
      * For example, 'error' may fire more than once for a single request
@@ -104,13 +104,15 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
                     shim.refresh()
                         .then(creds => {
                             this.loadCreds(creds)
+                            // The SDK V2 sets `expired` on certain errors so we should only
+                            // unset the flag after acquiring new credentials via `refresh`
+                            this.expired = false
                             callback()
                         })
                         .catch(callback)
                 }
 
                 private loadCreds(creds: CredentialsOptions & { expiration?: Date }) {
-                    this.expired = false
                     this.accessKeyId = creds.accessKeyId
                     this.secretAccessKey = creds.secretAccessKey
                     this.sessionToken = creds.sessionToken ?? this.sessionToken
