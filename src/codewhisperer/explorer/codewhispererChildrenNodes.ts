@@ -61,7 +61,7 @@ export const createRequestAccessNode = () =>
 export const createOpenReferenceLogNode = () =>
     showReferenceLog.build().asTreeNode({
         label: localize('AWS.explorerNode.codewhispererOpenReferenceLogNode.label', 'Open Code Reference Panel'),
-        iconPath: vscode.ThemeIcon.File,
+        iconPath: getIcon('vscode-file'),
         tooltip: localize(
             'AWS.explorerNode.codewhispererOpenReferenceLogNode.tooltip',
             'Click to open Code Reference Panel'

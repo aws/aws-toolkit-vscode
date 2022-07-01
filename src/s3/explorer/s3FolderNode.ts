@@ -24,6 +24,7 @@ import { S3FileNode } from './s3FileNode'
 import { inspect } from 'util'
 import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
+import { getIcon } from '../../shared/icons'
 
 /**
  * Represents a folder in an S3 bucket that may contain subfolders and/or objects.
@@ -39,7 +40,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     ) {
         super(folder.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = folder.path
-        this.iconPath = vscode.ThemeIcon.Folder
+        this.iconPath = getIcon('vscode-folder')
         this.contextValue = 'awsS3FolderNode'
     }
 

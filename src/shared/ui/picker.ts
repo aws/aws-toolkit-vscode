@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { getIcon } from '../icons'
 const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../logger'
@@ -172,7 +173,7 @@ export class IteratingQuickPickController<TResponse> {
 
     // Default constructs are public static so they can be validated aganist by other functions.
     public static readonly REFRESH_BUTTON: vscode.QuickInputButton = {
-        iconPath: new vscode.ThemeIcon('refresh'),
+        iconPath: getIcon('vscode-refresh'),
         tooltip: localize('AWS.generic.refresh', 'Refresh'),
     }
     public static readonly NO_ITEMS_ITEM: vscode.QuickPickItem = {

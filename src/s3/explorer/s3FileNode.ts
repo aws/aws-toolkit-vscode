@@ -15,6 +15,7 @@ import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
 import globals from '../../shared/extensionGlobals'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { getIcon } from '../../shared/icons'
 
 /**
  * Moment format for rendering readable dates for S3.
@@ -53,7 +54,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
             )
             this.description = `${readableSize}, ${readableDate}`
         }
-        this.iconPath = vscode.ThemeIcon.File
+        this.iconPath = getIcon('vscode-file')
         this.contextValue = 'awsS3FileNode'
         this.command = !isCloud9()
             ? {
