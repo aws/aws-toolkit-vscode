@@ -59,7 +59,7 @@ function failIf(cond: boolean, message?: string): void {
 
 export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): WizardTester<T> {
     const form = wizard instanceof Wizard ? wizard.boundForm : wizard
-    const state = (wizard instanceof Wizard ? wizard.initialState : {}) as T
+    const state = (wizard instanceof Wizard ? JSON.parse(JSON.stringify(wizard.initialState ?? {})) : {}) as T
 
     function canShowPrompter(prop: string): boolean {
         const defaultState = form.applyDefaults(state)
