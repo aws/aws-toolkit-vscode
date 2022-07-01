@@ -5,7 +5,6 @@
 
 import * as moment from 'moment'
 import * as bytes from 'bytes'
-import * as vscode from 'vscode'
 import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
