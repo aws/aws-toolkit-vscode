@@ -72,10 +72,10 @@ export class DefaultAwsContext implements AwsContext {
      * @returns heuristic for default region.
      */
     public guessDefaultRegion(node?: AWSTreeNodeBase): string {
-        if (this.explorerRegions.length === 1) {
-            return this.explorerRegions[0]
-        } else if (node?.regionCode) {
+        if (node?.regionCode) {
             return node.regionCode
+        } else if (this.explorerRegions.length === 1) {
+            return this.explorerRegions[0]
         } else if (this.lastTouchedRegion) {
             return this.lastTouchedRegion
         } else {
