@@ -22,6 +22,7 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 
 export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly schemaNodes: Map<string, SchemaItemNode>
+    public readonly regionCode: string = this.client.regionCode
 
     public constructor(private registryItemOutput: Schemas.RegistrySummary, private readonly client: SchemaClient) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)

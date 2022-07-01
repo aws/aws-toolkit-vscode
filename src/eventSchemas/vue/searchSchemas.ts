@@ -110,10 +110,10 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
     let webviewResult: Result = 'Succeeded'
 
     try {
-        if (!node.regionCode) {
-            vscode.window.showInformationMessage('Unable to determine regionCode for node')
-            return
-        }
+        // if (!node.regionCode) {
+        //     vscode.window.showInformationMessage('Unable to determine regionCode for node')
+        //     return
+        // }
         const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(node.regionCode)
         const registryNames = await getRegistryNames(node, client)
         if (registryNames.length === 0) {
