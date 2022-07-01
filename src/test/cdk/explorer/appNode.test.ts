@@ -11,6 +11,7 @@ import * as app from '../../../cdk/explorer/cdkProject'
 import * as appNode from '../../../cdk/explorer/nodes/appNode'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { getTestWorkspaceFolder } from '../../../integrationTest/integrationTestsUtilities'
+import { getIcon } from '../../../shared/icons'
 import * as treeUtils from '../treeTestUtils'
 
 describe('AppNode', function () {
@@ -29,11 +30,12 @@ describe('AppNode', function () {
         assert.strictEqual(testNode.id, vscode.Uri.file(cdkJsonPath).toString())
     })
 
-    it('initializes label and tooltip', async function () {
+    it('initializes label, tooltip, and icon', async function () {
         const testNode = getTestNode()
 
         assert.strictEqual(testNode.treeItem.label, path.relative(workspaceFolderPath, path.dirname(cdkJsonPath)))
         assert.strictEqual(testNode.treeItem.tooltip, vscode.Uri.file(cdkJsonPath).path)
+        assert.strictEqual(testNode.treeItem.iconPath, getIcon('aws-cdk-logo'))
     })
 
     it('returns placeholder node when app contains no stacks', async function () {
