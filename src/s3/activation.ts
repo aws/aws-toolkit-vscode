@@ -22,6 +22,7 @@ import { ExtContext } from '../shared/extensions'
 import { S3FileViewerManager, S3_EDIT_SCHEME, S3_READ_SCHEME } from './fileViewerManager'
 import { VirualFileSystem } from '../shared/virtualFilesystem'
 import globals from '../shared/extensionGlobals'
+import { Commands } from '../shared/vscode/commands2'
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -40,45 +41,48 @@ export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         vscode.workspace.registerFileSystemProvider(S3_EDIT_SCHEME, fs),
         vscode.workspace.registerFileSystemProvider(S3_READ_SCHEME, fs, { isReadonly: true }),
-        vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
+        Commands.register('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
         }),
-        vscode.commands.registerCommand('aws.s3.presignedURL', async (node: S3FileNode) => {
+        Commands.register('aws.s3.presignedURL', async (node: S3FileNode) => {
             await presignedURLCommand(node)
         }),
-        vscode.commands.registerCommand('aws.s3.downloadFileAs', async (node: S3FileNode) => {
+        Commands.register('aws.s3.downloadFileAs', async (node: S3FileNode) => {
             await downloadFileAsCommand(node)
         }),
-        vscode.commands.registerCommand('aws.s3.openFile', async (node: S3FileNode) => {
+        Commands.register('aws.s3.openFile', async (node: S3FileNode) => {
             await openFileReadModeCommand(node, manager)
         }),
-        vscode.commands.registerCommand('aws.s3.editFile', async (uriOrNode: vscode.Uri | S3FileNode) => {
+        Commands.register('aws.s3.editFile', async (uriOrNode: vscode.Uri | S3FileNode) => {
             await editFileCommand(uriOrNode, manager)
         }),
-        vscode.commands.registerCommand('aws.s3.uploadFile', async (node?: S3BucketNode | S3FolderNode) => {
-            if (!node) {
-                const awsContext = ctx.awsContext
-                const regionCode = awsContext.getCredentialDefaultRegion()
-                const s3Client = globals.toolkitClientBuilder.createS3Client(regionCode)
-                const document = vscode.window.activeTextEditor?.document.uri
-                await uploadFileCommand(s3Client, document)
-            } else {
-                await uploadFileCommand(node.s3, node)
+        Commands.register(
+            { id: 'aws.s3.uploadFile', autoconnect: true },
+            async (node?: S3BucketNode | S3FolderNode) => {
+                if (!node) {
+                    const awsContext = ctx.awsContext
+                    const regionCode = awsContext.getCredentialDefaultRegion()
+                    const s3Client = globals.toolkitClientBuilder.createS3Client(regionCode)
+                    const document = vscode.window.activeTextEditor?.document.uri
+                    await uploadFileCommand(s3Client, document)
+                } else {
+                    await uploadFileCommand(node.s3, node)
+                }
             }
-        }),
-        vscode.commands.registerCommand('aws.s3.uploadFileToParent', async (node: S3FileNode) => {
+        ),
+        Commands.register('aws.s3.uploadFileToParent', async (node: S3FileNode) => {
             await uploadFileToParentCommand(node)
         }),
-        vscode.commands.registerCommand('aws.s3.createBucket', async (node: S3Node) => {
+        Commands.register('aws.s3.createBucket', async (node: S3Node) => {
             await createBucketCommand(node)
         }),
-        vscode.commands.registerCommand('aws.s3.createFolder', async (node: S3BucketNode | S3FolderNode) => {
+        Commands.register('aws.s3.createFolder', async (node: S3BucketNode | S3FolderNode) => {
             await createFolderCommand(node)
         }),
-        vscode.commands.registerCommand('aws.s3.deleteBucket', async (node: S3BucketNode) => {
+        Commands.register('aws.s3.deleteBucket', async (node: S3BucketNode) => {
             await deleteBucketCommand(node)
         }),
-        vscode.commands.registerCommand('aws.s3.deleteFile', async (node: S3FileNode) => {
+        Commands.register('aws.s3.deleteFile', async (node: S3FileNode) => {
             await deleteFileCommand(node)
         })
     )
