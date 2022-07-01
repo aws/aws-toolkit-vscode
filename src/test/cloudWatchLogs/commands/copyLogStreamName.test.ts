@@ -19,7 +19,9 @@ describe('copyLogStreamName', async function () {
 
     it('copies stream names from valid URIs and does not copy anything new if the URI is invalid', async function () {
         const streamName = 'stream'
-        await copyLogStreamName(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:${streamName}:account`))
+        const action = 'viewLogStream'
+
+        await copyLogStreamName(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${action}:group:region:${streamName}`))
 
         assert.strictEqual(await vscode.env.clipboard.readText(), streamName)
         await copyLogStreamName(vscode.Uri.parse(`notCloudWatch:hahahaha`))

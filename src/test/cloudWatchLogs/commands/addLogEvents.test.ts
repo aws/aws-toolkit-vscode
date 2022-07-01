@@ -34,7 +34,7 @@ describe('addLogEvents', async function () {
     })
 
     it('runs updateLog and sets busy status correctly', async function () {
-        const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:stream:region`)
+        const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:region:stream`)
         const setBusyStatus = sandbox.stub<[vscode.Uri, boolean], void>()
         const updateLog = sandbox.stub<
             [

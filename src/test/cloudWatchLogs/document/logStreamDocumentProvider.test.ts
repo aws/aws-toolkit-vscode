@@ -7,34 +7,36 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
-import { LogStreamRegistry, CloudWatchLogStreamData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { LogStreamRegistry, CloudWatchLogsData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { Settings } from '../../../shared/settings'
 
 describe('LogStreamDocumentProvider', function () {
-    let registry: LogStreamRegistry
-    let map: Map<string, CloudWatchLogStreamData>
+    let map = new Map<string, CloudWatchLogsData>()
     let provider: LogStreamDocumentProvider
 
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
+    let registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
 
     const registeredUri = vscode.Uri.parse('has:This')
     // TODO: Make this less flaky when we add manual timestamp controls.
     const message = "i'm just putting something here because it's a friday"
-    const stream: CloudWatchLogStreamData = {
+    const stream: CloudWatchLogsData = {
         data: [
             {
                 message,
             },
         ],
+        parameters: {},
+        logGroupInfo: {
+            groupName: 'group',
+            streamName: 'stream',
+            regionName: 'region',
+        },
+        retrieveLogsFunction: registry.getLogEventsFromUriComponents,
         busy: false,
     }
-
-    beforeEach(function () {
-        map = new Map<string, CloudWatchLogStreamData>()
-        map.set(registeredUri.path, stream)
-        registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
-        provider = new LogStreamDocumentProvider(registry)
-    })
+    provider = new LogStreamDocumentProvider(registry)
+    map.set(registeredUri.path, stream)
 
     it('provides content if it exists and a blank string if it does not', function () {
         assert.strictEqual(
