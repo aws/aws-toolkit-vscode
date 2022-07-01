@@ -15,13 +15,9 @@ input[type='number'][data-invalid='true'] {
     background: none;
 }
 
-input[type='checkbox'] {
-    background-color: rgba(var(--shade), 0.1);
-}
-
 /* "Cloud9 gray" in input boxes (not buttons/radios). */
 body.vscode-dark input:not([type='submit']):not([type='radio']) {
-    background: rgba(var(--shade), 0.1);
+    background-color: rgba(var(--shade), 0.1);
 }
 
 input:disabled {
