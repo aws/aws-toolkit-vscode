@@ -15,6 +15,7 @@ import { ResourcesNode } from './explorer/nodes/resourcesNode'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { RESOURCE_FILE_GLOB_PATTERN } from './awsResourceManager'
+import { Commands } from '../shared/vscode/commands2'
 import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
@@ -30,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider('awsResource', new VirtualDocumentProvider()),
-        vscode.commands.registerCommand('aws.resources.openResourcePreview', async (node: ResourceNode) => {
+        Commands.register('aws.resources.openResourcePreview', async (node: ResourceNode) => {
             await openResource({
                 source: node,
                 preview: true,
@@ -38,25 +39,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 diagnostics: resourceDiagnostics,
             })
         }),
-        vscode.commands.registerCommand('aws.resources.copyIdentifier', async (node: ResourceNode) => {
+        Commands.register('aws.resources.copyIdentifier', async (node: ResourceNode) => {
             await copyIdentifier(node.parent.typeName, node.identifier)
         }),
-        vscode.commands.registerCommand('aws.resources.configure', async (node: ResourcesNode) => {
+        Commands.register('aws.resources.configure', async (node: ResourcesNode) => {
             if (await configureResources()) {
                 node.refresh()
             }
         }),
-        vscode.commands.registerCommand('aws.resources.createResource', async (node: ResourceTypeNode) => {
+        Commands.register('aws.resources.createResource', async (node: ResourceTypeNode) => {
             await resourceManager.new(node)
         }),
-        vscode.commands.registerCommand('aws.resources.deleteResource', async (node: ResourceNode) => {
+        Commands.register('aws.resources.deleteResource', async (node: ResourceNode) => {
             if (await deleteResource(node.parent.cloudControl, node.parent.typeName, node.identifier)) {
                 await resourceManager.close(resourceManager.toUri(node)!)
                 node.parent.clearChildren()
                 node.parent.refresh()
             }
         }),
-        vscode.commands.registerCommand('aws.resources.updateResource', async (node: ResourceNode) => {
+        Commands.register('aws.resources.updateResource', async (node: ResourceNode) => {
             await openResource({
                 source: node,
                 preview: false,
@@ -64,7 +65,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 diagnostics: resourceDiagnostics,
             })
         }),
-        vscode.commands.registerCommand('aws.resources.updateResourceInline', async (uri: vscode.Uri) => {
+        Commands.register('aws.resources.updateResourceInline', async (uri: vscode.Uri) => {
             await openResource({
                 source: uri,
                 preview: false,
@@ -75,11 +76,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.workspace.onDidSaveTextDocument(async (doc: vscode.TextDocument) => {
             return await saveResource(doc, resourceManager, resourceDiagnostics)
         }),
-        vscode.commands.registerCommand('aws.resources.saveResource', async (uri: vscode.Uri) => {
+        Commands.register('aws.resources.saveResource', async (uri: vscode.Uri) => {
             await vscode.window.showTextDocument(uri)
             await vscode.commands.executeCommand('workbench.action.files.save')
         }),
-        vscode.commands.registerCommand('aws.resources.closeResource', async (uri: vscode.Uri) => {
+        Commands.register('aws.resources.closeResource', async (uri: vscode.Uri) => {
             if (resourceManager.fromUri(uri) instanceof ResourceNode) {
                 await openResource({
                     source: uri,
@@ -92,7 +93,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 await resourceManager.close(uri)
             }
         }),
-        vscode.commands.registerCommand('aws.resources.viewDocs', async (node: ResourceTypeNode) => {
+        Commands.register('aws.resources.viewDocs', async (node: ResourceTypeNode) => {
             await vscode.env.openExternal(vscode.Uri.parse(node.metadata.documentation))
         }),
         vscode.workspace.onDidChangeTextDocument(textDocumentEvent => {
