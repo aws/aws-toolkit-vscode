@@ -109,9 +109,9 @@ export class LogStreamRegistry {
             return
         }
         const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
-        const URIResults = parseCloudWatchLogsUri(uri)
+        const uriResults = parseCloudWatchLogsUri(uri)
 
-        const logGroupInfo = URIResults.logGroupInfo
+        const logGroupInfo = uriResults.logGroupInfo
 
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
@@ -196,14 +196,14 @@ export class LogStreamRegistry {
             logGroupInfo.regionName
         )
 
-        if (!logGroupInfo.streamName) {
+        if (!parameters.streamName) {
             throw new Error(
                 `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
             )
         }
         const response = await client.getLogEvents({
             logGroupName: logGroupInfo.groupName,
-            logStreamName: logGroupInfo.streamName,
+            logStreamName: parameters.streamName,
             nextToken,
             limit: parameters.limit,
         })
@@ -218,32 +218,13 @@ export class LogStreamRegistry {
 export type CloudWatchLogsGroupInfo = {
     groupName: string
     regionName: string
-    streamName?: string
 }
 
 export type CloudWatchLogsParameters = {
     filterPattern?: string
     startTime?: number
     limit?: number
-}
-
-export function parametersStringValue(parameters: CloudWatchLogsParameters): string {
-    let value = ''
-
-    // There must be a cleaner waßy to do this.
-    if (parameters.filterPattern) {
-        value += `:${parameters.filterPattern}`
-    }
-
-    if (parameters.startTime) {
-        value += `:${parameters.startTime}`
-    }
-
-    if (parameters.limit) {
-        value += `:${parameters.limit}`
-    }
-
-    return value
+    streamName?: string
 }
 
 export type CloudWatchLogsResponse = {

@@ -17,7 +17,12 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
-import { CloudWatchLogsData, CloudWatchLogsParameters, LogStreamRegistry } from '../registry/logStreamRegistry'
+import {
+    CloudWatchLogsData,
+    CloudWatchLogsGroupInfo,
+    CloudWatchLogsParameters,
+    LogStreamRegistry,
+} from '../registry/logStreamRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import globals from '../../shared/extensionGlobals'
 
@@ -31,14 +36,17 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
-        const logGroupInfo = {
+        const logGroupInfo: CloudWatchLogsGroupInfo = {
             groupName: logStreamResponse.logGroupName,
-            streamName: logStreamResponse.logStreamName,
             regionName: logStreamResponse.region,
         }
 
-        const parameters: CloudWatchLogsParameters = { limit: registry.configuration.get('limit', 10000) }
-        const uri = createURIFromArgs('viewLogStream', logGroupInfo, parameters)
+        const parameters: CloudWatchLogsParameters = {
+            limit: registry.configuration.get('limit', 10000),
+            streamName: logStreamResponse.logStreamName,
+        }
+
+        const uri = createURIFromArgs(logGroupInfo, parameters)
 
         const initialStreamData: CloudWatchLogsData = {
             data: [],

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
-import { CloudWatchLogsGroupInfo, parametersStringValue } from './registry/logStreamRegistry'
+import { CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
 import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
@@ -22,35 +22,19 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
     parameters: CloudWatchLogsParameters
 } {
     const parts = uri.path.split(':')
-    const action = parts[0]
 
     if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME) {
         throw new Error(`URI ${uri} is not parseable for CloudWatch Logs`)
     }
 
-    switch (action) {
-        case 'viewLogStream':
-            return {
-                logGroupInfo: {
-                    groupName: parts[1],
-                    regionName: parts[2],
-                    streamName: parts[3],
-                },
-                parameters: {},
-            }
-        case 'searchLogGroup':
-            return {
-                logGroupInfo: {
-                    groupName: parts[1],
-                    regionName: parts[2],
-                },
-                parameters: {
-                    filterPattern: parts[3],
-                    startTime: Number(parts[4]),
-                },
-            }
-        default:
-            throw new Error(`Undefined action ${action}, do not know how to parse the URI: ${uri}.`)
+    console.log(JSON.parse(uri.query))
+
+    return {
+        logGroupInfo: {
+            groupName: parts[1],
+            regionName: parts[2],
+        },
+        parameters: JSON.parse(uri.query),
     }
 }
 
@@ -61,17 +45,16 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
  * @param regionName AWS region
  */
 export function createURIFromArgs(
-    action: string,
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters
 ): vscode.Uri {
-    let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${action}:${logGroupInfo.groupName}:${logGroupInfo.regionName}`
+    let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${logGroupInfo.groupName}:${logGroupInfo.regionName}`
 
-    if (logGroupInfo.streamName) {
-        uriStr += `:${logGroupInfo.streamName}`
+    if (parameters.streamName) {
+        uriStr += `:${parameters.streamName}`
     }
 
-    uriStr += parametersStringValue(parameters)
+    uriStr += `?${encodeURIComponent(JSON.stringify(parameters))}`
     return vscode.Uri.parse(uriStr)
 }
 
