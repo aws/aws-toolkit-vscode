@@ -19,7 +19,8 @@ input[type='checkbox'] {
     background-color: rgba(var(--shade), 0.1);
 }
 
-body.vscode-dark input {
+/* "Cloud9 gray" in input boxes (not buttons/radios). */
+body.vscode-dark input:not([type='submit']):not([type='radio']) {
     background: rgba(var(--shade), 0.1);
 }
 
@@ -57,7 +58,11 @@ body.vscode-dark .settings-panel {
 body.vscode-light .settings-panel {
     background: rgba(var(--shade), 0.02) !important;
 }
+
 .button-container {
     border: none !important;
     background: none !important;
+}
+.button-container h1 {
+    margin: 0px;
 }
