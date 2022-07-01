@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../shared/extensionGlobals'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
@@ -13,12 +18,8 @@ import { publishStateMachine } from './commands/publishStateMachine'
 import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVisualizationManager'
 
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
-
-import * as nls from 'vscode-nls'
-import globals from '../shared/extensionGlobals'
 import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
-const localize = nls.loadMessageBundle()
 
 /**
  * Activate Step Functions related functionality for the extension.

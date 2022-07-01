@@ -3,29 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { IAM } from 'aws-sdk'
 import { IamClient } from '../../../../shared/clients/iamClient'
-import { RolePrompter } from '../../../../shared/ui/common/rolePrompter'
 import { mock, when } from 'ts-mockito'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 import { instance } from '../../../utilities/mockito'
-import { QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
+import { createRolePrompter } from '../../../../shared/ui/common/roles'
+import { toCollection } from '../../../../shared/utilities/asyncCollection'
 
-const TEST_HELP_URI = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
+const helpUri = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
-describe('RolePrompter', function () {
-    let sandbox: sinon.SinonSandbox
+describe('createRolePrompter', function () {
     let roles: IAM.Role[]
     let newRole: IAM.Role
     let mockIamClient: IamClient
     let tester: QuickPickTester<IAM.Role>
 
     beforeEach(function () {
-        sandbox = sinon.createSandbox()
         roles = [
             {
                 RoleName: 'test-role1',
@@ -39,16 +36,22 @@ describe('RolePrompter', function () {
         } as any
 
         mockIamClient = mock()
-        when(mockIamClient.listRoles()).thenResolve(roles)
-        const prompter = new RolePrompter(instance(mockIamClient), {
+        when(mockIamClient.getRoles()).thenReturn(
+            toCollection(async function* () {
+                yield roles
+            })
+        )
+
+        const prompter = createRolePrompter(instance(mockIamClient), {
             createRole: () => Promise.resolve(newRole),
-            helpUri: TEST_HELP_URI,
-        }).call({ estimator: () => 0, stepCache: {} }) as QuickPickPrompter<IAM.Role>
+            helpUri: helpUri,
+        })
+
         tester = createQuickPickTester(prompter)
     })
 
     afterEach(function () {
-        sandbox.restore()
+        sinon.restore()
     })
 
     it('prompts for role', async function () {
@@ -73,9 +76,9 @@ describe('RolePrompter', function () {
     })
 
     it('can open documentation', async function () {
-        const openStub = sandbox.stub(vscode.env, 'openExternal')
+        const openStub = sinon.stub(vscode.env, 'openExternal')
         tester.pressButton('View Toolkit Documentation')
-        tester.addCallback(() => assert.ok(openStub.calledWith(TEST_HELP_URI)))
+        tester.addCallback(() => assert.ok(openStub.calledWith(helpUri)))
         tester.hide()
         await tester.result()
     })
