@@ -66,7 +66,7 @@ import { join } from 'path'
 import { initializeIconPaths } from './shared/icons'
 import { Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands } from './shared/vscode/commands2'
 
 let localize: nls.LocalizeFunc
 

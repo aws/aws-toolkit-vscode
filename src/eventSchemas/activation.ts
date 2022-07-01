@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { downloadSchemaItemCode } from '../eventSchemas/commands/downloadSchemaItemCode'
 import { createSearchSchemasWebView } from './vue/searchSchemas'
 import { viewSchemaItem } from '../eventSchemas/commands/viewSchemaItem'
