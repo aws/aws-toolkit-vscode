@@ -35,6 +35,7 @@ import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebug
 import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
+import { Commands } from '../../../shared/vscode/commands2'
 
 const localize = nls.loadMessageBundle()
 
@@ -302,14 +303,11 @@ export class SamInvokeWebview extends VueWebview {
 const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
-    return vscode.commands.registerCommand(
-        'aws.launchConfigForm',
-        async (launchConfig?: AwsSamDebuggerConfiguration) => {
-            const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
-            webview.show({ title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration') })
-            recordSamOpenConfigUi()
-        }
-    )
+    return Commands.register('aws.launchConfigForm', async (launchConfig?: AwsSamDebuggerConfiguration) => {
+        const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
+        webview.show({ title: localize('AWS.command.launchConfigForm.title', 'Edit SAM Debug Configuration') })
+        recordSamOpenConfigUi()
+    })
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
