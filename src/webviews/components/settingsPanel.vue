@@ -4,17 +4,17 @@
     <div :id="id" class="settings-panel">
         <div class="header">
             <input
-                ref="button"
                 v-bind:id="buttonId"
-                class="preload-transition collapse-button"
+                style="display: none"
                 type="checkbox"
                 v-if="collapseable || startCollapsed"
                 v-model="collapsed"
             />
-            <label v-bind:for="buttonId">
-                <p class="settings-title">{{ title }}</p>
-                <p class="soft no-spacing">{{ description }}</p>
+            <label :for="buttonId" class="panel-header">
+                <i class="preload-transition collapse-button icon icon-vscode-chevron-up" ref="icon"></i>
+                <span class="settings-title">{{ title }}</span>
             </label>
+            <p class="soft no-spacing mt-8">{{ description }}</p>
         </div>
         <transition
             @enter="updateHeight"
@@ -82,7 +82,7 @@ export default defineComponent({
         // or just use Vue's transition element, but this is pretty heavy
         this.$nextTick(() => {
             setTimeout(() => {
-                ;(this.$refs.button as HTMLElement | undefined)?.classList.remove('preload-transition')
+                ;(this.$refs.icon as HTMLElement | undefined)?.classList.remove('preload-transition')
             }, 100)
         })
     },
@@ -96,7 +96,7 @@ export default defineComponent({
 .settings-title {
     font-size: calc(1.1 * var(--vscode-font-size)); /* TODO: make this configurable */
     font-weight: bold;
-    margin: 0 0 2px 0;
+    margin: 0;
     padding: 0;
 }
 .sub-pane {
@@ -125,34 +125,36 @@ export default defineComponent({
     max-height: var(--max-height);
     padding: 1rem;
 }
+
 .collapse-button {
+    display: none;
+}
+
+input[type='checkbox'] ~ label .collapse-button {
+    display: inline-block;
     width: 24px;
     height: 24px;
-    -webkit-appearance: none;
-    display: inline;
-    margin: -4px 12px 0 0;
+    margin: -4px 0 0 0;
     padding: 0;
-    background: transparent;
-    background-size: 24px;
-    background-repeat: no-repeat;
-    background-position: center;
+    font-size: 2em;
     opacity: 0.8;
+    color: var(--vscode-foreground);
     transition: transform 0.5s;
-}
-body.vscode-dark .collapse-button {
-    background-image: url('/resources/dark/expand-less.svg');
-}
-body.vscode-light .collapse-button {
-    background-image: url('/resources/light/expand-less.svg');
-}
-.collapse-button {
     transform: rotate(180deg);
 }
-.collapse-button:checked {
+
+input[type='checkbox']:checked ~ label .collapse-button {
     transform: rotate(90deg);
 }
+
 .settings-panel {
     background: var(--vscode-menu-background);
     margin: 16px 0;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
 }
 </style>

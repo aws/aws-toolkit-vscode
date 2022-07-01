@@ -17,7 +17,6 @@ import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuild
 import globals from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
@@ -39,8 +38,7 @@ describe('CloudFormationStackNode', function () {
     // Mocked CloudFormation Client returns Lambda Function Stack Resources for anything listed in cloudFormationStacklambdaFunctionNames
     let cloudFormationStacklambdaFunctionNames: string[]
 
-    before(async function () {
-        setupTestIconPaths()
+    before(function () {
         fakeStackSummary = {
             CreationTime: new globals.clock.Date(),
             StackId: '1',
@@ -64,20 +62,9 @@ describe('CloudFormationStackNode', function () {
         sandbox.restore()
     })
 
-    after(async function () {
-        clearTestIconPaths()
-    })
-
     it('initializes name and tooltip', async function () {
         assert.strictEqual(testNode.label, `${fakeStackSummary.StackName} [${fakeStackSummary.StackStatus}]`)
         assert.strictEqual(testNode.tooltip, `${fakeStackSummary.StackName}${os.EOL}${fakeStackSummary.StackId}`)
-    })
-
-    it('initializes icon', async function () {
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, globals.iconPaths.light.cloudFormation, 'Unexpected light icon path')
     })
 
     it('returns placeholder node if no children are present', async function () {

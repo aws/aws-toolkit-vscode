@@ -7,11 +7,9 @@
 !dist/libs
 !dist/*/!(testFixtures|test)/**/!(*.*.map)
 !dist/*/!(*.*.map)
-!media/**
 !resources/**
 !syntaxes/**
 !templates/**
-!third-party/**
 !types/**
 !LICENSE
 !NOTICE

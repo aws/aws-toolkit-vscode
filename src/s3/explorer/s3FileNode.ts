@@ -9,12 +9,12 @@ import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/client
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { inspect } from 'util'
 import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
 import globals from '../../shared/extensionGlobals'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { getIcon } from '../../shared/icons'
 
 /**
  * Moment format for rendering readable dates for S3.
@@ -53,7 +53,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
             )
             this.description = `${readableSize}, ${readableDate}`
         }
-        this.iconPath = fileIconPath()
+        this.iconPath = getIcon('vscode-file')
         this.contextValue = 'awsS3FileNode'
         this.command = !isCloud9()
             ? {

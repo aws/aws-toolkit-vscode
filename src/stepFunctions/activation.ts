@@ -89,15 +89,15 @@ export function initalizeWebviewPaths(context: vscode.ExtensionContext): typeof 
     const visualizationLibraryCache = join(context.globalStorageUri.fsPath, 'visualization')
 
     return {
-        localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('media', 'js'))),
-        webviewBodyScript: vscode.Uri.file(context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js'))),
+        localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('resources', 'js'))),
+        webviewBodyScript: vscode.Uri.file(context.asAbsolutePath(join('resources', 'js', 'graphStateMachine.js'))),
         visualizationLibraryCachePath: vscode.Uri.file(visualizationLibraryCache),
         visualizationLibraryScript: vscode.Uri.file(join(visualizationLibraryCache, 'graph.js')),
         visualizationLibraryCSS: vscode.Uri.file(join(visualizationLibraryCache, 'graph.css')),
         // Locations for an additional stylesheet to add Light/Dark/High-Contrast theme support
-        stateMachineCustomThemePath: vscode.Uri.file(context.asAbsolutePath(join('media', 'css'))),
+        stateMachineCustomThemePath: vscode.Uri.file(context.asAbsolutePath(join('resources', 'css'))),
         stateMachineCustomThemeCSS: vscode.Uri.file(
-            context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css'))
+            context.asAbsolutePath(join('resources', 'css', 'stateMachineRender.css'))
         ),
     }
 }
