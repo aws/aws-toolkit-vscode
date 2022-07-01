@@ -26,10 +26,9 @@ describe('LogStreamDocumentProvider', function () {
                 message,
             },
         ],
-        parameters: {},
+        parameters: { streamName: 'stream' },
         logGroupInfo: {
             groupName: 'group',
-            streamName: 'stream',
             regionName: 'region',
         },
         retrieveLogsFunction: registry.getLogEventsFromUriComponents,

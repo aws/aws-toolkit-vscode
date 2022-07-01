@@ -21,7 +21,6 @@ export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
             }
         }
         const parsedUri = parseCloudWatchLogsUri(uri)
-        const logGroupInfo = parsedUri.logGroupInfo
         const parameters = parsedUri.parameters
 
         if (!parameters.streamName) {

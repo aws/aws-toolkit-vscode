@@ -8,7 +8,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as fs from 'fs-extra'
-import * as path from 'path'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { recordCloudwatchlogsDownloadStreamToFile, Result } from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'

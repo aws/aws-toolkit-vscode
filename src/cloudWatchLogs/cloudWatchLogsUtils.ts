@@ -31,8 +31,8 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
 
     return {
         logGroupInfo: {
-            groupName: parts[1],
-            regionName: parts[2],
+            groupName: parts[0],
+            regionName: parts[1],
         },
         parameters: JSON.parse(uri.query),
     }
@@ -49,10 +49,6 @@ export function createURIFromArgs(
     parameters: CloudWatchLogsParameters
 ): vscode.Uri {
     let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${logGroupInfo.groupName}:${logGroupInfo.regionName}`
-
-    if (parameters.streamName) {
-        uriStr += `:${parameters.streamName}`
-    }
 
     uriStr += `?${encodeURIComponent(JSON.stringify(parameters))}`
     return vscode.Uri.parse(uriStr)

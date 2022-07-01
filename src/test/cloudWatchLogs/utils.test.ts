@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import { create } from 'lodash'
 import * as vscode from 'vscode'
 import { createURIFromArgs, parseCloudWatchLogsUri } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
@@ -11,16 +12,12 @@ import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 const goodComponents = {
     logGroupInfo: {
         groupName: 'theBeeGees',
-        streamName: 'islandsInTheStream',
         regionName: 'ap-southeast-2',
     },
-    action: 'viewLogStream',
-    parameters: {},
+    parameters: { streamName: 'islandsInTheStream' },
 }
 
-const goodUri = vscode.Uri.parse(
-    `${CLOUDWATCH_LOGS_SCHEME}:${goodComponents.action}:${goodComponents.logGroupInfo.groupName}:${goodComponents.logGroupInfo.regionName}:${goodComponents.logGroupInfo.streamName}`
-)
+const goodUri = createURIFromArgs(goodComponents.logGroupInfo, goodComponents.parameters)
 
 describe('convertUriToLogGroupInfo', async function () {
     it('converts a valid URI to components', function () {
@@ -50,9 +47,6 @@ describe('convertUriToLogGroupInfo', async function () {
 
 describe('convertLogGroupInfoToUri', function () {
     it('converts components to a valid URI', function () {
-        assert.deepStrictEqual(
-            createURIFromArgs(goodComponents.action, goodComponents.logGroupInfo, goodComponents.parameters),
-            goodUri
-        )
+        assert.deepStrictEqual(createURIFromArgs(goodComponents.logGroupInfo, goodComponents.parameters), goodUri)
     })
 })

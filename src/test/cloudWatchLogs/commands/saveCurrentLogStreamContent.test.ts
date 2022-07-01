@@ -8,9 +8,9 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 
+import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { saveCurrentLogStreamContent } from '../../../cloudWatchLogs/commands/saveCurrentLogStreamContent'
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
@@ -35,8 +35,15 @@ describe('saveCurrentLogStreamContent', async function () {
     })
 
     it('saves log content to a file', async function () {
+        const logGroupInfo = {
+            groupName: 'g',
+            regionName: 'r',
+        }
+        const parameters = { streamName: 's' }
+        const uri = createURIFromArgs(logGroupInfo, parameters)
+
         await saveCurrentLogStreamContent(
-            vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:viewLogStream:g:r:s`),
+            uri,
             fakeRegistry,
             new FakeWindow({
                 dialog: {
