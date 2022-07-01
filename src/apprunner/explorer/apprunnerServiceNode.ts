@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as AsyncLock from 'async-lock'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { AppRunner } from 'aws-sdk'
@@ -17,7 +16,7 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../shared/logger'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 const localize = nls.loadMessageBundle()
 
 const CONTEXT_BASE = 'awsAppRunnerServiceNode'
@@ -49,10 +48,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             parent.region,
             localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
         )
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.apprunner),
-            light: vscode.Uri.file(globals.iconPaths.light.apprunner),
-        }
+        this.iconPath = getIcon('aws-apprunner-service')
         this.id = `AppRunnerService-${_info.ServiceArn}`
         this.name = _info.ServiceName
         this.arn = _info.ServiceArn

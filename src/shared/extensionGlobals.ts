@@ -42,7 +42,6 @@ export function initialize(context: ExtensionContext, window: Window): ToolkitGl
         window,
         clock: copyClock(),
         didReload: checkDidReload(context),
-        iconPaths: { dark: {}, light: {} } as ToolkitGlobals['iconPaths'],
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
     })
@@ -85,11 +84,6 @@ interface ToolkitGlobals {
      */
     readonly clock: Clock
 
-    readonly iconPaths: {
-        readonly dark: IconPaths
-        readonly light: IconPaths
-    }
-
     visualizationResourcePaths: {
         localWebviewScriptsPath: Uri
         webviewBodyScript: Uri
@@ -104,44 +98,4 @@ interface ToolkitGlobals {
         endpoints: string
         lambdaSampleRequests: string
     }
-}
-
-export interface IconPaths {
-    apprunner: string
-    statemachine: string
-    help: string
-    cloudFormation: string
-    ecr: string
-    lambda: string
-    settings: string
-    registry: string
-    s3: string
-    folder: string
-    file: string
-    schema: string
-    cloudWatchLogGroup: string
-    bucket: string
-    createBucket: string
-    thing: string
-    certificate: string
-    policy: string
-    cluster: string
-    service: string
-    container: string
-    // temporary icons while Cloud9 does not have codicon support
-    plus: string
-    edit: string
-    exit: string
-    sync: string
-    syncIgnore: string
-    refresh: string
-    run: string
-    pause: string
-    question: string
-    email: string
-    megaphone: string
-    check: string
-    chromeMaximize: string
-    securityScan: string
-    loading: string
 }

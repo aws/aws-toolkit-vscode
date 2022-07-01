@@ -8,8 +8,8 @@ import { SSM } from 'aws-sdk'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
-import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { getIcon } from '../../shared/icons'
 
 export class DocumentItemNode extends AWSTreeNodeBase {
     public constructor(
@@ -20,7 +20,7 @@ export class DocumentItemNode extends AWSTreeNodeBase {
         super('')
         this.update(documentItem)
         this.contextValue = 'awsDocumentItemNode'
-        this.iconPath = fileIconPath()
+        this.iconPath = getIcon('vscode-file')
     }
 
     public update(documentItem: SSM.Types.DocumentIdentifier): void {

@@ -20,6 +20,7 @@ import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '..
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
 export const CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION = 'awsCloudFormationFunctionNode'
 
@@ -71,10 +72,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         this.update(stackSummary)
         this.contextValue = 'awsCloudFormationNode'
         this.functionNodes = new Map<string, LambdaFunctionNode>()
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.cloudFormation),
-            light: vscode.Uri.file(globals.iconPaths.light.cloudFormation),
-        }
+        this.iconPath = getIcon('aws-cloudformation-stack')
     }
 
     public get stackId(): CloudFormation.StackId | undefined {

@@ -41,6 +41,7 @@ import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
+import { getIcon } from '../../shared/icons'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -417,17 +418,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
     ): Promise<string | undefined> {
         const createBucket = {
-            iconPath: {
-                light: vscode.Uri.file(globals.iconPaths.light.plus),
-                dark: vscode.Uri.file(globals.iconPaths.dark.plus),
-            },
+            iconPath: getIcon('vscode-add'),
             tooltip: CREATE_NEW_BUCKET,
         }
         const enterBucket = {
-            iconPath: {
-                light: vscode.Uri.file(globals.iconPaths.light.edit),
-                dark: vscode.Uri.file(globals.iconPaths.dark.edit),
-            },
+            iconPath: getIcon('vscode-edit'),
             tooltip: ENTER_BUCKET,
         }
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({

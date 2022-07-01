@@ -19,6 +19,7 @@ import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/colle
 import { listStateMachines } from '../../stepFunctions/utils'
 import { Commands } from '../../shared/vscode/commands'
 import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
 export const CONTEXT_VALUE_STATE_MACHINE = 'awsStateMachineNode'
 
@@ -87,10 +88,7 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
     ) {
         super('')
         this.update(details)
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.statemachine),
-            light: vscode.Uri.file(globals.iconPaths.light.statemachine),
-        }
+        this.iconPath = getIcon('aws-stepfunctions-preview')
     }
 
     public update(details: StepFunctions.StateMachineListItem): void {
