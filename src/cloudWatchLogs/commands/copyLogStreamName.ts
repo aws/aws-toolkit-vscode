@@ -8,6 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { copyToClipboard } from '../../shared/utilities/messages'
 
 export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
     try {
@@ -25,8 +26,7 @@ export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
         if (!logGroupInfo.streamName) {
             throw new Error()
         }
-
-        await vscode.env.clipboard.writeText(logGroupInfo.streamName)
+        await copyToClipboard(logGroupInfo.streamName)
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
