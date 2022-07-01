@@ -28,7 +28,7 @@ interface IconsContribution {
 }
 
 function createPackageIcon(fontPath: string, unicode: string, description?: string): PackageIcon {
-    const codePoint = unicode.codePointAt(0)?.toString(16).toUpperCase()
+    const codePoint = unicode.codePointAt(0)?.toString(16)
 
     if (!codePoint) {
         throw new Error(`Invalid unicode character: ${unicode}`)
