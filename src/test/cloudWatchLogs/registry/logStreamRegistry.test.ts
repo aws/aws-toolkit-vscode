@@ -131,7 +131,7 @@ describe('LogStreamRegistry', async function () {
 
     describe('registerLog', async function () {
         it("registers logs and doesn't overwrite existing logs", async () => {
-            await registry.registerLog(missingRegisteredUri, newLineStream)
+            await registry.registerLog(missingRegisteredUri, missingStream)
             const blankPostRegister = registry.getLogContent(missingRegisteredUri)
             assert.strictEqual(blankPostRegister, newText)
 
