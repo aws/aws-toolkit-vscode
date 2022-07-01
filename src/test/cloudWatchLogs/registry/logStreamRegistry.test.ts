@@ -94,12 +94,25 @@ describe('LogStreamRegistry', async function () {
         busy: false,
     }
 
+    const missingStream: CloudWatchLogsData = {
+        data: [],
+        parameters: {},
+        logGroupInfo: {
+            groupName: 'ANOTHER',
+            regionName: 'LINE',
+            streamName: 'PIEEEECCCEEEEEE',
+        },
+        retrieveLogsFunction: fakeGetLogEvents,
+        busy: false,
+    }
+
     const action = 'viewLogStream'
     const registeredUri = createURIFromArgs(action, stream1.logGroupInfo, {})
     const shorterRegisteredUri = createURIFromArgs(action, simplerStream.logGroupInfo, {})
-    const missingRegisteredUri = createURIFromArgs(action, newLineStream.logGroupInfo, {})
+    const missingRegisteredUri = createURIFromArgs(action, missingStream.logGroupInfo, {})
     //const missingRegisteredUri = vscode.Uri.parse(createURIFromArgs(action, newLineStream.logGroupInfo, {}).path)
-    const newLineUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:ANOTHER:LINE:PIEEEECCCEEEEEE`)
+    //const newLineUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:ANOTHER:LINE:PIEEEECCCEEEEEE`)
+    const newLineUri = createURIFromArgs(action, newLineStream.logGroupInfo, {})
 
     beforeEach(function () {
         map = new Map<string, CloudWatchLogsData>()
