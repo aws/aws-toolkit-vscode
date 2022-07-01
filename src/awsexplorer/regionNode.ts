@@ -33,6 +33,7 @@ import globals from '../shared/extensionGlobals'
 export class RegionNode extends AWSTreeNodeBase {
     private region: Region
     private readonly childNodes: AWSTreeNodeBase[] = []
+    public readonly regionCode: string
 
     public get regionName(): string {
         return this.region.name
@@ -43,40 +44,41 @@ export class RegionNode extends AWSTreeNodeBase {
         this.contextValue = 'awsRegionNode'
         this.region = region
         this.update(region)
+        this.regionCode = region.id
 
         //  Services that are candidates to add to the region explorer.
         //  `serviceId`s are checked against ~/resources/endpoints.json to see whether or not the service is available in the given region.
         //  If the service is available, we use the `createFn` to generate the node for the region.
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
-        const partitionId = regionProvider.getPartitionId(this.region.id) ?? DEFAULT_PARTITION
+        const partitionId = regionProvider.getPartitionId(this.regionCode) ?? DEFAULT_PARTITION
         const serviceCandidates = [
-            { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.region.id) },
+            { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) },
             {
                 serviceId: 'apprunner',
                 createFn: () =>
                     new AppRunnerNode(
-                        this.region.id,
-                        globals.toolkitClientBuilder.createAppRunnerClient(this.region.id)
+                        this.regionCode,
+                        globals.toolkitClientBuilder.createAppRunnerClient(this.regionCode)
                     ),
             },
-            { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.region.id) },
-            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.region.id) },
+            { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
+            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 'ecr',
-                createFn: () => new EcrNode(globals.toolkitClientBuilder.createEcrClient(this.region.id)),
+                createFn: () => new EcrNode(globals.toolkitClientBuilder.createEcrClient(this.regionCode)),
             },
             {
                 serviceId: 'ecs',
-                createFn: () => new EcsNode(globals.toolkitClientBuilder.createEcsClient(this.region.id)),
+                createFn: () => new EcsNode(globals.toolkitClientBuilder.createEcsClient(this.regionCode)),
             },
             {
                 serviceId: 'iot',
-                createFn: () => new IotNode(globals.toolkitClientBuilder.createIotClient(this.region.id)),
+                createFn: () => new IotNode(globals.toolkitClientBuilder.createIotClient(this.regionCode)),
             },
-            { serviceId: 'lambda', createFn: () => new LambdaNode(this.region.id) },
+            { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             {
                 serviceId: 's3',
-                createFn: () => new S3Node(globals.toolkitClientBuilder.createS3Client(this.region.id)),
+                createFn: () => new S3Node(globals.toolkitClientBuilder.createS3Client(this.regionCode)),
             },
             ...(isCloud9()
                 ? []
@@ -84,17 +86,17 @@ export class RegionNode extends AWSTreeNodeBase {
                       {
                           serviceId: 'schemas',
                           createFn: () =>
-                              new SchemasNode(globals.toolkitClientBuilder.createSchemaClient(this.region.id)),
+                              new SchemasNode(globals.toolkitClientBuilder.createSchemaClient(this.regionCode)),
                       },
                   ]),
-            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.region.id) },
-            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.region.id) },
+            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
+            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
         ]
 
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
-        this.childNodes.push(new ResourcesNode(this.region.id))
+        this.childNodes.push(new ResourcesNode(this.regionCode))
     }
 
     private tryClearChildren(): void {
@@ -124,7 +126,7 @@ export class RegionNode extends AWSTreeNodeBase {
     public update(region: Region): void {
         this.region = region
         this.label = this.regionName
-        this.tooltip = `${this.regionName} [${this.region.id}]`
+        this.tooltip = `${this.regionName} [${this.regionCode}]`
     }
 
     private addChildNodeIfInRegion(
@@ -132,7 +134,7 @@ export class RegionNode extends AWSTreeNodeBase {
         regionProvider: RegionProvider,
         childNodeProducer: () => AWSTreeNodeBase
     ) {
-        if (regionProvider.isServiceInRegion(serviceId, this.region.id)) {
+        if (regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
             this.childNodes.push(childNodeProducer())
         }
     }
