@@ -55,11 +55,6 @@ body.vscode-light .settings-panel {
     background: rgba(var(--shade), 0.02) !important;
 }
 
-.button-container {
-    border: none !important;
-    background: none !important;
-}
-
 .button-container h1 {
     margin: 0px;
 }
