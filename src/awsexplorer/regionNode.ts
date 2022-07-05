@@ -43,8 +43,8 @@ export class RegionNode extends AWSTreeNodeBase {
         super(region.name, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
         this.region = region
-        this.update(region)
         this.regionCode = region.id
+        this.update(region)
 
         //  Services that are candidates to add to the region explorer.
         //  `serviceId`s are checked against ~/resources/endpoints.json to see whether or not the service is available in the given region.
