@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { create } from 'lodash'
 import * as vscode from 'vscode'
 import { createURIFromArgs, parseCloudWatchLogsUri } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
