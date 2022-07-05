@@ -34,6 +34,8 @@ describe('keyStrokeHandler', function () {
             sinon.spy(RecommendationHandler.instance, 'getRecommendations')
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
             resetCodeWhispererGlobalVariables()
+            sinon.stub(mockClient, 'listRecommendations')
+            sinon.stub(mockClient, 'generateRecommendations')
         })
         afterEach(function () {
             sinon.restore()
@@ -189,6 +191,8 @@ describe('keyStrokeHandler', function () {
             sinon.restore()
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
             resetCodeWhispererGlobalVariables()
+            sinon.stub(mockClient, 'listRecommendations')
+            sinon.stub(mockClient, 'generateRecommendations')
         })
         afterEach(function () {
             sinon.restore()
