@@ -22,6 +22,7 @@ import {
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     LogStreamRegistry,
+    getLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import globals from '../../shared/extensionGlobals'
@@ -53,7 +54,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
             parameters: parameters,
             busy: false,
             logGroupInfo: logGroupInfo,
-            retrieveLogsFunction: registry.getLogEventsFromUriComponents,
+            retrieveLogsFunction: getLogEventsFromUriComponents,
         }
 
         await registry.registerLog(uri, initialStreamData)

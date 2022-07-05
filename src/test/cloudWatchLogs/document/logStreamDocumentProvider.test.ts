@@ -7,7 +7,11 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
-import { LogStreamRegistry, CloudWatchLogsData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import {
+    LogStreamRegistry,
+    CloudWatchLogsData,
+    getLogEventsFromUriComponents,
+} from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { Settings } from '../../../shared/settings'
 
 describe('LogStreamDocumentProvider', function () {
@@ -30,7 +34,7 @@ describe('LogStreamDocumentProvider', function () {
             groupName: 'group',
             regionName: 'region',
         },
-        retrieveLogsFunction: registry.getLogEventsFromUriComponents,
+        retrieveLogsFunction: getLogEventsFromUriComponents,
         busy: false,
     }
     const provider = new LogStreamDocumentProvider(registry)

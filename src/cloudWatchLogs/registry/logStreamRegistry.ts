@@ -186,35 +186,36 @@ export class LogStreamRegistry {
     private getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
         return this.activeStreams.get(uri.path)
     }
+}
 
-    public async getLogEventsFromUriComponents(
-        logGroupInfo: CloudWatchLogsGroupInfo,
-        parameters: CloudWatchLogsParameters,
-        nextToken?: string
-    ): Promise<CloudWatchLogsResponse> {
-        const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
-            logGroupInfo.regionName
+export async function getLogEventsFromUriComponents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    nextToken?: string
+): Promise<CloudWatchLogsResponse> {
+    const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
+        logGroupInfo.regionName
+    )
+
+    if (!parameters.streamName) {
+        throw new Error(
+            `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
         )
+    }
+    const response = await client.getLogEvents({
+        logGroupName: logGroupInfo.groupName,
+        logStreamName: parameters.streamName,
+        nextToken,
+        limit: parameters.limit,
+    })
 
-        if (!parameters.streamName) {
-            throw new Error(
-                `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
-            )
-        }
-        const response = await client.getLogEvents({
-            logGroupName: logGroupInfo.groupName,
-            logStreamName: parameters.streamName,
-            nextToken,
-            limit: parameters.limit,
-        })
-
-        return {
-            events: response.events ? response.events : [],
-            nextForwardToken: response.nextForwardToken,
-            nextBackwardToken: response.nextBackwardToken,
-        }
+    return {
+        events: response.events ? response.events : [],
+        nextForwardToken: response.nextForwardToken,
+        nextBackwardToken: response.nextBackwardToken,
     }
 }
+
 export type CloudWatchLogsGroupInfo = {
     groupName: string
     regionName: string
