@@ -20,7 +20,7 @@ import { Commands } from '../shared/vscode/commands2'
  */
 export async function activate(context: ExtContext): Promise<void> {
     context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
+        Commands.register(
             'aws.deleteLambda',
             async (node: LambdaFunctionNode) =>
                 await deleteLambda({
@@ -31,7 +31,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent),
                 })
         ),
-        vscode.commands.registerCommand(
+        Commands.register(
             'aws.invokeLambda',
             async (node: LambdaFunctionNode) =>
                 await invokeRemoteLambda(context, { outputChannel: context.outputChannel, functionNode: node })
@@ -45,10 +45,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 await tryRemoveFolder(session.configuration.baseBuildDir)
             }
         }),
-        vscode.commands.registerCommand(
-            'aws.downloadLambda',
-            async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)
-        ),
+        Commands.register('aws.downloadLambda', async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)),
         Commands.register({ id: 'aws.uploadLambda', autoconnect: true }, async (arg?: unknown) => {
             if (arg instanceof LambdaFunctionNode) {
                 await uploadLambdaCommand({

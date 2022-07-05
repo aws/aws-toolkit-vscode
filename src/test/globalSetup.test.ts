@@ -13,7 +13,6 @@ import { format } from 'util'
 import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
 import globals from '../shared/extensionGlobals'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { initializeIconPaths } from '../shared/icons'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
@@ -39,10 +38,9 @@ before(async function () {
     // For stability in tests we will wait until the extension has activated prior to injecting mocks
     const activationLogger = (msg: string, ...meta: any[]) => console.log(format(msg, ...meta))
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false, activationLogger)
-
     const fakeContext = await FakeExtensionContext.create()
     fakeContext.globalStorageUri = (await testUtil.createTestWorkspaceFolder('globalStoragePath')).uri
-    initializeIconPaths(fakeContext)
+    fakeContext.extensionPath = globals.context.extensionPath
     Object.assign(globals, { context: fakeContext })
 })
 

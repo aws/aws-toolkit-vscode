@@ -6,23 +6,15 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as treeUtils from '../treeTestUtils'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
 import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
-import { clearTestIconPaths, setupTestIconPaths } from '../iconPathUtils'
-import * as treeUtils from '../treeTestUtils'
 import { isStateMachine } from '../../../cdk/explorer/nodes/constructNode'
 import { CdkAppLocation } from '../../../cdk/explorer/cdkProject'
+import { getIcon } from '../../../shared/icons'
 
 describe('ConstructNode', function () {
-    before(async function () {
-        setupTestIconPaths()
-    })
-
-    after(async function () {
-        clearTestIconPaths()
-    })
-
     const label = 'MyConstruct'
     const constructTreePath = 'Path/To/MyConstruct'
     const cdkJsonPath = path.join('/', 'the', 'road', 'to', 'cdk.json')
@@ -31,11 +23,13 @@ describe('ConstructNode', function () {
         treeUri: vscode.Uri.file(path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json')),
     }
 
-    it('initializes label and tooltip', async function () {
+    it('initializes label, tooltip, and icon', async function () {
         const testNode = generateTestNode(label)
+
         assert.strictEqual(testNode.treeItem.label, label)
-        assert.strictEqual(testNode.treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
         assert.strictEqual(testNode.treeItem.tooltip, constructTreePath)
+        assert.strictEqual(testNode.treeItem.iconPath, getIcon('aws-cdk-logo'))
+        assert.strictEqual(testNode.treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
     })
 
     it('returns a uri with a fragment pointing to the resource', async () => {
@@ -44,6 +38,15 @@ describe('ConstructNode', function () {
 
         assert.strictEqual(resourceUri.path, location.treeUri.path)
         assert.strictEqual(resourceUri.fragment, testNode.resource.construct.path)
+    })
+
+    it('initializes icon paths for CDK constructs', async function () {
+        const testNode = new ConstructNode(location, {
+            ...treeUtils.generateConstructTreeEntity('', constructTreePath),
+            attributes: treeUtils.generateAttributes(),
+        })
+
+        assert.strictEqual(testNode.treeItem.iconPath, getIcon('aws-cloudformation-stack'))
     })
 
     it('returns no child nodes if construct does not have any', async function () {

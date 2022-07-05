@@ -103,15 +103,15 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'pip',
         vscodeMinimum: '1.50.0',
     },
-    {
-        runtime: 'python3.8',
-        displayName: 'python3.8 (ZIP)',
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
+    // {
+    //     runtime: 'python3.8',
+    //     displayName: 'python3.8 (ZIP)',
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    //     vscodeMinimum: '1.50.0',
+    // },
     // TODO: Add Python3.9 support to integration test hosts
     // {
     //     runtime: 'python3.9',
@@ -211,16 +211,16 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'pip',
         vscodeMinimum: '1.50.0',
     },
-    {
-        runtime: 'python3.8',
-        displayName: 'python3.8 (Image)',
-        baseImage: `amazon/python3.8-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-        dependencyManager: 'pip',
-        vscodeMinimum: '1.50.0',
-    },
+    // {
+    //     runtime: 'python3.8',
+    //     displayName: 'python3.8 (Image)',
+    //     baseImage: `amazon/python3.8-base`,
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    //     vscodeMinimum: '1.50.0',
+    // },
     // TODO: Add Python3.9 support to integration test hosts
     // {
     //     runtime: 'python3.9',
