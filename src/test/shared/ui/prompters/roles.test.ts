@@ -44,7 +44,7 @@ describe('createRolePrompter', function () {
 
         const prompter = createRolePrompter(instance(mockIamClient), {
             createRole: () => Promise.resolve(newRole),
-            helpUri: helpUri,
+            helpUrl: helpUri,
         })
 
         tester = createQuickPickTester(prompter)

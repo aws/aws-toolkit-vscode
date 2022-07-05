@@ -19,7 +19,7 @@ const createRoleTooltip = localize('AWS.generic.createRole', 'Create Role...')
 
 interface RolePrompterOptions {
     readonly title?: string
-    readonly helpUri?: vscode.Uri
+    readonly helpUrl?: string | vscode.Uri
     readonly noRoleDetail?: string
     readonly roleFilter?: (role: IAM.Role) => boolean
     readonly createRole?: () => Promise<IAM.Role>
@@ -48,7 +48,7 @@ export function createRolePrompter(client: IamClient, options: RolePrompterOptio
 
     const buttons = [
         { ...createRefreshButton(), onClick: () => void prompter.clearAndLoadItems(loadItems()) },
-        ...createCommonButtons(options.helpUri),
+        ...createCommonButtons(options.helpUrl),
     ]
 
     const prompter = createQuickPick(loadItems(), {

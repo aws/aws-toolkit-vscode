@@ -258,7 +258,7 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
         const createAccessRolePrompter = () => {
             return createRolePrompter(iamClient, {
                 title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
-                helpUri: vscode.Uri.parse(apprunnerCreateServiceDocsUrl),
+                helpUrl: vscode.Uri.parse(apprunnerCreateServiceDocsUrl),
                 roleFilter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
                 createRole: createEcrRole.bind(undefined, iamClient),
             }).transform(resp => resp.Arn)

@@ -13,6 +13,7 @@ import {
     sfnCreateIamRoleUrl,
     sfnCreateStateMachineNameParamUrl,
     sfnDeveloperGuideUrl,
+    sfnSupportedRegionsUrl,
     sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
 import { createCommonButtons } from '../../shared/ui/buttons'
@@ -97,7 +98,7 @@ function createStepFunctionsRolePrompter(region: string) {
     const client = globals.toolkitClientBuilder.createIamClient(region)
 
     return createRolePrompter(client, {
-        helpUri: vscode.Uri.parse(sfnCreateIamRoleUrl),
+        helpUrl: vscode.Uri.parse(sfnCreateIamRoleUrl),
         title: localize('AWS.stepFunctions.publishWizard.iamRole.title', 'Select execution role ({0})', region),
         noRoleDetail: localize(
             'AWS.stepFunctions.publishWizard.iamRole.noRoles.detail',
@@ -151,9 +152,12 @@ export class PublishStateMachineWizard extends Wizard<PublishStateMachineWizardS
         super({ initState: { region } })
         const form = this.form
 
-        //FIXME: add the correct url
-        //form.region.bindPrompter(() => createRegionPrompter({ filter: 'states' }).transform(r => r.id))
-        form.region.bindPrompter(() => createRegionPrompter().transform(r => r.id))
+        form.region.bindPrompter(() =>
+            createRegionPrompter(undefined, {
+                serviceFilter: 'states',
+                helpUrl: sfnSupportedRegionsUrl,
+            }).transform(r => r.id)
+        )
 
         form.publishAction.bindPrompter(({ region }) => createPublishActionPrompter(region!))
 
