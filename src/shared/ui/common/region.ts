@@ -3,21 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
 import globals from '../../extensionGlobals'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
 import { getLogger } from '../../logger/logger'
 import { Region } from '../../regions/endpoints'
 import { getRegionsForActiveCredentials } from '../../regions/regionUtilities'
 import { createCommonButtons, PrompterButtons } from '../buttons'
 import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
 
-const localize = nls.loadMessageBundle()
-
 interface RegionPrompterOptions {
     readonly defaultRegion?: string
     readonly title?: string
     readonly buttons?: PrompterButtons<Region>
     readonly serviceFilter?: string
+    readonly helpUrl?: string | vscode.Uri
 }
 
 export function createRegionPrompter(
@@ -46,7 +49,7 @@ export function createRegionPrompter(
 
     const prompter = createQuickPick(items, {
         title: options.title ?? localize('AWS.generic.selectRegion', 'Select a region'),
-        buttons: options.buttons ?? createCommonButtons(),
+        buttons: options.buttons ?? createCommonButtons(options.helpUrl),
         matchOnDetail: true,
         compare: (a, b) => {
             return a.detail === defaultRegion ? -1 : b.detail === defaultRegion ? 1 : 0

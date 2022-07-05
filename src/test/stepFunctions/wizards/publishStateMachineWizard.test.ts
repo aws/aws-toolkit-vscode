@@ -2,110 +2,41 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as assert from 'assert'
+
 import {
     PublishStateMachineAction,
     PublishStateMachineWizard,
-    PublishStateMachineWizardContext,
-    PublishStateMachineWizardResponse,
 } from '../../../stepFunctions/wizards/publishStateMachineWizard'
+import { WizardTester, createWizardTester } from '../../shared/wizards/wizardTestUtils'
 
 describe('PublishStateMachineWizard', async function () {
-    describe('PUBLISH_ACTION', async function () {
-        it('exits when cancelled', async function () {
-            const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext()
-            const wizard = new PublishStateMachineWizard(context)
-            const result: PublishStateMachineWizardResponse | undefined = await wizard.run()
+    let tester: WizardTester<PublishStateMachineWizard>
 
-            assert.ok(!result)
-        })
+    beforeEach(function () {
+        tester = createWizardTester(new PublishStateMachineWizard())
     })
 
-    describe('Quick create', async function () {
-        it('exits gracefully if cancelled', async function () {
-            const roleArn: string = 'arn:aws:iam::123456789012:role/myRole'
-            const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext(
-                [PublishStateMachineAction.QuickCreate],
-                [roleArn],
-                undefined
-            )
-            const wizard = new PublishStateMachineWizard(context)
-            const result: PublishStateMachineWizardResponse | undefined = await wizard.run()
-
-            assert.ok(!result)
-        })
-
-        it('returns create response when completed', async function () {
-            const name: string = 'myStateMachine'
-            const roleArn: string = 'arn:aws:iam::123456789012:role/myRole'
-            const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext(
-                [PublishStateMachineAction.QuickCreate],
-                [roleArn],
-                [name]
-            )
-            const wizard = new PublishStateMachineWizard(context)
-            const result: PublishStateMachineWizardResponse | undefined = await wizard.run()
-
-            assert.ok(!result!.updateResponse, 'Wizard should not return updateResponse for create action')
-            assert.strictEqual(result!.createResponse?.name, name)
-            assert.strictEqual(result!.createResponse?.roleArn, roleArn)
-        })
+    it('only shows two steps until an action is selected', function () {
+        tester.assertShowCount(2)
     })
 
-    describe('Quick update', async function () {
-        it('exits gracefully if cancelled', async function () {
-            const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext([
-                PublishStateMachineAction.QuickUpdate,
-            ])
-            const wizard = new PublishStateMachineWizard(context)
-            const result: PublishStateMachineWizardResponse | undefined = await wizard.run()
+    it('always prompts for region and action', function () {
+        tester.region.assertShowFirst()
+        tester.publishAction.assertShowSecond()
+    })
 
-            assert.ok(!result)
-        })
+    it('prompts for state machine arn if updating an existing state machine', function () {
+        tester.region.applyInput('us-east-1')
+        tester.publishAction.applyInput(PublishStateMachineAction.QuickUpdate)
+        tester.createResponse.assertDoesNotShowAny()
+        tester.updateResponse.stateMachineArn.assertShow()
+    })
 
-        it('returns update response when completed', async function () {
-            const stateMachineArn: string = 'arn:aws:states:us-east-1:123456789012:stateMachine:myStateMachine'
-            const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext(
-                [PublishStateMachineAction.QuickUpdate],
-                undefined,
-                undefined,
-                [stateMachineArn]
-            )
-            const wizard = new PublishStateMachineWizard(context)
-            const result: PublishStateMachineWizardResponse | undefined = await wizard.run()
-
-            assert.ok(!result!.createResponse, 'Wizard should not return createResponse for update action')
-            assert.strictEqual(result!.updateResponse?.stateMachineArn, stateMachineArn)
-        })
+    it('prompts for name and role arn if creating a new state machine', function () {
+        tester.region.applyInput('us-east-1')
+        tester.publishAction.applyInput(PublishStateMachineAction.QuickCreate)
+        tester.updateResponse.assertDoesNotShowAny()
+        tester.createResponse.name.assertShow()
+        tester.createResponse.roleArn.assertShow()
     })
 })
-
-class MockPublishStateMachineWizardContext implements PublishStateMachineWizardContext {
-    public constructor(
-        private readonly publishAction?: PublishStateMachineAction[],
-        private readonly iamRoleArn?: string[],
-        private readonly stateMachineName?: string[],
-        private readonly stateMachineArn?: string[]
-    ) {}
-
-    public async promptUserForStateMachineToUpdate(): Promise<string | undefined> {
-        return this.stateMachineArn?.shift()
-    }
-
-    public async promptUserForPublishAction(
-        publishAction: PublishStateMachineAction | undefined
-    ): Promise<PublishStateMachineAction | undefined> {
-        return this.publishAction?.shift()
-    }
-
-    public async promptUserForStateMachineName(): Promise<string | undefined> {
-        return this.stateMachineName?.shift()
-    }
-
-    public async promptUserForIamRole(currRoleArn?: string | undefined): Promise<string | undefined> {
-        return this.iamRoleArn?.shift()
-    }
-
-    public async loadIamRoles(): Promise<void> {}
-    public async loadStateMachines(): Promise<void> {}
-}
