@@ -12,7 +12,10 @@ import * as vscode from 'vscode'
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import * as publish from '../../../ssmDocument/commands/publishDocument'
 import * as ssmUtils from '../../../ssmDocument/util/util'
-import { PublishSSMDocumentWizardResponse } from '../../../ssmDocument/wizards/publishDocumentWizard'
+import {
+    PublishSSMDocumentAction,
+    PublishSSMDocumentWizardResponse,
+} from '../../../ssmDocument/wizards/publishDocumentWizard'
 import { closeAllEditors } from '../../testUtil'
 
 describe('publishDocument', async function () {
@@ -44,7 +47,7 @@ describe('publishDocument', async function () {
 
     beforeEach(async function () {
         wizardResponse = {
-            PublishSsmDocAction: 'Update',
+            action: PublishSSMDocumentAction.QuickUpdate,
             name: 'test',
             documentType: 'Automation',
             region: '',
@@ -63,7 +66,7 @@ describe('publishDocument', async function () {
     describe('createDocument', async function () {
         it('createDocument API returns successfully', async function () {
             wizardResponse = {
-                PublishSsmDocAction: 'Create',
+                action: PublishSSMDocumentAction.QuickCreate,
                 name: 'test',
                 documentType: 'Automation',
                 region: '',
