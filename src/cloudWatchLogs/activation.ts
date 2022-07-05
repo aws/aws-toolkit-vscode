@@ -46,7 +46,6 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
     )
 
     context.subscriptions.push(vscode.commands.registerCommand('aws.copyLogStreamName', copyLogStreamName))
-
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.addLogEvents',
