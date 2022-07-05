@@ -27,8 +27,6 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
         throw new Error(`URI ${uri} is not parseable for CloudWatch Logs`)
     }
 
-    console.log(JSON.parse(uri.query))
-
     return {
         logGroupInfo: {
             groupName: parts[0],

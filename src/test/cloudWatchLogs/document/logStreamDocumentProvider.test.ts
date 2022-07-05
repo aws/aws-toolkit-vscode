@@ -15,7 +15,7 @@ describe('LogStreamDocumentProvider', function () {
     let provider: LogStreamDocumentProvider
 
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
-    let registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
+    const registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
 
     const registeredUri = vscode.Uri.parse('has:This')
     // TODO: Make this less flaky when we add manual timestamp controls.
