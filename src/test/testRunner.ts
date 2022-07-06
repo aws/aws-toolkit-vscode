@@ -99,17 +99,17 @@ export async function runTests(testFolder: string, initTests: string[] = [], tes
             console.log('No test coverage found')
         }
     }
-    const files = testFiles
-        ? testFiles
-        : await new Promise<string[]>((resolve, reject) => {
-              glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }, (err, files) => {
-                  if (err) {
-                      reject(err)
-                  } else {
-                      resolve(files)
-                  }
-              })
-          })
+    const files =
+        testFiles ??
+        (await new Promise<string[]>((resolve, reject) => {
+            glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: dist }, (err, files) => {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve(files)
+                }
+            })
+        }))
 
     await runMocha(files)
     await writeCoverage()
