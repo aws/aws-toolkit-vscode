@@ -75,6 +75,7 @@ export class DefaultCodeWhispererClient {
                             req.on('error', e => {
                                 if (e.code === 'AccessDeniedException' && e.message.match(/expired/i)) {
                                     refreshCredentials()
+                                    e.retryable = true
                                 }
                             })
                         }
