@@ -43,14 +43,22 @@ import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
+import { Commands } from '../shared/vscode/commands2'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
+    const codewhispererSettings = CodeWhispererSettings.instance
+    if (!codewhispererSettings.isEnabled()) {
+        return
+    }
+
     /**
-     * Enable essential intellisense default settings
+     * Enable essential intellisense default settings for AWS C9 IDE
      */
-    await enableDefaultConfig()
+    if (isCloud9()) {
+        await enableDefaultConfig()
+    }
 
     /**
      * CodeWhisperer security panel
@@ -61,7 +69,6 @@ export async function activate(context: ExtContext): Promise<void> {
     /**
      * Service control
      */
-    const codewhispererSettings = CodeWhispererSettings.instance
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     const referenceHoverProvider = new ReferenceHoverProvider()
@@ -98,7 +105,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Accept terms of service
          */
-        vscode.commands.registerCommand('aws.codeWhisperer.acceptTermsOfService', async () => {
+        Commands.register('aws.codeWhisperer.acceptTermsOfService', async () => {
             set(CodeWhispererConstants.autoTriggerEnabledKey, true, context)
             set(CodeWhispererConstants.termsAcceptedKey, true, context)
             await vscode.commands.executeCommand('setContext', CodeWhispererConstants.termsAcceptedKey, true)
@@ -117,14 +124,14 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * Cancel terms of service
          */
-        vscode.commands.registerCommand('aws.codeWhisperer.cancelTermsOfService', async () => {
+        Commands.register('aws.codeWhisperer.cancelTermsOfService', async () => {
             set(CodeWhispererConstants.autoTriggerEnabledKey, false, context)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         }),
         /**
          * Open Configuration
          */
-        vscode.commands.registerCommand('aws.codeWhisperer.configure', async id => {
+        Commands.register('aws.codeWhisperer.configure', async id => {
             if (id === 'codewhisperer') {
                 await vscode.commands.executeCommand(
                     'workbench.action.openSettings',
@@ -147,13 +154,13 @@ export async function activate(context: ExtContext): Promise<void> {
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
         // manual trigger
-        vscode.commands.registerCommand('aws.codeWhisperer', async () => {
+        Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
         /**
          * On recommendation acceptance
          */
-        vscode.commands.registerCommand(
+        Commands.register(
             'aws.codeWhisperer.accept',
             async (
                 range: vscode.Range,
@@ -327,25 +334,25 @@ export async function activate(context: ExtContext): Promise<void> {
                     await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
                 }
             }),
-            vscode.commands.registerCommand('aws.codeWhisperer.rejectCodeSuggestion', async e => {
+            Commands.register('aws.codeWhisperer.rejectCodeSuggestion', async e => {
                 if (vscode.window.activeTextEditor)
                     await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
             }),
             /**
              * Recommendation navigation
              */
-            vscode.commands.registerCommand('aws.codeWhisperer.nextCodeSuggestion', async () => {
+            Commands.register('aws.codeWhisperer.nextCodeSuggestion', async () => {
                 if (vscode.window.activeTextEditor)
                     InlineCompletion.instance.navigateRecommendation(vscode.window.activeTextEditor, true)
             }),
-            vscode.commands.registerCommand('aws.codeWhisperer.previousCodeSuggestion', async () => {
+            Commands.register('aws.codeWhisperer.previousCodeSuggestion', async () => {
                 if (vscode.window.activeTextEditor)
                     InlineCompletion.instance.navigateRecommendation(vscode.window.activeTextEditor, false)
             }),
             /**
              * Recommendation acceptance
              */
-            vscode.commands.registerCommand('aws.codeWhisperer.acceptCodeSuggestion', async () => {
+            Commands.register('aws.codeWhisperer.acceptCodeSuggestion', async () => {
                 if (vscode.window.activeTextEditor)
                     await InlineCompletion.instance.acceptRecommendation(vscode.window.activeTextEditor)
             })

@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import globals from '../shared/extensionGlobals'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
@@ -11,14 +16,11 @@ import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
 import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVisualizationManager'
+import { Commands } from '../shared/vscode/commands2'
 
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
-
-import * as nls from 'vscode-nls'
-import globals from '../shared/extensionGlobals'
 import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
-const localize = nls.loadMessageBundle()
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -50,7 +52,7 @@ async function registerStepFunctionCommands(
          * specifc subset of file types ( .json only, custom .states extension, etc...)
          * Ensure tests are written for this use case as well.
          */
-        vscode.commands.registerCommand('aws.previewStateMachine', async (arg?: vscode.TextEditor | vscode.Uri) => {
+        Commands.register('aws.previewStateMachine', async (arg?: vscode.TextEditor | vscode.Uri) => {
             try {
                 arg ??= vscode.window.activeTextEditor
                 const input = arg instanceof vscode.Uri ? arg : arg?.document
@@ -65,21 +67,15 @@ async function registerStepFunctionCommands(
                 telemetry.recordStepfunctionsPreviewstatemachine()
             }
         }),
-        renderCdkStateMachineGraph.register(extensionContext.globalState, cdkVisualizationManager)
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.stepfunctions.createStateMachineFromTemplate', async () => {
+        renderCdkStateMachineGraph.register(extensionContext.globalState, cdkVisualizationManager),
+        Commands.register('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
                 await createStateMachineFromTemplate(extensionContext)
             } finally {
                 telemetry.recordStepfunctionsCreateStateMachineFromTemplate()
             }
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.stepfunctions.publishStateMachine', async (node?: any) => {
+        }),
+        Commands.register('aws.stepfunctions.publishStateMachine', async (node?: any) => {
             const region: string | undefined = node?.regionCode
             await publishStateMachine(awsContext, outputChannel, region)
         })
@@ -94,15 +90,15 @@ export function initalizeWebviewPaths(context: vscode.ExtensionContext): typeof 
     const visualizationLibraryCache = join(context.globalStorageUri.fsPath, 'visualization')
 
     return {
-        localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('media', 'js'))),
-        webviewBodyScript: vscode.Uri.file(context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js'))),
+        localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('resources', 'js'))),
+        webviewBodyScript: vscode.Uri.file(context.asAbsolutePath(join('resources', 'js', 'graphStateMachine.js'))),
         visualizationLibraryCachePath: vscode.Uri.file(visualizationLibraryCache),
         visualizationLibraryScript: vscode.Uri.file(join(visualizationLibraryCache, 'graph.js')),
         visualizationLibraryCSS: vscode.Uri.file(join(visualizationLibraryCache, 'graph.css')),
         // Locations for an additional stylesheet to add Light/Dark/High-Contrast theme support
-        stateMachineCustomThemePath: vscode.Uri.file(context.asAbsolutePath(join('media', 'css'))),
+        stateMachineCustomThemePath: vscode.Uri.file(context.asAbsolutePath(join('resources', 'css'))),
         stateMachineCustomThemeCSS: vscode.Uri.file(
-            context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css'))
+            context.asAbsolutePath(join('resources', 'css', 'stateMachineRender.css'))
         ),
     }
 }

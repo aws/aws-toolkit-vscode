@@ -10,50 +10,42 @@ import { dump, load } from 'js-yaml'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { readFileAsString } from '../../shared/filesystemUtilities'
-import { getLogger, Logger } from '../../shared/logger'
-import CreateStateMachineWizard, {
-    StateMachineTemplateQuickPickItem,
-    TemplateFormats,
-} from '../wizards/createStateMachineWizard'
+import { getLogger } from '../../shared/logger'
+import { CreateStateMachineWizard, TemplateFormats } from '../wizards/createStateMachineWizard'
 
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
 
 export async function createStateMachineFromTemplate(context: vscode.ExtensionContext) {
-    const logger: Logger = getLogger()
+    const response = await new CreateStateMachineWizard().run()
+    if (!response) {
+        return
+    }
 
-    const wizardResponse = await new CreateStateMachineWizard().run()
+    try {
+        const textDocumentFromSelection = await getTextDocumentForSelectedItem(
+            response.templateFile,
+            context.extensionPath,
+            response.templateFormat
+        )
 
-    if (wizardResponse && wizardResponse.template && wizardResponse.templateFormat) {
-        try {
-            logger.debug(
-                `User selected the ${wizardResponse.template.label} template of ${wizardResponse.templateFormat} format`
+        vscode.window.showTextDocument(textDocumentFromSelection)
+    } catch (err) {
+        getLogger().error(err as Error)
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.message.error.stepfunctions.getTextDocumentForSelectedItem',
+                'There was an error creating the State Machine Template, check log for details.'
             )
-
-            const textDocumentFromSelection = await getTextDocumentForSelectedItem(
-                wizardResponse.template,
-                context.extensionPath,
-                wizardResponse.templateFormat
-            )
-
-            vscode.window.showTextDocument(textDocumentFromSelection)
-        } catch (err) {
-            logger.error(err as Error)
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.message.error.stepfunctions.getTextDocumentForSelectedItem',
-                    'There was an error creating the State Machine Template, check log for details.'
-                )
-            )
-        }
+        )
     }
 }
 
 async function getTextDocumentForSelectedItem(
-    item: StateMachineTemplateQuickPickItem,
+    fileName: string,
     extensionPath: string,
     format: string
 ): Promise<vscode.TextDocument> {
-    let content = await readFileAsString(path.join(extensionPath, 'templates', item.fileName))
+    let content = await readFileAsString(path.join(extensionPath, 'templates', fileName))
 
     if (format === TemplateFormats.YAML) {
         // Convert JSON string to YAML string

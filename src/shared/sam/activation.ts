@@ -206,14 +206,14 @@ async function activateCodeLensProviders(
     disposables.push(vscode.languages.registerCodeLensProvider(goLensProvider.GO_ALLFILES, goCodeLensProvider))
 
     disposables.push(
-        vscode.commands.registerCommand('aws.toggleSamCodeLenses', () => {
+        Commands.register({ id: 'aws.toggleSamCodeLenses', autoconnect: false }, async () => {
             const toggled = !configuration.get('enableCodeLenses', false)
             configuration.update('enableCodeLenses', toggled)
         })
     )
 
     disposables.push(
-        vscode.commands.registerCommand('aws.addSamDebugConfig', async () => {
+        Commands.register('aws.addSamDebugConfig', async () => {
             const activeEditor = vscode.window.activeTextEditor
             if (!activeEditor) {
                 getLogger().error(`aws.addSamDebugConfig was called without an active text editor`)

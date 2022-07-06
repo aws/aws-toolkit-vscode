@@ -2,28 +2,20 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as assert from 'assert'
-import CreateStateMachineWizard, {
-    STARTER_TEMPLATES,
-    TemplateFormats,
-} from '../../../stepFunctions/wizards/createStateMachineWizard'
 
-describe('CreateStateMachineWizard', async function () {
-    it('exits when cancelled', async function () {
-        const mockUserPrompt: any = () => Promise.resolve(undefined)
-        const wizard = new CreateStateMachineWizard(mockUserPrompt)
-        const result = await wizard.run()
+import { CreateStateMachineWizard } from '../../../stepFunctions/wizards/createStateMachineWizard'
+import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 
-        assert.ok(!result)
+describe('CreateStateMachineWizard', function () {
+    let tester: WizardTester<CreateStateMachineWizard>
+
+    beforeEach(function () {
+        tester = createWizardTester(new CreateStateMachineWizard())
     })
 
-    it('returns format and template type when completed', async function () {
-        const promptRsults = [[STARTER_TEMPLATES[0]], [{ label: TemplateFormats.YAML }]]
-
-        const mockUserPrompt: any = (options: any) => Promise.resolve(promptRsults.shift())
-        const wizard = new CreateStateMachineWizard(mockUserPrompt)
-        const result = await wizard.run()
-
-        assert.deepStrictEqual(result, { template: STARTER_TEMPLATES[0], templateFormat: TemplateFormats.YAML })
+    it('prompts for a file name and format', async function () {
+        tester.templateFile.assertShowFirst()
+        tester.templateFormat.assertShowSecond()
+        tester.assertShowCount(2)
     })
 })

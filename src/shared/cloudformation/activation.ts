@@ -11,6 +11,7 @@ import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../watchedFiles'
 import { createStarterTemplateFile } from './cloudformation'
+import { Commands } from '../vscode/commands2'
 import globals from '../extensionGlobals'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
@@ -51,7 +52,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     // If setting it up worked, add it to subscriptions so it is cleaned up at exit
     extensionContext.subscriptions.push(
         globals.templateRegistry,
-        vscode.commands.registerCommand('aws.cloudFormation.newTemplate', () => createStarterTemplateFile(false)),
-        vscode.commands.registerCommand('aws.sam.newTemplate', () => createStarterTemplateFile(true))
+        Commands.register('aws.cloudFormation.newTemplate', () => createStarterTemplateFile(false)),
+        Commands.register('aws.sam.newTemplate', () => createStarterTemplateFile(true))
     )
 }

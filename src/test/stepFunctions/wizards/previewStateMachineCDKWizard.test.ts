@@ -10,7 +10,6 @@ import {
     PreviewStateMachineCDKWizard,
 } from '../../../stepFunctions/wizards/previewStateMachineCDKWizard'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import { Wizard } from '../../../shared/wizards/wizard'
 
 const stateMachine1: ConstructTreeEntity = {
     id: 'MyStateMachine',
@@ -83,8 +82,7 @@ describe('getStateMachines', function () {
 })
 
 describe('PreviewStateMachineCDKWizard', async function () {
-    type WizardState<T> = T extends Wizard<infer U> ? U : never
-    let tester: WizardTester<WizardState<PreviewStateMachineCDKWizard>>
+    let tester: WizardTester<PreviewStateMachineCDKWizard>
 
     beforeEach(function () {
         tester = createWizardTester(new PreviewStateMachineCDKWizard())

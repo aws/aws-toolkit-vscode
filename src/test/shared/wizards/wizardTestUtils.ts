@@ -49,7 +49,8 @@ const NOT_ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertDoesNotShowAny'
 const ASSERT_VALUE: FormTesterMethodKey = 'assertValue'
 const SHOW_COUNT: FormTesterMethodKey = 'assertShowCount'
 
-export type WizardTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
+type Tester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
+export type WizardTester<T> = T extends Wizard<infer U> ? Tester<U> : Tester<T>
 
 function failIf(cond: boolean, message?: string): void {
     if (cond) {
@@ -57,9 +58,9 @@ function failIf(cond: boolean, message?: string): void {
     }
 }
 
-export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): WizardTester<T> {
+export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): Tester<T> {
     const form = wizard instanceof Wizard ? wizard.boundForm : wizard
-    const state = {} as T
+    const state = (wizard instanceof Wizard ? JSON.parse(JSON.stringify(wizard.initialState ?? {})) : {}) as T
 
     function canShowPrompter(prop: string): boolean {
         const defaultState = form.applyDefaults(state)
@@ -114,7 +115,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
             failIf(actual !== expected, `Property "${path}" had unexpected value: ${actual} !== ${expected}`)
     }
 
-    function createFormWrapper(path: string[] = []): WizardTester<T> {
+    function createFormWrapper(path: string[] = []): Tester<T> {
         return new Proxy(
             {},
             {
@@ -156,7 +157,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
                     }
                 },
             }
-        ) as WizardTester<T>
+        ) as Tester<T>
     }
 
     return createFormWrapper()

@@ -46,7 +46,11 @@ const tasks: CopyTask[] = [
 
     // Vue
     {
-        target: 'node_modules/vue/dist/vue.global.prod.js',
+        target: path.join('resources', 'js', 'vscode.js'),
+        destination: path.join('libs', 'vscode.js'),
+    },
+    {
+        target: path.join('node_modules', 'vue', 'dist', 'vue.global.prod.js'),
         destination: path.join('libs', 'vue.min.js'),
     },
 ]
