@@ -16,7 +16,7 @@ import { Settings } from '../../../shared/settings'
 
 describe('LogStreamDocumentProvider', function () {
     const map = new Map<string, CloudWatchLogsData>()
-
+    let provider: LogStreamDocumentProvider
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
     const registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
 
@@ -37,8 +37,11 @@ describe('LogStreamDocumentProvider', function () {
         retrieveLogsFunction: getLogEventsFromUriComponents,
         busy: false,
     }
-    const provider = new LogStreamDocumentProvider(registry)
-    map.set(registeredUri.path, stream)
+
+    before(async function () {
+        provider = new LogStreamDocumentProvider(registry)
+        map.set(registeredUri.path, stream)
+    })
 
     it('provides content if it exists and a blank string if it does not', function () {
         assert.strictEqual(
