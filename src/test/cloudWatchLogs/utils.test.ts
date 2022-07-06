@@ -18,7 +18,7 @@ const goodComponents = {
 
 const goodUri = createURIFromArgs(goodComponents.logGroupInfo, goodComponents.parameters)
 
-describe('convertUriToLogGroupInfo', async function () {
+describe('parseCloudWatchLogsUri', async function () {
     it('converts a valid URI to components', function () {
         const result = parseCloudWatchLogsUri(goodUri)
         assert.deepStrictEqual(result.logGroupInfo, goodComponents.logGroupInfo)
@@ -44,8 +44,15 @@ describe('convertUriToLogGroupInfo', async function () {
     })
 })
 
-describe('convertLogGroupInfoToUri', function () {
-    it('converts components to a valid URI', function () {
-        assert.deepStrictEqual(createURIFromArgs(goodComponents.logGroupInfo, goodComponents.parameters), goodUri)
+describe('createURIFromArgs', function () {
+    it('converts components to a valid URI that can be parsed.', function () {
+        const testUri = vscode.Uri.parse(
+            `${CLOUDWATCH_LOGS_SCHEME}:${goodComponents.logGroupInfo.groupName}:${
+                goodComponents.logGroupInfo.regionName
+            }?${encodeURIComponent(JSON.stringify(goodComponents.parameters))}`
+        )
+        assert.deepStrictEqual(testUri, goodUri)
+        const testComponents = parseCloudWatchLogsUri(testUri)
+        assert.deepStrictEqual(testComponents, goodComponents)
     })
 })
