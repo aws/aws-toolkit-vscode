@@ -6,19 +6,33 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogStreamData, LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
+import {
+    CloudWatchLogsData,
+    LogStreamRegistry,
+    CloudWatchLogsResponse,
+} from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
-import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
-    let map: Map<string, CloudWatchLogStreamData>
+    let map: Map<string, CloudWatchLogsData>
 
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
-    const stream: CloudWatchLogStreamData = {
+    const newText = 'a little longer now\n'
+    const fakeGetLogEvents = async (): Promise<CloudWatchLogsResponse> => {
+        return {
+            events: [
+                {
+                    message: newText,
+                },
+            ],
+        }
+    }
+
+    const stream1: CloudWatchLogsData = {
         data: [
             {
                 timestamp: 1,
@@ -36,47 +50,65 @@ describe('LogStreamRegistry', async function () {
                 message: 'does anybody really know what time it is? does anybody really care?\n',
             },
         ],
+        parameters: { streamName: 'Registered' },
+        logGroupInfo: {
+            groupName: 'This',
+            regionName: 'Is',
+        },
+        retrieveLogsFunction: fakeGetLogEvents,
         busy: false,
     }
 
-    const simplerStream: CloudWatchLogStreamData = {
+    const simplerStream: CloudWatchLogsData = {
         data: [
             {
                 message: 'short and sweet\n',
             },
         ],
+        parameters: { streamName: 'More' },
+        logGroupInfo: {
+            groupName: 'Less',
+            regionName: 'Is',
+        },
+        retrieveLogsFunction: fakeGetLogEvents,
         busy: false,
     }
 
-    const newLineStream: CloudWatchLogStreamData = {
+    const newLineStream: CloudWatchLogsData = {
         data: [
             {
                 timestamp: 12745641600000,
                 message: 'the\nline\rmust\r\nbe\ndrawn\rHERE\nright\nhere\r\nno\nfurther\n',
             },
         ],
+        parameters: { streamName: 'Dude' },
+        logGroupInfo: {
+            groupName: 'Not',
+            regionName: 'Here',
+        },
+        retrieveLogsFunction: fakeGetLogEvents,
         busy: false,
     }
 
-    const newText = 'a little longer now\n'
-    const getLogEventsFromUriComponentsFn = async (): Promise<CloudWatchLogs.GetLogEventsResponse> => {
-        return {
-            events: [
-                {
-                    message: newText,
-                },
-            ],
-        }
+    const missingStream: CloudWatchLogsData = {
+        data: [],
+        parameters: { streamName: 'PIEEEECCCEEEEEE' },
+        logGroupInfo: {
+            groupName: 'ANOTHER',
+            regionName: 'LINE',
+        },
+        retrieveLogsFunction: fakeGetLogEvents,
+        busy: false,
     }
 
-    const registeredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:This:Is:Registered`)
-    const shorterRegisteredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:Less:Is:More`)
-    const missingRegisteredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:Not:Here:Dude`)
-    const newLineUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:ANOTHER:LINE:PIEEEECCCEEEEEE`)
+    const registeredUri = createURIFromArgs(stream1.logGroupInfo, {})
+    const shorterRegisteredUri = createURIFromArgs(simplerStream.logGroupInfo, {})
+    const missingRegisteredUri = createURIFromArgs(missingStream.logGroupInfo, {})
+    const newLineUri = createURIFromArgs(newLineStream.logGroupInfo, {})
 
     beforeEach(function () {
-        map = new Map<string, CloudWatchLogStreamData>()
-        map.set(registeredUri.path, stream)
+        map = new Map<string, CloudWatchLogsData>()
+        map.set(registeredUri.path, stream1)
         map.set(shorterRegisteredUri.path, simplerStream)
         map.set(newLineUri.path, newLineStream)
         registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
@@ -91,11 +123,11 @@ describe('LogStreamRegistry', async function () {
 
     describe('registerLog', async function () {
         it("registers logs and doesn't overwrite existing logs", async () => {
-            await registry.registerLog(missingRegisteredUri, getLogEventsFromUriComponentsFn)
+            await registry.registerLog(missingRegisteredUri, missingStream)
             const blankPostRegister = registry.getLogContent(missingRegisteredUri)
             assert.strictEqual(blankPostRegister, newText)
 
-            await registry.registerLog(shorterRegisteredUri, getLogEventsFromUriComponentsFn)
+            await registry.registerLog(shorterRegisteredUri, simplerStream)
             const preregisteredLog = registry.getLogContent(shorterRegisteredUri)
             assert.strictEqual(preregisteredLog, `${simplerStream.data[0].message}`)
         })
@@ -107,7 +139,7 @@ describe('LogStreamRegistry', async function () {
 
             assert.strictEqual(
                 text,
-                `${stream.data[0].message}${stream.data[1].message}${stream.data[2].message}${stream.data[3].message}`
+                `${stream1.data[0].message}${stream1.data[1].message}${stream1.data[2].message}${stream1.data[3].message}`
             )
         })
 
@@ -116,11 +148,11 @@ describe('LogStreamRegistry', async function () {
 
             assert.strictEqual(
                 text,
-                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${stream.data[0].message}${moment(2).format(
+                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${stream1.data[0].message}${moment(2).format(
                     INSIGHTS_TIMESTAMP_FORMAT
-                )}${'\t'}${stream.data[1].message}${moment(3).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${
-                    stream.data[2].message
-                }                             ${'\t'}${stream.data[3].message}`
+                )}${'\t'}${stream1.data[1].message}${moment(3).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${
+                    stream1.data[2].message
+                }                             ${'\t'}${stream1.data[3].message}`
             )
         })
 
@@ -140,14 +172,14 @@ describe('LogStreamRegistry', async function () {
 
     describe('updateLog', async function () {
         it("adds content to existing streams at both head and tail ends and doesn't do anything if the log isn't registered", async () => {
-            await registry.updateLog(shorterRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
+            await registry.updateLog(shorterRegisteredUri, 'tail')
             const initialWithTail = registry.getLogContent(shorterRegisteredUri)
             assert.strictEqual(initialWithTail, `${simplerStream.data[0].message}${newText}`)
-            await registry.updateLog(shorterRegisteredUri, 'head', getLogEventsFromUriComponentsFn)
+            await registry.updateLog(shorterRegisteredUri, 'head')
             const initialWithHeadAndTail = registry.getLogContent(shorterRegisteredUri)
             assert.strictEqual(initialWithHeadAndTail, `${newText}${simplerStream.data[0].message}${newText}`)
 
-            await registry.updateLog(missingRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
+            await registry.updateLog(missingRegisteredUri, 'tail')
             const unregisteredGet = registry.getLogContent(missingRegisteredUri)
             assert.strictEqual(unregisteredGet, undefined)
         })

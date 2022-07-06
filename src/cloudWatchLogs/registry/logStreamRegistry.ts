@@ -25,11 +25,8 @@ export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
 
     public constructor(
-        private readonly configuration: CloudWatchLogsSettings,
-        private readonly activeStreams: Map<string, CloudWatchLogStreamData> = new Map<
-            string,
-            CloudWatchLogStreamData
-        >()
+        public readonly configuration: CloudWatchLogsSettings,
+        private readonly activeStreams: Map<string, CloudWatchLogsData> = new Map<string, CloudWatchLogsData>()
     ) {}
 
     /**
@@ -44,19 +41,12 @@ export class LogStreamRegistry {
      * @param uri Document URI
      * @param getLogEventsFromUriComponentsFn Override for testing purposes.
      */
-    public async registerLog(
-        uri: vscode.Uri,
-        getLogEventsFromUriComponentsFn?: (logGroupInfo: {
-            groupName: string
-            streamName: string
-            regionName: string
-        }) => Promise<CloudWatchLogs.GetLogEventsResponse>
-    ): Promise<void> {
+    public async registerLog(uri: vscode.Uri, initialStreamData: CloudWatchLogsData): Promise<void> {
         // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
         parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
-            this.setLog(uri, new CloudWatchLogStreamData())
-            await this.updateLog(uri, 'tail', getLogEventsFromUriComponentsFn)
+            this.setLog(uri, initialStreamData)
+            await this.updateLog(uri, 'tail')
         }
     }
 
@@ -112,36 +102,27 @@ export class LogStreamRegistry {
      * @param headOrTail Determines update behavior: `'head'` retrieves the most recent previous token and appends data to the top of the log, `'tail'` does the opposite. Default: `'tail'`
      * @param getLogEventsFromUriComponentsFn Override for testing purposes.
      */
-    public async updateLog(
-        uri: vscode.Uri,
-        headOrTail: 'head' | 'tail' = 'tail',
-        getLogEventsFromUriComponentsFn?: (
-            logGroupInfo: {
-                groupName: string
-                streamName: string
-                regionName: string
-            },
-            nextToken?: string
-        ) => Promise<CloudWatchLogs.GetLogEventsResponse>
-    ): Promise<void> {
+    public async updateLog(uri: vscode.Uri, headOrTail: 'head' | 'tail' = 'tail'): Promise<void> {
         const stream = this.getLog(uri)
         if (!stream) {
             getLogger().debug(`No registry entry for ${uri.path}`)
             return
         }
         const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
-        const logGroupInfo = parseCloudWatchLogsUri(uri)
+        const uriResults = parseCloudWatchLogsUri(uri)
+
+        const logGroupInfo = uriResults.logGroupInfo
+
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-            const logEvents = getLogEventsFromUriComponentsFn
-                ? await getLogEventsFromUriComponentsFn(logGroupInfo, nextToken)
-                : await this.getLogEventsFromUriComponents(logGroupInfo, nextToken)
+            const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
+
             const newData =
                 headOrTail === 'head'
                     ? (logEvents.events ?? []).concat(stream.data)
                     : stream.data.concat(logEvents.events ?? [])
 
-            const tokens: Pick<CloudWatchLogStreamData, 'next' | 'previous'> = {}
+            const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
             // update if no token exists or if the token is updated in the correct direction.
             if (!stream.previous || headOrTail === 'head') {
                 tokens.previous = {
@@ -166,8 +147,8 @@ export class LogStreamRegistry {
             vscode.window.showErrorMessage(
                 localize(
                     'AWS.cloudWatchLogs.viewLogStream.errorRetrievingLogs',
-                    'Error retrieving logs for Log Stream {0} : {1}',
-                    logGroupInfo.streamName,
+                    'Error retrieving logs for Log Group {0} : {1}',
+                    logGroupInfo.groupName,
                     err.message
                 )
             )
@@ -198,37 +179,72 @@ export class LogStreamRegistry {
         return (log && log.busy) ?? false
     }
 
-    private setLog(uri: vscode.Uri, stream: CloudWatchLogStreamData): void {
+    private setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
         this.activeStreams.set(uri.path, stream)
     }
 
-    private getLog(uri: vscode.Uri): CloudWatchLogStreamData | undefined {
+    private getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
         return this.activeStreams.get(uri.path)
-    }
-
-    private async getLogEventsFromUriComponents(
-        logGroupInfo: {
-            groupName: string
-            streamName: string
-            regionName: string
-        },
-        nextToken?: string
-    ): Promise<CloudWatchLogs.GetLogEventsResponse> {
-        const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
-            logGroupInfo.regionName
-        )
-
-        return await client.getLogEvents({
-            logGroupName: logGroupInfo.groupName,
-            logStreamName: logGroupInfo.streamName,
-            nextToken,
-            limit: this.configuration.get('limit', 1000),
-        })
     }
 }
 
-export class CloudWatchLogStreamData {
+export async function getLogEventsFromUriComponents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    nextToken?: string
+): Promise<CloudWatchLogsResponse> {
+    const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
+        logGroupInfo.regionName
+    )
+
+    if (!parameters.streamName) {
+        throw new Error(
+            `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
+        )
+    }
+    const response = await client.getLogEvents({
+        logGroupName: logGroupInfo.groupName,
+        logStreamName: parameters.streamName,
+        nextToken,
+        limit: parameters.limit,
+    })
+
+    return {
+        events: response.events ? response.events : [],
+        nextForwardToken: response.nextForwardToken,
+        nextBackwardToken: response.nextBackwardToken,
+    }
+}
+
+export type CloudWatchLogsGroupInfo = {
+    groupName: string
+    regionName: string
+}
+
+export type CloudWatchLogsParameters = {
+    filterPattern?: string
+    startTime?: number
+    limit?: number
+    streamName?: string
+}
+
+export type CloudWatchLogsResponse = {
+    events: CloudWatchLogs.FilteredLogEvents
+    nextForwardToken?: CloudWatchLogs.NextToken
+    nextBackwardToken?: CloudWatchLogs.NextToken
+}
+
+export type CloudWatchLogsAction = (
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    apiParameters: CloudWatchLogsParameters,
+    nextToken?: string
+) => Promise<CloudWatchLogsResponse>
+
+export class CloudWatchLogsData {
     data: CloudWatchLogs.OutputLogEvents = []
+    parameters: CloudWatchLogsParameters = {}
+    logGroupInfo!: CloudWatchLogsGroupInfo
+    retrieveLogsFunction!: CloudWatchLogsAction
     next?: {
         token: CloudWatchLogs.NextToken
     }
