@@ -17,14 +17,14 @@ export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
             // should work correctly under any normal circumstances since the action only appears in command palette when the editor is a CloudWatch Logs editor
             uri = vscode.window.activeTextEditor?.document.uri
             if (!uri) {
-                throw new Error()
+                throw new Error("Attempt to copy Uri that doesn't exist.")
             }
         }
         const parsedUri = parseCloudWatchLogsUri(uri)
         const parameters = parsedUri.parameters
 
         if (!parameters.streamName) {
-            throw new Error()
+            throw new Error(`Unable to copy stream name for Uri that doesn\'t have stream. Attempted copy on ${uri}`)
         }
         await copyToClipboard(parameters.streamName)
     } catch (e) {
