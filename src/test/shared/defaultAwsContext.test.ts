@@ -164,6 +164,10 @@ describe('DefaultAwsContext', function () {
     })
 
     it('sets default region to last region from prompter', async function () {
+        const testContext = await FakeExtensionContext.create()
+        const awsContext: AwsContext = new DefaultAwsContext(testContext)
+        const originalRegion = awsContext.guessDefaultRegion()
+
         const regions = [
             { id: 'us-west-2', name: 'PDX' },
             { id: 'us-east-1', name: 'IAD' },
@@ -175,25 +179,20 @@ describe('DefaultAwsContext', function () {
             defaultRegion: 'foo-bar-1',
         })
         const tester = createQuickPickTester(p)
-        const selection = regions[0]
-        tester.assertItems(['FOO', 'PDX', 'IAD'])
-        tester.acceptItem({
-            label: selection.name,
-            detail: selection.id,
-            data: selection,
-            skipEstimate: true,
-            description: '',
-        })
+        const selection = regions[2]
+        tester.acceptItem(selection.name)
         await tester.result(selection)
 
-        const testContext = await FakeExtensionContext.create()
-        const awsContext: AwsContext = new DefaultAwsContext(testContext)
-        const result = awsContext.guessDefaultRegion()
-
+        const newRegion = awsContext.guessDefaultRegion()
+        assert.notStrictEqual(
+            originalRegion,
+            newRegion,
+            `Region Prompter failed to update value of guessDefaultRegion from ${originalRegion}.`
+        )
         assert.strictEqual(
-            result,
+            newRegion,
             selection.id,
-            `guessDefaultRegion gave region ${result} while selection is region ${selection.id}`
+            `guessDefaultRegion gave region ${newRegion} while selection is region ${selection.id}`
         )
     })
 
