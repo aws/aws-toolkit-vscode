@@ -190,10 +190,11 @@ describe('DefaultAwsContext', function () {
         const awsContext: AwsContext = new DefaultAwsContext(testContext)
         const result = awsContext.guessDefaultRegion()
 
-        if (result !== selection.id) {
-            const errMsg = `guessDefaultRegion gave region ${result} while selection is region ${selection.id}`
-            throw new Error(errMsg)
-        }
+        assert.strictEqual(
+            result,
+            selection.id,
+            `guessDefaultRegion gave region ${result} while selection is region ${selection.id}`
+        )
     })
 
     it('prioritizes the AWS explorer region if there is only one', async function () {
