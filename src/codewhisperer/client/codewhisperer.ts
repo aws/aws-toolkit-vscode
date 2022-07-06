@@ -72,10 +72,13 @@ export class DefaultCodeWhispererClient {
                         // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
                         // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
                         if (isCloud9() && req.operation !== 'getAccessToken') {
-                            req.on('error', e => {
-                                if (e.code === 'AccessDeniedException' && e.message.match(/expired/i)) {
+                            req.on('retry', resp => {
+                                if (
+                                    resp.error?.code === 'AccessDeniedException' &&
+                                    resp.error.message.match(/expired/i)
+                                ) {
                                     refreshCredentials()
-                                    e.retryable = true
+                                    resp.error.retryable = true
                                 }
                             })
                         }
