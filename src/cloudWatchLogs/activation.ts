@@ -66,6 +66,8 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         Commands.register(
             'aws.cloudWatchLogs.viewLogStream',
             async (node: LogGroupNode) => await viewLogStream(node, registry)
-        )
+        ),
+
+        Commands.register('aws.cloudWatchLogs.searchLogGroup', async () => console.log('search log group'))
     )
 }

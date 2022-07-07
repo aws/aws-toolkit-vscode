@@ -2511,8 +2511,8 @@
                 }
             },
             {
-                "command": "aws.searchLogGroup",
-                "title": "%AWS.command.searchLogGroup%",
+                "command": "aws.cloudWatchLogs.searchLogGroup",
+                "title": "%AWS.command.cloudWatchLogs.searchLogGroup%",
                 "category": "%AWS.title%",
                 "icon": "$(files)",
                 "cloud9": {
