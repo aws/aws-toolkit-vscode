@@ -1,0 +1,18 @@
+{
+	"date": "2022-07-07",
+	"version": "1.45.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "`Add SAM Debug Configuration` codelenses in source files are now disabled by default. (To enable the codelenses, use the `AWS: Toggle SAM hints in source files` command or the `Enable SAM hints` setting.)"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer features were not fully disabled if the experiment was disabled"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "'security token expired' errors when using CodeWhisperer in Cloud9 with managed credentials"
+		}
+	]
+}
