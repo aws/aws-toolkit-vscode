@@ -401,7 +401,7 @@ export async function makeJavaCodeLensProvider(configuration: SamCliSettings): P
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (!forceProvide && !configuration.get('enableCodeLenses', true)) {
+            if (!forceProvide && !configuration.get('enableCodeLenses', false)) {
                 return []
             }
             // Try to activate the Java Extension before requesting symbols from a java file
