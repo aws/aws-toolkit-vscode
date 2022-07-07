@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>FunctionNaming:DotNetEcsCloudDebugRunConfigurationTest.kt$DotNetEcsCloudDebugRunConfigurationTest$@Test fun testCheckConfiguration_StartupCommand_NotStartWithDotNet()</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionProviderTest.kt$DotNetHandlerCompletionProviderTest$@Test( dataProvider = "handlerCompletionSupportedData", description = "Check completion in run configuration feature is enabled for DOTNET runtime." ) fun testCompletion_IsSupportedForDotNetRuntime(name: String, runtime: LambdaRuntime)</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$// TODO this test only works on 2019.2. Which we don't support anymore. Fix the test // TODO: This test is failing due to handlers detection logic. I assume it need to be fixed if test is correct. @Test(enabled = false, description = "Check all handlers are show in completion lookup when multiple handlers are defined in a project.") @TestEnvironment(solution = "SamMultipleHandlersApp") fun testDetermineHandlers_MultipleHandlers()</ID>
     <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$@Test(description = "Check a single handler is shown in lookup when one is defined in a project.") @TestEnvironment(solution = "SamHelloWorldApp") fun testDetermineHandlers_SingleHandler()</ID>

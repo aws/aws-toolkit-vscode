@@ -16,8 +16,4 @@
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs16ImageDebug"/>
         <sam.projectWizard id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamProjectWizard"/>
     </extensions>
-
-    <extensions defaultExtensionNs="aws.toolkit.clouddebug">
-        <debuggerSupport implementation="software.aws.toolkits.jetbrains.services.clouddebug.nodejs.NodeJsDebuggerSupport"/>
-    </extensions>
 </idea-plugin>

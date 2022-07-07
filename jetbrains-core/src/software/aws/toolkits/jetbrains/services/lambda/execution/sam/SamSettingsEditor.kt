@@ -9,7 +9,7 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.remoteServer.configuration.RemoteServersManager
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.jetbrains.services.ecs.execution.DockerUtil.dockerPluginAvailable
+import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import java.net.URI
 import javax.swing.JComponent
@@ -33,7 +33,7 @@ class SamSettingsEditor<T : SamSettingsRunConfiguration> : SettingsEditor<T>() {
         val hostOptions = mutableSetOf<String>()
 
         hostOptions.add("localhost")
-        if (dockerPluginAvailable()) {
+        if (pluginIsInstalledAndEnabled("Docker")) {
             val dockerCloudType = DockerCloudType.getInstance()
             RemoteServersManager.getInstance().servers.asSequence()
                 .filter { it.type == dockerCloudType }

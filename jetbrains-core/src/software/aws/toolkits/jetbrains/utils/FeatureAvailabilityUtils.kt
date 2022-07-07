@@ -13,5 +13,3 @@ private fun availableInClassic(activeRegion: AwsRegion): Boolean = activeRegion.
 // technically available in govcloud but the api/console is broken
 fun lambdaTracingConfigIsAvailable(activeRegion: AwsRegion) = availableInClassic(activeRegion) &&
     AwsRegionProvider.getInstance().isServiceSupported(activeRegion, "xray")
-
-fun cloudDebugIsAvailable(activeRegion: AwsRegion) = availableInClassic(activeRegion)

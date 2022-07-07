@@ -12,7 +12,6 @@ import software.aws.toolkits.jetbrains.core.experiments.isEnabled
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.ecs.EcsExecExperiment
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
-import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings
 import software.aws.toolkits.resources.message
 
@@ -31,7 +30,7 @@ class DisableEcsExecuteCommand :
     }
 
     override fun update(selected: EcsServiceNode, e: AnActionEvent) {
-        e.presentation.isVisible = selected.executeCommandEnabled() && !EcsUtils.isInstrumented(selected.value.serviceArn()) && EcsExecExperiment.isEnabled()
+        e.presentation.isVisible = selected.executeCommandEnabled() && EcsExecExperiment.isEnabled()
     }
 
     private fun disableExecuteCommand(project: Project, service: Service) {

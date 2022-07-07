@@ -23,7 +23,4 @@
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.python.Python39ImageDebugSupport"/>
         <sam.projectWizard id="PYTHON" implementationClass="software.aws.toolkits.jetbrains.services.lambda.python.PythonSamProjectWizard"/>
     </extensions>
-    <extensions defaultExtensionNs="aws.toolkit.clouddebug">
-        <debuggerSupport implementation="software.aws.toolkits.jetbrains.services.clouddebug.python.PythonDebuggerSupport"/>
-    </extensions>
 </idea-plugin>

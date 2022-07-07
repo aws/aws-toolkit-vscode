@@ -145,8 +145,6 @@ with what features/services are supported.
 
         <extensionPoint name="executable" interface="software.aws.toolkits.jetbrains.core.executables.ExecutableType" dynamic="true"/>
 
-        <extensionPoint name="clouddebug.debuggerSupport" interface="software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport" dynamic="true"/>
-
         <extensionPoint name="explorer.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode" dynamic="true"/>
         <extensionPoint name="explorer.nodeProcessor" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNodeProcessor" dynamic="true"/>
         <extensionPoint name="explorer.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerTreeStructureProvider" dynamic="true"/>
@@ -176,7 +174,6 @@ with what features/services are supported.
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"
                             testServiceImplementation="software.aws.toolkits.jetbrains.settings.MockAwsSettings" />
 
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.CloudDebugSettings"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings"/>
 
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings"
@@ -295,11 +292,6 @@ with what features/services are supported.
         <notificationGroup id="aws.toolkit_deprecation" displayType="STICKY_BALLOON" key="aws.toolkit_deprecation.title"/>
         <notificationGroup id="aws.toolkit_telemetry" displayType="STICKY_BALLOON" key="aws.settings.telemetry.prompt.title"/>
 
-        <!-- ECS -->
-        <configurationType implementation="software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationType"/>
-        <programRunner implementation="software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebuggingRunner"/>
-        <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationProducer" />
-
         <!-- Project Wizard components -->
         <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator" />
         <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGeneratorIntelliJAdapter" />
@@ -326,7 +318,6 @@ with what features/services are supported.
         <registryKey key="aws.telemetry.region" description="Region to use for publishing AWS client-side telemetry" defaultValue="us-east-1" restartRequired="true"/>
         <registryKey key="aws.credentialProcess.timeout" description="AWS Credential Process timeout (ms)" restartRequired="false" defaultValue="30000"/>
         <registryKey key="aws.debuggerAttach.timeout" description="Time allowed for debuggers to attach before timing out (ms)" restartRequired="false" defaultValue="60000"/>
-        <registryKey key="aws.feature.ecsCloudDebug" description="Enables the Cloud Debug for ECS set of features" restartRequired="false" defaultValue="true"/>
         <registryKey key="aws.toolkit.developerMode" description="Enables features to facilitate development of the toolkit" restartRequired="false" defaultValue="false"/>
         <typedHandler implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererTypedHandler"/>
         <editorFactoryListener implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorListener"/>
@@ -344,16 +335,11 @@ with what features/services are supported.
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.metadataservice.InstanceRoleCredentialProviderFactory"/>
 
         <!-- Executables -->
-        <executable implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable"/>
         <executable implementation="software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable"/>
 
-        <explorer.nodeProcessor implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerProcessor" />
-        <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerTreeStructureProvider"/>
-        <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceTreeStructureProvider"/>
-
-        <devTools.treeStructure implementation="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerTreeStructureProvider"/>
-
         <!-- Explorer nodes -->
+        <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceTreeStructureProvider"/>
+        <devTools.treeStructure implementation="software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerTreeStructureProvider"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.AppRunnerExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode"/>
@@ -373,7 +359,6 @@ with what features/services are supported.
 
         <!-- Experiments -->
         <experiment implementation="software.aws.toolkits.jetbrains.services.codewhisperer.experiment.CodeWhispererExperiment"/>
-        <experiment implementation="software.aws.toolkits.jetbrains.services.ecs.EcsCloudDebugExperiment"/>
         <experiment implementation="software.aws.toolkits.jetbrains.services.ecs.EcsExecExperiment"/>
         <experiment implementation="software.aws.toolkits.jetbrains.services.dynamic.JsonResourceModificationExperiment"/>
 
@@ -425,9 +410,6 @@ with what features/services are supported.
         <group id="aws.toolkit.explorer.ecs.service" popup="true" compact="false">
             <reference ref="RunContextGroupInner"/>
             <group id="ecs.container.actions" compact="true" class="software.aws.toolkits.jetbrains.services.ecs.ServiceContainerActions"/>
-            <separator/>
-            <action id="ecs.function.instrument" class="software.aws.toolkits.jetbrains.services.clouddebug.actions.InstrumentResourceFromExplorerAction"/>
-            <action id="clouddebug.resource.deinstrument" class="software.aws.toolkits.jetbrains.services.clouddebug.actions.DeinstrumentResourceFromExplorerAction"/>
             <separator/>
             <action id="ecs.exec.enable" class="software.aws.toolkits.jetbrains.services.ecs.exec.EnableEcsExecuteCommand"/>
             <action id="ecs.exec.disable" class="software.aws.toolkits.jetbrains.services.ecs.exec.DisableEcsExecuteCommand"/>

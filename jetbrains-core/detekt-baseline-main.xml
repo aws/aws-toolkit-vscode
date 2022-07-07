@@ -72,7 +72,6 @@
     <ID>NoNameShadowing:Iam.kt$Iam${ it.roleName(roleName) .policyName(roleName) .policyDocument(policy) }</ID>
     <ID>NoNameShadowing:LocalPathProjectBaseCellEditor.kt$LocalPathProjectBaseCellEditor${ LocalFileSystem.getInstance().findFileByPath(it) }</ID>
     <ID>NoNameShadowing:LocalPathProjectBaseCellEditor.kt$LocalPathProjectBaseCellEditor${ StringUtil.isNotEmpty(it) }</ID>
-    <ID>NoNameShadowing:PerContainerSettings.kt$PerContainerSettings${ CloudDebugConstants.DEFAULT_REMOTE_DEBUG_PORT + it }</ID>
     <ID>NoNameShadowing:RuntimeGroup.kt$RuntimeGroup.Companion${ it.id == id }</ID>
     <ID>NoNameShadowing:SdkSelectionPanel.kt$SdkSelectionPanel${ row(it.sdkSelectionLabel()) { it.sdkSelectionPanel()(grow) } }</ID>
     <ID>NoNameShadowing:SelectSavedQuery.kt$SelectSavedQuery${ logGroups.text = it.logGroupNames().joinToString("\n") queryString.text = it.queryString() // reset to the start, since setting the text moves the cursor to the end, // which results in scrolling to the bottom right corner if there's enough text logGroups.caretPosition = 0 queryString.caretPosition = 0 }</ID>

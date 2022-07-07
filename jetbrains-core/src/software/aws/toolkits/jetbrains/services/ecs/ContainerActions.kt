@@ -24,7 +24,6 @@ import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeA
 import software.aws.toolkits.jetbrains.core.getResource
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
-import software.aws.toolkits.jetbrains.services.clouddebug.actions.StartRemoteShellAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.checkIfLogStreamExists
 import software.aws.toolkits.jetbrains.services.ecs.exec.EcsExecUtils
@@ -46,7 +45,6 @@ class ContainerActions(
     }
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> = arrayOf(
-        StartRemoteShellAction(project, container),
         ContainerLogsAction(project, container),
         Separator.getInstance(),
         ExecuteCommandAction(project, container),
@@ -154,7 +152,7 @@ class ExecuteCommandAction(
 
     override fun update(e: AnActionEvent) {
         e.presentation.isVisible = container.service.enableExecuteCommand() &&
-            !EcsUtils.isInstrumented(container.service.serviceArn()) && EcsExecExperiment.isEnabled()
+            EcsExecExperiment.isEnabled()
     }
 }
 
@@ -182,7 +180,6 @@ class ExecuteCommandInShellAction(
 
     override fun update(e: AnActionEvent) {
         e.presentation.isVisible = container.service.enableExecuteCommand() &&
-            !EcsUtils.isInstrumented(container.service.serviceArn()) &&
             pluginIsInstalledAndEnabled("org.jetbrains.plugins.terminal") && EcsExecExperiment.isEnabled()
     }
 }

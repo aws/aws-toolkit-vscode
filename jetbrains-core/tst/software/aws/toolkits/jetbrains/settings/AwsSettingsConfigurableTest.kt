@@ -29,7 +29,6 @@ class AwsSettingsConfigurableTest : ExecutableDetectorTestBase() {
         val settings = AwsSettingsConfigurable()
         // explicit call to suppress compiling error
         settings.samExecutablePath.setText(null)
-        settings.cloudDebugExecutablePath.setText(null)
         settings.enableTelemetry.isSelected = true
         settings.apply()
         settings.enableTelemetry.isSelected = false

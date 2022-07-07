@@ -1,0 +1,4 @@
+{
+  "type" : "removal",
+  "description" : "Remove Cloud Debugging of ECS Services (beta)"
+}

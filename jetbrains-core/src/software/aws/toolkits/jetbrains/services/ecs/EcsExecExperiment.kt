@@ -13,9 +13,3 @@ object EcsExecExperiment : ToolkitExperiment(
     default = true,
     hidden = true
 )
-
-object EcsCloudDebugExperiment : ToolkitExperiment(
-    "ecsCloudDebug",
-    { message("cloud_debug.experiment.title") },
-    { message("cloud_debug.experiment.description") }
-)

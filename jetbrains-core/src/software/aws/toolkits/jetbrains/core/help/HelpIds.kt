@@ -26,16 +26,6 @@ enum class HelpIds(shortId: String, val url: String) {
         "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/aws-explorer"
     ),
 
-    // Cloud Debugging
-    CLOUD_DEBUG_ENABLE(
-        "enableCloudDebugging",
-        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/cloud-debug"
-    ),
-    CLOUD_DEBUG_RUN_CONFIGURATION(
-        "cloudDebugRunConfiguration",
-        "https://docs.aws.amazon.com/console/toolkit-for-jetbrains/run-debug-config-dialog-cloud-debug"
-    ),
-
     // Lambda
     CREATE_FUNCTION_DIALOG(
         "createFunctionDialog",

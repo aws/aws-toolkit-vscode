@@ -27,8 +27,6 @@ object DotNetDebuggerUtils {
 
     val debuggerBinDir: File = debuggerAssemblyFile.parentFile
 
-    const val cloudDebuggerTempDirName = "aws_rider_debugger_files"
-
     fun createAndStartSession(
         executionConsole: ExecutionConsole,
         env: ExecutionEnvironment,

@@ -15,7 +15,6 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRoo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
-import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugLocation
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.resources.message
 
@@ -62,7 +61,6 @@ class EcsServiceNode(project: Project, private val service: Service, private val
     override fun resourceType() = "service"
     override fun resourceArn(): String = value.serviceArn()
     override fun displayName(): String = value.serviceName()
-    override fun location() = EcsCloudDebugLocation(nodeProject, service)
     fun executeCommandEnabled() = value.enableExecuteCommand()
     fun clusterArn(): String = clusterArn
 }
