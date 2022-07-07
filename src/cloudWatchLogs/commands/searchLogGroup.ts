@@ -24,7 +24,8 @@ import { Wizard } from '../../shared/wizards/wizard'
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const regionCode = 'us-west-2'
-    const logGroup = await new SearchLogGroupWizard(regionCode).run()
+    const logGroupNodes = await getLogGroupNodes(regionCode)
+    const logGroup = await new SearchLogGroupWizard(logGroupNodes).run()
     console.log(logGroup)
     // console.log("here")
     // console.log(logGroup)
@@ -32,10 +33,10 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
-async function loadLogGroups(logGroups: Promise<AWSTreeNodeBase[]>): Promise<DataQuickPickItem<string>[]> {
+function loadLogGroups(logGroups: AWSTreeNodeBase[]): DataQuickPickItem<string>[] {
     let options: DataQuickPickItem<string>[] = []
     let groupNode: AWSTreeNodeBase
-    for (groupNode of await logGroups) {
+    for (groupNode of logGroups) {
         if (groupNode.label) {
             options.push({
                 label: groupNode.label,
@@ -54,16 +55,24 @@ export interface SearchLogGroupWizardResponse {
     logGroup: string
 }
 
-function createLogGroupPrompter(regionCode: string) {
+async function getLogGroupNodes(regionCode: string) {
+    // How can I test this??
     const artificialNode = new CloudWatchLogsNode(regionCode)
-    const logGroupsPromise: Promise<AWSTreeNodeBase[]> = artificialNode.getChildren()
-    const logGroups = loadLogGroups(logGroupsPromise)
-    return createQuickPick(logGroups)
+    const logGroupNodes: AWSTreeNodeBase[] = await artificialNode.getChildren()
+    return logGroupNodes
+}
+
+export function createLogGroupPrompter(logGroupNodes: AWSTreeNodeBase[]) {
+    const logGroups = loadLogGroups(logGroupNodes)
+    return createQuickPick(logGroups, {
+        title: 'Select Log Group',
+        placeholder: 'Enter text here',
+    })
 }
 
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
-    public constructor(regionCode: string) {
+    public constructor(logGroupNodes: AWSTreeNodeBase[]) {
         super()
-        this.form.logGroup.bindPrompter(() => createLogGroupPrompter(regionCode))
+        this.form.logGroup.bindPrompter(() => createLogGroupPrompter(logGroupNodes))
     }
 }
