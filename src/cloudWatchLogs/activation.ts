@@ -16,6 +16,7 @@ import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
 import { LogStreamRegistry } from './registry/logStreamRegistry'
 import { Commands } from '../shared/vscode/commands2'
+import { searchLogGroup } from './commands/searchLogGroup'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
@@ -68,6 +69,6 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             async (node: LogGroupNode) => await viewLogStream(node, registry)
         ),
 
-        Commands.register('aws.cloudWatchLogs.searchLogGroup', async () => console.log('search log group'))
+        Commands.register('aws.cloudWatchLogs.searchLogGroup', async () => await searchLogGroup(registry))
     )
 }
