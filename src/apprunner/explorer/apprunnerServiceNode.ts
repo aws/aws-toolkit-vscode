@@ -45,7 +45,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {},
         cloudwatchClient = new DefaultCloudWatchLogsClient(client.regionCode)
     ) {
-        super('App Runner Service', parent.region, cloudwatchClient)
+        super('App Runner Service', parent.regionCode, cloudwatchClient)
 
         this.iconPath = getIcon('aws-apprunner-service')
         this.id = `AppRunnerService-${_info.ServiceArn}`

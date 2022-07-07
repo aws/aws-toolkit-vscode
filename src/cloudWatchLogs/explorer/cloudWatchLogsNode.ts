@@ -23,7 +23,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
 
     public constructor(
         label: string,
-        protected readonly regionCode: string,
+        public readonly regionCode: string,
         protected readonly cloudwatchClient: DefaultCloudWatchLogsClient
     ) {
         super(label, vscode.TreeItemCollapsibleState.Collapsed)

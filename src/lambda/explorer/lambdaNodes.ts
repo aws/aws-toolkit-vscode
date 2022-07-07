@@ -29,7 +29,7 @@ export class LambdaNode extends AWSTreeNodeBase {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public constructor(
-        private readonly regionCode: string,
+        public readonly regionCode: string,
         private readonly client = new DefaultLambdaClient(regionCode)
     ) {
         super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)

@@ -24,7 +24,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
     public constructor(
         private readonly partitionId: string,
-        private readonly regionCode: string,
+        public readonly regionCode: string,
         private readonly client = new DefaultApiGatewayClient(regionCode)
     ) {
         super('API Gateway', vscode.TreeItemCollapsibleState.Collapsed)

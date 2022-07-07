@@ -81,6 +81,10 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     }
 
     public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
+        if (element) {
+            this.awsContext.setLastTouchedRegion(element.regionCode)
+        }
+
         let childNodes: AWSTreeNodeBase[] = []
 
         try {

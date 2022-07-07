@@ -27,7 +27,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
     public constructor(
-        private readonly regionCode: string,
+        public readonly regionCode: string,
         private readonly client = new DefaultCloudFormationClient(regionCode)
     ) {
         super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)

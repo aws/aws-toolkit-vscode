@@ -40,13 +40,12 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     private readonly stateMachineNodes: Map<string, StateMachineNode>
 
     public constructor(
-        private readonly regionCode: string,
+        public readonly regionCode: string,
         private readonly client = new DefaultStepFunctionsClient(regionCode)
     ) {
         super('Step Functions', vscode.TreeItemCollapsibleState.Collapsed)
         this.stateMachineNodes = new Map<string, StateMachineNode>()
         this.contextValue = 'awsStepFunctionsNode'
-
         sfnNodeMap.set(regionCode, this)
     }
 
