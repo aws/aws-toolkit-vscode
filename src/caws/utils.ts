@@ -11,6 +11,7 @@ import * as nls from 'vscode-nls'
 import { CawsResource, getCawsConfig } from '../shared/clients/cawsClient'
 import { Commands } from '../shared/vscode/commands'
 import { pushIf } from '../shared/utilities/collectionUtils'
+import { Ides } from '../../types/clientcodeaws'
 const localize = nls.loadMessageBundle()
 
 export async function promptCawsNotConnected(window = Window.vscode(), commands = Commands.vscode()): Promise<void> {
@@ -71,4 +72,8 @@ export function getHelpUrl(): string {
 export function openCawsUrl(o: CawsResource) {
     const url = toCawsUrl(o)
     vscode.env.openExternal(vscode.Uri.parse(url))
+}
+
+export function isCawsVSCode(ides: Ides | undefined): boolean {
+    return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
 }

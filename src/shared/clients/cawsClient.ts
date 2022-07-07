@@ -327,14 +327,14 @@ class CawsClientInternal {
         return { ...resp, version: resp.version } as const
     }
 
-    public async getOrg(request: caws.GetOrganizationInput): Promise<CawsOrg | undefined> {
+    public async getOrg(request: caws.GetOrganizationRequest): Promise<CawsOrg | undefined> {
         const resp = await this.call(this.sdkClient.getOrganization(request), false)
         assertHasProps(resp, 'id', 'name')
 
         return { ...resp, type: 'org' }
     }
 
-    public async getProject(request: caws.GetProjectInput): Promise<CawsProject | undefined> {
+    public async getProject(request: caws.GetProjectRequest): Promise<CawsProject | undefined> {
         const resp = await this.call(this.sdkClient.getProject(request), false)
         assertHasProps(resp, 'id', 'name')
 
@@ -344,12 +344,12 @@ class CawsClientInternal {
     /**
      * Gets a list of all orgs for the current CAWS user.
      */
-    public listOrgs(request: caws.ListOrganizationsInput = {}): AsyncCollection<CawsOrg[]> {
+    public listOrgs(request: caws.ListOrganizationsRequest = {}): AsyncCollection<CawsOrg[]> {
         function asCawsOrg(org: caws.OrganizationSummary & { id?: string }): CawsOrg {
             return { id: '', type: 'org', name: org.name ?? 'unknown', ...org }
         }
 
-        const requester = async (request: caws.ListOrganizationsInput) =>
+        const requester = async (request: caws.ListOrganizationsRequest) =>
             this.call(this.sdkClient.listOrganizations(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.map(summaries => summaries?.map(asCawsOrg) ?? [])
@@ -358,8 +358,8 @@ class CawsClientInternal {
     /**
      * Gets a list of all projects for the given CAWS user.
      */
-    public listProjects(request: caws.ListProjectsInput): AsyncCollection<CawsProject[]> {
-        const requester = async (request: caws.ListProjectsInput) =>
+    public listProjects(request: caws.ListProjectsRequest): AsyncCollection<CawsProject[]> {
+        const requester = async (request: caws.ListProjectsRequest) =>
             this.call(this.sdkClient.listProjects(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
@@ -382,7 +382,11 @@ class CawsClientInternal {
     public listDevEnvs(proj: CawsProject): AsyncCollection<DevelopmentWorkspace[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
         const requester = async (request: caws.ListDevelopmentWorkspaceRequest) =>
-            this.call(this.sdkClient.listDevelopmentWorkspace(request), true, { items: [] })
+            this.call(this.sdkClient.listDevelopmentWorkspace(request), true, {
+                organizationName: proj.org.name,
+                projectName: proj.name,
+                items: [],
+            })
         const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
 
         return collection.map(envs => envs.map(s => intoDevelopmentWorkspace(proj.org.name, proj.name, s)))
@@ -450,8 +454,8 @@ class CawsClientInternal {
 
     /** CAWS */
     public async createDevEnv(args: caws.CreateDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
-        if (!args.ideRuntimes || args.ideRuntimes.length === 0) {
-            throw new Error('missing ideRuntimes')
+        if (!args.ides || args.ides.length === 0) {
+            throw new Error('missing ides')
         }
         const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
         assertHasProps(r, 'id')
@@ -488,7 +492,7 @@ class CawsClientInternal {
 
     public async getDevelopmentWorkspace(args: caws.GetDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
         const a = { ...args }
-        delete (a as any).ideRuntimes
+        delete (a as any).ides
         delete (a as any).repositories
         const r = await this.call(this.sdkClient.getDevelopmentWorkspace(a), false)
 

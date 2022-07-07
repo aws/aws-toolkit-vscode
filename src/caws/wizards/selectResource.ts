@@ -15,7 +15,7 @@ import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getRelativeDate } from '../../shared/utilities/textUtilities'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { associateWorkspace } from '../model'
-import { getHelpUrl } from '../utils'
+import { getHelpUrl, isCawsVSCode } from '../utils'
 
 export function createRepoLabel(r: caws.CawsRepo): string {
     return `${r.org.name} / ${r.project.name} / ${r.name}`
@@ -133,7 +133,7 @@ export function createDevEnvPrompter(
     proj?: caws.CawsProject
 ): QuickPickPrompter<caws.DevelopmentWorkspace> {
     const envs = proj ? client.listDevEnvs(proj) : client.listResources('env')
-    const filtered = envs.map(arr => arr.filter(env => env.ide === 'VSCode'))
+    const filtered = envs.map(arr => arr.filter(env => isCawsVSCode(env.ides)))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
         return typeof obj !== 'function' && isValidResponse(obj)
     }

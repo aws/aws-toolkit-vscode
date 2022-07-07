@@ -24,6 +24,7 @@ import { writeFile } from 'fs-extra'
 import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { ensureDependencies, HOST_NAME_PREFIX } from './tools'
+import { isCawsVSCode } from './utils'
 
 export type DevEnvId = Pick<DevelopmentWorkspace, 'id' | 'org' | 'project'>
 
@@ -242,7 +243,7 @@ export function associateWorkspace(
         const workspaces = await client
             .listResources('env')
             .flatten()
-            .filter(env => env.repositories.length > 0 && env.ide === 'VSCode')
+            .filter(env => env.repositories.length > 0 && isCawsVSCode(env.ides))
             .toMap(env => `${env.org.name}.${env.project.name}.${env.repositories[0].repositoryName}`)
 
         yield* repos.map(repo => ({

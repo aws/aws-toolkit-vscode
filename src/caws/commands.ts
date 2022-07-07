@@ -105,7 +105,12 @@ export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
     const args = {
         organizationName,
         projectName,
-        ideRuntimes: ['VSCode'],
+        ides: [
+            {
+                name: 'VSCode',
+                runtime: 'VSCode',
+            },
+        ],
         repositories: [
             {
                 repositoryName: repo.name,

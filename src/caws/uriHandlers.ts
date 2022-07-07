@@ -43,9 +43,9 @@ async function handleConnectParams(
     params: ReturnType<typeof parseConnectParams>
 ): Promise<void> {
     const env = await client.getDevelopmentWorkspace({
-        ...params,
         id: params.developmentWorkspaceId,
-        organizationName: params.developmentWorkspaceId,
+        organizationName: params.organizationName,
+        projectName: params.projectName,
     })
 
     if (!env) {
