@@ -23,7 +23,7 @@ import globals from '../../shared/extensionGlobals'
 export class ApiGatewayNode extends AWSTreeNodeBase {
     private readonly apiNodes: Map<string, RestApiNode>
 
-    public constructor(private readonly partitionId: string, private readonly regionCode: string) {
+    public constructor(private readonly partitionId: string, public readonly regionCode: string) {
         super('API Gateway', vscode.TreeItemCollapsibleState.Collapsed)
         this.apiNodes = new Map<string, RestApiNode>()
     }

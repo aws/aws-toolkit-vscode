@@ -33,10 +33,8 @@ import globals from '../shared/extensionGlobals'
 export class RegionNode extends AWSTreeNodeBase {
     private region: Region
     private readonly childNodes: AWSTreeNodeBase[] = []
+    public readonly regionCode: string
 
-    public get regionCode(): string {
-        return this.region.id
-    }
     public get regionName(): string {
         return this.region.name
     }
@@ -45,6 +43,7 @@ export class RegionNode extends AWSTreeNodeBase {
         super(region.name, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
         this.region = region
+        this.regionCode = region.id
         this.update(region)
 
         //  Services that are candidates to add to the region explorer.
