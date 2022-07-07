@@ -23,7 +23,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
 
     public constructor(
         label: string,
-        protected readonly regionCode: string,
+        public readonly regionCode: string,
         protected placeholderMessage: string = localize(
             'AWS.explorerNode.cloudWatchLogs.nologs',
             '[No log groups found]'
