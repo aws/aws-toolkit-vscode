@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "'security token expired' errors when using CodeWhisperer in Cloud9 with managed credentials"
-}
