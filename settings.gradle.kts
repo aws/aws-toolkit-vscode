@@ -1,31 +1,22 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-val codeArtifactMavenRepo = fun RepositoryHandler.(): MavenArtifactRepository? {
-    val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
-    val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
-    return if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
-        println("Using CodeArtifact proxy: ${codeArtifactUrl.get()}")
-        maven {
-            url = uri(codeArtifactUrl.get())
-            credentials {
-                username = "aws"
-                password = codeArtifactToken.get()
+pluginManagement {
+    repositories {
+        val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
+        val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
+        if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
+            println("Using CodeArtifact proxy: ${codeArtifactUrl.get()}")
+            maven {
+                url = uri(codeArtifactUrl.get())
+                credentials {
+                    username = "aws"
+                    password = codeArtifactToken.get()
+                }
             }
         }
-    } else {
-        null
-    }
-}.also {
-    pluginManagement {
-        repositories {
-            // janky because we need to apply to plugins in this file, but val falls out of scope
-            it()
-            gradlePluginPortal()
-        }
+        gradlePluginPortal()
     }
 }
-
-extra["codeArtifactMavenRepo"] = codeArtifactMavenRepo
 
 rootProject.name = "aws-toolkit-jetbrains"
 

@@ -1,6 +1,5 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 import org.jetbrains.gradle.ext.ProjectSettings
 import org.jetbrains.gradle.ext.TaskTriggersConfig
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
@@ -14,8 +13,17 @@ plugins {
 
 allprojects {
     repositories {
-        val codeArtifactMavenRepo: ((RepositoryHandler) -> Unit)? by extra
-        codeArtifactMavenRepo?.invoke(this)
+        val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
+        val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
+        if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
+            maven {
+                url = uri(codeArtifactUrl.get())
+                credentials {
+                    username = "aws"
+                    password = codeArtifactToken.get()
+                }
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }

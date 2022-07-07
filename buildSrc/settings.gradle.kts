@@ -1,10 +1,25 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-pluginManagement {
-    repositories {
-        val codeArtifactMavenRepo: ((RepositoryHandler) -> Unit)? by extra
-        codeArtifactMavenRepo?.invoke(this)
-        gradlePluginPortal()
+val codeArtifactMavenRepo = fun RepositoryHandler.(): MavenArtifactRepository? {
+    val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
+    val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
+    return if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
+        maven {
+            url = uri(codeArtifactUrl.get())
+            credentials {
+                username = "aws"
+                password = codeArtifactToken.get()
+            }
+        }
+    } else {
+        null
+    }
+}.also {
+    pluginManagement {
+        repositories {
+            it()
+            gradlePluginPortal()
+        }
     }
 }
 
@@ -16,8 +31,7 @@ dependencyResolutionManagement {
     }
 
     repositories {
-        val codeArtifactMavenRepo: ((RepositoryHandler) -> Unit)? by extra
-        codeArtifactMavenRepo?.invoke(this)
+        codeArtifactMavenRepo()
         mavenCentral()
         gradlePluginPortal()
         maven {
