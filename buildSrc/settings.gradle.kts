@@ -1,12 +1,11 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL").forUseAtConfigurationTime()
-val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN").forUseAtConfigurationTime()
+val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
+val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
 
 dependencyResolutionManagement {
     versionCatalogs {
-        // TODO: Using "libs" seems to confuse Intellij?
-        create("deps") {
+        create("libs") {
             from(files("../gradle/libs.versions.toml"))
         }
     }

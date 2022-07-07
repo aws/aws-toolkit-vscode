@@ -25,8 +25,8 @@ sourceSets {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = software.aws.toolkits.gradle.jvmTarget
+    targetCompatibility = software.aws.toolkits.gradle.jvmTarget
 }
 
 tasks.withType<JavaCompile>().configureEach {

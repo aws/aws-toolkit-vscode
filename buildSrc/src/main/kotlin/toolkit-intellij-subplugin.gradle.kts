@@ -61,11 +61,11 @@ configurations {
     // TODO: https://github.com/gradle/gradle/issues/15383
     val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
     dependencies {
-        testImplementation(platform(versionCatalog.findDependency("junit5-bom").get()))
-        testImplementation(versionCatalog.findDependency("junit5-jupiterApi").get())
+        testImplementation(platform(versionCatalog.findLibrary("junit5-bom").get()))
+        testImplementation(versionCatalog.findLibrary("junit5-jupiterApi").get())
 
-        testRuntimeOnly(versionCatalog.findDependency("junit5-jupiterEngine").get())
-        testRuntimeOnly(versionCatalog.findDependency("junit5-jupiterVintage").get())
+        testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterEngine").get())
+        testRuntimeOnly(versionCatalog.findLibrary("junit5-jupiterVintage").get())
     }
 }
 
@@ -150,7 +150,7 @@ tasks.runIde {
     systemProperty("ide.plugins.snapshot.on.unload.fail", true)
     systemProperty("memory.snapshots.path", project.rootDir)
 
-    val alternativeIde = providers.environmentVariable("ALTERNATIVE_IDE").forUseAtConfigurationTime()
+    val alternativeIde = providers.environmentVariable("ALTERNATIVE_IDE")
     if (alternativeIde.isPresent) {
         // remove the trailing slash if there is one or else it will not work
         val value = alternativeIde.get()

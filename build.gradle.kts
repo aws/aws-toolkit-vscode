@@ -12,8 +12,8 @@ plugins {
     id("org.jetbrains.gradle.plugin.idea-ext")
 }
 
-val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL").forUseAtConfigurationTime()
-val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN").forUseAtConfigurationTime()
+val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
+val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
 
 allprojects {
     repositories {

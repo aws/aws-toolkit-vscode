@@ -15,9 +15,9 @@ plugins {
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 dependencies {
     implementation(versionCatalog.findBundle("kotlin").get())
-    implementation(versionCatalog.findDependency("kotlin-coroutines").get())
+    implementation(versionCatalog.findLibrary("kotlin-coroutines").get())
 
-    testImplementation(versionCatalog.findDependency("kotlin-test").get())
+    testImplementation(versionCatalog.findLibrary("kotlin-test").get())
 }
 
 sourceSets {
@@ -40,18 +40,19 @@ sourceSets {
     }
 }
 
+val javaVersion = software.aws.toolkits.gradle.jvmTarget
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
 }
 
 tasks.withType<KotlinCompile>().all {
-    kotlinOptions.jvmTarget = "11"
-    kotlinOptions.apiVersion = "1.4"
+    kotlinOptions.jvmTarget = javaVersion.majorVersion
+    kotlinOptions.apiVersion = software.aws.toolkits.gradle.kotlinTarget
 }
 
 tasks.withType<Detekt>().configureEach {
-    jvmTarget = "11"
+    jvmTarget = javaVersion.majorVersion
     dependsOn(":detekt-rules:assemble")
     exclude("build/**")
     exclude("**/*.Generated.kt")
@@ -59,7 +60,7 @@ tasks.withType<Detekt>().configureEach {
 }
 
 tasks.withType<DetektCreateBaselineTask>().configureEach {
-    jvmTarget = "11"
+    jvmTarget = javaVersion.majorVersion
     dependsOn(":detekt-rules:assemble")
     exclude("build/**")
     exclude("**/*.Generated.kt")

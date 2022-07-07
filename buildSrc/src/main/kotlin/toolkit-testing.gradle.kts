@@ -14,7 +14,7 @@ plugins {
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 dependencies {
     testImplementation(versionCatalog.findBundle("mockito").get())
-    testImplementation(versionCatalog.findDependency("assertj").get())
+    testImplementation(versionCatalog.findLibrary("assertj").get())
 
     // Don't add a test framework by default since we use junit4, junit5, and testng depending on project
 }

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.gradle
 
+import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 
 /**
@@ -15,3 +16,6 @@ fun Project.ciOnly(block: () -> Unit) {
 }
 
 fun Project.isCi() : Boolean = providers.environmentVariable("CI").isPresent
+
+val jvmTarget = JavaVersion.VERSION_11
+val kotlinTarget = "1.5"
