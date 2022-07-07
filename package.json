@@ -194,7 +194,7 @@
                 "aws.samcli.enableCodeLenses": {
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
-                    "default": true
+                    "default": false
                 },
                 "aws.suppressPrompts": {
                     "type": "object",
