@@ -23,7 +23,12 @@ import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
-import globals from '../shared/extensionGlobals'
+import { DefaultAppRunnerClient } from '../shared/clients/apprunnerClient'
+import { DefaultEcrClient } from '../shared/clients/ecrClient'
+import { DefaultEcsClient } from '../shared/clients/ecsClient'
+import { DefaultIotClient } from '../shared/clients/iotClient'
+import { DefaultS3Client } from '../shared/clients/s3Client'
+import { DefaultSchemaClient } from '../shared/clients/schemaClient'
 
 /**
  * An AWS Explorer node representing a region.
@@ -56,38 +61,33 @@ export class RegionNode extends AWSTreeNodeBase {
             { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) },
             {
                 serviceId: 'apprunner',
-                createFn: () =>
-                    new AppRunnerNode(
-                        this.regionCode,
-                        globals.toolkitClientBuilder.createAppRunnerClient(this.regionCode)
-                    ),
+                createFn: () => new AppRunnerNode(this.regionCode, new DefaultAppRunnerClient(this.regionCode)),
             },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 'ecr',
-                createFn: () => new EcrNode(globals.toolkitClientBuilder.createEcrClient(this.regionCode)),
+                createFn: () => new EcrNode(new DefaultEcrClient(this.regionCode)),
             },
             {
                 serviceId: 'ecs',
-                createFn: () => new EcsNode(globals.toolkitClientBuilder.createEcsClient(this.regionCode)),
+                createFn: () => new EcsNode(new DefaultEcsClient(this.regionCode)),
             },
             {
                 serviceId: 'iot',
-                createFn: () => new IotNode(globals.toolkitClientBuilder.createIotClient(this.regionCode)),
+                createFn: () => new IotNode(new DefaultIotClient(this.regionCode)),
             },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             {
                 serviceId: 's3',
-                createFn: () => new S3Node(globals.toolkitClientBuilder.createS3Client(this.regionCode)),
+                createFn: () => new S3Node(new DefaultS3Client(this.regionCode)),
             },
             ...(isCloud9()
                 ? []
                 : [
                       {
                           serviceId: 'schemas',
-                          createFn: () =>
-                              new SchemasNode(globals.toolkitClientBuilder.createSchemaClient(this.regionCode)),
+                          createFn: () => new SchemasNode(new DefaultSchemaClient(this.regionCode)),
                       },
                   ]),
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },

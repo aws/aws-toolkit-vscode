@@ -30,7 +30,7 @@ import {
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../config/parameterUtils'
 
-import { EcrRepository } from '../../shared/clients/ecrClient'
+import { DefaultEcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import * as semver from 'semver'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
@@ -42,6 +42,7 @@ import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getIcon } from '../../shared/icons'
+import { DefaultS3Client } from '../../shared/clients/s3Client'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -544,7 +545,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
 
         const populator = new IteratorTransformer<EcrRepository, vscode.QuickPickItem>(
-            () => globals.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
+            () => new DefaultEcrClient(selectedRegion).describeRepositories(),
             response => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
         )
         const controller = new picker.IteratingQuickPickController(quickPick, populator)
@@ -796,7 +797,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
 
             try {
-                const s3Client = globals.toolkitClientBuilder.createS3Client(this.response.region!)
+                const s3Client = new DefaultS3Client(this.response.region!)
                 const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
@@ -999,7 +1000,7 @@ async function populateS3QuickPick(
         }
 
         try {
-            const s3Client = globals.toolkitClientBuilder.createS3Client(selectedRegion)
+            const s3Client = new DefaultS3Client(selectedRegion)
 
             quickPick.items = [...baseItems]
 

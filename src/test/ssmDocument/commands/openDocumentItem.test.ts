@@ -14,7 +14,8 @@ import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode
 
 import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
-import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { stub } from '../../utilities/stubber'
 
 describe('openDocumentItem', async function () {
     afterEach(function () {
@@ -69,12 +70,9 @@ describe('openDocumentItem', async function () {
     })
 
     function generateDocumentItemNode(): DocumentItemNode {
-        const ssmDocumentClient = {
-            async getDocument() {
-                return rawContent
-            },
-        } as unknown as SsmDocumentClient
+        const client = stub(DefaultSsmDocumentClient, { regionCode: fakeRegion })
+        client.getDocument.resolves(rawContent)
 
-        return new DocumentItemNode(fakeDoc, ssmDocumentClient, fakeRegion)
+        return new DocumentItemNode(fakeDoc, client, fakeRegion)
     }
 })

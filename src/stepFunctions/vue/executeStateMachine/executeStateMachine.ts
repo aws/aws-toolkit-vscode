@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
+import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 
 import { getLogger } from '../../../shared/logger'
 import {
@@ -15,7 +15,6 @@ import {
     Result,
 } from '../../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../../explorer/stepFunctionsNodes'
-import globals from '../../../shared/extensionGlobals'
 import { ExtContext } from '../../../shared/extensions'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
@@ -55,9 +54,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
         this.channel.appendLine('')
 
         try {
-            const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(
-                this.stateMachine.region
-            )
+            const client = new DefaultStepFunctionsClient(this.stateMachine.region)
             const startExecResponse = await client.executeStateMachine(this.stateMachine.arn, input)
             this.logger.info('Successfully started execution for Step Functions State Machine')
             this.channel.appendLine(

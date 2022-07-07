@@ -4,9 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { StepFunctions } from 'aws-sdk'
-import * as sinon from 'sinon'
-import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import {
     CONTEXT_VALUE_STATE_MACHINE,
     StateMachineNode,
@@ -18,100 +15,67 @@ import {
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import globals from '../../../shared/extensionGlobals'
+import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
+import { stub } from '../../utilities/stubber'
 
-const FAKE_REGION_CODE = 'someregioncode'
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const regionCode = 'someregioncode'
 
 describe('StepFunctionsNode', function () {
-    let sandbox: sinon.SinonSandbox
-    let testNode: StepFunctionsNode
+    function createStatesClient(...stateMachineNames: string[]) {
+        const client = stub(DefaultStepFunctionsClient, { regionCode })
+        client.listStateMachines.returns(
+            asyncGenerator(
+                stateMachineNames.map(name => {
+                    return {
+                        name: name,
+                        stateMachineArn: 'arn:aws:states:us-east-1:123412341234:stateMachine:' + name,
+                        type: 'STANDARD',
+                        creationDate: new globals.clock.Date(),
+                    }
+                })
+            )
+        )
 
-    // Mocked Step Functions Client returns State Machines for anything listed in stateMachineNames
-    let stateMachineNames: string[]
-
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-
-        stateMachineNames = ['stateMachine1', 'stateMachine2']
-
-        initializeClientBuilders()
-
-        testNode = new StepFunctionsNode(FAKE_REGION_CODE)
-    })
-
-    afterEach(function () {
-        sandbox.restore()
-    })
+        return client
+    }
 
     it('returns placeholder node if no children are present', async function () {
-        stateMachineNames = []
+        const node = new StepFunctionsNode(regionCode, createStatesClient())
 
-        const childNodes = await testNode.getChildren()
-
-        assertNodeListOnlyContainsPlaceholderNode(childNodes)
+        assertNodeListOnlyContainsPlaceholderNode(await node.getChildren())
     })
 
     it('has StateMachineNode child nodes', async function () {
+        const client = createStatesClient('stateMachine1', 'stateMachine2')
+        const testNode = new StepFunctionsNode(regionCode, client)
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, stateMachineNames.length, 'Unexpected child count')
+        assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
 
-        childNodes.forEach(node =>
+        childNodes.forEach(node => {
             assert.ok(node instanceof StateMachineNode, 'Expected child node to be StateMachineNode')
-        )
-    })
-
-    it('has child nodes with State Machine contextValue', async function () {
-        const childNodes = await testNode.getChildren()
-
-        childNodes.forEach(node =>
             assert.strictEqual(
                 node.contextValue,
                 CONTEXT_VALUE_STATE_MACHINE,
                 'expected the node to have a State Machine contextValue'
             )
-        )
+        })
     })
 
     it('sorts child nodes', async function () {
-        stateMachineNames = UNSORTED_TEXT
-
+        const client = createStatesClient('c', 'a', 'b')
+        const testNode = new StepFunctionsNode(regionCode, client)
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map(node => node.label)
-        assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
+        assert.deepStrictEqual(actualChildOrder, ['a', 'b', 'c'], 'Unexpected child sort order')
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        sandbox.stub(testNode, 'updateChildren').callsFake(() => {
-            throw new Error('Update Children error!')
-        })
+        const client = createStatesClient('state-machine')
+        client.listStateMachines.throws()
+        const testNode = new StepFunctionsNode(regionCode, client)
 
-        const childNodes = await testNode.getChildren()
-        assertNodeListOnlyContainsErrorNode(childNodes)
+        assertNodeListOnlyContainsErrorNode(await testNode.getChildren())
     })
-
-    function initializeClientBuilders() {
-        const stepFunctionsClient = {
-            listStateMachines: sandbox.stub().callsFake(() => {
-                return asyncGenerator<StepFunctions.StateMachineListItem>(
-                    stateMachineNames.map<StepFunctions.StateMachineListItem>(name => {
-                        return {
-                            name: name,
-                            stateMachineArn: 'arn:aws:states:us-east-1:123412341234:stateMachine:' + name,
-                            type: 'STANDARD',
-                            creationDate: new globals.clock.Date(),
-                        }
-                    })
-                )
-            }),
-        }
-
-        const clientBuilder = {
-            createStepFunctionsClient: sandbox.stub().returns(stepFunctionsClient),
-        }
-
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-    }
 })

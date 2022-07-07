@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 
 import { StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -18,7 +18,6 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listStateMachines } from '../../stepFunctions/utils'
 import { Commands } from '../../shared/vscode/commands'
-import globals from '../../shared/extensionGlobals'
 import { getIcon } from '../../shared/icons'
 
 export const CONTEXT_VALUE_STATE_MACHINE = 'awsStateMachineNode'
@@ -40,7 +39,10 @@ export function refreshStepFunctionsTree(regionCode: string) {
 export class StepFunctionsNode extends AWSTreeNodeBase {
     private readonly stateMachineNodes: Map<string, StateMachineNode>
 
-    public constructor(private readonly regionCode: string) {
+    public constructor(
+        private readonly regionCode: string,
+        private readonly client = new DefaultStepFunctionsClient(regionCode)
+    ) {
         super('Step Functions', vscode.TreeItemCollapsibleState.Collapsed)
         this.stateMachineNodes = new Map<string, StateMachineNode>()
         this.contextValue = 'awsStepFunctionsNode'
@@ -65,9 +67,8 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(this.regionCode)
         const functions: Map<string, StepFunctions.StateMachineListItem> = toMap(
-            await toArrayAsync(listStateMachines(client)),
+            await toArrayAsync(listStateMachines(this.client)),
             details => details.name
         )
 

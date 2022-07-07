@@ -9,7 +9,7 @@ import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import { EcrRepositoryNode } from './ecrRepositoryNode'
 
 export class EcrTagNode extends AWSTreeNodeBase {
-    constructor(
+    public constructor(
         public readonly parent: EcrRepositoryNode,
         private readonly ecr: EcrClient,
         public readonly repository: EcrRepository,
@@ -17,6 +17,10 @@ export class EcrTagNode extends AWSTreeNodeBase {
     ) {
         super(tag, vscode.TreeItemCollapsibleState.None)
         this.contextValue = 'awsEcrTagNode'
+    }
+
+    public get regionCode() {
+        return this.parent.regionCode
     }
 
     public async deleteTag(): Promise<void> {

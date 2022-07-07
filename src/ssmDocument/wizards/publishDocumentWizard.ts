@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../shared/extensionGlobals'
-
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -15,6 +13,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { validateDocumentName } from '../util/validateDocumentName'
+import { DefaultSsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 
 export interface PublishSSMDocumentWizardResponse {
     readonly action: PublishSSMDocumentAction
@@ -41,7 +40,7 @@ async function* loadDocuments(region: string, documentType?: SSM.Types.DocumentT
             Values: [documentType],
         })
     }
-    const client = globals.toolkitClientBuilder.createSsmClient(region)
+    const client = new DefaultSsmDocumentClient(region)
 
     for await (const document of client.listDocuments({ Filters: filters })) {
         yield [

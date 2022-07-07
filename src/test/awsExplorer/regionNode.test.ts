@@ -4,40 +4,15 @@
  */
 
 import * as assert from 'assert'
-import * as sinon from 'sinon'
-
 import { RegionNode } from '../../awsexplorer/regionNode'
 import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
 import { DEFAULT_TEST_REGION_CODE, DEFAULT_TEST_REGION_NAME, FakeRegionProvider } from '../utilities/fakeAwsContext'
-import { ToolkitClientBuilder } from '../../shared/clients/toolkitClientBuilder'
-import globals from '../../shared/extensionGlobals'
 
 describe('RegionNode', function () {
-    let sandbox: sinon.SinonSandbox
     let testNode: RegionNode
 
     beforeEach(function () {
-        sandbox = sinon.createSandbox()
-        console.log('initializing...')
-
-        // contingency for current Node impl: requires a client built from globals.toolkitClientBuilder.
-        const clientBuilder = {
-            createS3Client: sandbox.stub().returns({}),
-            createEcrClient: sandbox.stub().returns({}),
-            createEcsClient: sandbox.stub().returns({}),
-            createCloudFormationClient: sandbox.stub().returns({}),
-            createAppRunnerClient: sandbox.stub().returns({}),
-            createCloudControlClient: sandbox.stub().returns({}),
-            createIotClient: sandbox.stub().returns({}),
-            createSchemaClient: sandbox.stub().returns({}),
-        }
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
-
         testNode = new RegionNode({ id: regionCode, name: regionName }, new FakeRegionProvider())
-    })
-
-    afterEach(function () {
-        sandbox.reset()
     })
 
     const regionCode = DEFAULT_TEST_REGION_CODE

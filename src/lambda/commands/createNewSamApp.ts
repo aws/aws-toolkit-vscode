@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { SchemaClient } from '../../../src/shared/clients/schemaClient'
+import { DefaultSchemaClient, SchemaClient } from '../../../src/shared/clients/schemaClient'
 import { createSchemaCodeDownloaderObject } from '../..//eventSchemas/commands/downloadSchemaItemCode'
 import {
     SchemaCodeDownloader,
@@ -180,7 +180,7 @@ export async function createNewSamApplication(
         let schemaTemplateParameters: SchemaTemplateParameters
         let client: SchemaClient
         if (config.template === eventBridgeStarterAppTemplate) {
-            client = globals.toolkitClientBuilder.createSchemaClient(config.region!)
+            client = new DefaultSchemaClient(config.region!)
             schemaTemplateParameters = await buildSchemaTemplateParameters(
                 config.schemaName!,
                 config.registryName!,
