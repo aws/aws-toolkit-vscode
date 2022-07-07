@@ -133,6 +133,7 @@ describe('schemasDataProvider', function () {
 
         it('should return undefined when error occurs', async function () {
             const client = createSchemaClient()
+            client.listRegistries.reset()
             client.listRegistries.throws(new Error('Custom error'))
 
             const result = await dataProviderObject.getRegistries(TEST_REGION, client, testCredentials)
@@ -226,6 +227,7 @@ describe('schemasDataProvider', function () {
 
         it('should return undefined when error occurs ', async function () {
             const client = createSchemaClient()
+            client.listSchemas.reset()
             client.listSchemas.throws(new Error('Custom error'))
 
             const result = await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, client, testCredentials)
