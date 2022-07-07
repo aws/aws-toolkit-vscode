@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "`Add SAM Debug Configuration` codelenses in source files are now disabled by default. (To enable the codelenses, use the `AWS: Toggle SAM hints in source files` command or the `Enable SAM hints` setting.)"
-}
