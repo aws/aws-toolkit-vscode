@@ -12,21 +12,10 @@ plugins {
     id("org.jetbrains.gradle.plugin.idea-ext")
 }
 
-val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL")
-val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN")
-
 allprojects {
     repositories {
-        if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
-            println("Using CodeArtifact proxy: ${codeArtifactUrl.get()}")
-            maven {
-                url = uri(codeArtifactUrl.get())
-                credentials {
-                    username = "aws"
-                    password = codeArtifactToken.get()
-                }
-            }
-        }
+        val codeArtifactMavenRepo: ((RepositoryHandler) -> Unit)? by extra
+        codeArtifactMavenRepo?.invoke(this)
         mavenCentral()
         gradlePluginPortal()
     }
