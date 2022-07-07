@@ -27,7 +27,7 @@ export const CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION = 'awsCloudFormationFu
 export class CloudFormationNode extends AWSTreeNodeBase {
     private readonly stackNodes: Map<string, CloudFormationStackNode>
 
-    public constructor(private readonly regionCode: string) {
+    public constructor(public readonly regionCode: string) {
         super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)
         this.stackNodes = new Map<string, CloudFormationStackNode>()
         this.contextValue = 'awsCloudFormationRootNode'
