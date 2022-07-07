@@ -25,7 +25,6 @@ export const sharedRegistryName = localize('AWS.explorerNode.registry.name.share
 
 export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly documentNodes: Map<string, DocumentItemNode>
-
     public constructor(public readonly regionCode: string, public registryName: string, readonly documentType: string) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 

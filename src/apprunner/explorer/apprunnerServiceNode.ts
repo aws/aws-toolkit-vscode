@@ -45,7 +45,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     ) {
         super(
             'App Runner Service',
-            parent.region,
+            parent.regionCode,
             localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
         )
         this.iconPath = getIcon('aws-apprunner-service')

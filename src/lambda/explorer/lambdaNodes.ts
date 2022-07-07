@@ -29,7 +29,7 @@ export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDo
 export class LambdaNode extends AWSTreeNodeBase {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
-    public constructor(private readonly regionCode: string) {
+    public constructor(public readonly regionCode: string) {
         super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)
         this.functionNodes = new Map<string, LambdaFunctionNode>()
         this.contextValue = 'awsLambdaNode'
