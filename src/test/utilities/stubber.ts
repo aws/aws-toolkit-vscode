@@ -8,8 +8,9 @@ import * as sinon from 'sinon'
 type Stub<T> = T & { [P in keyof T]: sinon.SinonStubbedMember<T[P]> }
 type Fields<T> = { [P in FieldKeys<T>]-?: T[P] }
 type FieldKeys<T> = { [P in keyof T]: T[P] extends (...args: any[]) => unknown ? never : P }[keyof T]
+type PartialStub<T> = FieldKeys<T> extends never ? Stub<T> : Stub<Omit<T, FieldKeys<T>>>
 
-export function stub<T>(ctor: new (...args: any[]) => T): Stub<Omit<T, FieldKeys<T>>>
+export function stub<T>(ctor: new (...args: any[]) => T): PartialStub<T>
 export function stub<T>(ctor: new (...args: any[]) => T, fields: Fields<T>): Stub<T>
 export function stub<T>(ctor: new (...args: any[]) => T, fields?: Fields<T>): Stub<T> {
     const stubs = new Map<PropertyKey, sinon.SinonStub>()
