@@ -8,7 +8,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as fs from 'fs-extra'
-import * as path from 'path'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { recordCloudwatchlogsDownloadStreamToFile, Result } from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
@@ -36,10 +35,15 @@ export async function saveCurrentLogStreamContent(
             ? vscode.workspace.workspaceFolders[0].uri
             : vscode.Uri.file(SystemUtilities.getHomeDirectory())
         const uriComponents = parseCloudWatchLogsUri(uri)
+        const logGroupInfo = uriComponents.logGroupInfo
+        const parameters = uriComponents.parameters
 
         const localizedLogFile = localize('AWS.command.saveCurrentLogStreamContent.logfile', 'Log File')
         const selectedUri = await window.showSaveDialog({
-            defaultUri: vscode.Uri.parse(path.join(workspaceDir.toString(), uriComponents.streamName)),
+            defaultUri: vscode.Uri.joinPath(
+                workspaceDir,
+                parameters.streamName ? parameters.streamName : logGroupInfo.groupName
+            ),
             filters: {
                 [localizedLogFile]: ['log'],
             },

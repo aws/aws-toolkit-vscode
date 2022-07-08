@@ -7,33 +7,40 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
-import { LogStreamRegistry, CloudWatchLogStreamData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import {
+    LogStreamRegistry,
+    CloudWatchLogsData,
+    getLogEventsFromUriComponents,
+} from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { Settings } from '../../../shared/settings'
 
 describe('LogStreamDocumentProvider', function () {
-    let registry: LogStreamRegistry
-    let map: Map<string, CloudWatchLogStreamData>
+    const map = new Map<string, CloudWatchLogsData>()
     let provider: LogStreamDocumentProvider
-
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
+    const registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
 
     const registeredUri = vscode.Uri.parse('has:This')
     // TODO: Make this less flaky when we add manual timestamp controls.
     const message = "i'm just putting something here because it's a friday"
-    const stream: CloudWatchLogStreamData = {
+    const stream: CloudWatchLogsData = {
         data: [
             {
                 message,
             },
         ],
+        parameters: { streamName: 'stream' },
+        logGroupInfo: {
+            groupName: 'group',
+            regionName: 'region',
+        },
+        retrieveLogsFunction: getLogEventsFromUriComponents,
         busy: false,
     }
 
-    beforeEach(function () {
-        map = new Map<string, CloudWatchLogStreamData>()
-        map.set(registeredUri.path, stream)
-        registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
+    before(async function () {
         provider = new LogStreamDocumentProvider(registry)
+        map.set(registeredUri.path, stream)
     })
 
     it('provides content if it exists and a blank string if it does not', function () {

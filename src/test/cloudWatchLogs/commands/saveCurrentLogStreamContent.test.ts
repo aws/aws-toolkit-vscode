@@ -8,9 +8,9 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 
+import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { saveCurrentLogStreamContent } from '../../../cloudWatchLogs/commands/saveCurrentLogStreamContent'
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
@@ -23,11 +23,11 @@ describe('saveCurrentLogStreamContent', async function () {
     beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
         filename = path.join(tempDir, 'bobLoblawsLawB.log')
-        fakeRegistry = ({
+        fakeRegistry = {
             getLogContent: (uri: vscode.Uri, formatting?: { timestamps?: boolean }) => {
                 return logContent
             },
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
     })
 
     afterEach(async function () {
@@ -35,8 +35,15 @@ describe('saveCurrentLogStreamContent', async function () {
     })
 
     it('saves log content to a file', async function () {
+        const logGroupInfo = {
+            groupName: 'g',
+            regionName: 'r',
+        }
+        const parameters = { streamName: 's' }
+        const uri = createURIFromArgs(logGroupInfo, parameters)
+
         await saveCurrentLogStreamContent(
-            vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:g:s:r`),
+            uri,
             fakeRegistry,
             new FakeWindow({
                 dialog: {

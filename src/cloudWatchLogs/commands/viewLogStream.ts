@@ -17,8 +17,15 @@ import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
-import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
+import {
+    CloudWatchLogsData,
+    CloudWatchLogsGroupInfo,
+    CloudWatchLogsParameters,
+    LogStreamRegistry,
+    getLogEventsFromUriComponents,
+} from '../registry/logStreamRegistry'
+import { createURIFromArgs } from '../cloudWatchLogsUtils'
+
 
 export interface SelectLogStreamResponse {
     region: string
@@ -30,12 +37,27 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
-        const uri = convertLogGroupInfoToUri(
-            logStreamResponse.logGroupName,
-            logStreamResponse.logStreamName,
-            logStreamResponse.region
-        )
-        await registry.registerLog(uri)
+        const logGroupInfo: CloudWatchLogsGroupInfo = {
+            groupName: logStreamResponse.logGroupName,
+            regionName: logStreamResponse.region,
+        }
+
+        const parameters: CloudWatchLogsParameters = {
+            limit: registry.configuration.get('limit', 10000),
+            streamName: logStreamResponse.logStreamName,
+        }
+
+        const uri = createURIFromArgs(logGroupInfo, parameters)
+
+        const initialStreamData: CloudWatchLogsData = {
+            data: [],
+            parameters: parameters,
+            busy: false,
+            logGroupInfo: logGroupInfo,
+            retrieveLogsFunction: getLogEventsFromUriComponents,
+        }
+
+        await registry.registerLog(uri, initialStreamData)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
         await vscode.window.showTextDocument(doc, { preview: false })
