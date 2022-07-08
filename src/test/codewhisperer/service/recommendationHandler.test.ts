@@ -2,6 +2,7 @@
  * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
@@ -12,6 +13,7 @@ import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import { stub } from '../../utilities/stubber'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -27,13 +29,15 @@ describe('recommendationHandler', function () {
     })
 
     describe('getRecommendations', async function () {
-        const mockClient: DefaultCodeWhispererClient = new DefaultCodeWhispererClient()
+        const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
 
         beforeEach(function () {
             sinon.restore()
             resetCodeWhispererGlobalVariables()
-            sinon.stub(mockClient, 'listRecommendations')
+            mockClient.listRecommendations.resolves({})
+            mockClient.generateRecommendations.resolves({})
+            RecommendationHandler.instance.clearRecommendations()
         })
 
         afterEach(function () {
@@ -52,9 +56,8 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            const recommendationHandler = new RecommendationHandler()
-            sinon.stub(recommendationHandler, 'getServerResponse').resolves(mockServerResult)
-            await recommendationHandler.getRecommendations(
+            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
+            await RecommendationHandler.instance.getRecommendations(
                 mockClient,
                 mockEditor,
                 'AutoTrigger',
@@ -62,7 +65,7 @@ describe('recommendationHandler', function () {
                 'Enter',
                 false
             )
-            const actual = recommendationHandler.recommendations
+            const actual = RecommendationHandler.instance.recommendations
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }]
             assert.deepStrictEqual(actual, expected)
         })
@@ -79,9 +82,8 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            const recommendationHandler = new RecommendationHandler()
-            sinon.stub(recommendationHandler, 'getServerResponse').resolves(mockServerResult)
-            await recommendationHandler.getRecommendations(
+            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
+            await RecommendationHandler.instance.getRecommendations(
                 mockClient,
                 mockEditor,
                 'AutoTrigger',
@@ -89,8 +91,8 @@ describe('recommendationHandler', function () {
                 'Enter',
                 false
             )
-            assert.strictEqual(recommendationHandler.requestId, 'test_request')
-            assert.strictEqual(recommendationHandler.sessionId, 'test_request')
+            assert.strictEqual(RecommendationHandler.instance.requestId, 'test_request')
+            assert.strictEqual(RecommendationHandler.instance.sessionId, 'test_request')
             assert.strictEqual(TelemetryHelper.instance.triggerType, 'AutoTrigger')
         })
 
@@ -106,12 +108,17 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
-            const recommendationHandler = new RecommendationHandler()
-            sinon.stub(recommendationHandler, 'getServerResponse').resolves(mockServerResult)
+            sinon.stub(RecommendationHandler.instance, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(performance, 'now').returns(0.0)
-            recommendationHandler.startPos = new vscode.Position(1, 0)
+            RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
             TelemetryHelper.instance.cursorOffset = 2
-            await recommendationHandler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
+            await RecommendationHandler.instance.getRecommendations(
+                mockClient,
+                mockEditor,
+                'AutoTrigger',
+                config,
+                'Enter'
+            )
             const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
             assertTelemetry({
                 codewhispererRequestId: 'test_request',

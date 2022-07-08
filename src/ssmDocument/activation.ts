@@ -15,6 +15,7 @@ import { DocumentItemNode } from './explorer/documentItemNode'
 import { deleteDocument } from './commands/deleteDocument'
 import { DocumentItemNodeWriteable } from './explorer/documentItemNodeWriteable'
 import { updateDocumentVersion } from './commands/updateDocumentVersion'
+import { Commands } from '../shared/vscode/commands2'
 
 // Activate SSM Document related functionality for the extension.
 export async function activate(
@@ -34,47 +35,26 @@ async function registerSsmDocumentCommands(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.createLocalDocument', async () => {
+        Commands.register('aws.ssmDocument.createLocalDocument', async () => {
             await createSsmDocumentFromTemplate(extensionContext)
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.deleteDocument', async (node: DocumentItemNodeWriteable) => {
+        }),
+        Commands.register('aws.ssmDocument.deleteDocument', async (node: DocumentItemNodeWriteable) => {
             await deleteDocument(node)
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.openLocalDocument', async (node: DocumentItemNode) => {
+        }),
+        Commands.register('aws.ssmDocument.openLocalDocument', async (node: DocumentItemNode) => {
             await openDocumentItem(node, awsContext)
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.openLocalDocumentJson', async (node: DocumentItemNode) => {
+        }),
+        Commands.register('aws.ssmDocument.openLocalDocumentJson', async (node: DocumentItemNode) => {
             await openDocumentItemJson(node, awsContext)
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.openLocalDocumentYaml', async (node: DocumentItemNode) => {
+        }),
+        Commands.register('aws.ssmDocument.openLocalDocumentYaml', async (node: DocumentItemNode) => {
             await openDocumentItemYaml(node, awsContext)
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.publishDocument', async () => {
+        }),
+        Commands.register('aws.ssmDocument.publishDocument', async () => {
             await publishSSMDocument(awsContext, regionProvider)
+        }),
+        Commands.register('aws.ssmDocument.updateDocumentVersion', async (node: DocumentItemNodeWriteable) => {
+            await updateDocumentVersion(node, awsContext)
         })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.ssmDocument.updateDocumentVersion',
-            async (node: DocumentItemNodeWriteable) => {
-                await updateDocumentVersion(node, awsContext)
-            }
-        )
     )
 }

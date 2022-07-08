@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import {
     enableCodeSuggestions,
@@ -21,10 +20,7 @@ import { codeScanState } from '../models/model'
 export const createEnableCodeSuggestionsNode = () =>
     enableCodeSuggestions.build().asTreeNode({
         label: localize('AWS.explorerNode.enableCodeWhispererNode.label', 'Enable CodeWhisperer'),
-        iconPath: {
-            dark: vscode.Uri.file(globals.iconPaths.dark.run),
-            light: vscode.Uri.file(globals.iconPaths.light.run),
-        },
+        iconPath: getIcon('vscode-debug-start'),
         tooltip: localize('AWS.explorerNode.enableCodeWhispererNode.tooltip', 'Click to Enable CodeWhisperer'),
     })
 
@@ -33,27 +29,18 @@ export const createAutoSuggestionsNode = (pause: boolean) =>
         pause
             ? {
                   label: localize('AWS.explorerNode.pauseCodeWhispererNode.label', 'Pause Auto-suggestions'),
-                  iconPath: {
-                      dark: vscode.Uri.file(globals.iconPaths.dark.pause),
-                      light: vscode.Uri.file(globals.iconPaths.light.pause),
-                  },
+                  iconPath: getIcon('vscode-debug-pause'),
               }
             : {
                   label: localize('AWS.explorerNode.resumeCodeWhispererNode.label', 'Resume Auto-suggestions'),
-                  iconPath: {
-                      dark: vscode.Uri.file(globals.iconPaths.dark.run),
-                      light: vscode.Uri.file(globals.iconPaths.light.run),
-                  },
+                  iconPath: getIcon('vscode-debug-start'),
               }
     )
 
 export const createIntroductionNode = () =>
     showIntroduction.build().asTreeNode({
         label: localize('AWS.explorerNode.codewhispererIntroductionNode.label', 'What is CodeWhisperer?'),
-        iconPath: {
-            dark: vscode.Uri.file(globals.iconPaths.dark.question),
-            light: vscode.Uri.file(globals.iconPaths.light.question),
-        },
+        iconPath: getIcon('vscode-help'),
         tooltip: localize('AWS.explorerNode.codewhispererIntroductionNode.tooltip', 'Click to open the node'),
         contextValue: 'awsCodeWhispererIntroductionNode',
     })
@@ -61,28 +48,19 @@ export const createIntroductionNode = () =>
 export const createEnterAccessCodeNode = () =>
     enterAccessToken.build().asTreeNode({
         label: localize('AWS.explorerNode.enterCodeWhispererAccessTokenNode.label', 'Enter Preview Access Code'),
-        iconPath: {
-            dark: vscode.Uri.file(globals.iconPaths.dark.email),
-            light: vscode.Uri.file(globals.iconPaths.light.email),
-        },
+        iconPath: getIcon('vscode-mail'),
     })
 
 export const createRequestAccessNode = () =>
     requestAccess.build().asTreeNode({
         label: localize('AWS.explorerNode.requestCodeWhispererAccessNode.label', 'Request Preview Access'),
-        iconPath: {
-            dark: vscode.Uri.file(globals.iconPaths.dark.megaphone),
-            light: vscode.Uri.file(globals.iconPaths.light.megaphone),
-        },
+        iconPath: getIcon('vscode-megaphone'),
     })
 
 export const createOpenReferenceLogNode = () =>
     showReferenceLog.build().asTreeNode({
         label: localize('AWS.explorerNode.codewhispererOpenReferenceLogNode.label', 'Open Code Reference Panel'),
-        iconPath: {
-            dark: vscode.Uri.file(globals.iconPaths.dark.file),
-            light: vscode.Uri.file(globals.iconPaths.light.file),
-        },
+        iconPath: getIcon('vscode-file'),
         tooltip: localize(
             'AWS.explorerNode.codewhispererOpenReferenceLogNode.tooltip',
             'Click to open Code Reference Panel'
@@ -94,15 +72,7 @@ export const createSecurityScanNode = () => {
     const prefix = codeScanState.running ? 'Running' : 'Run'
     return showSecurityScan.build().asTreeNode({
         label: `${prefix} Security Scan`,
-        iconPath: codeScanState.running
-            ? {
-                  dark: vscode.Uri.file(globals.iconPaths.dark.loading),
-                  light: vscode.Uri.file(globals.iconPaths.light.loading),
-              }
-            : {
-                  dark: vscode.Uri.file(globals.iconPaths.dark.securityScan),
-                  light: vscode.Uri.file(globals.iconPaths.light.securityScan),
-              },
+        iconPath: codeScanState.running ? getIcon('vscode-loading~spin') : getIcon('vscode-debug-alt-small'),
         tooltip: `${prefix} Security Scan`,
         contextValue: `awsCodeWhisperer${prefix}SecurityScanNode`,
     })
@@ -111,10 +81,7 @@ export const createSecurityScanNode = () => {
 export const createRequestAccessNodeCloud9 = () => {
     return requestAccessCloud9.build().asTreeNode({
         label: `Request Access`,
-        iconPath: {
-            dark: vscode.Uri.file(globals.iconPaths.dark.megaphone),
-            light: vscode.Uri.file(globals.iconPaths.light.megaphone),
-        },
+        iconPath: getIcon('vscode-megaphone'),
         tooltip: `Request Access`,
         contextValue: `awsCodeWhispererRequestAccessNodeCloud9`,
     })

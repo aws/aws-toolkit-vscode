@@ -11,9 +11,9 @@ import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { Resource } from 'aws-sdk/clients/apigateway'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { recordApigatewayInvokeRemote, Result } from '../../shared/telemetry/telemetry'
-import globals from '../../shared/extensionGlobals'
 import { VueWebview } from '../../webviews/main'
 import { ExtContext } from '../../shared/extensions'
+import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 
 interface InvokeApiMessage {
     region: string
@@ -47,7 +47,8 @@ export class RemoteRestInvokeWebview extends VueWebview {
 
     public constructor(
         private readonly data: InvokeRemoteRestApiInitialData,
-        private readonly channel: vscode.OutputChannel
+        private readonly channel: vscode.OutputChannel,
+        private readonly client = new DefaultApiGatewayClient(data.Region)
     ) {
         super()
     }
@@ -62,7 +63,6 @@ export class RemoteRestInvokeWebview extends VueWebview {
 
     public async invokeApi(message: InvokeApiMessage): Promise<string> {
         let result: Result = 'Succeeded'
-        const client = globals.toolkitClientBuilder.createApiGatewayClient(message.region)
 
         this.logger.info('Invoking API Gateway resource:')
         this.logger.info(String(message.body))
@@ -73,7 +73,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
         const path = message.selectedApiResource.path
         const pathWithQueryString = path && message.queryString ? `${path}?${message.queryString}` : undefined
         try {
-            const response = await client.testInvokeMethod(
+            const response = await this.client.testInvokeMethod(
                 message.api,
                 message.selectedApiResource.id!,
                 message.selectedMethod,
@@ -113,7 +113,7 @@ export async function invokeRemoteRestApi(
     const logger: Logger = getLogger()
 
     try {
-        const client = globals.toolkitClientBuilder.createApiGatewayClient(params.apiNode.regionCode)
+        const client = new DefaultApiGatewayClient(params.apiNode.regionCode)
         logger.info(`Loading API Resources for API ${params.apiNode.name} (id: ${params.apiNode.id})`)
         const resources = (await toArrayAsync(client.getResourcesForApi(params.apiNode.id)))
             .sort((a, b) => a.path!.localeCompare(b.path!))

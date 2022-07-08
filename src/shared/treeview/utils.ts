@@ -7,13 +7,13 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
 import { UnknownError } from '../toolkitError'
 import { Logging } from '../logger/commands'
 import { TreeNode } from './resourceTreeDataProvider'
 import { assign } from '../utilities/collectionUtils'
+import { addColor, getIcon } from '../icons'
 
 /**
  * Produces a list of child nodes using handlers to consistently populate the
@@ -44,23 +44,6 @@ export async function makeChildrenNodes<T extends AWSTreeNodeBase, P extends AWS
     }
 }
 
-/**
- * Creates a new {@link vscode.ThemeIcon} with an optional theme color.
- * Only used to maintain backwards compatability with C9.
- *
- * Refer to https://code.visualstudio.com/api/references/theme-color for a list of theme colors.
- */
-export function createThemeIcon(id: string, color?: string) {
-    if (!color || isCloud9()) {
-        return new vscode.ThemeIcon(id)
-    } else {
-        const themeColor = new vscode.ThemeColor(color)
-        const ThemeIcon = vscode.ThemeIcon as new (id: string, theme: typeof themeColor) => vscode.ThemeIcon
-
-        return new ThemeIcon(id, themeColor)
-    }
-}
-
 export function createErrorItem(error: Error, message?: string): TreeNode {
     const command = Logging.declared.viewLogsAtMessage
     const logId = message ? getLogger().error(message) : getLogger().error(error)
@@ -68,7 +51,7 @@ export function createErrorItem(error: Error, message?: string): TreeNode {
     return command.build(logId).asTreeNode({
         label: localize('AWS.explorerNode.error.label', 'Failed to load resources (click for logs)'),
         tooltip: `${error.name}: ${error.message}`,
-        iconPath: createThemeIcon('error', 'testing.iconErrored'),
+        iconPath: addColor(getIcon('vscode-error'), 'testing.iconErrored'),
         contextValue: 'awsErrorNode',
     })
 }

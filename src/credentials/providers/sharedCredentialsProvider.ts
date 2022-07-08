@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../shared/extensionGlobals'
-
 import * as AWS from '@aws-sdk/types'
 import { AssumeRoleParams, fromIni } from '@aws-sdk/credential-provider-ini'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
@@ -20,6 +18,7 @@ import { resolveProviderWithCancel } from '../credentialsUtilities'
 import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { SsoProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
+import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { getMissingProps, hasProps } from '../../shared/utilities/tsUtils'
 import { DevSettings } from '../../shared/settings'
 
@@ -326,7 +325,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
         const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
             const region = this.getDefaultRegion() ?? 'us-east-1'
-            const stsClient = globals.toolkitClientBuilder.createStsClient(region, { credentials })
+            const stsClient = new DefaultStsClient(region, credentials)
             const response = await stsClient.assumeRole(params)
             return {
                 accessKeyId: response.Credentials!.AccessKeyId!,

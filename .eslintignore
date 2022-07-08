@@ -1,5 +1,4 @@
 node_modules/**
-third-party
 **/*.json
 src/shared/telemetry/clienttelemetry.d.ts
 src/codewhisperer/client/codewhispererclient.d.ts

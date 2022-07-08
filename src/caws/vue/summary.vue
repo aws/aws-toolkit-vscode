@@ -31,8 +31,8 @@
             <div id="status" style="grid-area: status" :data-connected="isConnected">
                 <span class="label-context soft">Status</span>
                 <b>
-                    <i id="connected-icon" class="icon mr-2" v-if="isConnected"></i>
-                    {{ isConnected ? 'Connected' : status }}
+                    <span id="connected-icon" class="icon icon-lg icon-vscode-pass" v-if="isConnected"></span>
+                    <span v-html="isConnected ? 'Connected' : status"></span>
                 </b>
             </div>
         </div>
@@ -43,7 +43,7 @@
             :disabled="!isConnected"
             @click="stopWorkspace"
         >
-            <i id="stop-icon" class="icon mr-2"></i>Stop
+            <span id="stop-icon" class="icon icon-lg icon-vscode-stop-circle"></span>Stop
         </button>
         <!--TODO: add generic 'delete thing' prompt then enable this-->
         <button
@@ -143,21 +143,20 @@ export default defineComponent({
 #edit-compute-settings {
     margin-top: 16px;
 }
-body.vscode-dark #status[data-connected='true'] {
-    color: #73c991;
+
+/* TODO: darker green for light-theme ??? */
+#status[data-connected='true'] {
+    color: var(--vscode-testing-iconPassed);
 }
-/* TODO: darker green for light-theme */
-body.vscode-light #status[data-connected='true'] {
-    color: #73c991;
-}
+
 #connected-icon {
-    /* TODO: use an in-line svg loader */
-    background-image: url('/resources/generic/pass.svg');
+    padding: 4px;
+    vertical-align: -0.2em;
 }
-body.vscode-dark #stop-icon {
-    background-image: url('/resources/dark/stop-circle.svg');
-}
-body.vscode-light #stop-icon {
-    background-image: url('/resources/light/stop-circle.svg');
+
+#stop-icon {
+    color: var(--vscode-debugIcon-stopForeground);
+    padding: 4px;
+    vertical-align: -0.2em;
 }
 </style>

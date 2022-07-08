@@ -19,7 +19,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -41,10 +41,7 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
             policy.name,
             certs?.length ?? 0 > 0 ? `\nAttached to: ${certs?.join(', ')}` : ''
         )
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.policy),
-            light: vscode.Uri.file(globals.iconPaths.light.policy),
-        }
+        this.iconPath = getIcon('aws-iot-policy')
         this.contextValue = 'awsIotPolicyNode.Certificates'
     }
 

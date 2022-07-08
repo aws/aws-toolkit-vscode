@@ -3,394 +3,177 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IAM, StepFunctions } from 'aws-sdk'
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { IamClient } from '../../shared/clients/iamClient'
-import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
 import {
     sfnCreateIamRoleUrl,
     sfnCreateStateMachineNameParamUrl,
     sfnDeveloperGuideUrl,
+    sfnSupportedRegionsUrl,
     sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
-import globals from '../../shared/extensionGlobals'
-
-import { getIdeProperties } from '../../shared/extensionUtilities'
-import { recentlyUsed } from '../../shared/localizedText'
-import { createHelpButton } from '../../shared/ui/buttons'
-import * as input from '../../shared/ui/input'
-import * as picker from '../../shared/ui/picker'
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import {
-    MultiStepWizard,
-    WizardContext,
-    wizardContinue,
-    WizardStep,
-    WIZARD_GOBACK,
-    WIZARD_TERMINATE,
-} from '../../shared/wizards/multiStepWizard'
+import { createCommonButtons } from '../../shared/ui/buttons'
+import { createRegionPrompter } from '../../shared/ui/common/region'
+import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
+import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { isStepFunctionsRole } from '../utils'
-const localize = nls.loadMessageBundle()
-
-export interface PublishStateMachineWizardContext {
-    promptUserForStateMachineToUpdate(): Promise<string | undefined>
-    promptUserForPublishAction(
-        publishAction: PublishStateMachineAction | undefined
-    ): Promise<PublishStateMachineAction | undefined>
-    promptUserForStateMachineName(): Promise<string | undefined>
-    promptUserForIamRole(currRoleArn?: string): Promise<string | undefined>
-    loadIamRoles(): Promise<void>
-    loadStateMachines(): Promise<void>
-}
+import { createRolePrompter } from '../../shared/ui/common/roles'
+import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 export enum PublishStateMachineAction {
     QuickCreate,
     QuickUpdate,
 }
 
-export interface PublishStateMachineWizardResponse {
-    createResponse?: PublishStateMachineWizardCreateResponse
-    updateResponse?: PublishStateMachineWizardUpdateResponse
+function createPublishActionPrompter(region: string): QuickPickPrompter<PublishStateMachineAction> {
+    const publishItems: DataQuickPickItem<PublishStateMachineAction>[] = [
+        {
+            label: localize('AWS.stepFunctions.publishWizard.publishAction.quickCreate.label', 'Quick Create'),
+            detail: localize(
+                'AWS.stepFunctions.publishWizard.publishAction.quickCreate.detail',
+                'Create a state machine from the ASL definition using default settings'
+            ),
+            data: PublishStateMachineAction.QuickCreate,
+        },
+        {
+            label: localize('AWS.stepFunctions.publishWizard.publishAction.quickUpdate.label', 'Quick Update'),
+            detail: localize(
+                'AWS.stepFunctions.publishWizard.publishAction.quickUpdate.detail',
+                'Update an existing state machine with the ASL definition'
+            ),
+            data: PublishStateMachineAction.QuickUpdate,
+        },
+    ]
+
+    const prompter = createQuickPick(publishItems, {
+        title: localize(
+            'AWS.stepFunctions.publishWizard.publishAction.title',
+            'Publish to AWS Step Functions ({0})',
+            region
+        ),
+        buttons: createCommonButtons(sfnDeveloperGuideUrl),
+    })
+
+    return prompter
 }
 
-export interface PublishStateMachineWizardCreateResponse {
-    name: string
-    roleArn: string
-}
+function createNamePrompter(): InputBoxPrompter {
+    function validate(value: string): string | undefined {
+        if (!value) {
+            return localize(
+                'AWS.stepFunctions.publishWizard.stateMachineName.validation.empty',
+                'State machine name cannot be empty'
+            )
+        }
 
-export interface PublishStateMachineWizardUpdateResponse {
-    stateMachineArn: string
-}
-
-interface AwsResourceQuickPickItem {
-    label: string
-    description?: string
-    arn?: string
-    detail?: string
-    alwaysShow: boolean
-}
-
-interface PublishActionQuickPickItem {
-    label: string
-    description?: string
-    detail: string
-    action: PublishStateMachineAction
-}
-
-export class DefaultPublishStateMachineWizardContext extends WizardContext implements PublishStateMachineWizardContext {
-    private readonly helpButton = createHelpButton()
-    private iamRoles: IAM.roleListType | undefined
-    private stateMachines: StepFunctions.StateMachineList | undefined
-    private readonly iamClient: IamClient
-    private readonly stepFunctionsClient: StepFunctionsClient
-
-    private readonly totalSteps = 2
-    private additionalSteps: number = 0
-
-    public constructor(private readonly defaultRegion: string) {
-        super()
-        this.stepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
-        this.iamClient = globals.toolkitClientBuilder.createIamClient(this.defaultRegion)
+        return undefined
     }
 
-    public async promptUserForPublishAction(
-        currPublishAction: PublishStateMachineAction | undefined
-    ): Promise<PublishStateMachineAction | undefined> {
-        this.additionalSteps = 0
-        const publishItems: PublishActionQuickPickItem[] = [
+    const prompter = createInputBox({
+        title: localize('AWS.stepFunctions.publishWizard.stateMachineName.title', 'Name your state machine'),
+        validateInput: validate,
+        buttons: createCommonButtons(sfnCreateStateMachineNameParamUrl),
+    })
+
+    return prompter
+}
+
+export interface PublishStateMachineWizardState {
+    readonly region: string
+    readonly publishAction: PublishStateMachineAction
+    readonly createResponse?: {
+        readonly name: string
+        readonly roleArn: string
+    }
+    readonly updateResponse?: {
+        readonly stateMachineArn: string
+    }
+}
+
+function createStepFunctionsRolePrompter(region: string) {
+    const client = new DefaultIamClient(region)
+
+    return createRolePrompter(client, {
+        helpUrl: vscode.Uri.parse(sfnCreateIamRoleUrl),
+        title: localize('AWS.stepFunctions.publishWizard.iamRole.title', 'Select execution role ({0})', region),
+        noRoleDetail: localize(
+            'AWS.stepFunctions.publishWizard.iamRole.noRoles.detail',
+            'Create an IAM role before proceeding. See documentation for details.'
+        ),
+        roleFilter: isStepFunctionsRole,
+    })
+}
+
+async function* listStateMachines(region: string) {
+    const client = new DefaultStepFunctionsClient(region)
+
+    for await (const machine of client.listStateMachines()) {
+        yield [
             {
-                label: localize('AWS.stepFunctions.publishWizard.publishAction.quickCreate.label', 'Quick Create'),
-                detail: localize(
-                    'AWS.stepFunctions.publishWizard.publishAction.quickCreate.detail',
-                    'Create a state machine from the ASL definition using default settings'
-                ),
-                action: PublishStateMachineAction.QuickCreate,
+                label: machine.name,
+                data: machine.stateMachineArn,
+                description: machine.stateMachineArn,
             },
-            {
-                label: localize('AWS.stepFunctions.publishWizard.publishAction.quickUpdate.label', 'Quick Update'),
-                detail: localize(
-                    'AWS.stepFunctions.publishWizard.publishAction.quickUpdate.detail',
-                    'Update an existing state machine with the ASL definition'
-                ),
-                action: PublishStateMachineAction.QuickUpdate,
-            },
-        ].map((item: PublishActionQuickPickItem) => {
-            if (item.action === currPublishAction) {
-                item.description = recentlyUsed
-            }
-
-            return item
-        })
-
-        const quickPick = picker.createQuickPick<PublishActionQuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.stepFunctions.publishWizard.publishAction.title',
-                    'Publish to {0} Step Functions ({1})',
-                    getIdeProperties().company,
-                    this.defaultRegion
-                ),
-                step: 1,
-                totalSteps: this.totalSteps,
-            },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: publishItems,
-        })
-
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(sfnDeveloperGuideUrl))
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput(choices)
-
-        return val ? val.action : undefined
-    }
-
-    public async promptUserForStateMachineName(): Promise<string | undefined> {
-        const inputBox = input.createInputBox({
-            options: {
-                title: localize('AWS.stepFunctions.publishWizard.stateMachineName.title', 'Name your state machine'),
-                ignoreFocusOut: true,
-                step: 3,
-                totalSteps: this.totalSteps + this.additionalSteps,
-            },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-        })
-
-        return await input.promptUser({
-            inputBox: inputBox,
-            onValidateInput: (value: string) => {
-                if (!value) {
-                    return localize(
-                        'AWS.stepFunctions.publishWizard.stateMachineName.validation.empty',
-                        'State machine name cannot be empty'
-                    )
-                }
-
-                return undefined
-            },
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(sfnCreateStateMachineNameParamUrl))
-                }
-            },
-        })
-    }
-
-    public async loadIamRoles() {
-        if (!this.iamRoles) {
-            this.iamRoles = []
-            for await (const role of this.iamClient.getRoles()) {
-                if (isStepFunctionsRole(role)) {
-                    this.iamRoles.push(role)
-                }
-            }
-        }
-    }
-
-    public async promptUserForIamRole(currRoleArn?: string): Promise<string | undefined> {
-        this.additionalSteps = 1
-        let roles: AwsResourceQuickPickItem[]
-        if (!this.iamRoles || this.iamRoles.length === 0) {
-            roles = [
-                {
-                    label: localize('AWS.stepFunctions.publishWizard.iamRole.noRoles.label', 'No roles could be found'),
-                    alwaysShow: true,
-                    arn: undefined,
-                    detail: localize(
-                        'AWS.stepFunctions.publishWizard.iamRole.noRoles.detail',
-                        'Create an IAM role before proceeding. See documentation for details.'
-                    ),
-                },
-            ]
-        } else {
-            roles = this.iamRoles.map(iamRole => ({
-                label: iamRole.RoleName,
-                alwaysShow: iamRole.Arn === currRoleArn,
-                arn: iamRole.Arn,
-                description: iamRole.Arn === currRoleArn ? recentlyUsed : iamRole.Arn,
-            }))
-        }
-
-        const quickPick = picker.createQuickPick<AwsResourceQuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.stepFunctions.publishWizard.iamRole.title',
-                    'Select execution role ({0})',
-                    this.defaultRegion
-                ),
-                value: currRoleArn ? currRoleArn : '',
-                step: 2,
-                totalSteps: this.totalSteps + this.additionalSteps,
-            },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: roles,
-        })
-
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(sfnCreateIamRoleUrl))
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput<AwsResourceQuickPickItem>(choices)
-
-        return val ? val.arn : undefined
-    }
-
-    public async loadStateMachines() {
-        if (!this.stateMachines) {
-            this.stateMachines = await toArrayAsync(this.stepFunctionsClient.listStateMachines())
-        }
-    }
-
-    public async promptUserForStateMachineToUpdate(): Promise<string | undefined> {
-        let stateMachines: AwsResourceQuickPickItem[]
-        if (!this.stateMachines || this.stateMachines.length === 0) {
-            stateMachines = [
-                {
-                    label: localize(
-                        'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.noStateMachines.label',
-                        'No state machines could be found'
-                    ),
-                    alwaysShow: true,
-                    arn: undefined,
-                    detail: localize(
-                        'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.noStateMachines.detail',
-                        'Create a state machine before proceeding. See documentation for details.'
-                    ),
-                },
-            ]
-        } else {
-            stateMachines = this.stateMachines.map(stateMachine => ({
-                label: stateMachine.name,
-                alwaysShow: false,
-                arn: stateMachine.stateMachineArn,
-                description: stateMachine.stateMachineArn,
-            }))
-        }
-
-        const quickPick = picker.createQuickPick<AwsResourceQuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.title',
-                    'Select state machine to update ({0})',
-                    this.defaultRegion
-                ),
-                step: 2,
-                totalSteps: this.totalSteps,
-            },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: stateMachines,
-        })
-
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(sfnUpdateStateMachineUrl))
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput<AwsResourceQuickPickItem>(choices)
-
-        return val ? val.arn : undefined
+        ]
     }
 }
-export class PublishStateMachineWizard extends MultiStepWizard<PublishStateMachineWizardResponse> {
-    private name?: string
-    private roleArn?: string
-    private publishAction?: PublishStateMachineAction
-    private stateMachineArn?: string
 
-    public constructor(private readonly context: PublishStateMachineWizardContext) {
-        super()
-    }
+function createUpdateStateMachinePrompter(region: string): QuickPickPrompter<string> {
+    const prompter = createQuickPick(listStateMachines(region), {
+        title: localize(
+            'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.title',
+            'Select state machine to update ({0})',
+            region
+        ),
+        buttons: createCommonButtons(sfnUpdateStateMachineUrl),
+        noItemsFoundItem: {
+            label: localize(
+                'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.noStateMachines.label',
+                'No state machines could be found'
+            ),
+            alwaysShow: true,
+            data: WIZARD_BACK,
+            detail: localize(
+                'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.noStateMachines.detail',
+                'Create a state machine before proceeding. See documentation for details.'
+            ),
+        },
+    })
 
-    protected get startStep() {
-        return this.PUBLISH_ACTION
-    }
+    return prompter
+}
 
-    protected getResult(): PublishStateMachineWizardResponse | undefined {
-        switch (this.publishAction) {
-            case PublishStateMachineAction.QuickCreate:
-                if (!this.name || !this.roleArn) {
-                    return undefined
-                }
+export class PublishStateMachineWizard extends Wizard<PublishStateMachineWizardState> {
+    public constructor(region?: string) {
+        super({ initState: { region } })
+        const form = this.form
 
-                return {
-                    createResponse: {
-                        name: this.name,
-                        roleArn: this.roleArn,
-                    },
-                }
+        form.region.bindPrompter(() =>
+            createRegionPrompter(undefined, {
+                serviceFilter: 'states',
+                helpUrl: sfnSupportedRegionsUrl,
+            }).transform(r => r.id)
+        )
 
-            case PublishStateMachineAction.QuickUpdate:
-                if (!this.stateMachineArn) {
-                    return undefined
-                }
+        form.publishAction.bindPrompter(({ region }) => createPublishActionPrompter(region!))
 
-                return {
-                    updateResponse: {
-                        stateMachineArn: this.stateMachineArn,
-                    },
-                }
+        form.createResponse.roleArn.bindPrompter(
+            ({ region }) => createStepFunctionsRolePrompter(region!).transform(r => r.Arn),
+            {
+                showWhen: form => form.publishAction === PublishStateMachineAction.QuickCreate,
+            }
+        )
 
-            default:
-                return undefined
-        }
-    }
+        form.createResponse.name.bindPrompter(() => createNamePrompter(), {
+            showWhen: form => form.publishAction === PublishStateMachineAction.QuickCreate,
+        })
 
-    private readonly PUBLISH_ACTION: WizardStep = async () => {
-        this.publishAction = await this.context.promptUserForPublishAction(this.publishAction)
-
-        switch (this.publishAction) {
-            case PublishStateMachineAction.QuickCreate:
-                return wizardContinue(this.ROLE_ARN)
-
-            case PublishStateMachineAction.QuickUpdate:
-                return wizardContinue(this.EXISTING_STATE_MACHINE_ARN)
-
-            default:
-                return WIZARD_TERMINATE
-        }
-    }
-
-    private readonly ROLE_ARN: WizardStep = async () => {
-        await this.context.loadIamRoles()
-        this.roleArn = await this.context.promptUserForIamRole(this.roleArn)
-
-        return this.roleArn ? wizardContinue(this.NEW_STATE_MACHINE_NAME) : WIZARD_GOBACK
-    }
-
-    private readonly NEW_STATE_MACHINE_NAME: WizardStep = async () => {
-        this.name = await this.context.promptUserForStateMachineName()
-
-        return this.name ? WIZARD_TERMINATE : WIZARD_GOBACK
-    }
-
-    private readonly EXISTING_STATE_MACHINE_ARN: WizardStep = async () => {
-        await this.context.loadStateMachines()
-        this.stateMachineArn = await this.context.promptUserForStateMachineToUpdate()
-
-        return this.stateMachineArn ? WIZARD_TERMINATE : WIZARD_GOBACK
+        form.updateResponse.stateMachineArn.bindPrompter(({ region }) => createUpdateStateMachinePrompter(region!), {
+            showWhen: form => form.publishAction === PublishStateMachineAction.QuickUpdate,
+        })
     }
 }

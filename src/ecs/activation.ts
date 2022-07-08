@@ -13,10 +13,11 @@ import { EcsContainerNode } from './explorer/ecsContainerNode'
 import { EcsServiceNode } from './explorer/ecsServiceNode'
 import { ecsDocumentationUrl } from '../shared/constants'
 import { getLogger } from '../shared/logger'
+import { Commands } from '../shared/vscode/commands2'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ecs.runCommandInContainer', async (node: EcsContainerNode) => {
+        Commands.register('aws.ecs.runCommandInContainer', async (node: EcsContainerNode) => {
             // VS Code will rarely call the command with `undefined` if the tree is still loading
             if (!(node instanceof EcsContainerNode)) {
                 getLogger().error('Cannot run command on node: %O', node)
@@ -33,19 +34,19 @@ export async function activate(ctx: ExtContext): Promise<void> {
     )
 
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ecs.enableEcsExec', async (node: EcsServiceNode) => {
+        Commands.register('aws.ecs.enableEcsExec', async (node: EcsServiceNode) => {
             await updateEnableExecuteCommandFlag(node, true)
         })
     )
 
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ecs.disableEcsExec', async (node: EcsServiceNode) => {
+        Commands.register('aws.ecs.disableEcsExec', async (node: EcsServiceNode) => {
             await updateEnableExecuteCommandFlag(node, false)
         })
     )
 
     ctx.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ecs.viewDocumentation', async () => {
+        Commands.register('aws.ecs.viewDocumentation', async () => {
             vscode.env.openExternal(vscode.Uri.parse(ecsDocumentationUrl))
         })
     )

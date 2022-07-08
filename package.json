@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.45.0-SNAPSHOT",
+    "version": "1.46.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -15,7 +15,7 @@
     "engines": {
         "vscode": "^1.50.1"
     },
-    "icon": "resources/aws-icon-256x256.png",
+    "icon": "resources/marketplace/aws-icon-256x256.png",
     "bugs": {
         "url": "https://github.com/aws/aws-toolkit-vscode/issues"
     },
@@ -203,7 +203,7 @@
                 "aws.samcli.enableCodeLenses": {
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
-                    "default": true
+                    "default": false
                 },
                 "aws.suppressPrompts": {
                     "type": "object",
@@ -699,11 +699,11 @@
                 {
                     "id": "aws-explorer",
                     "title": "%AWS.title%",
-                    "icon": "media/aws-logo.svg",
+                    "icon": "resources/aws-logo.svg",
                     "cloud9": {
                         "cn": {
                             "title": "%AWS.title.cn%",
-                            "icon": "media/aws-cn-logo.svg"
+                            "icon": "resources/aws-cn-logo.svg"
                         }
                     }
                 }
@@ -1905,10 +1905,7 @@
                 "command": "aws.ecr.createRepository",
                 "title": "%AWS.command.ecr.createRepository%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/plus.svg",
-                    "dark": "resources/dark/plus.svg"
-                },
+                "icon": "$(add)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -1939,10 +1936,7 @@
                 "command": "aws.iot.createThing",
                 "title": "%AWS.command.iot.createThing%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/plus.svg",
-                    "dark": "resources/dark/plus.svg"
-                },
+                "icon": "$(add)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -1963,10 +1957,7 @@
                 "command": "aws.iot.createCert",
                 "title": "%AWS.command.iot.createCert%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/plus.svg",
-                    "dark": "resources/dark/plus.svg"
-                },
+                "icon": "$(add)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -1987,10 +1978,7 @@
                 "command": "aws.iot.attachCert",
                 "title": "%AWS.command.iot.attachCert%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/attach-file.svg",
-                    "dark": "resources/dark/attach-file.svg"
-                },
+                "icon": "$(aws-generic-attach-file)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2001,10 +1989,7 @@
                 "command": "aws.iot.attachPolicy",
                 "title": "%AWS.command.iot.attachPolicy%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/attach-file.svg",
-                    "dark": "resources/dark/attach-file.svg"
-                },
+                "icon": "$(aws-generic-attach-file)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2045,10 +2030,7 @@
                 "command": "aws.iot.createPolicy",
                 "title": "%AWS.command.iot.createPolicy%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/plus.svg",
-                    "dark": "resources/dark/plus.svg"
-                },
+                "icon": "$(add)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2209,10 +2191,7 @@
                 "command": "aws.s3.createBucket",
                 "title": "%AWS.command.s3.createBucket%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/s3/create-bucket.svg",
-                    "dark": "resources/dark/s3/create-bucket.svg"
-                },
+                "icon": "$(aws-s3-create-bucket)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2307,8 +2286,8 @@
                 "title": "%AWS.command.refreshAwsExplorer%",
                 "category": "%AWS.title%",
                 "icon": {
-                    "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
-                    "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
+                    "dark": "resources/icons/vscode/dark/refresh.svg",
+                    "light": "resources/icons/vscode/light/refresh.svg"
                 }
             },
             {
@@ -2472,8 +2451,13 @@
                 "title": "%AWS.command.refreshCdkExplorer%",
                 "category": "%AWS.title%",
                 "icon": {
-                    "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
-                    "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
+                    "dark": "resources/icons/vscode/dark/refresh.svg",
+                    "light": "resources/icons/vscode/light/refresh.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
                 }
             },
             {
@@ -2505,10 +2489,7 @@
                 "command": "aws.previewStateMachine",
                 "title": "%AWS.command.stepFunctions.previewStateMachine%",
                 "category": "%AWS.title%",
-                "icon": {
-                    "light": "resources/light/stepfunctions/preview.svg",
-                    "dark": "resources/dark/stepfunctions/preview.svg"
-                },
+                "icon": "$(aws-stepfunctions-preview)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2519,10 +2500,7 @@
                 "command": "aws.cdk.renderStateMachineGraph",
                 "title": "%AWS.command.cdk.previewStateMachine%",
                 "category": "AWS",
-                "icon": {
-                    "light": "resources/light/stepfunctions/preview.svg",
-                    "dark": "resources/dark/stepfunctions/preview.svg"
-                }
+                "icon": "$(aws-stepfunctions-preview)"
             },
             {
                 "command": "aws.aboutToolkit",
@@ -3121,26 +3099,155 @@
                     }
                 ]
             }
-        ]
+        ],
+        "icons": {
+            "aws-apprunner-service": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e000"
+                }
+            },
+            "aws-cdk-logo": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e001"
+                }
+            },
+            "aws-cloudformation-stack": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e002"
+                }
+            },
+            "aws-cloudwatch-log-group": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e003"
+                }
+            },
+            "aws-ecr-registry": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e004"
+                }
+            },
+            "aws-ecs-cluster": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e005"
+                }
+            },
+            "aws-ecs-container": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e006"
+                }
+            },
+            "aws-ecs-service": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e007"
+                }
+            },
+            "aws-generic-attach-file": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e008"
+                }
+            },
+            "aws-iot-certificate": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e009"
+                }
+            },
+            "aws-iot-policy": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e00a"
+                }
+            },
+            "aws-iot-thing": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e00b"
+                }
+            },
+            "aws-lambda-function": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e00c"
+                }
+            },
+            "aws-s3-bucket": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e00d"
+                }
+            },
+            "aws-s3-create-bucket": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e00e"
+                }
+            },
+            "aws-schemas-registry": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e00f"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e010"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\e011"
+                }
+            }
+        }
     },
     "scripts": {
         "prepare": "husky install",
-        "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts -- --webpacked",
+        "vscode:prepublish": "npm run clean && npm run lint && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
         "clean": "ts-node ./scripts/clean.ts dist",
         "generateNonCodeFiles": "ts-node ./scripts/build/generateNonCodeFiles.ts",
         "reset": "npm run clean -- node_modules && npm install",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
-        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles --",
-        "compile": "npm run clean && webpack --mode development && npm run buildScripts -- --webpacked",
+        "buildScripts": "npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
+        "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles -- --webpacked",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "postinstall": "ts-node ./scripts/build/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
-        "testCompile": "tsc -p ./ && npm run buildScripts && npm run instrument",
+        "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
         "integrationTest": "npm run testCompile && ts-node ./scripts/test/integrationTest.ts && npm run report",
         "lint": "eslint -c .eslintrc.js --ext .ts .",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
         "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
+        "generatePackage": "ts-node ./scripts/build/generateIcons.ts",
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
         "newChange": "ts-node ./scripts/newChange.ts",
@@ -3192,7 +3299,7 @@
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",
-        "prettier": "^2.6.2",
+        "prettier": "^2.7.1",
         "prettier-plugin-sh": "^0.8.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
@@ -3205,6 +3312,7 @@
         "vscode-nls-dev": "^3.3.1",
         "vue-loader": "^16.8.1",
         "vue-style-loader": "^4.1.3",
+        "webfont": "^11.2.26",
         "webpack": "^5.65.0",
         "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^4.9.2"
@@ -3232,7 +3340,7 @@
         "jsonc-parser": "^3.0.0",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.32",
-        "moment": "^2.29.1",
+        "moment": "^2.29.4",
         "portfinder": "^1.0.25",
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",
