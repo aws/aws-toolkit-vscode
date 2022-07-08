@@ -10,6 +10,7 @@ import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceT
 import { once } from '../shared/utilities/functionUtils'
 import { AppNode } from '../cdk/explorer/nodes/appNode'
 import { isCloud9 } from '../shared/extensionUtilities'
+import { initNodes } from '../caws/explorer'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 
 export interface RootNode extends TreeNode {
@@ -17,9 +18,9 @@ export interface RootNode extends TreeNode {
     readonly onDidChangeVisibility?: vscode.Event<void>
 }
 
-const roots: readonly RootNode[] = [cdkNode, codewhispererNode]
+const roots: RootNode[] = [cdkNode, codewhispererNode]
 
-async function getChildren(roots: readonly RootNode[]) {
+async function getChildren(roots: RootNode[]) {
     const nodes: TreeNode[] = []
 
     for (const node of roots) {
@@ -38,7 +39,11 @@ async function getChildren(roots: readonly RootNode[]) {
  * Components placed under this view do not strictly need to be 'local'. They just need to place greater
  * emphasis on the developer's local development environment.
  */
-export function createLocalExplorerView(): vscode.TreeView<TreeNode> {
+export function createLocalExplorerView(ctx: vscode.ExtensionContext): vscode.TreeView<TreeNode> {
+    // CAWS/Sono are special cases at the moment and need to be created after the extension activates
+    // Will probably just add a `register` function to generalize this
+    roots.unshift(...initNodes(ctx))
+
     const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => getChildren(roots) })
     const view = vscode.window.createTreeView('aws.developerTools', { treeDataProvider })
 

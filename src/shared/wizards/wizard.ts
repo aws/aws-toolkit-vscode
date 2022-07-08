@@ -74,9 +74,9 @@ export interface WizardOptions<TState> {
  * class. Wizards will modify a single property of their internal state with each prompt.
  */
 export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
-    private readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
-    private readonly _form: WizardForm<TState>
-    private stateController: StateMachineController<TState>
+    protected readonly _form: WizardForm<TState>
+    protected readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
+    protected stateController: StateMachineController<TState>
     private _stepOffset: [number, number] = [0, 0]
     private _exitStep?: StepFunction<TState>
 

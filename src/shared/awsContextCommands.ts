@@ -30,6 +30,7 @@ import { showViewLogsMessage } from './utilities/messages'
 import globals from './extensionGlobals'
 import { DefaultStsClient } from './clients/stsClient'
 import { getLogger } from './logger/logger'
+import { getCawsWorkspaceArn } from './vscode/env'
 
 export class AwsContextCommands {
     private readonly _awsContext: AwsContext
@@ -201,6 +202,7 @@ export class AwsContextCommands {
     /**
      * @description Responsible for getting a profile from the user,
      * working with them to define one if necessary.
+     * Does not prompt the user if in a CAWS development workspace.
      *
      * @returns User's selected Profile name, or undefined if none was selected.
      * undefined is also returned if we leave the user in a state where they are
@@ -210,14 +212,20 @@ export class AwsContextCommands {
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
         const profileNames = Object.keys(providerMap)
+
         if (profileNames.length > 0) {
             // There are credentials for the user to choose from
             const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, globals.context)
             const state = await credentialProfileSelector(dataProvider)
-            if (state && state.credentialProfile) {
-                return state.credentialProfile.label
-            }
-        } else if (credentialsFiles.length === 0) {
+
+            return state?.credentialProfile?.label
+        }
+
+        if (getCawsWorkspaceArn()) {
+            return
+        }
+
+        if (credentialsFiles.length === 0) {
             if (await this.promptCredentialsSetup()) {
                 return await this.promptAndCreateNewCredentialsFile()
             }
@@ -226,7 +234,6 @@ export class AwsContextCommands {
                 await this.editCredentials()
             }
         }
-        return undefined
     }
 
     private async promptCredentialsSetup(): Promise<boolean> {

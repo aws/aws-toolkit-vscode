@@ -116,7 +116,7 @@ button,
     color: var(--vscode-button-foreground);
     background: var(--vscode-button-background);
     border: 1px solid var(--vscode-button-border);
-    padding: 8px;
+    padding: 8px 12px;
 }
 button,
 .button-theme-primary:hover:not(:disabled) {
@@ -158,6 +158,7 @@ textarea {
     white-space: nowrap;
 }
 
+/* Labels */
 .label-context {
     display: block;
     padding: 0 0 4px 0;
@@ -257,7 +258,6 @@ textarea {
 .display-contents {
     display: contents;
 }
-
 .button-container {
     display: flex;
     align-items: flex-start;

@@ -8,6 +8,7 @@ import { isCloud9 } from './extensionUtilities'
 export const extensionSettingsPrefix = 'aws'
 export const regionSettingKey = 'region'
 export const profileSettingKey = 'profile'
+export const productName: string = 'aws-toolkit-vscode'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
@@ -23,6 +24,8 @@ export const documentationUrl: string = isCloud9()
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
+export const ssoCredentialsHelpUrl: string =
+    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html'
 
 export const supportedLambdaRuntimesUrl: string =
     'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'
