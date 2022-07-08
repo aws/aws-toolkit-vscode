@@ -35,6 +35,15 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
         parameters: JSON.parse(uri.query),
     }
 }
+/**
+ * Determines if loadOlder codelense should be visible on virtual document
+ * @param uri CloudWatchLogs Document URI
+ * @returns
+ */
+export function loadOlderRevelevant(uri: vscode.Uri): boolean {
+    const params = parseCloudWatchLogsUri(uri).parameters
+    return params.filterPattern ? false : true
+}
 
 /**
  * Converts relevant information for CloudWatch Logs Streams into an awsCloudWatchLogs URI

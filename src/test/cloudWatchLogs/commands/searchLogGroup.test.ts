@@ -25,7 +25,7 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { createQuickPickTester } from '../../shared/ui/testUtils'
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
-import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
+import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
 
 class FakeNode extends AWSTreeNodeBase {
     public constructor(label: string) {

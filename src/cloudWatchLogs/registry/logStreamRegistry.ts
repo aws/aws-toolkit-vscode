@@ -110,6 +110,7 @@ export class LogStreamRegistry {
         }
         const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
         const uriResults = parseCloudWatchLogsUri(uri)
+        console.log(nextToken)
 
         const logGroupInfo = uriResults.logGroupInfo
 
