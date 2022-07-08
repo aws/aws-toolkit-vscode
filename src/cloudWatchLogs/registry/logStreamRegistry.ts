@@ -26,7 +26,7 @@ export class LogStreamRegistry {
 
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
-        private readonly activeStreams: Map<string, CloudWatchLogsData> = new Map<string, CloudWatchLogsData>()
+        private readonly activeStreams: Map<vscode.Uri, CloudWatchLogsData> = new Map<vscode.Uri, CloudWatchLogsData>()
     ) {}
 
     /**
@@ -55,7 +55,7 @@ export class LogStreamRegistry {
      * @param uri Document URI
      */
     public hasLog(uri: vscode.Uri): boolean {
-        return this.activeStreams.has(uri.path)
+        return this.activeStreams.has(uri)
     }
 
     /**
@@ -161,7 +161,7 @@ export class LogStreamRegistry {
      * @param uri Document URI
      */
     public deregisterLog(uri: vscode.Uri): void {
-        this.activeStreams.delete(uri.path)
+        this.activeStreams.delete(uri)
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
@@ -181,11 +181,11 @@ export class LogStreamRegistry {
     }
 
     private setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
-        this.activeStreams.set(uri.path, stream)
+        this.activeStreams.set(uri, stream)
     }
 
     private getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
-        return this.activeStreams.get(uri.path)
+        return this.activeStreams.get(uri)
     }
 }
 

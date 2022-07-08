@@ -18,6 +18,7 @@ import {
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { getLogger } from '../../../shared/logger/logger'
 import { Settings } from '../../../shared/settings'
+import { LogStreamCodeLensProvider } from '../../../cloudWatchLogs/document/logStreamCodeLensProvider'
 
 function testGetLogEvents(
     logGroupInfo: CloudWatchLogsGroupInfo,
@@ -48,10 +49,12 @@ async function testFilterLogEvents(
 }
 
 describe('LogStreamDocumentProvider', function () {
-    const map = new Map<string, CloudWatchLogsData>()
+    const map = new Map<vscode.Uri, CloudWatchLogsData>()
     let provider: LogStreamDocumentProvider
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
     const registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
+
+    const codeLensProvider = new LogStreamCodeLensProvider(registry)
 
     // TODO: Make this less flaky when we add manual timestamp controls.
     const message = "i'm just putting something here because it's a friday"
@@ -86,8 +89,8 @@ describe('LogStreamDocumentProvider', function () {
 
     before(async function () {
         provider = new LogStreamDocumentProvider(registry)
-        map.set(getLogsUri.path, getLogsStream)
-        map.set(filterLogsUri.path, filterLogsStream)
+        map.set(getLogsUri, getLogsStream)
+        map.set(filterLogsUri, filterLogsStream)
     })
 
     it('provides content if it exists and a blank string if it does not', function () {
@@ -98,7 +101,19 @@ describe('LogStreamDocumentProvider', function () {
         assert.strictEqual(provider.provideTextDocumentContent(vscode.Uri.parse('has:Not')), '')
     })
 
-    // it('Give backward codelense if viewing log stream and doesn\'t if not', async function() {
+    it("Give backward codelense if viewing log stream and doesn't if not", async function () {
+        const fakeGetLogsDocument = await vscode.workspace.openTextDocument(getLogsUri)
+        const fakeFilterLogsDocument = await vscode.workspace.openTextDocument(filterLogsUri)
+        const fakeVscodeToken = {} as vscode.CancellationToken
 
-    // })
+        const fakeGetLogsCodeLens = codeLensProvider.provideCodeLenses(fakeGetLogsDocument, fakeVscodeToken)
+        const fakeFilterLogsCodeLens = codeLensProvider.provideCodeLenses(fakeFilterLogsDocument, fakeVscodeToken)
+
+        assert(fakeGetLogsCodeLens)
+        assert(fakeFilterLogsCodeLens)
+
+        assert.notStrictEqual(fakeGetLogsCodeLens, fakeFilterLogsCodeLens)
+
+        // TODO: How to test this better? I want to literally check if the codelens is in the out, but the type definition makes this difficult.
+    })
 })
