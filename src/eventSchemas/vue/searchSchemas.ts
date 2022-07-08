@@ -12,13 +12,12 @@ import { RegistryItemNode } from '../explorer/registryItemNode'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { SchemasNode } from '../explorer/schemasNode'
 import { listRegistryItems, searchSchemas } from '../utils'
-import { SchemaClient } from '../../shared/clients/schemaClient'
+import { DefaultSchemaClient, SchemaClient } from '../../shared/clients/schemaClient'
 
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasSearch, recordSchemasView, Result } from '../../shared/telemetry/telemetry'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import globals from '../../shared/extensionGlobals'
 import { ExtContext } from '../../shared/extensions'
 import { VueWebview } from '../../webviews/main'
 
@@ -110,7 +109,7 @@ export async function createSearchSchemasWebView(context: ExtContext, node: Regi
     let webviewResult: Result = 'Succeeded'
 
     try {
-        const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(node.regionCode)
+        const client = new DefaultSchemaClient(node.regionCode)
         const registryNames = await getRegistryNames(node, client)
         if (registryNames.length === 0) {
             vscode.window.showInformationMessage(localize('AWS.schemas.search.no_registries', 'No Schema Registries'))

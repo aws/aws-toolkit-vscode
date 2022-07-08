@@ -10,9 +10,9 @@ import { LoginManager } from '../../../credentials/loginManager'
 import { CredentialsProvider, CredentialsId } from '../../../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 import { AwsContext } from '../../../shared/awsContext'
-import * as accountId from '../../../shared/credentials/accountId'
 import { CredentialsStore } from '../../../credentials/credentialsStore'
 import { assertTelemetryCurried } from '../../testUtil'
+import { DefaultStsClient } from '../../../shared/clients/stsClient'
 
 describe('LoginManager', async function () {
     let sandbox: sinon.SinonSandbox
@@ -35,7 +35,7 @@ describe('LoginManager', async function () {
 
     let loginManager: LoginManager
     let credentialsProvider: CredentialsProvider
-    let getAccountIdStub: sinon.SinonStub<[AWS.Credentials, string], Promise<string | undefined>>
+    let getAccountIdStub: sinon.SinonStub<[], Promise<{ Account?: string } | undefined>>
     let getCredentialsProviderStub: sinon.SinonStub<[CredentialsId], Promise<CredentialsProvider | undefined>>
 
     beforeEach(async function () {
@@ -53,8 +53,10 @@ describe('LoginManager', async function () {
             isAvailable: sandbox.stub().returns(Promise.resolve(true)),
         }
 
-        getAccountIdStub = sandbox.stub(accountId, 'getAccountId')
-        getAccountIdStub.resolves('AccountId1234')
+        getAccountIdStub = sandbox.stub(DefaultStsClient.prototype, 'getCallerIdentity').resolves({
+            Account: 'AccountId1234',
+        })
+
         getCredentialsProviderStub = sandbox.stub(CredentialsProviderManager.getInstance(), 'getCredentialsProvider')
         getCredentialsProviderStub.resolves(credentialsProvider)
     })
