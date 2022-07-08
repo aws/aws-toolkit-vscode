@@ -8,7 +8,6 @@ import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
-import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { RegionProvider } from './regions/regionProvider'
 import { CodelensRootRegistry } from './sam/codelensRootRegistry'
@@ -58,13 +57,12 @@ export default globals
 interface ToolkitGlobals {
     readonly context: ExtensionContext
     readonly window: Window
-    // TODO: make the rest of these readonly
+    // TODO: make the rest of these readonly (or delete them)
     outputChannel: OutputChannel
     awsContextCommands: AwsContextCommands
     awsContext: AwsContext
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
-    toolkitClientBuilder: ToolkitClientBuilder
     telemetry: TelemetryService & { logger: TelemetryLogger }
     templateRegistry: CloudFormationTemplateRegistry
     schemaService: SchemaService
