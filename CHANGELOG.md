@@ -1,3 +1,6 @@
+# _1.47_ (2022-07-08)
+- **(Removal)** Remove Cloud Debugging of ECS Services (beta)
+
 # _1.46_ (2022-06-28)
 - **(Feature)** Nodejs16.x Lambda runtime support
 - **(Bug Fix)** Fix broken user UI due to 'Enter' handler override ([#3193](https://github.com/aws/aws-toolkit-jetbrains/issues/3193))

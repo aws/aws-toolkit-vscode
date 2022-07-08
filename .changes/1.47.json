@@ -1,0 +1,8 @@
+{
+  "date" : "2022-07-08",
+  "version" : "1.47",
+  "entries" : [ {
+    "type" : "removal",
+    "description" : "Remove Cloud Debugging of ECS Services (beta)"
+  } ]
+}
