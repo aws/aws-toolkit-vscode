@@ -12,11 +12,11 @@ import { Prompter } from '../../shared/ui/prompter'
 import { Wizard, WizardState } from '../../shared/wizards/wizard'
 import { AppRunnerImageRepositoryWizard } from './imageRepositoryWizard'
 import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
-import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
 import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
+import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -103,7 +103,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         super({
             initState,
             implicitState,
-            exitPrompterProvider: new BasicExitPrompterProvider(),
+            exitPrompterProvider: createExitPrompter,
         })
 
         const ecrClient = globals.toolkitClientBuilder.createEcrClient(region)

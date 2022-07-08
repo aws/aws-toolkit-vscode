@@ -39,8 +39,8 @@ import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import globals from '../../shared/extensionGlobals'
+import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -203,7 +203,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
         credentials?: AWS.Credentials
     }) {
         super({
-            exitPrompterProvider: new BasicExitPrompterProvider(),
+            exitPrompterProvider: createExitPrompter,
         })
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))

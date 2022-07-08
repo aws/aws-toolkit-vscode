@@ -8,7 +8,10 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import { AppRunnerCodeRepositoryWizard, ConnectionPrompter } from '../../../apprunner/wizards/codeRepositoryWizard'
+import {
+    AppRunnerCodeRepositoryWizard,
+    createConnectionPrompter,
+} from '../../../apprunner/wizards/codeRepositoryWizard'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
@@ -74,7 +77,7 @@ describe('createConnectionPrompter', function () {
     } as any
 
     function makeTester(): QuickPickTester<ConnectionSummary> {
-        const prompter = new ConnectionPrompter(fakeApprunnerClient).call({ estimator: () => 0, stepCache: {} })
+        const prompter = createConnectionPrompter(fakeApprunnerClient)
         return createQuickPickTester(prompter as any)
     }
 
