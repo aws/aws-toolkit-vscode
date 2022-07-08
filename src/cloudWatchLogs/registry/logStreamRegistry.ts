@@ -188,6 +188,32 @@ export class LogStreamRegistry {
     }
 }
 
+export async function filterLogEventsFromUriComponents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    nextToken?: string
+): Promise<CloudWatchLogsResponse> {
+    const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
+        logGroupInfo.regionName
+    )
+
+    const response = await client.filterLogEvents({
+        logGroupName: logGroupInfo.groupName,
+        filterPattern: parameters.filterPattern,
+        nextToken,
+        limit: parameters.limit,
+    })
+
+    // Use heuristic of last token as backward token and next token as forward to generalize token form.
+    // Note that this fails if the contents of the calls are changing as they are being made.
+    // However, this fail wouldn't really impact customers.
+    return {
+        events: response.events ? response.events : [],
+        nextForwardToken: response.nextToken,
+        nextBackwardToken: nextToken,
+    }
+}
+
 export async function getLogEventsFromUriComponents(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { nodeModuleNameResolver } from 'typescript'
 import * as nls from 'vscode-nls'
 import { CloudWatchLogsClient, DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
@@ -13,22 +14,51 @@ import {
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     LogStreamRegistry,
-    getLogEventsFromUriComponents,
+    filterLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { CloudWatchLogsNode } from '../../../src/cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 
 import { Wizard } from '../../shared/wizards/wizard'
+import { InputBoxPrompter } from '../../shared/ui/inputPrompter'
+import { createInputBox } from '../../shared/ui/inputPrompter'
+import { filter } from 'lodash'
+import { createURIFromArgs } from '../cloudWatchLogsUtils'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const regionCode = 'us-west-2'
     const logGroupNodes = await getLogGroupNodes(regionCode)
-    const logGroup = await new SearchLogGroupWizard(logGroupNodes).run()
-    console.log(logGroup)
-    // console.log("here")
-    // console.log(logGroup)
+    const response = await new SearchLogGroupWizard(logGroupNodes).run()
+    if (!response) {
+        // What should I do if the Wizard does not get a response? Nothing seems like best option?
+        return
+    }
+
+    const logGroupInfo: CloudWatchLogsGroupInfo = {
+        groupName: response.logGroup,
+        regionName: regionCode,
+    }
+
+    const parameters: CloudWatchLogsParameters = {
+        limit: registry.configuration.get('limit', 10000),
+        filterPattern: response.filterPattern,
+    }
+
+    const uri = createURIFromArgs(logGroupInfo, parameters)
+    const initialStreamData: CloudWatchLogsData = {
+        data: [],
+        parameters: parameters,
+        busy: false,
+        logGroupInfo: logGroupInfo,
+        retrieveLogsFunction: filterLogEventsFromUriComponents,
+    }
+
+    await registry.registerLog(uri, initialStreamData)
+    const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+    vscode.languages.setTextDocumentLanguage(doc, 'log')
+    await vscode.window.showTextDocument(doc, { preview: false })
 
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
@@ -51,12 +81,7 @@ function loadLogGroups(logGroups: AWSTreeNodeBase[]): DataQuickPickItem<string>[
     return options
 }
 
-export interface SearchLogGroupWizardResponse {
-    logGroup: string
-}
-
 async function getLogGroupNodes(regionCode: string) {
-    // How can I test this??
     const artificialNode = new CloudWatchLogsNode(regionCode)
     const logGroupNodes: AWSTreeNodeBase[] = await artificialNode.getChildren()
     return logGroupNodes
@@ -70,9 +95,23 @@ export function createLogGroupPrompter(logGroupNodes: AWSTreeNodeBase[]) {
     })
 }
 
+export function createFilterpatternPrompter() {
+    return createInputBox({
+        title: 'Keyword Search',
+        placeholder: 'Enter text here',
+    })
+}
+
+export interface SearchLogGroupWizardResponse {
+    logGroup: string
+    filterPattern: string
+}
+
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
     public constructor(logGroupNodes: AWSTreeNodeBase[]) {
         super()
+        // TODO: I want the filterPattern to only prompt if the logGroup is given and properly recieved.
         this.form.logGroup.bindPrompter(() => createLogGroupPrompter(logGroupNodes))
+        this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
     }
 }
