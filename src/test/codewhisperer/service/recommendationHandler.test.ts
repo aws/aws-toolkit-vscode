@@ -13,6 +13,7 @@ import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import { stub } from '../../utilities/stubber'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -28,14 +29,14 @@ describe('recommendationHandler', function () {
     })
 
     describe('getRecommendations', async function () {
-        const mockClient: DefaultCodeWhispererClient = new DefaultCodeWhispererClient()
+        const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
 
         beforeEach(function () {
             sinon.restore()
             resetCodeWhispererGlobalVariables()
-            sinon.stub(mockClient, 'listRecommendations')
-            sinon.stub(mockClient, 'generateRecommendations')
+            mockClient.listRecommendations.resolves({})
+            mockClient.generateRecommendations.resolves({})
             RecommendationHandler.instance.clearRecommendations()
         })
 

@@ -10,27 +10,20 @@ import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { ExtContext } from '../shared/extensions'
-import globals from '../shared/extensionGlobals'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
 import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 import { Commands } from '../shared/vscode/commands2'
+import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 
 /**
  * Activates Lambda components.
  */
 export async function activate(context: ExtContext): Promise<void> {
     context.extensionContext.subscriptions.push(
-        Commands.register(
-            'aws.deleteLambda',
-            async (node: LambdaFunctionNode) =>
-                await deleteLambda({
-                    deleteParams: { functionName: node.configuration.FunctionName || '' },
-                    lambdaClient: globals.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                    outputChannel: context.outputChannel,
-                    onRefresh: async () =>
-                        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent),
-                })
-        ),
+        Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode) => {
+            await deleteLambda(node.configuration, new DefaultLambdaClient(node.regionCode))
+            await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent)
+        }),
         Commands.register(
             'aws.invokeLambda',
             async (node: LambdaFunctionNode) =>

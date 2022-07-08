@@ -25,7 +25,7 @@ import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
 import { Progress } from 'got/dist/source'
-import globals from '../../shared/extensionGlobals'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runDownloadLambda(functionNode)
@@ -143,7 +143,7 @@ async function downloadAndUnzipLambda(
     functionNode: LambdaFunctionNode,
     extractLocation: string,
     window = Window.vscode(),
-    lambda = globals.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
+    lambda = new DefaultLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
     let tempDir: string | undefined

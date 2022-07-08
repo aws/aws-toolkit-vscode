@@ -9,15 +9,17 @@ import { EcrRepositoryNode } from '../../ecr/explorer/ecrRepositoryNode'
 import { EcrTagNode } from '../../ecr/explorer/ecrTagNode'
 
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'
-import globals from '../../shared/extensionGlobals'
+import { DefaultAppRunnerClient } from '../../shared/clients/apprunnerClient'
 
-export async function createFromEcr(node: EcrTagNode | EcrRepositoryNode): Promise<void> {
+export async function createFromEcr(
+    node: EcrTagNode | EcrRepositoryNode,
+    client = new DefaultAppRunnerClient(node.regionCode)
+): Promise<void> {
     let telemetryResult: telemetry.Result = 'Failed'
 
     try {
         const ecrNode = (node as any).tag === undefined ? (node as EcrRepositoryNode) : (node as EcrTagNode).parent
-        const client = globals.toolkitClientBuilder.createAppRunnerClient(ecrNode.regionCode)
-        const wizard = new CreateAppRunnerServiceWizard(ecrNode.regionCode, {
+        const wizard = new CreateAppRunnerServiceWizard(node.regionCode, {
             SourceConfiguration: {
                 ImageRepository: {
                     ImageIdentifier: `${ecrNode.repository.repositoryUri}:${(node as any).tag ?? 'latest'}`,
