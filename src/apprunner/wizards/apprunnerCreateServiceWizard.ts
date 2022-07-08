@@ -15,8 +15,10 @@ import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
 import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
-import globals from '../../shared/extensionGlobals'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
+import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { DefaultEcrClient } from '../../shared/clients/ecrClient'
+import { DefaultAppRunnerClient } from '../../shared/clients/apprunnerClient'
 
 const localize = nls.loadMessageBundle()
 
@@ -98,7 +100,12 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
     public constructor(
         region: string,
         initState: WizardState<AppRunner.CreateServiceRequest> = {},
-        implicitState: WizardState<AppRunner.CreateServiceRequest> = {}
+        implicitState: WizardState<AppRunner.CreateServiceRequest> = {},
+        clients = {
+            iam: new DefaultIamClient(region),
+            ecr: new DefaultEcrClient(region),
+            apprunner: new DefaultAppRunnerClient(region),
+        }
     ) {
         super({
             initState,
@@ -106,13 +113,14 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
             exitPrompterProvider: createExitPrompter,
         })
 
-        const ecrClient = globals.toolkitClientBuilder.createEcrClient(region)
-        const iamClient = globals.toolkitClientBuilder.createIamClient(region)
-        const apprunnerClient = globals.toolkitClientBuilder.createAppRunnerClient(region)
         const autoDeployButton = makeDeploymentButton()
         const gitExtension = GitExtension.instance
-        const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(apprunnerClient, gitExtension, autoDeployButton)
-        const imageRepositoryWizard = new AppRunnerImageRepositoryWizard(ecrClient, iamClient, autoDeployButton)
+        const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(
+            clients.apprunner,
+            gitExtension,
+            autoDeployButton
+        )
+        const imageRepositoryWizard = new AppRunnerImageRepositoryWizard(clients.ecr, clients.iam, autoDeployButton)
 
         const form = this.form
 

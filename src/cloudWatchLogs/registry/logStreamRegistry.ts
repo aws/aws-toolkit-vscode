@@ -10,11 +10,10 @@ import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
-import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
+import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
-import globals from '../../shared/extensionGlobals'
 
 // TODO: Add debug logging statements
 
@@ -214,9 +213,7 @@ export class LogStreamRegistry {
         },
         nextToken?: string
     ): Promise<CloudWatchLogs.GetLogEventsResponse> {
-        const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
-            logGroupInfo.regionName
-        )
+        const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
         return await client.getLogEvents({
             logGroupName: logGroupInfo.groupName,

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.45.0-SNAPSHOT",
+    "version": "1.46.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -194,7 +194,7 @@
                 "aws.samcli.enableCodeLenses": {
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
-                    "default": true
+                    "default": false
                 },
                 "aws.suppressPrompts": {
                     "type": "object",
@@ -3209,7 +3209,7 @@
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",
-        "prettier": "^2.6.2",
+        "prettier": "^2.7.1",
         "prettier-plugin-sh": "^0.8.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
@@ -3250,7 +3250,7 @@
         "jsonc-parser": "^3.0.0",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.32",
-        "moment": "^2.29.1",
+        "moment": "^2.29.4",
         "portfinder": "^1.0.25",
         "semver": "^7.3.5",
         "strip-ansi": "^5.2.0",

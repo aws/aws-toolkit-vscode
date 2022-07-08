@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeWhisperer features were not fully disabled if the experiment was disabled"
-}
