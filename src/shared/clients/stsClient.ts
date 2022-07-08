@@ -28,7 +28,7 @@ export class DefaultStsClient {
         return await globals.sdkClientBuilder.createAwsService(
             STS,
             {
-                ...this.credentials,
+                credentials: this.credentials,
                 stsRegionalEndpoints: 'regional',
             },
             this.regionCode

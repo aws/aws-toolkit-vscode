@@ -14,6 +14,7 @@ import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { millisecondsSince, recordLambdaDelete, Result } from '../../shared/telemetry/telemetry'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
+import { getLogger } from '../../shared/logger/logger'
 
 async function confirmDeletion(functionName: string, window = vscode.window): Promise<boolean> {
     return showConfirmationMessage(
@@ -36,6 +37,8 @@ export async function deleteLambda(
     window = vscode.window
 ): Promise<void> {
     if (!lambda.FunctionName) {
+        recordLambdaDelete({ duration: 0, result: 'Failed' })
+
         throw new TypeError('Lambda does not have a function name')
     }
 
@@ -50,6 +53,7 @@ export async function deleteLambda(
         }
     } catch (err) {
         deleteResult = 'Failed'
+        getLogger().error(`Failed to delete lambda function "${lambda.FunctionName}": %O`, err)
         const message = localize(
             'AWS.command.deleteLambda.error',
             "There was an error deleting lambda function '{0}'",
