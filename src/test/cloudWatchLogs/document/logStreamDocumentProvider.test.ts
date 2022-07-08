@@ -5,14 +5,47 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
 import {
     LogStreamRegistry,
     CloudWatchLogsData,
     getLogEventsFromUriComponents,
+    CloudWatchLogsAction,
+    CloudWatchLogsGroupInfo,
+    CloudWatchLogsParameters,
+    CloudWatchLogsResponse,
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { getLogger } from '../../../shared/logger/logger'
 import { Settings } from '../../../shared/settings'
+
+function testGetLogEvents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    apiParameters: CloudWatchLogsParameters,
+    nextToken?: string
+): Promise<CloudWatchLogsResponse> {
+    return Promise.resolve({
+        events: [
+            {
+                message: 'This is from getLogEvents',
+            },
+        ],
+    })
+}
+
+async function testFilterLogEvents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    apiParameters: CloudWatchLogsParameters,
+    nextToken?: string
+): Promise<CloudWatchLogsResponse> {
+    return Promise.resolve({
+        events: [
+            {
+                message: 'This is from filterLogEvents',
+            },
+        ],
+    })
+}
 
 describe('LogStreamDocumentProvider', function () {
     const map = new Map<string, CloudWatchLogsData>()
@@ -20,10 +53,9 @@ describe('LogStreamDocumentProvider', function () {
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
     const registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
 
-    const registeredUri = vscode.Uri.parse('has:This')
     // TODO: Make this less flaky when we add manual timestamp controls.
     const message = "i'm just putting something here because it's a friday"
-    const stream: CloudWatchLogsData = {
+    const getLogsStream: CloudWatchLogsData = {
         data: [
             {
                 message,
@@ -34,20 +66,39 @@ describe('LogStreamDocumentProvider', function () {
             groupName: 'group',
             regionName: 'region',
         },
-        retrieveLogsFunction: getLogEventsFromUriComponents,
+        retrieveLogsFunction: testGetLogEvents,
+        busy: false,
+    }
+    const getLogsUri = createURIFromArgs(getLogsStream.logGroupInfo, getLogsStream.parameters)
+
+    const filterLogsStream: CloudWatchLogsData = {
+        data: [],
+        parameters: { filterPattern: 'lookForThis' },
+        logGroupInfo: {
+            groupName: 'group',
+            regionName: 'region',
+        },
+        retrieveLogsFunction: testFilterLogEvents,
         busy: false,
     }
 
+    const filterLogsUri = createURIFromArgs(filterLogsStream.logGroupInfo, filterLogsStream.parameters)
+
     before(async function () {
         provider = new LogStreamDocumentProvider(registry)
-        map.set(registeredUri.path, stream)
+        map.set(getLogsUri.path, getLogsStream)
+        map.set(filterLogsUri.path, filterLogsStream)
     })
 
     it('provides content if it exists and a blank string if it does not', function () {
         assert.strictEqual(
-            provider.provideTextDocumentContent(registeredUri),
+            provider.provideTextDocumentContent(getLogsUri),
             `                             \t${message}\n`
         )
         assert.strictEqual(provider.provideTextDocumentContent(vscode.Uri.parse('has:Not')), '')
     })
+
+    // it('Give backward codelense if viewing log stream and doesn\'t if not', async function() {
+
+    // })
 })
