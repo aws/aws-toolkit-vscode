@@ -6,7 +6,7 @@
     <transition name="slide-down">
         <div id="restart-notification" class="notification" v-if="canRestart">
             <span id="notification-span">
-                <i id="info-notification-icon" class="icon"></i>
+                <span id="info-notification-icon" class="icon icon-lg icon-vscode-info"></span>
                 <span>Restart your environment to update with changes.</span>
             </span>
             <button
@@ -175,7 +175,7 @@ body {
     flex-grow: 1;
 }
 #info-notification-icon {
-    background-image: url('/resources/generic/info.svg');
+    color: var(--vscode-notificationsInfoIcon-foreground);
 }
 .slide-down-enter-active {
     transition: all 0.4s ease-in-out;
