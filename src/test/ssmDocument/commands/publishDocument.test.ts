@@ -9,7 +9,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 
-import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import * as publish from '../../../ssmDocument/commands/publishDocument'
 import * as ssmUtils from '../../../ssmDocument/util/util'
 import {
@@ -17,6 +17,7 @@ import {
     PublishSSMDocumentWizardResponse,
 } from '../../../ssmDocument/wizards/publishDocumentWizard'
 import { closeAllEditors } from '../../testUtil'
+import { stub } from '../../utilities/stubber'
 
 describe('publishDocument', async function () {
     let wizardResponse: PublishSSMDocumentWizardResponse
@@ -72,24 +73,18 @@ describe('publishDocument', async function () {
                 region: '',
             }
 
-            const client = {
-                async createDocument() {
-                    return result
-                },
-            } as unknown as SsmDocumentClient
+            const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
+            client.createDocument.resolves(result)
 
-            const createSpy = sinon.spy(client, 'createDocument')
             await publish.createDocument(wizardResponse, textDocument, client)
-            assert(createSpy.calledOnce)
-            assert(createSpy.calledWith(fakeCreateRequest))
+
+            assert(client.createDocument.calledOnce)
+            assert(client.createDocument.calledWith(fakeCreateRequest))
         })
 
         it('createDocument API failed', async function () {
-            const client = {
-                async createDocument() {
-                    throw new Error('Create Error')
-                },
-            } as unknown as SsmDocumentClient
+            const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
+            client.getDocument.rejects(new Error('Create Error'))
 
             const createErrorSpy = sinon.spy(vscode.window, 'showErrorMessage')
             await publish.createDocument(wizardResponse, textDocument, client)
@@ -103,28 +98,22 @@ describe('publishDocument', async function () {
 
     describe('updateDocument', async function () {
         it('updateDocument API returns successfully', async function () {
-            const client = {
-                async updateDocument() {
-                    return result
-                },
-            } as unknown as SsmDocumentClient
+            const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
+            client.updateDocument.resolves(result)
 
-            const updateSpy = sinon.spy(client, 'updateDocument')
-            sinon.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
+            sinon.stub(ssmUtils, 'showConfirmationMessage').resolves(false)
             await publish.updateDocument(wizardResponse, textDocument, client)
-            assert(updateSpy.calledOnce)
-            assert(updateSpy.calledWith(fakeUpdateRequest))
+
+            assert(client.updateDocument.calledOnce)
+            assert(client.updateDocument.calledWith(fakeUpdateRequest))
         })
 
         it('updateDocument API failed', async function () {
-            const client = {
-                async updateDocument() {
-                    throw new Error('Update Error')
-                },
-            } as unknown as SsmDocumentClient
+            const client = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
+            client.updateDocument.rejects(new Error('Update Error'))
 
             const updateErrorSpy = sinon.spy(vscode.window, 'showErrorMessage')
-            sinon.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
+            sinon.stub(ssmUtils, 'showConfirmationMessage').resolves(false)
             await publish.updateDocument(wizardResponse, textDocument, client)
             assert(updateErrorSpy.calledOnce)
             assert(

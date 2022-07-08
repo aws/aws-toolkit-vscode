@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../shared/extensionGlobals'
-
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -23,6 +21,8 @@ import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../sha
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { isStepFunctionsRole } from '../utils'
 import { createRolePrompter } from '../../shared/ui/common/roles'
+import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 export enum PublishStateMachineAction {
     QuickCreate,
@@ -95,7 +95,7 @@ export interface PublishStateMachineWizardState {
 }
 
 function createStepFunctionsRolePrompter(region: string) {
-    const client = globals.toolkitClientBuilder.createIamClient(region)
+    const client = new DefaultIamClient(region)
 
     return createRolePrompter(client, {
         helpUrl: vscode.Uri.parse(sfnCreateIamRoleUrl),
@@ -109,7 +109,7 @@ function createStepFunctionsRolePrompter(region: string) {
 }
 
 async function* listStateMachines(region: string) {
-    const client = globals.toolkitClientBuilder.createStepFunctionsClient(region)
+    const client = new DefaultStepFunctionsClient(region)
 
     for await (const machine of client.listStateMachines()) {
         yield [

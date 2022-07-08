@@ -14,6 +14,7 @@ import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilit
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals from '../extensionGlobals'
+import { DEFAULT_PARTITION } from '../regions/regionUtilities'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'
@@ -133,8 +134,8 @@ const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
 export class DefaultS3Client {
     public constructor(
-        private readonly partitionId: string,
         private readonly regionCode: string,
+        private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION,
         private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
     ) {}

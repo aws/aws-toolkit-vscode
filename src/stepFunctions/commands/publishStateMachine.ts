@@ -4,11 +4,10 @@
  */
 
 import { load } from 'js-yaml'
-import globals from '../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
-import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { getLogger, Logger } from '../../shared/logger'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
@@ -58,7 +57,7 @@ export async function publishStateMachine(
         if (!response) {
             return
         }
-        const client = globals.toolkitClientBuilder.createStepFunctionsClient(response.region)
+        const client = new DefaultStepFunctionsClient(response.region)
 
         if (response?.createResponse) {
             await createStateMachine(response.createResponse, text, outputChannel, response.region, client)
