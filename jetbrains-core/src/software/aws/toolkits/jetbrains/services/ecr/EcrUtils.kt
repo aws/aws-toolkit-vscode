@@ -8,7 +8,6 @@ import com.intellij.docker.DockerCloudType
 import com.intellij.docker.DockerDeploymentConfiguration
 import com.intellij.docker.DockerServerRuntimeInstance
 import com.intellij.docker.deploymentSource.DockerFileDeploymentSourceType
-import com.intellij.docker.registry.DockerRegistry
 import com.intellij.docker.registry.DockerRepositoryModel
 import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
@@ -31,6 +30,7 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
+import software.aws.toolkits.jetbrains.core.docker.compatability.DockerRegistry
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message

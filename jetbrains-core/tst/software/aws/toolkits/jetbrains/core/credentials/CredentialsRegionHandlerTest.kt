@@ -174,7 +174,7 @@ class CredentialsRegionHandlerTest {
         val notification = getOnlyNotification()
 
         runInEdtAndWait {
-            Notification.fire(notification, notification.actions.first { it.templateText == "Always" }, TestDataProvider(projectRule.project))
+            Notification.fire(notification, notification.actions.first { it.templateText == "Always" }, TestDataProvider(projectRule.project)::getData)
         }
 
         assertThat(AwsSettings.getInstance().useDefaultCredentialRegion).isEqualTo(UseAwsCredentialRegion.Always)

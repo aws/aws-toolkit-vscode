@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.TestActionEvent
-import com.intellij.testFramework.TestDataProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -85,5 +85,5 @@ class RefreshConnectionActionTest {
         assertThat(actionEvent.presentation.isEnabled).isEqualTo(shouldBeEnabled)
     }
 
-    private fun testAction() = TestActionEvent(TestDataProvider(projectRule.project))
+    private fun testAction() = TestActionEvent(DataContext { projectRule.project })
 }

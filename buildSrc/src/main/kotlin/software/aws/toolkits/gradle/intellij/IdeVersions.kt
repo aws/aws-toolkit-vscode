@@ -131,18 +131,18 @@ object IdeVersions {
             name = "2022.2",
             community = ProductProfile(
                 sdkFlavor = IdeFlavor.IC,
-                sdkVersion = "222.2964-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "222.3345-EAP-CANDIDATE-SNAPSHOT",
                 plugins = commonPlugins + listOf(
                     "java",
                     "com.intellij.gradle",
                     "org.jetbrains.idea.maven",
-                    "PythonCore:222.2964.16",
-                    "Docker:222.2964.63"
+                    "PythonCore:222.3345.16",
+                    "Docker:222.3345.16"
                 )
             ),
             ultimate = ProductProfile(
                 sdkFlavor = IdeFlavor.IU,
-                sdkVersion = "222.2964-EAP-CANDIDATE-SNAPSHOT",
+                sdkVersion = "222.3345-EAP-CANDIDATE-SNAPSHOT",
                 plugins = commonPlugins + listOf(
                     "JavaScript",
                     // Transitive dependency needed for javascript
@@ -150,18 +150,20 @@ object IdeVersions {
                     "com.intellij.css",
                     "JavaScriptDebugger",
                     "com.intellij.database",
-                    "Pythonid:222.2964.55",
-                    "org.jetbrains.plugins.go:222.2964.55"
+                    "Pythonid:222.3345.16",
+                    "org.jetbrains.plugins.go:222.3345.16",
+                    // https://github.com/JetBrains/gradle-intellij-plugin/issues/1056
+                    "org.intellij.intelliLang"
                 )
             ),
             rider = RiderProfile(
-                sdkVersion = "2022.2-EAP4-SNAPSHOT",
+                sdkVersion = "2022.2-EAP8-SNAPSHOT",
                 plugins = commonPlugins + listOf(
                     "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
                 ),
                 netFrameworkTarget = "net472",
-                rdGenVersion = "2022.2.1",
-                nugetVersion = "2022.2.0-eap04"
+                rdGenVersion = "2022.2.4",
+                nugetVersion = "2022.2.0-eap08"
             )
         )
 
