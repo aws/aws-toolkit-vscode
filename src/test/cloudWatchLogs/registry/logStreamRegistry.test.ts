@@ -13,7 +13,7 @@ import {
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
-import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, createURIFromArgs, uriToKey } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
@@ -108,9 +108,9 @@ describe('LogStreamRegistry', async function () {
 
     beforeEach(function () {
         map = new Map<string, CloudWatchLogsData>()
-        map.set(registeredUri.path, stream1)
-        map.set(shorterRegisteredUri.path, simplerStream)
-        map.set(newLineUri.path, newLineStream)
+        map.set(uriToKey(registeredUri), stream1)
+        map.set(uriToKey(shorterRegisteredUri), simplerStream)
+        map.set(uriToKey(newLineUri), newLineStream)
         registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
     })
 

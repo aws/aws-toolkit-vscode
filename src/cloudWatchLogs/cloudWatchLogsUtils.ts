@@ -14,6 +14,15 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 // Colons are not valid characters in either the group name or stream name and will be used as separators.
 
 /**
+ * This function concatenates the path and query to create a unique (enough) identifier for a URI.
+ * @param uri
+ * @returns
+ */
+export function uriToKey(uri: vscode.Uri): string {
+    return uri.path + uri.query
+}
+
+/**
  * Destructures an awsCloudWatchLogs URI into its component pieces.
  * @param uri URI for a Cloudwatch Logs file
  */

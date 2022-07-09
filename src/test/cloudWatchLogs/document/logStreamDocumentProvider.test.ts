@@ -5,7 +5,12 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import {
+    CloudWatchLogsSettings,
+    createURIFromArgs,
+    loadOlderRevelevant,
+    uriToKey,
+} from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
 import {
     LogStreamRegistry,
@@ -49,7 +54,7 @@ async function testFilterLogEvents(
 }
 
 describe('LogStreamDocumentProvider', function () {
-    const map = new Map<vscode.Uri, CloudWatchLogsData>()
+    const map = new Map<string, CloudWatchLogsData>()
     let provider: LogStreamDocumentProvider
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
     const registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
@@ -89,8 +94,8 @@ describe('LogStreamDocumentProvider', function () {
 
     before(async function () {
         provider = new LogStreamDocumentProvider(registry)
-        map.set(getLogsUri, getLogsStream)
-        map.set(filterLogsUri, filterLogsStream)
+        map.set(uriToKey(getLogsUri), getLogsStream)
+        map.set(uriToKey(filterLogsUri), filterLogsStream)
     })
 
     it('provides content if it exists and a blank string if it does not', function () {
@@ -112,8 +117,8 @@ describe('LogStreamDocumentProvider', function () {
         assert(fakeGetLogsCodeLens)
         assert(fakeFilterLogsCodeLens)
 
+        assert.strictEqual(loadOlderRevelevant(filterLogsUri), false)
+        assert.strictEqual(loadOlderRevelevant(getLogsUri), true)
         assert.notStrictEqual(fakeGetLogsCodeLens, fakeFilterLogsCodeLens)
-
-        // TODO: How to test this better? I want to literally check if the codelens is in the out, but the type definition makes this difficult.
     })
 })

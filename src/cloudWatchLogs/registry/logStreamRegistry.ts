@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 import { getLogger } from '../../shared/logger'
@@ -26,7 +26,7 @@ export class LogStreamRegistry {
 
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
-        private readonly activeStreams: Map<vscode.Uri, CloudWatchLogsData> = new Map<vscode.Uri, CloudWatchLogsData>()
+        private readonly activeStreams: Map<string, CloudWatchLogsData> = new Map<string, CloudWatchLogsData>()
     ) {}
 
     /**
@@ -55,7 +55,7 @@ export class LogStreamRegistry {
      * @param uri Document URI
      */
     public hasLog(uri: vscode.Uri): boolean {
-        return this.activeStreams.has(uri)
+        return this.activeStreams.has(uriToKey(uri))
     }
 
     /**
@@ -110,7 +110,6 @@ export class LogStreamRegistry {
         }
         const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
         const uriResults = parseCloudWatchLogsUri(uri)
-        console.log(nextToken)
 
         const logGroupInfo = uriResults.logGroupInfo
 
@@ -161,7 +160,7 @@ export class LogStreamRegistry {
      * @param uri Document URI
      */
     public deregisterLog(uri: vscode.Uri): void {
-        this.activeStreams.delete(uri)
+        this.activeStreams.delete(uriToKey(uri))
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
@@ -181,11 +180,11 @@ export class LogStreamRegistry {
     }
 
     private setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
-        this.activeStreams.set(uri, stream)
+        this.activeStreams.set(uriToKey(uri), stream)
     }
 
     private getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
-        return this.activeStreams.get(uri)
+        return this.activeStreams.get(uriToKey(uri))
     }
 }
 
