@@ -8,12 +8,16 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import { AppRunnerCodeRepositoryWizard, ConnectionPrompter } from '../../../apprunner/wizards/codeRepositoryWizard'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import {
+    AppRunnerCodeRepositoryWizard,
+    createConnectionPrompter,
+} from '../../../apprunner/wizards/codeRepositoryWizard'
+import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
 import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtils'
+import { stub } from '../../utilities/stubber'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
@@ -62,20 +66,18 @@ describe('AppRunnerCodeRepositoryWizard', function () {
 type ConnectionStatus = 'AVAILABLE' | 'PENDING_HANDSHAKE' | 'ERROR' | 'DELETED'
 
 describe('createConnectionPrompter', function () {
-    let connections: ConnectionSummary[]
-    let tester: QuickPickTester<ConnectionSummary>
     let openExternal: sinon.SinonSpy<Parameters<typeof vscode.env.openExternal>>
 
-    const fakeApprunnerClient: AppRunnerClient = {
-        listConnections: (request: any) =>
-            Promise.resolve({
-                ConnectionSummaryList: connections,
-            }),
-    } as any
+    const defaultConnections = [
+        makeConnection('connection-name-1', 'connection-arn-1'),
+        makeConnection('connection-name-2', 'connection-arn-2'),
+    ]
 
-    function makeTester(): QuickPickTester<ConnectionSummary> {
-        const prompter = new ConnectionPrompter(fakeApprunnerClient).call({ estimator: () => 0, stepCache: {} })
-        return createQuickPickTester(prompter as any)
+    function makeTester(connections = defaultConnections): QuickPickTester<ConnectionSummary> {
+        const client = stub(DefaultAppRunnerClient, { regionCode: '' })
+        client.listConnections.resolves({ ConnectionSummaryList: connections })
+
+        return createQuickPickTester(createConnectionPrompter(client))
     }
 
     function makeConnection(name: string, arn: string, status: ConnectionStatus = 'AVAILABLE'): ConnectionSummary {
@@ -87,11 +89,6 @@ describe('createConnectionPrompter', function () {
     }
 
     beforeEach(function () {
-        connections = [
-            makeConnection('connection-name-1', 'connection-arn-1'),
-            makeConnection('connection-name-2', 'connection-arn-2'),
-        ]
-        tester = makeTester()
         openExternal = sinon.stub(vscode.env, 'openExternal')
     })
 
@@ -100,24 +97,29 @@ describe('createConnectionPrompter', function () {
     })
 
     it('lists connections', async function () {
+        const tester = makeTester()
         tester.assertItems(['connection-name-1', 'connection-name-2'])
         tester.acceptItem('connection-name-2')
-        await tester.result(connections[1])
+        await tester.result(defaultConnections[1])
     })
 
     it('lists only available connections', async function () {
+        const connections = [...defaultConnections]
         connections.push(makeConnection('pending', 'pending', 'PENDING_HANDSHAKE'))
         connections.push(makeConnection('error', 'error', 'ERROR'))
         connections.unshift(makeConnection('deleted', 'deleted', 'DELETED'))
 
-        tester = makeTester()
+        const tester = makeTester(connections)
         tester.assertItems(['connection-name-1', 'connection-name-2'])
         tester.hide()
         await tester.result()
     })
 
     it('can refresh connections', async function () {
+        const connections = [...defaultConnections]
         const newConnection = makeConnection('new-connection', 'new-arn')
+        const tester = makeTester(connections)
+
         tester.addCallback(() => connections.push(newConnection))
         tester.pressButton('Refresh')
         tester.assertItems(['connection-name-1', 'connection-name-2', 'new-connection'])
@@ -126,8 +128,7 @@ describe('createConnectionPrompter', function () {
     })
 
     it('shows an option to go to documentation when no connections are available', async function () {
-        connections = []
-        tester = makeTester()
+        const tester = makeTester([])
         tester.assertItems(['No connections found'])
         tester.acceptItem('No connections found')
         tester.hide()
