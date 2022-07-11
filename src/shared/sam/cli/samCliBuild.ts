@@ -10,6 +10,7 @@ import { pushIf } from '../../utilities/collectionUtils'
 import { localize } from '../../utilities/vsCodeUtils'
 import { Timeout, waitTimeout } from '../../utilities/timeoutUtils'
 import { ChildProcessResult } from '../../utilities/childProcess'
+import { dirname } from 'path'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -133,7 +134,10 @@ export class SamCliBuildInvocation {
         }
 
         let childProcessResult: Promise<ChildProcessResult | void> = this.args.invoker.invoke({
-            spawnOptions: { env },
+            spawnOptions: {
+                env,
+                cwd: dirname(this.args.templatePath),
+            },
             arguments: invokeArgs,
             onStdout: onOutput,
             onStderr: onOutput,
