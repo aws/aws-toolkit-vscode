@@ -4,9 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { nodeModuleNameResolver } from 'typescript'
-import * as nls from 'vscode-nls'
-import { CloudWatchLogsClient, DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import {
@@ -17,13 +14,10 @@ import {
     filterLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { CloudWatchLogsNode } from '../../../src/cloudWatchLogs/explorer/cloudWatchLogsNode'
-import { CloudWatchLogs } from 'aws-sdk'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 
 import { Wizard } from '../../shared/wizards/wizard'
-import { InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { createInputBox } from '../../shared/ui/inputPrompter'
-import { filter } from 'lodash'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {

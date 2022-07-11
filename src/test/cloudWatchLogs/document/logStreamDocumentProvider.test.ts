@@ -15,13 +15,10 @@ import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logS
 import {
     LogStreamRegistry,
     CloudWatchLogsData,
-    getLogEventsFromUriComponents,
-    CloudWatchLogsAction,
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     CloudWatchLogsResponse,
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { getLogger } from '../../../shared/logger/logger'
 import { Settings } from '../../../shared/settings'
 import { LogStreamCodeLensProvider } from '../../../cloudWatchLogs/document/logStreamCodeLensProvider'
 
