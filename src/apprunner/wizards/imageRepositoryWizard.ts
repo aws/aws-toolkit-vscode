@@ -21,9 +21,9 @@ import { makeDeploymentButton } from './deploymentButton'
 import { IamClient } from '../../shared/clients/iamClient'
 import { createRolePrompter } from '../../shared/ui/common/roles'
 import { getLogger } from '../../shared/logger/logger'
-import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
+import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -228,7 +228,7 @@ function createImageRepositorySubForm(
     // note: this is intentionally initialized only once to preserve caches
     const imageIdentifierWizard = new Wizard({
         initForm: new ImageIdentifierForm(ecrClient),
-        exitPrompterProvider: new BasicExitPrompterProvider(),
+        exitPrompterProvider: createExitPrompter,
     })
 
     form.ImageIdentifier.bindPrompter(() =>
