@@ -60,9 +60,6 @@ beforeEach(async function () {
     globals.telemetry.logger.clear()
     ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
 
-    //Reset globalState to avoid tests messing eachother up.
-    ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
-
     await testUtil.closeAllEditors()
 })
 

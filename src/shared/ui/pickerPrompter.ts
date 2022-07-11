@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
+import { isValidResponse, StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult, Transform } from './prompter'
 import { assign, isAsyncIterable } from '../utilities/collectionUtils'
@@ -149,6 +149,16 @@ export function createQuickPick<T>(
     prompter.loadItems(items)
 
     return prompter
+}
+
+export async function showQuickPick<T>(
+    items: ItemLoadTypes<T>,
+    options?: ExtendedQuickPickOptions<T>
+): Promise<T | undefined> {
+    const prompter = createQuickPick(items, options)
+    const response = await prompter.prompt()
+
+    return isValidResponse(response) ? response : undefined
 }
 
 // Note: the generic type used in `createLabelQuickPick` is needed to infer the correct type when using string
