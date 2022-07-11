@@ -40,7 +40,7 @@ export class DefaultAppRunnerClient {
     }
 
     public async listConnections(
-        request: AppRunner.ListConnectionsRequest
+        request: AppRunner.ListConnectionsRequest = {}
     ): Promise<AppRunner.ListConnectionsResponse> {
         return (await this.createSdkClient()).listConnections(request).promise()
     }

@@ -12,10 +12,10 @@ import { Prompter } from '../../shared/ui/prompter'
 import { Wizard, WizardState } from '../../shared/wizards/wizard'
 import { AppRunnerImageRepositoryWizard } from './imageRepositoryWizard'
 import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
-import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
 import { apprunnerCreateServiceDocsUrl } from '../../shared/constants'
+import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 import { DefaultEcrClient } from '../../shared/clients/ecrClient'
 import { DefaultAppRunnerClient } from '../../shared/clients/apprunnerClient'
@@ -110,7 +110,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         super({
             initState,
             implicitState,
-            exitPrompterProvider: new BasicExitPrompterProvider(),
+            exitPrompterProvider: createExitPrompter,
         })
 
         const autoDeployButton = makeDeploymentButton()

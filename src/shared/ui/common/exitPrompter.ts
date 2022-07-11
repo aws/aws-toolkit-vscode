@@ -6,7 +6,7 @@
 import { localize } from '../../utilities/vsCodeUtils'
 import { StepEstimator } from '../../wizards/wizard'
 import { createQuickPick } from '../pickerPrompter'
-import { Prompter, CachedPrompter, PromptResult } from '../prompter'
+import { Prompter, PromptResult } from '../prompter'
 
 class BasicExitPrompter extends Prompter<boolean> {
     private _isStart = true
@@ -40,11 +40,6 @@ class BasicExitPrompter extends Prompter<boolean> {
     public setStepEstimator(estimator: StepEstimator<boolean>): void {}
 }
 
-export class BasicExitPrompterProvider extends CachedPrompter<boolean, any> {
-    protected load(...args: any) {
-        return undefined
-    }
-    protected createPrompter(loader: any, state: any): Prompter<boolean> {
-        return new BasicExitPrompter()
-    }
+export function createExitPrompter() {
+    return new BasicExitPrompter()
 }
