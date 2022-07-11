@@ -25,35 +25,33 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
     const regionCode = 'us-west-2'
     const logGroupNodes = await getLogGroupNodes(regionCode)
     const response = await new SearchLogGroupWizard(logGroupNodes).run()
-    if (!response) {
-        // What should I do if the Wizard does not get a response? Nothing seems like best option?
-        return
+    if (response) {
+        const logGroupInfo: CloudWatchLogsGroupInfo = {
+            groupName: response.logGroup,
+            regionName: regionCode,
+        }
+
+        const parameters: CloudWatchLogsParameters = {
+            limit: registry.configuration.get('limit', 10000),
+            filterPattern: response.filterPattern,
+        }
+
+        const uri = createURIFromArgs(logGroupInfo, parameters)
+        const initialStreamData: CloudWatchLogsData = {
+            data: [],
+            parameters: parameters,
+            busy: false,
+            logGroupInfo: logGroupInfo,
+            retrieveLogsFunction: filterLogEventsFromUriComponents,
+        }
+
+        await registry.registerLog(uri, initialStreamData)
+        const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+        vscode.languages.setTextDocumentLanguage(doc, 'log')
+        await vscode.window.showTextDocument(doc, { preview: false })
+    } else {
+        result = 'Cancelled'
     }
-
-    const logGroupInfo: CloudWatchLogsGroupInfo = {
-        groupName: response.logGroup,
-        regionName: regionCode,
-    }
-
-    const parameters: CloudWatchLogsParameters = {
-        limit: registry.configuration.get('limit', 10000),
-        filterPattern: response.filterPattern,
-    }
-
-    const uri = createURIFromArgs(logGroupInfo, parameters)
-    const initialStreamData: CloudWatchLogsData = {
-        data: [],
-        parameters: parameters,
-        busy: false,
-        logGroupInfo: logGroupInfo,
-        retrieveLogsFunction: filterLogEventsFromUriComponents,
-    }
-
-    await registry.registerLog(uri, initialStreamData)
-    const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
-    vscode.languages.setTextDocumentLanguage(doc, 'log')
-    await vscode.window.showTextDocument(doc, { preview: false })
-
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
