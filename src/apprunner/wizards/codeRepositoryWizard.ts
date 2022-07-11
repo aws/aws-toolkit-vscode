@@ -149,7 +149,7 @@ export function createConnectionPrompter(client: AppRunnerClient) {
         detail: 'Click for documentation on creating a new GitHub connection for App Runner',
         data: {} as any,
         invalidSelection: true,
-        onClick: () => vscode.Uri.parse(apprunnerConnectionHelpUrl),
+        onClick: () => vscode.env.openExternal(vscode.Uri.parse(apprunnerConnectionHelpUrl)),
     }
 
     const errorItem = {
@@ -168,7 +168,7 @@ export function createConnectionPrompter(client: AppRunnerClient) {
     }
 
     const refreshButton = createRefreshButton()
-    refreshButton.onClick = () => prompter.clearAndLoadItems(getItems())
+    refreshButton.onClick = () => void prompter.clearAndLoadItems(getItems())
 
     const prompter = createQuickPick(getItems(), {
         errorItem,
