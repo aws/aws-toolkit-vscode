@@ -4,7 +4,31 @@
 
 function Get-Timestamp {
     return Get-Date -format "[yyyy-MMM-dd HH:mm:ss]"
-}    
+}
+
+function Log {
+    param (
+        [string] $Output,
+        [switch] $Debug
+    )
+
+    if (!(Test-Path variable:global:logFileLocation)) {
+        Write-Output "error: logFileLocation is not defined"
+        Exit 1
+    }
+
+    if (!(Test-Path $global:logFileLocation)) {
+        New-Item -path $global:logFileLocation -type "file" -value ""
+    }
+
+    $Output | Out-File -FilePath $global:logFileLocation -Append
+    if ($Debug.IsPresent) {
+        Write-Debug $Output
+    }
+    else {
+        Write-Output $Output
+    }   
+}
 
 function Require {
     param (
@@ -15,12 +39,12 @@ function Require {
     $value = [Environment]::GetEnvironmentVariable($VariableName)
 
     if ($value -eq $null) {
-        Write-Output "error: missing required arg: $VariableName"
+        Log -Output "error: missing required arg: $VariableName"
         Exit 1
     }
 
     if (!$Silent.IsPresent) {
-        Write-Debug "$(Get-Timestamp) $VariableName=$value"
+        Log -Output "$(Get-Timestamp) $VariableName=$value" -Debug
     }
 
     return $value
@@ -64,7 +88,7 @@ function ExecCaws {
     $startSessionResponse = StartSessionDevelopmentWorkspace -Endpoint $Endpoint -Token $Token -Organization $Organization -Project $Project -WorkspaceId $WorkspaceId
 
     if ($startSessionResponse -match ".*errors.*" -or $startSessionResponse -match ".*ValidationException.*") {
-        Write-Output "Failed to start the session with error: $startSessionResponse"
+        Log -Output "Failed to start the session with error: $startSessionResponse"
         Exit 1
     }
 
@@ -80,6 +104,10 @@ function ExecCaws {
 
 
 function Main {
+    $global:logFileLocation = [Environment]::GetEnvironmentVariable("LOG_FILE_LOCATION")
+
+    Log -Output "===================================================================="
+    
     $region = Require -VariableName "AWS_REGION"
     $ssmPath = Require -VariableName "AWS_SSM_CLI"
 
