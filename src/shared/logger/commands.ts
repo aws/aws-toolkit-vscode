@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { Logger } from '.'
 import { recordVscodeViewLogs } from '../telemetry/telemetry'
+import { waitUntil } from '../utilities/timeoutUtils'
 import { Commands } from '../vscode/commands2'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {
@@ -37,7 +38,7 @@ export class Logging {
     }
 
     public async openLogId(logId: number, logUri = this.defaultLogUri) {
-        const msg = this.logger.getLogById(logId, logUri)
+        const msg = await waitUntil(async () => this.logger.getLogById(logId, logUri), { interval: 100, timeout: 1000 })
         const editor = await this.openLogUri(logUri)
 
         if (!msg || !editor) {

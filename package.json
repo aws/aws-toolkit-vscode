@@ -87,7 +87,8 @@
         "onFileSystem:s3-readonly",
         "onCommand:aws.codeWhisperer.accept",
         "onCommand:aws.codeWhisperer",
-        "onCommand:aws.uploadLambda"
+        "onCommand:aws.uploadLambda",
+        "onCommand:wizard.example"
     ],
     "main": "./dist/src/main",
     "contributes": {
@@ -2822,6 +2823,11 @@
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",
                 "enablement": "aws.isDevMode"
+            },
+            {
+                "command": "wizard.example",
+                "title": "Run an example wizard",
+                "category": "Example"
             }
         ],
         "jsonValidation": [

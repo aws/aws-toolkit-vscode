@@ -65,6 +65,7 @@ import { join } from 'path'
 import { Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands } from './shared/vscode/commands2'
+import { exampleCommand } from './shared/wizards/dynamicWizard'
 
 let localize: nls.LocalizeFunc
 
@@ -83,6 +84,9 @@ export async function activate(context: vscode.ExtensionContext) {
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
     globals.outputChannel = toolkitOutputChannel
+
+    // Only registering it here because we need to load the JS module
+    exampleCommand.register()
 
     try {
         initializeCredentialsProviderManager()

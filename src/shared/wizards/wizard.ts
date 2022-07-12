@@ -103,10 +103,6 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return this._form
     }
 
-    public get initialState(): Readonly<Partial<TState>> | undefined {
-        return this.options.initState
-    }
-
     private _estimator: ((state: TState) => number) | undefined
     public set parentEstimator(estimator: (state: TState) => number) {
         this._estimator = estimator
@@ -119,7 +115,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             options.exitPrompterProvider !== undefined ? this.createExitStep(options.exitPrompterProvider) : undefined
     }
 
-    private assignSteps(): void {
+    protected assignSteps(): void {
         this._form.properties.forEach(prop => {
             const provider = this._form.getPrompterProvider(prop)
             if (!this.boundSteps.has(prop) && provider !== undefined) {
@@ -169,6 +165,9 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
+    /** Dummy lifecycle hook meant to be overridden by derived classes. */
+    protected async afterPrompt(state: TState, prop: string, type?: ControlSignal): Promise<void> {}
+
     private createBoundStep<TProp>(prop: string, provider: PrompterProvider<TState, TProp>): StepFunction<TState> {
         const stepCache: StepCache = {}
 
@@ -187,8 +186,11 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
                 }
             }
 
+            const nextState = isValidResponse(response) ? _.set(state, prop, response) : state
+            await this.afterPrompt(nextState, prop, isWizardControl(response) ? response.type : undefined)
+
             return {
-                nextState: isValidResponse(response) ? _.set(state, prop, response) : state,
+                nextState,
                 nextSteps: this.resolveNextSteps(state),
                 controlSignal: isWizardControl(response) ? response.type : undefined,
             }
