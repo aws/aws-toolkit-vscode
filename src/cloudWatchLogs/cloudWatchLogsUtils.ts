@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
+import { Any } from '../shared/utilities/typeConstructors'
 import { CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
 import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 
@@ -19,7 +20,19 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
  * @returns
  */
 export function uriToKey(uri: vscode.Uri): string {
-    return uri.path + uri.query
+    // We sort the query object by key because queries can be identical semantically in different order.
+    // `Any` is used as type hack to avoid errors when recreating the object.
+    if (uri.query) {
+        const queryObject = JSON.parse(uri.query)
+        const orderedObject = Object.keys(queryObject)
+            .sort()
+            .reduce(function (acc: Any, key: string) {
+                acc[key] = queryObject[key]
+                return acc
+            }, {})
+        return uri.path + JSON.stringify(orderedObject)
+    }
+    return uri.path
 }
 
 /**
