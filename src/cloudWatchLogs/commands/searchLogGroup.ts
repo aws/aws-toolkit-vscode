@@ -56,21 +56,10 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
 }
 
 function loadLogGroups(logGroups: AWSTreeNodeBase[]): DataQuickPickItem<string>[] {
-    let options: DataQuickPickItem<string>[] = []
-    let groupNode: AWSTreeNodeBase
-    for (groupNode of logGroups) {
-        if (groupNode.label) {
-            options.push({
-                label: groupNode.label,
-                data: groupNode.label,
-            })
-        } else {
-            // Not sure if this can/should ever happen, but put error message in case.
-            throw new Error('Recieved Log Group in searchLogGroup Wizard without a label.')
-        }
-    }
-
-    return options
+    return logGroups.map<DataQuickPickItem<string>>(groupNode => ({
+        label: groupNode.label!,
+        data: groupNode.label!,
+    }))
 }
 
 async function getLogGroupNodes(regionCode: string) {
