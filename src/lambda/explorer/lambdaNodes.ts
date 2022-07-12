@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { LambdaClient } from '../../shared/clients/lambdaClient'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -17,7 +17,6 @@ import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/colle
 import { listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
-import globals from '../../shared/extensionGlobals'
 
 export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
 export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
@@ -29,7 +28,10 @@ export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDo
 export class LambdaNode extends AWSTreeNodeBase {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
-    public constructor(private readonly regionCode: string) {
+    public constructor(
+        public readonly regionCode: string,
+        private readonly client = new DefaultLambdaClient(regionCode)
+    ) {
         super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)
         this.functionNodes = new Map<string, LambdaFunctionNode>()
         this.contextValue = 'awsLambdaNode'
@@ -49,9 +51,8 @@ export class LambdaNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const client: LambdaClient = globals.toolkitClientBuilder.createLambdaClient(this.regionCode)
         const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
-            await toArrayAsync(listLambdaFunctions(client)),
+            await toArrayAsync(listLambdaFunctions(this.client)),
             configuration => configuration.FunctionName
         )
 

@@ -1,3 +1,9 @@
+## 1.45.0 2022-07-07
+
+- **Bug Fix** `Add SAM Debug Configuration` codelenses in source files are now disabled by default. (To enable the codelenses, use the `AWS: Toggle SAM hints in source files` command or the `Enable SAM hints` setting.)
+- **Bug Fix** CodeWhisperer features were not fully disabled if the experiment was disabled
+- **Bug Fix** 'security token expired' errors when using CodeWhisperer in Cloud9 with managed credentials
+
 ## 1.44.0 2022-06-30
 
 - **Bug Fix** Fixed a bug where CodeWhisperer incorrectly changes the `snippetSuggestions` setting in VSCode

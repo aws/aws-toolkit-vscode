@@ -7,19 +7,17 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { IAM } from 'aws-sdk'
-import { IamClient } from '../../../../shared/clients/iamClient'
-import { mock, when } from 'ts-mockito'
+import { DefaultIamClient } from '../../../../shared/clients/iamClient'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
-import { instance } from '../../../utilities/mockito'
 import { createRolePrompter } from '../../../../shared/ui/common/roles'
 import { toCollection } from '../../../../shared/utilities/asyncCollection'
+import { stub } from '../../../utilities/stubber'
 
 const helpUri = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
 describe('createRolePrompter', function () {
     let roles: IAM.Role[]
     let newRole: IAM.Role
-    let mockIamClient: IamClient
     let tester: QuickPickTester<IAM.Role>
 
     beforeEach(function () {
@@ -35,14 +33,14 @@ describe('createRolePrompter', function () {
             Arn: 'new-arn',
         } as any
 
-        mockIamClient = mock()
-        when(mockIamClient.getRoles()).thenReturn(
+        const client = stub(DefaultIamClient, { regionCode: 'region-1' })
+        client.getRoles.returns(
             toCollection(async function* () {
                 yield roles
             })
         )
 
-        const prompter = createRolePrompter(instance(mockIamClient), {
+        const prompter = createRolePrompter(client, {
             createRole: () => Promise.resolve(newRole),
             helpUrl: helpUri,
         })

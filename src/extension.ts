@@ -17,7 +17,6 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
-import { DefaultToolkitClientBuilder } from './shared/clients/toolkitClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
@@ -108,7 +107,6 @@ export async function activate(context: vscode.ExtensionContext) {
         globals.regionProvider = regionProvider
         globals.awsContextCommands = new AwsContextCommands(awsContext, awsContextTrees, regionProvider, loginManager)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-        globals.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
 

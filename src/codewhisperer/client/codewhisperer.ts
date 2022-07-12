@@ -14,6 +14,13 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { getCognitoCredentials } from '../util/cognitoIdentity'
 import { PromiseResult } from 'aws-sdk/lib/request'
+import { getLogger } from '../../shared/logger'
+import { throttle } from 'lodash'
+
+const refreshCredentials = throttle(() => {
+    getLogger().verbose('codewhisperer: invalidating expired credentials')
+    globals.awsContext.credentialsShim?.refresh()
+}, 60000)
 
 export type ProgrammingLanguage = Readonly<CodeWhispererClient.ProgrammingLanguage>
 export type FileContext = Readonly<CodeWhispererClient.FileContext>
@@ -59,6 +66,20 @@ export class DefaultCodeWhispererClient {
                         if (req.operation === 'listRecommendations') {
                             req.on('build', () => {
                                 req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
+                            })
+                        }
+
+                        // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
+                        // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
+                        if (isCloud9() && req.operation !== 'getAccessToken') {
+                            req.on('retry', resp => {
+                                if (
+                                    resp.error?.code === 'AccessDeniedException' &&
+                                    resp.error.message.match(/expired/i)
+                                ) {
+                                    refreshCredentials()
+                                    resp.error.retryable = true
+                                }
                             })
                         }
                     },

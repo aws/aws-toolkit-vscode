@@ -10,7 +10,7 @@ import { Schemas } from 'aws-sdk'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
-import { SchemaClient } from '../../../shared/clients/schemaClient'
+import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import {
@@ -19,17 +19,14 @@ import {
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { getIcon } from '../../../shared/icons'
+import { stub } from '../../utilities/stubber'
 
 function createSchemaClient(data?: { schemas?: Schemas.SchemaSummary[]; registries?: Schemas.RegistrySummary[] }) {
-    return {
-        regionCode: 'code',
-        async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
-            yield* data?.schemas ?? []
-        },
-        async *listRegistries() {
-            yield* data?.registries ?? []
-        },
-    } as unknown as SchemaClient
+    const client = stub(DefaultSchemaClient, { regionCode: 'code' })
+    client.listSchemas.callsFake(() => asyncGenerator(data?.schemas ?? []))
+    client.listRegistries.callsFake(() => asyncGenerator(data?.registries ?? []))
+
+    return client
 }
 
 describe('RegistryItemNode', function () {
@@ -76,23 +73,7 @@ describe('RegistryItemNode', function () {
             SchemaName: 'schema3Name',
         }
 
-        const schemaItems: Schemas.SchemaSummary[] = [schema1Item, schema2Item, schema3Item]
-
-        const schemaClient = {
-            regionCode: 'code',
-
-            async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
-                yield* asyncGenerator<Schemas.SchemaSummary>(
-                    schemaItems.map<Schemas.SchemaSummary>(schema => {
-                        return {
-                            SchemaArn: schema.SchemaArn,
-                            SchemaName: schema.SchemaName,
-                        }
-                    })
-                )
-            },
-        } as any as SchemaClient
-
+        const schemaClient = createSchemaClient({ schemas: [schema1Item, schema2Item, schema3Item] })
         const testNode: RegistryItemNode = generateTestNode(schemaClient)
 
         const childNodes = await testNode.getChildren()

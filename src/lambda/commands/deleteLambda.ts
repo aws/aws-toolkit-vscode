@@ -3,65 +3,64 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
-
-import * as localizedText from '../../shared/localizedText'
-import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { millisecondsSince, recordLambdaDelete, Result } from '../../shared/telemetry/telemetry'
-import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { Window } from '../../shared/vscode/window'
 import globals from '../../shared/extensionGlobals'
 
+import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-export async function deleteLambda({
-    deleteParams,
-    onConfirm = async () =>
-        showConfirmationMessage(
-            {
-                prompt: localize(
-                    'AWS.command.deleteLambda.confirm',
-                    "Are you sure you want to delete lambda function '{0}'?",
-                    deleteParams.functionName
-                ),
-                confirm: localizedText.localizedDelete,
-                cancel: localizedText.cancel,
-            },
-            Window.vscode()
-        ),
-    ...restParams
-}: {
-    deleteParams: { functionName: string }
-    lambdaClient: Pick<LambdaClient, 'deleteFunction'> // i.e. implements LambdaClient.deleteFunction
-    outputChannel: vscode.OutputChannel
-    onConfirm?(): Promise<boolean>
-    onRefresh(): void
-}): Promise<void> {
-    if (!deleteParams.functionName) {
-        return
+import * as vscode from 'vscode'
+import * as localizedText from '../../shared/localizedText'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
+import { millisecondsSince, recordLambdaDelete, Result } from '../../shared/telemetry/telemetry'
+import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
+import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
+import { getLogger } from '../../shared/logger/logger'
+
+async function confirmDeletion(functionName: string, window = vscode.window): Promise<boolean> {
+    return showConfirmationMessage(
+        {
+            prompt: localize(
+                'AWS.command.deleteLambda.confirm',
+                "Are you sure you want to delete lambda function '{0}'?",
+                functionName
+            ),
+            confirm: localizedText.localizedDelete,
+            cancel: localizedText.cancel,
+        },
+        window
+    )
+}
+
+export async function deleteLambda(
+    lambda: Pick<FunctionConfiguration, 'FunctionName'>,
+    client: Pick<DefaultLambdaClient, 'deleteFunction'>,
+    window = vscode.window
+): Promise<void> {
+    if (!lambda.FunctionName) {
+        recordLambdaDelete({ duration: 0, result: 'Failed' })
+
+        throw new TypeError('Lambda does not have a function name')
     }
+
     const startTime = new globals.clock.Date()
     let deleteResult: Result = 'Succeeded'
+
     try {
-        const isConfirmed = await onConfirm()
-        if (isConfirmed) {
-            await restParams.lambdaClient.deleteFunction(deleteParams.functionName)
-            restParams.onRefresh()
+        if (await confirmDeletion(lambda.FunctionName, window)) {
+            await client.deleteFunction(lambda.FunctionName)
+        } else {
+            deleteResult = 'Cancelled'
         }
     } catch (err) {
         deleteResult = 'Failed'
-        restParams.outputChannel.show(true)
-        restParams.outputChannel.appendLine(
-            localize(
-                'AWS.command.deleteLambda.error',
-                "There was an error deleting lambda function '{0}'",
-                deleteParams.functionName
-            )
+        getLogger().error(`Failed to delete lambda function "${lambda.FunctionName}": %O`, err)
+        const message = localize(
+            'AWS.command.deleteLambda.error',
+            "There was an error deleting lambda function '{0}'",
+            lambda.FunctionName
         )
-        restParams.outputChannel.appendLine(String(err)) // linter hates toString on type any
-        restParams.outputChannel.appendLine('')
-        restParams.onRefresh() // Refresh in case it was already deleted.
+
+        showViewLogsMessage(message, window)
     } finally {
         recordLambdaDelete({
             createTime: startTime,

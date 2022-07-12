@@ -13,7 +13,7 @@ import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 
-import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
+import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
@@ -25,7 +25,7 @@ import {
     getLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
-import globals from '../../shared/extensionGlobals'
+
 
 export interface SelectLogStreamResponse {
     region: string
@@ -79,7 +79,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     public async pickLogStream(): Promise<string | undefined> {
         let telemetryResult: telemetry.Result = 'Succeeded'
 
-        const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
+        const client = new DefaultCloudWatchLogsClient(this.regionCode)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupName: this.logGroupName,
             orderBy: 'LastEventTime',
