@@ -23,7 +23,7 @@ class FakeNode extends AWSTreeNodeBase {
 }
 
 describe('searchLogGroup', async function () {
-    let fakeLogNodes: AWSTreeNodeBase[] = []
+    const fakeLogNodes: AWSTreeNodeBase[] = []
     let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
     let testPrompter: InputBoxPrompter
 

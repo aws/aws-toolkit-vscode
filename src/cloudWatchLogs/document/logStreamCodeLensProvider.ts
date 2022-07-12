@@ -30,7 +30,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
             title: localize('AWS.message.loading', 'Loading...'),
             command: 'aws.doNothingCommand',
         }
-        let codelenses = []
+        const codelenses = []
         const newerCodelense = {
             range: new vscode.Range(
                 new vscode.Position(document.lineCount - 1, 0),
