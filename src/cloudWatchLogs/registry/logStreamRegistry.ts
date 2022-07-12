@@ -146,7 +146,7 @@ export class LogStreamRegistry {
             const err = e as Error
             vscode.window.showErrorMessage(
                 localize(
-                    'AWS.cloudWatchLogs.viewLogStream.errorRetrievingLogs',
+                    'AWS.cwl.viewLogStream.errorRetrievingLogs',
                     'Error retrieving logs for Log Group {0} : {1}',
                     logGroupInfo.groupName,
                     err.message

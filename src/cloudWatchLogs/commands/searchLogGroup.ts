@@ -91,7 +91,7 @@ export interface SearchLogGroupWizardResponse {
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
     public constructor(logGroupNodes: AWSTreeNodeBase[]) {
         super()
-        // TODO: I want the filterPattern to only prompt if the logGroup is given and properly recieved.
+
         this.form.logGroup.bindPrompter(() => createLogGroupPrompter(logGroupNodes))
         this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
     }

@@ -64,11 +64,8 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         ),
         // AWS Explorer right-click action
         // Here instead of in ../awsexplorer/activation due to dependence on the registry.
-        Commands.register(
-            'aws.cloudWatchLogs.viewLogStream',
-            async (node: LogGroupNode) => await viewLogStream(node, registry)
-        ),
+        Commands.register('aws.cwl.viewLogStream', async (node: LogGroupNode) => await viewLogStream(node, registry)),
 
-        Commands.register('aws.cloudWatchLogs.searchLogGroup', async () => await searchLogGroup(registry))
+        Commands.register('aws.cwl.searchLogGroup', async () => await searchLogGroup(registry))
     )
 }
