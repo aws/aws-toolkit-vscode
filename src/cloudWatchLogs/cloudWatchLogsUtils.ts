@@ -49,7 +49,7 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
  * @param uri CloudWatchLogs Document URI
  * @returns
  */
-export function loadOlderRevelevant(uri: vscode.Uri): boolean {
+export function loadOlderRelevant(uri: vscode.Uri): boolean {
     const params = parseCloudWatchLogsUri(uri).parameters
     return params.filterPattern ? false : true
 }
