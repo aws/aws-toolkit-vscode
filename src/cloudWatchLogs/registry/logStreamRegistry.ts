@@ -10,10 +10,9 @@ import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
-import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 // TODO: Add debug logging statements
 
@@ -192,9 +191,7 @@ export async function filterLogEventsFromUriComponents(
     parameters: CloudWatchLogsParameters,
     nextToken?: string
 ): Promise<CloudWatchLogsResponse> {
-    const client: CloudWatchLogsClient = globals.toolkitClientBuilder.createCloudWatchLogsClient(
-        logGroupInfo.regionName
-    )
+    const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
     const response = await client.filterLogEvents({
         logGroupName: logGroupInfo.groupName,
@@ -212,7 +209,6 @@ export async function filterLogEventsFromUriComponents(
         nextBackwardToken: nextToken,
     }
 }
-
 
 export async function getLogEventsFromUriComponents(
     logGroupInfo: CloudWatchLogsGroupInfo,
