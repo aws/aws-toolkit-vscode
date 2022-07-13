@@ -13,7 +13,7 @@ import {
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
-import { CloudWatchLogsSettings, createURIFromArgs, uriToKey } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
