@@ -183,7 +183,7 @@ export class LogStreamRegistry {
         this.activeStreams.set(uriToKey(uri), stream)
     }
 
-    private getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
+    public getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
         return this.activeStreams.get(uriToKey(uri))
     }
 
