@@ -23,14 +23,20 @@ export function uriToKey(uri: vscode.Uri): string {
     // We sort the query object by key because queries can be identical semantically in different order.
     // `Any` is used as type hack to avoid errors when recreating the object.
     if (uri.query) {
-        const queryObject = JSON.parse(uri.query)
-        const orderedObject = Object.keys(queryObject)
-            .sort()
-            .reduce(function (acc: Any, key: string) {
-                acc[key] = queryObject[key]
-                return acc
-            }, {})
-        return uri.path + JSON.stringify(orderedObject)
+        try {
+            const queryObject = JSON.parse(uri.query)
+            const orderedObject = Object.keys(queryObject)
+                .sort()
+                .reduce(function (acc: Any, key: string) {
+                    acc[key] = queryObject[key]
+                    return acc
+                }, {})
+            return uri.path + JSON.stringify(orderedObject)
+        } catch {
+            throw new Error(
+                `Unable to parse ${uri.query} into JSON and therefore cannot key uri with path: ${uri.path}`
+            )
+        }
     }
     return uri.path
 }

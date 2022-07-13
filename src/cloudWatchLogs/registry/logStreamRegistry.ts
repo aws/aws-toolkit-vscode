@@ -177,7 +177,7 @@ export class LogStreamRegistry {
         return (log && log.busy) ?? false
     }
 
-    private setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
+    public setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
         this.activeStreams.set(uriToKey(uri), stream)
     }
 

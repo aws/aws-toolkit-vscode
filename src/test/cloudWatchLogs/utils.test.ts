@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { createURIFromArgs, parseCloudWatchLogsUri, uriToKey } from '../../cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsParameters } from '../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 
 const goodComponents = {
@@ -64,6 +65,21 @@ describe('uriToKey', function () {
             `${CLOUDWATCH_LOGS_SCHEME}:g:r
             ?${encodeURIComponent(JSON.stringify(goodComponents.parameters))}`
         )
+    })
+
+    it('throws error if query not parsable', function () {
+        const badUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:g:r?ThisIsNotAJson`)
+        assert.throws(() => uriToKey(badUri))
+    })
+
+    it('creates the same key for different order query', function () {
+        const param1: CloudWatchLogsParameters = { filterPattern: 'same', startTime: 0 }
+        const param2: CloudWatchLogsParameters = { startTime: 0, filterPattern: 'same' }
+        const firstOrder = createURIFromArgs(goodComponents.logGroupInfo, param1)
+        const secondOrder = createURIFromArgs(goodComponents.logGroupInfo, param2)
+
+        assert.notDeepStrictEqual(firstOrder, secondOrder)
+        assert.strictEqual(uriToKey(firstOrder), uriToKey(secondOrder))
     })
 
     it('creates unique strings for Uri with different parameters', function () {
