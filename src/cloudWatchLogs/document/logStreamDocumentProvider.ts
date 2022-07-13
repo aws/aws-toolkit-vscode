@@ -18,6 +18,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
     public constructor(private readonly registry: LogStreamRegistry) {
         this.registry.onDidChange(uri => {
             getLogger().debug(`Registry item changed: ${uri.path}`)
+            this.registry.getTextEditor(uri)
             this._onDidChange.fire(uri)
         })
     }

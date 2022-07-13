@@ -48,7 +48,9 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
         await registry.registerLog(uri, initialStreamData)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
-        await vscode.window.showTextDocument(doc, { preview: false })
+
+        const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+        registry.setTextEditor(uri, textEditor)
     } else {
         result = 'Cancelled'
     }

@@ -26,7 +26,6 @@ import {
 } from '../registry/logStreamRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 
-
 export interface SelectLogStreamResponse {
     region: string
     logGroupName: string
@@ -60,7 +59,8 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
         await registry.registerLog(uri, initialStreamData)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
-        await vscode.window.showTextDocument(doc, { preview: false })
+        const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+        registry.setTextEditor(uri, textEditor) // For consistency, even though this isn't necessary (for now)
     } else {
         result = 'Cancelled'
     }

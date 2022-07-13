@@ -206,4 +206,18 @@ describe('LogStreamRegistry', async function () {
             assert.strictEqual(timestamp, '2021-06-20T14:59:22.222+00:00')
         })
     })
+
+    describe('activeTextEditor', function () {
+        const fakeTextEditor = {} as vscode.TextEditor
+
+        it('returns undefined for unregistered textEditors', function () {
+            assert.strictEqual(registry.getTextEditor(shorterRegisteredUri), undefined)
+        })
+
+        it('registers and retrieves textEditor to activeTextEditors', function () {
+            assert.strictEqual(registry.getTextEditor(registeredUri), undefined)
+            registry.setTextEditor(registeredUri, fakeTextEditor)
+            assert.strictEqual(registry.getTextEditor(registeredUri), fakeTextEditor)
+        })
+    })
 })

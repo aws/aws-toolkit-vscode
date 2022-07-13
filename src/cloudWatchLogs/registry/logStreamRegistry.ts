@@ -13,6 +13,7 @@ import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../clo
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
+import { toJSON } from 'yaml/util'
 
 // TODO: Add debug logging statements
 
@@ -24,7 +25,8 @@ export class LogStreamRegistry {
 
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
-        private readonly activeStreams: Map<string, CloudWatchLogsData> = new Map<string, CloudWatchLogsData>()
+        private readonly activeStreams: Map<string, CloudWatchLogsData> = new Map<string, CloudWatchLogsData>(),
+        private readonly activeTextEditors: Map<string, vscode.TextEditor> = new Map<string, vscode.TextEditor>()
     ) {}
 
     /**
@@ -183,6 +185,14 @@ export class LogStreamRegistry {
 
     private getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
         return this.activeStreams.get(uriToKey(uri))
+    }
+
+    public setTextEditor(uri: vscode.Uri, textEditor: vscode.TextEditor): void {
+        this.activeTextEditors.set(uriToKey(uri), textEditor)
+    }
+
+    public getTextEditor(uri: vscode.Uri): vscode.TextEditor | undefined {
+        return this.activeTextEditors.get(uriToKey(uri))
     }
 }
 
