@@ -322,6 +322,7 @@ export class InlineCompletion {
         config: ConfigurationEntry,
         autoTriggerType?: telemetry.CodewhispererAutomatedTriggerType
     ) {
+        RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
         RecommendationHandler.instance.clearRecommendations()
         this.setCodeWhispererStatusBarLoading()
         const isManualTrigger = triggerType === 'OnDemand'
@@ -347,6 +348,7 @@ export class InlineCompletion {
                 )
                 this.setCompletionItems(editor)
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
+                    RecommendationHandler.instance.reportUserDecisionOfCurrentRecommendation(editor, -1)
                     RecommendationHandler.instance.clearRecommendations()
                     break
                 }
