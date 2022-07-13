@@ -75,12 +75,10 @@ describe('downloadFileAsCommand', function () {
         verify(s3.downloadFileStream(anything(), anything())).never()
     })
 
-    it('shows an error message when download fails', async function () {
+    it('throws when download fails', async function () {
         when(s3.downloadFileStream(anything(), anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
-        await downloadFileAsCommand(node, window, new MockOutputChannel())
-
-        assert.ok(window.message.error?.includes('Failed to download'))
+        await assert.rejects(() => downloadFileAsCommand(node, window, new MockOutputChannel()), /Failed to download/)
     })
 })

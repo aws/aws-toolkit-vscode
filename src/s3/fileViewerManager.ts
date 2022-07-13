@@ -14,7 +14,7 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { downloadFile } from './commands/downloadFileAs'
 import { s3FileViewerHelpUrl } from '../shared/constants'
 import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
-import { ToolkitError } from '../shared/toolkitError'
+import { getTelemetryResult } from '../shared/errors'
 import { Result, recordS3DownloadObject, recordS3UploadObject } from '../shared/telemetry/telemetry'
 import { PromptSettings } from '../shared/settings'
 
@@ -72,8 +72,7 @@ export class S3FileProvider implements FileProvider {
 
         // There's no way to 'silently' fail here which is why we let the error bubble up
         result.catch(err => {
-            const result = (err instanceof ToolkitError ? err?.metric?.result : undefined) ?? 'Failed'
-            recordS3DownloadObject({ result, component: 'viewer' })
+            recordS3DownloadObject({ result: getTelemetryResult(err), component: 'viewer' })
         })
 
         return result

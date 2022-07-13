@@ -4,11 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { ToolkitError } from '../../shared/toolkitError'
-import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { getTelemetryResult } from '../../shared/errors'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -48,21 +45,8 @@ function runWithTelemetry(fn: () => Promise<void>, mode: TabMode): Promise<void>
     return fn()
         .then(() => recordMetric('Succeeded'))
         .catch(err => {
-            if (CancellationError.isUserCancelled(err)) {
-                return recordMetric('Cancelled')
-            }
-            if (!(err instanceof ToolkitError)) {
-                throw err // TODO: add util for 'fatal' errors unhandled by our own code
-            }
-
-            const result: telemetry.Result = err.cancelled ? 'Cancelled' : 'Failed'
-            if (result !== 'Cancelled') {
-                if (err.detail) {
-                    getLogger().error(err.detail)
-                }
-                showViewLogsMessage(err.message)
-            }
-            recordMetric(result)
+            recordMetric(getTelemetryResult(err))
+            throw err
         })
 }
 

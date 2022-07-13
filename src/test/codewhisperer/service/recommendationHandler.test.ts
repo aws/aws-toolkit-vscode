@@ -128,7 +128,6 @@ describe('recommendationHandler', function () {
                 codewhispererAutomatedTriggerType: 'Enter',
                 codewhispererCompletionType: 'Line',
                 result: 'Succeeded',
-                duration: 0.0,
                 codewhispererLineNumber: 1,
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',

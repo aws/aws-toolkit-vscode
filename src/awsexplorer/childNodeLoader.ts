@@ -26,7 +26,7 @@ export class ChildNodeLoader<T extends AWSTreeNodeBase = AWSTreeNodeBase> {
     private cache: ChildNodeCache<T>
 
     public constructor(
-        parent: LoadMoreNode,
+        parent: AWSTreeNodeBase & LoadMoreNode,
         loadPage: (continuationToken: string | undefined) => Promise<ChildNodePage<T>>
     ) {
         this.loadPage = loadPage

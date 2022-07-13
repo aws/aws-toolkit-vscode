@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import { createBucketCommand } from '../../../s3/commands/createBucket'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
@@ -40,29 +41,19 @@ describe('createBucketCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await createBucketCommand(node, new FakeWindow(), new FakeCommands())
+        await assert.rejects(() => createBucketCommand(node, new FakeWindow(), new FakeCommands()), CancellationError)
 
         verify(s3.createFolder(anything())).never()
     })
 
-    it('shows an error message and refreshes node when bucket creation fails', async function () {
+    it('throws an error and refreshes node when bucket creation fails', async function () {
         when(s3.createBucket(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ inputBox: { input: bucketName } })
         const commands = new FakeCommands()
-        await createBucketCommand(node, window, commands)
-
-        assert.ok(window.message.error?.includes('Failed to create bucket'))
+        await assert.rejects(() => createBucketCommand(node, window, commands), /Failed to create bucket/)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
-    })
-
-    it('warns when bucket name is invalid', async function () {
-        const window = new FakeWindow({ inputBox: { input: 'gg' } })
-        const commands = new FakeCommands()
-        await createBucketCommand(node, window, commands)
-
-        assert.strictEqual(window.inputBox.errorMessage, 'Bucket name must be between 3 and 63 characters long')
     })
 })

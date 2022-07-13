@@ -153,20 +153,15 @@ export class DefaultS3Client {
         getLogger().debug('CreateBucket called with request: %O', request)
         const s3 = await this.createS3()
 
-        try {
-            await s3
-                .createBucket({
-                    Bucket: request.bucketName,
-                    // Passing us-east-1 for LocationConstraint breaks creating bucket. To make a bucket in us-east-1, you need to
-                    // not pass a region, so check for this case.
-                    CreateBucketConfiguration:
-                        this.regionCode == 'us-east-1' ? undefined : { LocationConstraint: this.regionCode },
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to create bucket %s: %O', request.bucketName, e)
-            throw e
-        }
+        await s3
+            .createBucket({
+                Bucket: request.bucketName,
+                // Passing us-east-1 for LocationConstraint breaks creating bucket. To make a bucket in us-east-1, you need to
+                // not pass a region, so check for this case.
+                CreateBucketConfiguration:
+                    this.regionCode == 'us-east-1' ? undefined : { LocationConstraint: this.regionCode },
+            })
+            .promise()
 
         const response: CreateBucketResponse = {
             bucket: new DefaultBucket({
@@ -193,19 +188,8 @@ export class DefaultS3Client {
         const { bucketName } = request
         const s3 = await this.createS3()
 
-        try {
-            await this.emptyBucket(bucketName)
-        } catch (e) {
-            getLogger().error('Failed to empty bucket %s before deleting: %O', bucketName, e)
-            throw e
-        }
-
-        try {
-            await s3.deleteBucket({ Bucket: bucketName }).promise()
-        } catch (e) {
-            getLogger().error('Failed to delete bucket %s: %O', bucketName, e)
-            throw e
-        }
+        await this.emptyBucket(bucketName)
+        await s3.deleteBucket({ Bucket: bucketName }).promise()
 
         getLogger().debug('DeleteBucket succeeded')
     }
@@ -236,18 +220,13 @@ export class DefaultS3Client {
             bucketName: request.bucketName,
         })
 
-        try {
-            await s3
-                .upload({
-                    Bucket: request.bucketName,
-                    Key: request.path,
-                    Body: '',
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to create folder %s: %O', folder.name, e)
-            throw e
-        }
+        await s3
+            .upload({
+                Bucket: request.bucketName,
+                Key: request.path,
+                Body: '',
+            })
+            .promise()
 
         const response: CreateFolderResponse = { folder }
         getLogger().debug('CreateFolder returned response: %O', response)
@@ -276,13 +255,8 @@ export class DefaultS3Client {
         const readStream = s3.getObject({ Bucket: request.bucketName, Key: request.key }).createReadStream()
 
         const writeStream = this.fileStreams.createWriteStream(request.saveLocation)
+        await pipe(readStream, writeStream, request.progressListener)
 
-        try {
-            await pipe(readStream, writeStream, request.progressListener)
-        } catch (e) {
-            getLogger().error(`Failed to download %s from bucket %s: %O`, request.key, request.bucketName, e)
-            throw e
-        }
         getLogger().debug('DownloadFile succeeded')
     }
 
@@ -375,16 +349,9 @@ export class DefaultS3Client {
      */
     public async listAllBuckets(): Promise<S3.Bucket[]> {
         const s3 = await this.createS3()
+        const output = await s3.listBuckets().promise()
 
-        let s3Buckets: S3.Bucket[]
-        try {
-            const output = await s3.listBuckets().promise()
-            s3Buckets = output.Buckets ?? []
-        } catch (e) {
-            getLogger().error('Failed to list buckets: %O', e)
-            throw e
-        }
-        return s3Buckets
+        return output.Buckets ?? []
     }
 
     /**
@@ -457,21 +424,15 @@ export class DefaultS3Client {
 
         const s3 = await this.createS3()
 
-        let output: S3.ListObjectsV2Output
-        try {
-            output = await s3
-                .listObjectsV2({
-                    Bucket: request.bucketName,
-                    Delimiter: DEFAULT_DELIMITER,
-                    MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                    Prefix: request.folderPath,
-                    ContinuationToken: request.continuationToken,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to list files for bucket %s: %O', request.bucketName, e)
-            throw e
-        }
+        const output = await s3
+            .listObjectsV2({
+                Bucket: request.bucketName,
+                Delimiter: DEFAULT_DELIMITER,
+                MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+                Prefix: request.folderPath,
+                ContinuationToken: request.continuationToken,
+            })
+            .promise()
 
         const files: File[] = _(output.Contents)
             .reject(file => file.Key === request.folderPath)
@@ -518,20 +479,14 @@ export class DefaultS3Client {
         getLogger().debug('ListObjectVersions called with request: %O', request)
         const s3 = await this.createS3()
 
-        let output: S3.ListObjectVersionsOutput
-        try {
-            output = await s3
-                .listObjectVersions({
-                    Bucket: request.bucketName,
-                    MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                    KeyMarker: request.continuationToken?.keyMarker,
-                    VersionIdMarker: request.continuationToken?.versionIdMarker,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to list object versions: %O', e)
-            throw e
-        }
+        const output = await s3
+            .listObjectVersions({
+                Bucket: request.bucketName,
+                MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+                KeyMarker: request.continuationToken?.keyMarker,
+                VersionIdMarker: request.continuationToken?.versionIdMarker,
+            })
+            .promise()
 
         const response: ListObjectVersionsResponse = {
             objects: (output.Versions ?? []).map(version => ({
@@ -578,17 +533,12 @@ export class DefaultS3Client {
         getLogger().debug('DeleteObject called with request: %O', request)
         const s3 = await this.createS3()
 
-        try {
-            await s3
-                .deleteObject({
-                    Bucket: request.bucketName,
-                    Key: request.key,
-                })
-                .promise()
-        } catch (e) {
-            getLogger().error('Failed to delete object: %O', e)
-            throw e
-        }
+        await s3
+            .deleteObject({
+                Bucket: request.bucketName,
+                Key: request.key,
+            })
+            .promise()
 
         getLogger().debug('DeleteObject succeeded')
     }
@@ -606,25 +556,17 @@ export class DefaultS3Client {
         getLogger().debug('DeleteObjects called with request: %O', request)
         const s3 = await this.createS3()
 
-        let errors: S3.Error[]
-        try {
-            const output = await s3
-                .deleteObjects({
-                    Bucket: request.bucketName,
-                    Delete: {
-                        Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
-                        Quiet: true,
-                    },
-                })
-                .promise()
+        const output = await s3
+            .deleteObjects({
+                Bucket: request.bucketName,
+                Delete: {
+                    Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
+                    Quiet: true,
+                },
+            })
+            .promise()
 
-            errors = output.Errors ?? []
-        } catch (e) {
-            getLogger().error('Failed to delete objects: %O', e)
-            throw e
-        }
-
-        const response: DeleteObjectsResponse = { errors }
+        const response: DeleteObjectsResponse = { errors: output.Errors ?? [] }
         getLogger().debug('DeleteObjects returned response: %O', response)
         return response
     }
@@ -657,22 +599,17 @@ export class DefaultS3Client {
      * @throws Error if there is an error listing or deleting.
      */
     private async emptyBucket(bucketName: string): Promise<void> {
-        try {
-            for await (const { objects } of this.listObjectVersionsIterable({ bucketName })) {
-                if (_(objects).isEmpty()) {
-                    continue
-                }
-
-                const deleteObjectsResponse = await this.deleteObjects({ bucketName, objects })
-                if (!_(deleteObjectsResponse.errors).isEmpty()) {
-                    const e = new Error(inspect(deleteObjectsResponse.errors[0]))
-                    getLogger().error('Failed to delete %d objects: %O...', deleteObjectsResponse.errors.length, e)
-                    throw e
-                }
+        for await (const { objects } of this.listObjectVersionsIterable({ bucketName })) {
+            if (_(objects).isEmpty()) {
+                continue
             }
-        } catch (e) {
-            getLogger().error('Failed to empty bucket %s: %O', bucketName, e)
-            throw e
+
+            const deleteObjectsResponse = await this.deleteObjects({ bucketName, objects })
+            if (!_(deleteObjectsResponse.errors).isEmpty()) {
+                const e = new Error(inspect(deleteObjectsResponse.errors[0]))
+                getLogger().error('Failed to delete %d objects: %O...', deleteObjectsResponse.errors.length, e)
+                throw e
+            }
         }
     }
 }

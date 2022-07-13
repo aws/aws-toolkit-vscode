@@ -175,7 +175,7 @@ type FunctionNameFromName<S extends MetricName> = S extends `${infer N}_${infer 
 type FunctionFromName<S extends MetricName> = FunctionNameFromName<S> extends keyof Telemetry
     ? Telemetry[FunctionNameFromName<S>]
     : never
-type TelemetryMetric<K extends MetricName> = NonNullable<Parameters<FunctionFromName<K>>[0]>
+type TelemetryMetric<K extends MetricName> = Omit<NonNullable<Parameters<FunctionFromName<K>>[0]>, 'duration'>
 
 /**
  * Finds the first emitted telemetry metric with the given name, then checks if the metadata fields
@@ -195,7 +195,8 @@ export function assertTelemetry<K extends MetricName>(name: K, expected: Telemet
 
     const metadata = globals.telemetry.logger.query(query)
     assert.ok(metadata.length > 0, `Telemetry did not contain any metrics with the name "${name}"`)
-    assert.deepStrictEqual(metadata[0], expectedCopy)
+    // TODO: `duration` should not be in metadata and very little logic should be testing it
+    assert.deepStrictEqual({ ...metadata[0], duration: 0 }, { ...expectedCopy, duration: 0 })
 
     if (passive !== undefined) {
         const metric = globals.telemetry.logger.queryFull(query)
