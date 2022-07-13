@@ -121,6 +121,7 @@ export class RecommendationHandler {
         let nextToken = ''
         let errorCode = ''
         let req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
+        let shouldRecordServiceInvocation = false
 
         if (pagination) {
             req = EditorContext.buildListRecommendationRequest(editor as vscode.TextEditor, this.nextToken)
@@ -141,6 +142,7 @@ export class RecommendationHandler {
                 const codewhispererPromise = pagination
                     ? client.listRecommendations(req)
                     : client.generateRecommendations(req)
+                shouldRecordServiceInvocation = true
                 const resp = await this.getServerResponse(
                     triggerType,
                     config.isManualTriggerEnabled,
@@ -217,24 +219,25 @@ export class RecommendationHandler {
             recommendation.forEach((item, index) => {
                 getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
             })
-
-            telemetry.recordCodewhispererServiceInvocation({
-                codewhispererRequestId: requestId ? requestId : undefined,
-                codewhispererSessionId: sessionId ? sessionId : undefined,
-                codewhispererLastSuggestionIndex: this.recommendations.length - 1,
-                codewhispererTriggerType: triggerType,
-                codewhispererAutomatedTriggerType: autoTriggerType,
-                codewhispererCompletionType:
-                    invocationResult == 'Succeeded' ? TelemetryHelper.instance.completionType : undefined,
-                result: invocationResult,
-                duration: latency ? latency : 0,
-                codewhispererLineNumber: this.startPos.line ? this.startPos.line : 0,
-                codewhispererCursorOffset: TelemetryHelper.instance.cursorOffset
-                    ? TelemetryHelper.instance.cursorOffset
-                    : 0,
-                codewhispererLanguage: languageContext.language,
-                reason: reason ? reason.substring(0, 200) : undefined,
-            })
+            if (shouldRecordServiceInvocation) {
+                telemetry.recordCodewhispererServiceInvocation({
+                    codewhispererRequestId: requestId ? requestId : undefined,
+                    codewhispererSessionId: sessionId ? sessionId : undefined,
+                    codewhispererLastSuggestionIndex: this.recommendations.length - 1,
+                    codewhispererTriggerType: triggerType,
+                    codewhispererAutomatedTriggerType: autoTriggerType,
+                    codewhispererCompletionType:
+                        invocationResult == 'Succeeded' ? TelemetryHelper.instance.completionType : undefined,
+                    result: invocationResult,
+                    duration: latency ? latency : 0,
+                    codewhispererLineNumber: this.startPos.line ? this.startPos.line : 0,
+                    codewhispererCursorOffset: TelemetryHelper.instance.cursorOffset
+                        ? TelemetryHelper.instance.cursorOffset
+                        : 0,
+                    codewhispererLanguage: languageContext.language,
+                    reason: reason ? reason.substring(0, 200) : undefined,
+                })
+            }
             recommendation = recommendation.filter(r => r.content.length > 0)
 
             if (config.isIncludeSuggestionsWithCodeReferencesEnabled === false) {
