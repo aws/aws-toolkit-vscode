@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { LoginWizard } from './wizards/login'
-import { selectCawsResource, selectRepoForWorkspace } from './wizards/selectResource'
+import { selectCawsResource } from './wizards/selectResource'
 import { getLogger } from '../shared/logger'
 import { openCawsUrl } from './utils'
 import { CawsAuthenticationProvider } from './auth'
@@ -20,6 +20,7 @@ import { CawsClient, ConnectedCawsClient, CawsResource } from '../shared/clients
 import { createClientFactory, DevEnvId, getConnectedWorkspace, openDevEnv, toCawsGitUri } from './model'
 import { showConfigureWorkspace } from './vue/configure/backend'
 import { UpdateDevelopmentWorkspaceRequest } from '../../types/clientcodeaws'
+import { showCreateWorkspace } from './vue/create/backend'
 
 type LoginResult = 'Succeeded' | 'Cancelled' | 'Failed'
 
@@ -88,54 +89,6 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
         const resource = { name: repo, project, org }
         const uri = toCawsGitUri(client.identity.name, await getPat(), resource)
         await vscode.commands.executeCommand('git.clone', uri)
-    }
-}
-
-/** "Create CODE.AWS Development Environment" command. */
-export async function createDevEnv(client: ConnectedCawsClient): Promise<void> {
-    // TODO: add telemetry
-    const repo = await selectRepoForWorkspace(client)
-    const projectName = repo?.project.name
-    const organizationName = repo?.org.name
-
-    if (!projectName || !organizationName) {
-        return
-    }
-
-    const args = {
-        organizationName,
-        projectName,
-        ides: [
-            {
-                name: 'VSCode',
-                runtime: 'VSCode',
-            },
-        ],
-        repositories: [
-            {
-                repositoryName: repo.name,
-                branchName: repo.defaultBranch,
-            },
-        ],
-    }
-    const env = await client.createDevEnv(args)
-    try {
-        const request = {
-            id: env.id,
-            projectName: env.project.name,
-            organizationName: env.org.name,
-        }
-
-        await client.startEnvironmentWithProgress(request, 'RUNNING')
-    } catch (err) {
-        showViewLogsMessage(
-            localize(
-                'AWS.command.caws.createDevEnv.failed',
-                'Failed to create CODE.AWS development environment in "{0}": {1}',
-                projectName,
-                (err as Error).message
-            )
-        )
     }
 }
 
@@ -280,8 +233,8 @@ export class CawsCommands {
         return this.withClient(cloneCawsRepo, ...args)
     }
 
-    public createWorkspace(...args: WithClient<typeof createDevEnv>) {
-        return this.withClient(createDevEnv, ...args)
+    public async createWorkspace() {
+        return this.withClient(showCreateWorkspace.bind(undefined, globals.context))
     }
 
     public openResource(...args: WithClient<typeof openCawsResource>) {

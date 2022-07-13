@@ -52,8 +52,9 @@ import saveData from '../../webviews/mixins/saveData'
 import { createClass, createType } from '../../webviews/util'
 import { WorkspaceSettings } from '../commands'
 import { CawsConfigureWebview } from './configure/backend'
+import { CawsCreateWebview } from './create/backend'
 
-const client = WebviewClientFactory.create<CawsConfigureWebview>()
+const client = WebviewClientFactory.create<CawsConfigureWebview | CawsCreateWebview>()
 
 const DEFAULT_COMPUTE_SETTINGS = {
     inactivityTimeoutMinutes: 30,

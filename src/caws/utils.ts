@@ -54,7 +54,7 @@ export function toCawsUrl(resource: CawsResource): string {
         case 'repo':
             return format(resource.org.name, resource.project.name, resource.name)
         case 'branch':
-            return format(resource.repo.org.name, resource.repo.project.name, resource.repo.name, resource.name)
+            return format(resource.org.name, resource.project.name, resource.repo.name, resource.name)
         case 'env':
             // There's currently no page to view an individual workspace
             // This may be changed to direct to the underlying repository instead

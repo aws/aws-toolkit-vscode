@@ -126,12 +126,9 @@ export class CawsConfigureWebview extends VueWebview {
         openCawsUrl({
             type: 'branch',
             name: repo.branchName,
-            repo: {
-                type: 'repo',
-                org: this.workspace.summary.org,
-                project: this.workspace.summary.project,
-                name: repo.repositoryName,
-            },
+            repo: { name: repo.repositoryName },
+            org: { name: this.workspace.summary.org.name },
+            project: { name: this.workspace.summary.project.name },
         })
     }
 }

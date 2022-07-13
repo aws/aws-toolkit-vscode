@@ -16,7 +16,7 @@ import * as logger from '../logger/logger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
-import { assertHasProps, ClassToInterfaceType, RequiredProps } from '../utilities/tsUtils'
+import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
@@ -87,7 +87,9 @@ export interface CawsRepo extends caws.SourceRepositorySummary {
 export interface CawsBranch extends caws.SourceBranchSummary {
     readonly type: 'branch'
     readonly name: string
-    readonly repo: CawsRepo
+    readonly repo: Pick<CawsRepo, 'name'>
+    readonly org: Pick<CawsOrg, 'name'>
+    readonly project: Pick<CawsProject, 'name'>
 }
 
 export type CawsResource = CawsOrg | CawsProject | CawsRepo | CawsBranch | DevelopmentWorkspace
@@ -102,6 +104,19 @@ function intoDevelopmentWorkspace(
         org: { name: organizationName },
         project: { name: projectName },
         ...summary,
+    }
+}
+
+function intoBranch(org: string, project: string, branch: caws.SourceBranchSummary): CawsBranch {
+    assertHasProps(branch, 'branchName', 'sourceRepositoryName')
+
+    return {
+        type: 'branch',
+        name: branch.branchName,
+        repo: { name: branch.sourceRepositoryName },
+        org: { name: org },
+        project: { name: project },
+        ...branch,
     }
 }
 
@@ -410,6 +425,16 @@ class CawsClientInternal {
                     ...s,
                 })) ?? []
         )
+    }
+
+    public listBranches(request: caws.ListSourceBranchesInput): AsyncCollection<CawsBranch[]> {
+        const requester = async (request: caws.ListSourceBranchesInput) =>
+            this.call(this.sdkClient.listSourceBranches(request), true, { items: [] })
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
+
+        return collection
+            .filter(isNonNullable)
+            .map(items => items.map(b => intoBranch(request.organizationName, request.projectName, b)))
     }
 
     /**
