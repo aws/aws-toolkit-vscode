@@ -4,10 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { query } from 'winston'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
-import { Any } from '../shared/utilities/typeConstructors'
 import { CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
 import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 

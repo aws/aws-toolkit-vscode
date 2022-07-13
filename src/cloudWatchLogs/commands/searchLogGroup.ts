@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import {
     CloudWatchLogsData,
     CloudWatchLogsGroupInfo,
@@ -13,7 +12,6 @@ import {
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
-import { CloudWatchLogsNode } from '../../../src/cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createInputBox } from '../../shared/ui/inputPrompter'
