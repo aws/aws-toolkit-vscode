@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { query } from 'winston'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
 import { Any } from '../shared/utilities/typeConstructors'
@@ -25,13 +26,18 @@ export function uriToKey(uri: vscode.Uri): string {
     if (uri.query) {
         try {
             const queryObject = JSON.parse(uri.query)
-            const orderedObject = Object.keys(queryObject)
-                .sort()
-                .reduce(function (acc: Any, key: string) {
-                    acc[key] = queryObject[key]
-                    return acc
-                }, {})
-            return uri.path + JSON.stringify(orderedObject)
+            const params: CloudWatchLogsParameters = {
+                filterPattern: queryObject.filterPattern,
+                startTime: queryObject.startTime,
+                limit: queryObject.limit,
+                streamName: queryObject.streamName,
+            }
+            return (
+                uri.path +
+                `:${params.filterPattern ?? ''}:${params.startTime ?? ''}: ${params.limit ?? ''}: ${
+                    params.streamName ?? ''
+                }`
+            )
         } catch {
             throw new Error(
                 `Unable to parse ${uri.query} into JSON and therefore cannot key uri with path: ${uri.path}`
