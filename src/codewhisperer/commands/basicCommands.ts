@@ -22,7 +22,7 @@ export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
     (context: ExtContext) => async () => {
         const autoTriggerEnabled: boolean = get(CodeWhispererConstants.autoTriggerEnabledKey, context) || false
-        set(CodeWhispererConstants.autoTriggerEnabledKey, !autoTriggerEnabled, context)
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, !autoTriggerEnabled, context)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     }
 )
@@ -45,7 +45,11 @@ export const enterAccessToken = Commands.declare(
     'aws.codeWhisperer.enterAccessToken',
     (context: ExtContext, client: DefaultCodeWhispererClient) => async () => {
         const setToken = async (token: string) => {
-            set(CodeWhispererConstants.accessToken, token, context)
+            try {
+                await context.extensionContext.globalState.update(CodeWhispererConstants.accessToken, token)
+            } catch (error) {
+                getLogger().error(`Failed to save access token: ${error}`)
+            }
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
         }
@@ -66,10 +70,10 @@ export const requestAccessCloud9 = Commands.declare(
             try {
                 await vscode.commands.executeCommand('cloud9.codeWhispererRequestAccess')
                 showTimedMessage(CodeWhispererConstants.cloud9AccessSent, 3000)
-                set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.RequestedAccess, context)
+                await set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.RequestedAccess, context)
             } catch (e) {
                 getLogger().error(`Encountered error when requesting cloud9 access ${e}`)
-                set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess, context)
+                await set(CodeWhispererConstants.cloud9AccessStateKey, Cloud9AccessState.NoAccess, context)
             }
         }
     }
@@ -109,7 +113,7 @@ export const updateCloud9TreeNodes = Commands.declare(
             for (let i = 0; i < 3; i++) {
                 const result = await testApiCall()
                 if (result) {
-                    context.extensionContext.globalState.update(
+                    await context.extensionContext.globalState.update(
                         CodeWhispererConstants.cloud9AccessStateKey,
                         Cloud9AccessState.HasAccess
                     )
@@ -119,14 +123,14 @@ export const updateCloud9TreeNodes = Commands.declare(
                 sleep(1000)
             }
             if (state !== Cloud9AccessState.RequestedAccess) {
-                context.extensionContext.globalState.update(
+                await context.extensionContext.globalState.update(
                     CodeWhispererConstants.cloud9AccessStateKey,
                     Cloud9AccessState.NoAccess
                 )
             }
         } catch (e) {
             getLogger().error(`Error when updateCloud9TreeNodes ${e}`)
-            context.extensionContext.globalState.update(
+            await context.extensionContext.globalState.update(
                 CodeWhispererConstants.cloud9AccessStateKey,
                 Cloud9AccessState.NoAccess
             )
@@ -163,8 +167,8 @@ export function get(key: string, context: ExtContext): any {
     return context.extensionContext.globalState.get(key)
 }
 
-export function set(key: string, value: any, context: ExtContext): void {
-    context.extensionContext.globalState.update(key, value).then(
+export async function set(key: string, value: any, context: ExtContext): Promise<void> {
+    await context.extensionContext.globalState.update(key, value).then(
         () => {},
         error => {
             getLogger().verbose(`Failed to update global state: ${error}`)
