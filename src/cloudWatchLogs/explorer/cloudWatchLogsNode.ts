@@ -30,7 +30,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
         this.logGroupNodes = new Map<string, LogGroupNode>()
     }
 
-    protected abstract getLogGroups(): Promise<Map<string, CloudWatchLogs.LogGroup>>
+    protected abstract getLogGroups(client: DefaultCloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>>
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
@@ -45,7 +45,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const logGroups = await this.getLogGroups()
+        const logGroups = await this.getLogGroups(this.cloudwatchClient)
 
         updateInPlace(
             this.logGroupNodes,
@@ -62,10 +62,7 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
         super('CloudWatch Logs', regionCode, client)
     }
 
-    protected async getLogGroups(): Promise<Map<string, CloudWatchLogs.LogGroup>> {
-        return toMap(
-            await toArrayAsync(this.cloudwatchClient.describeLogGroups()),
-            configuration => configuration.logGroupName
-        )
+    protected async getLogGroups(client: DefaultCloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
+        return toMap(await toArrayAsync(client.describeLogGroups()), configuration => configuration.logGroupName)
     }
 }

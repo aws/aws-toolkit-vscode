@@ -87,7 +87,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         }
         const qp = picker.createQuickPick({
             options: {
-                title: localize('AWS.cloudWatchLogs.viewLogStream.workflow.prompt', 'Select a log stream'),
+                title: localize('AWS.cwl.viewLogStream.workflow.prompt', 'Select a log stream'),
                 step: 1,
                 totalSteps: this.totalSteps,
             },
@@ -140,7 +140,7 @@ export function convertDescribeLogStreamsToQuickPickItems(
         label: stream.logStreamName!,
         detail: stream.lastEventTimestamp
             ? moment(stream.lastEventTimestamp).format(LOCALIZED_DATE_FORMAT)
-            : localize('AWS.cloudWatchLogs.viewLogStream.workflow.noStreams', '[No Log Events found]'),
+            : localize('AWS.cwl.viewLogStream.workflow.noStreams', '[No Log Events found]'),
     }))
 }
 

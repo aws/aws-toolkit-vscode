@@ -108,10 +108,10 @@ describe('LogStreamRegistry', async function () {
 
     beforeEach(function () {
         map = new Map<string, CloudWatchLogsData>()
-        map.set(registeredUri.path, stream1)
-        map.set(shorterRegisteredUri.path, simplerStream)
-        map.set(newLineUri.path, newLineStream)
         registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
+        registry.setLog(registeredUri, stream1)
+        registry.setLog(shorterRegisteredUri, simplerStream)
+        registry.setLog(newLineUri, newLineStream)
     })
 
     describe('hasLog', function () {

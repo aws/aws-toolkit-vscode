@@ -9,11 +9,10 @@ const localize = nls.loadMessageBundle()
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
-import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 // TODO: Add debug logging statements
 
@@ -54,7 +53,7 @@ export class LogStreamRegistry {
      * @param uri Document URI
      */
     public hasLog(uri: vscode.Uri): boolean {
-        return this.activeStreams.has(uri.path)
+        return this.activeStreams.has(uriToKey(uri))
     }
 
     /**
@@ -145,7 +144,7 @@ export class LogStreamRegistry {
             const err = e as Error
             vscode.window.showErrorMessage(
                 localize(
-                    'AWS.cloudWatchLogs.viewLogStream.errorRetrievingLogs',
+                    'AWS.cwl.viewLogStream.errorRetrievingLogs',
                     'Error retrieving logs for Log Group {0} : {1}',
                     logGroupInfo.groupName,
                     err.message
@@ -159,7 +158,7 @@ export class LogStreamRegistry {
      * @param uri Document URI
      */
     public deregisterLog(uri: vscode.Uri): void {
-        this.activeStreams.delete(uri.path)
+        this.activeStreams.delete(uriToKey(uri))
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
@@ -178,15 +177,38 @@ export class LogStreamRegistry {
         return (log && log.busy) ?? false
     }
 
-    private setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
-        this.activeStreams.set(uri.path, stream)
+    public setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
+        this.activeStreams.set(uriToKey(uri), stream)
     }
 
     private getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
-        return this.activeStreams.get(uri.path)
+        return this.activeStreams.get(uriToKey(uri))
     }
 }
 
+export async function filterLogEventsFromUriComponents(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    nextToken?: string
+): Promise<CloudWatchLogsResponse> {
+    const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
+
+    const response = await client.filterLogEvents({
+        logGroupName: logGroupInfo.groupName,
+        filterPattern: parameters.filterPattern,
+        nextToken,
+        limit: parameters.limit,
+    })
+
+    // Use heuristic of last token as backward token and next token as forward to generalize token form.
+    // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
+    // However, this fail wouldn't really impact customers.
+    return {
+        events: response.events ? response.events : [],
+        nextForwardToken: response.nextToken,
+        nextBackwardToken: nextToken,
+    }
+}
 
 export async function getLogEventsFromUriComponents(
     logGroupInfo: CloudWatchLogsGroupInfo,

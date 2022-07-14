@@ -5,7 +5,8 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { createURIFromArgs, parseCloudWatchLogsUri } from '../../cloudWatchLogs/cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri, uriToKey } from '../../cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsParameters } from '../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 
 const goodComponents = {
@@ -54,5 +55,50 @@ describe('createURIFromArgs', function () {
         assert.deepStrictEqual(testUri, goodUri)
         const testComponents = parseCloudWatchLogsUri(testUri)
         assert.deepStrictEqual(testComponents, goodComponents)
+    })
+})
+
+describe('uriToKey', function () {
+    let testUri: vscode.Uri
+    before(function () {
+        testUri = vscode.Uri.parse(
+            `${CLOUDWATCH_LOGS_SCHEME}:g:r
+            ?${encodeURIComponent(JSON.stringify(goodComponents.parameters))}`
+        )
+    })
+
+    it('throws error if query not parsable', function () {
+        const badUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:g:r?ThisIsNotAJson`)
+        assert.throws(() => uriToKey(badUri))
+    })
+
+    it('creates the same key for different order query', function () {
+        const param1: CloudWatchLogsParameters = { filterPattern: 'same', startTime: 0 }
+        const param2: CloudWatchLogsParameters = { startTime: 0, filterPattern: 'same' }
+        const firstOrder = createURIFromArgs(goodComponents.logGroupInfo, param1)
+        const secondOrder = createURIFromArgs(goodComponents.logGroupInfo, param2)
+
+        assert.notDeepStrictEqual(firstOrder, secondOrder)
+        assert.strictEqual(uriToKey(firstOrder), uriToKey(secondOrder))
+    })
+
+    it('creates unique strings for Uri with different parameters', function () {
+        const diffParameters = { streamName: 'NotIslandsInTheStream' }
+
+        const uriDiffParameters = vscode.Uri.parse(
+            `${CLOUDWATCH_LOGS_SCHEME}:g:r
+            ?${encodeURIComponent(JSON.stringify(diffParameters))}`
+        )
+
+        assert.notStrictEqual(uriToKey(testUri), uriToKey(uriDiffParameters))
+    })
+
+    it('creates unique strings for Uri with different log group info', function () {
+        const uriDiffGroup = vscode.Uri.parse(
+            `${CLOUDWATCH_LOGS_SCHEME}:g2:r2
+            ?${encodeURIComponent(JSON.stringify(goodComponents.parameters))}`
+        )
+
+        assert.notStrictEqual(uriToKey(testUri), uriToKey(uriDiffGroup))
     })
 })

@@ -60,7 +60,7 @@
         "onCommand:aws.cdk.refresh",
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
-        "onCommand:aws.cloudWatchLogs.viewLogStream",
+        "onCommand:aws.cwl.viewLogStream",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -180,10 +180,10 @@
                     "default": 5000,
                     "description": "%AWS.ssmDocument.ssm.maxItemsComputed.desc%"
                 },
-                "aws.cloudWatchLogs.limit": {
+                "aws.cwl.limit": {
                     "type": "number",
                     "default": 10000,
-                    "description": "%AWS.cloudWatchLogs.limit.desc%",
+                    "description": "%AWS.cwl.limit.desc%",
                     "maximum": 10000
                 },
                 "aws.samcli.manuallySelectedBuckets": {
@@ -837,7 +837,7 @@
                     "when": "resourceScheme == s3-readonly"
                 },
                 {
-                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "command": "aws.cwl.viewLogStream",
                     "when": "false"
                 },
                 {
@@ -1532,7 +1532,7 @@
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "command": "aws.cwl.viewLogStream",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
@@ -2418,7 +2418,7 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.cloudWatchLogs.viewLogStream",
+                "command": "aws.cwl.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2502,6 +2502,17 @@
             {
                 "command": "aws.copyLogStreamName",
                 "title": "%AWS.command.copyLogStreamName%",
+                "category": "%AWS.title%",
+                "icon": "$(files)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.searchLogGroup",
+                "title": "%AWS.command.cloudWatchLogs.searchLogGroup%",
                 "category": "%AWS.title%",
                 "icon": "$(files)",
                 "cloud9": {
