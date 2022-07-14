@@ -193,29 +193,38 @@ export async function updateSchemaFromRemote(params: {
 }): Promise<void> {
     const cachedVersion = params.extensionContext.globalState.get<string>(params.cacheKey)
     const outdated = params.version && params.version !== cachedVersion
-    if (!outdated) {
-        // Check that the cached file actually can be fetched. Else we might
-        // never update the cache.
-        const fileFetcher = new FileResourceFetcher(params.destination.fsPath)
-        const content = await fileFetcher.get()
-        if (content) {
-            return
+
+    // Check that the cached file actually can be fetched. Else we might
+    // never update the cache.
+    const fileFetcher = new FileResourceFetcher(params.destination.fsPath)
+    const cachedContent = await fileFetcher.get()
+
+    if (outdated || !cachedContent) {
+        try {
+            const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
+            const content = await httpFetcher.get()
+
+            if (!content) {
+                throw new Error(`failed to resolve schema: ${params.destination}`)
+            }
+
+            const parsedFile = { ...JSON.parse(content), title: params.title }
+            const dir = vscode.Uri.joinPath(params.destination, '..')
+            await SystemUtilities.createDirectory(dir)
+            await writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
+            await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
+                getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
+            })
+        } catch (err) {
+            if (cachedContent) {
+                getLogger().warn(
+                    `schemas: failed to fetch the latest version for "${params.title}": ${(err as Error).message}`
+                )
+            } else {
+                throw err
+            }
         }
     }
-
-    const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
-    const content = await httpFetcher.get()
-    if (!content) {
-        throw new Error(`failed to resolve schema: ${params.destination}`)
-    }
-
-    const parsedFile = { ...JSON.parse(content), title: params.title }
-    const dir = vscode.Uri.joinPath(params.destination, '..')
-    await SystemUtilities.createDirectory(dir)
-    await writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
-    await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
-        getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
-    })
 }
 
 /**
