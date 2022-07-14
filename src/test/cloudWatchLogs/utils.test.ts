@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { integer } from 'vscode-languageserver-types'
 import {
     createURIFromArgs,
     parseCloudWatchLogsUri,

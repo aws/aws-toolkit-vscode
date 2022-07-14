@@ -62,7 +62,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
             codelenses.push(oldCodeLense)
         }
         codelenses.push(newerCodelense)
-
+        this.registry.highlightDocument(uri) // This exists here because this is the last change made to the document before rendered.
         return uri.scheme === CLOUDWATCH_LOGS_SCHEME ? codelenses : []
     }
 }

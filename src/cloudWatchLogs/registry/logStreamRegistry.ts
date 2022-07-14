@@ -9,11 +9,10 @@ const localize = nls.loadMessageBundle()
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { toJSON } from 'yaml/util'
 
 // TODO: Add debug logging statements
 
@@ -95,7 +94,6 @@ export class LogStreamRegistry {
 
         return output
     }
-
     /**
      * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log (`'head'`) or end (`'tail'`)
      * @param uri Document URI
@@ -140,6 +138,10 @@ export class LogStreamRegistry {
                 ...tokens,
                 data: newData,
             })
+
+            if (this.hasTextEditor(uri)) {
+                this.highlightDocument(uri)
+            }
 
             this._onDidChange.fire(uri)
         } catch (e) {
@@ -193,6 +195,29 @@ export class LogStreamRegistry {
 
     public getTextEditor(uri: vscode.Uri): vscode.TextEditor | undefined {
         return this.activeTextEditors.get(uriToKey(uri))
+    }
+
+    public hasTextEditor(uri: vscode.Uri): boolean {
+        return this.activeTextEditors.has(uriToKey(uri))
+    }
+
+    public async highlightDocument(uri: vscode.Uri): Promise<void> {
+        const textEditor = this.getTextEditor(uri)
+        const logData = this.getLog(uri)
+
+        if (!logData) {
+            throw new Error(`Missing log data in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+        }
+
+        if (!textEditor) {
+            throw new Error(`Missing textEditor in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+        }
+
+        if (logData.parameters.filterPattern) {
+            const highlighter = vscode.window.createTextEditorDecorationType({ backgroundColor: 'blue' })
+            const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
+            textEditor.setDecorations(highlighter, ranges)
+        }
     }
 }
 

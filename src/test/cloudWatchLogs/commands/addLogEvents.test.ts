@@ -61,6 +61,9 @@ describe('addLogEvents', async function () {
         const fakeRegistry: LogStreamRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
+            highlightDocument: () => {
+                return
+            },
         } as any as LogStreamRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)

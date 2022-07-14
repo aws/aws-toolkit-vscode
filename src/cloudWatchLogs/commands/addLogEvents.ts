@@ -47,4 +47,5 @@ export async function addLogEvents(
     if (onDidChangeCodeLensEvent) {
         onDidChangeCodeLensEvent.fire()
     }
+    registry.highlightDocument(uri)
 }
