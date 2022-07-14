@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import {
     CloudWatchLogsSettings,
     createURIFromArgs,
-    loadOlderRelevant,
+    canShowPreviousLogs,
     uriToKey,
 } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
@@ -114,8 +114,8 @@ describe('LogStreamDocumentProvider', function () {
         assert(fakeGetLogsCodeLens)
         assert(fakeFilterLogsCodeLens)
 
-        assert.strictEqual(loadOlderRelevant(filterLogsUri), false)
-        assert.strictEqual(loadOlderRelevant(getLogsUri), true)
+        assert.strictEqual(canShowPreviousLogs(filterLogsUri), false)
+        assert.strictEqual(canShowPreviousLogs(getLogsUri), true)
         assert.notStrictEqual(fakeGetLogsCodeLens, fakeFilterLogsCodeLens)
     })
 })

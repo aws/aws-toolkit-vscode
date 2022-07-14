@@ -48,12 +48,7 @@ describe('searchLogGroup', async function () {
         tester.assertItems(['group-1', 'group-2', 'group-3'])
         const selection = 'group-2'
         tester.acceptItem(selection)
-        tester.result(selection)
-    })
-
-    it('creates an valid InputBox', async function () {
-        assert.strictEqual(inputBox.title, 'Keyword Search')
-        assert.strictEqual(inputBox.placeholder, 'Enter text here')
+        await tester.result(selection)
     })
 
     it('filterPattern InputBox accepts input', async function () {
