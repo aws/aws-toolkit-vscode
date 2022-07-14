@@ -199,30 +199,32 @@ export async function updateSchemaFromRemote(params: {
     const fileFetcher = new FileResourceFetcher(params.destination.fsPath)
     const cachedContent = await fileFetcher.get()
 
-    if (outdated || !cachedContent) {
-        try {
-            const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
-            const content = await httpFetcher.get()
+    if (!outdated && cachedContent) {
+        return
+    }
 
-            if (!content) {
-                throw new Error(`failed to resolve schema: ${params.destination}`)
-            }
+    try {
+        const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
+        const content = await httpFetcher.get()
 
-            const parsedFile = { ...JSON.parse(content), title: params.title }
-            const dir = vscode.Uri.joinPath(params.destination, '..')
-            await SystemUtilities.createDirectory(dir)
-            await writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
-            await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
-                getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
-            })
-        } catch (err) {
-            if (cachedContent) {
-                getLogger().warn(
-                    `schemas: failed to fetch the latest version for "${params.title}": ${(err as Error).message}`
-                )
-            } else {
-                throw err
-            }
+        if (!content) {
+            throw new Error(`failed to resolve schema: ${params.destination}`)
+        }
+
+        const parsedFile = { ...JSON.parse(content), title: params.title }
+        const dir = vscode.Uri.joinPath(params.destination, '..')
+        await SystemUtilities.createDirectory(dir)
+        await writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
+        await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, err => {
+            getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
+        })
+    } catch (err) {
+        if (cachedContent) {
+            getLogger().warn(
+                `schemas: failed to fetch the latest version for "${params.title}": ${(err as Error).message}`
+            )
+        } else {
+            throw err
         }
     }
 }
