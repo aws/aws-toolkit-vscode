@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { start } from 'repl'
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
@@ -23,19 +24,9 @@ export function uriToKey(uri: vscode.Uri): string {
     // `Any` is used as type hack to avoid errors when recreating the object.
     if (uri.query) {
         try {
-            const queryObject = JSON.parse(uri.query)
-            const params: CloudWatchLogsParameters = {
-                filterPattern: queryObject.filterPattern,
-                startTime: queryObject.startTime,
-                limit: queryObject.limit,
-                streamName: queryObject.streamName,
-            }
-            return (
-                uri.path +
-                `:${params.filterPattern ?? ''}:${params.startTime ?? ''}: ${params.limit ?? ''}: ${
-                    params.streamName ?? ''
-                }`
-            )
+            const { filterPattern, startTime, limit, streamName } = parseCloudWatchLogsUri(uri).parameters
+            const parts = [uri.path, filterPattern, startTime, limit, streamName]
+            return parts.map(p => p ?? '').join(':')
         } catch {
             throw new Error(
                 `Unable to parse ${uri.query} into JSON and therefore cannot key uri with path: ${uri.path}`

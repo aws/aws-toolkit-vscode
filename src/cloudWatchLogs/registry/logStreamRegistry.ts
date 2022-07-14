@@ -201,7 +201,7 @@ export async function filterLogEventsFromUriComponents(
     })
 
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
-    // Note that this fails if the contents of the calls are changing as they are being made.
+    // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
     // However, this fail wouldn't really impact customers.
     return {
         events: response.events ? response.events : [],
