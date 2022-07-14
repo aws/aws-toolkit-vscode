@@ -58,6 +58,7 @@ describe('addLogEvents', async function () {
             uri: uri,
         } as any as vscode.TextDocument
 
+        // highlightDocument function needed so that test does not throw error.
         const fakeRegistry: LogStreamRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
