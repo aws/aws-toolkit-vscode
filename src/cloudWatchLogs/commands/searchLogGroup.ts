@@ -57,7 +57,7 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
 
 async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.LogGroup>): Promise<string[]> {
     const logGroupsArray = []
-    for await (let logGroupObject of logGroups) {
+    for await (const logGroupObject of logGroups) {
         logGroupObject.logGroupName && logGroupsArray.push(logGroupObject.logGroupName)
     }
     return logGroupsArray
