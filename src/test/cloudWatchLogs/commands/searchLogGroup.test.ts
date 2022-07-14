@@ -10,53 +10,45 @@ import {
     createLogGroupPrompter,
     createFilterpatternPrompter,
 } from '../../../cloudWatchLogs/commands/searchLogGroup'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { createQuickPickTester } from '../../shared/ui/testUtils'
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
-import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
-
-class FakeNode extends AWSTreeNodeBase {
-    public constructor(label: string) {
-        super(label)
-    }
-}
+import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 
 describe('searchLogGroup', async function () {
-    const fakeLogNodes: AWSTreeNodeBase[] = []
+    const fakeLogGroups: string[] = []
     let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
     let testPrompter: InputBoxPrompter
+    let testWizard: WizardTester<SearchLogGroupWizard>
 
     before(function () {
-        fakeLogNodes.push(new FakeNode('group-1'), new FakeNode('group-2'), new FakeNode('group-3'))
+        fakeLogGroups.push('group-1', 'group-2', 'group-3')
         testPrompter = createFilterpatternPrompter()
 
         inputBox = exposeEmitters(testPrompter.inputBox, ['onDidAccept', 'onDidChangeValue', 'onDidTriggerButton'])
     })
 
-    it('Wizard accepts inputs', async function () {
-        const testWizard = createWizardTester(new SearchLogGroupWizard(fakeLogNodes))
-        const logGroupSelection = 'group-2'
-        testWizard.logGroup.applyInput(logGroupSelection)
-        testWizard.logGroup.assertValue(logGroupSelection)
+    beforeEach(function () {
+        testWizard = createWizardTester(new SearchLogGroupWizard(fakeLogGroups))
+    })
 
-        const filterPatternSelection = 'this is filter text'
-        testWizard.filterPattern.applyInput(filterPatternSelection)
-        testWizard.filterPattern.assertValue(filterPatternSelection)
+    it('shows logGroup prompt first', function () {
+        testWizard.logGroup.assertShow()
+        testWizard.logGroup.applyInput('group-1')
+    })
+
+    it('Shoes filterPattern prompt when logGroup is chosen', function () {
+        testWizard.logGroup.applyInput('group-2')
+        testWizard.filterPattern.assertShow()
     })
 
     it('creates Log Group prompter from TreeNodes', async function () {
-        const prompter = createLogGroupPrompter(fakeLogNodes)
+        const prompter = createLogGroupPrompter(fakeLogGroups)
         const tester = createQuickPickTester(prompter)
         tester.assertItems(['group-1', 'group-2', 'group-3'])
         const selection = 'group-2'
         tester.acceptItem(selection)
-        tester.result(selection)
-    })
-
-    it('creates an valid InputBox', async function () {
-        assert.strictEqual(inputBox.title, 'Keyword Search')
-        assert.strictEqual(inputBox.placeholder, 'Enter text here')
+        await tester.result(selection)
     })
 
     it('filterPattern InputBox accepts input', async function () {
