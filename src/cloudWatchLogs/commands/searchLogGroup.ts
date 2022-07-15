@@ -19,6 +19,7 @@ import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
+import { DataQuickPick } from '../../shared/ui/pickerPrompter'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -53,7 +54,7 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
-async function getLogGroupsFromRegion(regionCode: string) {
+async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
     const client = new DefaultCloudWatchLogsClient(regionCode)
     const logGroups = await logGroupsToArray(client.describeLogGroups())
     const options = logGroups.map<DataQuickPickItem<string>>(logGroupString => ({

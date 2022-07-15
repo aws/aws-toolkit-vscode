@@ -28,14 +28,22 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         super()
     }
 
+    public get menuPrompter() {
+        return createQuickPick<T | typeof switchRegion>(
+            this.itemsProvider(this.currentRegion),
+            this.options as ExtendedQuickPickOptions<T | typeof switchRegion>
+        )
+    }
+
+    public get regionPrompter() {
+        return createRegionPrompter(undefined, { defaultRegion: this.currentRegion })
+    }
+
     protected async promptUser(): Promise<PromptResult<RegionSubmenuResponse<T>>> {
         while (true) {
             switch (this.currentState) {
                 case 'data': {
-                    const prompter = createQuickPick<T | typeof switchRegion>(
-                        this.itemsProvider(this.currentRegion),
-                        this.options as ExtendedQuickPickOptions<T | typeof switchRegion>
-                    )
+                    const prompter = this.menuPrompter
 
                     prompter.quickPick.items = [
                         {
@@ -60,7 +68,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                     break
                 }
                 case 'region': {
-                    const prompter = createRegionPrompter(undefined, { defaultRegion: this.currentRegion })
+                    const prompter = this.regionPrompter
                     const resp = await prompter.prompt()
 
                     if (isValidResponse(resp)) {
