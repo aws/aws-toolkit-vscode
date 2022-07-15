@@ -13,7 +13,11 @@ import {
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
-import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import {
+    CloudWatchLogsSettings,
+    createURIFromArgs,
+    parseCloudWatchLogsUri,
+} from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
@@ -27,6 +31,17 @@ describe('LogStreamRegistry', async function () {
             events: [
                 {
                     message: newText,
+                },
+            ],
+        }
+    }
+
+    const fakeSearchLogGroup = async (): Promise<CloudWatchLogsResponse> => {
+        return {
+            events: [
+                {
+                    message: newText,
+                    logStreamName: 'testStreamName',
                 },
             ],
         }
@@ -101,10 +116,22 @@ describe('LogStreamRegistry', async function () {
         busy: false,
     }
 
-    const registeredUri = createURIFromArgs(stream1.logGroupInfo, {})
-    const shorterRegisteredUri = createURIFromArgs(simplerStream.logGroupInfo, {})
-    const missingRegisteredUri = createURIFromArgs(missingStream.logGroupInfo, {})
-    const newLineUri = createURIFromArgs(newLineStream.logGroupInfo, {})
+    const logGroupsStream: CloudWatchLogsData = {
+        data: [],
+        parameters: { streamName: 'testStreamName' },
+        logGroupInfo: {
+            groupName: 'thisIsAGroupName',
+            regionName: 'thisIsARegionCode',
+        },
+        retrieveLogsFunction: fakeSearchLogGroup,
+        busy: false,
+    }
+
+    const registeredUri = createURIFromArgs(stream1.logGroupInfo, stream1.parameters)
+    const shorterRegisteredUri = createURIFromArgs(simplerStream.logGroupInfo, simplerStream.parameters)
+    const missingRegisteredUri = createURIFromArgs(missingStream.logGroupInfo, missingStream.parameters)
+    const newLineUri = createURIFromArgs(newLineStream.logGroupInfo, newLineStream.parameters)
+    const searchLogGroupUri = createURIFromArgs(logGroupsStream.logGroupInfo, logGroupsStream.parameters)
 
     beforeEach(function () {
         map = new Map<string, CloudWatchLogsData>()
@@ -112,6 +139,9 @@ describe('LogStreamRegistry', async function () {
         registry.setLog(registeredUri, stream1)
         registry.setLog(shorterRegisteredUri, simplerStream)
         registry.setLog(newLineUri, newLineStream)
+        registry.setLog(searchLogGroupUri, logGroupsStream)
+
+        registry.updateLog(searchLogGroupUri)
     })
 
     describe('hasLog', function () {
@@ -167,6 +197,23 @@ describe('LogStreamRegistry', async function () {
                     INSIGHTS_TIMESTAMP_FORMAT
                 )}${'\t'}the${'\n'}                             ${'\t'}line${'\n'}                             ${'\t'}must${'\n'}                             ${'\t'}be${'\n'}                             ${'\t'}drawn${'\n'}                             ${'\t'}HERE${'\n'}                             ${'\t'}right${'\n'}                             ${'\t'}here${'\n'}                             ${'\t'}no${'\n'}                             ${'\t'}further\n`
             )
+        })
+
+        it('adds stream id to searches from searchLogGroup, but not viewLogStream', function () {
+            const viewLogStreamContent = registry.getLogContent(registeredUri)
+            const searchLogGroupContent = registry.getLogContent(searchLogGroupUri)
+
+            assert(viewLogStreamContent)
+            assert(searchLogGroupContent)
+
+            const searchLogGroupStreamName = parseCloudWatchLogsUri(searchLogGroupUri).parameters.streamName
+            const viewLogStreamName = parseCloudWatchLogsUri(registeredUri).parameters.streamName
+
+            assert(searchLogGroupStreamName)
+            assert(viewLogStreamName)
+
+            assert.strictEqual(viewLogStreamContent.indexOf(viewLogStreamName), -1)
+            assert.notDeepStrictEqual(searchLogGroupContent.indexOf(searchLogGroupStreamName), -1)
         })
     })
 
