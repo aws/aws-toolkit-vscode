@@ -90,14 +90,14 @@ export function createURIFromArgs(
  * @returns Ranges where pattern occurrs in document.
  */
 export function findOccurencesOf(document: vscode.TextDocument, keyword: string): vscode.Range[] {
-    var ranges: vscode.Range[] = []
+    const ranges: vscode.Range[] = []
     let lineNum = 0
 
     keyword = keyword.toLowerCase()
 
     while (lineNum < document.lineCount) {
-        let currentLine = document.lineAt(lineNum)
-        let currentLineText = currentLine.text.toLowerCase()
+        const currentLine = document.lineAt(lineNum)
+        const currentLineText = currentLine.text.toLowerCase()
         let indexOccurrence = currentLineText.indexOf(keyword, 0)
 
         while (indexOccurrence >= 0) {
