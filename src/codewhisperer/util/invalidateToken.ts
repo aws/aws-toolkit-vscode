@@ -8,6 +8,6 @@ import globals from '../../shared/extensionGlobals'
 import { CodeWhispererConstants } from '../models/constants'
 
 export const invalidateAccessToken = async () => {
-    globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
+    await globals.context.globalState.update(CodeWhispererConstants.accessToken, undefined)
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 }

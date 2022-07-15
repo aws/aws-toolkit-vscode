@@ -90,8 +90,8 @@ export async function activate(context: ExtContext): Promise<void> {
             if (configurationChangeEvent.affectsConfiguration('aws.experiments')) {
                 const codewhispererEnabled = await codewhispererSettings.isEnabled()
                 if (!codewhispererEnabled) {
-                    set(CodeWhispererConstants.termsAcceptedKey, false, context)
-                    set(CodeWhispererConstants.autoTriggerEnabledKey, false, context)
+                    await set(CodeWhispererConstants.termsAcceptedKey, false, context)
+                    await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context)
                     if (!isCloud9()) {
                         InlineCompletion.instance.hideCodeWhispererStatusBar()
                     }
@@ -106,15 +106,15 @@ export async function activate(context: ExtContext): Promise<void> {
          * Accept terms of service
          */
         Commands.register('aws.codeWhisperer.acceptTermsOfService', async () => {
-            set(CodeWhispererConstants.autoTriggerEnabledKey, true, context)
-            set(CodeWhispererConstants.termsAcceptedKey, true, context)
+            await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context)
+            await set(CodeWhispererConstants.termsAcceptedKey, true, context)
             await vscode.commands.executeCommand('setContext', CodeWhispererConstants.termsAcceptedKey, true)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
             const isShow = get(CodeWhispererConstants.welcomeMessageKey, context)
             if (!isShow) {
                 showCodeWhispererWelcomeMessage()
-                set(CodeWhispererConstants.welcomeMessageKey, true, context)
+                await set(CodeWhispererConstants.welcomeMessageKey, true, context)
             }
 
             if (!isCloud9()) {
@@ -125,7 +125,7 @@ export async function activate(context: ExtContext): Promise<void> {
          * Cancel terms of service
          */
         Commands.register('aws.codeWhisperer.cancelTermsOfService', async () => {
-            set(CodeWhispererConstants.autoTriggerEnabledKey, false, context)
+            await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         }),
         /**
