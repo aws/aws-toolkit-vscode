@@ -300,8 +300,15 @@ export type CloudWatchLogsAction = (
     nextToken?: string
 ) => Promise<CloudWatchLogsResponse>
 
+export type CloudWatchLogsExtendedLogEvent = CloudWatchLogs.OutputLogEvent & {
+    logStreamName?: string
+    eventId?: string
+}
+
+export type CloudWatchLogsExtendedLogEvents = CloudWatchLogsExtendedLogEvent[]
+
 export class CloudWatchLogsData {
-    data: CloudWatchLogs.OutputLogEvents = []
+    data: CloudWatchLogsExtendedLogEvents = []
     parameters: CloudWatchLogsParameters = {}
     logGroupInfo!: CloudWatchLogsGroupInfo
     retrieveLogsFunction!: CloudWatchLogsAction
