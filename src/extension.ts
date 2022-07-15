@@ -65,6 +65,7 @@ import { join } from 'path'
 import { Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands } from './shared/vscode/commands2'
+import { CfnCompletionProvider } from './cfn/completion'
 
 let localize: nls.LocalizeFunc
 
@@ -129,6 +130,14 @@ export async function activate(context: vscode.ExtensionContext) {
             telemetryService: globals.telemetry,
             credentialsStore,
         }
+
+        const cfnCompletionProvider = new CfnCompletionProvider()
+        const cfnTriggerCharacters = ['-', ':']
+        vscode.languages.registerCompletionItemProvider(
+            { language: 'yaml' },
+            cfnCompletionProvider,
+            ...cfnTriggerCharacters
+        )
 
         try {
             activateDev(extContext)

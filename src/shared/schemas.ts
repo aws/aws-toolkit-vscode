@@ -78,8 +78,8 @@ export class SchemaService {
     }
 
     public async start(): Promise<void> {
-        getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
-        await this.startTimer()
+        //getDefaultSchemas(this.extensionContext).then(schemas => (this.schemas = schemas))
+        //await this.startTimer()
     }
 
     /**
