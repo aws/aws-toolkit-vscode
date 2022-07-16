@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "\"Read-only file system\" error when deploying or debugging a SAM project #2395"
+}
