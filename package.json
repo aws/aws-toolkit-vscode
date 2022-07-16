@@ -1124,7 +1124,7 @@
                 },
                 {
                     "command": "aws.listCommands",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer && !isCloud9",
                     "group": "1_account@3"
                 },
                 {
