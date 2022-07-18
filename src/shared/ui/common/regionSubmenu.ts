@@ -29,10 +29,21 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
     }
 
     public get menuPrompter() {
-        return createQuickPick<T | typeof switchRegion>(
+        const prompter = createQuickPick<T | typeof switchRegion>(
             this.itemsProvider(this.currentRegion),
             this.options as ExtendedQuickPickOptions<T | typeof switchRegion>
         )
+
+        prompter.quickPick.items = [
+            {
+                label: 'Switch region',
+                data: switchRegion,
+                detail: `Showing groups for ${this.currentRegion}`,
+            },
+            ...prompter.quickPick.items,
+        ]
+
+        return prompter
     }
 
     public get regionPrompter() {
@@ -44,15 +55,6 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
             switch (this.currentState) {
                 case 'data': {
                     const prompter = this.menuPrompter
-
-                    prompter.quickPick.items = [
-                        {
-                            label: 'Switch region',
-                            data: switchRegion,
-                            detail: `Showing groups for ${this.currentRegion}`,
-                        },
-                        ...prompter.quickPick.items,
-                    ]
 
                     this.steps && prompter.setSteps(this.steps[0], this.steps[1])
 

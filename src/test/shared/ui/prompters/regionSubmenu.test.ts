@@ -39,10 +39,12 @@ describe('regionSubmenu', function () {
         menuTester = createQuickPickTester(SubmenuPrompter.menuPrompter)
         regionTester = createQuickPickTester(SubmenuPrompter.regionPrompter)
     })
-    // The menuTester.assertItems passes regardless of input???
+
     it('Prompts with log groups and escape hatch', async function () {
         const expectedMenuItems1 = ['testRegion1'].concat(region1Groups)
-        menuTester.assertItems(expectedMenuItems1)
+        console.log(expectedMenuItems1, menuTester.quickPick.items)
+        // The menuTester.assertItems passes regardless of input???
+        menuTester.assertItems(['none'])
     })
 
     it('Log Groups offered depend on region', async function () {
