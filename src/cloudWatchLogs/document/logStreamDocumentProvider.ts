@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
 import { uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
-import { listenerCount } from 'process'
 
 export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider {
     // Expose an event to signal changes of _virtual_ documents
