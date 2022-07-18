@@ -1472,6 +1472,11 @@
                     "group": "2@2"
                 },
                 {
+                    "command": "aws.cwl.searchLogGroup",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
+                },
+                {
                     "command": "aws.apig.copyUrl",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "2@0"
