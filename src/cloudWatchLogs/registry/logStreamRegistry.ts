@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
@@ -142,10 +142,6 @@ export class LogStreamRegistry {
                 data: newData,
             })
 
-            if (this.hasTextEditor(uri)) {
-                this.highlightDocument(uri)
-            }
-
             this._onDidChange.fire(uri)
         } catch (e) {
             const err = e as Error
@@ -206,25 +202,6 @@ export class LogStreamRegistry {
 
     public hasTextEditor(uri: vscode.Uri): boolean {
         return this.hasLog(uri) && this.getTextEditor(uri) !== undefined
-    }
-
-    public async highlightDocument(uri: vscode.Uri): Promise<void> {
-        const textEditor = this.getTextEditor(uri)
-        const logData = this.getLogData(uri)
-
-        if (!logData) {
-            throw new Error(`Missing log data in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
-        }
-
-        if (!textEditor) {
-            throw new Error(`Missing textEditor in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
-        }
-
-        if (logData.parameters.filterPattern) {
-            const highlighter = vscode.window.createTextEditorDecorationType({ backgroundColor: 'blue' })
-            const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
-            textEditor.setDecorations(highlighter, ranges)
-        }
     }
 }
 

@@ -51,7 +51,6 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
 
         const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
         registry.setTextEditor(uri, textEditor)
-        registry.highlightDocument(uri)
     } else {
         result = 'Cancelled'
     }

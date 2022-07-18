@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { canShowPreviousLogs } from '../cloudWatchLogsUtils'
+import { highlightDocument } from './logStreamDocumentProvider'
 
 export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
     public constructor(private readonly registry: LogStreamRegistry) {}
@@ -62,7 +63,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
             codelenses.push(oldCodeLense)
         }
         codelenses.push(newerCodelense)
-        this.registry.highlightDocument(uri) // This exists here because this is the last change made to the document before rendered.
+        highlightDocument(this.registry, uri) // This exists here because this is the last change made to the document before rendered.
         return uri.scheme === CLOUDWATCH_LOGS_SCHEME ? codelenses : []
     }
 }
