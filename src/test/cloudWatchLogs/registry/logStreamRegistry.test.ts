@@ -135,7 +135,6 @@ describe('LogStreamRegistry', async function () {
     const searchLogGroupUri = createURIFromArgs(logGroupsStream.logGroupInfo, logGroupsStream.parameters)
 
     beforeEach(function () {
-        map = new Map<string, ActiveTab>()
         registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
         registry.setLogData(registeredUri, stream1)
         registry.setLogData(shorterRegisteredUri, simplerStream)
