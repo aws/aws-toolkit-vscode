@@ -13,7 +13,8 @@ import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../clo
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-
+import { Timeout } from '../../shared/utilities/timeoutUtils'
+import { showMessageWithCancel } from '../../shared/utilities/messages'
 // TODO: Add debug logging statements
 
 /**
@@ -193,6 +194,8 @@ export async function filterLogEventsFromUriComponents(
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
+    const timeout = new Timeout(1) // How should I set this?
+    showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
     const response = await client.filterLogEvents({
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,
