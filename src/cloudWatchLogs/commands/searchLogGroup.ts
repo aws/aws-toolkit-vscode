@@ -18,24 +18,43 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
+import { LogGroupNode } from '../explorer/logGroupNode'
 
-export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
+export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
+    let logGroupInfo: CloudWatchLogsGroupInfo
+    let parameters: CloudWatchLogsParameters
+    let response: SearchLogGroupWizardResponse | undefined
+
     const regionCode = 'us-west-2'
-    const client = new DefaultCloudWatchLogsClient(regionCode)
-    const logGroups = await logGroupsToArray(client.describeLogGroups())
-    const response = await new SearchLogGroupWizard(logGroups).run()
+
+    if (node) {
+        if (!node.logGroup.logGroupName) {
+            throw new Error('CWL: Log Group node does not have name attached')
+        }
+        logGroupInfo = {
+            groupName: node.logGroup.logGroupName,
+            regionName: node.regionCode,
+        }
+
+        response = await new SearchLogGroupWizard([], logGroupInfo).run()
+    } else {
+        const regionCode = 'us-west-2'
+        const client = new DefaultCloudWatchLogsClient(regionCode)
+        const logGroups = await logGroupsToArray(client.describeLogGroups())
+        response = await new SearchLogGroupWizard(logGroups).run()
+    }
+
     if (response) {
-        const logGroupInfo: CloudWatchLogsGroupInfo = {
+        logGroupInfo = {
             groupName: response.logGroup,
             regionName: regionCode,
         }
 
-        const parameters: CloudWatchLogsParameters = {
+        parameters = {
             limit: registry.configuration.get('limit', 10000),
             filterPattern: response.filterPattern,
         }
-
         const uri = createURIFromArgs(logGroupInfo, parameters)
         const initialStreamData: CloudWatchLogsData = {
             data: [],
@@ -88,10 +107,13 @@ export interface SearchLogGroupWizardResponse {
 }
 
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
-    public constructor(logGroups: string[]) {
+    public constructor(logGroups: string[], logGroupInfo?: CloudWatchLogsGroupInfo) {
         super()
-
-        this.form.logGroup.bindPrompter(() => createLogGroupPrompter(logGroups))
+        if (!logGroupInfo) {
+            this.form.logGroup.bindPrompter(() => createLogGroupPrompter(logGroups))
+        } else {
+            this.form.logGroup.setDefault(logGroupInfo.groupName)
+        }
         this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
     }
 }
