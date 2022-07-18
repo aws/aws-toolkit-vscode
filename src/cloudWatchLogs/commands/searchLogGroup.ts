@@ -19,7 +19,6 @@ import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
-import { DataQuickPick } from '../../shared/ui/pickerPrompter'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -71,18 +70,6 @@ async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.
     }
     return logGroupsArray
 }
-
-// export function createLogGroupPrompter(logGroups: string[]) {
-//     const options = logGroups.map<DataQuickPickItem<string>>(logGroupString => ({
-//         label: logGroupString,
-//         data: logGroupString,
-//     }))
-
-//     return createQuickPick(options, {
-//         title: 'Select Log Group',
-//         placeholder: 'Enter text here',
-//     })
-// }
 
 export function createFilterpatternPrompter() {
     return createInputBox({
