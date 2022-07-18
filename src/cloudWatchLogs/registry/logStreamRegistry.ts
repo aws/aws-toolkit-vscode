@@ -85,7 +85,6 @@ export class LogStreamRegistry {
                 // log entries containing newlines are indented to the same length as the timestamp.
                 line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
             }
-            //Linting error here, not sure how to fix.
             if (datum.logStreamName) {
                 const logStream = `[streamID: ${datum.logStreamName}]`
                 line = logStream.concat('\t', line)
