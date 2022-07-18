@@ -1473,7 +1473,7 @@
                 },
                 {
                     "command": "aws.cwl.searchLogGroup",
-                    "group": "0@1",
+                    "group": "inline@1",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
                 {
@@ -2519,7 +2519,7 @@
                 "command": "aws.cwl.searchLogGroup",
                 "title": "%AWS.command.cloudWatchLogs.searchLogGroup%",
                 "category": "%AWS.title%",
-                "icon": "$(files)",
+                "icon": "$(search-view-icon)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
