@@ -18,6 +18,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
+import { highlightDocument } from '../document/logStreamDocumentProvider'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -51,6 +52,11 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
 
         const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
         registry.setTextEditor(uri, textEditor)
+        // Initial highlighting of the document and then for any addLogEvent calls.
+        highlightDocument(registry, uri)
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) =>
+            highlightDocument(registry, uri)
+        )
     } else {
         result = 'Cancelled'
     }
