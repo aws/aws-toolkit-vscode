@@ -10,6 +10,7 @@ import {
     CloudWatchLogsData,
     LogStreamRegistry,
     CloudWatchLogsResponse,
+    ActiveTab,
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
@@ -21,7 +22,7 @@ import {
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
-    let map: Map<string, CloudWatchLogsData>
+    let map: Map<string, ActiveTab>
 
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
@@ -134,12 +135,12 @@ describe('LogStreamRegistry', async function () {
     const searchLogGroupUri = createURIFromArgs(logGroupsStream.logGroupInfo, logGroupsStream.parameters)
 
     beforeEach(function () {
-        map = new Map<string, CloudWatchLogsData>()
+        map = new Map<string, ActiveTab>()
         registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
-        registry.setLog(registeredUri, stream1)
-        registry.setLog(shorterRegisteredUri, simplerStream)
-        registry.setLog(newLineUri, newLineStream)
-        registry.setLog(searchLogGroupUri, logGroupsStream)
+        registry.setLogData(registeredUri, stream1)
+        registry.setLogData(shorterRegisteredUri, simplerStream)
+        registry.setLogData(newLineUri, newLineStream)
+        registry.setLogData(searchLogGroupUri, logGroupsStream)
 
         registry.updateLog(searchLogGroupUri)
     })
