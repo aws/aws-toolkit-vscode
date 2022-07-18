@@ -6,12 +6,10 @@
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem } from '../../../../shared/ui/pickerPrompter'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
-import { Region } from '../../../../shared/regions/endpoints'
 
 describe('regionSubmenu', function () {
     let SubmenuPrompter: RegionSubmenu<string>
     let menuTester: QuickPickTester<any>
-    let regionTester: QuickPickTester<Region>
 
     const region1Groups = ['group1a', 'group1b', 'group1c']
     const region2Groups = ['group2a', 'group2b', 'group2c']
@@ -37,7 +35,6 @@ describe('regionSubmenu', function () {
         SubmenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'us-west-1')
 
         menuTester = createQuickPickTester(SubmenuPrompter.menuPrompter)
-        regionTester = createQuickPickTester(SubmenuPrompter.regionPrompter)
     })
 
     it('Prompts with log groups and escape hatch', async function () {
