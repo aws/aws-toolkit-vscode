@@ -7,7 +7,6 @@ import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem } from '../../../../shared/ui/pickerPrompter'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 import { Region } from '../../../../shared/regions/endpoints'
-import { assert } from 'console'
 
 describe('regionSubmenu', function () {
     let SubmenuPrompter: RegionSubmenu<string>
@@ -21,10 +20,10 @@ describe('regionSubmenu', function () {
         const fakeGroupProvider = function (regionCode: string) {
             let groupNames: Array<string>
             switch (regionCode) {
-                case 'testRegion1':
+                case 'us-west-1':
                     groupNames = region1Groups
                     break
-                case 'testRegion2':
+                case 'us-west-2':
                     groupNames = region2Groups
                     break
                 default:
@@ -35,25 +34,16 @@ describe('regionSubmenu', function () {
                 data: groupName,
             }))
         }
-        SubmenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'testRegion1')
+        SubmenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'us-west-1')
 
         menuTester = createQuickPickTester(SubmenuPrompter.menuPrompter)
         regionTester = createQuickPickTester(SubmenuPrompter.regionPrompter)
     })
 
-    it('Prompts with log groups and escape hatch', function () {
-        const expectedMenuItems1 = ['testRegion1'].concat(region1Groups)
-        // console.log(expectedMenuItems1, menuTester.quickPick.items)
-        // The menuTester.assertItems passes regardless of input???
-        menuTester.assertItems(['none'])
-    })
-
-    it('Log Groups offered depend on region', function () {
-        regionTester.acceptItem('testRegion2')
-
-        // reload the tester to have new region
-        menuTester = createQuickPickTester(SubmenuPrompter.menuPrompter)
-        const expectedMenuItems2 = ['testRegion2'].concat(region2Groups)
-        menuTester.assertItems(expectedMenuItems2)
+    it('Prompts with log groups and escape hatch', async function () {
+        const expectedMenuItems1 = ['Switch region'].concat(region1Groups)
+        menuTester.assertItems(expectedMenuItems1)
+        menuTester.acceptItem('group1a')
+        await menuTester.result()
     })
 })
