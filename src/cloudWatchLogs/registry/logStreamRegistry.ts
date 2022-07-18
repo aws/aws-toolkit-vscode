@@ -300,12 +300,12 @@ export type CloudWatchLogsAction = (
     nextToken?: string
 ) => Promise<CloudWatchLogsResponse>
 
-export type CloudWatchLogsExtendedLogEvent = CloudWatchLogs.OutputLogEvent & {
+export type CloudWatchLogsEvents = CloudWatchLogs.OutputLogEvent & {
     logStreamName?: string
     eventId?: string
 }
 
-export type CloudWatchLogsExtendedLogEvents = CloudWatchLogsExtendedLogEvent[]
+export type CloudWatchLogsExtendedLogEvents = CloudWatchLogsEvents[]
 
 export class CloudWatchLogsData {
     data: CloudWatchLogsExtendedLogEvents = []
