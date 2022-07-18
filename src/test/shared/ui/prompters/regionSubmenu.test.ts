@@ -7,6 +7,7 @@ import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem } from '../../../../shared/ui/pickerPrompter'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 import { Region } from '../../../../shared/regions/endpoints'
+import { assert } from 'console'
 
 describe('regionSubmenu', function () {
     let SubmenuPrompter: RegionSubmenu<string>
@@ -16,7 +17,7 @@ describe('regionSubmenu', function () {
     const region1Groups = ['group1a', 'group1b', 'group1c']
     const region2Groups = ['group2a', 'group2b', 'group2c']
 
-    before(function () {
+    before(async function () {
         const fakeGroupProvider = function (regionCode: string) {
             let groupNames: Array<string>
             switch (regionCode) {
@@ -40,14 +41,14 @@ describe('regionSubmenu', function () {
         regionTester = createQuickPickTester(SubmenuPrompter.regionPrompter)
     })
 
-    it('Prompts with log groups and escape hatch', async function () {
+    it('Prompts with log groups and escape hatch', function () {
         const expectedMenuItems1 = ['testRegion1'].concat(region1Groups)
-        console.log(expectedMenuItems1, menuTester.quickPick.items)
+        // console.log(expectedMenuItems1, menuTester.quickPick.items)
         // The menuTester.assertItems passes regardless of input???
         menuTester.assertItems(['none'])
     })
 
-    it('Log Groups offered depend on region', async function () {
+    it('Log Groups offered depend on region', function () {
         regionTester.acceptItem('testRegion2')
 
         // reload the tester to have new region
