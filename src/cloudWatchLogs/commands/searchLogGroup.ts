@@ -39,7 +39,6 @@ export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegi
 
         response = await new SearchLogGroupWizard([], logGroupInfo).run()
     } else {
-        const regionCode = 'us-west-2'
         const client = new DefaultCloudWatchLogsClient(regionCode)
         const logGroups = await logGroupsToArray(client.describeLogGroups())
         response = await new SearchLogGroupWizard(logGroups).run()
