@@ -8,6 +8,10 @@ import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
 import { uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
 
+const HIGHLIGHTER = vscode.window.createTextEditorDecorationType({
+    backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
+})
+
 export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider {
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
@@ -46,10 +50,7 @@ export async function highlightDocument(registry: LogStreamRegistry, uri: vscode
     }
 
     if (logData.parameters.filterPattern) {
-        const highlighter = vscode.window.createTextEditorDecorationType({
-            backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
-        })
         const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
-        textEditor.setDecorations(highlighter, ranges)
+        textEditor.setDecorations(HIGHLIGHTER, ranges)
     }
 }
