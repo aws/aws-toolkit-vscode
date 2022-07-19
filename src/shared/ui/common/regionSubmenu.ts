@@ -8,6 +8,8 @@ import { isValidResponse, StepEstimator } from '../../wizards/wizard'
 import { createQuickPick, ExtendedQuickPickOptions, ItemLoadTypes } from '../pickerPrompter'
 import { Prompter, PromptResult } from '../prompter'
 import { createRegionPrompter } from './region'
+import { QuickPickPrompter } from '../pickerPrompter'
+import { Region } from '../../regions/endpoints'
 
 const switchRegion = Symbol('switchRegion')
 
@@ -19,6 +21,8 @@ export interface RegionSubmenuResponse<T> {
 export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
     private currentState: 'data' | 'region' = 'data'
     private steps?: [current: number, total: number]
+    private activePrompter: QuickPickPrompter<typeof switchRegion | T> | QuickPickPrompter<Region> =
+        this.createMenuPrompter()
 
     public constructor(
         private readonly itemsProvider: (region: string) => ItemLoadTypes<T>,
@@ -28,7 +32,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         super()
     }
 
-    public get menuPrompter() {
+    public createMenuPrompter() {
         const prompter = createQuickPick<T | typeof switchRegion>(
             this.itemsProvider(this.currentRegion),
             this.options as ExtendedQuickPickOptions<T | typeof switchRegion>
@@ -46,21 +50,24 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         return prompter
     }
 
-    public get regionPrompter() {
-        return createRegionPrompter(undefined, { defaultRegion: this.currentRegion })
+    private switchState(newState: 'data' | 'region') {
+        this.currentState = newState
+        if (newState === 'data') {
+            this.activePrompter = this.createMenuPrompter()
+        } else {
+            this.activePrompter = createRegionPrompter(undefined, { defaultRegion: this.currentRegion })
+        }
     }
 
     protected async promptUser(): Promise<PromptResult<RegionSubmenuResponse<T>>> {
         while (true) {
             switch (this.currentState) {
                 case 'data': {
-                    const prompter = this.menuPrompter
+                    this.steps && this.activePrompter.setSteps(this.steps[0], this.steps[1])
 
-                    this.steps && prompter.setSteps(this.steps[0], this.steps[1])
-
-                    const resp = await prompter.prompt()
+                    const resp = await this.activePrompter.prompt()
                     if (resp === switchRegion) {
-                        this.currentState = 'region'
+                        this.switchState('region')
                     } else if (isValidResponse(resp)) {
                         return { region: this.currentRegion, data: resp }
                     } else {
@@ -70,14 +77,12 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                     break
                 }
                 case 'region': {
-                    const prompter = this.regionPrompter
-                    const resp = await prompter.prompt()
-
+                    const resp = await this.activePrompter.prompt()
                     if (isValidResponse(resp)) {
                         this.currentRegion = resp.id
                     }
 
-                    this.currentState = 'data'
+                    this.switchState('data')
 
                     break
                 }

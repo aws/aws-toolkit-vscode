@@ -34,7 +34,7 @@ describe('regionSubmenu', function () {
         }
         SubmenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'us-west-1')
 
-        menuTester = createQuickPickTester(SubmenuPrompter.menuPrompter)
+        menuTester = createQuickPickTester(SubmenuPrompter.createMenuPrompter())
     })
 
     it('Prompts with log groups and escape hatch', async function () {
