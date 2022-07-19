@@ -13,7 +13,7 @@ import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../clo
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
+import { CancellationError, Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 // TODO: Add debug logging statements
 
@@ -198,7 +198,7 @@ export async function filterLogEventsFromUriComponents(
 ): Promise<CloudWatchLogsResponse | void> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    const timeout = new Timeout(5000) // How should I set this? This waits up to 5 seconds now
+    const timeout = new Timeout(10000) // How should I set this? This waits up to 5 seconds now
     showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
     const responsePromise = client.filterLogEvents({
         logGroupName: logGroupInfo.groupName,
@@ -220,7 +220,12 @@ export async function filterLogEventsFromUriComponents(
             }
         }
     } catch (err) {
-        return
+        if (!CancellationError.isUserCancelled(err)) {
+            getLogger().error(`cloudwatchlogs: failed to recieve log data for ${logGroupInfo}`)
+            throw err
+        } else {
+            getLogger().info('cloudwatchlogs: user cancelled search')
+        }
     }
 }
 
