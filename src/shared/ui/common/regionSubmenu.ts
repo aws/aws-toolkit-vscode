@@ -72,7 +72,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                     if (resp === switchRegion) {
                         this.switchState('region')
                     } else if (isValidResponse(resp)) {
-                        return { region: this.currentRegion, data: resp }
+                        return { region: this.currentRegion, data: resp as Awaited<T> }
                     } else {
                         return resp
                     }
@@ -80,7 +80,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                     break
                 }
                 case 'region': {
-                    const resp = await this.activePrompter.prompt()
+                    const resp = (await this.activePrompter.prompt()) as Region
                     if (isValidResponse(resp)) {
                         this.currentRegion = resp.id
                     }
