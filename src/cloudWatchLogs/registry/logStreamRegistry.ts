@@ -13,7 +13,7 @@ import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../clo
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { Timeout } from '../../shared/utilities/timeoutUtils'
+import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 // TODO: Add debug logging statements
 
@@ -115,7 +115,11 @@ export class LogStreamRegistry {
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
             const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
-
+            if (!logEvents) {
+                // This means the user cancelled the search
+                this.deregisterLog(uri)
+                return
+            }
             const newData =
                 headOrTail === 'head'
                     ? (logEvents.events ?? []).concat(stream.data)
@@ -191,25 +195,32 @@ export async function filterLogEventsFromUriComponents(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
     nextToken?: string
-): Promise<CloudWatchLogsResponse> {
+): Promise<CloudWatchLogsResponse | void> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    const timeout = new Timeout(1) // How should I set this?
+    const timeout = new Timeout(5000) // How should I set this? This waits up to 5 seconds now
     showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
-    const response = await client.filterLogEvents({
+    const responsePromise = client.filterLogEvents({
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,
         nextToken,
         limit: parameters.limit,
     })
-
-    // Use heuristic of last token as backward token and next token as forward to generalize token form.
-    // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
-    // However, this fail wouldn't really impact customers.
-    return {
-        events: response.events ? response.events : [],
-        nextForwardToken: response.nextToken,
-        nextBackwardToken: nextToken,
+    let response
+    try {
+        response = await waitTimeout(responsePromise, timeout)
+        // Use heuristic of last token as backward token and next token as forward to generalize token form.
+        // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
+        // However, this fail wouldn't really impact customers.
+        if (response) {
+            return {
+                events: response.events ? response.events : [],
+                nextForwardToken: response.nextToken,
+                nextBackwardToken: nextToken,
+            }
+        }
+    } catch (err) {
+        return
     }
 }
 
@@ -261,7 +272,7 @@ export type CloudWatchLogsAction = (
     logGroupInfo: CloudWatchLogsGroupInfo,
     apiParameters: CloudWatchLogsParameters,
     nextToken?: string
-) => Promise<CloudWatchLogsResponse>
+) => Promise<CloudWatchLogsResponse | void>
 
 export class CloudWatchLogsData {
     data: CloudWatchLogs.OutputLogEvents = []
