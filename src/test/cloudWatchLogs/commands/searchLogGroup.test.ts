@@ -27,14 +27,9 @@ describe('searchLogGroup', async function () {
         testWizard = createWizardTester(new SearchLogGroupWizard())
     })
 
-    it('shows logGroup prompt first', function () {
-        testWizard.submenuResponse.assertShow()
-        testWizard.submenuResponse.applyInput({ region: 'testRegion', data: 'group-1' })
-    })
-
-    it('Shoes filterPattern prompt when logGroup is chosen', function () {
-        testWizard.submenuResponse.applyInput({ region: 'testRegion', data: 'group-1' })
-        testWizard.filterPattern.assertShow()
+    it('shows logGroup prompt first and filterPattern second', function () {
+        testWizard.submenuResponse.assertShowFirst()
+        testWizard.filterPattern.assertShowSecond()
     })
 
     it('filterPattern InputBox accepts input', async function () {
