@@ -257,7 +257,7 @@ export async function getLogEventsFromUriComponents(
 
 export interface ActiveTab {
     data: CloudWatchLogsData
-    editor: vscode.TextEditor | undefined
+    editor?: vscode.TextEditor
 }
 
 export type CloudWatchLogsGroupInfo = {
