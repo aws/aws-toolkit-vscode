@@ -55,7 +55,10 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         if (newState === 'data') {
             this.activePrompter = this.createMenuPrompter()
         } else {
-            this.activePrompter = createRegionPrompter(undefined, { defaultRegion: this.currentRegion })
+            this.activePrompter = createRegionPrompter(undefined, {
+                defaultRegion: this.currentRegion,
+                title: 'Select region for log group',
+            })
         }
     }
 
