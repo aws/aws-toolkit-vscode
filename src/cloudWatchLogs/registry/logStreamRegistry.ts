@@ -198,7 +198,7 @@ export async function filterLogEventsFromUriComponents(
 ): Promise<CloudWatchLogsResponse | void> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    const timeout = new Timeout(10000) // How should I set this? This waits up to 5 seconds now
+    const timeout = new Timeout(10000)
     showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
     const responsePromise = client.filterLogEvents({
         logGroupName: logGroupInfo.groupName,
