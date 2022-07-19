@@ -54,9 +54,11 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
         registry.setTextEditor(uri, textEditor)
         // Initial highlighting of the document and then for any addLogEvent calls.
         highlightDocument(registry, uri)
-        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) =>
-            highlightDocument(registry, uri)
-        )
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            if (event.document.uri.toString() === doc.uri.toString()) {
+                highlightDocument(registry, uri)
+            }
+        })
     } else {
         result = 'Cancelled'
     }
