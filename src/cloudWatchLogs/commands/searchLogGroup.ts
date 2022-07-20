@@ -19,6 +19,7 @@ import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { LogGroupNode } from '../explorer/logGroupNode'
+import { highlightDocument } from '../document/logStreamDocumentProvider'
 
 export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -66,7 +67,16 @@ export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegi
         await registry.registerLog(uri, initialStreamData)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
-        await vscode.window.showTextDocument(doc, { preview: false })
+
+        const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+        registry.setTextEditor(uri, textEditor)
+        // Initial highlighting of the document and then for any addLogEvent calls.
+        highlightDocument(registry, uri)
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            if (event.document.uri.toString() === doc.uri.toString()) {
+                highlightDocument(registry, uri)
+            }
+        })
     } else {
         result = 'Cancelled'
     }

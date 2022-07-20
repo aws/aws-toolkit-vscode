@@ -1473,7 +1473,12 @@
                 },
                 {
                     "command": "aws.cwl.searchLogGroup",
-                    "group": "inline@1",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
+                },
+                {
+                    "command": "aws.cwl.searchLogGroup",
+                    "group": "inline@0",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
                 {
