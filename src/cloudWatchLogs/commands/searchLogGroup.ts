@@ -221,6 +221,8 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                         return { start: startTime.valueOf(), end: endTime.valueOf() }
                     }
 
+                    this.switchState('recent-range')
+
                     break
                 }
             }
@@ -253,11 +255,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     }
 
     private parseDate(resp: string) {
-        // TODO: Validate that the date is correct.
         const parts = resp.split('-')
-        // if(parts.length !== 2) {
-        //     throw new Error('Incorrect')
-        // }
         return [new Date(parts[0]), new Date(parts[1])]
     }
 
