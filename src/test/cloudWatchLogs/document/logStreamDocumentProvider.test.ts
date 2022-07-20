@@ -9,7 +9,6 @@ import {
     CloudWatchLogsSettings,
     createURIFromArgs,
     canShowPreviousLogs,
-    uriToKey,
 } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
 import {
@@ -18,6 +17,7 @@ import {
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     CloudWatchLogsResponse,
+    ActiveTab,
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { Settings } from '../../../shared/settings'
 import { LogStreamCodeLensProvider } from '../../../cloudWatchLogs/document/logStreamCodeLensProvider'
@@ -51,7 +51,7 @@ async function testFilterLogEvents(
 }
 
 describe('LogStreamDocumentProvider', function () {
-    const map = new Map<string, CloudWatchLogsData>()
+    const map = new Map<string, ActiveTab>()
     let provider: LogStreamDocumentProvider
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
     const registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
@@ -90,9 +90,9 @@ describe('LogStreamDocumentProvider', function () {
     const filterLogsUri = createURIFromArgs(filterLogsStream.logGroupInfo, filterLogsStream.parameters)
 
     before(async function () {
+        registry.setLogData(getLogsUri, getLogsStream)
+        registry.setLogData(filterLogsUri, filterLogsStream)
         provider = new LogStreamDocumentProvider(registry)
-        map.set(uriToKey(getLogsUri), getLogsStream)
-        map.set(uriToKey(filterLogsUri), filterLogsStream)
     })
 
     it('provides content if it exists and a blank string if it does not', function () {

@@ -83,4 +83,35 @@ export function createURIFromArgs(
     return vscode.Uri.parse(uriStr)
 }
 
+/**
+ * Finds occurences of text in the document.
+ * @param document
+ * @param keyword
+ * @returns Ranges where pattern occurrs in document.
+ */
+export function findOccurencesOf(document: vscode.TextDocument, keyword: string): vscode.Range[] {
+    const ranges: vscode.Range[] = []
+    let lineNum = 0
+
+    keyword = keyword.toLowerCase()
+
+    while (lineNum < document.lineCount) {
+        const currentLine = document.lineAt(lineNum)
+        const currentLineText = currentLine.text.toLowerCase()
+        let indexOccurrence = currentLineText.indexOf(keyword, 0)
+
+        while (indexOccurrence >= 0) {
+            ranges.push(
+                new vscode.Range(
+                    new vscode.Position(lineNum, indexOccurrence),
+                    new vscode.Position(lineNum, indexOccurrence + keyword.length)
+                )
+            )
+            indexOccurrence = currentLineText.indexOf(keyword, indexOccurrence + 1)
+        }
+        lineNum += 1
+    }
+    return ranges
+}
+
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}
