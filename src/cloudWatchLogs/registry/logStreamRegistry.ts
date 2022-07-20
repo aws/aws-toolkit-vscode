@@ -115,10 +115,7 @@ export class LogStreamRegistry {
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
             const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
-            if (logEvents.cancelled) {
-                // This means the user cancelled the search
-                return
-            }
+
             const newData =
                 headOrTail === 'head'
                     ? (logEvents.events ?? []).concat(stream.data)
@@ -136,12 +133,13 @@ export class LogStreamRegistry {
                     token: logEvents.nextForwardToken ?? '',
                 }
             }
-
-            this.setLog(uri, {
-                ...stream,
-                ...tokens,
-                data: newData,
-            })
+            if (!logEvents.cancelled) {
+                this.setLog(uri, {
+                    ...stream,
+                    ...tokens,
+                    data: newData,
+                })
+            }
 
             this._onDidChange.fire(uri)
         } catch (e) {
@@ -226,6 +224,9 @@ export async function filterLogEventsFromUriComponents(
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
             getLogger().info('cloudwatchlogs: user cancelled search')
+        } else {
+            getLogger().info('')
+            throw err
         }
     }
     return {
