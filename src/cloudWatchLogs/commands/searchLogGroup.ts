@@ -14,11 +14,17 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createInputBox } from '../../shared/ui/inputPrompter'
+import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
+import { integer } from 'aws-sdk/clients/cloudfront'
+import { Prompter, PromptResult } from '../../shared/ui/prompter'
+import { createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
+import { ItemLoadTypes } from '../../shared/ui/pickerPrompter'
+import { isValidResponse } from '../../shared/wizards/wizard'
+import { StepEstimator } from '../../shared/wizards/wizard'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -28,10 +34,21 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
             groupName: response.submenuResponse.data,
             regionName: response.submenuResponse.region,
         }
+        let parameters: CloudWatchLogsParameters
 
-        const parameters: CloudWatchLogsParameters = {
-            limit: registry.configuration.get('limit', 10000),
-            filterPattern: response.filterPattern,
+        if (response.timeRange.start === response.timeRange.end) {
+            // this means no time filter.
+            parameters = {
+                limit: registry.configuration.get('limit', 10000),
+                filterPattern: response.filterPattern,
+            }
+        } else {
+            parameters = {
+                limit: registry.configuration.get('limit', 10000),
+                filterPattern: response.filterPattern,
+                startTime: response.timeRange.start,
+                endTime: response.timeRange.end,
+            }
         }
 
         const uri = createURIFromArgs(logGroupInfo, parameters)
@@ -85,6 +102,7 @@ export function createRegionSubmenu() {
 export interface SearchLogGroupWizardResponse {
     submenuResponse: RegionSubmenuResponse<string>
     filterPattern: string
+    timeRange: TimeFilterResponse
 }
 
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
@@ -92,5 +110,124 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
         super()
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
         this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
+        this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
     }
+}
+
+export interface TimeFilterResponse {
+    // # of miliseconds since january 1 1970 since thats what API expects.
+    readonly start: number
+    readonly end: number
+}
+
+const customRange = Symbol('customRange')
+
+export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
+    private currentState: 'custom-range' | 'recent-range' = 'recent-range'
+    private steps?: [current: number, total: number]
+    private activePrompter: QuickPickPrompter<typeof customRange | integer> | InputBoxPrompter =
+        this.createMenuPrompter()
+
+    public constructor() {
+        super()
+    }
+
+    private get recentTimeOptions(): ItemLoadTypes<integer> {
+        const options: DataQuickPickItem<integer>[] = []
+        options.push({
+            label: 'View all events',
+            data: 0,
+        })
+        options.push({
+            label: 'Last 1 Minute',
+            data: 1,
+        })
+        options.push({
+            label: 'Last 30 Minutes',
+            data: 30,
+        })
+        options.push({
+            label: 'Last 1 Hour',
+            data: 60,
+        })
+        options.push({
+            label: 'Last 12 Hours',
+            data: 60 * 12,
+        })
+        return options
+    }
+
+    public createMenuPrompter() {
+        const prompter = createQuickPick<integer | typeof customRange>(this.recentTimeOptions)
+
+        prompter.quickPick.items = [
+            {
+                label: 'Custom time range',
+                data: customRange,
+                detail: `YYYY/MM/DD-YYYY/MM/DD`,
+            },
+            ...prompter.quickPick.items,
+        ]
+
+        return prompter
+    }
+
+    private switchState(newState: 'custom-range' | 'recent-range') {
+        this.currentState = newState
+    }
+
+    protected async promptUser(): Promise<PromptResult<TimeFilterResponse>> {
+        while (true) {
+            switch (this.currentState) {
+                case 'recent-range': {
+                    const prompter = (this.activePrompter = this.createMenuPrompter())
+                    this.steps && prompter.setSteps(this.steps[0], this.steps[1])
+
+                    const resp = await prompter.prompt()
+                    if (resp === customRange) {
+                        this.switchState('custom-range')
+                    } else if (isValidResponse(resp)) {
+                        const [endTime, startTime] = [new Date(), new Date()]
+                        startTime.setHours(endTime.getHours() - resp)
+
+                        return { start: startTime.valueOf(), end: endTime.valueOf() }
+                    } else {
+                        return resp
+                    }
+
+                    break
+                }
+                case 'custom-range': {
+                    const prompter = (this.activePrompter = createInputBox())
+
+                    const resp = await prompter.prompt()
+                    if (isValidResponse(resp)) {
+                        const [startTime, endTime] = this.parseDate(resp)
+
+                        return { start: startTime.valueOf(), end: endTime.valueOf() }
+                    }
+
+                    break
+                }
+            }
+        }
+    }
+
+    public setSteps(current: number, total: number): void {
+        this.steps = [current, total]
+    }
+
+    private parseDate(resp: string) {
+        // TODO: Validate that the date is correct.
+        const parts = resp.split('-')
+        return [new Date(parts[0]), new Date(parts[1])]
+    }
+
+    // Unused
+    public get recentItem(): any {
+        return
+    }
+
+    public set recentItem(response: any) {}
+    public setStepEstimator(estimator: StepEstimator<TimeFilterResponse>): void {}
 }

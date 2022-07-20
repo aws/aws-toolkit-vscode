@@ -192,13 +192,19 @@ export async function filterLogEventsFromUriComponents(
     nextToken?: string
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
-
-    const response = await client.filterLogEvents({
+    let cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,
         nextToken,
         limit: parameters.limit,
-    })
+    }
+
+    if (parameters.startTime && parameters.endTime) {
+        cwlParameters.startTime = parameters.startTime
+        cwlParameters.endTime = parameters.endTime
+    }
+
+    const response = await client.filterLogEvents(cwlParameters)
 
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
     // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
@@ -244,6 +250,7 @@ export type CloudWatchLogsGroupInfo = {
 export type CloudWatchLogsParameters = {
     filterPattern?: string
     startTime?: number
+    endTime?: number
     limit?: number
     streamName?: string
 }
