@@ -19,12 +19,10 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
  * @returns
  */
 export function uriToKey(uri: vscode.Uri): string {
-    // We sort the query object by key because queries can be identical semantically in different order.
-    // `Any` is used as type hack to avoid errors when recreating the object.
     if (uri.query) {
         try {
-            const { filterPattern, startTime, limit, streamName } = parseCloudWatchLogsUri(uri).parameters
-            const parts = [uri.path, filterPattern, startTime, limit, streamName]
+            const { filterPattern, startTime, endTime, limit, streamName } = parseCloudWatchLogsUri(uri).parameters
+            const parts = [uri.path, filterPattern, startTime, endTime, limit, streamName]
             return parts.map(p => p ?? '').join(':')
         } catch {
             throw new Error(
