@@ -5,31 +5,41 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { SearchLogGroupWizard, createFilterpatternPrompter } from '../../../cloudWatchLogs/commands/searchLogGroup'
+import {
+    SearchLogGroupWizard,
+    createFilterpatternPrompter,
+    TimeFilterSubmenu,
+} from '../../../cloudWatchLogs/commands/searchLogGroup'
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
+import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtils'
 
 describe('searchLogGroup', async function () {
     const fakeLogGroups: string[] = []
     let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
     let testPrompter: InputBoxPrompter
     let testWizard: WizardTester<SearchLogGroupWizard>
+    let testTimeRangeMenu: TimeFilterSubmenu
+    let testSubmenu: QuickPickTester<any>
 
     before(function () {
         fakeLogGroups.push('group-1', 'group-2', 'group-3')
         testPrompter = createFilterpatternPrompter()
 
         inputBox = exposeEmitters(testPrompter.inputBox, ['onDidAccept', 'onDidChangeValue', 'onDidTriggerButton'])
+        testTimeRangeMenu = new TimeFilterSubmenu()
+        testSubmenu = createQuickPickTester(testTimeRangeMenu.createMenuPrompter())
     })
 
     beforeEach(function () {
         testWizard = createWizardTester(new SearchLogGroupWizard())
     })
 
-    it('shows logGroup prompt first and filterPattern second', function () {
+    it('shows logGroup prompt first and filterPattern second, then timerange submenu', function () {
         testWizard.submenuResponse.assertShowFirst()
         testWizard.filterPattern.assertShowSecond()
+        testWizard.timeRange.assertShowThird()
     })
 
     it('filterPattern InputBox accepts input', async function () {
@@ -45,4 +55,15 @@ describe('searchLogGroup', async function () {
         accept(testInput)
         assert.strictEqual(await result, testInput)
     })
+
+    it('Timerange Submenu gives option for custom input', async function () {
+        testSubmenu.assertContainsItems('Custom time range')
+        await testSubmenu.result()
+    })
+
+    it('Timerange Submenu prompts for custom input', async function () {
+        console.log('pass')
+    })
 })
+
+describe('')

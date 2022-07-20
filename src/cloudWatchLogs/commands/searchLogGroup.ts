@@ -208,7 +208,11 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                     break
                 }
                 case 'custom-range': {
-                    const prompter = (this.activePrompter = createInputBox())
+                    const prompter = (this.activePrompter = createInputBox({
+                        title: 'Enter custom date range',
+                        placeholder: 'YYYY/MM/DD-YYYY/MM/DD',
+                        validateInput: input => this.validateDate(input),
+                    }))
 
                     const resp = await prompter.prompt()
                     if (isValidResponse(resp)) {
@@ -223,6 +227,27 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         }
     }
 
+    private validateDate(input: string) {
+        const parts = input.split('-')
+        if (parts.length !== 2) {
+            return 'String must include two dates seperated by `-`'
+        }
+        const [startTime, endTime] = parts
+        if (!Date.parse(startTime)) {
+            return 'starting time format is invalid, use YYYY/MM/DD'
+        }
+        if (!Date.parse(endTime)) {
+            return 'ending time format is valid, use YYYY/MM/DD'
+        }
+        const regEx = /^\d{4}\/\d{2}\/\d{2}$/
+        if (startTime.match(regEx) === null || endTime.match(regEx) === null) {
+            return 'enter date in format YYYY/MM/DD-YYYY/MM/DD'
+        }
+        if (startTime === endTime) {
+            return 'must enter two different dates for valid range'
+        }
+    }
+
     public setSteps(current: number, total: number): void {
         this.steps = [current, total]
     }
@@ -230,6 +255,9 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     private parseDate(resp: string) {
         // TODO: Validate that the date is correct.
         const parts = resp.split('-')
+        // if(parts.length !== 2) {
+        //     throw new Error('Incorrect')
+        // }
         return [new Date(parts[0]), new Date(parts[1])]
     }
 
