@@ -115,9 +115,8 @@ export class LogStreamRegistry {
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
             const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
-            if (!logEvents) {
+            if (logEvents.cancelled) {
                 // This means the user cancelled the search
-                this.deregisterLog(uri)
                 return
             }
             const newData =
@@ -182,6 +181,10 @@ export class LogStreamRegistry {
         return (log && log.busy) ?? false
     }
 
+    public getLogCancelled(uri: vscode.Uri): boolean | undefined {
+        return this.getLog(uri)?.cancelled
+    }
+
     public setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
         this.activeStreams.set(uriToKey(uri), stream)
     }
@@ -195,7 +198,7 @@ export async function filterLogEventsFromUriComponents(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
     nextToken?: string
-): Promise<CloudWatchLogsResponse | void> {
+): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
     const timeout = new Timeout(10000)
@@ -206,9 +209,9 @@ export async function filterLogEventsFromUriComponents(
         nextToken,
         limit: parameters.limit,
     })
-    let response
     try {
-        response = await waitTimeout(responsePromise, timeout)
+        const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
+
         // Use heuristic of last token as backward token and next token as forward to generalize token form.
         // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
         // However, this fail wouldn't really impact customers.
@@ -217,15 +220,17 @@ export async function filterLogEventsFromUriComponents(
                 events: response.events ? response.events : [],
                 nextForwardToken: response.nextToken,
                 nextBackwardToken: nextToken,
+                cancelled: false,
             }
         }
     } catch (err) {
-        if (!CancellationError.isUserCancelled(err)) {
-            getLogger().error(`cloudwatchlogs: failed to recieve log data for ${logGroupInfo}`)
-            throw err
-        } else {
+        if (CancellationError.isUserCancelled(err)) {
             getLogger().info('cloudwatchlogs: user cancelled search')
         }
+    }
+    return {
+        events: [],
+        cancelled: true,
     }
 }
 
@@ -252,6 +257,7 @@ export async function getLogEventsFromUriComponents(
         events: response.events ? response.events : [],
         nextForwardToken: response.nextForwardToken,
         nextBackwardToken: response.nextBackwardToken,
+        cancelled: false,
     }
 }
 
@@ -271,13 +277,14 @@ export type CloudWatchLogsResponse = {
     events: CloudWatchLogs.FilteredLogEvents
     nextForwardToken?: CloudWatchLogs.NextToken
     nextBackwardToken?: CloudWatchLogs.NextToken
+    cancelled?: boolean
 }
 
 export type CloudWatchLogsAction = (
     logGroupInfo: CloudWatchLogsGroupInfo,
     apiParameters: CloudWatchLogsParameters,
     nextToken?: string
-) => Promise<CloudWatchLogsResponse | void>
+) => Promise<CloudWatchLogsResponse>
 
 export class CloudWatchLogsData {
     data: CloudWatchLogs.OutputLogEvents = []
@@ -291,4 +298,5 @@ export class CloudWatchLogsData {
         token: CloudWatchLogs.NextToken
     }
     busy: boolean = false
+    cancelled?: boolean = false
 }
