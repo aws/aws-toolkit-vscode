@@ -62,7 +62,6 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
             codelenses.push(oldCodeLense)
         }
         codelenses.push(newerCodelense)
-
         return uri.scheme === CLOUDWATCH_LOGS_SCHEME ? codelenses : []
     }
 }

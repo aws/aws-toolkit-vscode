@@ -25,6 +25,7 @@ import { createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompt
 import { ItemLoadTypes } from '../../shared/ui/pickerPrompter'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { StepEstimator } from '../../shared/wizards/wizard'
+import { highlightDocument } from '../document/logStreamDocumentProvider'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -63,7 +64,16 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
         await registry.registerLog(uri, initialStreamData)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
-        await vscode.window.showTextDocument(doc, { preview: false })
+
+        const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+        registry.setTextEditor(uri, textEditor)
+        // Initial highlighting of the document and then for any addLogEvent calls.
+        highlightDocument(registry, uri)
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            if (event.document.uri.toString() === doc.uri.toString()) {
+                highlightDocument(registry, uri)
+            }
+        })
     } else {
         result = 'Cancelled'
     }
@@ -125,7 +135,7 @@ const customRange = Symbol('customRange')
 export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     private currentState: 'custom-range' | 'recent-range' = 'recent-range'
     private steps?: [current: number, total: number]
-    private activePrompter: QuickPickPrompter<typeof customRange | integer> | InputBoxPrompter =
+    public activePrompter: QuickPickPrompter<typeof customRange | integer> | InputBoxPrompter =
         this.createMenuPrompter()
 
     public constructor() {

@@ -10,14 +10,19 @@ import {
     CloudWatchLogsData,
     LogStreamRegistry,
     CloudWatchLogsResponse,
+    ActiveTab,
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
-import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import {
+    CloudWatchLogsSettings,
+    createURIFromArgs,
+    parseCloudWatchLogsUri,
+} from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
-    let map: Map<string, CloudWatchLogsData>
+    let map: Map<string, ActiveTab>
 
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
@@ -27,6 +32,17 @@ describe('LogStreamRegistry', async function () {
             events: [
                 {
                     message: newText,
+                },
+            ],
+        }
+    }
+
+    const fakeSearchLogGroup = async (): Promise<CloudWatchLogsResponse> => {
+        return {
+            events: [
+                {
+                    message: newText,
+                    logStreamName: 'testStreamName',
                 },
             ],
         }
@@ -101,17 +117,31 @@ describe('LogStreamRegistry', async function () {
         busy: false,
     }
 
-    const registeredUri = createURIFromArgs(stream1.logGroupInfo, {})
-    const shorterRegisteredUri = createURIFromArgs(simplerStream.logGroupInfo, {})
-    const missingRegisteredUri = createURIFromArgs(missingStream.logGroupInfo, {})
-    const newLineUri = createURIFromArgs(newLineStream.logGroupInfo, {})
+    const logGroupsStream: CloudWatchLogsData = {
+        data: [],
+        parameters: { streamName: 'testStreamName' },
+        logGroupInfo: {
+            groupName: 'thisIsAGroupName',
+            regionName: 'thisIsARegionCode',
+        },
+        retrieveLogsFunction: fakeSearchLogGroup,
+        busy: false,
+    }
+
+    const registeredUri = createURIFromArgs(stream1.logGroupInfo, stream1.parameters)
+    const shorterRegisteredUri = createURIFromArgs(simplerStream.logGroupInfo, simplerStream.parameters)
+    const missingRegisteredUri = createURIFromArgs(missingStream.logGroupInfo, missingStream.parameters)
+    const newLineUri = createURIFromArgs(newLineStream.logGroupInfo, newLineStream.parameters)
+    const searchLogGroupUri = createURIFromArgs(logGroupsStream.logGroupInfo, logGroupsStream.parameters)
 
     beforeEach(function () {
-        map = new Map<string, CloudWatchLogsData>()
         registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
-        registry.setLog(registeredUri, stream1)
-        registry.setLog(shorterRegisteredUri, simplerStream)
-        registry.setLog(newLineUri, newLineStream)
+        registry.setLogData(registeredUri, stream1)
+        registry.setLogData(shorterRegisteredUri, simplerStream)
+        registry.setLogData(newLineUri, newLineStream)
+        registry.setLogData(searchLogGroupUri, logGroupsStream)
+
+        registry.updateLog(searchLogGroupUri)
     })
 
     describe('hasLog', function () {
@@ -168,6 +198,23 @@ describe('LogStreamRegistry', async function () {
                 )}${'\t'}the${'\n'}                             ${'\t'}line${'\n'}                             ${'\t'}must${'\n'}                             ${'\t'}be${'\n'}                             ${'\t'}drawn${'\n'}                             ${'\t'}HERE${'\n'}                             ${'\t'}right${'\n'}                             ${'\t'}here${'\n'}                             ${'\t'}no${'\n'}                             ${'\t'}further\n`
             )
         })
+
+        it('adds stream id to searches from searchLogGroup, but not viewLogStream', function () {
+            const viewLogStreamContent = registry.getLogContent(registeredUri)
+            const searchLogGroupContent = registry.getLogContent(searchLogGroupUri)
+
+            assert(viewLogStreamContent)
+            assert(searchLogGroupContent)
+
+            const searchLogGroupStreamName = parseCloudWatchLogsUri(searchLogGroupUri).parameters.streamName
+            const viewLogStreamName = parseCloudWatchLogsUri(registeredUri).parameters.streamName
+
+            assert(searchLogGroupStreamName)
+            assert(viewLogStreamName)
+
+            assert.strictEqual(viewLogStreamContent.indexOf(viewLogStreamName), -1)
+            assert.notDeepStrictEqual(searchLogGroupContent.indexOf(searchLogGroupStreamName), -1)
+        })
     })
 
     describe('updateLog', async function () {
@@ -204,6 +251,20 @@ describe('LogStreamRegistry', async function () {
             const time = 1624201162222 // 2021-06-20 14:59:22.222 GMT+0
             const timestamp = moment.utc(time).format(INSIGHTS_TIMESTAMP_FORMAT)
             assert.strictEqual(timestamp, '2021-06-20T14:59:22.222+00:00')
+        })
+    })
+
+    describe('activeTextEditor', function () {
+        const fakeTextEditor = {} as vscode.TextEditor
+
+        it('returns undefined for unregistered textEditors', function () {
+            assert.strictEqual(registry.getTextEditor(shorterRegisteredUri), undefined)
+        })
+
+        it('registers and retrieves textEditor to activeTextEditors', function () {
+            assert.strictEqual(registry.getTextEditor(registeredUri), undefined)
+            registry.setTextEditor(registeredUri, fakeTextEditor)
+            assert.strictEqual(registry.getTextEditor(registeredUri), fakeTextEditor)
         })
     })
 })

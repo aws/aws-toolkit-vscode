@@ -24,7 +24,7 @@ export class LogStreamRegistry {
 
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
-        private readonly activeStreams: Map<string, CloudWatchLogsData> = new Map<string, CloudWatchLogsData>()
+        private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
     ) {}
 
     /**
@@ -43,7 +43,7 @@ export class LogStreamRegistry {
         // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
         parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
-            this.setLog(uri, initialStreamData)
+            this.setLogData(uri, initialStreamData)
             await this.updateLog(uri, 'tail')
         }
     }
@@ -53,7 +53,7 @@ export class LogStreamRegistry {
      * @param uri Document URI
      */
     public hasLog(uri: vscode.Uri): boolean {
-        return this.activeStreams.has(uriToKey(uri))
+        return this.activeLogs.has(uriToKey(uri))
     }
 
     /**
@@ -67,7 +67,7 @@ export class LogStreamRegistry {
         // if no timestamp for some reason, entering a blank of equal length (29 characters long)
         const timestampSpaceEquivalent = '                             '
 
-        const currData = this.getLog(uri)
+        const currData = this.getLogData(uri)
 
         if (!currData) {
             return undefined
@@ -85,6 +85,10 @@ export class LogStreamRegistry {
                 // log entries containing newlines are indented to the same length as the timestamp.
                 line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
             }
+            if (datum.logStreamName) {
+                const logStream = `[streamID: ${datum.logStreamName}]`
+                line = logStream.concat('\t', line)
+            }
             if (!line.endsWith('\n')) {
                 line = line.concat('\n')
             }
@@ -93,7 +97,6 @@ export class LogStreamRegistry {
 
         return output
     }
-
     /**
      * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log (`'head'`) or end (`'tail'`)
      * @param uri Document URI
@@ -101,7 +104,7 @@ export class LogStreamRegistry {
      * @param getLogEventsFromUriComponentsFn Override for testing purposes.
      */
     public async updateLog(uri: vscode.Uri, headOrTail: 'head' | 'tail' = 'tail'): Promise<void> {
-        const stream = this.getLog(uri)
+        const stream = this.getLogData(uri)
         if (!stream) {
             getLogger().debug(`No registry entry for ${uri.path}`)
             return
@@ -133,7 +136,7 @@ export class LogStreamRegistry {
                 }
             }
 
-            this.setLog(uri, {
+            this.setLogData(uri, {
                 ...stream,
                 ...tokens,
                 data: newData,
@@ -158,13 +161,13 @@ export class LogStreamRegistry {
      * @param uri Document URI
      */
     public deregisterLog(uri: vscode.Uri): void {
-        this.activeStreams.delete(uriToKey(uri))
+        this.activeLogs.delete(uriToKey(uri))
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
-        const log = this.getLog(uri)
+        const log = this.getLogData(uri)
         if (log) {
-            this.setLog(uri, {
+            this.setLogData(uri, {
                 ...log,
                 busy: isBusy,
             })
@@ -172,17 +175,33 @@ export class LogStreamRegistry {
     }
 
     public getBusyStatus(uri: vscode.Uri): boolean {
-        const log = this.getLog(uri)
+        const log = this.getLogData(uri)
 
         return (log && log.busy) ?? false
     }
 
-    public setLog(uri: vscode.Uri, stream: CloudWatchLogsData): void {
-        this.activeStreams.set(uriToKey(uri), stream)
+    public setLogData(uri: vscode.Uri, newData: CloudWatchLogsData): void {
+        this.activeLogs.set(uriToKey(uri), { data: newData, editor: this.getTextEditor(uri) })
     }
 
-    private getLog(uri: vscode.Uri): CloudWatchLogsData | undefined {
-        return this.activeStreams.get(uriToKey(uri))
+    public getLogData(uri: vscode.Uri): CloudWatchLogsData | undefined {
+        return this.activeLogs.get(uriToKey(uri))?.data
+    }
+
+    public setTextEditor(uri: vscode.Uri, textEditor: vscode.TextEditor): void {
+        const oldData = this.getLogData(uri)
+        if (!oldData) {
+            throw new Error(`Unable to assign textEditor to activeLog entry ${uriToKey(uri)} with no log data.`)
+        }
+        this.activeLogs.set(uriToKey(uri), { data: oldData, editor: textEditor })
+    }
+
+    public getTextEditor(uri: vscode.Uri): vscode.TextEditor | undefined {
+        return this.activeLogs.get(uriToKey(uri))?.editor
+    }
+
+    public hasTextEditor(uri: vscode.Uri): boolean {
+        return this.hasLog(uri) && this.getTextEditor(uri) !== undefined
     }
 }
 
@@ -242,6 +261,11 @@ export async function getLogEventsFromUriComponents(
     }
 }
 
+export interface ActiveTab {
+    data: CloudWatchLogsData
+    editor?: vscode.TextEditor
+}
+
 export type CloudWatchLogsGroupInfo = {
     groupName: string
     regionName: string
@@ -267,8 +291,13 @@ export type CloudWatchLogsAction = (
     nextToken?: string
 ) => Promise<CloudWatchLogsResponse>
 
+export type CloudWatchLogsEvent = CloudWatchLogs.OutputLogEvent & {
+    logStreamName?: string
+    eventId?: string
+}
+
 export class CloudWatchLogsData {
-    data: CloudWatchLogs.OutputLogEvents = []
+    data: CloudWatchLogsEvent[] = []
     parameters: CloudWatchLogsParameters = {}
     logGroupInfo!: CloudWatchLogsGroupInfo
     retrieveLogsFunction!: CloudWatchLogsAction
