@@ -211,7 +211,7 @@ export async function filterLogEventsFromUriComponents(
     nextToken?: string
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
-    let cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
+    const cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,
         nextToken,

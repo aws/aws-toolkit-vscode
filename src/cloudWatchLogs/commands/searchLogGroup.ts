@@ -242,7 +242,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
             return 'ending time format is valid, use YYYY/MM/DD'
         }
         const regEx = /^\d{4}\/\d{2}\/\d{2}$/
-        if (startTime.match(regEx) === null || endTime.match(regEx) === null) {
+        if (!startTime.match(regEx) || !endTime.match(regEx)) {
             return 'enter date in format YYYY/MM/DD-YYYY/MM/DD'
         }
         if (startTime === endTime) {
