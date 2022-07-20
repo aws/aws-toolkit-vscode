@@ -52,27 +52,20 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
 
     private switchState(newState: 'data' | 'region') {
         this.currentState = newState
-        if (newState === 'data') {
-            this.activePrompter = this.createMenuPrompter()
-        } else {
-            this.activePrompter = createRegionPrompter(undefined, {
-                defaultRegion: this.currentRegion,
-                title: 'Select region for log group',
-            })
-        }
     }
 
     protected async promptUser(): Promise<PromptResult<RegionSubmenuResponse<T>>> {
         while (true) {
             switch (this.currentState) {
                 case 'data': {
-                    this.steps && this.activePrompter.setSteps(this.steps[0], this.steps[1])
+                    const prompter = (this.activePrompter = this.createMenuPrompter())
+                    this.steps && prompter.setSteps(this.steps[0], this.steps[1])
 
-                    const resp = await this.activePrompter.prompt()
+                    const resp = await prompter.prompt()
                     if (resp === switchRegion) {
                         this.switchState('region')
                     } else if (isValidResponse(resp)) {
-                        return { region: this.currentRegion, data: resp as Awaited<T> }
+                        return { region: this.currentRegion, data: resp }
                     } else {
                         return resp
                     }
@@ -80,7 +73,12 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                     break
                 }
                 case 'region': {
-                    const resp = (await this.activePrompter.prompt()) as Region
+                    const prompter = (this.activePrompter = createRegionPrompter(undefined, {
+                        defaultRegion: this.currentRegion,
+                        title: 'Select region for log group',
+                    }))
+
+                    const resp = await prompter.prompt()
                     if (isValidResponse(resp)) {
                         this.currentRegion = resp.id
                     }
