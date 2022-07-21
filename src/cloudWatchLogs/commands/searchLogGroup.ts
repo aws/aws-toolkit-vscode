@@ -18,6 +18,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
+import { highlightDocument } from '../document/logStreamDocumentProvider'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -46,12 +47,19 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
         }
 
         await registry.registerLog(uri, initialStreamData)
-        const status = registry.getLogCancelled(uri)
+        const status = registry.getLogCancelled
         if (status !== undefined && !status) {
             // If the log recieved data i.e. wasn't cancelled.
             const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
             vscode.languages.setTextDocumentLanguage(doc, 'log')
-            await vscode.window.showTextDocument(doc, { preview: false })
+            const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+            registry.setTextEditor(uri, textEditor)
+            highlightDocument(registry, uri)
+            vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+                if (event.document.uri.toString() === doc.uri.toString()) {
+                    highlightDocument(registry, uri)
+                }
+            })
         } else {
             result = 'Cancelled'
         }

@@ -6,6 +6,11 @@
 import * as vscode from 'vscode'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
+import { uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
+
+const HIGHLIGHTER = vscode.window.createTextEditorDecorationType({
+    backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
+})
 
 export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider {
     // Expose an event to signal changes of _virtual_ documents
@@ -28,7 +33,24 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         if (!content) {
             getLogger().error(`No content found for URI: ${uri}`)
         }
-
         return content ?? ''
+    }
+}
+
+export async function highlightDocument(registry: LogStreamRegistry, uri: vscode.Uri): Promise<void> {
+    const textEditor = registry.getTextEditor(uri)
+    const logData = registry.getLogData(uri)
+
+    if (!logData) {
+        throw new Error(`Missing log data in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+    }
+
+    if (!textEditor) {
+        throw new Error(`Missing textEditor in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+    }
+
+    if (logData.parameters.filterPattern) {
+        const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
+        textEditor.setDecorations(HIGHLIGHTER, ranges)
     }
 }

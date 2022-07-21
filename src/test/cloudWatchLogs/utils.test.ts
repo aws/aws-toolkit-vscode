@@ -5,7 +5,12 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { createURIFromArgs, parseCloudWatchLogsUri, uriToKey } from '../../cloudWatchLogs/cloudWatchLogsUtils'
+import {
+    createURIFromArgs,
+    parseCloudWatchLogsUri,
+    uriToKey,
+    findOccurencesOf,
+} from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import { CloudWatchLogsParameters } from '../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 
@@ -100,5 +105,37 @@ describe('uriToKey', function () {
         )
 
         assert.notStrictEqual(uriToKey(testUri), uriToKey(uriDiffGroup))
+    })
+})
+
+describe('findOccurrencesOf', function () {
+    it('finds correct number', async function () {
+        const testDoc1 = await vscode.workspace.openTextDocument({ content: 'Arr' })
+        const result1 = findOccurencesOf(testDoc1, 'rr')
+        const expected1 = [new vscode.Range(new vscode.Position(0, 1), new vscode.Position(0, 3))]
+
+        const testDoc2 = await vscode.workspace.openTextDocument({
+            content:
+                'Here is a bunch of text (here) \n and it even spans multiple lines (here) \n to make it more interesting (here) \n (here) because why not \n',
+        })
+        const result2 = findOccurencesOf(testDoc2, 'here')
+        const expected2 = [
+            new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 4)),
+            new vscode.Range(new vscode.Position(0, 25), new vscode.Position(0, 29)),
+            new vscode.Range(new vscode.Position(1, 35), new vscode.Position(1, 39)),
+            new vscode.Range(new vscode.Position(2, 30), new vscode.Position(2, 34)),
+            new vscode.Range(new vscode.Position(3, 2), new vscode.Position(3, 6)),
+        ]
+
+        const testDoc3 = await vscode.workspace.openTextDocument({ content: 'Here is a \n weird \n one\n zzz' })
+        const result3 = findOccurencesOf(testDoc3, 'zz')
+        const expected3 = [
+            new vscode.Range(new vscode.Position(3, 1), new vscode.Position(3, 3)),
+            new vscode.Range(new vscode.Position(3, 2), new vscode.Position(3, 4)),
+        ]
+
+        assert.deepStrictEqual(result1, expected1)
+        assert.deepStrictEqual(result2, expected2)
+        assert.deepStrictEqual(result3, expected3)
     })
 })
