@@ -19,6 +19,9 @@ import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { localize } from 'vscode-nls'
+import { getLogger } from '../../shared/logger'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -47,10 +50,8 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
         }
         // Currently displays nothing if update log fails in non-cancellationError. (don't want this)
 
-        // Catch error out here
-        await registry.registerLog(uri, initialStreamData)
-        const isLogCancelled = registry.getLogCancelled(uri)
-        if (!isLogCancelled) {
+        try {
+            await registry.registerLog(uri, initialStreamData)
             const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
             vscode.languages.setTextDocumentLanguage(doc, 'log')
             const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
@@ -61,8 +62,21 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
                     highlightDocument(registry, uri)
                 }
             })
-        } else {
-            result = 'Cancelled'
+        } catch (err) {
+            if (CancellationError.isUserCancelled(err)) {
+                getLogger().debug('cwl: User Cancelled Search')
+                result = 'Cancelled'
+            } else {
+                const error = err as Error
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.cwl.searchLogGroup.errorRetrievingLogs',
+                        'Error retrieving logs for Log Group {0} : {1}',
+                        logGroupInfo.groupName,
+                        error.message
+                    )
+                )
+            }
         }
     } else {
         result = 'Cancelled'

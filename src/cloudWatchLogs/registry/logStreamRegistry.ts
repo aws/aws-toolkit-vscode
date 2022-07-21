@@ -13,7 +13,7 @@ import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../clo
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { CancellationError, Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
+import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 // TODO: Add debug logging statements
 
@@ -111,50 +111,34 @@ export class LogStreamRegistry {
             return
         }
         const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
-        const uriResults = parseCloudWatchLogsUri(uri)
 
-        const logGroupInfo = uriResults.logGroupInfo
+        // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
+        const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
 
-        try {
-            // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-            const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
+        const newData =
+            headOrTail === 'head'
+                ? (logEvents.events ?? []).concat(stream.data)
+                : stream.data.concat(logEvents.events ?? [])
 
-            const newData =
-                headOrTail === 'head'
-                    ? (logEvents.events ?? []).concat(stream.data)
-                    : stream.data.concat(logEvents.events ?? [])
-
-            const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
-            // update if no token exists or if the token is updated in the correct direction.
-            if (!stream.previous || headOrTail === 'head') {
-                tokens.previous = {
-                    token: logEvents.nextBackwardToken ?? '',
-                }
+        const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
+        // update if no token exists or if the token is updated in the correct direction.
+        if (!stream.previous || headOrTail === 'head') {
+            tokens.previous = {
+                token: logEvents.nextBackwardToken ?? '',
             }
-            if (!stream.next || headOrTail === 'tail') {
-                tokens.next = {
-                    token: logEvents.nextForwardToken ?? '',
-                }
-            }
-            this.setLogData(uri, {
-                ...stream,
-                ...tokens,
-                data: newData,
-                cancelled: logEvents.cancelled,
-            })
-
-            this._onDidChange.fire(uri)
-        } catch (e) {
-            const err = e as Error
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.cwl.viewLogStream.errorRetrievingLogs',
-                    'Error retrieving logs for Log Group {0} : {1}',
-                    logGroupInfo.groupName,
-                    err.message
-                )
-            )
         }
+        if (!stream.next || headOrTail === 'tail') {
+            tokens.next = {
+                token: logEvents.nextForwardToken ?? '',
+            }
+        }
+        this.setLogData(uri, {
+            ...stream,
+            ...tokens,
+            data: newData,
+        })
+
+        this._onDidChange.fire(uri)
     }
 
     /**
@@ -179,10 +163,6 @@ export class LogStreamRegistry {
         const log = this.getLogData(uri)
 
         return (log && log.busy) ?? false
-    }
-
-    public getLogCancelled(uri: vscode.Uri): boolean | undefined {
-        return this.getLogData(uri)?.cancelled
     }
 
     public setLogData(uri: vscode.Uri, newData: CloudWatchLogsData): void {
@@ -225,7 +205,7 @@ export async function filterLogEventsFromUriComponents(
         nextToken,
         limit: parameters.limit,
     })
-    // try {
+
     const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
@@ -238,17 +218,8 @@ export async function filterLogEventsFromUriComponents(
             nextBackwardToken: nextToken,
         }
     }
-    // } catch (err) {
-    //     if (CancellationError.isUserCancelled(err)) {
-    //         getLogger().info('cloudwatchlogs: user cancelled search')
-    //     } else {
-    //         getLogger().info('')
-    //         throw err
-    //     }
-    // }
     return {
         events: [],
-        cancelled: true,
     }
 }
 

@@ -55,12 +55,24 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
             logGroupInfo: logGroupInfo,
             retrieveLogsFunction: getLogEventsFromUriComponents,
         }
-
-        await registry.registerLog(uri, initialStreamData)
-        const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
-        vscode.languages.setTextDocumentLanguage(doc, 'log')
-        const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
-        registry.setTextEditor(uri, textEditor) // For consistency, even though this isn't necessary (for now)
+        try {
+            await registry.registerLog(uri, initialStreamData)
+            const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+            vscode.languages.setTextDocumentLanguage(doc, 'log')
+            const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+            registry.setTextEditor(uri, textEditor) // For consistency, even though this isn't necessary (for now)
+        } catch (err) {
+            result = 'Cancelled'
+            const error = err as Error
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.cwl.searchLogGroup.errorRetrievingLogs',
+                    'Error retrieving logs for Log Group {0} : {1}',
+                    logGroupInfo.groupName,
+                    error.message
+                )
+            )
+        }
     } else {
         result = 'Cancelled'
     }
