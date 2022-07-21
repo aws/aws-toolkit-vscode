@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import kotlinx.coroutines.launch
@@ -82,7 +83,7 @@ class ServiceContainerActions : SingleExplorerNodeActionGroup<EcsServiceNode>("C
 class ContainerLogsAction(
     private val project: Project,
     private val container: ContainerDetails
-) : AnAction(message("ecs.service.container_logs.action_label"), null, AwsIcons.Resources.CloudWatch.LOGS) {
+) : DumbAwareAction(message("ecs.service.container_logs.action_label"), null, AwsIcons.Resources.CloudWatch.LOGS) {
 
     private val logConfiguration: Pair<String, String>? by lazy {
         container.containerDefinition.logConfiguration().takeIf { it.logDriver() == LogDriver.AWSLOGS }?.options()?.let {
@@ -134,7 +135,7 @@ class ContainerLogsAction(
 class ExecuteCommandAction(
     private val project: Project,
     private val container: ContainerDetails
-) : AnAction(message("ecs.execute_command_run"), null, null) {
+) : DumbAwareAction(message("ecs.execute_command_run"), null, null) {
     private val coroutineScope = projectCoroutineScope(project)
     override fun actionPerformed(e: AnActionEvent) {
         coroutineScope.launch {
@@ -159,7 +160,7 @@ class ExecuteCommandAction(
 class ExecuteCommandInShellAction(
     private val project: Project,
     private val container: ContainerDetails
-) : AnAction(message("ecs.execute_command_run_command_in_shell"), null, null) {
+) : DumbAwareAction(message("ecs.execute_command_run_command_in_shell"), null, null) {
     private val coroutineScope = projectCoroutineScope(project)
     override fun actionPerformed(e: AnActionEvent) {
         coroutineScope.launch {
