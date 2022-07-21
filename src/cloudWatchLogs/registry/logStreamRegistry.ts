@@ -194,7 +194,7 @@ export async function filterLogEventsFromUriComponents(
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    const timeout = new Timeout(10000)
+    const timeout = new Timeout(300000)
     showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
     const responsePromise = client.filterLogEvents({
         logGroupName: logGroupInfo.groupName,
@@ -214,9 +214,8 @@ export async function filterLogEventsFromUriComponents(
             nextForwardToken: response.nextToken,
             nextBackwardToken: nextToken,
         }
-    }
-    return {
-        events: [],
+    } else {
+        throw new Error('cwl:`filterLogEvents` did not return anything.')
     }
 }
 
@@ -238,6 +237,10 @@ export async function getLogEventsFromUriComponents(
         nextToken,
         limit: parameters.limit,
     })
+
+    if (!response) {
+        throw new Error('cwl:`getLogEvents` did not return anything.')
+    }
 
     return {
         events: response.events ? response.events : [],
@@ -267,7 +270,6 @@ export type CloudWatchLogsResponse = {
     events: CloudWatchLogs.FilteredLogEvents
     nextForwardToken?: CloudWatchLogs.NextToken
     nextBackwardToken?: CloudWatchLogs.NextToken
-    cancelled?: boolean
 }
 
 export type CloudWatchLogsAction = (
@@ -293,5 +295,4 @@ export class CloudWatchLogsData {
         token: CloudWatchLogs.NextToken
     }
     busy: boolean = false
-    cancelled?: boolean = false
 }

@@ -62,7 +62,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
             const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
             registry.setTextEditor(uri, textEditor) // For consistency, even though this isn't necessary (for now)
         } catch (err) {
-            result = 'Cancelled'
+            result = 'Failed'
             const error = err as Error
             vscode.window.showErrorMessage(
                 localize(

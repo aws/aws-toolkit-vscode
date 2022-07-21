@@ -65,7 +65,7 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
         } catch (err) {
             if (CancellationError.isUserCancelled(err)) {
                 getLogger().debug('cwl: User Cancelled Search')
-                result = 'Cancelled'
+                result = 'Failed'
             } else {
                 const error = err as Error
                 vscode.window.showErrorMessage(
