@@ -133,6 +133,7 @@ export interface TimeFilterResponse {
 const customRange = Symbol('customRange')
 
 export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
+    // TODO: Generalize submenu code between this and the region Submenu.
     private currentState: 'custom-range' | 'recent-range' = 'recent-range'
     private steps?: [current: number, total: number]
     public activePrompter: QuickPickPrompter<typeof customRange | integer> | InputBoxPrompter =
