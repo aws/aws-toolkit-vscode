@@ -47,9 +47,8 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
         }
 
         await registry.registerLog(uri, initialStreamData)
-        const status = registry.getLogCancelled
-        if (status !== undefined && !status) {
-            // If the log recieved data i.e. wasn't cancelled.
+        const isLogCancelled = registry.getLogCancelled(uri)
+        if (!isLogCancelled) {
             const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
             vscode.languages.setTextDocumentLanguage(doc, 'log')
             const textEditor = await vscode.window.showTextDocument(doc, { preview: false })

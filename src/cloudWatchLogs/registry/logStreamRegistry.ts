@@ -136,13 +136,12 @@ export class LogStreamRegistry {
                     token: logEvents.nextForwardToken ?? '',
                 }
             }
-            if (!logEvents.cancelled) {
-                this.setLogData(uri, {
-                    ...stream,
-                    ...tokens,
-                    data: newData,
-                })
-            }
+            this.setLogData(uri, {
+                ...stream,
+                ...tokens,
+                data: newData,
+                cancelled: logEvents.cancelled,
+            })
 
             this._onDidChange.fire(uri)
         } catch (e) {
@@ -237,7 +236,6 @@ export async function filterLogEventsFromUriComponents(
                 events: response.events ? response.events : [],
                 nextForwardToken: response.nextToken,
                 nextBackwardToken: nextToken,
-                cancelled: false,
             }
         }
     } catch (err) {
@@ -277,7 +275,6 @@ export async function getLogEventsFromUriComponents(
         events: response.events ? response.events : [],
         nextForwardToken: response.nextForwardToken,
         nextBackwardToken: response.nextBackwardToken,
-        cancelled: false,
     }
 }
 
