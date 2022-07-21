@@ -186,6 +186,14 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         this.currentState = newState
     }
 
+    public createDateBox(): InputBoxPrompter {
+        return createInputBox({
+            title: 'Enter custom date range',
+            placeholder: 'YYYY/MM/DD-YYYY/MM/DD',
+            validateInput: input => this.validateDate(input),
+        })
+    }
+
     protected async promptUser(): Promise<PromptResult<TimeFilterResponse>> {
         while (true) {
             switch (this.currentState) {
@@ -208,11 +216,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                     break
                 }
                 case 'custom-range': {
-                    const prompter = (this.activePrompter = createInputBox({
-                        title: 'Enter custom date range',
-                        placeholder: 'YYYY/MM/DD-YYYY/MM/DD',
-                        validateInput: input => this.validateDate(input),
-                    }))
+                    const prompter = (this.activePrompter = this.createDateBox())
 
                     const resp = await prompter.prompt()
                     if (isValidResponse(resp)) {
@@ -229,12 +233,14 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         }
     }
 
-    private validateDate(input: string) {
+    public validateDate(input: string) {
         const parts = input.split('-')
+        const today = new Date()
         if (parts.length !== 2) {
             return 'String must include two dates seperated by `-`'
         }
         const [startTime, endTime] = parts
+
         if (!Date.parse(startTime)) {
             return 'starting time format is invalid, use YYYY/MM/DD'
         }
@@ -247,6 +253,13 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         }
         if (startTime === endTime) {
             return 'must enter two different dates for valid range'
+        }
+        if (Date.parse(startTime) > Date.parse(endTime)) {
+            return 'first date must occur before second date'
+        }
+
+        if (Date.parse(endTime) > today.valueOf()) {
+            return 'end date cannot be in the future'
         }
     }
 
