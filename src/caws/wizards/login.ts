@@ -49,7 +49,7 @@ function createUserPrompter(auth: CawsAuthenticationProvider) {
 type AccountSelection =
     | (CawsAccount & ({ available: true; session: CawsSession } | { available: false; session: void }))
     | typeof newAccount
-const newAccount = Symbol('New CAWS account')
+const newAccount = Symbol('newAccount')
 interface LoginWizardState {
     readonly account: AccountSelection
     // It makes sense for the wizard to encompass the full flow
@@ -95,7 +95,7 @@ export class LoginWizard extends Wizard<LoginWizardState> {
                                 if (account !== newAccount) {
                                     return auth.createSession(account).catch(async error => {
                                         // Usually you'd only get to this point if the refresh token itself expired
-                                        getLogger().error(`CAWS: failed to login: %O`, error)
+                                        getLogger().error(`REMOVED.codes: failed to login: %O`, error)
                                         await auth.deleteAccount(account)
                                         return auth.createSession(await auth.createAccount())
                                     })

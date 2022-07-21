@@ -21,13 +21,13 @@ describe('Prompts', function () {
     let orgs: CawsOrg[]
 
     beforeEach(function () {
-        orgs = [{ type: 'org', id: '', name: 'MyOrg', description: 'My Description' }]
+        orgs = [{ type: 'org', name: 'MyOrg', description: 'My Description', regionName: 'region' }]
     })
 
     function mockClient(): ConnectedCawsClient {
         const client = mock<ConnectedCawsClient>()
 
-        when(client.listOrgs()).thenReturn(intoCollection([orgs]))
+        when(client.listOrganizations()).thenReturn(intoCollection([orgs]))
 
         return instance(client)
     }
@@ -45,7 +45,7 @@ describe('Prompts', function () {
     it('can refresh organizations', async function () {
         const prompt = createOrgPrompter(mockClient())
         const tester = createQuickPickTester(prompt)
-        const newOrg = { type: 'org', id: '', name: 'AnotherOrg', description: 'More Text' } as const
+        const newOrg = { type: 'org', name: 'AnotherOrg', description: 'More Text', regionName: 'region' } as const
 
         tester.assertItems([{ label: 'MyOrg', detail: 'My Description', data: orgs[0] }])
         tester.addCallback(() => orgs.push(newOrg))

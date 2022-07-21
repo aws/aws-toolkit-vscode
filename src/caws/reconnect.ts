@@ -10,7 +10,13 @@ import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { WorkspaceSettings } from './commands'
-import { CAWS_RECONNECT_KEY, createClientFactory, DevEnvId, EnvironmentMemento, openDevEnv } from './model'
+import {
+    CAWS_RECONNECT_KEY,
+    createClientFactory,
+    DevelopmentWorkspaceId,
+    DevelopmentWorkspaceMemento,
+    openDevelopmentWorkspace,
+} from './model'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { CawsAuthenticationProvider } from './auth'
 import { getCawsWorkspaceArn } from '../shared/vscode/env'
@@ -40,12 +46,12 @@ export function watchRestartingWorkspaces(ctx: ExtContext, authProvider: CawsAut
 function handleRestart(client: ConnectedCawsClient, ctx: ExtContext, cawsArn: string | undefined) {
     if (cawsArn !== undefined) {
         const memento = ctx.extensionContext.globalState
-        const pendingReconnects = memento.get<Record<string, EnvironmentMemento>>(CAWS_RECONNECT_KEY, {})
+        const pendingReconnects = memento.get<Record<string, DevelopmentWorkspaceMemento>>(CAWS_RECONNECT_KEY, {})
         const workspaceId = cawsArn.split('/').pop() ?? ''
         if (workspaceId && workspaceId in pendingReconnects) {
-            const environment = pendingReconnects[workspaceId]
-            const workspaceName = getWorkspaceName(environment.alias, workspaceId)
-            getLogger().info(`caws: ssh session to ${workspaceName} has reconnected successfully`)
+            const workspace = pendingReconnects[workspaceId]
+            const workspaceName = getWorkspaceName(workspace.alias, workspaceId)
+            getLogger().info(`REMOVED.codes: ssh session to ${workspaceName} has reconnected successfully`)
             vscode.window.showInformationMessage(
                 localize('AWS.caws.reconnect.success', 'Successfully reconnected to: {0}', workspaceName)
             )
@@ -53,31 +59,31 @@ function handleRestart(client: ConnectedCawsClient, ctx: ExtContext, cawsArn: st
             memento.update(CAWS_RECONNECT_KEY, pendingReconnects)
         }
     } else {
-        getLogger().info('caws: attempting to poll development workspaces')
+        getLogger().info('REMOVED.codes: attempting to poll development workspaces')
 
-        // Reconnect environments (if coming from a restart)
-        reconnectEnvironments(client, ctx).catch(err => {
-            getLogger().error(`caws: error while resuming environments: ${err}`)
+        // Reconnect workspaces (if coming from a restart)
+        reconnectWorkspaces(client, ctx).catch(err => {
+            getLogger().error(`REMOVED.codes: error while resuming workspaces: ${err}`)
         })
     }
 }
 
 /**
- * Attempt to poll for connection in all valid environments
+ * Attempt to poll for connection in all valid workspaces
  * @param client a connected caws client
  * @param ctx the extension context
  */
-async function reconnectEnvironments(client: ConnectedCawsClient, ctx: ExtContext): Promise<void> {
+async function reconnectWorkspaces(client: ConnectedCawsClient, ctx: ExtContext): Promise<void> {
     const memento = ctx.extensionContext.globalState
-    const pendingEnvironments = memento.get<Record<string, EnvironmentMemento>>(CAWS_RECONNECT_KEY, {})
-    const validEnvironments = filterInvalidEnvironments(pendingEnvironments)
-    if (Object.keys(validEnvironments).length === 0) {
+    const pendingWorkspaces = memento.get<Record<string, DevelopmentWorkspaceMemento>>(CAWS_RECONNECT_KEY, {})
+    const validWorkspaces = filterInvalidWorkspaces(pendingWorkspaces)
+    if (Object.keys(validWorkspaces).length === 0) {
         return
     }
 
     const workspaceNames = []
-    for (const [id, environment] of Object.entries(validEnvironments)) {
-        workspaceNames.push(getWorkspaceName(environment.alias, id))
+    for (const [id, workspace] of Object.entries(validWorkspaces)) {
+        workspaceNames.push(getWorkspaceName(workspace.alias, id))
     }
 
     const polledWorkspaces = workspaceNames.join(', ')
@@ -92,40 +98,40 @@ async function reconnectEnvironments(client: ConnectedCawsClient, ctx: ExtContex
         },
         (progress, token) => {
             progress.report({ message: progressTitle })
-            return pollWorkspaces(client, progress, token, memento, validEnvironments)
+            return pollWorkspaces(client, progress, token, memento, validWorkspaces)
         }
     )
 }
 
 /**
- * Filter out environments who are expired OR are already attempting to reconnect.
- * @param environments All of the possible in environments to check
+ * Filter out workspaces who are expired OR are already attempting to reconnect.
+ * @param workspaces All of the possible in workspaces to check
  */
-function filterInvalidEnvironments(environments: Record<string, EnvironmentMemento>) {
-    for (const reconnectWorkspaceId in environments) {
-        const workspaceDetail = environments[reconnectWorkspaceId]
+function filterInvalidWorkspaces(workspaces: Record<string, DevelopmentWorkspaceMemento>) {
+    for (const reconnectWorkspaceId in workspaces) {
+        const workspaceDetail = workspaces[reconnectWorkspaceId]
         if (isExpired(workspaceDetail.previousConnectionTimestamp) || workspaceDetail.attemptingReconnect) {
-            delete environments[reconnectWorkspaceId]
+            delete workspaces[reconnectWorkspaceId]
         }
     }
-    return environments
+    return workspaces
 }
 
 /**
- * Ensure that all environments that are currently being looked at set to attempting to reconnect so that they are not looked at
+ * Ensure that all workspaces that are currently being looked at set to attempting to reconnect so that they are not looked at
  * by any other instance of VSCode.
  * @param memento
- * @param environments
+ * @param workspaces
  */
-function setWatchedEnvironmentStatus(
+function setWatchedWorkspaceStatus(
     memento: vscode.Memento,
-    environments: Record<string, EnvironmentMemento>,
+    workspaces: Record<string, DevelopmentWorkspaceMemento>,
     watchStatus: boolean
 ) {
-    for (const [id, detail] of Object.entries(environments)) {
-        environments[id] = { ...detail, attemptingReconnect: watchStatus }
+    for (const [id, detail] of Object.entries(workspaces)) {
+        workspaces[id] = { ...detail, attemptingReconnect: watchStatus }
     }
-    return memento.update(CAWS_RECONNECT_KEY, environments)
+    return memento.update(CAWS_RECONNECT_KEY, workspaces)
 }
 
 /**
@@ -142,17 +148,17 @@ async function pollWorkspaces(
     progress: vscode.Progress<{ message: string }>,
     token: vscode.CancellationToken,
     memento: vscode.Memento,
-    workspaces: Record<string, EnvironmentMemento>
+    workspaces: Record<string, DevelopmentWorkspaceMemento>
 ) {
-    // Ensure that all environments that you want to look at are attempting reconnection
+    // Ensure that all workspaces that you want to look at are attempting reconnection
     // and won't be watched by any other VSCode instance
-    await setWatchedEnvironmentStatus(memento, workspaces, true)
+    await setWatchedWorkspaceStatus(memento, workspaces, true)
 
     const shouldCloseRootInstance = Object.keys(workspaces).length === 1
 
     while (Object.keys(workspaces).length > 0) {
         if (token.isCancellationRequested) {
-            await setWatchedEnvironmentStatus(memento, workspaces, false)
+            await setWatchedWorkspaceStatus(memento, workspaces, false)
             return
         }
 
@@ -213,7 +219,7 @@ function isExpired(previousConnectionTime: number): boolean {
  * @param workspaceDetails the details of the failing workspace
  */
 function failWorkspace(memento: vscode.Memento, workspaceId: string) {
-    const curr = memento.get<Record<string, EnvironmentMemento>>(CAWS_RECONNECT_KEY, {})
+    const curr = memento.get<Record<string, DevelopmentWorkspaceMemento>>(CAWS_RECONNECT_KEY, {})
     delete curr[workspaceId]
     return memento.update(CAWS_RECONNECT_KEY, curr)
 }
@@ -221,15 +227,15 @@ function failWorkspace(memento: vscode.Memento, workspaceId: string) {
 async function openReconnectedWorkspace(
     cawsClient: ConnectedCawsClient,
     id: string,
-    environment: EnvironmentMemento,
+    workspace: DevelopmentWorkspaceMemento,
     closeRootInstance: boolean
 ): Promise<void> {
     const devEnv = await cawsClient.getDevelopmentWorkspace({
         id,
-        organizationName: environment.organizationName,
-        projectName: environment.projectName,
+        organizationName: workspace.organizationName,
+        projectName: workspace.projectName,
     })
-    await openDevEnv(cawsClient, devEnv, environment.previousOpenWorkspace)
+    await openDevelopmentWorkspace(cawsClient, devEnv, workspace.previousOpenWorkspace)
 
     // When we only have 1 workspace to watch we might as well close the local vscode instance
     if (closeRootInstance) {
@@ -251,27 +257,27 @@ export function isLongReconnect(oldSettings: WorkspaceSettings, newSettings: Wor
 }
 
 export function saveReconnectionInformation(
-    devEnv: Pick<DevelopmentWorkspace, 'id' | 'org' | 'project' | 'alias'>
+    workspace: DevelopmentWorkspaceId & Pick<DevelopmentWorkspace, 'alias'>
 ): Thenable<void> {
     const memento = globals.context.globalState
-    const pendingReconnects = memento.get<Record<string, EnvironmentMemento>>(CAWS_RECONNECT_KEY, {})
+    const pendingReconnects = memento.get<Record<string, DevelopmentWorkspaceMemento>>(CAWS_RECONNECT_KEY, {})
     const workspaceFolders = vscode.workspace.workspaceFolders
     const currentWorkspace =
         workspaceFolders !== undefined && workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : '/projects'
-    pendingReconnects[devEnv.id] = {
+    pendingReconnects[workspace.id] = {
         previousOpenWorkspace: currentWorkspace,
-        organizationName: devEnv.org.name,
-        projectName: devEnv.project.name,
+        organizationName: workspace.org.name,
+        projectName: workspace.project.name,
         attemptingReconnect: false,
         previousConnectionTimestamp: Date.now(),
-        alias: devEnv.alias,
+        alias: workspace.alias,
     }
     return memento.update(CAWS_RECONNECT_KEY, pendingReconnects)
 }
 
-export function removeReconnectionInformation(devEnvId: DevEnvId): Thenable<void> {
+export function removeReconnectionInformation(workspace: DevelopmentWorkspaceId): Thenable<void> {
     const memento = globals.context.globalState
-    const pendingReconnects = memento.get<Record<string, EnvironmentMemento>>(CAWS_RECONNECT_KEY, {})
-    delete pendingReconnects[devEnvId.id]
+    const pendingReconnects = memento.get<Record<string, DevelopmentWorkspaceMemento>>(CAWS_RECONNECT_KEY, {})
+    delete pendingReconnects[workspace.id]
     return memento.update(CAWS_RECONNECT_KEY, pendingReconnects)
 }

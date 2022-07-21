@@ -7,7 +7,7 @@
         <div id="restart-notification" class="notification" v-if="canRestart">
             <span id="notification-span">
                 <span id="info-notification-icon" class="icon icon-lg icon-vscode-info"></span>
-                <span>Restart your environment to update with changes.</span>
+                <span>Restart your workspace to update with changes.</span>
             </span>
             <button
                 id="restart-button"
@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts">
-import summaryPanel, { VueModel as EnvironmentDetailsModel } from '../summary.vue'
+import summaryPanel, { VueModel as WorkspaceDetailsModel } from '../summary.vue'
 import computePanel, { VueModel as ComputeModel } from '../compute.vue'
 import settingsPanel from '../../../webviews/components/settingsPanel.vue'
 import devfilePanel from '../devfile.vue'
@@ -56,7 +56,7 @@ import { WorkspaceSettings } from '../../commands'
 const client = WebviewClientFactory.create<CawsConfigureWebview>()
 
 const model = {
-    details: new EnvironmentDetailsModel(),
+    details: new WorkspaceDetailsModel(),
     definitionFilePath: '',
     workspaceUrl: '',
     devfileStatus: 'STABLE' as Status,
@@ -93,7 +93,7 @@ export default defineComponent({
     },
     created() {
         client.init().then(env => {
-            this.details = env ? new EnvironmentDetailsModel(env) : this.details
+            this.details = env ? new WorkspaceDetailsModel(env) : this.details
             this.compute = env ? new ComputeModel(env) : this.compute
         })
 

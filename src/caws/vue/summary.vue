@@ -21,7 +21,7 @@
                 <b class="mb-8" style="display: block">{{ branchName }}</b>
                 <button class="button-theme-secondary" @click="openBranch">
                     <!--TODO: support 3P links?-->
-                    Open Branch in Code.AWS
+                    Open Branch in REMOVED.codes
                 </button>
             </div>
             <div id="project" style="grid-area: project">
@@ -47,7 +47,7 @@
         </button>
         <!--TODO: add generic 'delete thing' prompt then enable this-->
         <button
-            id="delete-environment"
+            id="delete-workspace"
             class="button-theme-secondary ml-8 mt-8"
             type="button"
             :disabled="!isConnected"

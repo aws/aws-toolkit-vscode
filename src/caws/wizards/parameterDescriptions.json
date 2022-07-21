@@ -1,11 +1,6 @@
 {
     "environment": {
         "instanceType": {
-            "dev.standard1.micro": {
-                "vcpus": 1,
-                "ram": { "value": 2, "unit": "gigabyte" },
-                "arch": "x86_64"
-            },
             "dev.standard1.small": {
                 "vcpus": 2,
                 "ram": { "value": 4, "unit": "gigabyte" },
@@ -14,11 +9,6 @@
             "dev.standard1.medium": {
                 "vcpus": 4,
                 "ram": { "value": 8, "unit": "gigabyte" },
-                "arch": "x86_64"
-            },
-            "dev.standard1.large": {
-                "vcpus": 8,
-                "ram": { "value": 16, "unit": "gigabyte" },
                 "arch": "x86_64"
             }
         },

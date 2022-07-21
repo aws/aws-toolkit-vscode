@@ -2,7 +2,7 @@
     <div class="modes">
         <label class="mode-container" :data-disabled="value.mode !== 'linked'">
             <input class="radio" type="radio" name="mode" id="from-caws" v-model="value.mode" value="linked" />
-            <span class="ml-8 option-label" style="padding: 0px">Select from Code.AWS</span>
+            <span class="ml-8 option-label" style="padding: 0px">Select from REMOVED.codes</span>
         </label>
 
         <label class="mode-container" :data-disabled="value.mode !== 'empty'">

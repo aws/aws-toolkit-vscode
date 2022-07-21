@@ -77,7 +77,7 @@ export class CawsAuthStorage {
             })
         } catch (error) {
             const message = UnknownError.cast(error).message
-            getLogger().warn(`CAWS: failed to save user information for: ${id}: ${message}`)
+            getLogger().warn(`REMOVED.codes: failed to save user information for: ${id}: ${message}`)
         }
     }
 
@@ -102,7 +102,7 @@ export class CawsAuthStorage {
             })
         }
 
-        const logger = (message: string) => getLogger().debug(`SSO token cache (CAWS): ${message}`)
+        const logger = (message: string) => getLogger().debug(`SSO token cache (REMOVED.codes): ${message}`)
         const cache = mapCache(createSecretsCache(this.secrets, logger), read, write)
         const getKey = (id: string) => `${CawsAuthStorage.SECRETS_KEY}.${id}`
 
@@ -173,7 +173,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
         getRegistrationCache()
             .clear(CAWS_SONO_PROFILE)
             .then(() => {
-                getLogger().debug('CAWS: cleared client registration to prevent it being re-used')
+                getLogger().debug('REMOVED.codes: cleared client registration to prevent it being re-used')
             })
 
         assertHasProps(token, 'identity')
@@ -195,7 +195,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
      */
     public listSessions(): CawsSession[] {
         const expired = Array.from(this.sessions.values()).filter(s => this.isSessionExpired(s))
-        expired.forEach(({ id }) => getLogger().debug(`CAWS: removing expired session: ${id}`))
+        expired.forEach(({ id }) => getLogger().debug(`REMOVED.codes: removing expired session: ${id}`))
 
         this.deleteSession(...expired)
         return Array.from(this.sessions.values())
@@ -229,7 +229,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
                 accountDetails: { id: person.userId, label: person.displayName, metadata: updatedPerson },
             }
         } catch (err) {
-            getLogger().debug(`CAWS: failed to login (will clear existing secrets): ${(err as Error).message}`)
+            getLogger().debug(`REMOVED.codes: failed to login (will clear existing secrets): ${(err as Error).message}`)
             tokenProvider.invalidate()
             throw err
         }

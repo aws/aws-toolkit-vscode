@@ -15,16 +15,16 @@ import { Ides } from '../../types/clientcodeaws'
 const localize = nls.loadMessageBundle()
 
 export async function promptCawsNotConnected(window = Window.vscode(), commands = Commands.vscode()): Promise<void> {
-    const connect = localize('AWS.command.caws.connect', 'Connect to CODE.AWS')
+    const connect = localize('AWS.command.caws.login', 'Connect to REMOVED.codes')
     return await window
         .showWarningMessage(
-            localize('AWS.caws.badConnection', 'Not connected to CODE.AWS.'),
+            localize('AWS.caws.badConnection', 'Not connected to REMOVED.codes.'),
             connect,
             localizedText.viewDocs
         )
         .then(btn => {
             if (btn === connect) {
-                commands.execute('aws.caws.connect')
+                commands.execute('aws.caws.login')
             } else if (btn === localizedText.viewDocs) {
                 vscode.env.openExternal(vscode.Uri.parse(getHelpUrl()))
             }
@@ -55,7 +55,7 @@ export function toCawsUrl(resource: CawsResource): string {
             return format(resource.org.name, resource.project.name, resource.name)
         case 'branch':
             return format(resource.org.name, resource.project.name, resource.repo.name, resource.name)
-        case 'env':
+        case 'developmentWorkspace':
             // There's currently no page to view an individual workspace
             // This may be changed to direct to the underlying repository instead
             return [prefix, resource.org.name, 'projects', resource.project.name, 'development-workspaces'].join('/')

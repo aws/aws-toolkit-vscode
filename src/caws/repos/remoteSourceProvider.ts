@@ -23,7 +23,7 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
 
         return localize(
             'AWS.caws.cloneRepo.git',
-            'CODE.AWS {0}',
+            'REMOVED.codes {0}',
             username
                 ? localize('AWS.caws.cloneRepo.connected', '(connected as {0})', username)
                 : localize('AWS.credentials.statusbar.no.credentials', '(not connected)')

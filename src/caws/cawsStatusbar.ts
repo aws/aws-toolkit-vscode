@@ -11,7 +11,7 @@ import { CawsAuthenticationProvider } from './auth'
 import { CawsCommands } from './commands'
 
 const STATUS_PRIORITY = 1
-const STATUS_TOOLTIP = localize('AWS.caws.statusbar.tooltip', 'Click to connect to CODE.AWS or check its status.')
+const STATUS_TOOLTIP = localize('AWS.caws.statusbar.tooltip', 'Click to connect to REMOVED.codes or check its status.')
 
 export function initStatusbar(authProvider: CawsAuthenticationProvider): vscode.Disposable {
     const statusbarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, STATUS_PRIORITY)
@@ -30,5 +30,5 @@ export function initStatusbar(authProvider: CawsAuthenticationProvider): vscode.
 }
 
 function setCawsStatusbar(statusBarItem: vscode.StatusBarItem, username?: string): void {
-    statusBarItem.text = localize('AWS.caws.statusbar.text', 'CODE.AWS: {0}', username || '-')
+    statusBarItem.text = localize('AWS.caws.statusbar.text', 'REMOVED.codes: {0}', username || '-')
 }

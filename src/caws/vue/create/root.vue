@@ -1,10 +1,10 @@
 <template>
     <div id="configure-header">
-        <h1>Create a Code.AWS workspace</h1>
+        <h1>Create a REMOVED.codes workspace</h1>
         <!--TODO: add link-->
         <span>
             Create an on-demand AWS instance to work on your code in the cloud.
-            <a>Learn more about Code.AWS workspaces.</a>
+            <a>Learn more about REMOVED.codes workspaces.</a>
         </span>
     </div>
 

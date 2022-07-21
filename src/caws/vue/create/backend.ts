@@ -37,7 +37,7 @@ export class CawsCreateWebview extends VueWebview {
 
     public async getBranches(project: CawsProject) {
         const repos = this.client
-            .listRepos({
+            .listSourceRepositories({
                 organizationName: project.org.name,
                 projectName: project.name,
             })
@@ -88,7 +88,7 @@ export class CawsCreateWebview extends VueWebview {
     }
 
     public async submit(settings: WorkspaceSettings, project: CawsProject, branch: CawsBranch) {
-        await this.client.createDevEnv({
+        await this.client.createDevelopmentWorkspace({
             organizationName: project.org.name,
             projectName: project.name,
             repositories: [
@@ -118,7 +118,7 @@ let subscriptions: vscode.Disposable[] | undefined
 export async function showCreateWorkspace(ctx: vscode.ExtensionContext, client: ConnectedCawsClient): Promise<void> {
     activePanel ??= new Panel(ctx, client)
     const webview = await activePanel.show({
-        title: localize('AWS.view.createWorkspace.title', 'Create a Code.AWS Workspace'),
+        title: localize('AWS.view.createWorkspace.title', 'Create a REMOVED.codes Workspace'),
         viewColumn: vscode.ViewColumn.Active,
     })
 

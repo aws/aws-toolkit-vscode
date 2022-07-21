@@ -37,7 +37,7 @@ _parse_json_for_value() {
     echo "$json" | grep -o "\"$key\":\"[^\"]*" | grep -o '[^"]*$'
 }
 
-# Note: A development environment must have been previously started by VSCode Extension/CAWS
+# Note: A development workspace must have been previously started by VSCode Extension/CAWS
 _start_session_development_workspace() {
     # Function inputs
     local CAWS_ENDPOINT=$1

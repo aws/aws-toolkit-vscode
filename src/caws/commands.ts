@@ -17,7 +17,13 @@ import { openCawsUrl } from './utils'
 import { CawsAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
 import { CawsClient, ConnectedCawsClient, CawsResource } from '../shared/clients/cawsClient'
-import { createClientFactory, DevEnvId, getConnectedWorkspace, openDevEnv, toCawsGitUri } from './model'
+import {
+    createClientFactory,
+    DevelopmentWorkspaceId,
+    getConnectedWorkspace,
+    openDevelopmentWorkspace,
+    toCawsGitUri,
+} from './model'
 import { showConfigureWorkspace } from './vue/configure/backend'
 import { UpdateDevelopmentWorkspaceRequest } from '../../types/clientcodeaws'
 import { showCreateWorkspace } from './vue/create/backend'
@@ -44,7 +50,7 @@ export async function login(authProvider: CawsAuthenticationProvider, client: Ca
 
         return 'Succeeded'
     } catch (err) {
-        getLogger().error('CAWS: failed to login: %O', err)
+        getLogger().error('REMOVED.codes: failed to login: %O', err)
         return 'Failed'
     }
 }
@@ -57,13 +63,13 @@ export async function logout(authProvider: CawsAuthenticationProvider): Promise<
     }
 }
 
-/** "List CODE.AWS Commands" command. */
+/** "List REMOVED.codes Commands" command. */
 export async function listCommands(): Promise<void> {
     // TODO: add telemetry
-    vscode.commands.executeCommand('workbench.action.quickOpen', '> CODE.AWS')
+    vscode.commands.executeCommand('workbench.action.quickOpen', '> REMOVED.codes')
 }
 
-/** "Clone CODE.AWS Repository" command. */
+/** "Clone REMOVED.codes Repository" command. */
 export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Uri): Promise<void> {
     // TODO: add telemetry
 
@@ -84,7 +90,7 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
     } else {
         const [_, org, project, repo] = url.path.slice(1).split('/')
         if (!org || !project || !repo) {
-            throw new Error(`Invalid CAWS URL: unable to parse repository`)
+            throw new Error(`Invalid REMOVED.codes URL: unable to parse repository`)
         }
         const resource = { name: repo, project, org }
         const uri = toCawsGitUri(client.identity.name, await getPat(), resource)
@@ -94,9 +100,9 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
 
 /**
  * Implements commands:
- * - "Open CODE.AWS Organization"
- * - "Open CODE.AWS Project"
- * - "Open CODE.AWS Repository"
+ * - "Open REMOVED.codes Organization"
+ * - "Open REMOVED.codes Project"
+ * - "Open REMOVED.codes Repository"
  */
 export async function openCawsResource(client: ConnectedCawsClient, kind: CawsResource['type']): Promise<void> {
     // TODO: add telemetry
@@ -106,18 +112,18 @@ export async function openCawsResource(client: ConnectedCawsClient, kind: CawsRe
         return
     }
 
-    if (resource.type !== 'env') {
+    if (resource.type !== 'developmentWorkspace') {
         openCawsUrl(resource)
         return
     }
 
     try {
-        await openDevEnv(client, resource)
+        await openDevelopmentWorkspace(client, resource)
     } catch (err) {
         showViewLogsMessage(
             localize(
-                'AWS.command.caws.createDevEnv.failed',
-                'Failed to start CODE.AWS development environment "{0}": {1}',
+                'AWS.command.caws.createWorkspace.failed',
+                'Failed to start REMOVED.codes development workspace "{0}": {1}',
                 resource.id,
                 (err as Error).message
             )
@@ -125,16 +131,16 @@ export async function openCawsResource(client: ConnectedCawsClient, kind: CawsRe
     }
 }
 
-export async function stopWorkspace(client: ConnectedCawsClient, workspace: DevEnvId): Promise<void> {
-    await client.stopDevEnv({
+export async function stopWorkspace(client: ConnectedCawsClient, workspace: DevelopmentWorkspaceId): Promise<void> {
+    await client.stopDevelopmentWorkspace({
         id: workspace.id,
         projectName: workspace.project.name,
         organizationName: workspace.org.name,
     })
 }
 
-export async function deleteWorkspace(client: ConnectedCawsClient, workspace: DevEnvId): Promise<void> {
-    await client.deleteDevEnv({
+export async function deleteWorkspace(client: ConnectedCawsClient, workspace: DevelopmentWorkspaceId): Promise<void> {
+    await client.deleteDevelopmentWorkspace({
         id: workspace.id,
         projectName: workspace.project.name,
         organizationName: workspace.org.name,
@@ -148,7 +154,7 @@ export type WorkspaceSettings = Pick<
 
 export async function updateWorkspace(
     client: ConnectedCawsClient,
-    workspace: DevEnvId,
+    workspace: DevelopmentWorkspaceId,
     settings: WorkspaceSettings
 ): Promise<void> {
     await client.updateDevelopmentWorkspace({
@@ -174,7 +180,7 @@ function createClientInjector(
             }
 
             if (result === 'Failed') {
-                globals.window.showErrorMessage('AWS: Not connected to CODE.AWS')
+                globals.window.showErrorMessage('AWS: Not connected to REMOVED.codes')
             }
 
             return
@@ -266,14 +272,14 @@ export class CawsCommands {
     }
 
     public openWorkspace() {
-        return this.openResource('env')
+        return this.openResource('developmentWorkspace')
     }
 
     public listCommands() {
         return listCommands()
     }
 
-    public async openDevFile(uri: vscode.Uri) {
+    public async openDevfile(uri: vscode.Uri) {
         await vscode.window.showTextDocument(uri)
     }
 
@@ -295,20 +301,20 @@ export class CawsCommands {
     }
 
     public static readonly declared = {
-        login: Commands.from(this).declareLogin('aws.caws.connect'),
+        login: Commands.from(this).declareLogin('aws.caws.login'),
         logout: Commands.from(this).declareLogout('aws.caws.logout'),
         openResource: Commands.from(this).declareOpenResource('aws.caws.openResource'),
         cloneRepo: Commands.from(this).declareCloneRepository('aws.caws.cloneRepo'),
         listCommands: Commands.from(this).declareListCommands('aws.caws.listCommands'),
-        createWorkspace: Commands.from(this).declareCreateWorkspace('aws.caws.createDevEnv'),
+        createWorkspace: Commands.from(this).declareCreateWorkspace('aws.caws.createWorkspace'),
         openOrganization: Commands.from(this).declareOpenOrganization('aws.caws.openOrg'),
         openProject: Commands.from(this).declareOpenProject('aws.caws.openProject'),
         openRepository: Commands.from(this).declareOpenRepository('aws.caws.openRepo'),
-        openWorkspace: Commands.from(this).declareOpenWorkspace('aws.caws.openDevEnv'),
+        openWorkspace: Commands.from(this).declareOpenWorkspace('aws.caws.openWorkspace'),
         stopWorkspace: Commands.from(this).declareStopWorkspace('aws.caws.stopWorkspace'),
         deleteWorkspace: Commands.from(this).declareDeleteWorkspace('aws.caws.deleteWorkspace'),
         updateWorkspace: Commands.from(this).declareUpdateWorkspace('aws.caws.updateWorkspace'),
-        openDevFile: Commands.from(this).declareOpenDevFile('aws.caws.openDevFile'),
+        openDevfile: Commands.from(this).declareOpenDevfile('aws.caws.openDevfile'),
         openWorkspaceSettings: Commands.from(this).declareOpenWorkspaceSettings('aws.caws.openWorkspaceSettings'),
     } as const
 }

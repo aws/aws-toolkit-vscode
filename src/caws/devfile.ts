@@ -29,8 +29,8 @@ async function updateDevfile(uri: vscode.Uri): Promise<void> {
     await vscode.window.withProgress({ title, location: vscode.ProgressLocation.Notification }, async () => {
         if (checkUnsavedChanges()) {
             // TODO: show confirmation prompt instead
-            vscode.window.showErrorMessage('Cannot stop current environment with unsaved changes')
-            throw new Error('Cannot stop environment with unsaved changes')
+            vscode.window.showErrorMessage('Cannot stop current workspace with unsaved changes')
+            throw new Error('Cannot stop workspace with unsaved changes')
         }
 
         try {
@@ -40,8 +40,8 @@ async function updateDevfile(uri: vscode.Uri): Promise<void> {
                 throw new TypeError(`Received unknown error: ${JSON.stringify(err ?? 'null')}`)
             }
 
-            getLogger().error('Failed to restart environment: %O', err)
-            showViewLogsMessage(`Failed to restart environment: ${err.message}`)
+            getLogger().error('Failed to restart workspace: %O', err)
+            showViewLogsMessage(`Failed to restart workspace: ${err.message}`)
         }
     })
     // if we get here, no restart happened :(
@@ -70,7 +70,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
                 }
 
                 await this.handleUpdate(document).catch(err => {
-                    getLogger().debug(`caws: devfile codelens failure: ${err?.message}`)
+                    getLogger().debug(`REMOVED.codes: devfile codelens failure: ${err?.message}`)
                 })
             })
         )
@@ -95,7 +95,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
         // also make the positions better
         const range = new vscode.Range(0, 0, 0, 0)
         const lens = updateDevfileCommand.build(document.uri).asCodeLens(range, {
-            title: localize('AWS.caws.codeLens.updateWorkspace', 'Update Development Workspace'),
+            title: localize('AWS.caws.codelens.updateWorkspace', 'Update Development Workspace'),
         })
 
         return [lens]

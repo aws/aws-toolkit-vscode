@@ -13,7 +13,7 @@ import { ConnectedCawsClient } from '../../shared/clients/cawsClient'
 import { anything, instance, mock, reset, verify, when } from 'ts-mockito'
 import { createTestWindow, TestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
-import { DevEnvId } from '../../caws/model'
+import { DevelopmentWorkspaceId } from '../../caws/model'
 
 type Stub<T extends (...args: any[]) => any> = sinon.SinonStub<Parameters<T>, ReturnType<T>>
 
@@ -21,7 +21,7 @@ function createCloneUri(target: string): vscode.Uri {
     return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/clone?url=${encodeURIComponent(target)}`)
 }
 
-function createConnectUri(env: DevEnvId): vscode.Uri {
+function createConnectUri(env: DevelopmentWorkspaceId): vscode.Uri {
     const params = {
         developmentWorkspaceId: env.id,
         organizationName: env.org.name,
@@ -93,23 +93,23 @@ describe('CAWS handlers', function () {
         })
 
         it('tries to connect to the environment', async function () {
-            const fullEnv = {
+            when(client.getDevelopmentWorkspace(anything())).thenResolve({
                 ...env,
-                type: 'env' as const,
+                type: 'developmentWorkspace' as const,
                 id: env.id,
                 creatorId: '',
-                ide: '',
                 lastUpdatedTime: new Date(),
-                name: 'somefoo',
                 repositories: [],
                 status: '',
-            }
+                inactivityTimeoutMinutes: 60,
+                instanceType: '',
+                persistentStorage: { sizeInGiB: 400 },
+            })
 
-            when(client.getDevelopmentWorkspace(anything())).thenResolve(fullEnv)
-            when(client.startEnvironmentWithProgress(anything(), 'RUNNING')).thenResolve(undefined)
+            when(client.startWorkspaceWithProgress(anything(), 'RUNNING')).thenResolve(undefined)
 
             await handler.handleUri(createConnectUri(env))
-            verify(client.startEnvironmentWithProgress(anything(), 'RUNNING')).once()
+            verify(client.startWorkspaceWithProgress(anything(), 'RUNNING')).once()
         })
     })
 })

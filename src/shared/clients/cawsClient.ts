@@ -21,6 +21,7 @@ import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
 import { Credentials } from 'aws-sdk'
+import { isCloud9 } from '../extensionUtilities'
 
 // XXX: remove signing from the CAWS model until Bearer token auth is added to the SDKs
 delete (apiConfig.metadata as Partial<typeof apiConfig['metadata']>)['signatureVersion']
@@ -34,7 +35,9 @@ interface CawsConfig {
 }
 
 export function getCawsConfig(): CawsConfig {
-    const stage = DevSettings.instance.get('cawsStage', 'gamma')
+    // XXX: gamma is needed for testing the Cloud9 widget, remove this when going into beta
+    const defaultStage = isCloud9() ? 'gamma' : 'prod'
+    const stage = DevSettings.instance.get('cawsStage', defaultStage)
 
     if (stage === 'gamma') {
         return {
@@ -54,7 +57,7 @@ export function getCawsConfig(): CawsConfig {
 }
 
 export interface DevelopmentWorkspace extends caws.DevelopmentWorkspaceSummary {
-    readonly type: 'env'
+    readonly type: 'developmentWorkspace'
     readonly id: string
     readonly org: Pick<CawsOrg, 'name'>
     readonly project: Pick<CawsProject, 'name'>
@@ -67,13 +70,11 @@ export interface CawsDevEnvSession extends caws.StartSessionDevelopmentWorkspace
 export interface CawsOrg extends caws.OrganizationSummary {
     readonly type: 'org'
     readonly name: string
-    readonly id: string // TODO: why doesn't OrganizationSummary have this already?
 }
 
 export interface CawsProject extends caws.ProjectSummary {
     readonly type: 'project'
     readonly name: string
-    readonly id: string // TODO: why doesn't ProjectSummary have this already?
     readonly org: Pick<CawsOrg, 'name'>
 }
 
@@ -100,7 +101,7 @@ function intoDevelopmentWorkspace(
     summary: caws.DevelopmentWorkspaceSummary
 ): DevelopmentWorkspace {
     return {
-        type: 'env',
+        type: 'developmentWorkspace',
         org: { name: organizationName },
         project: { name: projectName },
         ...summary,
@@ -203,7 +204,7 @@ class CawsClientInternal {
 
     public get identity(): ConnectedCawsClient['identity'] {
         if (!this.userDetails) {
-            throw new Error('CAWS client is not connected')
+            throw new Error('REMOVED.codes client is not connected')
         }
 
         return { id: this.userDetails.userId, name: this.userDetails.userName }
@@ -211,7 +212,7 @@ class CawsClientInternal {
 
     public get token(): ConnectedCawsClient['token'] {
         if (!this.connected) {
-            throw new Error('CAWS client is not connected')
+            throw new Error('REMOVED.codes client is not connected')
         }
 
         return this.bearerToken as string
@@ -322,7 +323,7 @@ class CawsClientInternal {
         assertHasProps(resp, 'identity')
 
         if (this.userId && this.userId !== resp.identity) {
-            throw new Error('CAWS identity does not match the one provided by the client')
+            throw new Error('REMOVED.codes identity does not match the one provided by the client')
         }
 
         this.userId = resp.identity
@@ -336,22 +337,22 @@ class CawsClientInternal {
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
         if (resp.version !== '1') {
-            throw new Error(`CAWS 'getUserDetails' API returned an unsupported version: ${resp.version}`)
+            throw new Error(`REMOVED.codes 'getUserDetails' API returned an unsupported version: ${resp.version}`)
         }
 
         return { ...resp, version: resp.version } as const
     }
 
-    public async getOrg(request: caws.GetOrganizationRequest): Promise<CawsOrg | undefined> {
+    public async getOrganization(request: caws.GetOrganizationRequest): Promise<CawsOrg | undefined> {
         const resp = await this.call(this.sdkClient.getOrganization(request), false)
-        assertHasProps(resp, 'id', 'name')
+        assertHasProps(resp, 'name')
 
         return { ...resp, type: 'org' }
     }
 
     public async getProject(request: caws.GetProjectRequest): Promise<CawsProject | undefined> {
         const resp = await this.call(this.sdkClient.getProject(request), false)
-        assertHasProps(resp, 'id', 'name')
+        assertHasProps(resp, 'name')
 
         return { ...resp, type: 'project', org: { name: request.organizationName } }
     }
@@ -359,15 +360,12 @@ class CawsClientInternal {
     /**
      * Gets a list of all orgs for the current CAWS user.
      */
-    public listOrgs(request: caws.ListOrganizationsRequest = {}): AsyncCollection<CawsOrg[]> {
-        function asCawsOrg(org: caws.OrganizationSummary & { id?: string }): CawsOrg {
-            return { id: '', type: 'org', name: org.name ?? 'unknown', ...org }
-        }
-
+    public listOrganizations(request: caws.ListOrganizationsRequest = {}): AsyncCollection<CawsOrg[]> {
         const requester = async (request: caws.ListOrganizationsRequest) =>
             this.call(this.sdkClient.listOrganizations(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
-        return collection.map(summaries => summaries?.map(asCawsOrg) ?? [])
+
+        return collection.map(summaries => summaries?.map(s => ({ type: 'org', ...s })) ?? [])
     }
 
     /**
@@ -382,22 +380,19 @@ class CawsClientInternal {
             summaries =>
                 summaries?.map(s => ({
                     type: 'project',
-                    id: '',
                     org: { name: request.organizationName },
-                    name: s.name ?? 'unknown',
                     ...s,
                 })) ?? []
         )
     }
 
     /**
-     * CAWS
      * Gets a flat list of all workspaces for the given CAWS project.
      */
-    public listDevEnvs(proj: CawsProject): AsyncCollection<DevelopmentWorkspace[]> {
+    public listWorkspaces(proj: CawsProject): AsyncCollection<DevelopmentWorkspace[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
         const requester = async (request: caws.ListDevelopmentWorkspaceRequest) =>
-            this.call(this.sdkClient.listDevelopmentWorkspace(request), true, {
+            this.call(this.sdkClient.listDevelopmentWorkspaceMigration(request), true, {
                 organizationName: proj.org.name,
                 projectName: proj.name,
                 items: [],
@@ -410,7 +405,7 @@ class CawsClientInternal {
     /**
      * Gets a flat list of all repos for the given CAWS user.
      */
-    public listRepos(request: caws.ListSourceRepositoriesInput): AsyncCollection<CawsRepo[]> {
+    public listSourceRepositories(request: caws.ListSourceRepositoriesInput): AsyncCollection<CawsRepo[]> {
         const requester = async (request: caws.ListSourceRepositoriesInput) =>
             this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
@@ -418,7 +413,6 @@ class CawsClientInternal {
             summaries =>
                 summaries?.map(s => ({
                     type: 'repo',
-                    id: '',
                     org: { name: request.organizationName },
                     project: { name: request.projectName },
                     name: s.name ?? 'unknown',
@@ -443,7 +437,7 @@ class CawsClientInternal {
     public listResources(resourceType: 'org'): AsyncCollection<CawsOrg[]>
     public listResources(resourceType: 'project'): AsyncCollection<CawsProject[]>
     public listResources(resourceType: 'repo'): AsyncCollection<CawsRepo[]>
-    public listResources(resourceType: 'env'): AsyncCollection<DevelopmentWorkspace[]>
+    public listResources(resourceType: 'developmentWorkspace'): AsyncCollection<DevelopmentWorkspace[]>
     public listResources(resourceType: CawsResource['type']): AsyncCollection<CawsResource[]> {
         // Don't really want to expose this apart of the `AsyncCollection` API yet
         // The semantics of concatenating async iterables is rather ambiguous
@@ -463,22 +457,23 @@ class CawsClientInternal {
 
         switch (resourceType) {
             case 'org':
-                return this.listOrgs()
+                return this.listOrganizations()
             case 'project':
                 return mapInner(this.listResources('org'), o => this.listProjects({ organizationName: o.name }))
             case 'repo':
                 return mapInner(this.listResources('project'), p =>
-                    this.listRepos({ projectName: p.name, organizationName: p.org.name })
+                    this.listSourceRepositories({ projectName: p.name, organizationName: p.org.name })
                 )
             case 'branch':
                 throw new Error('Listing branches is not currently supported')
-            case 'env':
-                return mapInner(this.listResources('project'), p => this.listDevEnvs(p))
+            case 'developmentWorkspace':
+                return mapInner(this.listResources('project'), p => this.listWorkspaces(p))
         }
     }
 
-    /** CAWS */
-    public async createDevEnv(args: caws.CreateDevelopmentWorkspaceRequest): Promise<DevelopmentWorkspace> {
+    public async createDevelopmentWorkspace(
+        args: caws.CreateDevelopmentWorkspaceRequest
+    ): Promise<DevelopmentWorkspace> {
         if (!args.ides || args.ides.length === 0) {
             throw new Error('missing ides')
         }
@@ -492,24 +487,24 @@ class CawsClientInternal {
         })
     }
 
-    public async startDevEnv(
+    public async startDevelopmentWorkspace(
         args: caws.StartDevelopmentWorkspaceRequest
     ): Promise<caws.StartDevelopmentWorkspaceResponse | undefined> {
         const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args), false)
         return r
     }
 
-    public async startDevEnvSession(
+    public async startSessionDevelopmentWorkspace(
         args: caws.StartSessionDevelopmentWorkspaceRequest
     ): Promise<caws.StartSessionDevelopmentWorkspaceResponse & { sessionId: string }> {
         const r = await this.call(this.sdkClient.startSessionDevelopmentWorkspace(args), false)
         if (!r.sessionId) {
-            throw new TypeError('Received falsy CAWS workspace "sessionId"')
+            throw new TypeError('Received falsy development workspace "sessionId"')
         }
         return { ...r, sessionId: r.sessionId }
     }
 
-    public async stopDevEnv(
+    public async stopDevelopmentWorkspace(
         args: caws.StopDevelopmentWorkspaceRequest
     ): Promise<caws.StopDevelopmentWorkspaceResponse> {
         return this.call(this.sdkClient.stopDevelopmentWorkspace(args), false)
@@ -524,7 +519,7 @@ class CawsClientInternal {
         return intoDevelopmentWorkspace(args.organizationName, args.projectName, { ...args, ...r })
     }
 
-    public async deleteDevEnv(
+    public async deleteDevelopmentWorkspace(
         args: caws.DeleteDevelopmentWorkspaceRequest
     ): Promise<caws.DeleteDevelopmentWorkspaceResponse | undefined> {
         const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
@@ -546,7 +541,7 @@ class CawsClientInternal {
      *
      * @returns the environment on success, undefined otherwise
      */
-    public async startEnvironmentWithProgress(
+    public async startWorkspaceWithProgress(
         args: caws.StartDevelopmentWorkspaceRequest,
         status: string,
         timeout: Timeout = new Timeout(180000)
@@ -563,7 +558,7 @@ class CawsClientInternal {
             lastStatus = undefined
         }
 
-        const progress = await showMessageWithCancel(localize('AWS.caws.startMde.message', 'CODE.AWS'), timeout)
+        const progress = await showMessageWithCancel(localize('AWS.caws.startMde.message', 'REMOVED.codes'), timeout)
         progress.report({ message: localize('AWS.caws.startMde.checking', 'checking status...') })
 
         const pollMde = waitUntil(
@@ -575,19 +570,19 @@ class CawsClientInternal {
 
                 const resp = await this.getDevelopmentWorkspace(args)
                 if (lastStatus === 'STARTING' && (resp?.status === 'STOPPED' || resp?.status === 'STOPPING')) {
-                    throw Error('Evironment failed to start')
+                    throw new Error('Workspace failed to start')
                 }
 
                 if (resp?.status === 'STOPPED') {
-                    progress.report({ message: localize('AWS.caws.startMde.stopStart', 'resuming environment...') })
-                    await this.startDevEnv(args)
+                    progress.report({ message: localize('AWS.caws.startMde.stopStart', 'resuming workspace...') })
+                    await this.startDevelopmentWorkspace(args)
                 } else if (resp?.status === 'STOPPING') {
                     progress.report({
-                        message: localize('AWS.caws.startMde.resuming', 'waiting for environment to stop...'),
+                        message: localize('AWS.caws.startMde.resuming', 'waiting for workspace to stop...'),
                     })
                 } else {
                     progress.report({
-                        message: localize('AWS.caws.startMde.starting', 'waiting for environment...'),
+                        message: localize('AWS.caws.startMde.starting', 'waiting for workspace...'),
                     })
                 }
 

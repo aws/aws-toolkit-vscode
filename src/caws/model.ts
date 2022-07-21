@@ -26,19 +26,19 @@ import { ChildProcess } from '../shared/utilities/childProcess'
 import { ensureDependencies, HOST_NAME_PREFIX } from './tools'
 import { isCawsVSCode } from './utils'
 
-export type DevEnvId = Pick<DevelopmentWorkspace, 'id' | 'org' | 'project'>
+export type DevelopmentWorkspaceId = Pick<DevelopmentWorkspace, 'id' | 'org' | 'project'>
 
-export function getCawsSsmEnv(region: string, ssmPath: string, envs: DevEnvId): NodeJS.ProcessEnv {
+export function getCawsSsmEnv(region: string, ssmPath: string, workspace: DevelopmentWorkspaceId): NodeJS.ProcessEnv {
     return Object.assign(
         {
             AWS_REGION: region,
             AWS_SSM_CLI: ssmPath,
             CAWS_ENDPOINT: getCawsConfig().endpoint,
-            BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(envs.id),
-            LOG_FILE_LOCATION: sshLogFileLocation(envs.id),
-            ORGANIZATION_NAME: envs.org.name,
-            PROJECT_NAME: envs.project.name,
-            WORKSPACE_ID: envs.id,
+            BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(workspace.id),
+            LOG_FILE_LOCATION: sshLogFileLocation(workspace.id),
+            ORGANIZATION_NAME: workspace.org.name,
+            PROJECT_NAME: workspace.project.name,
+            WORKSPACE_ID: workspace.id,
         },
         process.env
     )
@@ -47,16 +47,16 @@ export function getCawsSsmEnv(region: string, ssmPath: string, envs: DevEnvId): 
 export function createCawsEnvProvider(
     client: ConnectedCawsClient,
     ssmPath: string,
-    env: DevelopmentWorkspace,
+    workspace: DevelopmentWorkspace,
     useSshAgent: boolean = true
 ): EnvProvider {
     return async () => {
         if (!client.connected) {
-            throw new Error('Unable to provide CAWS environment variables for disconnected environment')
+            throw new Error('Unable to provide development workpace environment variables when not logged-in')
         }
 
-        await cacheBearerToken(client.token, env.id)
-        const vars = getCawsSsmEnv(client.regionCode, ssmPath, env)
+        await cacheBearerToken(client.token, workspace.id)
+        const vars = getCawsSsmEnv(client.regionCode, ssmPath, workspace)
 
         return useSshAgent ? { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent(), ...vars } : vars
     }
@@ -96,21 +96,21 @@ export function sshLogFileLocation(workspaceId: string): string {
     return path.join(globals.context.globalStorageUri.fsPath, `caws.${workspaceId}.log`)
 }
 
-export function getHostNameFromEnv(env: DevEnvId): string {
+export function getHostNameFromEnv(env: DevelopmentWorkspaceId): string {
     return `${HOST_NAME_PREFIX}${env.id}`
 }
 
 export async function autoConnect(authProvider: CawsAuthenticationProvider) {
     for (const account of authProvider.listAccounts().filter(({ metadata }) => metadata.canAutoConnect)) {
-        getLogger().info(`CAWS: trying to auto-connect with user: ${account.label}`)
+        getLogger().info(`REMOVED.codes: trying to auto-connect with user: ${account.label}`)
 
         try {
             const creds = await authProvider.createSession(account)
-            getLogger().info(`CAWS: auto-connected with user: ${account.label}`)
+            getLogger().info(`REMOVED.codes: auto-connected with user: ${account.label}`)
 
             return creds
         } catch (err) {
-            getLogger().debug(`CAWS: unable to auto-connect with user "${account.label}": %O`, err)
+            getLogger().debug(`REMOVED.codes: unable to auto-connect with user "${account.label}": %O`, err)
         }
     }
 }
@@ -130,15 +130,15 @@ export function createClientFactory(authProvider: CawsAuthenticationProvider): (
 
 export interface ConnectedWorkspace {
     readonly summary: DevelopmentWorkspace
-    readonly environmentClient: DevelopmentWorkspaceClient
+    readonly workspaceClient: DevelopmentWorkspaceClient
 }
 
 export async function getConnectedWorkspace(
     cawsClient: ConnectedCawsClient,
-    environmentClient = new DevelopmentWorkspaceClient()
+    workspaceClient = new DevelopmentWorkspaceClient()
 ): Promise<ConnectedWorkspace | undefined> {
-    const arn = environmentClient.arn
-    if (!arn || !environmentClient.isCawsWorkspace()) {
+    const arn = workspaceClient.arn
+    if (!arn || !workspaceClient.isCawsWorkspace()) {
         return
     }
 
@@ -166,41 +166,41 @@ export async function getConnectedWorkspace(
         id: workspaceId,
     })
 
-    return { summary, environmentClient }
+    return { summary, workspaceClient: workspaceClient }
 }
 
-export async function openDevEnv(
+export async function openDevelopmentWorkspace(
     client: ConnectedCawsClient,
-    env: DevelopmentWorkspace,
-    targetWorkspace = '/projects'
+    workspace: DevelopmentWorkspace,
+    targetPath = '/projects'
 ): Promise<void> {
-    const runningEnv = await client.startEnvironmentWithProgress(
+    const runningEnv = await client.startWorkspaceWithProgress(
         {
-            id: env.id,
-            organizationName: env.org.name,
-            projectName: env.project.name,
+            id: workspace.id,
+            organizationName: workspace.org.name,
+            projectName: workspace.project.name,
         },
         'RUNNING'
     )
     if (!runningEnv) {
-        getLogger().error('openDevEnv: failed to start environment: %s', env.id)
+        getLogger().error('openWorkspace: failed to start workspace: %s', workspace.id)
         return
     }
 
     const deps = (await ensureDependencies()).unwrap()
 
-    const cawsEnvProvider = createCawsEnvProvider(client, deps.ssm, env)
+    const cawsEnvProvider = createCawsEnvProvider(client, deps.ssm, workspace)
     const SessionProcess = createBoundProcess(cawsEnvProvider).extend({
         onStdout(stdout) {
-            getLogger().verbose(`CAWS connect: ${env.id}: ${stdout}`)
+            getLogger().verbose(`REMOVED.codes connect: ${workspace.id}: ${stdout}`)
         },
         onStderr(stderr) {
-            getLogger().verbose(`CAWS connect: ${env.id}: ${stderr}`)
+            getLogger().verbose(`REMOVED.codes connect: ${workspace.id}: ${stderr}`)
         },
         rejectOnErrorCode: true,
     })
 
-    await startVscodeRemote(SessionProcess, getHostNameFromEnv(env), targetWorkspace, deps.vsc)
+    await startVscodeRemote(SessionProcess, getHostNameFromEnv(workspace), targetPath, deps.vsc)
 }
 
 // Should technically be with the MDE stuff
@@ -241,7 +241,7 @@ export function associateWorkspace(
 ): AsyncCollection<CawsRepo & { developmentWorkspace?: DevelopmentWorkspace }> {
     return toCollection(async function* () {
         const workspaces = await client
-            .listResources('env')
+            .listResources('developmentWorkspace')
             .flatten()
             .filter(env => env.repositories.length > 0 && isCawsVSCode(env.ides))
             .toMap(env => `${env.org.name}.${env.project.name}.${env.repositories[0].repositoryName}`)
@@ -253,8 +253,8 @@ export function associateWorkspace(
     })
 }
 
-export interface EnvironmentMemento {
-    /** True if the environment is watching the status of the workspace to try and reconnect. */
+export interface DevelopmentWorkspaceMemento {
+    /** True if the extension is watching the status of the workspace to try and reconnect. */
     attemptingReconnect?: boolean
     /** Unix time of the most recent connection. */
     previousConnectionTimestamp: number

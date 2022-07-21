@@ -12,7 +12,7 @@ import { ChildProcess } from '../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { startSshAgent } from '../../shared/extensions/ssh'
 import { ensureConnectScript } from '../../caws/tools'
-import { bearerTokenCacheLocation, DevEnvId, getCawsSsmEnv, sshLogFileLocation } from '../../caws/model'
+import { bearerTokenCacheLocation, DevelopmentWorkspaceId, getCawsSsmEnv, sshLogFileLocation } from '../../caws/model'
 import { readFile, writeFile } from 'fs-extra'
 import { StartSessionDevelopmentWorkspaceRequest } from '../../../types/clientcodeaws'
 
@@ -59,7 +59,7 @@ describe('Connect Script', function () {
         assert.ok(isWithin(context.globalStorageUri.fsPath, script))
     })
 
-    function createFakeServer(testWorkspace: DevEnvId) {
+    function createFakeServer(testWorkspace: DevelopmentWorkspaceId) {
         return http.createServer(async (req, resp) => {
             try {
                 const data = await new Promise<string>((resolve, reject) => {
@@ -95,7 +95,7 @@ describe('Connect Script', function () {
     }
 
     it('can run the script with environment variables', async function () {
-        const testWorkspace: DevEnvId = {
+        const testWorkspace: DevelopmentWorkspaceId = {
             id: '01234567890',
             project: { name: 'project' },
             org: { name: 'org' },

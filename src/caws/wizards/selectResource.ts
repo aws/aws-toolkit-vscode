@@ -38,7 +38,7 @@ export function asQuickpickItem<T extends caws.CawsResource>(resource: T): DataQ
                 description: resource.description,
                 data: resource,
             }
-        case 'env':
+        case 'developmentWorkspace':
             return { ...fromWorkspace(resource), data: resource }
         case 'org':
             return { label: resource.name, detail: resource.description, data: resource }
@@ -96,8 +96,8 @@ function createResourcePrompter<T extends caws.CawsResource>(
 }
 
 export function createOrgPrompter(client: caws.ConnectedCawsClient): QuickPickPrompter<caws.CawsOrg> {
-    return createResourcePrompter(client.listOrgs(), {
-        title: 'Select a Code.AWS Organization',
+    return createResourcePrompter(client.listOrganizations(), {
+        title: 'Select a REMOVED.codes Organization',
         placeholder: 'Search for an Organization',
     })
 }
@@ -109,7 +109,7 @@ export function createProjectPrompter(
     const projects = org ? client.listProjects({ organizationName: org.name }) : client.listResources('project')
 
     return createResourcePrompter(projects, {
-        title: 'Select a Code.AWS Project',
+        title: 'Select a REMOVED.codes Project',
         placeholder: 'Search for a Project',
     })
 }
@@ -119,27 +119,27 @@ export function createRepoPrompter(
     proj?: caws.CawsProject
 ): QuickPickPrompter<caws.CawsRepo> {
     const repos = proj
-        ? client.listRepos({ organizationName: proj.org.name, projectName: proj.name })
+        ? client.listSourceRepositories({ organizationName: proj.org.name, projectName: proj.name })
         : client.listResources('repo')
 
     return createResourcePrompter(repos, {
-        title: 'Select a Code.AWS Repository',
+        title: 'Select a REMOVED.codes Repository',
         placeholder: 'Search for a Repository',
     })
 }
 
-export function createDevEnvPrompter(
+export function createWorkpacePrompter(
     client: caws.ConnectedCawsClient,
     proj?: caws.CawsProject
 ): QuickPickPrompter<caws.DevelopmentWorkspace> {
-    const envs = proj ? client.listDevEnvs(proj) : client.listResources('env')
+    const envs = proj ? client.listWorkspaces(proj) : client.listResources('developmentWorkspace')
     const filtered = envs.map(arr => arr.filter(env => isCawsVSCode(env.ides)))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {
         return typeof obj !== 'function' && isValidResponse(obj)
     }
 
     return createResourcePrompter(filtered, {
-        title: 'Select a Code.AWS Workspace',
+        title: 'Select a REMOVED.codes Workspace',
         placeholder: 'Search for a Workspace',
         compare: (a, b) => {
             if (isData(a.data) && isData(b.data)) {
@@ -171,8 +171,8 @@ export async function selectCawsResource<T extends ResourceType>(
                 return createRepoPrompter(client)
             case 'branch':
                 throw new Error('Picking a branch is not supported')
-            case 'env':
-                return createDevEnvPrompter(client)
+            case 'developmentWorkspace':
+                return createWorkpacePrompter(client)
         }
     })()
 
@@ -197,7 +197,7 @@ export async function selectRepoForWorkspace(client: caws.ConnectedCawsClient): 
 
     const prompter = createQuickPick(items, {
         buttons: [refresh, ...createCommonButtons(getHelpUrl())],
-        title: 'Select a Code.AWS Repository',
+        title: 'Select a REMOVED.codes Repository',
         placeholder: 'Search for a Repository',
         compare: (a, b) => {
             if (a.invalidSelection === b.invalidSelection) {

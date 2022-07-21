@@ -49,13 +49,13 @@ interface MenuOption {
 const menuOptions: Record<string, MenuOption> = {
     installVsix: {
         label: 'Install VSIX on Remote Environment',
-        description: 'CAWS',
+        description: 'REMOVED.codes',
         detail: 'Automatically upload/install a VSIX to a remote host',
         executor: installVsixCommand,
     },
     openTerminal: {
         label: 'Open Remote Terminal',
-        description: 'CAWS',
+        description: 'REMOVED.codes',
         detail: 'Open a new terminal connected to the remote environment',
         executor: openTerminalCommand,
     },
@@ -149,12 +149,12 @@ async function openTerminalCommand(ctx: ExtContext) {
 }
 
 async function openTerminal(client: ConnectedCawsClient, progress: LazyProgress<{ message: string }>) {
-    const env = await selectCawsResource(client, 'env')
+    const env = await selectCawsResource(client, 'developmentWorkspace')
     if (!env) {
         return
     }
 
-    const runningEnv = await client.startEnvironmentWithProgress(
+    const runningEnv = await client.startWorkspaceWithProgress(
         {
             id: env.id,
             organizationName: env.org.name,
@@ -193,7 +193,7 @@ async function installVsixCommand(ctx: ExtContext) {
     const commands = CawsCommands.fromContext(ctx.extensionContext)
 
     await commands.withClient(async client => {
-        const env = await selectCawsResource(client, 'env')
+        const env = await selectCawsResource(client, 'developmentWorkspace')
         if (!env) {
             return
         }
@@ -324,7 +324,7 @@ async function installVsix(
     const { vsc, ssh, ssm } = (await ensureDependencies()).unwrap()
 
     progress.report({ message: 'Waiting...' })
-    const runningEnv = await client.startEnvironmentWithProgress(
+    const runningEnv = await client.startWorkspaceWithProgress(
         {
             id: env.id,
             organizationName: env.org.name,

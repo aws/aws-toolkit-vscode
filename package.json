@@ -62,14 +62,14 @@
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onCommand:aws.caws.listCommands",
-        "onCommand:aws.caws.connect",
+        "onCommand:aws.caws.login",
         "onCommand:aws.caws.logout",
         "onCommand:aws.caws.openOrg",
         "onCommand:aws.caws.openProject",
         "onCommand:aws.caws.openRepo",
-        "onCommand:aws.caws.openDevEnv",
+        "onCommand:aws.caws.openWorkspace",
         "onCommand:aws.caws.cloneRepo",
-        "onCommand:aws.caws.createDevEnv",
+        "onCommand:aws.caws.createWorkspace",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -735,13 +735,6 @@
                 }
             ]
         },
-        "viewsWelcome": [
-            {
-                "view": "aws.developerTools",
-                "contents": "[Connect to CODE.AWS](command:aws.caws.connect)\n[Clone Repository](command:aws.caws.cloneRepo)\n[Create Development Environment](command:aws.caws.createDevEnv)\n[CODE.AWS Commands](command:aws.caws.listCommands)\n",
-                "when": "true"
-            }
-        ],
         "menus": {
             "commandPalette": [
                 {
@@ -782,7 +775,7 @@
                 },
                 {
                     "command": "aws.caws.listCommands",
-                    "when": "false"
+                    "when": "!isCloud9"
                 },
                 {
                     "command": "aws.downloadSchemaItemCode",
@@ -1198,7 +1191,7 @@
                     "group": "z_about@1"
                 },
                 {
-                    "command": "aws.caws.connect",
+                    "command": "aws.caws.login",
                     "when": "view == aws.caws",
                     "group": "1_caws@1"
                 },
@@ -1208,18 +1201,18 @@
                     "group": "1_caws@1"
                 },
                 {
-                    "command": "aws.caws.createDevEnv",
-                    "when": "view == aws.caws",
+                    "command": "aws.caws.createWorkspace",
+                    "when": "view == aws.caws && !isCloud9",
                     "group": "1_caws@1"
                 },
                 {
                     "command": "aws.caws.listCommands",
-                    "when": "view == aws.caws",
+                    "when": "view == aws.caws && !isCloud9",
                     "group": "1_caws@1"
                 },
                 {
-                    "command": "aws.caws.openDevEnv",
-                    "when": "view == aws.caws",
+                    "command": "aws.caws.openWorkspace",
+                    "when": "view == aws.caws && !isCloud9",
                     "group": "1_caws@1"
                 }
             ],
@@ -1812,18 +1805,20 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.caws.openDevEnv",
-                "title": "%AWS.command.caws.openDevEnv%",
-                "category": "AWS"
+                "command": "aws.caws.openWorkspace",
+                "title": "%AWS.command.caws.openWorkspace%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
             },
             {
                 "command": "aws.caws.listCommands",
                 "title": "%AWS.command.caws.listCommands%",
-                "category": "AWS"
+                "category": "AWS",
+                "enablement": "!isCloud9"
             },
             {
-                "command": "aws.caws.connect",
-                "title": "%AWS.command.caws.connect%",
+                "command": "aws.caws.login",
+                "title": "%AWS.command.caws.login%",
                 "category": "AWS"
             },
             {
@@ -1837,9 +1832,10 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.caws.createDevEnv",
-                "title": "%AWS.command.caws.createDevEnv%",
-                "category": "AWS"
+                "command": "aws.caws.createWorkspace",
+                "title": "%AWS.command.caws.createWorkspace%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
             },
             {
                 "command": "aws.credential.profile.create",

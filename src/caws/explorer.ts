@@ -23,7 +23,7 @@ function getLocalCommands() {
             iconPath: getIcon('vscode-vm-connect'),
         }),
         CawsCommands.declared.listCommands.build().asTreeNode({
-            label: 'View Additional Code.AWS Commands',
+            label: 'View Additional REMOVED.codes Commands',
             iconPath: getIcon('vscode-list-flat'), // TODO(sijaden): use better icon
         }),
     ]
@@ -39,7 +39,7 @@ function getRemoteCommands(currentWorkspace: DevelopmentWorkspace, devFileLocati
             label: 'Open Settings',
             iconPath: getIcon('vscode-settings-gear'),
         }),
-        CawsCommands.declared.openDevFile.build(devFileLocation).asTreeNode({
+        CawsCommands.declared.openDevfile.build(devFileLocation).asTreeNode({
             label: 'Open Devfile',
             iconPath: getIcon('vscode-symbol-namespace'),
             description: vscode.workspace.asRelativePath(devFileLocation),
@@ -91,7 +91,8 @@ export class CawsRootNode implements RootNode {
     private workspace?: ConnectedWorkspace
 
     public constructor(private readonly authProvider: CawsAuthenticationProvider) {
-        this.authProvider.onDidChangeSessions(() => {
+        this.authProvider.onDidChangeSessions(async () => {
+            this.workspace = await this.getWorkspace()
             this.onDidChangeVisibilityEmitter.fire()
         })
 
@@ -114,13 +115,13 @@ export class CawsRootNode implements RootNode {
             return getLocalCommands()
         }
 
-        const devFileLocation = await getDevfileLocation(this.workspace.environmentClient)
+        const devFileLocation = await getDevfileLocation(this.workspace.workspaceClient)
 
         return getRemoteCommands(this.workspace.summary, devFileLocation)
     }
 
     private createTreeItem() {
-        const item = new vscode.TreeItem('CODE.AWS', vscode.TreeItemCollapsibleState.Collapsed)
+        const item = new vscode.TreeItem('REMOVED.codes', vscode.TreeItemCollapsibleState.Collapsed)
 
         if (this.workspace !== undefined) {
             item.description = 'Connected to Workspace'
@@ -132,7 +133,6 @@ export class CawsRootNode implements RootNode {
 
     private async getWorkspace() {
         const client = await createClientFactory(this.authProvider)()
-
-        return client.connected ? await getConnectedWorkspace(client) : undefined
+        return client.connected ? getConnectedWorkspace(client) : undefined
     }
 }

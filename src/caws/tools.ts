@@ -36,7 +36,7 @@ interface MissingTool {
     readonly reason?: string
 }
 
-export const HOST_NAME_PREFIX = 'aws-caws-'
+export const HOST_NAME_PREFIX = 'aws-workspace-'
 
 export async function ensureDependencies(
     window = vscode.window
@@ -60,13 +60,13 @@ export async function ensureDependencies(
             .join(', ')
         const msg = localize(
             'AWS.caws.missingRequiredTool',
-            'Failed to connect to environment, missing required tools: {0}',
+            'Failed to connect to workspace, missing required tools: {0}',
             missing
         )
 
         tools.err().forEach(d => {
             if (d.reason) {
-                getLogger().error(`caws: failed to get tool "${d.name}": ${d.reason}`)
+                getLogger().error(`REMOVED.codes: failed to get tool "${d.name}": ${d.reason}`)
             }
         })
 
@@ -78,7 +78,7 @@ export async function ensureDependencies(
     const config = await ensureCawsSshConfig(tools.ok().ssh)
     if (config.isErr()) {
         const err = config.err()
-        getLogger().error(`caws: failed to add ssh config section: ${err.message}`)
+        getLogger().error(`REMOVED.codes: failed to add ssh config section: ${err.message}`)
 
         return Result.err(err)
     }
@@ -148,7 +148,7 @@ async function ensureSsmCli() {
 }
 
 /**
- * Checks if the "aws-caws-*" SSH config hostname pattern is working, else prompts user to add it.
+ * Checks if the "aws-workspace-*" SSH config hostname pattern is working, else prompts user to add it.
  *
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
@@ -187,7 +187,7 @@ Host ${configHostName}
 `
 }
 
-// Check if the "aws-caws-*" hostname pattern is working.
+// Check if the "aws-workspace-*" hostname pattern is working.
 async function verifySSHHost({
     sshPath,
     section,
@@ -207,7 +207,10 @@ async function verifySSHHost({
 
     if (!hasProxyCommand) {
         if (configSection !== undefined) {
-            getLogger().warn(`CAWS: SSH config: found old/outdated "${configHostName}" section:\n%O`, configSection)
+            getLogger().warn(
+                `REMOVED.codes: SSH config: found old/outdated "${configHostName}" section:\n%O`,
+                configSection
+            )
             const oldConfig = localize(
                 'AWS.caws.error.oldConfig',
                 'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',

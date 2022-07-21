@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ConnectedWorkspace, DevEnvId, getDevfileLocation } from '../../model'
+import { ConnectedWorkspace, DevelopmentWorkspaceId, getDevfileLocation } from '../../model'
 import { CawsCommands, WorkspaceSettings } from '../../commands'
 import { VueWebview } from '../../../webviews/main'
 import { Prompter } from '../../../shared/ui/prompter'
@@ -49,13 +49,13 @@ export class CawsConfigureWebview extends VueWebview {
     }
 
     public async getDevFileLocation() {
-        const location = await getDevfileLocation(this.workspace.environmentClient)
+        const location = await getDevfileLocation(this.workspace.workspaceClient)
         return vscode.workspace.asRelativePath(location)
     }
 
     public async openDevfile() {
-        const location = await getDevfileLocation(this.workspace.environmentClient)
-        return this.commands.openDevFile.execute(location)
+        const location = await getDevfileLocation(this.workspace.workspaceClient)
+        return this.commands.openDevfile.execute(location)
     }
 
     public async updateDevfile(location: string) {
@@ -68,11 +68,11 @@ export class CawsConfigureWebview extends VueWebview {
         await updateDevfileCommand.execute(vscode.Uri.joinPath(rootDirectory, location))
     }
 
-    public async stopWorkspace(id: DevEnvId) {
+    public async stopWorkspace(id: DevelopmentWorkspaceId) {
         return this.commands.stopWorkspace.execute(id)
     }
 
-    public async deleteWorkspace(id: DevEnvId) {
+    public async deleteWorkspace(id: DevelopmentWorkspaceId) {
         return this.commands.deleteWorkspace.execute(id)
     }
 
@@ -166,7 +166,7 @@ function pollDevfile(workspace: ConnectedWorkspace, server: CawsConfigureWebview
 
     ;(async () => {
         while (!done) {
-            const resp = await workspace.environmentClient.getStatus()
+            const resp = await workspace.workspaceClient.getStatus()
             if (resp.status === 'CHANGED') {
                 server.onDidChangeDevfile.fire({ ...resp, actionId: 'devfile' })
             }

@@ -11,13 +11,12 @@ describe('cawsClient', function () {
     it('toCawsUrl()', async function () {
         const org: caws.CawsOrg = {
             type: 'org',
-            id: 'orgid1',
             name: 'org1',
+            regionName: 'region',
         }
         const project: caws.CawsProject = {
             type: 'project',
             org: org,
-            id: 'projectid1',
             name: 'project1',
         }
         const repo: caws.CawsRepo = {

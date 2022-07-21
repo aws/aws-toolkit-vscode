@@ -9,13 +9,13 @@ import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { Prompter } from '../../shared/ui/prompter'
 import { toTitleCase } from '../../shared/utilities/textUtilities'
 
-export type InstanceType = keyof typeof environmentOptions['instanceType']
+export type InstanceType = keyof typeof workspaceOptions['instanceType']
 interface InstanceDescription {
     name: string
     specs: string
 }
 
-const environmentOptions = settings['environment']
+const workspaceOptions = settings['environment']
 
 function entries<T, K extends keyof T = keyof T & string>(obj: T): [K, T[K]][] {
     return Object.entries(obj) as any
@@ -34,7 +34,7 @@ function abbreviateUnit(unit: string): string {
 
 export function getInstanceDescription(type: InstanceType): InstanceDescription {
     // TODO: add developer types?
-    const desc = environmentOptions.instanceType[type]
+    const desc = workspaceOptions.instanceType[type]
 
     return {
         name: toTitleCase(type.split('.').pop()!),
@@ -44,12 +44,12 @@ export function getInstanceDescription(type: InstanceType): InstanceDescription 
 
 export function getAllInstanceDescriptions(): { [key: string]: InstanceDescription } {
     const desc: { [key: string]: InstanceDescription } = {}
-    entries(environmentOptions.instanceType).forEach(([k]) => (desc[k] = getInstanceDescription(k)))
+    entries(workspaceOptions.instanceType).forEach(([k]) => (desc[k] = getInstanceDescription(k)))
     return desc
 }
 
 export function createInstancePrompter(): QuickPickPrompter<InstanceType> {
-    const items = entries(environmentOptions.instanceType).map(([name, desc]) => ({
+    const items = entries(workspaceOptions.instanceType).map(([name, desc]) => ({
         data: name,
         label: `${getInstanceDescription(name).name} (${getInstanceDescription(name).specs})`,
     }))

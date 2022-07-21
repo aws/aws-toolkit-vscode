@@ -29,8 +29,7 @@ export interface ContextChangeEventsArgs {
 }
 
 /**
- * Represents the current AWS credentials, CODE.AWS credentials, and zero or
- * more regions.
+ * Represents the current AWS credentials and zero or more regions.
  */
 export type AwsContext = ClassToInterfaceType<DefaultAwsContext>
 
