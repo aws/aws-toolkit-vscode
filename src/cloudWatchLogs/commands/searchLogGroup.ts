@@ -45,7 +45,9 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
             logGroupInfo: logGroupInfo,
             retrieveLogsFunction: filterLogEventsFromUriComponents,
         }
+        // Currently displays nothing if update log fails in non-cancellationError. (don't want this)
 
+        // Catch error out here
         await registry.registerLog(uri, initialStreamData)
         const isLogCancelled = registry.getLogCancelled(uri)
         if (!isLogCancelled) {

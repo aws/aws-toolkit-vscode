@@ -225,27 +225,27 @@ export async function filterLogEventsFromUriComponents(
         nextToken,
         limit: parameters.limit,
     })
-    try {
-        const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
+    // try {
+    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
-        // Use heuristic of last token as backward token and next token as forward to generalize token form.
-        // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
-        // However, this fail wouldn't really impact customers.
-        if (response) {
-            return {
-                events: response.events ? response.events : [],
-                nextForwardToken: response.nextToken,
-                nextBackwardToken: nextToken,
-            }
-        }
-    } catch (err) {
-        if (CancellationError.isUserCancelled(err)) {
-            getLogger().info('cloudwatchlogs: user cancelled search')
-        } else {
-            getLogger().info('')
-            throw err
+    // Use heuristic of last token as backward token and next token as forward to generalize token form.
+    // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
+    // However, this fail wouldn't really impact customers.
+    if (response) {
+        return {
+            events: response.events ? response.events : [],
+            nextForwardToken: response.nextToken,
+            nextBackwardToken: nextToken,
         }
     }
+    // } catch (err) {
+    //     if (CancellationError.isUserCancelled(err)) {
+    //         getLogger().info('cloudwatchlogs: user cancelled search')
+    //     } else {
+    //         getLogger().info('')
+    //         throw err
+    //     }
+    // }
     return {
         events: [],
         cancelled: true,

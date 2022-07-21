@@ -41,10 +41,10 @@ export async function addLogEvents(
         // contingency in case lock isn't busy but still locked out. Don't want to accidentally trigger making codelens not busy
         getLogger().debug(`addLogEvents already locked for lock: ${lockName}`)
         return
-    }
-
-    registry.setBusyStatus(uri, false)
-    if (onDidChangeCodeLensEvent) {
-        onDidChangeCodeLensEvent.fire()
+    } finally {
+        registry.setBusyStatus(uri, false)
+        if (onDidChangeCodeLensEvent) {
+            onDidChangeCodeLensEvent.fire()
+        }
     }
 }
