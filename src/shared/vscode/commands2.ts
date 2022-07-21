@@ -307,28 +307,41 @@ interface CommandInfo<T extends Callback> {
 // This debouncing is a temporary safe-guard to mitigate the risk of instrumenting all
 // commands with telemetry at once. The alternative is to do a gradual rollout although
 // it's not much safer in terms of weeding out problematic commands.
-//
-// Note that emission is recorded after the command terminates. Commands that implement
-// their own debouncing logic may conflict with this and give misleading numbers.
-const emitInfo = new Map<string, { previousEmitTime: number; debounceCounter?: number }>()
-function recordCommandDebounced(id: string, start: Date, err?: unknown) {
-    const currentTime = Date.now()
-    const threshold = isAutomation() ? 0 : 1000
-    const { previousEmitTime, debounceCounter } = { debounceCounter: 0, ...emitInfo.get(id) }
+const emitInfo = new Map<string, { token: number; startTime: number; debounceCounter: number }>()
+const emitTokens: Record<string, number> = {}
 
-    if (previousEmitTime !== undefined && currentTime - previousEmitTime < threshold) {
-        emitInfo.set(id, { previousEmitTime, debounceCounter: debounceCounter + 1 })
+function startRecordCommand(id: string): number {
+    const currentTime = Date.now()
+    const previousEmit = emitInfo.get(id)
+    const threshold = isAutomation() ? 0 : 60000
+    const token = (emitTokens[id] = (emitTokens[id] ?? 0) + 1)
+
+    if (previousEmit?.startTime !== undefined && currentTime - previousEmit.startTime < threshold) {
+        emitInfo.set(id, { ...previousEmit, debounceCounter: previousEmit.debounceCounter + 1 })
+        return token
+    }
+
+    emitInfo.set(id, { token, startTime: currentTime, debounceCounter: previousEmit?.debounceCounter ?? 0 })
+    return token
+}
+
+function endRecordCommand(id: string, token: number, err?: unknown) {
+    const data = emitInfo.get(id)
+    const currentTime = Date.now()
+
+    if (token !== data?.token) {
+        getLogger().debug(`commands: skipped telemetry for "${id}"`)
         return
     }
 
-    emitInfo.set(id, { previousEmitTime: currentTime })
+    emitInfo.set(id, { ...data, debounceCounter: 0 })
 
     recordVscodeExecuteCommand({
         command: id,
-        debounceCount: debounceCounter,
+        debounceCount: data.debounceCounter,
         result: getTelemetryResult(err),
         reason: getTelemetryReason(err),
-        duration: currentTime - start.getTime(),
+        duration: currentTime - data.startTime,
     })
 }
 
@@ -336,8 +349,8 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
     const { args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
+    const telemetryToken = startRecordCommand(info.id)
 
-    const start = new Date()
     logger.debug(`command: running ${label}${withArgs}`)
 
     try {
@@ -346,11 +359,11 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
         }
 
         const result = await fn(...args)
-        logging && recordCommandDebounced(info.id, start)
+        logging && endRecordCommand(info.id, telemetryToken)
 
         return result
     } catch (error) {
-        logging && recordCommandDebounced(info.id, start, error)
+        logging && endRecordCommand(info.id, telemetryToken, error)
 
         if (errorHandler !== undefined) {
             await errorHandler(info, error)
