@@ -88,10 +88,6 @@ export function createFilterpatternPrompter() {
     })
 }
 
-export function createRegionSubmenu() {
-    return new RegionSubmenu(getLogGroupsFromRegion)
-}
-
 export interface SearchLogGroupWizardResponse {
     submenuResponse: RegionSubmenuResponse<string>
     filterPattern: string
@@ -100,7 +96,7 @@ export interface SearchLogGroupWizardResponse {
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
     public constructor() {
         super()
-        this.form.submenuResponse.bindPrompter(createRegionSubmenu)
+        this.form.submenuResponse.bindPrompter(() => new RegionSubmenu(getLogGroupsFromRegion))
         this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
     }
 }
