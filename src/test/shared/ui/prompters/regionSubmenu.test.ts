@@ -35,7 +35,7 @@ describe('regionSubmenu', function () {
         submenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'us-west-1')
     })
 
-    it('Able to swap regions via escape hatch', async function () {
+    it('allow users to swap regions via escape hatch', async function () {
         type Inner<T> = T extends QuickPickPrompter<infer U> ? U : never
         type Combine<T> = QuickPickPrompter<Inner<T>>
 
