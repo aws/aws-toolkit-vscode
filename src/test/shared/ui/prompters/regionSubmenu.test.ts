@@ -69,13 +69,17 @@ describe('regionSubmenu', function () {
         logGroupTester.acceptItem('Switch region')
         await logGroupTester.result()
 
-        assert.ok(SubmenuPrompter.activePrompter)
         const regionTester = createQuickPickTester(
             SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
         )
-        regionTester.acceptItem('us-west-2')
+        regionTester.acceptItem('US West (Oregon)')
         await regionTester.result()
 
+        const logGroupTester2 = createQuickPickTester(
+            SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
+        )
+        logGroupTester2.acceptItem('group2c')
+        await logGroupTester2.result()
         await resp
     })
 })
