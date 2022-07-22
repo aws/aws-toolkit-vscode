@@ -259,12 +259,14 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             const store = toRecord(props, p => this.get(p, undefined))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
-                const isDifferent = (p: keyof T & string) =>
-                    event.affectsConfiguration(p) || store[p] !== this.get(p, undefined)
+                const isDifferent = (p: keyof T & string) => {
+                    const previous = store[p]
+
+                    return event.affectsConfiguration(p) || previous !== (store[p] = this.get(p, undefined))
+                }
 
                 for (const key of props.filter(isDifferent)) {
                     this.log(`key "${key}" changed`)
-                    store[key] = this.get(key, undefined)
                     emitter.fire({ key })
                 }
             })
