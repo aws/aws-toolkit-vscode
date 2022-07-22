@@ -107,9 +107,7 @@
                                 you provide to the Beta Service, and that multiple users may receive the same or similar
                                 output. For clarity, although these computational results are Your Content, the same or
                                 similar outputs are independently created, and AWS will not be restricted from providing
-                                the same or similar output to other customers. In addition, the CodeWhisperer Beta
-                                Service may produce computational results that are attributed to AWS or our affiliates,
-                                and we retain the underlying intellectual property rights in that Content;
+                                the same or similar output to other customers.
                             </li>
                             <li>
                                 if you would like to instruct AWS to refrain from using collected CodeWhisperer Content
@@ -128,9 +126,7 @@
                                 you provide to the Beta Service, and that multiple users may receive the same or similar
                                 output. For clarity, although these computational results are Your Content, the same or
                                 similar outputs are independently created, and AWS will not be restricted from providing
-                                the same or similar output to other customers. In addition, the CodeWhisperer Beta
-                                Service may produce computational results that are attributed to AWS or our affiliates,
-                                and we retain the underlying intellectual property rights in that Content;
+                                the same or similar output to other customers.
                             </li>
                             <li>
                                 if you would like to instruct AWS to refrain from using collected CodeWhisperer Content
