@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
-import { createQuickPickTester, QuickPickTester } from '../testUtils'
+import { createQuickPickTester } from '../testUtils'
 
 describe('regionSubmenu', function () {
     let submenuPrompter: RegionSubmenu<string>
