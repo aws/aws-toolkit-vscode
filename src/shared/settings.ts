@@ -260,9 +260,12 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
                 const isDifferent = (p: keyof T & string) => {
-                    const previous = store[p]
+                    const isDifferentLazy = () => {
+                        const previous = store[p]
+                        return previous !== (store[p] = this.get(p, undefined))
+                    }
 
-                    return event.affectsConfiguration(p) || previous !== (store[p] = this.get(p, undefined))
+                    return event.affectsConfiguration(p) || isDifferentLazy()
                 }
 
                 for (const key of props.filter(isDifferent)) {
