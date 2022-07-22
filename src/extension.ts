@@ -65,6 +65,8 @@ import { join } from 'path'
 import { Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands } from './shared/vscode/commands2'
+import { sleep } from './shared/utilities/timeoutUtils'
+import { PaginatedInlineCompletionItemProvider } from './shared/ui/inlineCompletion'
 
 let localize: nls.LocalizeFunc
 
@@ -228,6 +230,19 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
         }
+
+        const provider = new PaginatedInlineCompletionItemProvider(async function* () {
+            await sleep(2500)
+            yield [new vscode.InlineCompletionItem('hello, world!'), new vscode.InlineCompletionItem('hello, world?')]
+            await sleep(2500)
+            yield [new vscode.InlineCompletionItem('hello, steve!')]
+            await sleep(2500)
+            yield [new vscode.InlineCompletionItem('hello, bob!')]
+            await sleep(2500)
+            yield [new vscode.InlineCompletionItem('\n\tgoodbye!')]
+        })
+
+        vscode.languages.registerInlineCompletionItemProvider({ scheme: 'file' }, provider)
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
