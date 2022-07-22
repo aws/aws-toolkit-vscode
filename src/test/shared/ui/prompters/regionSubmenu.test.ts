@@ -47,8 +47,7 @@ describe('regionSubmenu', function () {
             SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
         )
         logGroupTester.acceptItem('Switch region')
-        //await logGroupTester.result()
-        await sleep(100)
+        await logGroupTester.result()
 
         const regionTester = createQuickPickTester(
             SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
@@ -61,6 +60,9 @@ describe('regionSubmenu', function () {
         )
         logGroupTester2.acceptItem('group2c')
         await logGroupTester2.result()
-        await resp
+        assert.deepStrictEqual(await resp, {
+            region: 'us-west-2',
+            data: 'group2c',
+        })
     })
 })
