@@ -21,8 +21,7 @@ export interface RegionSubmenuResponse<T> {
 export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
     private currentState: 'data' | 'region' = 'data'
     private steps?: [current: number, total: number]
-    public activePrompter: QuickPickPrompter<typeof switchRegion | T> | QuickPickPrompter<Region> =
-        this.createMenuPrompter()
+    public activePrompter?: QuickPickPrompter<typeof switchRegion | T> | QuickPickPrompter<Region>
 
     public constructor(
         private readonly itemsProvider: (region: string) => ItemLoadTypes<T>,
@@ -46,7 +45,6 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
             },
             ...prompter.quickPick.items,
         ]
-
         return prompter
     }
 
