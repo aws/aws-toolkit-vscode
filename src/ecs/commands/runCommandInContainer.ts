@@ -26,6 +26,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { PromptSettings } from '../../shared/settings'
 import { viewDocs } from '../../shared/localizedText'
+import { DefaultIamClient } from '../../shared/clients/iamClient'
 
 // Required SSM permissions for the task IAM role, see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using
 const REQUIRED_SSM_PERMISSIONS = [
@@ -57,7 +58,7 @@ export async function runCommandInContainer(
             settings.disablePrompt('ecsRunCommand')
         }
 
-        const iamClient = globals.toolkitClientBuilder.createIamClient(node.ecs.regionCode)
+        const iamClient = new DefaultIamClient(node.ecs.regionCode)
         if (
             node.taskRoleArn !== undefined &&
             (await iamClient.hasRolePermissions({

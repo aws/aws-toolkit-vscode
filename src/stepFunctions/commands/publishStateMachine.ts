@@ -4,28 +4,15 @@
  */
 
 import { load } from 'js-yaml'
-import globals from '../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
-import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
-import { sfnCreateStateMachineUrl } from '../../shared/constants'
-
+import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { getLogger, Logger } from '../../shared/logger'
-import { createCommonButtons } from '../../shared/ui/buttons'
-import { createRegionPrompter } from '../../shared/ui/common/region'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { isValidResponse } from '../../shared/wizards/wizard'
 import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
 import { refreshStepFunctionsTree } from '../explorer/stepFunctionsNodes'
-import {
-    DefaultPublishStateMachineWizardContext,
-    PublishStateMachineWizard,
-    PublishStateMachineWizardContext,
-    PublishStateMachineWizardCreateResponse,
-    PublishStateMachineWizardResponse,
-    PublishStateMachineWizardUpdateResponse,
-} from '../wizards/publishStateMachineWizard'
+import { PublishStateMachineWizard, PublishStateMachineWizardState } from '../wizards/publishStateMachineWizard'
 const localize = nls.loadMessageBundle()
 
 export async function publishStateMachine(
@@ -65,29 +52,18 @@ export async function publishStateMachine(
         }
     }
 
-    if (!region) {
-        const r = await createRegionPrompter(undefined, {
-            buttons: createCommonButtons(sfnCreateStateMachineUrl),
-            defaultRegion: awsContext.getCredentialDefaultRegion(),
-        }).prompt()
-        if (!isValidResponse(r)) {
-            logger.error('publishStateMachine: invalid region selected: %O', r)
-        }
-        region = isValidResponse(r) ? r.id : awsContext.getCredentialDefaultRegion()
-    }
-
-    const client: StepFunctionsClient = globals.toolkitClientBuilder.createStepFunctionsClient(region)
-
     try {
-        const wizardContext: PublishStateMachineWizardContext = new DefaultPublishStateMachineWizardContext(region)
-        const wizardResponse: PublishStateMachineWizardResponse | undefined = await new PublishStateMachineWizard(
-            wizardContext
-        ).run()
-        if (wizardResponse?.createResponse) {
-            await createStateMachine(wizardResponse.createResponse, text, outputChannel, region, client)
-            refreshStepFunctionsTree(region)
-        } else if (wizardResponse?.updateResponse) {
-            await updateStateMachine(wizardResponse.updateResponse, text, outputChannel, region, client)
+        const response = await new PublishStateMachineWizard(region).run()
+        if (!response) {
+            return
+        }
+        const client = new DefaultStepFunctionsClient(response.region)
+
+        if (response?.createResponse) {
+            await createStateMachine(response.createResponse, text, outputChannel, response.region, client)
+            refreshStepFunctionsTree(response.region)
+        } else if (response?.updateResponse) {
+            await updateStateMachine(response.updateResponse, text, outputChannel, response.region, client)
         }
     } catch (err) {
         logger.error(err as Error)
@@ -95,7 +71,7 @@ export async function publishStateMachine(
 }
 
 async function createStateMachine(
-    wizardResponse: PublishStateMachineWizardCreateResponse,
+    wizardResponse: NonNullable<PublishStateMachineWizardState['createResponse']>,
     definition: string,
     outputChannel: vscode.OutputChannel,
     region: string,
@@ -142,7 +118,7 @@ async function createStateMachine(
 }
 
 async function updateStateMachine(
-    wizardResponse: PublishStateMachineWizardUpdateResponse,
+    wizardResponse: NonNullable<PublishStateMachineWizardState['updateResponse']>,
     definition: string,
     outputChannel: vscode.OutputChannel,
     region: string,

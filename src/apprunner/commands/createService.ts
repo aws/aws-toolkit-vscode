@@ -12,7 +12,7 @@ export async function createAppRunnerService(node: AppRunnerNode): Promise<void>
     let source: telemetry.AppRunnerServiceSource | undefined = undefined
 
     try {
-        const wizard = new CreateAppRunnerServiceWizard(node.region)
+        const wizard = new CreateAppRunnerServiceWizard(node.regionCode)
         const result = await wizard.run()
         if (result === undefined) {
             telemetryResult = 'Cancelled'

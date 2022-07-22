@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { SchemaClient } from '../../../src/shared/clients/schemaClient'
+import { DefaultSchemaClient, SchemaClient } from '../../../src/shared/clients/schemaClient'
 import { createSchemaCodeDownloaderObject } from '../..//eventSchemas/commands/downloadSchemaItemCode'
 import {
     SchemaCodeDownloader,
@@ -107,13 +107,14 @@ export async function resumeCreateNewSamApp(
         getLogger().error('Error resuming new SAM Application: %O', err as Error)
     } finally {
         activationReloadState.clearSamInitState()
+        const arch = samInitState?.architecture as telemetry.LambdaArchitecture
         telemetry.recordSamInit({
             lambdaPackageType: samInitState?.isImage ? 'Image' : 'Zip',
+            lambdaArchitecture: arch,
             result: createResult,
             reason: reason,
             runtime: samInitState?.runtime as telemetry.Runtime,
             version: samVersion,
-            architecture: samInitState?.architecture as telemetry.Architecture,
         })
     }
 }
@@ -179,7 +180,7 @@ export async function createNewSamApplication(
         let schemaTemplateParameters: SchemaTemplateParameters
         let client: SchemaClient
         if (config.template === eventBridgeStarterAppTemplate) {
-            client = globals.toolkitClientBuilder.createSchemaClient(config.region!)
+            client = new DefaultSchemaClient(config.region!)
             schemaTemplateParameters = await buildSchemaTemplateParameters(
                 config.schemaName!,
                 config.registryName!,
@@ -340,11 +341,11 @@ export async function createNewSamApplication(
     } finally {
         telemetry.recordSamInit({
             lambdaPackageType: lambdaPackageType,
+            lambdaArchitecture: initArguments?.architecture,
             result: createResult,
             reason: reason,
             runtime: createRuntime as telemetry.Runtime,
             version: samVersion,
-            architecture: initArguments?.architecture,
         })
     }
 }

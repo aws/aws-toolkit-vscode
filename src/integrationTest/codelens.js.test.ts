@@ -8,6 +8,7 @@ import { dirname, join } from 'path'
 import * as vscode from 'vscode'
 import { getAddConfigCodeLens, getTestWorkspaceFolder } from './integrationTestsUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
+import * as testUtils from './integrationTestsUtilities'
 
 const ACTIVATE_EXTENSION_TIMEOUT_MILLIS = 30000
 const CODELENS_TEST_TIMEOUT_MILLIS = 10000
@@ -19,6 +20,7 @@ describe('SAM Local CodeLenses (JS)', async function () {
     // TODO : Extend this test suite out to work for different projects with different file configurations
     before(async function () {
         this.timeout(ACTIVATE_EXTENSION_TIMEOUT_MILLIS)
+        await testUtils.configureAwsToolkitExtension()
     })
 
     it('appear when manifest in subfolder and app is beside manifest', async function () {

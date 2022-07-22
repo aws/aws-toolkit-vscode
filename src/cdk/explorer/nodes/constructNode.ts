@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import { getIcon } from '../../../shared/icons'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
-import { cdk } from '../../globals'
 import { CdkAppLocation } from '../cdkProject'
 import * as treeInspector from '../tree/treeInspector'
 import { ConstructTreeEntity } from '../tree/types'
@@ -45,18 +45,7 @@ export class ConstructNode implements TreeNode {
         const item = new vscode.TreeItem(treeInspector.getDisplayLabel(this.construct), collapsibleState)
         item.contextValue = isStateMachine(this.construct) ? 'awsCdkStateMachineNode' : 'awsCdkConstructNode'
         item.tooltip = this.type || this.construct.path
-
-        if (this.type) {
-            item.iconPath = {
-                dark: vscode.Uri.file(cdk.iconPaths.dark.cloudFormation),
-                light: vscode.Uri.file(cdk.iconPaths.light.cloudFormation),
-            }
-        } else {
-            item.iconPath = {
-                dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
-                light: vscode.Uri.file(cdk.iconPaths.light.cdk),
-            }
-        }
+        item.iconPath = this.type ? getIcon('aws-cloudformation-stack') : getIcon('aws-cdk-logo')
 
         return item
     }

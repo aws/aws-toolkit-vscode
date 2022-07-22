@@ -56,6 +56,8 @@ export const sfnCreateStateMachineNameParamUrl: string =
 export const sfnDeveloperGuideUrl: string = 'https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html'
 export const sfnUpdateStateMachineUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/apireference/API_UpdateStateMachine.html'
+export const sfnSupportedRegionsUrl: string =
+    'https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html#supported-regions'
 
 // URLs for SSM Documents
 export const ssmDocumentPublishGuideUrl: string =

@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
+import { getIcon } from '../../../shared/icons'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 
 /*
@@ -32,10 +32,7 @@ export class PropertyNode implements TreeNode {
         const item = new vscode.TreeItem(`${this.key}: ${this.value}`)
 
         item.contextValue = 'awsCdkPropertyNode'
-        item.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.settings),
-            light: vscode.Uri.file(globals.iconPaths.light.settings),
-        }
+        item.iconPath = getIcon('vscode-gear')
 
         if (this.value instanceof Array || this.value instanceof Object) {
             item.label = this.key

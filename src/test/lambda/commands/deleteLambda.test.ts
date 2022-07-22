@@ -5,130 +5,68 @@
 
 import * as assert from 'assert'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import { MockOutputChannel } from '../../mockOutputChannel'
+import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
+import { createTestWindow } from '../../shared/vscode/window'
+import { stub } from '../../utilities/stubber'
 
 describe('deleteLambda', async function () {
-    it('should do nothing if function name is not provided', async function () {
-        await assertLambdaDeleteWorksWhen({
-            // test variables
-            functionName: '',
-            onConfirm: async () => assert.fail('should not try to confirm w/o function name'),
+    function createLambdaClient() {
+        const client = stub(DefaultLambdaClient, { regionCode: 'region-1' })
+        client.deleteFunction.resolves()
 
-            // expected results
-            expectedDeleteCallCount: 0,
-            expectedRefreshCallCount: 0,
-        })
+        return client
+    }
+
+    const buildDeleteRegExp = (name: string) => new RegExp(`delete.*${name}`)
+
+    it('throws if there is no function name', async function () {
+        await assert.rejects(deleteLambda({}, createLambdaClient()))
     })
 
     it('should delete lambda when confirmed', async function () {
-        await assertLambdaDeleteWorksWhen({
-            // test variables
-            functionName: 'myFunctionName',
-            onConfirm: async () => true,
+        const client = createLambdaClient()
+        const testWindow = createTestWindow()
+        const confirmDialog = testWindow.waitForMessage(buildDeleteRegExp('my-function'))
 
-            // expected results
-            expectedDeleteCallCount: 1,
-            expectedRefreshCallCount: 1,
-        })
+        await Promise.all([
+            confirmDialog.then(dialog => dialog.selectItem('Delete')),
+            deleteLambda({ FunctionName: 'my-function' }, client, testWindow),
+        ])
+
+        assert.strictEqual(client.deleteFunction.callCount, 1)
+
+        // TODO(sijaden): remove `duration` from metric metadata (it's not metadata?)
+        // assertTelemetry('lambda_delete', { result: 'Succeeded' })
     })
 
     it('should not delete lambda when cancelled', async function () {
-        await assertLambdaDeleteWorksWhen({
-            // test variables
-            functionName: 'myFunctionName',
-            onConfirm: async () => false,
+        const client = createLambdaClient()
+        const testWindow = createTestWindow()
+        const confirmDialog = testWindow.waitForMessage(buildDeleteRegExp('another-function'))
 
-            // expected results
-            expectedDeleteCallCount: 0,
-            expectedRefreshCallCount: 0,
-        })
+        await Promise.all([
+            confirmDialog.then(dialog => dialog.close()),
+            deleteLambda({ FunctionName: 'another-function' }, client, testWindow),
+        ])
+
+        assert.strictEqual(client.deleteFunction.callCount, 0)
+        // assertTelemetry('lambda_delete', { result: 'Cancelled' })
     })
 
     it('should handles errors gracefully', async function () {
-        const errorToThrowDuringDelete = new SyntaxError('Fake error inserted to test error handling')
+        const client = createLambdaClient()
+        const testWindow = createTestWindow()
+        const confirmDialog = testWindow.waitForMessage(buildDeleteRegExp('bad-name'))
+        const viewLogs = testWindow.waitForMessage(/There was an error/)
 
-        await assertLambdaDeleteWorksWhen({
-            // test variables
-            errorToThrowDuringDelete,
-            functionName: 'myFunctionName',
-            onConfirm: async () => true,
+        client.deleteFunction.rejects(new Error('Lambda function does not exist'))
 
-            // expected results
-            expectedDeleteCallCount: 1,
-            expectedRefreshCallCount: 1,
-            onAssertOutputChannel(outputChannel: MockOutputChannel) {
-                const expectedMessagePart = String(errorToThrowDuringDelete)
-                assert(outputChannel.isShown, 'output channel should be shown after error')
-                assert(
-                    outputChannel.value && outputChannel.value.indexOf(expectedMessagePart) > 0,
-                    `output channel should contain "${expectedMessagePart}"`
-                )
-            },
-        })
+        await Promise.all([
+            viewLogs.then(dialog => dialog.close()),
+            confirmDialog.then(dialog => dialog.selectItem('Delete')),
+            deleteLambda({ FunctionName: 'bad-name' }, client, testWindow),
+        ])
+
+        // assertTelemetry('lambda_delete', { result: 'Failed' })
     })
-
-    const assertLambdaDeleteWorksWhen = async ({
-        onAssertOutputChannel = (channel: MockOutputChannel) => {
-            // Defaults to expecting no output. Should verify output when expected.
-            assert.strictEqual(channel.value, '', 'expect no output since output testing was omitted')
-        },
-        ...params
-    }: {
-        functionName: string
-        errorToThrowDuringDelete?: Error
-        expectedDeleteCallCount: number
-        expectedRefreshCallCount: number
-        onConfirm(): Promise<boolean>
-        onAssertOutputChannel?(actualOutputChannel: MockOutputChannel): void
-    }) => {
-        let deleteCallCount = 0
-        let refreshCallCount = 0
-        const lambdaClient = {
-            deleteFunction: async (name: string) => {
-                deleteCallCount += 1
-                assert.strictEqual(
-                    name,
-                    params.functionName,
-                    `expected lambda name "${params.functionName}", not "${name}"`
-                )
-                if (params.errorToThrowDuringDelete) {
-                    throw params.errorToThrowDuringDelete
-                }
-            },
-        } as unknown as LambdaClient
-
-        const outputChannel = new MockOutputChannel()
-
-        try {
-            await deleteLambda({
-                deleteParams: { functionName: params.functionName },
-                lambdaClient,
-                outputChannel,
-                onRefresh: () => (refreshCallCount += 1),
-                onConfirm: async () => params.onConfirm(),
-            })
-        } catch (err) {
-            const error = err as Error
-            if (params.errorToThrowDuringDelete) {
-                assert.deepStrictEqual(params.errorToThrowDuringDelete, err)
-            } else {
-                console.error(error)
-                assert.fail(`Unexpected error during test: "${error.message}"`)
-            }
-        }
-
-        assert(
-            deleteCallCount === params.expectedDeleteCallCount,
-            `delete should be called ${params.expectedDeleteCallCount} times, not ${deleteCallCount}`
-        )
-
-        assert(
-            refreshCallCount === params.expectedRefreshCallCount,
-            `refresh should be called ${params.expectedRefreshCallCount} times, not ${refreshCallCount}`
-        )
-
-        onAssertOutputChannel.bind({}) // Make linter happy
-        onAssertOutputChannel(outputChannel)
-    }
 })

@@ -218,7 +218,7 @@ async function invokeLambdaHandler(
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 httpMethod: config.api?.httpMethod,
-                architecture: config.architecture,
+                lambdaArchitecture: config.architecture,
             })
         }
 
@@ -305,11 +305,11 @@ async function invokeLambdaHandler(
             }
             telemetry.recordLambdaInvokeLocal({
                 lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
+                lambdaArchitecture: config.architecture,
                 result: invokeResult,
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 version: samVersion,
-                architecture: config.architecture,
             })
         }
 
@@ -402,11 +402,11 @@ export async function runLambdaFunction(
             onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
                 telemetry.recordSamAttachDebugger({
                     lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
+                    lambdaArchitecture: config.architecture,
                     runtime: config.runtime as telemetry.Runtime,
                     result: attachResult ? 'Succeeded' : 'Failed',
                     attempts: attempts,
                     duration: timer.elapsedTime,
-                    architecture: config.architecture,
                 })
             },
         })

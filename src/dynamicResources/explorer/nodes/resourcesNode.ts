@@ -5,17 +5,16 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient, DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient, DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 import { isCloud9 } from '../../../shared/extensionUtilities'
-import globals from '../../../shared/extensionGlobals'
 import { ResourcesSettings } from '../../commands/configure'
 
 const localize = nls.loadMessageBundle()
@@ -25,12 +24,8 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public constructor(
         public readonly region: string,
-        public readonly cloudFormation: CloudFormationClient = globals.toolkitClientBuilder.createCloudFormationClient(
-            region
-        ),
-        private readonly cloudControl: CloudControlClient = globals.toolkitClientBuilder.createCloudControlClient(
-            region
-        ),
+        public readonly cloudFormation: CloudFormationClient = new DefaultCloudFormationClient(region),
+        private readonly cloudControl: CloudControlClient = new DefaultCloudControlClient(region),
         private readonly settings = new ResourcesSettings()
     ) {
         super(localize('AWS.explorerNode.resources.label', 'Resources'), vscode.TreeItemCollapsibleState.Collapsed)

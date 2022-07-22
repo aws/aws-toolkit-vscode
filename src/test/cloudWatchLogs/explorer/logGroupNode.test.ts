@@ -6,26 +6,19 @@
 import * as assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
-import globals from '../../../shared/extensionGlobals'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 describe('LogGroupNode', function () {
     let testNode: LogGroupNode
     let fakeLogGroup: CloudWatchLogs.LogGroup
 
-    before(async function () {
-        setupTestIconPaths()
+    before(function () {
         fakeLogGroup = {
             logGroupName: "it'sBig/it'sHeavy/it'sWood",
             arn: "it'sBetterThanBadIt'sGood",
         }
 
         testNode = new LogGroupNode('someregioncode', fakeLogGroup)
-    })
-
-    after(async function () {
-        clearTestIconPaths()
     })
 
     it('instantiates without issue', async function () {
@@ -46,17 +39,6 @@ describe('LogGroupNode', function () {
 
     it('initializes the tooltip', async function () {
         assert.strictEqual(testNode.tooltip, `${fakeLogGroup.logGroupName}${os.EOL}${fakeLogGroup.arn}`)
-    })
-
-    it('initializes the icon', async function () {
-        const iconPath = testNode.iconPath as IconPath
-
-        assert.strictEqual(iconPath.dark.path, globals.iconPaths.dark.cloudWatchLogGroup, 'Unexpected dark icon path')
-        assert.strictEqual(
-            iconPath.light.path,
-            globals.iconPaths.light.cloudWatchLogGroup,
-            'Unexpected light icon path'
-        )
     })
 
     it('has no children', async function () {

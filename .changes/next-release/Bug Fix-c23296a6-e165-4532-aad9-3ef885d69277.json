@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "S3 \"Presigned URL\" feature may silently fail #2687"
-}

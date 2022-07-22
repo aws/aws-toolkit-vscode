@@ -5,17 +5,8 @@
 
 import * as assert from 'assert'
 import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
-import { clearTestIconPaths, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
 describe('PropertyNode', function () {
-    before(async function () {
-        setupTestIconPaths()
-    })
-
-    after(async function () {
-        clearTestIconPaths()
-    })
-
     const label = 'myProperty'
 
     it('initializes label', async function () {

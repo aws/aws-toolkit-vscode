@@ -10,27 +10,21 @@ import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { ExtContext } from '../shared/extensions'
-import globals from '../shared/extensionGlobals'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
 import { registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
+import { Commands } from '../shared/vscode/commands2'
+import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 
 /**
  * Activates Lambda components.
  */
 export async function activate(context: ExtContext): Promise<void> {
     context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.deleteLambda',
-            async (node: LambdaFunctionNode) =>
-                await deleteLambda({
-                    deleteParams: { functionName: node.configuration.FunctionName || '' },
-                    lambdaClient: globals.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                    outputChannel: context.outputChannel,
-                    onRefresh: async () =>
-                        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent),
-                })
-        ),
-        vscode.commands.registerCommand(
+        Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode) => {
+            await deleteLambda(node.configuration, new DefaultLambdaClient(node.regionCode))
+            await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent)
+        }),
+        Commands.register(
             'aws.invokeLambda',
             async (node: LambdaFunctionNode) =>
                 await invokeRemoteLambda(context, { outputChannel: context.outputChannel, functionNode: node })
@@ -44,11 +38,8 @@ export async function activate(context: ExtContext): Promise<void> {
                 await tryRemoveFolder(session.configuration.baseBuildDir)
             }
         }),
-        vscode.commands.registerCommand(
-            'aws.downloadLambda',
-            async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)
-        ),
-        vscode.commands.registerCommand('aws.uploadLambda', async arg => {
+        Commands.register('aws.downloadLambda', async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)),
+        Commands.register({ id: 'aws.uploadLambda', autoconnect: true }, async (arg?: unknown) => {
             if (arg instanceof LambdaFunctionNode) {
                 await uploadLambdaCommand({
                     name: arg.functionName,

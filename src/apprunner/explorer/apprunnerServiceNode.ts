@@ -3,12 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as AsyncLock from 'async-lock'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
-import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { CloudWatchLogsBase } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
@@ -17,7 +15,8 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../shared/logger'
-import globals from '../../shared/extensionGlobals'
+import { getIcon } from '../../shared/icons'
+import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 const localize = nls.loadMessageBundle()
 
 const CONTEXT_BASE = 'awsAppRunnerServiceNode'
@@ -37,22 +36,18 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     public readonly name: string
     public readonly arn: string
     private readonly lock: AsyncLock = new AsyncLock()
+    protected readonly placeholderMessage = localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
 
     constructor(
         public readonly parent: AppRunnerNode,
         private readonly client: AppRunnerClient,
         private _info: AppRunner.Service,
-        private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {}
+        private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {},
+        cloudwatchClient = new DefaultCloudWatchLogsClient(client.regionCode)
     ) {
-        super(
-            'App Runner Service',
-            parent.region,
-            localize('AWS.explorerNode.apprunner.nologs', '[No App Runner logs found]')
-        )
-        this.iconPath = {
-            dark: vscode.Uri.file(globals.iconPaths.dark.apprunner),
-            light: vscode.Uri.file(globals.iconPaths.light.apprunner),
-        }
+        super('App Runner Service', parent.regionCode, cloudwatchClient)
+
+        this.iconPath = getIcon('aws-apprunner-service')
         this.id = `AppRunnerService-${_info.ServiceArn}`
         this.name = _info.ServiceName
         this.arn = _info.ServiceArn
@@ -68,10 +63,10 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         return `https://${this._info.ServiceUrl}`
     }
 
-    protected async getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
+    protected async getLogGroups(): Promise<Map<string, CloudWatchLogs.LogGroup>> {
         return toMap(
             await toArrayAsync(
-                client.describeLogGroups({
+                this.cloudwatchClient.describeLogGroups({
                     logGroupNamePrefix: `/aws/apprunner/${this._info.ServiceName}/${this._info.ServiceId}`,
                 })
             ),

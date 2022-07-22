@@ -11,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AwsContext } from '../shared/awsContext'
-import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
 import {
     CredentialSourceId,
@@ -38,6 +37,7 @@ import { isAutomation } from '../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
 import { ToolkitError } from '../shared/toolkitError'
 import * as localizedText from '../shared/localizedText'
+import { DefaultStsClient } from '../shared/clients/stsClient'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -70,7 +70,8 @@ export class LoginManager {
             }
 
             const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
-            const accountId = await getAccountId(credentials, credentialsRegion)
+            const stsClient = new DefaultStsClient(credentialsRegion, credentials)
+            const accountId = (await stsClient.getCallerIdentity()).Account
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }

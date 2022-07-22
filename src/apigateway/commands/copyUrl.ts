@@ -4,7 +4,6 @@
  */
 
 import { Window } from '../../shared/vscode/window'
-import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -14,12 +13,11 @@ import * as vscode from 'vscode'
 import { ProgressLocation } from 'vscode'
 
 import { Stage } from 'aws-sdk/clients/apigateway'
-import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
+import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { DEFAULT_DNS_SUFFIX } from '../../shared/regions/regionUtilities'
 import { getLogger } from '../../shared/logger'
 import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
-import globals from '../../shared/extensionGlobals'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined
@@ -29,12 +27,11 @@ interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
 export async function copyUrlCommand(
     node: RestApiNode,
     regionProvider: RegionProvider,
-    window = Window.vscode(),
-    env = Env.vscode()
+    window = Window.vscode()
 ): Promise<void> {
     const region = node.regionCode
     const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || DEFAULT_DNS_SUFFIX
-    const client: ApiGatewayClient = globals.toolkitClientBuilder.createApiGatewayClient(region)
+    const client = new DefaultApiGatewayClient(region)
 
     let stages: Stage[]
     try {

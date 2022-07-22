@@ -4,16 +4,13 @@
  */
 
 import { STS } from 'aws-sdk'
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { Credentials } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type StsClient = ClassToInterfaceType<DefaultStsClient>
 export class DefaultStsClient {
-    public constructor(
-        public readonly regionCode: string,
-        private readonly credentials?: ServiceConfigurationOptions
-    ) {}
+    public constructor(public readonly regionCode: string, private readonly credentials?: Credentials) {}
 
     public async assumeRole(request: STS.AssumeRoleRequest): Promise<STS.AssumeRoleResponse> {
         const sdkClient = await this.createSdkClient()
@@ -31,7 +28,7 @@ export class DefaultStsClient {
         return await globals.sdkClientBuilder.createAwsService(
             STS,
             {
-                ...this.credentials,
+                credentials: this.credentials,
                 stsRegionalEndpoints: 'regional',
             },
             this.regionCode

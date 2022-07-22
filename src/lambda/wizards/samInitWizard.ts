@@ -9,9 +9,8 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'
-import { SchemaClient } from '../../shared/clients/schemaClient'
+import { DefaultSchemaClient } from '../../shared/clients/schemaClient'
 import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
-
 import {
     Architecture,
     createRuntimeQuickPick,
@@ -40,8 +39,7 @@ import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { Region } from '../../shared/regions/endpoints'
 import { createCommonButtons } from '../../shared/ui/buttons'
-import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
-import globals from '../../shared/extensionGlobals'
+import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -101,7 +99,7 @@ function createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<Depen
 }
 
 function createRegistryPrompter(region: string, credentials?: AWS.Credentials): QuickPickPrompter<string> {
-    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(region)
+    const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getRegistries(region, client, credentials!)
         .then(registryNames => {
@@ -131,7 +129,7 @@ function createSchemaPrompter(
     registry: string,
     credentials?: AWS.Credentials
 ): QuickPickPrompter<string> {
-    const client: SchemaClient = globals.toolkitClientBuilder.createSchemaClient(region)
+    const client = new DefaultSchemaClient(region)
     const items = SchemasDataProvider.getInstance()
         .getSchemas(region, registry, client, credentials!)
         .then(schemas => {
@@ -204,7 +202,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
         credentials?: AWS.Credentials
     }) {
         super({
-            exitPrompterProvider: new BasicExitPrompterProvider(),
+            exitPrompterProvider: createExitPrompter,
         })
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))

@@ -7,14 +7,12 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { Credentials } from 'aws-sdk'
 import { LoginManager } from '../credentials/loginManager'
 import { asString, CredentialsId, fromString } from '../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
-import { getAccountId } from './credentials/accountId'
 import { CredentialSelectionState } from './credentials/credentialSelectionState'
 import {
     credentialProfileSelector,
@@ -30,6 +28,8 @@ import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
 import { showViewLogsMessage } from './utilities/messages'
 import globals from './extensionGlobals'
+import { DefaultStsClient } from './clients/stsClient'
+import { getLogger } from './logger/logger'
 
 export class AwsContextCommands {
     private readonly _awsContext: AwsContext
@@ -148,7 +148,13 @@ export class AwsContextCommands {
             }
 
             // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
-            const accountId = await getAccountId(new Credentials(state.accesskey, state.secretKey), 'us-east-1')
+            const client = new DefaultStsClient('us-east-1', {
+                accessKeyId: state.accesskey,
+                secretAccessKey: state.secretKey,
+            })
+            const accountId = await client.getCallerIdentity().catch(err => {
+                getLogger().error(`credentials: failed to get account id: ${(err as Error).message}`)
+            })
 
             if (accountId) {
                 await UserCredentialsUtils.generateCredentialDirectoryIfNonexistent()

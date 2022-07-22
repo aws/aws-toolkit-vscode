@@ -39,6 +39,7 @@ import globals from '../../shared/extensionGlobals'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { fromExtensionManifest } from '../../shared/settings'
 import { createRegionPrompter } from '../../shared/ui/common/region'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
 interface SavedLambdas {
     [profile: string]: { [region: string]: string }
@@ -472,7 +473,7 @@ async function uploadZipBuffer(
         message?: string | undefined
         increment?: number | undefined
     }>,
-    lambdaClient = globals.toolkitClientBuilder.createLambdaClient(lambda.region)
+    lambdaClient = new DefaultLambdaClient(lambda.region)
 ) {
     progress.report({
         message: localize('AWS.lambda.upload.progress.uploadingArchive', 'Uploading archive to Lambda...'),
@@ -563,7 +564,7 @@ async function listAllLambdaNames(region: string, path?: vscode.Uri) {
     }
 
     // Get Lambda functions from user AWS account.
-    const lambdaClient = globals.toolkitClientBuilder.createLambdaClient(region)
+    const lambdaClient = new DefaultLambdaClient(region)
     try {
         const foundLambdas = await toArrayAsync(listLambdaFunctions(lambdaClient))
         for (const l of foundLambdas) {

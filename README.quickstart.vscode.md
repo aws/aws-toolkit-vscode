@@ -21,7 +21,9 @@ See [Setup](#additional-setup-steps) for prerequisites. If you run into a proble
     -   Lambda functions
     -   S3 explorer
     -   Step Functions
--   [CDK Explorer](#ui-components-cdk-expl)
+-   [Developer Tools](#ui-components-dev-tools)
+    -   [CDK Explorer](#ui-components-cdk-expl)
+    -   [CodeWhisperer](#codewhisperer)
 -   [AWS Serverless Applications (SAM)](#sam-and-lambda)
 -   [Amazon CloudWatch Logs](#cloudwatchlogs)
 -   [Amazon EventBridge Schemas](#eventbridge)
@@ -41,6 +43,14 @@ The **AWS Explorer** provides access to the AWS services that you can work with 
 
 { [Return to Top](#top) }
 
+## <a id="ui-components-dev-tools"></a>Developer Tools
+
+The **Developer Tools** panel is a section for developer-focused tooling curated for working in an IDE. The **Developer Tools** panel can be found underneath the **AWS Explorer** when the **AWS icon** is selected in the **Activity bar**.
+
+![Overview, Developer Tools](./resources/marketplace/vscode/overview-codewhisperer.png)
+
+## { [Return to Top](#top) }
+
 ## <a id="ui-components-cdk-expl"></a>CDK Explorer
 
 The **AWS CDK Explorer** enables you to work with [AWS Cloud Development Kit (CDK)](https://aws.amazon.com/cdk/) applications. It shows a top-level view of your CDK applications that have been sythesized in your workspace.
@@ -55,7 +65,19 @@ For full details see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit-
 
 { [Return to Top](#top) }
 
----
+## <a id="codewhisperer"></a>Amazon CodeWhisperer
+
+**Amazon CodeWhisperer** provides inline code suggestions using machine learning and natural language processing on the contents of your current file. Supported languages include: Java, Python and Javascript.
+
+Once enabled, CodeWhisperer will provide code suggestions automatically and can also be requested manually using option+c (mac) / alt+c (PC). CodeWhisperer may provide multiple suggestions; use the left- and right-arrow to navigate between suggestions. To accept a suggestion and add it to your file, press Tab. To dismiss a suggestion, press escape or keep typing.
+
+In addition to providing code suggestions within your current file, CodeWhisperer can scan your entire package to identify security issues. To initiate a security scan, go to the CodeWhisperer section in the **Developer Tools** panel and select “Run security scan”. Results will be listed in the Problems panel.
+
+![CodeWhisperer](./resources/marketplace/vscode/overview-codewhisperer.png)
+
+For more information, see [Amazon CodeWhisperer](https://aws.amazon.com/codewhisperer) in our user guide.
+
+{ [Return to Top](#top) }
 
 ## <a id="sam-and-lambda"></a> AWS Serverless Applications
 

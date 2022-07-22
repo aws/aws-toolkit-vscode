@@ -13,7 +13,8 @@ import { DocumentItemNodeWriteable } from '../../../ssmDocument/explorer/documen
 import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 import { mock } from '../../utilities/mockito'
-import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
+import { stub } from '../../utilities/stubber'
 
 describe('openDocumentItem', async function () {
     afterEach(function () {
@@ -48,12 +49,12 @@ describe('openDocumentItem', async function () {
     }
 
     it('updateDocumentVersion with correct name and version', async function () {
-        sinon.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
+        sinon.stub(picker, 'promptUser').onFirstCall().resolves(undefined)
         sinon.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeVersionSelectionResult)
         sinon.stub(fakeAwsContext, 'getCredentialAccountId').returns('Amazon')
-        const ssmClient = {} as unknown as SsmDocumentClient
+        const ssmClient = stub(DefaultSsmDocumentClient, { regionCode: 'region-1' })
         const documentNode = new DocumentItemNodeWriteable(fakeDoc, ssmClient, fakeRegion, mock())
-        sinon.stub(documentNode, 'listSchemaVersion').returns(Promise.resolve(fakeSchemaList))
+        sinon.stub(documentNode, 'listSchemaVersion').resolves(fakeSchemaList)
         const updateVersionStub = sinon.stub(documentNode, 'updateDocumentVersion')
         await updateDocumentVersion(documentNode, fakeAwsContext)
         assert.strictEqual(updateVersionStub.getCall(0).args[0], '2')

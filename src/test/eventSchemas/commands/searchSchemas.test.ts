@@ -22,6 +22,7 @@ import {
 } from '../../../eventSchemas/vue/searchSchemas'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
+import { stub } from '../../utilities/stubber'
 
 describe('Search Schemas', function () {
     let sandbox: sinon.SinonSandbox
@@ -82,14 +83,10 @@ describe('Search Schemas', function () {
 
     describe('getSearchListForSingleRegistry', function () {
         it('should return summaries', async function () {
-            const searchSummaryList = [searchSummary1, searchSummary2]
+            const client = stub(DefaultSchemaClient, { regionCode: 'region-1' })
+            client.searchSchemas.returns(asyncGenerator([searchSummary1, searchSummary2]))
 
-            sandbox
-                .stub(schemaClient, 'searchSchemas')
-                .withArgs('searchText', TEST_REGISTRY)
-                .returns(asyncGenerator(searchSummaryList))
-
-            const results = await getSearchListForSingleRegistry(schemaClient, TEST_REGISTRY, 'searchText')
+            const results = await getSearchListForSingleRegistry(client, TEST_REGISTRY, 'searchText')
 
             assert.strictEqual(results.length, 2, 'search should return 2 summaries')
 
@@ -115,18 +112,12 @@ describe('Search Schemas', function () {
         })
 
         it('should display an error message when search api call fails', async function () {
-            const searchSummaryList = [searchSummary1, searchSummary2]
-
+            const client = stub(DefaultSchemaClient, { regionCode: 'region-1' })
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = `Unable to search registry ${FAIL_REGISTRY}`
 
-            sandbox
-                .stub(schemaClient, 'searchSchemas')
-                .withArgs('randomText', TEST_REGISTRY)
-                .returns(asyncGenerator(searchSummaryList))
-
             //make an api call with non existent registryName - should return empty results
-            const results = await getSearchListForSingleRegistry(schemaClient, FAIL_REGISTRY, 'randomText')
+            const results = await getSearchListForSingleRegistry(client, FAIL_REGISTRY, 'randomText')
 
             assert.strictEqual(results.length, 0, 'should return 0 summaries')
             assert.strictEqual(vscodeSpy.callCount, 1, ' error message should be shown exactly once')

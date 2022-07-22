@@ -11,7 +11,7 @@ import { AwsContext } from '../shared/awsContext'
 import * as localizedText from '../shared/localizedText'
 import { createQuickPick, promptUser } from '../shared/ui/picker'
 import { AwsExplorer } from './awsExplorer'
-import { getIdeProperties } from '../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { PromptSettings } from '../shared/settings'
 
 class RegionMissingUI {
@@ -32,6 +32,12 @@ export async function checkExplorerForDefaultRegion(
 
     const explorerRegions = new Set(await awsContext.getExplorerRegions())
     if (explorerRegions.has(profileRegion)) {
+        return
+    }
+
+    if (isCloud9()) {
+        await awsContext.addExplorerRegion(profileRegion)
+        awsExplorer.refresh()
         return
     }
 

@@ -15,6 +15,7 @@ import { deleteService } from './commands/deleteService'
 import { createFromEcr } from './commands/createServiceFromEcr'
 import { ExtContext } from '../shared/extensions'
 import { copyToClipboard } from '../shared/utilities/messages'
+import { Commands } from '../shared/vscode/commands2'
 
 const localize = nls.loadMessageBundle()
 
@@ -79,7 +80,7 @@ commandMap.set(['aws.apprunner.deleteService', DELETE_SERVICE_FAILED], deleteSer
 export async function activate(context: ExtContext): Promise<void> {
     commandMap.forEach((command, tuple) => {
         context.extensionContext.subscriptions.push(
-            vscode.commands.registerCommand(tuple[0], async (...args: any) => {
+            Commands.register(tuple[0], async (...args: any) => {
                 try {
                     await command(...args)
                 } catch (err) {

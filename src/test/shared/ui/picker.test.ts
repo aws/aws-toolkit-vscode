@@ -457,7 +457,7 @@ describe('IteratingQuickPickController', async function () {
         )
 
         assert.strictEqual(quickPick.buttons.length, 1)
-        assert.strictEqual(quickPick.buttons[0], picker.IteratingQuickPickController.REFRESH_BUTTON)
+        assert.strictEqual(quickPick.buttons[0].tooltip, 'Refresh')
     })
 
     it('returns iterated values on start and on reset', async function () {
@@ -693,18 +693,6 @@ describe('IteratingQuickPickController', async function () {
 
         afterEach(function () {
             sandbox.restore()
-        })
-
-        it('triggers a refresh and returns undefined', async function () {
-            const spy = sandbox.spy()
-            const controller = new fakeIteratingQuickPickController(spy)
-            const out = await controller.iteratingOnDidTriggerButton(
-                picker.IteratingQuickPickController.REFRESH_BUTTON,
-                () => {},
-                () => {}
-            )
-            assert.strictEqual(out, undefined)
-            assert.ok(spy.calledOnce)
         })
 
         it('returns undefined if no override is provided', async function () {

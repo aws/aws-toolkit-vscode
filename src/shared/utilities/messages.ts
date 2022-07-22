@@ -10,6 +10,7 @@ import { Window } from '../../shared/vscode/window'
 import { Env } from '../../shared/vscode/env'
 import globals from '../extensionGlobals'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
 
@@ -132,6 +133,27 @@ export async function showMessageWithCancel(
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout, window)
+}
+
+/**
+ * Shows a "spinner" / progress message for `duration` milliseconds.
+ *
+ * @param message Message to display
+ * @param duration Timeout duration (milliseconds)
+ *
+ * @returns prompts message to user on with progress
+ */
+export async function showTimedMessage(message: string, duration: number) {
+    vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: message,
+            cancellable: false,
+        },
+        async () => {
+            await sleep(duration)
+        }
+    )
 }
 
 export async function copyToClipboard(

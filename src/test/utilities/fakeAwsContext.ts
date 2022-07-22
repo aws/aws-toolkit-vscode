@@ -8,6 +8,7 @@ import * as AWS from '@aws-sdk/types'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { Region } from '../../shared/regions/endpoints'
 import { RegionProvider } from '../../shared/regions/regionProvider'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export const DEFAULT_TEST_PROFILE_NAME = 'qwerty'
 export const DEFAULT_TEST_ACCOUNT_ID = '123456789012'
@@ -65,9 +66,18 @@ export class FakeAwsContext implements AwsContext {
     public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
         new vscode.EventEmitter<ContextChangeEventsArgs>().event
     private awsContextCredentials: AwsContextCredentials | undefined
+    public lastTouchedRegion = 'None'
 
     public constructor(params?: FakeAwsContextParams) {
         this.awsContextCredentials = params?.contextCredentials
+    }
+
+    public guessDefaultRegion(node?: AWSTreeNodeBase): string {
+        return 'None'
+    }
+
+    public setLastTouchedRegion(region: string): void {
+        return
     }
 
     public credentialsShim = {

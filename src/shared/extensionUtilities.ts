@@ -15,7 +15,6 @@ import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 import { extensionVersion } from './vscode/env'
-import globals from './extensionGlobals'
 import { DevSettings } from './settings'
 
 const localize = nls.loadMessageBundle()
@@ -107,45 +106,6 @@ export function isCloud9(): boolean {
 
 export function isCn(): boolean {
     return getComputeRegion()?.startsWith('cn') ?? false
-}
-
-export class ExtensionUtilities {
-    public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'dist', 'libs')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    public static getScriptsForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'media', 'js')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    public static getCssForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const basePath = path.join(globals.context.extensionPath, 'media', 'css')
-
-        return this.resolveResourceURIs(basePath, names, webview)
-    }
-
-    private static resolveResourceURIs(basePath: string, names: string[], webview: vscode.Webview): vscode.Uri[] {
-        const scripts: vscode.Uri[] = []
-        _.forEach(names, scriptName => {
-            const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
-            scripts.push(webview.asWebviewUri(scriptPathOnDisk))
-        })
-
-        return scripts
-    }
-
-    public static getFilesAsVsCodeResources(rootdir: string, filenames: string[], webview: vscode.Webview) {
-        const arr: vscode.Uri[] = []
-        for (const filename of filenames) {
-            arr.push(webview.asWebviewUri(vscode.Uri.file(path.join(rootdir, filename))))
-        }
-
-        return arr
-    }
 }
 
 /**

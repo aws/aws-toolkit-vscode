@@ -8,11 +8,11 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { getLogger } from '../../../shared/logger'
-import { cdk } from '../../globals'
 import { CdkAppLocation, getApp } from '../cdkProject'
 import { ConstructNode, generateConstructNodes } from './constructNode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
+import { getIcon } from '../../../shared/icons'
 
 /**
  * Represents a CDK App
@@ -60,15 +60,11 @@ export class AppNode implements TreeNode {
     }
 
     private createTreeItem() {
-        const item = new vscode.TreeItem(this.location.cdkJsonUri, vscode.TreeItemCollapsibleState.Collapsed)
+        const label = vscode.workspace.asRelativePath(vscode.Uri.joinPath(this.location.cdkJsonUri, '..'))
+        const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.Collapsed)
+
         item.contextValue = 'awsCdkAppNode'
-        item.label = vscode.workspace.asRelativePath(vscode.Uri.joinPath(this.location.cdkJsonUri, '..'))
-
-        item.iconPath = {
-            dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
-            light: vscode.Uri.file(cdk.iconPaths.light.cdk),
-        }
-
+        item.iconPath = getIcon('aws-cdk-logo')
         item.tooltip = this.location.cdkJsonUri.path
 
         return item

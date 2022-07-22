@@ -5,11 +5,8 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import globals from '../../shared/extensionGlobals'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { RegionNode } from '../../awsexplorer/regionNode'
-import { ToolkitClientBuilder } from '../../shared/clients/toolkitClientBuilder'
-
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import {
     DEFAULT_TEST_REGION_CODE,
@@ -23,18 +20,6 @@ describe('AwsExplorer', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        // contingency for current Node impl: requires a client built from globals.toolkitClientBuilder.
-        const clientBuilder = {
-            createS3Client: sandbox.stub().returns({}),
-            createEcrClient: sandbox.stub().returns({}),
-            createEcsClient: sandbox.stub().returns({}),
-            createCloudFormationClient: sandbox.stub().returns({}),
-            createAppRunnerClient: sandbox.stub().returns({}),
-            createCloudControlClient: sandbox.stub().returns({}),
-            createIotClient: sandbox.stub().returns({}),
-            createSchemaClient: sandbox.stub().returns({}),
-        }
-        globals.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
 
     afterEach(function () {

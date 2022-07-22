@@ -5,6 +5,7 @@
 
 import { mkdirp } from 'fs-extra'
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { ExtContext } from '../shared/extensions'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
@@ -80,7 +81,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     }
 
     public asAbsolutePath(relativePath: string): string {
-        return relativePath
+        return path.resolve(this._extensionPath, relativePath)
     }
 
     /**

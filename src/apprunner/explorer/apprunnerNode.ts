@@ -21,7 +21,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
     private readonly pollingNodes: Set<string> = new Set()
     private pollTimer?: NodeJS.Timeout
 
-    public constructor(public readonly region: string, public readonly client: AppRunnerClient) {
+    public constructor(public readonly regionCode: string, public readonly client: AppRunnerClient) {
         super('App Runner', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsAppRunnerNode'
     }
