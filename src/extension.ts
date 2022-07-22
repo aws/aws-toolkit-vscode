@@ -113,21 +113,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const settings = Settings.instance
 
         await initializeCredentials(context, awsContext, settings)
-
-        try {
-            await activateTelemetry(context, awsContext, settings)
-            await globals.telemetry.start()
-        } catch (e) {
-            // Only throw in a production build because:
-            //   1. Telemetry must never prevent normal Toolkit operation.
-            //   2. We want to know if something is not working ASAP during development.
-            if (isAutomation() || !isReleaseVersion()) {
-                throw e
-            }
-
-            const message = UnknownError.cast(e)
-            getLogger().error(`Toolkit telemetry failed to activate: ${message}`)
-        }
+        await activateTelemetry(context, awsContext, settings)
 
         await globals.schemaService.start()
         awsFiletypes.activate()
