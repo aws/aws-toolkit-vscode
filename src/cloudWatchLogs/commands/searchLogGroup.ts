@@ -124,16 +124,16 @@ export interface SearchLogGroupWizardResponse {
 
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
     public constructor(logGroupInfo?: CloudWatchLogsGroupInfo) {
-        logGroupInfo
-            ? super({
-                  initState: {
-                      submenuResponse: {
+        super({
+            initState: {
+                submenuResponse: logGroupInfo
+                    ? {
                           data: logGroupInfo.groupName,
                           region: logGroupInfo.regionName,
-                      },
-                  },
-              })
-            : super()
+                      }
+                    : undefined,
+            },
+        })
 
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
         this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
