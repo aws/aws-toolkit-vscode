@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
+import { sleep } from '../../../../shared/utilities/timeoutUtils'
 import { createQuickPickTester, QuickPickTester } from '../testUtils'
 
 describe('regionSubmenu', function () {
@@ -68,6 +69,7 @@ describe('regionSubmenu', function () {
         )
         logGroupTester.acceptItem('Switch region')
         await logGroupTester.result()
+        await sleep()
 
         assert.ok(SubmenuPrompter.activePrompter)
         const regionTester = createQuickPickTester(
