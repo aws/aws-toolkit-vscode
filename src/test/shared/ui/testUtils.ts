@@ -108,6 +108,7 @@ export function createQuickPickTester<T>(
     const traces: AssertionError[] = []
     const testPicker = exposeEmitters(prompter.quickPick, ['onDidAccept', 'onDidTriggerButton'])
     const resolvedOptions = { ...TEST_DEFAULTS, ...options }
+    let running = false
 
     /* Waits until the picker is both enabled and not busy. */
     function whenReady(): Promise<void[]> {
@@ -276,6 +277,11 @@ export function createQuickPickTester<T>(
     }
 
     async function start(): Promise<void> {
+        if (running) {
+            return
+        }
+        running = true
+
         while (actions.length > 0) {
             const trace = traces.shift()!
             const timeout = setTimeout(() => throwErrorWithTrace(trace, 'Timed out'), resolvedOptions.timeout)
@@ -286,6 +292,7 @@ export function createQuickPickTester<T>(
     }
 
     async function result(expected?: PromptResult<T>): Promise<PromptResult<T>> {
+        start()
         const result = await prompter.prompt()
         if (errors.length > 0) {
             // TODO: combine errors into a single one
@@ -317,7 +324,6 @@ export function createQuickPickTester<T>(
         return obj
     }
 
-    // initialize prompter
     prompter.onDidShow(start)
 
     return Object.assign(
