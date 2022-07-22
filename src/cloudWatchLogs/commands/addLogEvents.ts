@@ -43,7 +43,6 @@ export async function addLogEvents(
         if (CancellationError.isUserCancelled(e)) {
             getLogger().debug('cwl: User Cancelled Search')
         } else {
-            // What about busy errors here?
             // contingency in case lock isn't busy but still locked out. Don't want to accidentally trigger making codelens not busy
             const error = e as Error
             vscode.window.showErrorMessage(
