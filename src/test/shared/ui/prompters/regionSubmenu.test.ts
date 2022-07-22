@@ -35,32 +35,11 @@ describe('regionSubmenu', function () {
             }))
         }
         SubmenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'us-west-1')
-
-        menuTester = createQuickPickTester(SubmenuPrompter.createMenuPrompter())
-    })
-
-    it('Prompts with log groups and escape hatch', async function () {
-        const expectedMenuItems1 = ['Switch region'].concat(region1Groups)
-        menuTester.assertItems(expectedMenuItems1)
-        menuTester.acceptItem('group1a')
-        await menuTester.result()
     })
 
     it('Able to swap regions via escape hatch', async function () {
         type Inner<T> = T extends QuickPickPrompter<infer U> ? U : never
         type Combine<T> = QuickPickPrompter<Inner<T>>
-
-        // const resp = SubmenuPrompter.prompt()
-        // assert(SubmenuPrompter.activePrompter)
-        // const submenuQuickPick = createQuickPickTester(
-        //     SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
-        // )
-        // submenuQuickPick.acceptItem('Switch Region')
-
-        // const regionPrompt = createQuickPickTester(
-        //     SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
-        // )
-        // assert.notDeepStrictEqual(regionPrompt, submenuQuickPick)
 
         const resp = SubmenuPrompter.prompt()
         assert.ok(SubmenuPrompter.activePrompter)
