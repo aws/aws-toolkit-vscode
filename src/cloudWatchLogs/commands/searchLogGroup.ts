@@ -136,8 +136,8 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     // TODO: Generalize submenu code between this and the region Submenu.
     private currentState: 'custom-range' | 'recent-range' = 'recent-range'
     private steps?: [current: number, total: number]
-    public activePrompter: QuickPickPrompter<typeof customRange | integer> | InputBoxPrompter =
-        this.createMenuPrompter()
+    public defaultPrompter: QuickPickPrompter<typeof customRange | integer> = this.createMenuPrompter()
+    public customPrompter: InputBoxPrompter = this.createDateBox()
 
     public constructor() {
         super()
@@ -199,10 +199,9 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         while (true) {
             switch (this.currentState) {
                 case 'recent-range': {
-                    const prompter = (this.activePrompter = this.createMenuPrompter())
-                    this.steps && prompter.setSteps(this.steps[0], this.steps[1])
+                    this.steps && this.defaultPrompter.setSteps(this.steps[0], this.steps[1])
 
-                    const resp = await prompter.prompt()
+                    const resp = await this.defaultPrompter.prompt()
                     if (resp === customRange) {
                         this.switchState('custom-range')
                     } else if (isValidResponse(resp)) {
@@ -217,9 +216,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                     break
                 }
                 case 'custom-range': {
-                    const prompter = (this.activePrompter = this.createDateBox())
-
-                    const resp = await prompter.prompt()
+                    const resp = await this.customPrompter.prompt()
                     if (isValidResponse(resp)) {
                         const [startTime, endTime] = this.parseDate(resp)
 
@@ -237,6 +234,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     public validateDate(input: string) {
         const parts = input.split('-')
         const today = new Date()
+
         if (parts.length !== 2) {
             return 'String must include two dates seperated by `-`'
         }

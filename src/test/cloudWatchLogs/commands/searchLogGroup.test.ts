@@ -17,27 +17,37 @@ import { createQuickPickTester, QuickPickTester } from '../../shared/ui/testUtil
 
 describe('searchLogGroup', async function () {
     const fakeLogGroups: string[] = []
-    let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
-    let testPrompter: InputBoxPrompter
+    let filterPatternInputBox: ExposeEmitters<
+        vscode.InputBox,
+        'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'
+    >
+    let filterPatternPrompter: InputBoxPrompter
+
     let testWizard: WizardTester<SearchLogGroupWizard>
     let testTimeRangeMenu: TimeFilterSubmenu
-    let testSubmenu: QuickPickTester<any>
-    let dateBoxPrompter: InputBoxPrompter
+
+    let customTimeRangePrompter: InputBoxPrompter
+    let defaultTimeRangePrompter: QuickPickTester<any>
+
     let testDateBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
 
     before(function () {
         fakeLogGroups.push('group-1', 'group-2', 'group-3')
-        testPrompter = createFilterpatternPrompter()
+        filterPatternPrompter = createFilterpatternPrompter()
         testTimeRangeMenu = new TimeFilterSubmenu()
-        dateBoxPrompter = testTimeRangeMenu.createDateBox()
+        defaultTimeRangePrompter = createQuickPickTester(testTimeRangeMenu.defaultPrompter)
+        customTimeRangePrompter = testTimeRangeMenu.customPrompter
 
-        inputBox = exposeEmitters(testPrompter.inputBox, ['onDidAccept', 'onDidChangeValue', 'onDidTriggerButton'])
-        testDateBox = exposeEmitters(dateBoxPrompter.inputBox, [
+        filterPatternInputBox = exposeEmitters(filterPatternPrompter.inputBox, [
             'onDidAccept',
             'onDidChangeValue',
             'onDidTriggerButton',
         ])
-        testSubmenu = createQuickPickTester(testTimeRangeMenu.createMenuPrompter())
+        testDateBox = exposeEmitters(customTimeRangePrompter.inputBox, [
+            'onDidAccept',
+            'onDidChangeValue',
+            'onDidTriggerButton',
+        ])
     })
 
     beforeEach(function () {
@@ -54,20 +64,20 @@ describe('searchLogGroup', async function () {
         /** Sets the input box's value then fires an accept event */
         // copied from 'src/test/shared/ui/inputPrompter.test.ts'
         function accept(value: string): void {
-            inputBox.value = value
-            inputBox.fireOnDidAccept()
+            filterPatternInputBox.value = value
+            filterPatternInputBox.fireOnDidAccept()
         }
 
         const testInput = 'this is my filterPattern'
-        const result = testPrompter.prompt()
+        const result = filterPatternPrompter.prompt()
         accept(testInput)
         assert.strictEqual(await result, testInput)
     })
 
     it('Timerange Submenu gives option for custom input', async function () {
-        testSubmenu.assertContainsItems('Custom time range')
-        testSubmenu.acceptItem('Custom time range')
-        await testSubmenu.result()
+        defaultTimeRangePrompter.assertContainsItems('Custom time range')
+        defaultTimeRangePrompter.acceptItem('Custom time range')
+        await defaultTimeRangePrompter.result()
     })
 
     it('Datebox accepts valid date format of (YYYY/MM/DD-YYYY/MM/DD)', async function () {
@@ -77,7 +87,7 @@ describe('searchLogGroup', async function () {
         }
 
         const validInput = '2000/10/06-2001/11/08'
-        const result = dateBoxPrompter.prompt()
+        const result = customTimeRangePrompter.prompt()
         accept(validInput)
         assert.strictEqual(await result, validInput)
     })
