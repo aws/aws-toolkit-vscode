@@ -7,6 +7,8 @@ import * as vscode from 'vscode'
 import * as AsyncLock from 'async-lock'
 import { getLogger } from '../../shared/logger/logger'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { localize } from 'vscode-nls'
 
 // TODO: Cut a PR to the async-lock package?...as of now, maxPending = 0 is theoretically ideal, but also falsy (which sets maxPending = 1000):
 // https://github.com/rogierschouten/async-lock/blob/78cb0c2441650d7bdc148548f99542ccc9c93fd7/lib/index.js#L19
@@ -38,13 +40,24 @@ export async function addLogEvents(
             getLogger().debug('Update done, releasing lock...')
         })
     } catch (e) {
-        // contingency in case lock isn't busy but still locked out. Don't want to accidentally trigger making codelens not busy
-        getLogger().debug(`addLogEvents already locked for lock: ${lockName}`)
-        return
-    }
-
-    registry.setBusyStatus(uri, false)
-    if (onDidChangeCodeLensEvent) {
-        onDidChangeCodeLensEvent.fire()
+        if (CancellationError.isUserCancelled(e)) {
+            getLogger().debug('cwl: User Cancelled Search')
+        } else {
+            // contingency in case lock isn't busy but still locked out. Don't want to accidentally trigger making codelens not busy
+            const error = e as Error
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.cwl.searchLogGroup.errorRetrievingLogs2',
+                    'Error retrieving logs for {0}: {1}',
+                    uri.path,
+                    error.message
+                )
+            )
+        }
+    } finally {
+        registry.setBusyStatus(uri, false)
+        if (onDidChangeCodeLensEvent) {
+            onDidChangeCodeLensEvent.fire()
+        }
     }
 }

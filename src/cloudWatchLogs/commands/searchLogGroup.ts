@@ -19,6 +19,9 @@ import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { localize } from 'vscode-nls'
+import { getLogger } from '../../shared/logger'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -45,20 +48,36 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
             logGroupInfo: logGroupInfo,
             retrieveLogsFunction: filterLogEventsFromUriComponents,
         }
+        // Currently displays nothing if update log fails in non-cancellationError. (don't want this)
 
-        await registry.registerLog(uri, initialStreamData)
-        const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
-        vscode.languages.setTextDocumentLanguage(doc, 'log')
-
-        const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
-        registry.setTextEditor(uri, textEditor)
-        // Initial highlighting of the document and then for any addLogEvent calls.
-        highlightDocument(registry, uri)
-        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-            if (event.document.uri.toString() === doc.uri.toString()) {
-                highlightDocument(registry, uri)
+        try {
+            await registry.registerLog(uri, initialStreamData)
+            const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+            vscode.languages.setTextDocumentLanguage(doc, 'log')
+            const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+            registry.setTextEditor(uri, textEditor)
+            highlightDocument(registry, uri)
+            vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+                if (event.document.uri.toString() === doc.uri.toString()) {
+                    highlightDocument(registry, uri)
+                }
+            })
+        } catch (err) {
+            if (CancellationError.isUserCancelled(err)) {
+                getLogger().debug('cwl: User Cancelled Search')
+                result = 'Failed'
+            } else {
+                const error = err as Error
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.cwl.searchLogGroup.errorRetrievingLogs',
+                        'Error retrieving logs for Log Group {0} : {1}',
+                        logGroupInfo.groupName,
+                        error.message
+                    )
+                )
             }
-        })
+        }
     } else {
         result = 'Cancelled'
     }
