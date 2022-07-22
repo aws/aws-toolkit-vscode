@@ -20,8 +20,28 @@ import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs
 import { CloudWatchLogs } from 'aws-sdk'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
+import globals from '../../shared/extensionGlobals'
 
-export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
+async function getLogGroups() {
+    const regionCode = globals.awsContext.guessDefaultRegion()
+    const client = new DefaultCloudWatchLogsClient(regionCode)
+    const logGroups = await logGroupsToArray(client.describeLogGroups())
+    return logGroups
+}
+
+function handleWizardResposne(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry) {
+    const logGroupInfo = {
+        groupName: response.logGroup,
+        regionName: response.regionCode,
+    }
+
+    const parameters = {
+        limit: registry.configuration.get('limit', 10000),
+        filterPattern: response.filterPattern,
+    }
+}
+
+export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     let logGroupInfo: CloudWatchLogsGroupInfo
     let parameters: CloudWatchLogsParameters
@@ -40,12 +60,12 @@ export async function searchLogGroup(node: LogGroupNode, registry: LogStreamRegi
 
         response = await new SearchLogGroupWizard([], logGroupInfo).run()
     } else {
-        const client = new DefaultCloudWatchLogsClient(regionCode)
-        const logGroups = await logGroupsToArray(client.describeLogGroups())
+        const logGroups = await getLogGroups()
         response = await new SearchLogGroupWizard(logGroups).run()
     }
 
     if (response) {
+        handleWizardResposne(response)
         logGroupInfo = {
             groupName: response.logGroup,
             regionName: regionCode,
@@ -118,6 +138,7 @@ export interface SearchLogGroupWizardResponse {
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
     public constructor(logGroups: string[], logGroupInfo?: CloudWatchLogsGroupInfo) {
         super()
+
         if (!logGroupInfo) {
             this.form.logGroup.bindPrompter(() => createLogGroupPrompter(logGroups))
         } else {
