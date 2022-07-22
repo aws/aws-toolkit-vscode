@@ -4,6 +4,8 @@
  */
 
 import * as uriHandlers from './uriHandlers'
+import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { ExtContext } from '../shared/extensions'
 import { CawsRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { CawsCommands } from './commands'
@@ -13,6 +15,11 @@ import { CawsAuthenticationProvider } from './auth'
 import { registerDevfileWatcher } from './devfile'
 import { DevelopmentWorkspaceClient } from '../shared/clients/developmentWorkspaceClient'
 import { watchRestartingWorkspaces } from './reconnect'
+import { getCawsWorkspaceArn } from '../shared/vscode/env'
+import { PromptSettings } from '../shared/settings'
+import { dontShow } from '../shared/localizedText'
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Activate CAWS functionality.
@@ -37,5 +44,23 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const workspaceClient = new DevelopmentWorkspaceClient()
     if (workspaceClient.arn) {
         ctx.extensionContext.subscriptions.push(registerDevfileWatcher(workspaceClient))
+    }
+
+    const settings = PromptSettings.instance
+    if (getCawsWorkspaceArn()) {
+        if (await settings.isPromptEnabled('remoteConnected')) {
+            const message = localize(
+                'AWS.caws.connectedMessage',
+                'Welcome to your REMOVED.codes Workspace. For more options and information, view Workspace settings (AWS Extension > REMOVED.codes).'
+            )
+            const openWorkspaceSettings = localize('AWS.caws.openWorkspaceSettings', 'Open Workspace Settings')
+            vscode.window.showInformationMessage(message, dontShow, openWorkspaceSettings).then(selection => {
+                if (selection === dontShow) {
+                    settings.disablePrompt('remoteConnected')
+                } else if (selection === openWorkspaceSettings) {
+                    CawsCommands.declared.openWorkspaceSettings.execute()
+                }
+            })
+        }
     }
 }

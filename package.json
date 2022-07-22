@@ -241,6 +241,10 @@
                         "fileViewerEdit": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "remoteConnected": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
