@@ -191,12 +191,12 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         const prompter = createQuickPick<integer | typeof customRange>(this.recentTimeOptions)
 
         prompter.quickPick.items = [
+            ...prompter.quickPick.items,
             {
                 label: 'Custom time range',
                 data: customRange,
                 detail: `YYYY/MM/DD-YYYY/MM/DD`,
             },
-            ...prompter.quickPick.items,
         ]
 
         return prompter
