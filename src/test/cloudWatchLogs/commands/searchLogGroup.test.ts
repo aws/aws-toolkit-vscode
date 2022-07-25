@@ -5,22 +5,14 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import {
-    SearchLogGroupWizard,
-    createFilterpatternPrompter,
-    searchLogGroup,
-} from '../../../cloudWatchLogs/commands/searchLogGroup'
+import { SearchLogGroupWizard, createFilterpatternPrompter } from '../../../cloudWatchLogs/commands/searchLogGroup'
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import { LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { Settings } from '../../../shared/settings'
-import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 
 describe('searchLogGroup', async function () {
     const fakeLogGroups: string[] = []
-    let registry: LogStreamRegistry
     let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
     let testPrompter: InputBoxPrompter
     let testWizard: WizardTester<SearchLogGroupWizard>
@@ -28,9 +20,6 @@ describe('searchLogGroup', async function () {
     before(function () {
         fakeLogGroups.push('group-1', 'group-2', 'group-3')
         testPrompter = createFilterpatternPrompter()
-
-        const config = new Settings(vscode.ConfigurationTarget.Workspace)
-        registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), new Map<string, ActiveTab>())
         inputBox = exposeEmitters(testPrompter.inputBox, ['onDidAccept', 'onDidChangeValue', 'onDidTriggerButton'])
     })
 
