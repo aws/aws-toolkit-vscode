@@ -78,7 +78,11 @@ export class AwsContextCommands {
         }
 
         await this.editCredentials()
-        if (credentialsFiles.length === 0 && (await this.promptCredentialsSetup())) {
+        if (
+            credentialsFiles.length === 0 &&
+            (await PromptSettings.instance.isPromptEnabled('createCredentialsProfile')) &&
+            (await this.promptCredentialsSetup())
+        ) {
             await this.onCommandCreateCredentialsProfile()
         }
     }
@@ -241,10 +245,6 @@ export class AwsContextCommands {
     }
 
     private async promptCredentialsSetup(): Promise<boolean> {
-        if (!(await PromptSettings.instance.isPromptEnabled('createCredentialsProfile'))) {
-            return false
-        }
-
         // If no credentials were found, the user should be
         // encouraged to define some.
         const userResponse = await vscode.window.showInformationMessage(
