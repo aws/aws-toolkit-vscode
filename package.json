@@ -833,6 +833,10 @@
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
+                    "command": "aws.cwl.changeFilterPattern",
+                    "when": "resourceScheme == awsCloudWatchLogs"
+                },
+                {
                     "command": "aws.s3.editFile",
                     "when": "resourceScheme == s3-readonly"
                 },
@@ -1065,6 +1069,11 @@
                 },
                 {
                     "command": "aws.saveCurrentLogStreamContent",
+                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.cwl.changeFilterPattern",
                     "when": "resourceScheme == awsCloudWatchLogs",
                     "group": "navigation"
                 },
@@ -2526,6 +2535,17 @@
                 "title": "%AWS.command.saveCurrentLogStreamContent%",
                 "category": "%AWS.title%",
                 "icon": "$(save-as)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.changeFilterPattern",
+                "title": "%AWS.command.cwl.changeFilterPattern%",
+                "category": "%AWS.title%",
+                "icon": "$(search-view-icon)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
