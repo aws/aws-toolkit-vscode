@@ -18,6 +18,7 @@ import { LogStreamRegistry } from './registry/logStreamRegistry'
 import { Commands } from '../shared/vscode/commands2'
 import { searchLogGroup } from './commands/searchLogGroup'
 import { changeFilterPattern } from './commands/changeFilterPattern'
+import { changeTimeFilter } from './commands/changeTimeFilter'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
@@ -69,6 +70,8 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
         Commands.register('aws.cwl.searchLogGroup', async () => await searchLogGroup(registry)),
 
-        Commands.register('aws.cwl.changeFilterPattern', async () => changeFilterPattern(registry))
+        Commands.register('aws.cwl.changeFilterPattern', async () => changeFilterPattern(registry)),
+
+        Commands.register('aws.cwl.changeTimeFilter', async () => changeTimeFilter(registry))
     )
 }

@@ -4,6 +4,10 @@ import { ItemLoadTypes, QuickPickPrompter, DataQuickPickItem, createQuickPick } 
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { isValidResponse, StepEstimator } from '../shared/wizards/wizard'
 
+export function isViewAllEvents(response: TimeFilterResponse) {
+    return response.start === response.end
+}
+
 export interface TimeFilterResponse {
     // # of miliseconds since january 1 1970 since thats what API expects.
     readonly start: number

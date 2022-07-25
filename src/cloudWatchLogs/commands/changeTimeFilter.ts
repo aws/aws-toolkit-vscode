@@ -7,7 +7,7 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import { CloudWatchLogsData, LogStreamRegistry } from '../registry/logStreamRegistry'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
-import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
+import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
 
 function getActiveUri(registry: LogStreamRegistry) {
     const currentEditor = vscode.window.activeTextEditor
@@ -22,7 +22,7 @@ function getActiveUri(registry: LogStreamRegistry) {
 
     return activeUri
 }
-export async function changeFilterPattern(registry: LogStreamRegistry): Promise<void> {
+export async function changeTimeFilter(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
 
     const oldUri = getActiveUri(registry)
@@ -38,8 +38,8 @@ export async function changeFilterPattern(registry: LogStreamRegistry): Promise<
             previous: undefined,
             parameters: {
                 ...oldData.parameters,
-                startTime: newTimeRange.start,
-                endTime: newTimeRange.end,
+                startTime: isViewAllEvents(newTimeRange) ? undefined : newTimeRange.start,
+                endTime: isViewAllEvents(newTimeRange) ? undefined : newTimeRange.end,
             },
         }
 

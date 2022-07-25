@@ -23,7 +23,7 @@ import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { localize } from 'vscode-nls'
 import { getLogger } from '../../shared/logger'
-import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
+import { TimeFilterResponse, TimeFilterSubmenu, isViewAllEvents } from '../timeFilterSubmenu'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
@@ -35,7 +35,7 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
         }
         let parameters: CloudWatchLogsParameters
         const limitParam = registry.configuration.get('limit', 10000)
-        if (response.timeRange.start === response.timeRange.end) {
+        if (isViewAllEvents(response.timeRange)) {
             // this means no time filter.
             parameters = {
                 limit: limitParam,
