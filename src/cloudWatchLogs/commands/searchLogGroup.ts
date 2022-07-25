@@ -31,7 +31,7 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
         regionName: response.submenuResponse.region,
     }
 
-    const parameters = {
+    const parameters: CloudWatchLogsParameters = {
         limit: registry.configuration.get('limit', 10000),
         filterPattern: response.filterPattern,
     }
