@@ -837,7 +837,7 @@
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
-                    "command": "aws.cwl.changeTimeRange",
+                    "command": "aws.cwl.changeTimeFilter",
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
@@ -1082,7 +1082,7 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.cwl.changeTimeRange",
+                    "command": "aws.cwl.changeTimeFilter",
                     "when": "resourceScheme == awsCloudWatchLogs",
                     "group": "navigation"
                 },
@@ -2562,7 +2562,7 @@
                 }
             },
             {
-                "command": "aws.cwl.changeTimeRange",
+                "command": "aws.cwl.changeTimeFilter",
                 "title": "%AWS.command.cwl.changeFilterPattern%",
                 "category": "%AWS.title%",
                 "icon": "$(filter)",

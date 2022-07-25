@@ -7,7 +7,7 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import { CloudWatchLogsData, LogStreamRegistry } from '../registry/logStreamRegistry'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
-import { showInputBox } from '../../shared/ui/inputPrompter'
+import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
 
 function getActiveUri(registry: LogStreamRegistry) {
     const currentEditor = vscode.window.activeTextEditor
@@ -27,12 +27,9 @@ export async function changeFilterPattern(registry: LogStreamRegistry): Promise<
 
     const oldUri = getActiveUri(registry)
     const oldData = registry.getLogData(oldUri) as CloudWatchLogsData
-    const newPattern = await showInputBox({
-        title: 'Keyword Search',
-        placeholder: 'Enter text here',
-    })
+    const newTimeRange = (await new TimeFilterSubmenu().prompt()) as TimeFilterResponse
 
-    if (newPattern) {
+    if (newTimeRange) {
         // Overwrite old data to remove old events, tokens, and filterPattern.
         const newData: CloudWatchLogsData = {
             ...oldData,
@@ -41,7 +38,8 @@ export async function changeFilterPattern(registry: LogStreamRegistry): Promise<
             previous: undefined,
             parameters: {
                 ...oldData.parameters,
-                filterPattern: newPattern,
+                startTime: newTimeRange.start,
+                endTime: newTimeRange.end,
             },
         }
 
