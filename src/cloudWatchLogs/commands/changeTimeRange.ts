@@ -9,19 +9,23 @@ import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { showInputBox } from '../../shared/ui/inputPrompter'
 
-export async function changeFilterPattern(registry: LogStreamRegistry): Promise<void> {
-    let result: telemetry.Result = 'Succeeded'
-
+function getActiveUri(registry: LogStreamRegistry) {
     const currentEditor = vscode.window.activeTextEditor
     if (!currentEditor) {
         throw new Error('cwl: Failed to identify active editor.')
     }
 
-    const oldUri = currentEditor.document.uri
-    if (!registry.hasLog(oldUri)) {
+    const activeUri = currentEditor.document.uri
+    if (!registry.hasLog(activeUri)) {
         throw new Error('cwl: Document open has unregistered uri.')
     }
 
+    return activeUri
+}
+export async function changeFilterPattern(registry: LogStreamRegistry): Promise<void> {
+    let result: telemetry.Result = 'Succeeded'
+
+    const oldUri = getActiveUri(registry)
     const oldData = registry.getLogData(oldUri) as CloudWatchLogsData
     const newPattern = await showInputBox({
         title: 'Keyword Search',
