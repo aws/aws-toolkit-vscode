@@ -1760,7 +1760,6 @@
                 "command": "aws.credentials.profile.create",
                 "title": "%AWS.command.credentials.profile.create%",
                 "category": "%AWS.title%",
-                "enablement": "!isCloud9",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
