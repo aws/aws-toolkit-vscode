@@ -9,8 +9,9 @@ import { getLogger } from './logger'
 import { cast, FromDescriptor, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
 import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
-import { isAutomation, isNameMangled } from './vscode/env'
+import { isNameMangled } from './vscode/env'
 import { once } from './utilities/functionUtils'
+import { UnknownError } from './toolkitError'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -181,11 +182,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
         protected readonly log = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'debug')
         protected readonly logErr = makeLogger(Object.getPrototypeOf(this)?.constructor?.name, 'error')
 
-        public constructor(
-            private readonly settings: ClassToInterfaceType<Settings> = Settings.instance,
-            /** Throw an exception if the user config is invalid or the caller type doesn't match the stored type. */
-            private readonly throwInvalid: boolean = isAutomation()
-        ) {}
+        public constructor(private readonly settings: ClassToInterfaceType<Settings> = Settings.instance) {}
 
         public get onDidChange() {
             return this.getChangedEmitter().event
@@ -195,12 +192,14 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             try {
                 return this.getOrThrow(key, defaultValue)
             } catch (e) {
-                if (this.throwInvalid || defaultValue === undefined) {
-                    throw new Error(`Failed to read key "${key}": ${e}`)
+                const message = UnknownError.cast(e)
+                if (arguments.length === 1) {
+                    throw new Error(`Failed to read key "${section}.${key}": ${message}`)
                 }
-                this.logErr(`using default for key "${key}", read failed: ${(e as Error).message ?? '?'}`)
 
-                return defaultValue
+                this.logErr(`using default for key "${key}", read failed: ${message}`)
+
+                return defaultValue as Inner[K]
             }
         }
 
@@ -252,21 +251,26 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             //   - the "key" is `bar`
             //
             // So if `aws.foo.bar` changed, this would fire with data `{ key: 'bar' }`
+            //
+            // Note that `undefined` is not a valid JSON value. So using it as a default
+            // value is a valid way to express that the key exists but no (valid) value is set.
+
             const props = keys(descriptor)
-            const store = toRecord(props, p => this.get(p))
+            const store = toRecord(props, p => this.get(p, undefined))
             const emitter = new vscode.EventEmitter<{ readonly key: keyof T }>()
             const listener = this.settings.onDidChangeSection(section, event => {
-                const isDifferent = (p: keyof T & string) => event.affectsConfiguration(p) || store[p] !== this.get(p)
+                const isDifferent = (p: keyof T & string) => {
+                    const isDifferentLazy = () => {
+                        const previous = store[p]
+                        return previous !== (store[p] = this.get(p, undefined))
+                    }
+
+                    return event.affectsConfiguration(p) || isDifferentLazy()
+                }
 
                 for (const key of props.filter(isDifferent)) {
                     this.log(`key "${key}" changed`)
-                    try {
-                        store[key] = this.get(key)
-                        emitter.fire({ key })
-                    } catch {
-                        // getChangedEmitter() can't provide a default value so
-                        // we must silence errors here. Logging is done by this.get().
-                    }
+                    emitter.fire({ key })
                 }
             })
 

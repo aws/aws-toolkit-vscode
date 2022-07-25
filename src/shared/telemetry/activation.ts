@@ -15,6 +15,8 @@ import { getLogger } from '../logger'
 import { getComputeRegion, getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { openSettings, Settings } from '../settings'
 import { TelemetryConfig } from './util'
+import { isAutomation, isReleaseVersion } from '../vscode/env'
+import { UnknownError } from '../toolkitError'
 
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
@@ -32,28 +34,35 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2
  * Sets up the Metrics system and initializes globals.telemetry
  */
 export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
+    const config = new TelemetryConfig(settings)
     globals.telemetry = new DefaultTelemetryService(extensionContext, awsContext, getComputeRegion())
 
-    const config = new TelemetryConfig(
-        settings,
-        // Disable `throwInvalid` because:
+    try {
+        globals.telemetry.telemetryEnabled = config.isEnabled()
+
+        extensionContext.subscriptions.push(
+            config.onDidChange(event => {
+                if (event.key === 'telemetry') {
+                    globals.telemetry.telemetryEnabled = config.isEnabled()
+                }
+            })
+        )
+
+        // Prompt user about telemetry if they haven't been
+        if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
+            showTelemetryNotice(extensionContext)
+        }
+
+        await globals.telemetry.start()
+    } catch (e) {
+        // Only throw in a production build because:
         //   1. Telemetry must never prevent normal Toolkit operation.
-        //   2. For tests, bad data is intentional, so these errors add unwanted noise in the test logs.
-        false
-    )
-    globals.telemetry.telemetryEnabled = config.isEnabled()
+        //   2. We want to know if something is not working ASAP during development.
+        if (isAutomation() || !isReleaseVersion()) {
+            throw e
+        }
 
-    extensionContext.subscriptions.push(
-        config.onDidChange(event => {
-            if (event.key === 'telemetry') {
-                globals.telemetry.telemetryEnabled = config.isEnabled()
-            }
-        })
-    )
-
-    // Prompt user about telemetry if they haven't been
-    if (!isCloud9() && !hasUserSeenTelemetryNotice(extensionContext)) {
-        showTelemetryNotice(extensionContext)
+        getLogger().error(`telemetry: failed to activate: ${UnknownError.cast(e).message}`)
     }
 }
 
