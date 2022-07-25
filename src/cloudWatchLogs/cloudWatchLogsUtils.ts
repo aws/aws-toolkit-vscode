@@ -62,7 +62,7 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
  */
 export function canShowPreviousLogs(uri: vscode.Uri): boolean {
     const params = parseCloudWatchLogsUri(uri).parameters
-    return params.filterPattern === undefined ? true : false
+    return params.filterPattern === undefined
 }
 
 /**

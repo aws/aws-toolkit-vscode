@@ -39,16 +39,16 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
             regionName: response.submenuResponse.region,
         }
         let parameters: CloudWatchLogsParameters
-
+        const limitParam = registry.configuration.get('limit', 10000)
         if (response.timeRange.start === response.timeRange.end) {
             // this means no time filter.
             parameters = {
-                limit: registry.configuration.get('limit', 10000),
+                limit: limitParam,
                 filterPattern: response.filterPattern,
             }
         } else {
             parameters = {
-                limit: registry.configuration.get('limit', 10000),
+                limit: limitParam,
                 filterPattern: response.filterPattern,
                 startTime: response.timeRange.start,
                 endTime: response.timeRange.end,
