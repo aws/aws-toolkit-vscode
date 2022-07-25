@@ -21,7 +21,7 @@ import { LogGroupNode } from '../explorer/logGroupNode'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 
-function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry) {
+function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
     const logGroupInfo = {
         groupName: response.submenuResponse.data,
         regionName: response.submenuResponse.region,

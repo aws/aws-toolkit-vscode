@@ -50,25 +50,12 @@ describe('regionSubmenu', function () {
         type Inner<T> = T extends QuickPickPrompter<infer U> ? U : never
         type Combine<T> = QuickPickPrompter<Inner<T>>
 
-        // const resp = SubmenuPrompter.prompt()
-        // assert(SubmenuPrompter.activePrompter)
-        // const submenuQuickPick = createQuickPickTester(
-        //     SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
-        // )
-        // submenuQuickPick.acceptItem('Switch Region')
-
-        // const regionPrompt = createQuickPickTester(
-        //     SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
-        // )
-        // assert.notDeepStrictEqual(regionPrompt, submenuQuickPick)
-
         const resp = SubmenuPrompter.prompt()
         assert.ok(SubmenuPrompter.activePrompter)
         const logGroupTester = createQuickPickTester(
             SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
         )
         logGroupTester.acceptItem('Switch region')
-        //await logGroupTester.result()
         await sleep(100)
 
         const regionTester = createQuickPickTester(
