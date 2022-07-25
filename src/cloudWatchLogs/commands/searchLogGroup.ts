@@ -70,6 +70,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
         if (!node.logGroup.logGroupName) {
             throw new Error('CWL: Log Group node does not have a name.')
         }
+        // Currently displays nothing if update log fails in non-cancellationError. (don't want this)
 
         response = await new SearchLogGroupWizard({
             groupName: node.logGroup.logGroupName,
@@ -93,6 +94,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
                 result = 'Cancelled'
             } else {
                 result = 'Failed'
+
                 const error = err as Error
                 vscode.window.showErrorMessage(
                     localize(
