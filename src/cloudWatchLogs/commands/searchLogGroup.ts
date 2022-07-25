@@ -10,6 +10,7 @@ import {
     CloudWatchLogsGroupInfo,
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
+    CloudWatchLogsParameters,
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
@@ -20,6 +21,9 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
+import { localize } from 'vscode-nls'
+import { getLogger } from '../../shared/logger'
 
 function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
     const logGroupInfo = {
@@ -76,12 +80,30 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
     }
 
     if (response) {
-        const initialStreamData = handleWizardResponse(response, registry)
+        const initialLogData = handleWizardResponse(response, registry)
 
-        const uri = createURIFromArgs(initialStreamData.logGroupInfo, initialStreamData.parameters)
+        const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
-        await registry.registerLog(uri, initialStreamData)
-        await prepareDocument(uri, registry)
+        await registry.registerLog(uri, initialLogData)
+        try {
+            await prepareDocument(uri, registry)
+        } catch (err) {
+            if (CancellationError.isUserCancelled(err)) {
+                getLogger().debug('cwl: User Cancelled Search')
+                result = 'Cancelled'
+            } else {
+                result = 'Failed'
+                const error = err as Error
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.cwl.searchLogGroup.errorRetrievingLogs',
+                        'Error retrieving logs for Log Group {0} : {1}',
+                        initialLogData.logGroupInfo.groupName,
+                        error.message
+                    )
+                )
+            }
+        }
     } else {
         result = 'Cancelled'
     }

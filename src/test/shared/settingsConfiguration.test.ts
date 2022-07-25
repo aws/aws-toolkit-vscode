@@ -8,6 +8,7 @@ import * as vscode from 'vscode'
 import { DevSettings, Experiments, fromExtensionManifest, PromptSettings, Settings } from '../../shared/settings'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
+import { Optional } from '../../shared/utilities/typeConstructors'
 
 const SETTINGS_TARGET = vscode.ConfigurationTarget.Workspace
 
@@ -15,7 +16,7 @@ describe('Settings', function () {
     // These tests use an actual extension setting, because vscode.WorkspaceConfiguration fails when
     // you attempt to update one that isn't defined in package.json. We will restore the setting value
     // at the end of the tests.
-    const SETTING_KEY = 'aws.telemetry'
+    const SETTING_KEY = 'aws.samcli.lambdaTimeout'
 
     let sut: Settings
 
@@ -67,11 +68,10 @@ describe('Settings', function () {
             //
             // Setting exists but has wrong type:
             //
-            await settings.update(SETTING_KEY, true, SETTINGS_TARGET)
+            await settings.update(SETTING_KEY, 123, SETTINGS_TARGET)
             assert.throws(() => sut.get(SETTING_KEY, String))
-            assert.throws(() => sut.get(SETTING_KEY, Number))
             assert.throws(() => sut.get(SETTING_KEY, Object))
-            assert.throws(() => sut.get(SETTING_KEY, Number))
+            assert.throws(() => sut.get(SETTING_KEY, Boolean))
         })
     })
 
@@ -140,6 +140,11 @@ describe('Settings', function () {
             assert.strictEqual(instance.get('profile', 'bar'), 'bar')
         })
 
+        it('can use `undefined` as a default value', function () {
+            const OptionalProfile = fromExtensionManifest('aws', { profile: Optional(String) })
+            assert.strictEqual(new OptionalProfile(settings).get('profile', undefined), undefined)
+        })
+
         it('can use a saved setting', async function () {
             await settings.update('aws.profile', 'foo')
             assert.strictEqual(instance.get('profile'), 'foo')
@@ -148,6 +153,11 @@ describe('Settings', function () {
         it('ignores the default value if the setting exists', async function () {
             await settings.update('aws.profile', 'foo')
             assert.strictEqual(instance.get('profile', 'bar'), 'foo')
+        })
+
+        it('uses the default value if the setting is invalid', async function () {
+            await settings.update('aws.profile', true)
+            assert.strictEqual(instance.get('profile', 'foo'), 'foo')
         })
 
         it('throws when the types do not match', async function () {
@@ -199,17 +209,6 @@ describe('DevSetting', function () {
         await settings.update(`aws.dev.${TEST_SETTING}`, true)
         assert.strictEqual(sut.get(TEST_SETTING, false), true)
         assert.deepStrictEqual(await state, { [TEST_SETTING]: true })
-    })
-
-    it('bubbles up errors when in automation', async function () {
-        await settings.update(`aws.dev.${TEST_SETTING}`, 'junk')
-        assert.throws(() => sut.get(TEST_SETTING, false))
-    })
-
-    it('only throws in automation', async function () {
-        const noAutomation = new DevSettings(settings, false)
-        await settings.update(`aws.dev.${TEST_SETTING}`, 'junk')
-        assert.strictEqual(noAutomation.get(TEST_SETTING, true), true)
     })
 })
 

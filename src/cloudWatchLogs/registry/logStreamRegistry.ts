@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
@@ -13,7 +10,8 @@ import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../clo
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-
+import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
+import { showMessageWithCancel } from '../../shared/utilities/messages'
 // TODO: Add debug logging statements
 
 /**
@@ -110,50 +108,34 @@ export class LogStreamRegistry {
             return
         }
         const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
-        const uriResults = parseCloudWatchLogsUri(uri)
 
-        const logGroupInfo = uriResults.logGroupInfo
+        // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
+        const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
 
-        try {
-            // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-            const logEvents = await stream.retrieveLogsFunction(stream.logGroupInfo, stream.parameters, nextToken)
+        const newData =
+            headOrTail === 'head'
+                ? (logEvents.events ?? []).concat(stream.data)
+                : stream.data.concat(logEvents.events ?? [])
 
-            const newData =
-                headOrTail === 'head'
-                    ? (logEvents.events ?? []).concat(stream.data)
-                    : stream.data.concat(logEvents.events ?? [])
-
-            const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
-            // update if no token exists or if the token is updated in the correct direction.
-            if (!stream.previous || headOrTail === 'head') {
-                tokens.previous = {
-                    token: logEvents.nextBackwardToken ?? '',
-                }
+        const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
+        // update if no token exists or if the token is updated in the correct direction.
+        if (!stream.previous || headOrTail === 'head') {
+            tokens.previous = {
+                token: logEvents.nextBackwardToken ?? '',
             }
-            if (!stream.next || headOrTail === 'tail') {
-                tokens.next = {
-                    token: logEvents.nextForwardToken ?? '',
-                }
-            }
-
-            this.setLogData(uri, {
-                ...stream,
-                ...tokens,
-                data: newData,
-            })
-
-            this._onDidChange.fire(uri)
-        } catch (e) {
-            const err = e as Error
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.cwl.viewLogStream.errorRetrievingLogs',
-                    'Error retrieving logs for Log Group {0} : {1}',
-                    logGroupInfo.groupName,
-                    err.message
-                )
-            )
         }
+        if (!stream.next || headOrTail === 'tail') {
+            tokens.next = {
+                token: logEvents.nextForwardToken ?? '',
+            }
+        }
+        this.setLogData(uri, {
+            ...stream,
+            ...tokens,
+            data: newData,
+        })
+
+        this._onDidChange.fire(uri)
     }
 
     /**
@@ -212,20 +194,28 @@ export async function filterLogEventsFromUriComponents(
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    const response = await client.filterLogEvents({
+    const timeout = new Timeout(300000)
+    showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
+    const responsePromise = client.filterLogEvents({
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,
         nextToken,
         limit: parameters.limit,
     })
 
+    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
+
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
     // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
     // However, this fail wouldn't really impact customers.
-    return {
-        events: response.events ? response.events : [],
-        nextForwardToken: response.nextToken,
-        nextBackwardToken: nextToken,
+    if (response) {
+        return {
+            events: response.events ? response.events : [],
+            nextForwardToken: response.nextToken,
+            nextBackwardToken: nextToken,
+        }
+    } else {
+        throw new Error('cwl:`filterLogEvents` did not return anything.')
     }
 }
 
@@ -247,6 +237,10 @@ export async function getLogEventsFromUriComponents(
         nextToken,
         limit: parameters.limit,
     })
+
+    if (!response) {
+        throw new Error('cwl:`getLogEvents` did not return anything.')
+    }
 
     return {
         events: response.events ? response.events : [],

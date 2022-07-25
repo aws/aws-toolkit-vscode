@@ -95,7 +95,7 @@
             "request": "direct-invoke",
             "invokeTarget": {
                 "target": "api",
-                "templatePath": "csharp2.1-plain-sam-app/template.yaml",
+                "templatePath": "csharp6-zip/template.yaml",
                 "logicalId": "HelloWorldFunction"
             },
             "api": {
