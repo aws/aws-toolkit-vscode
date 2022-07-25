@@ -12,12 +12,13 @@ import {
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
-import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
+import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { localize } from 'vscode-nls'
@@ -25,14 +26,11 @@ import { getLogger } from '../../shared/logger'
 
 export async function searchLogGroup(registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
-    const regionCode = 'us-west-2'
-    const client = new DefaultCloudWatchLogsClient(regionCode)
-    const logGroups = await logGroupsToArray(client.describeLogGroups())
-    const response = await new SearchLogGroupWizard(logGroups).run()
+    const response = await new SearchLogGroupWizard().run()
     if (response) {
         const logGroupInfo: CloudWatchLogsGroupInfo = {
-            groupName: response.logGroup,
-            regionName: regionCode,
+            groupName: response.submenuResponse.data,
+            regionName: response.submenuResponse.region,
         }
 
         const parameters: CloudWatchLogsParameters = {
@@ -84,24 +82,22 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
+async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
+    const client = new DefaultCloudWatchLogsClient(regionCode)
+    const logGroups = await logGroupsToArray(client.describeLogGroups())
+    const options = logGroups.map<DataQuickPickItem<string>>(logGroupString => ({
+        label: logGroupString,
+        data: logGroupString,
+    }))
+    return options
+}
+
 async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.LogGroup>): Promise<string[]> {
     const logGroupsArray = []
     for await (const logGroupObject of logGroups) {
         logGroupObject.logGroupName && logGroupsArray.push(logGroupObject.logGroupName)
     }
     return logGroupsArray
-}
-
-export function createLogGroupPrompter(logGroups: string[]) {
-    const options = logGroups.map<DataQuickPickItem<string>>(logGroupString => ({
-        label: logGroupString,
-        data: logGroupString,
-    }))
-
-    return createQuickPick(options, {
-        title: 'Select Log Group',
-        placeholder: 'Enter text here',
-    })
 }
 
 export function createFilterpatternPrompter() {
@@ -112,15 +108,14 @@ export function createFilterpatternPrompter() {
 }
 
 export interface SearchLogGroupWizardResponse {
-    logGroup: string
+    submenuResponse: RegionSubmenuResponse<string>
     filterPattern: string
 }
 
 export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
-    public constructor(logGroups: string[]) {
+    public constructor() {
         super()
-
-        this.form.logGroup.bindPrompter(() => createLogGroupPrompter(logGroups))
+        this.form.submenuResponse.bindPrompter(() => new RegionSubmenu(getLogGroupsFromRegion))
         this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
     }
 }

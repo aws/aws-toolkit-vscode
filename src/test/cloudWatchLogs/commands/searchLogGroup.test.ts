@@ -5,12 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import {
-    SearchLogGroupWizard,
-    createLogGroupPrompter,
-    createFilterpatternPrompter,
-} from '../../../cloudWatchLogs/commands/searchLogGroup'
-import { createQuickPickTester } from '../../shared/ui/testUtils'
+import { SearchLogGroupWizard, createFilterpatternPrompter } from '../../../cloudWatchLogs/commands/searchLogGroup'
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
@@ -29,26 +24,12 @@ describe('searchLogGroup', async function () {
     })
 
     beforeEach(function () {
-        testWizard = createWizardTester(new SearchLogGroupWizard(fakeLogGroups))
+        testWizard = createWizardTester(new SearchLogGroupWizard())
     })
 
-    it('shows logGroup prompt first', function () {
-        testWizard.logGroup.assertShow()
-        testWizard.logGroup.applyInput('group-1')
-    })
-
-    it('Shoes filterPattern prompt when logGroup is chosen', function () {
-        testWizard.logGroup.applyInput('group-2')
-        testWizard.filterPattern.assertShow()
-    })
-
-    it('creates Log Group prompter from TreeNodes', async function () {
-        const prompter = createLogGroupPrompter(fakeLogGroups)
-        const tester = createQuickPickTester(prompter)
-        tester.assertItems(['group-1', 'group-2', 'group-3'])
-        const selection = 'group-2'
-        tester.acceptItem(selection)
-        await tester.result(selection)
+    it('shows logGroup prompt first and filterPattern second', function () {
+        testWizard.submenuResponse.assertShowFirst()
+        testWizard.filterPattern.assertShowSecond()
     })
 
     it('filterPattern InputBox accepts input', async function () {
