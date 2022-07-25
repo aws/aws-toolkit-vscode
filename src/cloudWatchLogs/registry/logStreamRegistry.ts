@@ -211,6 +211,8 @@ export async function filterLogEventsFromUriComponents(
     const responsePromise = client.filterLogEvents(cwlParameters)
     const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
+    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
+
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
     // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
     // However, this fail wouldn't really impact customers.
