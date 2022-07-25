@@ -31,7 +31,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         super()
     }
 
-    public createMenuPrompter() {
+    private createMenuPrompter() {
         const prompter = createQuickPick<T | typeof switchRegion>(
             this.itemsProvider(this.currentRegion),
             this.options as ExtendedQuickPickOptions<T | typeof switchRegion>

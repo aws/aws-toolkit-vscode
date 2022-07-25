@@ -6,12 +6,10 @@
 import * as assert from 'assert'
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
-import { sleep } from '../../../../shared/utilities/timeoutUtils'
-import { createQuickPickTester, QuickPickTester } from '../testUtils'
+import { createQuickPickTester } from '../testUtils'
 
 describe('regionSubmenu', function () {
-    let SubmenuPrompter: RegionSubmenu<string>
-    let menuTester: QuickPickTester<any>
+    let submenuPrompter: RegionSubmenu<string>
 
     const region1Groups = ['group1a', 'group1b', 'group1c']
     const region2Groups = ['group2a', 'group2b', 'group2c']
@@ -34,41 +32,35 @@ describe('regionSubmenu', function () {
                 data: groupName,
             }))
         }
-        SubmenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'us-west-1')
-
-        menuTester = createQuickPickTester(SubmenuPrompter.createMenuPrompter())
+        submenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'us-west-1')
     })
 
-    it('Prompts with log groups and escape hatch', async function () {
-        const expectedMenuItems1 = ['Switch region'].concat(region1Groups)
-        menuTester.assertItems(expectedMenuItems1)
-        menuTester.acceptItem('group1a')
-        await menuTester.result()
-    })
-
-    it('Able to swap regions via escape hatch', async function () {
+    it('allow users to swap regions via escape hatch', async function () {
         type Inner<T> = T extends QuickPickPrompter<infer U> ? U : never
         type Combine<T> = QuickPickPrompter<Inner<T>>
 
-        const resp = SubmenuPrompter.prompt()
-        assert.ok(SubmenuPrompter.activePrompter)
+        const resp = submenuPrompter.prompt()
+        assert.ok(submenuPrompter.activePrompter)
         const logGroupTester = createQuickPickTester(
-            SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
+            submenuPrompter.activePrompter as Combine<typeof submenuPrompter.activePrompter>
         )
         logGroupTester.acceptItem('Switch region')
-        await sleep(100)
+        await logGroupTester.result()
 
         const regionTester = createQuickPickTester(
-            SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
+            submenuPrompter.activePrompter as Combine<typeof submenuPrompter.activePrompter>
         )
         regionTester.acceptItem('US West (Oregon)')
         await regionTester.result()
 
         const logGroupTester2 = createQuickPickTester(
-            SubmenuPrompter.activePrompter as Combine<typeof SubmenuPrompter.activePrompter>
+            submenuPrompter.activePrompter as Combine<typeof submenuPrompter.activePrompter>
         )
         logGroupTester2.acceptItem('group2c')
         await logGroupTester2.result()
-        await resp
+        assert.deepStrictEqual(await resp, {
+            region: 'us-west-2',
+            data: 'group2c',
+        })
     })
 })
