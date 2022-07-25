@@ -193,6 +193,7 @@ export async function filterLogEventsFromUriComponents(
     nextToken?: string
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
+
     const cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,

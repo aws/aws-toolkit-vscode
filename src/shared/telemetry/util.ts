@@ -9,11 +9,14 @@ import { fromExtensionManifest } from '../settings'
 import { shared } from '../utilities/functionUtils'
 import { isAutomation } from '../vscode/env'
 import { v4 as uuidv4 } from 'uuid'
+import { addTypeName } from '../utilities/typeConstructors'
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
 
-export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: convertLegacy }) {
+const TelemetryFlag = addTypeName('boolean', convertLegacy)
+
+export class TelemetryConfig extends fromExtensionManifest('aws', { telemetry: TelemetryFlag }) {
     public isEnabled(): boolean {
         return this.get('telemetry', true)
     }
