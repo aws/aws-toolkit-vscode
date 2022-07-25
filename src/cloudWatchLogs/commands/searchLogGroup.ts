@@ -42,7 +42,7 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     return initialStreamData
 }
 
-async function prepareDocument(uri: vscode.Uri, registry: LogStreamRegistry) {
+async function prepareDocument(uri: vscode.Uri, registry: LogStreamRegistry): Promise<void> {
     const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
     vscode.languages.setTextDocumentLanguage(doc, 'log')
 

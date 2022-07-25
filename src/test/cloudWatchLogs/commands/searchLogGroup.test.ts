@@ -5,13 +5,22 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import { SearchLogGroupWizard, createFilterpatternPrompter } from '../../../cloudWatchLogs/commands/searchLogGroup'
+import {
+    SearchLogGroupWizard,
+    createFilterpatternPrompter,
+    searchLogGroup,
+} from '../../../cloudWatchLogs/commands/searchLogGroup'
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
+import { LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { Settings } from '../../../shared/settings'
+import { CloudWatchLogsSettings } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 
 describe('searchLogGroup', async function () {
     const fakeLogGroups: string[] = []
+    let registry: LogStreamRegistry
     let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
     let testPrompter: InputBoxPrompter
     let testWizard: WizardTester<SearchLogGroupWizard>
@@ -20,6 +29,8 @@ describe('searchLogGroup', async function () {
         fakeLogGroups.push('group-1', 'group-2', 'group-3')
         testPrompter = createFilterpatternPrompter()
 
+        const config = new Settings(vscode.ConfigurationTarget.Workspace)
+        registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), new Map<string, ActiveTab>())
         inputBox = exposeEmitters(testPrompter.inputBox, ['onDidAccept', 'onDidChangeValue', 'onDidTriggerButton'])
     })
 
@@ -44,5 +55,24 @@ describe('searchLogGroup', async function () {
         const result = testPrompter.prompt()
         accept(testInput)
         assert.strictEqual(await result, testInput)
+    })
+
+    it('wizaard prioritizes logGroupInfo if passed in', async function () {
+        const fakeLogGroupNode = {
+            regionCode: 'test-region',
+            logGroup: {
+                logGroupName: 'test',
+            },
+        } as LogGroupNode
+
+        assert(fakeLogGroupNode.logGroup.logGroupName) // to avoid linting error
+
+        const nodeTestWizard = createWizardTester(
+            new SearchLogGroupWizard({
+                groupName: fakeLogGroupNode.logGroup.logGroupName,
+                regionName: fakeLogGroupNode.regionCode,
+            })
+        )
+        nodeTestWizard.filterPattern.assertShowFirst()
     })
 })
