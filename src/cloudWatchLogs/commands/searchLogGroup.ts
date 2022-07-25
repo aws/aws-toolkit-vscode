@@ -238,6 +238,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                         return { start: startTime.valueOf(), end: endTime.valueOf() }
                     }
 
+                    this.defaultPrompter = this.createMenuPrompter() //reload the defaultPrompter
                     this.switchState('recent-range')
 
                     break
