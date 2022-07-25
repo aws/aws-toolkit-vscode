@@ -11,19 +11,12 @@ import { FakeMemento } from '../../fakeExtensionContext'
 
 describe('TelemetryConfig', function () {
     const SETTING_KEY = 'aws.telemetry'
-
-    const target = ConfigurationTarget.Workspace
-    const settings = new Settings(target)
+    const settings = new Settings(ConfigurationTarget.Workspace)
 
     let sut: TelemetryConfig
 
     beforeEach(function () {
-        sut = new TelemetryConfig(
-            settings,
-            // Disable `throwInvalid`. These tests intentionally try invalid
-            // data, so the errors are unwanted noise in the test logs.
-            false
-        )
+        sut = new TelemetryConfig(settings)
     })
 
     afterEach(async function () {
