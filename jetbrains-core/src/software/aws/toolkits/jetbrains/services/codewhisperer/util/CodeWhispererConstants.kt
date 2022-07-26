@@ -37,6 +37,7 @@ object CodeWhispererConstants {
     const val TOTAL_BYTES_IN_KB = 1024
     const val TOTAL_BYTES_IN_MB = 1024 * 1024
     const val TOTAL_MILLIS_IN_SECOND = 1000
+    const val TOTAL_SECONDS_IN_MINUTE: Long = 60L
 
     const val CODEWHISPERER_ENDPOINT = "https://codewhisperer.us-east-1.amazonaws.com/"
 

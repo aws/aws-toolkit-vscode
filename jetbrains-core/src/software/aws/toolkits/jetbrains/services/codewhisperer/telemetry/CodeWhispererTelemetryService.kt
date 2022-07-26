@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionConte
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
+import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
 import software.aws.toolkits.telemetry.CodewhispererTelemetry
@@ -72,14 +73,6 @@ class CodeWhispererTelemetryService {
             reason = exceptionType,
             success = invocationSuccess
         )
-    }
-
-    private fun ProgrammingLanguage.toCodeWhispererLanguage() = when (languageName) {
-        CodewhispererLanguage.Python.toString() -> CodewhispererLanguage.Python
-        CodewhispererLanguage.Java.toString() -> CodewhispererLanguage.Java
-        CodewhispererLanguage.Javascript.toString() -> CodewhispererLanguage.Javascript
-        "plain_text" -> CodewhispererLanguage.Plaintext
-        else -> CodewhispererLanguage.Unknown
     }
 
     private fun sendUserDecisionEvent(
@@ -155,7 +148,7 @@ class CodeWhispererTelemetryService {
         val (project, _, triggerTypeInfo) = requestContext
         val (sessionId, completionType) = responseContext
         val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toCodeWhispererLanguage()
-        CodeWhispererTracker.getInstance(project).enqueue(
+        CodeWhispererUserModificationTracker.getInstance(project).enqueue(
             AcceptedSuggestionEntry(
                 time, vFile, range, suggestion, sessionId, requestId, selectedIndex,
                 triggerTypeInfo.triggerType, completionType,
@@ -210,3 +203,13 @@ class CodeWhispererTelemetryService {
             CodewhispererSuggestionState.Reject
         }
 }
+
+fun ProgrammingLanguage.toCodeWhispererLanguage() = when (languageName) {
+    CodewhispererLanguage.Python.toString() -> CodewhispererLanguage.Python
+    CodewhispererLanguage.Java.toString() -> CodewhispererLanguage.Java
+    CodewhispererLanguage.Javascript.toString() -> CodewhispererLanguage.Javascript
+    "plain_text" -> CodewhispererLanguage.Plaintext
+    else -> CodewhispererLanguage.Unknown
+}
+
+fun isTelemetryEnabled(): Boolean = AwsSettings.getInstance().isTelemetryEnabled

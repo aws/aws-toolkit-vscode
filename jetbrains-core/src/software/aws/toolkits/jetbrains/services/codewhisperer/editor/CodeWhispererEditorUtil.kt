@@ -33,7 +33,7 @@ object CodeWhispererEditorUtil {
         val programmingLanguage = ProgrammingLanguage(psiFile.toProgrammingLanguage())
         return FileContextInfo(caretContext, fileName, programmingLanguage)
     }
-    private fun PsiFile.toProgrammingLanguage() = lowerCase(this.fileType.name)
+    fun PsiFile.toProgrammingLanguage() = lowerCase(this.fileType.name)
 
     private fun extractCaretContext(editor: Editor): CaretContext {
         val document = editor.document

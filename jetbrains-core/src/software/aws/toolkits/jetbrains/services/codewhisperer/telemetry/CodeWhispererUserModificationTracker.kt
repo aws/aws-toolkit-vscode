@@ -43,7 +43,7 @@ data class AcceptedSuggestionEntry(
     val codewhispererRuntimeSource: String?
 )
 
-class CodeWhispererTracker(private val project: Project) : Disposable {
+class CodeWhispererUserModificationTracker(private val project: Project) : Disposable {
     private val acceptedSuggestions = LinkedBlockingDeque<AcceptedSuggestionEntry>(DEFAULT_MAX_QUEUE_SIZE)
     private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, this)
 
@@ -157,9 +157,9 @@ class CodeWhispererTracker(private val project: Project) : Disposable {
         private val checker = Levenshtein()
         private val TELEMETRY_ENABLED = System.getProperty(TELEMETRY_KEY)?.toBoolean() ?: true
 
-        private val LOG = getLogger<CodeWhispererTracker>()
+        private val LOG = getLogger<CodeWhispererUserModificationTracker>()
 
-        fun getInstance(project: Project) = project.service<CodeWhispererTracker>()
+        fun getInstance(project: Project) = project.service<CodeWhispererUserModificationTracker>()
     }
 
     override fun dispose() {

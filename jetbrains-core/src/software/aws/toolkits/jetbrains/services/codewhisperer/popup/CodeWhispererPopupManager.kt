@@ -15,6 +15,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.editor.actionSystem.EditorActionManager
 import com.intellij.openapi.editor.actionSystem.TypedAction
 import com.intellij.openapi.editor.colors.EditorColors
@@ -594,5 +595,5 @@ interface CodeWhispererUserActionListener {
     fun navigatePrevious(states: InvocationContext) {}
     fun navigateNext(states: InvocationContext) {}
     fun beforeAccept(states: InvocationContext, sessionContext: SessionContext) {}
-    fun afterAccept(states: InvocationContext, sessionContext: SessionContext) {}
+    fun afterAccept(states: InvocationContext, sessionContext: SessionContext, rangeMarker: RangeMarker) {}
 }

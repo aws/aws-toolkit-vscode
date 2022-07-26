@@ -71,7 +71,7 @@ object CodeWhispererTestUtil {
     const val pythonTestLeftContext = "def addTwoNumbers"
     const val javaTestContext = "public class Test {\n    public static void main\n}"
 
-    private fun generateMockRecommendationDetail(content: String): Recommendation {
+    internal fun generateMockRecommendationDetail(content: String): Recommendation {
         val pair = testReferenceInfoPair[Random.nextInt(testReferenceInfoPair.size)]
         return Recommendation.builder()
             .content(content)

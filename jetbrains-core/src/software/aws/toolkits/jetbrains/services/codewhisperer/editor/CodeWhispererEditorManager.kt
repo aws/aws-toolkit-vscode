@@ -58,7 +58,7 @@ class CodeWhispererEditorManager {
             )
             ApplicationManager.getApplication().messageBus.syncPublisher(
                 CodeWhispererPopupManager.CODEWHISPERER_USER_ACTION_PERFORMED,
-            ).afterAccept(states, sessionContext)
+            ).afterAccept(states, sessionContext, rangeMarker)
         }
     }
 

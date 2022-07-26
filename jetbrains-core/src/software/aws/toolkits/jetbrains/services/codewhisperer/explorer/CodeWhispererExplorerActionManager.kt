@@ -110,7 +110,6 @@ internal class CodeWhispererExplorerActionManager : PersistentStateComponent<Cod
             setManualEnabled(true)
             setAutoEnabled(true)
             setHasAcceptedTermsOfService(true)
-
             refreshCodeWhispererNode(project)
         }
     }
