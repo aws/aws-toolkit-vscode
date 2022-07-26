@@ -9,7 +9,7 @@ export function isViewAllEvents(response: TimeFilterResponse) {
 }
 
 export interface TimeFilterResponse {
-    // # of miliseconds since january 1 1970 since thats what API expects.
+    // # of miliseconds since january 1, 1970 since thats what API expects.
     readonly start: number
     readonly end: number
 }
@@ -90,7 +90,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                         this.switchState('custom-range')
                     } else if (isValidResponse(resp)) {
                         const [endTime, startTime] = [new Date(), new Date()]
-                        startTime.setHours(endTime.getHours() - resp)
+                        startTime.setMinutes(endTime.getMinutes() - resp)
 
                         return { start: startTime.valueOf(), end: endTime.valueOf() }
                     } else {
