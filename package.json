@@ -38,7 +38,8 @@
         "onStartupFinished",
         "onDebugResolve:aws-sam",
         "onCommand:aws.login",
-        "onCommand:aws.credential.profile.create",
+        "onCommand:aws.credentials.profile.create",
+        "onCommand:aws.credentials.edit",
         "onCommand:aws.logout",
         "onCommand:aws.createIssueOnGitHub",
         "onCommand:aws.submitFeedback",
@@ -230,6 +231,10 @@
                             "default": false
                         },
                         "fileViewerEdit": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "createCredentialsProfile": {
                             "type": "boolean",
                             "default": false
                         }
@@ -1752,8 +1757,18 @@
                 }
             },
             {
-                "command": "aws.credential.profile.create",
-                "title": "%AWS.command.credential.profile.create%",
+                "command": "aws.credentials.profile.create",
+                "title": "%AWS.command.credentials.profile.create%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.credentials.edit",
+                "title": "%AWS.command.credentials.edit%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

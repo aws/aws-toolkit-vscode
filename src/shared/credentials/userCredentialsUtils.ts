@@ -10,8 +10,7 @@ import { getConfigFilename, getCredentialsFilename } from '../../credentials/sha
 import { fileExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
-const createNewCredentialsFile = (ctx: CredentialsTemplateContext) =>
-    `
+const header = `
 # Amazon Web Services Credentials File used by AWS CLI, SDKs, and tools
 # This file was created by the AWS Toolkit for Visual Studio Code extension.
 #
@@ -23,7 +22,10 @@ const createNewCredentialsFile = (ctx: CredentialsTemplateContext) =>
 # named "profile". For information about how to change the access keys in a 
 # profile or to add a new profile with a different access key, see:
 # https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html 
-#
+`.trim()
+
+const createNewCredentialsFile = (ctx: CredentialsTemplateContext) =>
+    `
 [${ctx.profileName}]
 # The access key and secret key pair identify your account and grant access to AWS.
 aws_access_key_id = ${ctx.accessKey}
@@ -32,7 +34,7 @@ aws_access_key_id = ${ctx.accessKey}
 # key is ever disclosed, immediately use IAM to delete the access key and secret key
 # and create a new key pair. Then, update this file with the replacement key details.
 aws_secret_access_key = ${ctx.secretKey}
-`
+`.trim()
 
 export interface CredentialsTemplateContext {
     profileName: string
@@ -46,6 +48,9 @@ export interface CredentialsValidationResult {
     invalidMessage?: string
 }
 
+/**
+ * @deprecated
+ */
 export class UserCredentialsUtils {
     /**
      * @description Determines which credentials related files
@@ -76,20 +81,19 @@ export class UserCredentialsUtils {
     }
 
     /**
-     * @description Produces a credentials file from a template
-     * containing a single profile based on the given information
-     *
      * @param credentialsContext the profile to create in the file
      */
-    public static async generateCredentialsFile(credentialsContext: CredentialsTemplateContext): Promise<void> {
-        const credentialsFileContents = createNewCredentialsFile(credentialsContext)
+    public static async generateCredentialsFile(credentialsContext?: CredentialsTemplateContext): Promise<void> {
+        const dest = getCredentialsFilename()
+        const contents = credentialsContext ? ['', createNewCredentialsFile(credentialsContext)] : []
 
-        // Make a final check
-        if (await SystemUtilities.fileExists(getCredentialsFilename())) {
-            throw new Error('Credentials file exists. Not overwriting it.')
+        if (await SystemUtilities.fileExists(dest)) {
+            contents.unshift(await SystemUtilities.readFile(dest))
+        } else {
+            contents.unshift(header)
         }
 
-        await writeFile(getCredentialsFilename(), credentialsFileContents, {
+        await writeFile(dest, contents.join('\n'), {
             encoding: 'utf8',
             mode: 0o100600, // basic file (type 100) with 600 permissions
         })
