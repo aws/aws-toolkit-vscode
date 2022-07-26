@@ -65,6 +65,7 @@ export async function changeFilterPattern(registry: LogStreamRegistry): Promise<
     } else {
         result = 'Cancelled'
     }
+    console.log(result)
     // This is a placeholder until new telemetry stuff exists
     //telemetry.recordCloudwatchlogsOpenStream({ result })
 }

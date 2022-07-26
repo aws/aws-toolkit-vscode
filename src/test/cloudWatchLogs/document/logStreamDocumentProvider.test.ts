@@ -5,11 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import {
-    CloudWatchLogsSettings,
-    createURIFromArgs,
-    canShowPreviousLogs,
-} from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, createURIFromArgs, isLogStream } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
 import {
     LogStreamRegistry,
@@ -114,8 +110,8 @@ describe('LogStreamDocumentProvider', function () {
         assert(fakeGetLogsCodeLens)
         assert(fakeFilterLogsCodeLens)
 
-        assert.strictEqual(canShowPreviousLogs(filterLogsUri), false)
-        assert.strictEqual(canShowPreviousLogs(getLogsUri), true)
+        assert.strictEqual(isLogStream(filterLogsUri), false)
+        assert.strictEqual(isLogStream(getLogsUri), true)
         assert.notStrictEqual(fakeGetLogsCodeLens, fakeFilterLogsCodeLens)
     })
 })
