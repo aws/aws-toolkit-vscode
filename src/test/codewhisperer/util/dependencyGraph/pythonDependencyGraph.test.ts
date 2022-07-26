@@ -14,6 +14,7 @@ import { join } from 'path'
 import { CodeWhispererConstants } from '../../../../codewhisperer/models/constants'
 
 describe('pythonDependencyGraph', function () {
+    const languageId = 'python'
     const workspaceFolder = getTestWorkspaceFolder()
     const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
     const appCodePath = join(appRoot, 'hello_world', 'app.py')
@@ -26,7 +27,7 @@ describe('pythonDependencyGraph', function () {
             sinon.restore()
         })
         it('Should parse and generate dependencies ', function () {
-            const pythonDependencyGraph = new PythonDependencyGraph()
+            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
             const dependencies = pythonDependencyGraph.parseImport('from example import test', ['dirPath1', 'dirPath2'])
             assert.strictEqual(dependencies.length, 4)
             assert.deepStrictEqual(dependencies, [
@@ -40,7 +41,7 @@ describe('pythonDependencyGraph', function () {
 
     describe('getDependencies', function () {
         it('Should return expected dependencies', function () {
-            const pythonDependencyGraph = new PythonDependencyGraph()
+            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
             const dependencies = pythonDependencyGraph.getDependencies(vscode.Uri.parse(appCodePath), ['import app'])
             assert.strictEqual(dependencies.length, 1)
             assert.ok(appCodePath.includes(dependencies[0]))
@@ -52,7 +53,7 @@ describe('pythonDependencyGraph', function () {
             const statSyncSpy = sinon.spy(fs, 'statSync')
             const readFileAsStringSpy = sinon.spy(fsUtil, 'readFileAsString')
 
-            const pythonDependencyGraph = new PythonDependencyGraph()
+            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
             pythonDependencyGraph.searchDependency(vscode.Uri.parse(appCodePath))
             assert.ok(statSyncSpy.called)
             assert.ok(readFileAsStringSpy.calledOnce)
@@ -61,7 +62,7 @@ describe('pythonDependencyGraph', function () {
 
     describe('generateTruncation', function () {
         it('Should generate and return expected truncation', async function () {
-            const pythonDependencyGraph = new PythonDependencyGraph()
+            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
             const truncation = await pythonDependencyGraph.generateTruncation(vscode.Uri.parse(appCodePath))
             assert.ok(truncation.root.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(truncation.src.dir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))

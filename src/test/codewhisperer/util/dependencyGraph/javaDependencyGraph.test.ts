@@ -14,6 +14,7 @@ import { join } from 'path'
 import { CodeWhispererConstants } from '../../../../codewhisperer/models/constants'
 
 describe('javaDependencyGraph', function () {
+    const languageId = 'java'
     const workspaceFolder = getTestWorkspaceFolder()
     const appRoot = join(workspaceFolder, 'java11-plain-maven-sam-app')
     const appCodePath = join(appRoot, 'HelloWorldFunction', 'src', 'main', 'java', 'helloworld', 'App.java')
@@ -26,7 +27,7 @@ describe('javaDependencyGraph', function () {
             sinon.restore()
         })
         it('Should parse and generate dependencies ', function () {
-            const javaDependencyGraph = new JavaDependencyGraph()
+            const javaDependencyGraph = new JavaDependencyGraph(languageId)
             const dependencies = javaDependencyGraph.parseImport(
                 'import com.amazon.aws.vector.consolas.runtimeservice;',
                 ['dirPath1', 'dirPath2']
@@ -41,7 +42,7 @@ describe('javaDependencyGraph', function () {
     describe('getDependencies', function () {
         it('Should return expected dependencies', function () {
             const importStr = 'import java11-plain-maven-sam-app.HelloWorldFunction.src.main.java.helloworld.App;'
-            const javaDependencyGraph = new JavaDependencyGraph()
+            const javaDependencyGraph = new JavaDependencyGraph(languageId)
             const dependencies = javaDependencyGraph.getDependencies(vscode.Uri.parse(appRoot), [importStr])
             assert.strictEqual(dependencies.length, 1)
             assert.ok(appCodePath.includes(dependencies[0]))
@@ -53,7 +54,7 @@ describe('javaDependencyGraph', function () {
             const statSyncSpy = sinon.spy(fs, 'statSync')
             const readFileAsStringSpy = sinon.spy(fsUtil, 'readFileAsString')
 
-            const javaDependencyGraph = new JavaDependencyGraph()
+            const javaDependencyGraph = new JavaDependencyGraph(languageId)
             javaDependencyGraph.searchDependency(vscode.Uri.parse(appCodePath))
             assert.ok(statSyncSpy.calledOnce)
             assert.ok(readFileAsStringSpy.calledOnce)
@@ -68,7 +69,7 @@ describe('javaDependencyGraph', function () {
             sinon.restore()
         })
         it('Should generate and return expected truncation', async function () {
-            const javaDependencyGraph = new JavaDependencyGraph()
+            const javaDependencyGraph = new JavaDependencyGraph(languageId)
             sinon.stub(javaDependencyGraph, <any>'_outputDirs').value(new Set<string>('build'))
             const truncation = await javaDependencyGraph.generateTruncation(vscode.Uri.parse(appCodePath))
             assert.ok(truncation.lines > 0)
