@@ -536,6 +536,10 @@ const DEV_SETTINGS = {
     forceInstallTools: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
+    mdeBetaEndpoint: String,
+    mdeEmailFilter: Boolean,
+    enableSsoProvider: Boolean,
+    cawsStage: String,
 }
 
 type ResolvedDevSettings = FromDescriptor<typeof DEV_SETTINGS>
