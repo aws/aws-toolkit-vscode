@@ -30,8 +30,12 @@ import { showViewLogsMessage } from './utilities/messages'
 import globals from './extensionGlobals'
 import { DefaultStsClient } from './clients/stsClient'
 import { getLogger } from './logger/logger'
+import { PromptSettings } from './settings'
 import { getCawsWorkspaceArn } from './vscode/env'
 
+/**
+ * @deprecated
+ */
 export class AwsContextCommands {
     private readonly _awsContext: AwsContext
     private readonly _awsContextTrees: AwsContextTreeCollection
@@ -59,17 +63,28 @@ export class AwsContextCommands {
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
-        const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        // Help user make a new credentials profile
+        const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
-        if (credentialsFiles.length === 0) {
-            // Help user make a new credentials profile
-            const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
-
-            if (profileName) {
-                await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
-            }
-        } else {
+        if (profileName) {
+            await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
             await this.editCredentials()
+        }
+    }
+
+    public async onCommandEditCredentials(): Promise<void> {
+        const credentialsFiles = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        if (credentialsFiles.length === 0) {
+            await UserCredentialsUtils.generateCredentialsFile()
+        }
+
+        await this.editCredentials()
+        if (
+            credentialsFiles.length === 0 &&
+            (await PromptSettings.instance.isPromptEnabled('createCredentialsProfile')) &&
+            (await this.promptCredentialsSetup())
+        ) {
+            await this.onCommandCreateCredentialsProfile()
         }
     }
 
@@ -221,10 +236,6 @@ export class AwsContextCommands {
             return state?.credentialProfile?.label
         }
 
-        if (getCawsWorkspaceArn()) {
-            return
-        }
-
         if (credentialsFiles.length === 0) {
             if (await this.promptCredentialsSetup()) {
                 return await this.promptAndCreateNewCredentialsFile()
@@ -237,6 +248,10 @@ export class AwsContextCommands {
     }
 
     private async promptCredentialsSetup(): Promise<boolean> {
+        if (getCawsWorkspaceArn()) {
+            return false
+        }
+
         // If no credentials were found, the user should be
         // encouraged to define some.
         const userResponse = await vscode.window.showInformationMessage(
@@ -252,6 +267,8 @@ export class AwsContextCommands {
 
         if (userResponse === localizedText.yes) {
             return true
+        } else if (userResponse === localizedText.no) {
+            PromptSettings.instance.disablePrompt('createCredentialsProfile')
         } else if (userResponse === localizedText.help) {
             vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
             return await this.promptCredentialsSetup()
