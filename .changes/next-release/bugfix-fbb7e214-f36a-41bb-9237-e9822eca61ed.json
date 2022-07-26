@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix to display appropriate error messaging for filtering Cloudwatch Streams using search patterns failures"
+}
