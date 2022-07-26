@@ -97,5 +97,11 @@ object CodeWhispererEditorUtil {
     /**
      * Checks if the [otherRange] overlaps this TextRange. Note that the comparison is `<` because the endOffset of TextRange is exclusive.
      */
-    fun TextRange.overlaps(otherRange: TextRange) = max(startOffset, otherRange.startOffset) < min(endOffset, otherRange.endOffset)
+    fun TextRange.overlaps(otherRange: TextRange): Boolean =
+        if (otherRange.isEmpty) {
+            // Handle case when otherRange is empty and within the range
+            otherRange.startOffset in startOffset until endOffset
+        } else {
+            max(startOffset, otherRange.startOffset) < min(endOffset, otherRange.endOffset)
+        }
 }
