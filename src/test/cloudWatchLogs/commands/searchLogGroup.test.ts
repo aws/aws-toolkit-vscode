@@ -9,7 +9,6 @@ import { SearchLogGroupWizard, createFilterpatternPrompter } from '../../../clou
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 
 describe('searchLogGroup', async function () {
     const fakeLogGroups: string[] = []
