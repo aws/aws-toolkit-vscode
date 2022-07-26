@@ -80,34 +80,35 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
         response = await new SearchLogGroupWizard().run()
     }
 
-    if (response) {
-        const initialLogData = handleWizardResponse(response, registry)
+    if (!response) {
+        telemetry.recordCloudwatchlogsOpenStream({ result: 'Cancelled' })
+        return
+    }
 
-        const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
+    const initialLogData = handleWizardResponse(response, registry)
 
-        await registry.registerLog(uri, initialLogData)
-        try {
-            await prepareDocument(uri, registry)
-        } catch (err) {
-            if (CancellationError.isUserCancelled(err)) {
-                getLogger().debug('cwl: User Cancelled Search')
-                result = 'Cancelled'
-            } else {
-                result = 'Failed'
+    const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
-                const error = err as Error
-                vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.cwl.searchLogGroup.errorRetrievingLogs',
-                        'Error retrieving logs for Log Group {0} : {1}',
-                        initialLogData.logGroupInfo.groupName,
-                        error.message
-                    )
+    await registry.registerLog(uri, initialLogData)
+    try {
+        await prepareDocument(uri, registry)
+    } catch (err) {
+        if (CancellationError.isUserCancelled(err)) {
+            getLogger().debug('cwl: User Cancelled Search')
+            result = 'Cancelled'
+        } else {
+            result = 'Failed'
+
+            const error = err as Error
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.cwl.searchLogGroup.errorRetrievingLogs',
+                    'Error retrieving logs for Log Group {0} : {1}',
+                    initialLogData.logGroupInfo.groupName,
+                    error.message
                 )
-            }
+            )
         }
-    } else {
-        result = 'Cancelled'
     }
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }

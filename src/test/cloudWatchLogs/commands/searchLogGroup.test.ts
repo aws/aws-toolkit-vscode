@@ -46,22 +46,14 @@ describe('searchLogGroup', async function () {
         assert.strictEqual(await result, testInput)
     })
 
-    it('wizaard prioritizes logGroupInfo if passed in', async function () {
-        const fakeLogGroupNode = {
-            regionCode: 'test-region',
-            logGroup: {
-                logGroupName: 'test',
-            },
-        } as LogGroupNode
-
-        assert(fakeLogGroupNode.logGroup.logGroupName) // to avoid linting error
-
+    it('skips to filterPattern prompt if log group/region given', async function () {
         const nodeTestWizard = createWizardTester(
             new SearchLogGroupWizard({
-                groupName: fakeLogGroupNode.logGroup.logGroupName,
-                regionName: fakeLogGroupNode.regionCode,
+                groupName: 'group-test',
+                regionName: 'region-test',
             })
         )
         nodeTestWizard.filterPattern.assertShowFirst()
+        nodeTestWizard.submenuResponse.assertDoesNotShow()
     })
 })
