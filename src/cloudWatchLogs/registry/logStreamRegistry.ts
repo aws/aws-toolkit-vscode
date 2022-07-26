@@ -83,7 +83,7 @@ export class LogStreamRegistry {
                 // log entries containing newlines are indented to the same length as the timestamp.
                 line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
             }
-            if (datum.logStreamName) {
+            if (datum.logStreamName && !currData.parameters.streamNameOptions) {
                 const logStream = `[streamID: ${datum.logStreamName}]`
                 line = logStream.concat('\t', line)
             }
@@ -206,6 +206,10 @@ export async function filterLogEventsFromUriComponents(
         cwlParameters.endTime = parameters.endTime
     }
 
+    if (parameters.streamNameOptions) {
+        cwlParameters.logStreamNames = parameters.streamNameOptions
+    }
+
     const timeout = new Timeout(300000)
     showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
     const responsePromise = client.filterLogEvents(cwlParameters)
@@ -271,6 +275,7 @@ export type CloudWatchLogsParameters = {
     endTime?: number
     limit?: number
     streamName?: string
+    streamNameOptions?: string[]
 }
 
 export type CloudWatchLogsResponse = {

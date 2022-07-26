@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { CloudWatchLogsData, LogStreamRegistry } from '../registry/logStreamRegistry'
+import { CloudWatchLogsData, LogStreamRegistry, filterLogEventsFromUriComponents } from '../registry/logStreamRegistry'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { showInputBox } from '../../shared/ui/inputPrompter'
@@ -24,8 +24,8 @@ export async function changeFilterPattern(registry: LogStreamRegistry): Promise<
 
     const oldData = registry.getLogData(oldUri) as CloudWatchLogsData
     const newPattern = await showInputBox({
-        title: 'Keyword Search',
-        placeholder: 'Enter text here',
+        title: 'Log Group Keyword Search',
+        placeholder: oldData.parameters.filterPattern ?? 'Enter Text Here',
     })
     // Always displaying the buttons (on stream search log group parent or stream itself.)
     //
@@ -40,6 +40,11 @@ export async function changeFilterPattern(registry: LogStreamRegistry): Promise<
                 ...oldData.parameters,
                 filterPattern: newPattern,
             },
+        }
+        if (newData.parameters.streamName) {
+            newData.retrieveLogsFunction = filterLogEventsFromUriComponents
+            newData.parameters.streamNameOptions = [newData.parameters.streamName]
+            newData.parameters.streamName = undefined
         }
 
         // Remove old search
