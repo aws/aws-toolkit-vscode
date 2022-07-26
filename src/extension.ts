@@ -144,13 +144,14 @@ export async function activate(context: vscode.ExtensionContext) {
             Commands.register('aws.listCommands', () =>
                 vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
             ),
-            Commands.register('aws.credential.profile.create', async () => {
+            Commands.register('aws.credentials.profile.create', async () => {
                 try {
                     await globals.awsContextCommands.onCommandCreateCredentialsProfile()
                 } finally {
                     telemetry.recordAwsCreateCredentials()
                 }
             }),
+            Commands.register('aws.credentials.edit', () => globals.awsContextCommands.onCommandEditCredentials()),
             // register URLs in extension menu
             Commands.register('aws.help', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
