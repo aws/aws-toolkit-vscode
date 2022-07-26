@@ -49,15 +49,6 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             new LogStreamCodeLensProvider(registry)
         )
     )
-    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => {
-        if (!isLogStream(doc.uri)) {
-            vscode.commands.executeCommand('setContext', 'aws.cwl.searchOpen', true)
-            console.log('set true')
-        } else {
-            vscode.commands.executeCommand('setContext', 'aws.cwl.searchOpen', false)
-            console.log('set false')
-        }
-    })
 
     context.subscriptions.push(Commands.register('aws.copyLogStreamName', copyLogStreamName))
     context.subscriptions.push(

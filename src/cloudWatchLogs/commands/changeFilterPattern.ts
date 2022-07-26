@@ -27,8 +27,9 @@ export async function changeFilterPattern(registry: LogStreamRegistry): Promise<
         title: 'Keyword Search',
         placeholder: 'Enter text here',
     })
-
-    if (newPattern) {
+    // Always displaying the buttons (on stream search log group parent or stream itself.)
+    //
+    if (newPattern !== undefined) {
         // Overwrite old data to remove old events, tokens, and filterPattern.
         const newData: CloudWatchLogsData = {
             ...oldData,

@@ -1070,12 +1070,12 @@
                 },
                 {
                     "command": "aws.cwl.changeFilterPattern",
-                    "when": "aws.cwl.searchOpen",
+                    "when": "resourceScheme == awsCloudWatchLogs",
                     "group": "navigation"
                 },
                 {
                     "command": "aws.cwl.changeTimeFilter",
-                    "when": "aws.cwl.searchOpen",
+                    "when": "resourceScheme == awsCloudWatchLogs",
                     "group": "navigation"
                 },
                 {
