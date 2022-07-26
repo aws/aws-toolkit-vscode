@@ -1,0 +1,8 @@
+{
+  "date" : "2022-07-26",
+  "version" : "1.48",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix to display appropriate error messaging for filtering Cloudwatch Streams using search patterns failures"
+  } ]
+}

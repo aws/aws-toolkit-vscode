@@ -1,3 +1,6 @@
+# _1.48_ (2022-07-26)
+- **(Bug Fix)** Fix to display appropriate error messaging for filtering Cloudwatch Streams using search patterns failures
+
 # _1.47_ (2022-07-08)
 - **(Removal)** Remove Cloud Debugging of ECS Services (beta)
 
