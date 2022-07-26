@@ -833,14 +833,6 @@
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
-                    "command": "aws.cwl.changeFilterPattern",
-                    "when": "resourceScheme == awsCloudWatchLogs"
-                },
-                {
-                    "command": "aws.cwl.changeTimeFilter",
-                    "when": "resourceScheme == awsCloudWatchLogs"
-                },
-                {
                     "command": "aws.s3.editFile",
                     "when": "resourceScheme == s3-readonly"
                 },
@@ -1078,12 +1070,12 @@
                 },
                 {
                     "command": "aws.cwl.changeFilterPattern",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "when": "aws.cwl.searchOpen",
                     "group": "navigation"
                 },
                 {
                     "command": "aws.cwl.changeTimeFilter",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "when": "aws.cwl.searchOpen",
                     "group": "navigation"
                 },
                 {
@@ -2563,7 +2555,7 @@
             },
             {
                 "command": "aws.cwl.changeTimeFilter",
-                "title": "%AWS.command.cwl.changeFilterPattern%",
+                "title": "%AWS.command.cwl.changeTimeFilter%",
                 "category": "%AWS.title%",
                 "icon": "$(filter)",
                 "cloud9": {

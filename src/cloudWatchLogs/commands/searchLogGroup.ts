@@ -68,14 +68,14 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
             registry.setTextEditor(uri, textEditor)
             highlightDocument(registry, uri)
             vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-                if (event.document.uri.toString() === doc.uri.toString()) {
+                if (doesEventDocMatch(event, doc)) {
                     highlightDocument(registry, uri)
                 }
             })
         } catch (err) {
             if (CancellationError.isUserCancelled(err)) {
                 getLogger().debug('cwl: User Cancelled Search')
-                result = 'Failed'
+                result = 'Cancelled'
             } else {
                 const error = err as Error
                 vscode.window.showErrorMessage(
@@ -94,6 +94,9 @@ export async function searchLogGroup(registry: LogStreamRegistry): Promise<void>
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
+function doesEventDocMatch(event: vscode.TextDocumentChangeEvent, doc: vscode.TextDocument): boolean {
+    return event.document.uri.toString() === doc.uri.toString()
+}
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
     const client = new DefaultCloudWatchLogsClient(regionCode)
     const logGroups = await logGroupsToArray(client.describeLogGroups())

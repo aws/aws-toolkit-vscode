@@ -19,6 +19,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { searchLogGroup } from './commands/searchLogGroup'
 import { changeFilterPattern } from './commands/changeFilterPattern'
 import { changeTimeFilter } from './commands/changeTimeFilter'
+import { isLogStream } from './cloudWatchLogsUtils'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
@@ -48,6 +49,15 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             new LogStreamCodeLensProvider(registry)
         )
     )
+    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => {
+        if (!isLogStream(doc.uri)) {
+            vscode.commands.executeCommand('setContext', 'aws.cwl.searchOpen', true)
+            console.log('set true')
+        } else {
+            vscode.commands.executeCommand('setContext', 'aws.cwl.searchOpen', false)
+            console.log('set false')
+        }
+    })
 
     context.subscriptions.push(Commands.register('aws.copyLogStreamName', copyLogStreamName))
     context.subscriptions.push(

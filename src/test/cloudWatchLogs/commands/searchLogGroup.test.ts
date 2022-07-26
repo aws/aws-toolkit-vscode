@@ -5,11 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import {
-    SearchLogGroupWizard,
-    createFilterpatternPrompter,
-    TimeFilterSubmenu,
-} from '../../../cloudWatchLogs/commands/searchLogGroup'
+import { SearchLogGroupWizard, createFilterpatternPrompter } from '../../../cloudWatchLogs/commands/searchLogGroup'
+import { TimeFilterSubmenu } from '../../../cloudWatchLogs/timeFilterSubmenu'
 import { exposeEmitters, ExposeEmitters } from '../../../../src/test/shared/vscode/testUtils'
 import { InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'

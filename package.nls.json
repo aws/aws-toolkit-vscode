@@ -146,6 +146,7 @@
     "AWS.command.copyLogStreamName": "Copy Log Stream Name",
     "AWS.command.saveCurrentLogStreamContent": "Save Current Log Content to File",
     "AWS.command.cwl.changeFilterPattern": "Change filter pattern for search",
+    "AWS.command.cwl.changeTimeFilter": "Change time filter for search",
     "AWS.command.viewLogStream": "View Log Stream...",
     "AWS.command.ssmDocument.createLocalDocument": "Create a new Systems Manager Document locally",
     "AWS.command.ssmDocument.deleteDocument": "Delete Document",
