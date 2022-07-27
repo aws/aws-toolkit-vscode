@@ -38,6 +38,8 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
+                // Example comes from https://docs.aws.amazon.com/STS/latest/APIReference/API_GetAccessKeyInfo.html
+                placeholder: 'AKIAIOSFODNN7EXAMPLE',
                 prompt: localize(
                     'AWS.placeHolder.inputAccessKey',
                     'Input the {0} Access Key',
@@ -59,6 +61,8 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
             createInputBox({
                 title: getTitle(name),
                 buttons: createCommonButtons(credentialHelpUrl),
+                // Example comes from https://docs.aws.amazon.com/STS/latest/APIReference/API_GetAccessKeyInfo.html
+                placeholder: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
                 prompt: localize(
                     'AWS.placeHolder.inputSecretKey',
                     'Input the {0} Secret Key',
