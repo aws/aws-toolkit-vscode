@@ -47,7 +47,6 @@ describe('searchLogGroup', async function () {
                 filterPatternInputBox.value = value
                 filterPatternInputBox.fireOnDidAccept()
             }
-
             const testInput = 'this is my filterPattern'
             const result = filterPatternPrompter.prompt()
             accept(testInput)
@@ -111,6 +110,17 @@ describe('searchLogGroup', async function () {
                 assert(!testTimeRangeMenu.validateDate('2022/01/01-2022/05/03'))
             })
         })
+    })
+
+    it('skips to filterPattern prompt if log group/region given', async function () {
+        const nodeTestWizard = createWizardTester(
+            new SearchLogGroupWizard({
+                groupName: 'group-test',
+                regionName: 'region-test',
+            })
+        )
+        nodeTestWizard.filterPattern.assertShowFirst()
+        nodeTestWizard.submenuResponse.assertDoesNotShow()
     })
 
     it('skips to filterPattern prompt if log group/region given', async function () {
