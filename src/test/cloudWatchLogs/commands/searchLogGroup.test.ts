@@ -112,4 +112,15 @@ describe('searchLogGroup', async function () {
             })
         })
     })
+
+    it('skips to filterPattern prompt if log group/region given', async function () {
+        const nodeTestWizard = createWizardTester(
+            new SearchLogGroupWizard({
+                groupName: 'group-test',
+                regionName: 'region-test',
+            })
+        )
+        nodeTestWizard.filterPattern.assertShowFirst()
+        nodeTestWizard.submenuResponse.assertDoesNotShow()
+    })
 })
