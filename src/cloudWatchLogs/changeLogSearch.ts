@@ -4,7 +4,7 @@
  */
 import * as telemetry from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { createURIFromArgs } from './cloudWatchLogsUtils'
+import { createURIFromArgs, isLogStream } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
@@ -27,7 +27,7 @@ export async function changeLogSearchParams(registry: LogStreamRegistry, param: 
     switch (param) {
         case 'filterPattern':
             const newPattern = await showInputBox({
-                title: 'Log Group Keyword Search',
+                title: isLogStream(oldUri) ? 'Filter Log Stream Results' : 'Log Group Keyword Search',
                 placeholder: oldData.parameters.filterPattern ?? 'Enter Text Here',
             })
             if (newPattern === undefined) {
