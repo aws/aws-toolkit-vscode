@@ -2,11 +2,11 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import * as telemetry from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
 import { createURIFromArgs } from './cloudWatchLogsUtils'
-import { getActiveUri, highlightDocument } from './document/logStreamDocumentProvider'
+import { prepareDocument } from './commands/searchLogGroup'
+import { getActiveUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
 import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from './timeFilterSubmenu'
 
@@ -59,15 +59,8 @@ export async function changeLogSearchParams(registry: LogStreamRegistry, param: 
     registry.deregisterLog(oldUri)
     const newUri = createURIFromArgs(oldData.logGroupInfo, oldData.parameters)
     await registry.registerLog(newUri, newData)
-    const doc = await vscode.workspace.openTextDocument(newUri) // calls back into the provider
-    vscode.languages.setTextDocumentLanguage(doc, 'log')
-    const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
-    registry.setTextEditor(newUri, textEditor)
-    highlightDocument(registry, newUri)
-    vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-        if (event.document.uri.toString() === doc.uri.toString()) {
-            highlightDocument(registry, newUri)
-        }
-    })
-    result = 'Succeeded'
+
+    result = await prepareDocument(newUri, registry)
+
+    console.log(result)
 }

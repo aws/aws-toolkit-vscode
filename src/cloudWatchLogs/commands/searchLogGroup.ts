@@ -15,7 +15,7 @@ import {
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createInputBox } from '../../shared/ui/inputPrompter'
-import { createURIFromArgs } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { LogGroupNode } from '../explorer/logGroupNode'
@@ -60,24 +60,42 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     return initialStreamData
 }
 
-async function prepareDocument(uri: vscode.Uri, registry: LogStreamRegistry): Promise<void> {
-    const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
-    vscode.languages.setTextDocumentLanguage(doc, 'log')
+export async function prepareDocument(uri: vscode.Uri, registry: LogStreamRegistry): Promise<telemetry.Result> {
+    try {
+        const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+        vscode.languages.setTextDocumentLanguage(doc, 'log')
 
-    const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
-    registry.setTextEditor(uri, textEditor)
+        const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
+        registry.setTextEditor(uri, textEditor)
 
-    // Initial highlighting of the document and then for any addLogEvent calls.
-    highlightDocument(registry, uri)
-    vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-        if (event.document.uri.toString() === doc.uri.toString()) {
-            highlightDocument(registry, uri)
+        // Initial highlighting of the document and then for any addLogEvent calls.
+        highlightDocument(registry, uri)
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            if (event.document.uri.toString() === doc.uri.toString()) {
+                highlightDocument(registry, uri)
+            }
+        })
+        return 'Succeeded'
+    } catch (err) {
+        if (CancellationError.isUserCancelled(err)) {
+            getLogger().debug('cwl: User Cancelled Search')
+            return 'Cancelled'
+        } else {
+            const error = err as Error
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.cwl.searchLogGroup.errorRetrievingLogs',
+                    'Error retrieving logs for Log Group {0} : {1}',
+                    parseCloudWatchLogsUri(uri).logGroupInfo.groupName,
+                    error.message
+                )
+            )
+            return 'Failed'
         }
-    })
+    }
 }
 
 export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogStreamRegistry): Promise<void> {
-    let result: telemetry.Result = 'Succeeded'
     let response: SearchLogGroupWizardResponse | undefined
 
     if (node) {
@@ -103,26 +121,8 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
     const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
     await registry.registerLog(uri, initialLogData)
-    try {
-        await prepareDocument(uri, registry)
-    } catch (err) {
-        if (CancellationError.isUserCancelled(err)) {
-            getLogger().debug('cwl: User Cancelled Search')
-            result = 'Cancelled'
-        } else {
-            result = 'Failed'
 
-            const error = err as Error
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.cwl.searchLogGroup.errorRetrievingLogs',
-                    'Error retrieving logs for Log Group {0} : {1}',
-                    initialLogData.logGroupInfo.groupName,
-                    error.message
-                )
-            )
-        }
-    }
+    const result = await prepareDocument(uri, registry)
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
