@@ -31,7 +31,6 @@ import globals from './extensionGlobals'
 import { DefaultStsClient } from './clients/stsClient'
 import { getLogger } from './logger/logger'
 import { PromptSettings } from './settings'
-import { getCawsWorkspaceArn } from './vscode/env'
 
 /**
  * @deprecated
@@ -248,10 +247,6 @@ export class AwsContextCommands {
     }
 
     private async promptCredentialsSetup(): Promise<boolean> {
-        if (getCawsWorkspaceArn()) {
-            return false
-        }
-
         // If no credentials were found, the user should be
         // encouraged to define some.
         const userResponse = await vscode.window.showInformationMessage(

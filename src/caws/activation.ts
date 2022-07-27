@@ -18,6 +18,7 @@ import { watchRestartingWorkspaces } from './reconnect'
 import { getCawsWorkspaceArn } from '../shared/vscode/env'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
+import { isCloud9 } from '../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -39,7 +40,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ctx.extensionContext.subscriptions.push(disposable)
     })
 
-    watchRestartingWorkspaces(ctx, authProvider)
+    if (!isCloud9()) {
+        watchRestartingWorkspaces(ctx, authProvider)
+    }
 
     const workspaceClient = new DevelopmentWorkspaceClient()
     if (workspaceClient.arn) {

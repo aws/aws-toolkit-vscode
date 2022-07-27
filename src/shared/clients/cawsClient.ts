@@ -20,7 +20,6 @@ import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
 import { Credentials } from 'aws-sdk'
-import { isCloud9 } from '../extensionUtilities'
 
 // XXX: remove signing from the CAWS model until Bearer token auth is added to the SDKs
 delete (apiConfig.metadata as Partial<typeof apiConfig['metadata']>)['signatureVersion']
@@ -34,9 +33,7 @@ interface CawsConfig {
 }
 
 export function getCawsConfig(): CawsConfig {
-    // XXX: gamma is needed for testing the Cloud9 widget, remove this when going into beta
-    const defaultStage = isCloud9() ? 'gamma' : 'prod'
-    const stage = DevSettings.instance.get('cawsStage', defaultStage)
+    const stage = DevSettings.instance.get('cawsStage', 'prod')
 
     if (stage === 'gamma') {
         return {

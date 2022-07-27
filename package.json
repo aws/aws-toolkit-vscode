@@ -787,6 +787,14 @@
                     "when": "!isCloud9"
                 },
                 {
+                    "command": "aws.caws.openWorkspace",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.caws.createWorkspace",
+                    "when": "!isCloud9"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
