@@ -19,7 +19,6 @@ describe('searchLogGroup', async function () {
     before(function () {
         fakeLogGroups.push('group-1', 'group-2', 'group-3')
         testPrompter = createFilterpatternPrompter()
-
         inputBox = exposeEmitters(testPrompter.inputBox, ['onDidAccept', 'onDidChangeValue', 'onDidTriggerButton'])
     })
 
@@ -44,5 +43,16 @@ describe('searchLogGroup', async function () {
         const result = testPrompter.prompt()
         accept(testInput)
         assert.strictEqual(await result, testInput)
+    })
+
+    it('skips to filterPattern prompt if log group/region given', async function () {
+        const nodeTestWizard = createWizardTester(
+            new SearchLogGroupWizard({
+                groupName: 'group-test',
+                regionName: 'region-test',
+            })
+        )
+        nodeTestWizard.filterPattern.assertShowFirst()
+        nodeTestWizard.submenuResponse.assertDoesNotShow()
     })
 })
