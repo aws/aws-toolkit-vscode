@@ -194,15 +194,21 @@ export async function filterLogEventsFromUriComponents(
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    const timeout = new Timeout(300000)
-    showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
-    const responsePromise = client.filterLogEvents({
+    const cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,
         nextToken,
         limit: parameters.limit,
-    })
+    }
 
+    if (parameters.startTime && parameters.endTime) {
+        cwlParameters.startTime = parameters.startTime
+        cwlParameters.endTime = parameters.endTime
+    }
+
+    const timeout = new Timeout(300000)
+    showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
+    const responsePromise = client.filterLogEvents(cwlParameters)
     const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
     // Use heuristic of last token as backward token and next token as forward to generalize token form.
@@ -262,6 +268,7 @@ export type CloudWatchLogsGroupInfo = {
 export type CloudWatchLogsParameters = {
     filterPattern?: string
     startTime?: number
+    endTime?: number
     limit?: number
     streamName?: string
 }
