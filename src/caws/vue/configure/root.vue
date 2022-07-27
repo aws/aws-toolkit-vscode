@@ -25,7 +25,7 @@
     </settings-panel>
     <settings-panel
         id="dev-file-panel"
-        title="DevFile"
+        title="Devfile"
         description="Contains the definition to build your application libraries and toolchain. You can change the currently 
         configured definition file."
     >
@@ -102,7 +102,7 @@ export default defineComponent({
         })
 
         if (!this.definitionFilePath) {
-            client.getDevFileLocation().then(f => (this.definitionFilePath = f))
+            client.getDevfileLocation().then(f => (this.definitionFilePath = f))
         }
     },
     methods: {

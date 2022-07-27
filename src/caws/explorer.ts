@@ -38,7 +38,7 @@ function getLocalCommands() {
     ]
 }
 
-function getRemoteCommands(currentWorkspace: DevelopmentWorkspace, devFileLocation: vscode.Uri) {
+function getRemoteCommands(currentWorkspace: DevelopmentWorkspace, devfileLocation: vscode.Uri) {
     return [
         CawsCommands.declared.stopWorkspace.build(currentWorkspace).asTreeNode({
             label: 'Stop Workspace',
@@ -48,10 +48,10 @@ function getRemoteCommands(currentWorkspace: DevelopmentWorkspace, devFileLocati
             label: 'Open Settings',
             iconPath: getIcon('vscode-settings-gear'),
         }),
-        CawsCommands.declared.openDevfile.build(devFileLocation).asTreeNode({
+        CawsCommands.declared.openDevfile.build(devfileLocation).asTreeNode({
             label: 'Open Devfile',
             iconPath: getIcon('vscode-symbol-namespace'),
-            description: vscode.workspace.asRelativePath(devFileLocation),
+            description: vscode.workspace.asRelativePath(devfileLocation),
         }),
     ]
 }
@@ -124,9 +124,9 @@ export class CawsRootNode implements RootNode {
             return getLocalCommands()
         }
 
-        const devFileLocation = await getDevfileLocation(this.workspace.workspaceClient)
+        const devfileLocation = await getDevfileLocation(this.workspace.workspaceClient)
 
-        return getRemoteCommands(this.workspace.summary, devFileLocation)
+        return getRemoteCommands(this.workspace.summary, devfileLocation)
     }
 
     private createTreeItem() {

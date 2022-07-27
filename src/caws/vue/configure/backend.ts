@@ -48,7 +48,7 @@ export class CawsConfigureWebview extends VueWebview {
         return getAllInstanceDescriptions()
     }
 
-    public async getDevFileLocation() {
+    public async getDevfileLocation() {
         const location = await getDevfileLocation(this.workspace.workspaceClient)
         return vscode.workspace.asRelativePath(location)
     }
