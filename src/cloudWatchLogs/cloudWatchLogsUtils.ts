@@ -21,8 +21,9 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 export function uriToKey(uri: vscode.Uri): string {
     if (uri.query) {
         try {
-            const { filterPattern, startTime, endTime, limit, streamName } = parseCloudWatchLogsUri(uri).parameters
-            const parts = [uri.path, filterPattern, startTime, endTime, limit, streamName]
+            const { filterPattern, startTime, endTime, limit, streamName, streamNameOptions } =
+                parseCloudWatchLogsUri(uri).parameters
+            const parts = [uri.path, filterPattern, startTime, endTime, limit, streamName, streamNameOptions]
             return parts.map(p => p ?? '').join(':')
         } catch {
             throw new Error(
