@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as fs from 'fs'
-import * as fsUtil from '../../../../shared/filesystemUtilities'
 import { JavaDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/javaDependencyGraph'
 import { getTestWorkspaceFolder } from '../../../../integrationTest/integrationTestsUtilities'
 import { join } from 'path'
@@ -50,14 +49,12 @@ describe('javaDependencyGraph', function () {
     })
 
     describe('searchDependency', function () {
-        it('Should called methods to search dependencies', function () {
-            const statSyncSpy = sinon.spy(fs, 'statSync')
-            const readFileAsStringSpy = sinon.spy(fsUtil, 'readFileAsString')
-
+        it('Should search dependencies and return expected picked source file', async function () {
             const javaDependencyGraph = new JavaDependencyGraph(languageId)
-            javaDependencyGraph.searchDependency(vscode.Uri.parse(appCodePath))
-            assert.ok(statSyncSpy.calledOnce)
-            assert.ok(readFileAsStringSpy.calledOnce)
+            const sourceFiles = await javaDependencyGraph.searchDependency(vscode.Uri.parse(appCodePath))
+            assert.strictEqual(sourceFiles.size, 1)
+            const [firstFile] = sourceFiles
+            assert.ok(appCodePath.includes(firstFile))
         })
     })
 

@@ -132,14 +132,14 @@ export class PythonDependencyGraph extends DependencyGraph {
         return dependencies
     }
 
-    async searchDependency(uri: vscode.Uri) {
+    async searchDependency(uri: vscode.Uri): Promise<Set<string>> {
         const filePath = uri.fsPath
         const q: string[] = []
         q.push(filePath)
         while (q.length > 0) {
             let count: number = q.length
             while (count > 0) {
-                if (this.reachSizeLimit(this._totalSize)) return
+                if (this.reachSizeLimit(this._totalSize)) return this._pickedSourceFiles
                 count -= 1
                 const currentFilePath = q.shift()
                 if (currentFilePath === undefined) throw new Error('"undefined" is invalid for queued file.')
@@ -153,6 +153,7 @@ export class PythonDependencyGraph extends DependencyGraph {
                 })
             }
         }
+        return this._pickedSourceFiles
     }
 
     async traverseDir(dirPath: string) {

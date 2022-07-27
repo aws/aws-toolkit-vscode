@@ -7,16 +7,15 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as fs from 'fs'
-import { PythonDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/pythonDependencyGraph'
 import { getTestWorkspaceFolder } from '../../../../integrationTest/integrationTestsUtilities'
 import { join } from 'path'
 import { CodeWhispererConstants } from '../../../../codewhisperer/models/constants'
+import { JavascriptDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/javascriptDependencyGraph'
 
-describe('pythonDependencyGraph', function () {
-    const languageId = 'python'
+describe('javascriptDependencyGraph', function () {
     const workspaceFolder = getTestWorkspaceFolder()
-    const appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
-    const appCodePath = join(appRoot, 'hello_world', 'app.py')
+    const appRoot = join(workspaceFolder, 'js-plain-sam-app')
+    const appCodePath = join(appRoot, 'src', 'app.js')
 
     describe('parseImport', function () {
         beforeEach(function () {
@@ -26,22 +25,22 @@ describe('pythonDependencyGraph', function () {
             sinon.restore()
         })
         it('Should parse and generate dependencies ', function () {
-            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
-            const dependencies = pythonDependencyGraph.parseImport('from example import test', ['dirPath1', 'dirPath2'])
-            assert.strictEqual(dependencies.length, 4)
-            assert.deepStrictEqual(dependencies, [
-                join('dirPath1', 'example.py'),
-                join('dirPath1', 'example', 'test.py'),
-                join('dirPath2', 'example.py'),
-                join('dirPath2', 'example', 'test.py'),
+            const javascriptDependencyGraph = new JavascriptDependencyGraph(CodeWhispererConstants.javascript)
+            const dependencies = javascriptDependencyGraph.parseImport("import * as app from './app'", [
+                'dirPath1',
+                'dirPath2',
             ])
+            assert.strictEqual(dependencies.length, 2)
+            assert.deepStrictEqual(dependencies, [join('dirPath1', 'app.js'), join('dirPath2', 'app.js')])
         })
     })
 
     describe('getDependencies', function () {
         it('Should return expected dependencies', function () {
-            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
-            const dependencies = pythonDependencyGraph.getDependencies(vscode.Uri.parse(appCodePath), ['import app'])
+            const javascriptDependencyGraph = new JavascriptDependencyGraph(CodeWhispererConstants.javascript)
+            const dependencies = javascriptDependencyGraph.getDependencies(vscode.Uri.parse(appCodePath), [
+                "import * as app from './app'",
+            ])
             assert.strictEqual(dependencies.length, 1)
             assert.ok(appCodePath.includes(dependencies[0]))
         })
@@ -49,8 +48,8 @@ describe('pythonDependencyGraph', function () {
 
     describe('searchDependency', function () {
         it('Should search dependencies and return expected picked source file', async function () {
-            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
-            const sourceFiles = await pythonDependencyGraph.searchDependency(vscode.Uri.parse(appCodePath))
+            const javascriptDependencyGraph = new JavascriptDependencyGraph(CodeWhispererConstants.javascript)
+            const sourceFiles = await javascriptDependencyGraph.searchDependency(vscode.Uri.parse(appCodePath))
             assert.strictEqual(sourceFiles.size, 1)
             const [firstFile] = sourceFiles
             assert.ok(appCodePath.includes(firstFile))
@@ -59,8 +58,8 @@ describe('pythonDependencyGraph', function () {
 
     describe('generateTruncation', function () {
         it('Should generate and return expected truncation', async function () {
-            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
-            const truncation = await pythonDependencyGraph.generateTruncation(vscode.Uri.parse(appCodePath))
+            const javascriptDependencyGraph = new JavascriptDependencyGraph(CodeWhispererConstants.javascript)
+            const truncation = await javascriptDependencyGraph.generateTruncation(vscode.Uri.parse(appCodePath))
             assert.ok(truncation.root.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(truncation.src.dir.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
             assert.ok(truncation.src.zip.includes(CodeWhispererConstants.codeScanTruncDirPrefix))

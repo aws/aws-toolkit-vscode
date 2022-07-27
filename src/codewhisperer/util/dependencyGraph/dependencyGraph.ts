@@ -180,7 +180,7 @@ export abstract class DependencyGraph {
 
     abstract generateTruncation(uri: vscode.Uri): Promise<TruncPaths>
 
-    abstract searchDependency(uri: vscode.Uri): void
+    abstract searchDependency(uri: vscode.Uri): Promise<Set<string>>
 
     abstract traverseDir(dirPath: string): void
 
