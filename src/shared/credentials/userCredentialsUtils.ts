@@ -84,6 +84,7 @@ export class UserCredentialsUtils {
      * @param credentialsContext the profile to create in the file
      */
     public static async generateCredentialsFile(credentialsContext?: CredentialsTemplateContext): Promise<void> {
+        await this.generateCredentialDirectoryIfNonexistent()
         const dest = getCredentialsFilename()
         const contents = credentialsContext ? ['', createNewCredentialsFile(credentialsContext)] : []
 
