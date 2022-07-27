@@ -13,11 +13,14 @@ import { ParsedIniData, Profile } from '../../shared/credentials/credentialsFile
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { ProfileKey } from './templates'
+import { createCommonButtons } from '../../shared/ui/buttons'
+import { credentialHelpUrl } from '../../shared/constants'
 
 function createProfileNamePrompter(profiles: ParsedIniData) {
     return createInputBox({
         title: localize('AWS.profileName.title', 'Enter a profile name'),
         prompt: localize('AWS.profileName.prompt', 'Choose a unique name for the new profile'),
+        buttons: createCommonButtons(credentialHelpUrl),
         validateInput: name => {
             if (name === '') {
                 return localize('AWS.credentials.error.emptyProfileName', 'Profile name must not be empty')

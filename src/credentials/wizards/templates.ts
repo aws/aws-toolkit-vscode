@@ -9,6 +9,8 @@ const localize = nls.loadMessageBundle()
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { ProfileTemplateProvider } from './createProfile'
+import { createCommonButtons } from '../../shared/ui/buttons'
+import { credentialHelpUrl } from '../../shared/constants'
 
 // TODO: use this everywhere else
 export enum ProfileKey {
@@ -35,6 +37,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
         [ProfileKey.AccessKeyId]: name =>
             createInputBox({
                 title: getTitle(name),
+                buttons: createCommonButtons(credentialHelpUrl),
                 prompt: localize(
                     'AWS.placeHolder.inputAccessKey',
                     'Input the {0} Access Key',
@@ -55,6 +58,7 @@ export const staticCredentialsTemplate: ProfileTemplateProvider<StaticProfile> =
         [ProfileKey.SecretKey]: name =>
             createInputBox({
                 title: getTitle(name),
+                buttons: createCommonButtons(credentialHelpUrl),
                 prompt: localize(
                     'AWS.placeHolder.inputSecretKey',
                     'Input the {0} Secret Key',
@@ -82,6 +86,7 @@ export const processCredentialsTemplate: ProfileTemplateProvider<CredentialsProc
             createInputBox({
                 title: getTitle(name),
                 prompt: 'Enter a command to run',
+                buttons: createCommonButtons(credentialHelpUrl),
             }),
     },
 }
