@@ -19,7 +19,6 @@ import { Commands } from '../shared/vscode/commands2'
 import { searchLogGroup } from './commands/searchLogGroup'
 import { changeFilterPattern } from './commands/changeFilterPattern'
 import { changeTimeFilter } from './commands/changeTimeFilter'
-import { isLogStream } from './cloudWatchLogsUtils'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)

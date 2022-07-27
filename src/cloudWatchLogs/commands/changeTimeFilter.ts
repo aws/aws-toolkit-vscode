@@ -47,7 +47,7 @@ export async function changeTimeFilter(registry: LogStreamRegistry): Promise<voi
         registry.deregisterLog(oldUri)
         const newUri = createURIFromArgs(oldData.logGroupInfo, oldData.parameters)
         await registry.registerLog(newUri, newData)
-        const doc = await vscode.workspace.openTextDocument(newUri) // calls back into the provider
+        const doc: vscode.TextDocument = await vscode.workspace.openTextDocument(newUri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
         const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
         registry.setTextEditor(newUri, textEditor)
@@ -61,6 +61,7 @@ export async function changeTimeFilter(registry: LogStreamRegistry): Promise<voi
     } else {
         result = 'Cancelled'
     }
+    console.log(result)
     // This is a placeholder until new telemetry stuff exists
     //telemetry.recordCloudwatchlogsOpenStream({ result })
 }
