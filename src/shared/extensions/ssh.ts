@@ -139,5 +139,5 @@ export async function startVscodeRemote(
         ])
     }
 
-    await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run({ rejectOnErrorCode: true })
+    await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run()
 }

@@ -95,7 +95,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
         // also make the positions better
         const range = new vscode.Range(0, 0, 0, 0)
         const lens = updateDevfileCommand.build(document.uri).asCodeLens(range, {
-            title: localize('AWS.caws.codelens.updateWorkspace', 'Update Development Workspace'),
+            title: localize('AWS.caws.codelens.updateWorkspace', 'Update Workspace'),
         })
 
         return [lens]

@@ -42,15 +42,9 @@ async function handleConnectParams(
     client: ConnectedCawsClient,
     params: ReturnType<typeof parseConnectParams>
 ): Promise<void> {
-    const env = await client.getDevelopmentWorkspace({
+    await openDevelopmentWorkspace(client, {
         id: params.developmentWorkspaceId,
-        organizationName: params.organizationName,
-        projectName: params.projectName,
+        org: { name: params.organizationName },
+        project: { name: params.projectName },
     })
-
-    if (!env) {
-        throw new Error(`No workspace found with parameters: ${JSON.stringify(params, undefined, 4)}`)
-    }
-
-    await openDevelopmentWorkspace(client, env)
 }

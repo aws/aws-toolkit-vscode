@@ -114,7 +114,7 @@ export default defineComponent({
             if (key !== 'alias') {
                 this.needsRestart = this.needsRestart || previous !== resp[key]
                 this.compute = new ComputeModel(resp)
-            } else if (resp.alias !== undefined) {
+            } else if (resp.alias) {
                 this.details.alias = resp.alias
                 await client.updateWorkspace(this.details, { alias: this.details.alias })
             }

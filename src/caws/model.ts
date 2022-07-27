@@ -25,6 +25,7 @@ import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent, startVscodeRemote } from '../
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { ensureDependencies, HOST_NAME_PREFIX } from './tools'
 import { isCawsVSCode } from './utils'
+import { Timeout } from '../shared/utilities/timeoutUtils'
 
 export type DevelopmentWorkspaceId = Pick<DevelopmentWorkspace, 'id' | 'org' | 'project'>
 
@@ -157,7 +158,7 @@ export async function getConnectedWorkspace(
     }
 
     if (!projectName || !organizationName) {
-        throw new Error('No project or organization name found.')
+        throw new Error('No project or organization name found')
     }
 
     const summary = await cawsClient.getDevelopmentWorkspace({
@@ -169,41 +170,86 @@ export async function getConnectedWorkspace(
     return { summary, workspaceClient: workspaceClient }
 }
 
-export async function openDevelopmentWorkspace(
+/**
+ * Everything needed to connect to a development workspace via VS Code or `ssh`
+ */
+interface WorkspaceConnection {
+    readonly sshPath: string
+    readonly vscPath: string
+    readonly hostname: string
+    readonly envProvider: EnvProvider
+    readonly SessionProcess: typeof ChildProcess
+}
+
+export async function prepareWorkpaceConnection(
     client: ConnectedCawsClient,
-    workspace: DevelopmentWorkspace,
-    targetPath = '/projects'
-): Promise<void> {
-    const runningEnv = await client.startWorkspaceWithProgress(
+    { id, org, project }: DevelopmentWorkspaceId,
+    { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
+): Promise<WorkspaceConnection> {
+    const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
+    const runningWorkspace = await client.startWorkspaceWithProgress(
         {
-            id: workspace.id,
-            organizationName: workspace.org.name,
-            projectName: workspace.project.name,
+            id,
+            organizationName: org.name,
+            projectName: project.name,
         },
         'RUNNING'
     )
-    if (!runningEnv) {
-        getLogger().error('openWorkspace: failed to start workspace: %s', workspace.id)
-        return
-    }
 
-    const deps = (await ensureDependencies()).unwrap()
-
-    const cawsEnvProvider = createCawsEnvProvider(client, deps.ssm, workspace)
-    const SessionProcess = createBoundProcess(cawsEnvProvider).extend({
-        onStdout(stdout) {
-            getLogger().verbose(`REMOVED.codes connect: ${workspace.id}: ${stdout}`)
-        },
-        onStderr(stderr) {
-            getLogger().verbose(`REMOVED.codes connect: ${workspace.id}: ${stderr}`)
-        },
+    const hostname = getHostNameFromEnv({ id, org, project })
+    const logPrefix = topic ? `REMOVED.codes ${topic} (${id})` : `REMOVED.codes (${id})`
+    const logger = (data: string) => getLogger().verbose(`${logPrefix}: ${data}`)
+    const envProvider = createCawsEnvProvider(client, ssm, runningWorkspace)
+    const SessionProcess = createBoundProcess(envProvider).extend({
+        timeout,
+        onStdout: logger,
+        onStderr: logger,
         rejectOnErrorCode: true,
     })
 
-    await startVscodeRemote(SessionProcess, getHostNameFromEnv(workspace), targetPath, deps.vsc)
+    return {
+        hostname,
+        envProvider,
+        sshPath: ssh,
+        vscPath: vsc,
+        SessionProcess,
+    }
 }
 
-// Should technically be with the MDE stuff
+export async function openDevelopmentWorkspace(
+    client: ConnectedCawsClient,
+    workspace: DevelopmentWorkspaceId,
+    targetPath = '/projects'
+): Promise<void> {
+    const { SessionProcess, vscPath } = await prepareWorkpaceConnection(client, workspace, { topic: 'connect' })
+    await startVscodeRemote(SessionProcess, getHostNameFromEnv(workspace), targetPath, vscPath)
+}
+
+export async function cloneToWorkspace(
+    client: ConnectedCawsClient,
+    workspace: DevelopmentWorkspaceId,
+    repository: { name: string; location: vscode.Uri },
+    projectDir = '/projects'
+): Promise<void> {
+    const { sshPath, SessionProcess } = await prepareWorkpaceConnection(client, workspace, { topic: 'clone' })
+
+    // `git` treats scheme-less URLs as `ssh` and explicitly rejects the `ssh` scheme for some reason
+    const target =
+        repository.location.scheme === 'ssh'
+            ? `${repository.location.authority}${repository.location.path}`
+            : repository.location.toString()
+
+    const cloneCommand = [
+        'mkdir -p ~/.ssh',
+        `mkdir -p ${projectDir}`,
+        'touch ~/.ssh/known_hosts',
+        'ssh-keyscan github.com >> ~/.ssh/known_hosts',
+        `git clone '${target}' '${projectDir}/${repository.name}'`,
+    ].join(' && ')
+
+    await new SessionProcess(sshPath, [getHostNameFromEnv(workspace), '-v', cloneCommand]).run()
+}
+
 export async function getDevfileLocation(client: DevelopmentWorkspaceClient, root?: vscode.Uri) {
     const rootDirectory = root ?? vscode.workspace.workspaceFolders?.[0].uri
     if (!rootDirectory) {

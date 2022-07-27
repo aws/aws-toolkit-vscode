@@ -27,7 +27,7 @@ const localize = nls.loadMessageBundle()
 export async function activate(ctx: ExtContext): Promise<void> {
     const authProvider = CawsAuthenticationProvider.fromContext(ctx.extensionContext)
     const commands = new CawsCommands(authProvider)
-    const remoteSourceProvider = new CawsRemoteSourceProvider(authProvider)
+    const remoteSourceProvider = new CawsRemoteSourceProvider(commands, authProvider)
 
     ctx.extensionContext.subscriptions.push(
         initStatusbar(authProvider),

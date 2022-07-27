@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
 import { DevelopmentWorkspace } from '../shared/clients/cawsClient'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { CawsAuthenticationProvider } from './auth'
@@ -13,6 +14,10 @@ import { CawsCommands } from './commands'
 import { ConnectedWorkspace, createClientFactory, getConnectedWorkspace, getDevfileLocation } from './model'
 
 function getLocalCommands() {
+    if (isCloud9()) {
+        return []
+    }
+
     return [
         CawsCommands.declared.cloneRepo.build().asTreeNode({
             label: 'Clone Repository',
@@ -21,6 +26,10 @@ function getLocalCommands() {
         CawsCommands.declared.openWorkspace.build().asTreeNode({
             label: 'Open Workspace',
             iconPath: getIcon('vscode-vm-connect'),
+        }),
+        CawsCommands.declared.createWorkspace.build().asTreeNode({
+            label: 'Create Workspace',
+            iconPath: getIcon('vscode-add'),
         }),
         CawsCommands.declared.listCommands.build().asTreeNode({
             label: 'View Additional REMOVED.codes Commands',

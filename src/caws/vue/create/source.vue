@@ -1,22 +1,27 @@
 <template>
-    <div class="modes">
-        <label class="mode-container" :data-disabled="value.mode !== 'linked'">
-            <input class="radio" type="radio" name="mode" id="from-caws" v-model="value.mode" value="linked" />
-            <span class="ml-8 option-label" style="padding: 0px">Select from REMOVED.codes</span>
+    <div class="modes mb-16">
+        <label class="mode-container" :data-disabled="model.type !== 'linked'">
+            <input class="radio" type="radio" name="mode" id="from-caws" v-model="model.type" value="linked" />
+            <span class="ml-8 option-label" style="padding: 0px">Select a REMOVED.codes Repository</span>
         </label>
 
-        <label class="mode-container" :data-disabled="value.mode !== 'empty'">
-            <input class="radio" type="radio" name="mode" id="from-empty" v-model="value.mode" value="empty" />
-            <span class="ml-8 option-label" style="padding: 0px" for="from-empty">Add Source Code Later</span>
+        <label class="mode-container" :data-disabled="model.type !== 'clone'">
+            <input class="radio" type="radio" name="mode" id="from-clone" v-model="model.type" value="clone" />
+            <span class="ml-8 option-label" style="padding: 0px">Provide a Repository URL</span>
+        </label>
+
+        <label class="mode-container" :data-disabled="model.type !== 'empty'">
+            <input class="radio" type="radio" name="mode" id="from-empty" v-model="model.type" value="empty" />
+            <span class="ml-8 option-label" style="padding: 0px">Start with an empty Workspace</span>
         </label>
     </div>
 
-    <div class="source-pickers" v-if="value.mode === 'linked'">
+    <div class="source-pickers" v-if="model.type === 'linked'">
         <span>
             <label class="option-label soft">Project</label>
-            <select class="picker" v-model="value.selectedProject" @change="update">
+            <select class="picker" v-model="model.selectedProject" @change="update">
                 <option disabled :value="undefined">{{ loadingProjects ? 'Loading...' : 'Select a project' }}</option>
-                <option v-for="project in projects" :key="project.id" :value="project">
+                <option v-for="project in projects" :key="project.name" :value="project">
                     {{ `${project.org.name} / ${project.name}` }}
                 </option>
             </select>
@@ -24,7 +29,7 @@
 
         <span>
             <label class="option-label soft">Branch</label>
-            <select class="picker" v-model="value.selectedBranch" @change="update">
+            <select class="picker" :disabled="!model.selectedProject" v-model="model.selectedBranch" @change="update">
                 <option disabled :value="undefined">{{ loading ? 'Loading...' : 'Select a branch' }}</option>
                 <option v-for="branch in availableBranches" :key="branch.id" :value="branch">
                     {{ branchName(branch) }}
@@ -32,8 +37,16 @@
             </select>
         </span>
     </div>
-    <div v-else>
-        <b>Not Implemented</b>
+    <div v-else-if="model.type === 'clone'">
+        <label class="options-label soft mb-2" style="display: block" for="repository-url">Repository URL</label>
+        <input id="repository-url" class="mb-8" type="text" v-model="model.repositoryUrl" />
+
+        <p class="no-spacing soft" style="font-size: smaller">
+            The repo will be cloned in the workspace directly from the repo URL. Your SSH agent will be forwarded to the
+            workspace for authentication to the repository.
+        </p>
+
+        <p id="repository-error" class="input-validation mb-0" v-if="model.error">{{ model.error }}</p>
     </div>
 </template>
 
@@ -42,15 +55,28 @@ import { defineComponent } from 'vue'
 import { CawsBranch, CawsProject } from '../../../shared/clients/cawsClient'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { createClass, createType } from '../../../webviews/util'
-import { CawsCreateWebview } from './backend'
+import { CawsCreateWebview, SourceResponse } from './backend'
 
 const client = WebviewClientFactory.create<CawsCreateWebview>()
+const VALID_SCHEMES = ['https://', 'http://', 'ssh://']
 
-export const VueModel = createClass({
-    mode: 'linked' as 'linked' | 'empty',
-    selectedProject: undefined as CawsProject | undefined,
-    selectedBranch: undefined as CawsBranch | undefined,
-})
+type SourceModel = Partial<SourceResponse> & { error?: string }
+
+export function isValidSource(source: SourceModel): source is SourceResponse {
+    if (source.error) {
+        return false
+    }
+
+    if (source.type === 'linked') {
+        return !!source.selectedProject && !!source.selectedBranch
+    } else if (source.type === 'clone') {
+        return !!source.repositoryUrl
+    } else {
+        return source.type === 'empty'
+    }
+}
+
+export const VueModel = createClass<SourceModel>({ type: 'linked' })
 
 export default defineComponent({
     name: 'source-code',
@@ -73,7 +99,11 @@ export default defineComponent({
         this.projects = await client.getProjects().finally(() => (this.loadingProjects = false))
     },
     watch: {
-        async 'value.selectedProject'(project?: CawsProject) {
+        async 'model.selectedProject'(project?: CawsProject) {
+            if (this.model.type === 'linked') {
+                ;(this.model.selectedBranch as any) = undefined
+            }
+
             if (project && !this.branches[project.name]) {
                 this.loadingBranches[project.name] = true
                 this.branches[project.name] ??= await client.getBranches(project).finally(() => {
@@ -81,36 +111,52 @@ export default defineComponent({
                 })
             }
         },
+        'model.repositoryUrl'(url?: string) {
+            this.modelValue.error = this.urlError
+            this.update()
+        },
     },
     computed: {
-        value() {
+        model() {
             return this.modelValue
         },
         loading() {
-            if (!this.value.selectedProject) {
+            if (this.model.type !== 'linked' || !this.model.selectedProject) {
                 return false
             }
 
-            return this.loadingBranches[this.value.selectedProject.name] ?? false
+            return this.loadingBranches[this.model.selectedProject.name] ?? false
         },
         availableBranches() {
-            if (!this.value.selectedProject) {
+            if (this.model.type !== 'linked' || !this.model.selectedProject) {
                 return []
             }
 
-            return this.branches[this.value.selectedProject.name]
+            return this.branches[this.model.selectedProject.name]
         },
-    },
-    emits: {
-        'update:modelValue': (value: InstanceType<typeof VueModel>) => true,
+        urlError() {
+            if (this.model.type !== 'clone') {
+                return
+            }
+
+            const url = this.model.repositoryUrl
+            if (!url || url?.match(/^[\w]+@/)) {
+                return
+            } else if (!VALID_SCHEMES.some(scheme => url?.startsWith(scheme))) {
+                return `URL must use one of the following schemes: ${VALID_SCHEMES.join(', ')}`
+            }
+        },
     },
     methods: {
         update() {
-            this.$emit('update:modelValue', this.value)
+            this.$emit('update:modelValue', this.model)
         },
         branchName(branch: CawsBranch) {
             return `${branch.repo.name} / ${branch.name.replace('refs/heads/', '')}`
         },
+    },
+    emits: {
+        'update:modelValue': (value: InstanceType<typeof VueModel>) => true,
     },
 })
 </script>
@@ -133,6 +179,7 @@ export default defineComponent({
 
 .mode-container {
     display: flex;
+    flex: 1;
     border: 1px solid gray;
     padding: 8px;
     align-items: center;
@@ -153,5 +200,9 @@ body.vscode-dark .mode-container[data-disabled='true'] .config-item {
 
 body.vscode-light .mode-container[data-disabled='true'] .config-item {
     filter: brightness(1.2);
+}
+
+#repository-url {
+    min-width: 300px;
 }
 </style>

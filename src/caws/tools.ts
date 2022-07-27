@@ -42,12 +42,7 @@ export async function ensureDependencies(
     window = vscode.window
 ): Promise<Result<DependencyPaths, CancellationError | Error>> {
     if (!isExtensionInstalled('ms-vscode-remote.remote-ssh')) {
-        showInstallExtensionMsg(
-            'ms-vscode-remote.remote-ssh',
-            'Remote SSH',
-            'Connecting to development workspace',
-            window
-        )
+        showInstallExtensionMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to workspace', window)
 
         return Result.err(new Error('Remote SSH extension not installed'))
     }
@@ -100,14 +95,15 @@ export async function ensureConnectScript(context = globals.context): Promise<Re
         const contents1 = await readFileAsString(versionedScript.fsPath)
         const contents2 = exists ? await readFileAsString(connectScript.fsPath) : ''
         const isOutdated = contents1 !== contents2
+
         if (isOutdated) {
             await fs.copyFile(versionedScript.fsPath, connectScript.fsPath)
+            getLogger().info('ssh: updated connect script')
         }
-        getLogger().info('ensureSshConfig: updated caws_connect script: %O', connectScript)
 
         return Result.ok(connectScript)
     } catch (e) {
-        const message = localize('AWS.caws.error.copyScript', 'Failed to update script: {0}', connectScript.path)
+        const message = localize('AWS.caws.error.copyScript', 'Failed to update connect script')
 
         return Result.err(new ToolkitError(message, { cause: UnknownError.cast(e) }))
     }

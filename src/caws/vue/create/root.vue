@@ -2,7 +2,7 @@
     <div id="configure-header">
         <h1>Create a REMOVED.codes workspace</h1>
         <!--TODO: add link-->
-        <span>
+        <span style="font-size: 0.95em">
             Create an on-demand AWS instance to work on your code in the cloud.
             <a>Learn more about REMOVED.codes workspaces.</a>
         </span>
@@ -39,7 +39,7 @@
 
 <script lang="ts">
 import computePanel, { VueModel as ComputeModel } from '../compute.vue'
-import sourcePanel, { VueModel as SourceModel } from './source.vue'
+import sourcePanel, { isValidSource, VueModel as SourceModel } from './source.vue'
 import settingsPanel from '../../../webviews/components/settingsPanel.vue'
 import { defineComponent } from 'vue'
 import { CawsCreateWebview } from './backend'
@@ -69,12 +69,7 @@ export default defineComponent({
     },
     computed: {
         canCreate() {
-            // Not supported yet
-            if (this.source.mode === 'empty') {
-                return false
-            }
-
-            return this.source.selectedBranch && this.source.selectedProject && !this.creating
+            return !this.creating && isValidSource(this.source)
         },
     },
     created() {},
@@ -90,17 +85,19 @@ export default defineComponent({
             }
         },
         async submit() {
-            if (!this.source.selectedBranch || !this.source.selectedProject) {
+            if (!this.canCreate || !isValidSource(this.source)) {
                 return
             }
 
             this.creating = true
             try {
                 const settings = { ...this.compute, alias: this.alias }
-                await client.submit(settings, this.source.selectedProject, this.source.selectedBranch)
+                await client.submit(settings, this.source)
                 client.close()
-            } catch {
-                client.showLogsMessage('Failed to create workspace')
+            } catch (err) {
+                if (!(err as Error).message.match(/cancelled/i)) {
+                    client.showLogsMessage(`Failed to create workspace: ${(err as Error).message}`)
+                }
             } finally {
                 this.creating = false
             }

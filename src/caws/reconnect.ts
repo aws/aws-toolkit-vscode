@@ -230,12 +230,13 @@ async function openReconnectedWorkspace(
     workspace: DevelopmentWorkspaceMemento,
     closeRootInstance: boolean
 ): Promise<void> {
-    const devEnv = await cawsClient.getDevelopmentWorkspace({
+    const identifier: DevelopmentWorkspaceId = {
         id,
-        organizationName: workspace.organizationName,
-        projectName: workspace.projectName,
-    })
-    await openDevelopmentWorkspace(cawsClient, devEnv, workspace.previousOpenWorkspace)
+        org: { name: workspace.organizationName },
+        project: { name: workspace.projectName },
+    }
+
+    await openDevelopmentWorkspace(cawsClient, identifier, workspace.previousOpenWorkspace)
 
     // When we only have 1 workspace to watch we might as well close the local vscode instance
     if (closeRootInstance) {

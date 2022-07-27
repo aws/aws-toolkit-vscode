@@ -9,7 +9,6 @@ import globals from '../extensionGlobals'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
 import * as AWS from 'aws-sdk'
 import * as caws from '../../../types/clientcodeaws'
 import * as logger from '../logger/logger'
@@ -343,16 +342,14 @@ class CawsClientInternal {
         return { ...resp, version: resp.version } as const
     }
 
-    public async getOrganization(request: caws.GetOrganizationRequest): Promise<CawsOrg | undefined> {
+    public async getOrganization(request: caws.GetOrganizationRequest): Promise<CawsOrg> {
         const resp = await this.call(this.sdkClient.getOrganization(request), false)
-        assertHasProps(resp, 'name')
 
         return { ...resp, type: 'org' }
     }
 
-    public async getProject(request: caws.GetProjectRequest): Promise<CawsProject | undefined> {
+    public async getProject(request: caws.GetProjectRequest): Promise<CawsProject> {
         const resp = await this.call(this.sdkClient.getProject(request), false)
-        assertHasProps(resp, 'name')
 
         return { ...resp, type: 'project', org: { name: request.organizationName } }
     }
@@ -474,24 +471,25 @@ class CawsClientInternal {
     public async createDevelopmentWorkspace(
         args: caws.CreateDevelopmentWorkspaceRequest
     ): Promise<DevelopmentWorkspace> {
-        if (!args.ides || args.ides.length === 0) {
-            throw new Error('missing ides')
-        }
-        const r = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
-        assertHasProps(r, 'id')
+        const { id } = await this.call(this.sdkClient.createDevelopmentWorkspace(args), false)
 
         return this.getDevelopmentWorkspace({
-            id: r.id,
-            organizationName: args.organizationName,
+            id,
             projectName: args.projectName,
+            organizationName: args.organizationName,
         })
     }
 
     public async startDevelopmentWorkspace(
         args: caws.StartDevelopmentWorkspaceRequest
-    ): Promise<caws.StartDevelopmentWorkspaceResponse | undefined> {
-        const r = await this.call(this.sdkClient.startDevelopmentWorkspace(args), false)
-        return r
+    ): Promise<caws.StartDevelopmentWorkspaceResponse> {
+        return this.call(this.sdkClient.startDevelopmentWorkspace(args), false)
+    }
+
+    public async createProject(args: caws.CreateProjectRequest): Promise<CawsProject> {
+        await this.call(this.sdkClient.createProject(args), false)
+
+        return { ...args, type: 'project', org: { name: args.organizationName } }
     }
 
     public async startSessionDevelopmentWorkspace(
@@ -521,9 +519,8 @@ class CawsClientInternal {
 
     public async deleteDevelopmentWorkspace(
         args: caws.DeleteDevelopmentWorkspaceRequest
-    ): Promise<caws.DeleteDevelopmentWorkspaceResponse | undefined> {
-        const r = await this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
-        return r
+    ): Promise<caws.DeleteDevelopmentWorkspaceResponse> {
+        return this.call(this.sdkClient.deleteDevelopmentWorkspace(args), false)
     }
 
     public updateDevelopmentWorkspace(
@@ -538,21 +535,19 @@ class CawsClientInternal {
      *
      * The cancel button does not abort the start, but rather alerts any callers that any operations that rely
      * on the CAWS workspace starting should not progress.
-     *
-     * @returns the environment on success, undefined otherwise
      */
     public async startWorkspaceWithProgress(
         args: caws.StartDevelopmentWorkspaceRequest,
         status: string,
         timeout: Timeout = new Timeout(180000)
-    ): Promise<DevelopmentWorkspace | undefined> {
+    ): Promise<DevelopmentWorkspace> {
         let lastStatus: undefined | string
         try {
-            const env = await this.getDevelopmentWorkspace(args)
-            lastStatus = env?.status
+            const workpace = await this.getDevelopmentWorkspace(args)
+            lastStatus = workpace.status
             if (status === 'RUNNING' && lastStatus === 'RUNNING') {
                 // "Debounce" in case caller did not check if the environment was already running.
-                return env
+                return workpace
             }
         } catch {
             lastStatus = undefined
@@ -561,7 +556,7 @@ class CawsClientInternal {
         const progress = await showMessageWithCancel(localize('AWS.caws.startMde.message', 'REMOVED.codes'), timeout)
         progress.report({ message: localize('AWS.caws.startMde.checking', 'checking status...') })
 
-        const pollMde = waitUntil(
+        const pollWorkspace = waitUntil(
             async () => {
                 // technically this will continue to be called until it reaches its own timeout, need a better way to 'cancel' a `waitUntil`
                 if (timeout.completed) {
@@ -569,14 +564,14 @@ class CawsClientInternal {
                 }
 
                 const resp = await this.getDevelopmentWorkspace(args)
-                if (lastStatus === 'STARTING' && (resp?.status === 'STOPPED' || resp?.status === 'STOPPING')) {
+                if (lastStatus === 'STARTING' && (resp.status === 'STOPPED' || resp.status === 'STOPPING')) {
                     throw new Error('Workspace failed to start')
                 }
 
-                if (resp?.status === 'STOPPED') {
+                if (resp.status === 'STOPPED') {
                     progress.report({ message: localize('AWS.caws.startMde.stopStart', 'resuming workspace...') })
                     await this.startDevelopmentWorkspace(args)
-                } else if (resp?.status === 'STOPPING') {
+                } else if (resp.status === 'STOPPING') {
                     progress.report({
                         message: localize('AWS.caws.startMde.resuming', 'waiting for workspace to stop...'),
                     })
@@ -586,21 +581,18 @@ class CawsClientInternal {
                     })
                 }
 
-                lastStatus = resp?.status
-                return resp?.status === 'RUNNING' ? resp : undefined
+                lastStatus = resp.status
+                return resp.status === 'RUNNING' ? resp : undefined
             },
             // note: the `waitUntil` will resolve prior to the real timeout if it is refreshed
             { interval: 5000, timeout: timeout.remainingTime, truthy: true }
         )
 
-        return waitTimeout(pollMde, timeout, {
-            onExpire: () => (
-                vscode.window.showErrorMessage(
-                    localize('AWS.caws.startFailed', 'Timeout waiting for workspace: {0}', args.id)
-                ),
-                undefined
-            ),
-            onCancel: () => undefined,
-        })
+        const workspace = await waitTimeout(pollWorkspace, timeout)
+        if (!workspace) {
+            throw new TypeError('Workspace could not be started')
+        }
+
+        return workspace
     }
 }

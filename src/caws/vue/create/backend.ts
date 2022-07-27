@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
 import { WorkspaceSettings } from '../../commands'
 import { VueWebview } from '../../../webviews/main'
 import { Prompter } from '../../../shared/ui/prompter'
 import { isValidResponse } from '../../../shared/wizards/wizard'
-import { GetStatusResponse } from '../../../shared/clients/developmentWorkspaceClient'
 import {
     createAliasPrompter,
     createInstancePrompter,
@@ -18,17 +19,37 @@ import {
 } from '../../wizards/workspaceSettings'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { CawsBranch, CawsProject, ConnectedCawsClient } from '../../../shared/clients/cawsClient'
+import { cloneToWorkspace, DevelopmentWorkspaceId, openDevelopmentWorkspace } from '../../model'
+import { selectCawsResource } from '../../wizards/selectResource'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 
-const localize = nls.loadMessageBundle()
+interface LinkedResponse {
+    readonly type: 'linked'
+    readonly selectedProject: CawsProject
+    readonly selectedBranch: CawsBranch
+}
+
+interface CloneResponse {
+    readonly type: 'clone'
+    readonly repositoryUrl: string
+}
+
+interface EmptyResponse {
+    readonly type: 'empty'
+}
+
+export type SourceResponse = LinkedResponse | CloneResponse | EmptyResponse
 
 export class CawsCreateWebview extends VueWebview {
     public readonly id = 'createCaws'
     public readonly source = 'src/caws/vue/create/index.js'
 
-    public readonly onDidChangeDevfile = new vscode.EventEmitter<GetStatusResponse>()
-
     public constructor(private readonly client: ConnectedCawsClient) {
         super()
+    }
+
+    public close() {
+        this.dispose()
     }
 
     public async getProjects() {
@@ -87,27 +108,99 @@ export class CawsCreateWebview extends VueWebview {
         }
     }
 
-    public async submit(settings: WorkspaceSettings, project: CawsProject, branch: CawsBranch) {
-        await this.client.createDevelopmentWorkspace({
-            organizationName: project.org.name,
+    public async submit(settings: WorkspaceSettings, source: SourceResponse) {
+        const workspace: DevelopmentWorkspaceId = await (() => {
+            switch (source.type) {
+                case 'empty':
+                    return this.createEmptyWorkpace(settings, source)
+                case 'linked':
+                    return this.createLinkedWorkspace(settings, source)
+                case 'clone':
+                    return this.cloneRepository(settings, source)
+            }
+        })()
+
+        return openDevelopmentWorkspace(this.client, workspace)
+    }
+
+    private async createEmptyWorkpace(settings: WorkspaceSettings, source: EmptyResponse) {
+        const project = await selectCawsResource(this.client, 'project')
+        if (!project) {
+            throw new CancellationError('user')
+        }
+
+        return this.client.createDevelopmentWorkspace({
+            ides: [{ name: 'VSCode' }],
             projectName: project.name,
+            organizationName: project.org.name,
+            ...settings,
+        })
+    }
+
+    private createLinkedWorkspace(settings: WorkspaceSettings, source: LinkedResponse) {
+        return this.client.createDevelopmentWorkspace({
+            ides: [{ name: 'VSCode' }],
+            projectName: source.selectedProject.name,
+            organizationName: source.selectedProject.org.name,
             repositories: [
                 {
-                    repositoryName: branch.repo.name,
-                    branchName: branch.name,
-                },
-            ],
-            ides: [
-                {
-                    name: 'VSCode',
+                    repositoryName: source.selectedBranch.repo.name,
+                    branchName: source.selectedBranch.name.replace('refs/heads/', ''),
                 },
             ],
             ...settings,
         })
     }
 
-    public close() {
-        this.dispose()
+    private async cloneRepository(settings: WorkspaceSettings, source: CloneResponse) {
+        const isSchemeless = /^[\w]+@/.test(source.repositoryUrl)
+        const withScheme = isSchemeless ? `ssh://${source.repositoryUrl}` : source.repositoryUrl
+        const repoUri = vscode.Uri.parse(withScheme, true)
+        const repoName = repoUri.path
+            .split('/')
+            .pop()
+            ?.replace(/\.git$/, '')
+
+        if (!repoName) {
+            throw new TypeError('No repository name found')
+        }
+
+        const org = await selectCawsResource(this.client, 'org')
+        if (!org) {
+            throw new CancellationError('user')
+        }
+
+        const existingProject = await this.getUnlinkedProject(org.name, repoName)
+        const workspace = await this.client.createDevelopmentWorkspace({
+            ides: [{ name: 'VSCode' }],
+            projectName: existingProject.name,
+            organizationName: existingProject.org.name,
+            ...settings,
+        })
+
+        await cloneToWorkspace(this.client, workspace, { name: repoName, location: repoUri })
+
+        return workspace
+    }
+
+    private async getUnlinkedProject(organizationName: string, repoName: string): Promise<CawsProject> {
+        const existingProject = await this.client.getProject({ name: repoName, organizationName }).catch(err => {
+            if ((err as any).statusCode === 404) {
+                return undefined
+            } else {
+                throw err
+            }
+        })
+
+        return (
+            existingProject ??
+            this.client.createProject({
+                name: repoName,
+                organizationName,
+                displayName: repoName,
+                description: localize('aws.caws.createProject.description', 'Created by AWS Toolkit for Workspaces'),
+            })
+        )
     }
 }
 

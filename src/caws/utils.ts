@@ -4,32 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import { Window } from '../shared/vscode/window'
-import * as localizedText from '../shared/localizedText'
-
-import * as nls from 'vscode-nls'
 import { CawsResource, getCawsConfig } from '../shared/clients/cawsClient'
-import { Commands } from '../shared/vscode/commands'
 import { pushIf } from '../shared/utilities/collectionUtils'
 import { Ides } from '../../types/clientcodeaws'
-const localize = nls.loadMessageBundle()
-
-export async function promptCawsNotConnected(window = Window.vscode(), commands = Commands.vscode()): Promise<void> {
-    const connect = localize('AWS.command.caws.login', 'Connect to REMOVED.codes')
-    return await window
-        .showWarningMessage(
-            localize('AWS.caws.badConnection', 'Not connected to REMOVED.codes.'),
-            connect,
-            localizedText.viewDocs
-        )
-        .then(btn => {
-            if (btn === connect) {
-                commands.execute('aws.caws.login')
-            } else if (btn === localizedText.viewDocs) {
-                vscode.env.openExternal(vscode.Uri.parse(getHelpUrl()))
-            }
-        })
-}
 
 /**
  * Builds a web URL from the given CAWS object.

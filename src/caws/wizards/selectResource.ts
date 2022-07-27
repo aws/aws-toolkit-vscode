@@ -48,12 +48,6 @@ export function asQuickpickItem<T extends caws.CawsResource>(resource: T): DataQ
 }
 
 function fromWorkspace(env: caws.DevelopmentWorkspace): Omit<DataQuickPickItem<unknown>, 'data'> {
-    const repo = env.repositories[0]
-
-    if (!repo) {
-        throw new Error('Workspace does not have an associated repository')
-    }
-
     const labelParts = [] as string[]
 
     if (env.status === 'RUNNING') {
@@ -62,7 +56,14 @@ function fromWorkspace(env: caws.DevelopmentWorkspace): Omit<DataQuickPickItem<u
         labelParts.push('$(circle-slash) ') // TODO(sijaden): get actual 'stopped' icon
     }
 
-    labelParts.push(`${repo.repositoryName}/${repo.branchName}`)
+    const repo = env.repositories[0]
+
+    if (repo) {
+        const branchName = repo.branchName?.replace('refs/heads/', '')
+        labelParts.push(branchName ? `${repo.repositoryName}/${branchName}` : repo.repositoryName)
+    } else {
+        labelParts.push(`${env.id} (no repository)`)
+    }
 
     if (env.alias) {
         labelParts.push(` ${env.alias}`)

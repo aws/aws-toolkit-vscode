@@ -180,7 +180,7 @@ function createClientInjector(
             }
 
             if (result === 'Failed') {
-                globals.window.showErrorMessage('AWS: Not connected to REMOVED.codes')
+                globals.window.showErrorMessage('Not connected to REMOVED.codes')
             }
 
             return
@@ -235,11 +235,15 @@ export class CawsCommands {
         return logout(this.authProvider)
     }
 
+    public listCommands() {
+        return listCommands()
+    }
+
     public cloneRepository(...args: WithClient<typeof cloneCawsRepo>) {
         return this.withClient(cloneCawsRepo, ...args)
     }
 
-    public async createWorkspace() {
+    public createWorkspace() {
         return this.withClient(showCreateWorkspace.bind(undefined, globals.context))
     }
 
@@ -271,16 +275,16 @@ export class CawsCommands {
         return this.openResource('repo')
     }
 
-    public openWorkspace() {
-        return this.openResource('developmentWorkspace')
-    }
-
-    public listCommands() {
-        return listCommands()
-    }
-
     public async openDevfile(uri: vscode.Uri) {
         await vscode.window.showTextDocument(uri)
+    }
+
+    public openWorkspace(workspace?: DevelopmentWorkspaceId) {
+        if (workspace) {
+            return this.withClient(openDevelopmentWorkspace, workspace)
+        } else {
+            return this.openResource('developmentWorkspace')
+        }
     }
 
     public async openWorkspaceSettings() {
