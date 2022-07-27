@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.46.0-SNAPSHOT",
+    "version": "1.47.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -38,7 +38,8 @@
         "onStartupFinished",
         "onDebugResolve:aws-sam",
         "onCommand:aws.login",
-        "onCommand:aws.credential.profile.create",
+        "onCommand:aws.credentials.profile.create",
+        "onCommand:aws.credentials.edit",
         "onCommand:aws.logout",
         "onCommand:aws.createIssueOnGitHub",
         "onCommand:aws.submitFeedback",
@@ -230,6 +231,10 @@
                             "default": false
                         },
                         "fileViewerEdit": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "createCredentialsProfile": {
                             "type": "boolean",
                             "default": false
                         }
@@ -1482,6 +1487,16 @@
                     "group": "2@2"
                 },
                 {
+                    "command": "aws.cwl.searchLogGroup",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
+                },
+                {
+                    "command": "aws.cwl.searchLogGroup",
+                    "group": "inline@0",
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
+                },
+                {
                     "command": "aws.apig.copyUrl",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "2@0"
@@ -1762,8 +1777,18 @@
                 }
             },
             {
-                "command": "aws.credential.profile.create",
-                "title": "%AWS.command.credential.profile.create%",
+                "command": "aws.credentials.profile.create",
+                "title": "%AWS.command.credentials.profile.create%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.credentials.edit",
+                "title": "%AWS.command.credentials.edit%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2524,7 +2549,7 @@
                 "command": "aws.cwl.searchLogGroup",
                 "title": "%AWS.command.cloudWatchLogs.searchLogGroup%",
                 "category": "%AWS.title%",
-                "icon": "$(files)",
+                "icon": "$(search-view-icon)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

@@ -67,7 +67,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         // Here instead of in ../awsexplorer/activation due to dependence on the registry.
         Commands.register('aws.cwl.viewLogStream', async (node: LogGroupNode) => await viewLogStream(node, registry)),
 
-        Commands.register('aws.cwl.searchLogGroup', async () => await searchLogGroup(registry)),
+        Commands.register('aws.cwl.searchLogGroup', async (node: LogGroupNode) => await searchLogGroup(node, registry)),
 
         Commands.register('aws.cwl.changeFilterPattern', async () => changeLogSearchParams(registry, 'filterPattern')),
 

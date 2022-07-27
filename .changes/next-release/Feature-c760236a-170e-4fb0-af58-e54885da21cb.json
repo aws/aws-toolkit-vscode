@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Add `Edit Credentials` command which opens all known credential files"
+}
