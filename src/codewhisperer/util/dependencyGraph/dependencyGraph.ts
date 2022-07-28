@@ -17,6 +17,7 @@ export interface Truncation {
     dir: string
     zip: string
     size: number
+    zipSize: number
 }
 
 export interface TruncPaths {
@@ -153,13 +154,17 @@ export abstract class DependencyGraph {
     }
 
     protected printTruncLogs(size: number, source: string, build: string | undefined = undefined) {
+        const sourceZipSize = statSync(source).size
         getLogger().debug(`Complete ${this._languageId} dependency graph.`)
         getLogger().debug(`File count: ${this._pickedSourceFiles.size}`)
         getLogger().debug(`Total size: ${(size / 1024).toFixed(2)}kb`)
         getLogger().debug(`Total lines: ${this._totalLines}`)
         getLogger().debug(`Source zip file: ${source}`)
+        getLogger().debug(`Source zip file size: ${(sourceZipSize / 1024).toFixed(2)}kb}`)
         if (build !== undefined) {
+            const buildZipSize = statSync(build).size
             getLogger().debug(`Build zip file: ${build}`)
+            getLogger().debug(`Build zip file size: ${(buildZipSize / 1024).toFixed(2)}kb}`)
         }
     }
 

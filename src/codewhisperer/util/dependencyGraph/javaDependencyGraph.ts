@@ -395,18 +395,23 @@ export class JavaDependencyGraph extends DependencyGraph {
                 truncBuildDirPath,
                 CodeWhispererConstants.codeScanZipExt
             )
+            const zipSourceSize = statSync(zipSourcePath).size
+            const zipBuildSize = statSync(zipBuildPath).size
             this.printTruncLogs(this._totalSize + totalBuildSize, zipSourcePath, zipBuildPath)
+
             return {
                 root: truncDirPath,
                 src: {
                     dir: truncSourceDirPath,
                     zip: zipSourcePath,
                     size: this._totalSize,
+                    zipSize: zipSourceSize,
                 },
                 build: {
                     dir: truncBuildDirPath,
                     zip: zipBuildPath,
                     size: totalBuildSize,
+                    zipSize: zipBuildSize,
                 },
                 lines: this._totalLines,
             }
