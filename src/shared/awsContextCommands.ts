@@ -208,13 +208,9 @@ export class AwsContextCommands {
                 return state.credentialProfile.label
             }
         } else if (credentialsFiles.length === 0) {
-            if (await this.promptCredentialsSetup()) {
-                return await this.promptAndCreateNewCredentialsFile()
-            }
+            return await this.promptAndCreateNewCredentialsFile()
         } else {
-            if (await this.promptCredentialsSetup()) {
-                await this.editCredentials()
-            }
+            await this.editCredentials()
         }
         return undefined
     }
