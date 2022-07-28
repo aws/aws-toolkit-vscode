@@ -134,7 +134,7 @@ describe('Commands', function () {
             it('can build a tree node', function () {
                 const registered = commands.register('sum', sum)
                 const built = registered.build(5, 4).asTreeNode({ label: 'Sum' })
-                const item = built.treeItem
+                const item = built.getTreeItem()
 
                 assert.ok(item instanceof vscode.TreeItem)
                 assert.strictEqual(item.label, 'Sum')
