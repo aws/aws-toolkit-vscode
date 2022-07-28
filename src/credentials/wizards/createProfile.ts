@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
-import { Prompter, PromptResult } from '../../shared/ui/prompter'
+import { Prompter, PromptResult, PassthroughPrompter } from '../../shared/ui/prompter'
 import { ParsedIniData, Profile } from '../../shared/credentials/credentialsFile'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { DefaultStsClient } from '../../shared/clients/stsClient'
@@ -43,7 +43,13 @@ export class CreateProfileWizard extends Wizard<CreateProfileState> {
     public constructor(profiles: { readonly [name: string]: Profile }, template: ProfileTemplateProvider) {
         super()
 
-        this.form.name.bindPrompter(() => createProfileNamePrompter(profiles))
+        if (Object.keys(profiles).length === 0) {
+            // Skip the "Enter Profile" step and use "default" profile name.
+            // This reduces friction for the common case.
+            this.form.name.bindPrompter(() => new PassthroughPrompter('default'))
+        } else {
+            this.form.name.bindPrompter(() => createProfileNamePrompter(profiles))
+        }
 
         for (const [k, v] of Object.entries(template.prompts)) {
             this.form.profile[k].bindPrompter(({ name, profile }) => v(name!, profile ?? {}))
