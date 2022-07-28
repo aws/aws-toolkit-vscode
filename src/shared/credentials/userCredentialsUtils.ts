@@ -11,29 +11,28 @@ import { fileExists } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
 const header = `
-# Amazon Web Services Credentials File used by AWS CLI, SDKs, and tools
-# This file was created by the AWS Toolkit for Visual Studio Code extension.
+# AWS credentials file used by AWS CLI, SDKs, and tools.
+# Created by AWS Toolkit for VS Code. https://aws.amazon.com/visualstudiocode/
 #
-# Your AWS credentials are represented by access keys associated with IAM users.
-# For information about how to create and manage AWS access keys for a user, see:
-# https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+# Each [section] in this file declares a named "profile", which can be selected
+# in tools like AWS Toolkit to choose which credentials you want to use.
 #
-# This credential file can store multiple access keys by placing each one in a
-# named "profile". For information about how to change the access keys in a 
-# profile or to add a new profile with a different access key, see:
-# https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html 
+# See also:
+#   https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+#   https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html
+
 `.trim()
 
 const createNewCredentialsFile = (ctx: CredentialsTemplateContext) =>
     `
 [${ctx.profileName}]
-# The access key and secret key pair identify your account and grant access to AWS.
+# This key identifies your AWS account.
 aws_access_key_id = ${ctx.accessKey}
-# Treat your secret key like a password. Never share your secret key with anyone. Do 
-# not post it in online forums, or store it in a source control system. If your secret 
-# key is ever disclosed, immediately use IAM to delete the access key and secret key
-# and create a new key pair. Then, update this file with the replacement key details.
+# Treat this secret key like a password. Never share it or store it in source
+# control. If your secret key is ever disclosed, immediately use IAM to delete
+# the key pair and create a new one.
 aws_secret_access_key = ${ctx.secretKey}
+
 `.trim()
 
 export interface CredentialsTemplateContext {
