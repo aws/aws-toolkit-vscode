@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Prompter, PromptResult } from '../shared/ui/prompter'
 import { InputBoxPrompter } from '../shared/ui/inputPrompter'
 import { ItemLoadTypes, QuickPickPrompter, DataQuickPickItem, createQuickPick } from '../shared/ui/pickerPrompter'
