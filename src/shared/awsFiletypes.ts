@@ -90,7 +90,11 @@ export function activate(): void {
             }
 
             // Ensure nice syntax highlighting for ~/.aws/ files.
-            if (telemKind === 'awsCredentials' && (basename === 'credentials' || basename === 'config')) {
+            if (
+                telemKind === 'awsCredentials' &&
+                doc.languageId !== 'ini' &&
+                (basename === 'credentials' || basename === 'config')
+            ) {
                 vscode.languages.setTextDocumentLanguage(doc, 'ini')
             }
 
