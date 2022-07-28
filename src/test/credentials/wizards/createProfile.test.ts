@@ -34,18 +34,24 @@ class TestPrompter extends Prompter<string | undefined> {
 
 describe('CreateProfileWizard', function () {
     it('prompts for profile name, access key, secret, and then validates (static)', function () {
-        const tester = createWizardTester(new CreateProfileWizard({}, staticCredentialsTemplate))
+        const tester = createWizardTester(new CreateProfileWizard({ foo: {} }, staticCredentialsTemplate))
         tester.name.assertShowFirst()
         tester.profile[ProfileKey.AccessKeyId].assertShowSecond()
         tester.profile[ProfileKey.SecretKey].assertShowThird()
         tester.accountId.assertShow(4)
     })
 
-    it('prompts for profile name, command, and then validates (process)', function () {
-        const tester = createWizardTester(new CreateProfileWizard({}, processCredentialsTemplate))
+    it('prompts for profile name, command, and then validates (credential_process)', function () {
+        const tester = createWizardTester(new CreateProfileWizard({ foo: {} }, processCredentialsTemplate))
         tester.name.assertShowFirst()
         tester.profile[ProfileKey.Process].assertShowSecond()
         tester.accountId.assertShowThird()
+    })
+
+    it('skips profile name step (and uses "default") if starting with no profiles', function () {
+        const tester = createWizardTester(new CreateProfileWizard({}, processCredentialsTemplate))
+        tester.name.assertDoesNotShow()
+        tester.assertShowCount(2)
     })
 
     it('passes in the profile name + state to template prompts', async function () {
