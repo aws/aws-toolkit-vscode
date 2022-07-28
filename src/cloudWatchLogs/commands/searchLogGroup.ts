@@ -14,17 +14,17 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createInputBox } from '../../shared/ui/inputPrompter'
 import { createURIFromArgs, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { CloudWatchLogs } from 'aws-sdk'
-import { LogGroupNode } from '../explorer/logGroupNode'
-import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { localize } from 'vscode-nls'
 import { getLogger } from '../../shared/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
+import { LogGroupNode } from '../explorer/logGroupNode'
+import { CloudWatchLogs } from 'aws-sdk'
+import { createInputBox } from '../../shared/ui/inputPrompter'
+import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 
 function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
     const logGroupInfo: CloudWatchLogsGroupInfo = {
