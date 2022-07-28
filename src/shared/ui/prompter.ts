@@ -74,3 +74,23 @@ export abstract class Prompter<T> {
     protected abstract promptUser(): Promise<PromptResult<T>>
     public abstract setSteps(current: number, total: number): void
 }
+
+/**
+ * Pseudo-prompter that immediately returns a result without prompting.
+ */
+export class PassthroughPrompter extends Prompter<string> {
+    constructor(private readonly result: string) {
+        super()
+    }
+
+    protected async promptUser(): Promise<PromptResult<string>> {
+        return this.result
+    }
+
+    public setStepEstimator(estimator: StepEstimator<string>): void {}
+    public setSteps(current: number, total: number): void {}
+    public set recentItem(response: any) {}
+    public get recentItem(): any {
+        return
+    }
+}
