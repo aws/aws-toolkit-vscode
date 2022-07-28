@@ -73,6 +73,7 @@ export function activate(): void {
                 return
             }
 
+            const basename = path.basename(doc.fileName)
             let fileExt: string | undefined = path.extname(doc.fileName)
             fileExt = fileExt ? fileExt : undefined // Telemetry client will fail on empty string.
 
@@ -86,6 +87,11 @@ export function activate(): void {
             // HACK: for "~/.aws/foo" vscode sometimes _only_ emits "~/.aws/foo.git".
             if (telemKind === 'awsCredentials' && fileExt === '.git') {
                 fileExt = undefined
+            }
+
+            // Ensure nice syntax highlighting for ~/.aws/ files.
+            if (telemKind === 'awsCredentials' && (basename === 'credentials' || basename === 'config')) {
+                vscode.languages.setTextDocumentLanguage(doc, 'ini')
             }
 
             if (await isSameMetricPending(telemKind, fileExt)) {
