@@ -51,6 +51,7 @@ describe('CreateProfileWizard', function () {
     it('skips profile name step (and uses "default") if starting with no profiles', function () {
         const tester = createWizardTester(new CreateProfileWizard({}, processCredentialsTemplate))
         tester.name.assertDoesNotShow()
+        tester.name.assertValue('default')
         tester.assertShowCount(2)
     })
 
