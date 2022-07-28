@@ -6,7 +6,7 @@ The **AWS Toolkit for VS Code** uses the same shared credentials files as the [A
 
 ## User Flow
 
-From the VS Code [Command Palette](https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette) (**View**, then **Command Palette**), type "AWS" and then select **AWS: Connect to AWS**. The credentials available for use by the Toolkit are shown, starting with those most recently used. If no credentials were found by the Toolkit, users are provided with an optional guide to setting up a basic Shared Credentials profile.
+From the VS Code [Command Palette](https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette) (**View**, then **Command Palette**), type "AWS" and then select **AWS: Choose AWS Profile**. The credentials available for use by the Toolkit are shown, starting with those most recently used. If no credentials were found by the Toolkit, users are provided with an optional guide to setting up a basic Shared Credentials profile.
 
 Instead of selecting Credentials from the list, users have the option to create a new Shared Credentials Profile (see "Adding Credentials" below).
 
