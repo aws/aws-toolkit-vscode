@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { changeLogSearchParams } from '../../cloudWatchLogs/changeLogSearch'
+import * as assert from 'assert'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
     LogStreamRegistry,
@@ -27,22 +27,20 @@ describe('changeLogSearch', async function () {
         }
     }
 
-    const fakeSearchLogGroup = async (): Promise<CloudWatchLogsResponse> => {
-        return {
-            events: [
-                {
-                    message: 'we just filtered some log events!',
-                },
-            ],
-        }
-    }
-
     const oldComponenents = {
         logGroupInfo: {
             groupName: 'this-is-a-group',
             regionName: 'this-is-a-region',
         },
-        parameters: { streamName: 'this-is-a-stream' },
+        parameters: { streamName: 'this-is-a-stream', filterPattern: 'this is a bad filter!' },
+    }
+    const newText = 'this is a good filter!'
+    const newComponents = {
+        ...oldComponenents,
+        parameters: {
+            ...oldComponenents,
+            filterPattern: newText,
+        },
     }
 
     const oldData: CloudWatchLogsData = {
@@ -57,11 +55,30 @@ describe('changeLogSearch', async function () {
         busy: false,
     }
 
+    const newData: CloudWatchLogsData = {
+        data: [
+            {
+                message: 'Here is the new text that we want to have.',
+            },
+        ],
+        parameters: newComponents.parameters,
+        logGroupInfo: newComponents.logGroupInfo,
+        retrieveLogsFunction: fakeGetLogEvents,
+        busy: false,
+    }
+
     const oldUri = createURIFromArgs(oldComponenents.logGroupInfo, oldComponenents.parameters)
 
     before(function () {
         testRegistry = new LogStreamRegistry(new CloudWatchLogsSettings(config), new Map<string, ActiveTab>())
 
         testRegistry.registerLog(oldUri, oldData)
+    })
+
+    it('unregisters old log and registers a new one', async function () {
+        assert.deepStrictEqual(testRegistry.hasLog(oldUri), true)
+        const newUri = await testRegistry.registerLogWithNewUri(oldUri, newData)
+        assert.deepStrictEqual(testRegistry.hasLog(oldUri), false)
+        assert.deepStrictEqual(testRegistry.getLogData(newUri)?.parameters.filterPattern, newText)
     })
 })
