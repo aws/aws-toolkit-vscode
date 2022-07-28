@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "\"Connect to AWS\" does not handle missing credentials file"
+}
