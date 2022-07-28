@@ -117,6 +117,8 @@ export class CawsConfigureWebview extends VueWebview {
                 return prompt(createInstancePrompter())
             case 'inactivityTimeoutMinutes':
                 return prompt(createTimeoutPrompter())
+            case 'persistentStorage':
+                throw new Error('Persistent storage cannot be changed after creation')
         }
     }
 

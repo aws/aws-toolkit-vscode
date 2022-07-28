@@ -31,22 +31,27 @@
                     Edit Timeout Length
                 </button>
             </div>
-            <div id="vpc" style="grid-area: vpc">
-                <span class="label-context soft">VPC Connections</span>
-                <b>None</b>
-                <p class="mt-0 mb-0">{{ readonlyText }}</p>
-            </div>
             <div id="volume" style="grid-area: volume">
                 <span class="label-context soft">EBS Volume</span>
                 <b>{{ storage }}</b>
-                <p class="mt-0 mb-0">{{ readonlyText }}</p>
+                <p class="mt-0 mb-0" v-if="mode === 'update'">{{ readonlyText }}</p>
+                <div v-else>
+                    <button
+                        type="button"
+                        id="edit-storage"
+                        class="button-theme-secondary mt-8"
+                        @click="$emit('editSettings', 'persistentStorage')"
+                    >
+                        Edit Storage Size
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, PropType } from 'vue'
 import { WebviewClientFactory } from '../../webviews/client'
 import saveData from '../../webviews/mixins/saveData'
 import { createClass, createType } from '../../webviews/util'
@@ -57,7 +62,7 @@ import { CawsCreateWebview } from './create/backend'
 const client = WebviewClientFactory.create<CawsConfigureWebview | CawsCreateWebview>()
 
 const DEFAULT_COMPUTE_SETTINGS = {
-    inactivityTimeoutMinutes: 30,
+    inactivityTimeoutMinutes: 15,
     instanceType: 'dev.standard1.medium',
     persistentStorage: { sizeInGiB: 16 },
 }
@@ -70,6 +75,10 @@ export default defineComponent({
         modelValue: {
             type: createType(VueModel),
             default: new VueModel(),
+        },
+        mode: {
+            type: String as PropType<'create' | 'update'>,
+            default: 'update',
         },
     },
     data() {
@@ -99,7 +108,7 @@ export default defineComponent({
         },
         storage() {
             const storage = this.value.persistentStorage.sizeInGiB
-            const storageDesc = `${storage} GiB`
+            const storageDesc = `${storage} GB`
             return storage === DEFAULT_COMPUTE_SETTINGS.persistentStorage.sizeInGiB
                 ? `${storageDesc} (default)`
                 : storageDesc

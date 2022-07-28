@@ -12,7 +12,7 @@
 
         <label class="mode-container" :data-disabled="model.type !== 'empty'">
             <input class="radio" type="radio" name="mode" id="from-empty" v-model="model.type" value="empty" />
-            <span class="ml-8 option-label" style="padding: 0px">Start with an empty Workspace</span>
+            <span class="ml-8 option-label" style="padding: 0px">Create an Empty Workspace</span>
         </label>
     </div>
 

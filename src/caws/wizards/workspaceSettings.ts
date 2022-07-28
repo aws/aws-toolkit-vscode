@@ -38,7 +38,7 @@ export function getInstanceDescription(type: InstanceType): InstanceDescription 
 
     return {
         name: toTitleCase(type.split('.').pop()!),
-        specs: `${desc.vcpus} vCPUs, ${desc.ram.value}${abbreviateUnit(desc.ram.unit)} RAM, 64 GiB ephemeral storage`,
+        specs: `${desc.vcpus} vCPUs, ${desc.ram.value}${abbreviateUnit(desc.ram.unit)} RAM`,
     }
 }
 
@@ -75,5 +75,16 @@ export function createAliasPrompter(): InputBoxPrompter {
                 return 'Workspace alias cannot be longer than 128 characters'
             }
         },
+    })
+}
+
+export function createStoragePrompter(): QuickPickPrompter<{ sizeInGiB: number }> {
+    const items = settings.environment.persistentStorageSize.map(v => ({
+        data: { sizeInGiB: v },
+        label: `${v} GB`,
+    }))
+
+    return createQuickPick(items, {
+        title: 'Storage Size',
     })
 }

@@ -4,7 +4,9 @@
         <!--TODO: add link-->
         <span style="font-size: 0.95em">
             Create an on-demand AWS instance to work on your code in the cloud.
-            <a>Learn more about REMOVED.codes workspaces.</a>
+            <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html">
+                Learn more about REMOVED.codes workspaces.
+            </a>
         </span>
     </div>
 
@@ -25,7 +27,7 @@
         title="Configuration"
         description="All settings except Storage can be changed in settings after creation."
     >
-        <compute-panel v-model="compute" type="configure" @edit-settings="editCompute"></compute-panel>
+        <compute-panel v-model="compute" mode="create" @edit-settings="editCompute"></compute-panel>
     </settings-panel>
 
     <div id="submit-buttons" class="mb-16">

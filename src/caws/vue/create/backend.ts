@@ -14,6 +14,7 @@ import { isValidResponse } from '../../../shared/wizards/wizard'
 import {
     createAliasPrompter,
     createInstancePrompter,
+    createStoragePrompter,
     createTimeoutPrompter,
     getAllInstanceDescriptions,
 } from '../../wizards/workspaceSettings'
@@ -105,6 +106,8 @@ export class CawsCreateWebview extends VueWebview {
                 return prompt(createInstancePrompter())
             case 'inactivityTimeoutMinutes':
                 return prompt(createTimeoutPrompter())
+            case 'persistentStorage':
+                return prompt(createStoragePrompter())
         }
     }
 

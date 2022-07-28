@@ -25,7 +25,7 @@ import {
     toCawsGitUri,
 } from './model'
 import { showConfigureWorkspace } from './vue/configure/backend'
-import { UpdateDevelopmentWorkspaceRequest } from '../../types/clientcodeaws'
+import { CreateDevelopmentWorkspaceRequest } from '../../types/clientcodeaws'
 import { showCreateWorkspace } from './vue/create/backend'
 
 type LoginResult = 'Succeeded' | 'Cancelled' | 'Failed'
@@ -148,8 +148,8 @@ export async function deleteWorkspace(client: ConnectedCawsClient, workspace: De
 }
 
 export type WorkspaceSettings = Pick<
-    UpdateDevelopmentWorkspaceRequest,
-    'alias' | 'instanceType' | 'inactivityTimeoutMinutes'
+    CreateDevelopmentWorkspaceRequest,
+    'alias' | 'instanceType' | 'inactivityTimeoutMinutes' | 'persistentStorage'
 >
 
 export async function updateWorkspace(
