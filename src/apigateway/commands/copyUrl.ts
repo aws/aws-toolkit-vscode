@@ -14,8 +14,7 @@ import { ProgressLocation } from 'vscode'
 
 import { Stage } from 'aws-sdk/clients/apigateway'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { RegionProvider } from '../../shared/regions/regionProvider'
-import { DEFAULT_DNS_SUFFIX } from '../../shared/regions/regionUtilities'
+import { DEFAULT_DNS_SUFFIX, RegionProvider } from '../../shared/regions/regionProvider'
 import { getLogger } from '../../shared/logger'
 import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
 

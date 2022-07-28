@@ -17,7 +17,6 @@ import {
     CredentialType,
     recordAwsRefreshCredentials,
     recordAwsValidateCredentials,
-    recordVscodeActiveRegions,
     Result,
 } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
@@ -75,7 +74,6 @@ export class LoginManager {
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
-            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
             this.awsContext.credentialsShim = createCredentialsShim(this.store, args.providerId, credentials)
             await this.awsContext.setCredentials({
