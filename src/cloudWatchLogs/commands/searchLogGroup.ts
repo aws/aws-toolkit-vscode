@@ -190,11 +190,11 @@ export class JumpToStream implements vscode.DefinitionProvider {
     public constructor(registry: LogStreamRegistry) {
         this.registry = registry
     }
-    provideDefinition(
+    async provideDefinition(
         document: vscode.TextDocument,
         position: vscode.Position,
         token: vscode.CancellationToken
-    ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+    ): Promise<vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]>> {
         const activeUri = document.uri
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         const curLine = document.lineAt(position.line)
@@ -214,7 +214,9 @@ export class JumpToStream implements vscode.DefinitionProvider {
                     logGroupInfo: logGroupInfo,
                     retrieveLogsFunction: getLogEventsFromUriComponents,
                 }
-                this.registry.registerLog(streamUri, initialStreamData)
+                await this.registry.registerLog(streamUri, initialStreamData)
+                const doc = await vscode.workspace.openTextDocument(streamUri) // calls back into the provider
+                vscode.languages.setTextDocumentLanguage(doc, 'log')
             }
         } catch (err) {
             throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
