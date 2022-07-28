@@ -25,6 +25,7 @@ import {
     getLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
+import { prepareDocument } from './searchLogGroup'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -35,48 +36,33 @@ export interface SelectLogStreamResponse {
 export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
-    if (logStreamResponse) {
-        const logGroupInfo: CloudWatchLogsGroupInfo = {
-            groupName: logStreamResponse.logGroupName,
-            regionName: logStreamResponse.region,
-        }
-
-        const parameters: CloudWatchLogsParameters = {
-            limit: registry.configuration.get('limit', 10000),
-            streamName: logStreamResponse.logStreamName,
-        }
-
-        const uri = createURIFromArgs(logGroupInfo, parameters)
-
-        const initialStreamData: CloudWatchLogsData = {
-            data: [],
-            parameters: parameters,
-            busy: false,
-            logGroupInfo: logGroupInfo,
-            retrieveLogsFunction: getLogEventsFromUriComponents,
-        }
-        try {
-            await registry.registerLog(uri, initialStreamData)
-            const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
-            vscode.languages.setTextDocumentLanguage(doc, 'log')
-            const textEditor = await vscode.window.showTextDocument(doc, { preview: false })
-            registry.setTextEditor(uri, textEditor) // For consistency, even though this isn't necessary (for now)
-        } catch (err) {
-            result = 'Failed'
-            const error = err as Error
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.cwl.searchLogGroup.errorRetrievingLogs',
-                    'Error retrieving logs for Log Group {0} : {1}',
-                    logGroupInfo.groupName,
-                    error.message
-                )
-            )
-        }
-    } else {
-        result = 'Cancelled'
+    if (!logStreamResponse) {
+        telemetry.recordCloudwatchlogsOpenStream({ result: 'Cancelled' })
+        return
     }
 
+    const logGroupInfo: CloudWatchLogsGroupInfo = {
+        groupName: logStreamResponse.logGroupName,
+        regionName: logStreamResponse.region,
+    }
+
+    const parameters: CloudWatchLogsParameters = {
+        limit: registry.configuration.get('limit', 10000),
+        streamName: logStreamResponse.logStreamName,
+    }
+
+    const uri = createURIFromArgs(logGroupInfo, parameters)
+
+    const initialStreamData: CloudWatchLogsData = {
+        data: [],
+        parameters: parameters,
+        busy: false,
+        logGroupInfo: logGroupInfo,
+        retrieveLogsFunction: getLogEventsFromUriComponents,
+    }
+
+    await registry.registerLog(uri, initialStreamData)
+    result = await prepareDocument(uri, registry)
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 

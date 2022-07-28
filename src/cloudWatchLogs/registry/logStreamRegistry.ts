@@ -8,10 +8,11 @@ import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, createURIFromArgs } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
-import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { JumpToStream } from '../commands/searchLogGroup'
 // TODO: Add debug logging statements
 
 /**
@@ -23,7 +24,10 @@ export class LogStreamRegistry {
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
-    ) {}
+    ) {
+        const definitionProvider = new JumpToStream(this)
+        vscode.languages.registerDefinitionProvider({ scheme: CLOUDWATCH_LOGS_SCHEME }, definitionProvider)
+    }
 
     /**
      * Event fired on log content change

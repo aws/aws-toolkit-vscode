@@ -11,10 +11,11 @@ import {
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
+    getLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createURIFromArgs, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, isLogStream, parseCloudWatchLogsUri, parseStreamIDFromLine } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -69,12 +70,15 @@ export async function prepareDocument(uri: vscode.Uri, registry: LogStreamRegist
         registry.setTextEditor(uri, textEditor)
 
         // Initial highlighting of the document and then for any addLogEvent calls.
-        highlightDocument(registry, uri)
-        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-            if (event.document.uri.toString() === doc.uri.toString()) {
-                highlightDocument(registry, uri)
-            }
-        })
+        if (!isLogStream(uri)) {
+            highlightDocument(registry, uri)
+            vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+                if (event.document.uri.toString() === doc.uri.toString()) {
+                    highlightDocument(registry, uri)
+                }
+            })
+        }
+
         return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
@@ -177,5 +181,45 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
         this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
         this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
+    }
+}
+
+export class JumpToStream implements vscode.DefinitionProvider {
+    private registry: LogStreamRegistry
+
+    public constructor(registry: LogStreamRegistry) {
+        this.registry = registry
+    }
+    provideDefinition(
+        document: vscode.TextDocument,
+        position: vscode.Position,
+        token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+        const activeUri = document.uri
+        const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
+        const curLine = document.lineAt(position.line)
+        let streamUri: vscode.Uri
+        try {
+            const parameters: CloudWatchLogsParameters = {
+                limit: this.registry.configuration.get('limit', 10000),
+                streamName: parseStreamIDFromLine(curLine),
+            }
+            streamUri = createURIFromArgs(logGroupInfo, parameters)
+
+            if (!this.registry.hasLog(streamUri)) {
+                const initialStreamData: CloudWatchLogsData = {
+                    data: [],
+                    parameters: parameters,
+                    busy: false,
+                    logGroupInfo: logGroupInfo,
+                    retrieveLogsFunction: getLogEventsFromUriComponents,
+                }
+                this.registry.registerLog(streamUri, initialStreamData)
+            }
+        } catch (err) {
+            throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
+        }
+
+        return new vscode.Location(streamUri, new vscode.Position(0, 0))
     }
 }
