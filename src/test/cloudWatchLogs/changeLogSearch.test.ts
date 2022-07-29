@@ -5,54 +5,21 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../cloudWatchLogs/cloudWatchLogsUtils'
-import {
-    LogStreamRegistry,
-    ActiveTab,
-    CloudWatchLogsData,
-    CloudWatchLogsResponse,
-} from '../../cloudWatchLogs/registry/logStreamRegistry'
+import { LogStreamRegistry, ActiveTab, CloudWatchLogsData } from '../../cloudWatchLogs/registry/logStreamRegistry'
 import { Settings } from '../../shared/settings'
+import { fakeGetLogEvents, testComponents, testStreamData1 } from './utils.test'
 
 describe('changeLogSearch', async function () {
     let testRegistry: LogStreamRegistry
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
-    const fakeGetLogEvents = async (): Promise<CloudWatchLogsResponse> => {
-        return {
-            events: [
-                {
-                    message: 'we just got some log events!',
-                },
-            ],
-        }
-    }
-
-    const oldComponenents = {
-        logGroupInfo: {
-            groupName: 'this-is-a-group',
-            regionName: 'this-is-a-region',
-        },
-        parameters: { streamName: 'this-is-a-stream', filterPattern: 'this is a bad filter!' },
-    }
     const newText = 'this is a good filter!'
     const newComponents = {
-        ...oldComponenents,
+        ...testComponents,
         parameters: {
-            ...oldComponenents,
+            ...testComponents,
             filterPattern: newText,
         },
-    }
-
-    const oldData: CloudWatchLogsData = {
-        data: [
-            {
-                message: 'Here is some original text that we want to overwrite.',
-            },
-        ],
-        parameters: oldComponenents.parameters,
-        logGroupInfo: oldComponenents.logGroupInfo,
-        retrieveLogsFunction: fakeGetLogEvents,
-        busy: false,
     }
 
     const newData: CloudWatchLogsData = {
@@ -67,12 +34,12 @@ describe('changeLogSearch', async function () {
         busy: false,
     }
 
-    const oldUri = createURIFromArgs(oldComponenents.logGroupInfo, oldComponenents.parameters)
+    const oldUri = createURIFromArgs(testComponents.logGroupInfo, testComponents.parameters)
 
     before(function () {
         testRegistry = new LogStreamRegistry(new CloudWatchLogsSettings(config), new Map<string, ActiveTab>())
 
-        testRegistry.registerLog(oldUri, oldData)
+        testRegistry.registerLog(oldUri, testStreamData1)
     })
 
     it('unregisters old log and registers a new one', async function () {

@@ -55,7 +55,7 @@ export async function highlightDocument(registry: LogStreamRegistry, uri: vscode
     }
 }
 
-export function getActiveUri(registry: LogStreamRegistry) {
+export function getActiveDocumentUri(registry: LogStreamRegistry) {
     const currentEditor = vscode.window.activeTextEditor
     if (!currentEditor) {
         throw new Error('cwl: Failed to identify active editor.')

@@ -5,20 +5,28 @@
 import * as telemetry from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { isLogStream } from './cloudWatchLogsUtils'
+import { isLogStreamUri } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
-import { getActiveUri } from './document/logStreamDocumentProvider'
+import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
 import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from './timeFilterSubmenu'
 
-type ChangeableParam = 'filterPattern' | 'timeFilter'
-
+/**
+ * Prompts the user for new value for param in logSearch.
+ * @param registry
+ * @param param
+ * @param oldUri
+ * @returns Undefined if cancelled and the newData otherwise.
+ */
 export async function getNewData(
     registry: LogStreamRegistry,
-    param: ChangeableParam,
+    param: 'filterPattern' | 'timeFilter',
     oldUri: vscode.Uri
 ): Promise<CloudWatchLogsData | undefined> {
-    const oldData = registry.getLogData(oldUri) as CloudWatchLogsData
+    const oldData = registry.getLogData(oldUri)
+    if (!oldData) {
+        throw new Error(`cwl: LogStreamRegistry did not contain ${String(oldUri)}`)
+    }
     const newData: CloudWatchLogsData = {
         ...oldData,
         data: [],
@@ -31,7 +39,7 @@ export async function getNewData(
     switch (param) {
         case 'filterPattern':
             newPattern = await showInputBox({
-                title: isLogStream(oldUri) ? 'Filter Log Stream Results' : 'Log Group Keyword Search',
+                title: isLogStreamUri(oldUri) ? 'Filter Log Stream Results' : 'Log Group Keyword Search',
                 placeholder: oldData.parameters.filterPattern ?? 'Enter Text Here',
             })
             if (newPattern === undefined) {
@@ -60,10 +68,13 @@ export async function getNewData(
     return newData
 }
 
-export async function changeLogSearchParams(registry: LogStreamRegistry, param: ChangeableParam): Promise<void> {
+export async function changeLogSearchParams(
+    registry: LogStreamRegistry,
+    param: 'filterPattern' | 'timeFilter'
+): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
 
-    const oldUri = getActiveUri(registry)
+    const oldUri = getActiveDocumentUri(registry)
     const newData = await getNewData(registry, param, oldUri)
 
     if (!newData) {
