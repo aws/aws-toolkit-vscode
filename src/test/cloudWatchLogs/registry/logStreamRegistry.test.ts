@@ -6,12 +6,7 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import {
-    CloudWatchLogsData,
-    LogStreamRegistry,
-    CloudWatchLogsResponse,
-    ActiveTab,
-} from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { CloudWatchLogsData, LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import {
@@ -19,6 +14,7 @@ import {
     createURIFromArgs,
     parseCloudWatchLogsUri,
 } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import { fakeGetLogEvents, fakeSearchLogGroup, testStreamData1 } from '../utils.test'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
@@ -27,53 +23,6 @@ describe('LogStreamRegistry', async function () {
     const config = new Settings(vscode.ConfigurationTarget.Workspace)
 
     const newText = 'a little longer now\n'
-    const fakeGetLogEvents = async (): Promise<CloudWatchLogsResponse> => {
-        return {
-            events: [
-                {
-                    message: newText,
-                },
-            ],
-        }
-    }
-
-    const fakeSearchLogGroup = async (): Promise<CloudWatchLogsResponse> => {
-        return {
-            events: [
-                {
-                    message: newText,
-                    logStreamName: 'testStreamName',
-                },
-            ],
-        }
-    }
-
-    const stream1: CloudWatchLogsData = {
-        data: [
-            {
-                timestamp: 1,
-                message: 'is the loneliest number\n',
-            },
-            {
-                timestamp: 2,
-                message: 'can be as sad as one\n',
-            },
-            {
-                timestamp: 3,
-                message: '...dog night covered this song\n',
-            },
-            {
-                message: 'does anybody really know what time it is? does anybody really care?\n',
-            },
-        ],
-        parameters: { streamName: 'Registered' },
-        logGroupInfo: {
-            groupName: 'This',
-            regionName: 'Is',
-        },
-        retrieveLogsFunction: fakeGetLogEvents,
-        busy: false,
-    }
 
     const simplerStream: CloudWatchLogsData = {
         data: [
@@ -128,7 +77,7 @@ describe('LogStreamRegistry', async function () {
         busy: false,
     }
 
-    const registeredUri = createURIFromArgs(stream1.logGroupInfo, stream1.parameters)
+    const registeredUri = createURIFromArgs(testStreamData1.logGroupInfo, testStreamData1.parameters)
     const shorterRegisteredUri = createURIFromArgs(simplerStream.logGroupInfo, simplerStream.parameters)
     const missingRegisteredUri = createURIFromArgs(missingStream.logGroupInfo, missingStream.parameters)
     const newLineUri = createURIFromArgs(newLineStream.logGroupInfo, newLineStream.parameters)
@@ -136,7 +85,7 @@ describe('LogStreamRegistry', async function () {
 
     beforeEach(function () {
         registry = new LogStreamRegistry(new CloudWatchLogsSettings(config), map)
-        registry.setLogData(registeredUri, stream1)
+        registry.setLogData(registeredUri, testStreamData1)
         registry.setLogData(shorterRegisteredUri, simplerStream)
         registry.setLogData(newLineUri, newLineStream)
         registry.setLogData(searchLogGroupUri, logGroupsStream)
@@ -169,7 +118,7 @@ describe('LogStreamRegistry', async function () {
 
             assert.strictEqual(
                 text,
-                `${stream1.data[0].message}${stream1.data[1].message}${stream1.data[2].message}${stream1.data[3].message}`
+                `${testStreamData1.data[0].message}${testStreamData1.data[1].message}${testStreamData1.data[2].message}${testStreamData1.data[3].message}`
             )
         })
 
@@ -178,11 +127,13 @@ describe('LogStreamRegistry', async function () {
 
             assert.strictEqual(
                 text,
-                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${stream1.data[0].message}${moment(2).format(
+                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${testStreamData1.data[0].message}${moment(
+                    2
+                ).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${testStreamData1.data[1].message}${moment(3).format(
                     INSIGHTS_TIMESTAMP_FORMAT
-                )}${'\t'}${stream1.data[1].message}${moment(3).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${
-                    stream1.data[2].message
-                }                             ${'\t'}${stream1.data[3].message}`
+                )}${'\t'}${testStreamData1.data[2].message}                             ${'\t'}${
+                    testStreamData1.data[3].message
+                }`
             )
         })
 

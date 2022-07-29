@@ -6,7 +6,7 @@
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, createURIFromArgs } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
@@ -83,7 +83,7 @@ export class LogStreamRegistry {
                 // log entries containing newlines are indented to the same length as the timestamp.
                 line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
             }
-            if (datum.logStreamName) {
+            if (datum.logStreamName && !currData.parameters.streamNameOptions) {
                 const logStream = `[streamID: ${datum.logStreamName}]`
                 line = logStream.concat('\t', line)
             }
@@ -185,6 +185,18 @@ export class LogStreamRegistry {
     public hasTextEditor(uri: vscode.Uri): boolean {
         return this.hasLog(uri) && this.getTextEditor(uri) !== undefined
     }
+    /**
+     * Deregisters log with oldUri and registers one with the content of newData.
+     * @param oldUri
+     * @param newData
+     * @returns new Uri associated with new Data
+     */
+    public async registerLogWithNewUri(oldUri: vscode.Uri, newData: CloudWatchLogsData): Promise<vscode.Uri> {
+        this.deregisterLog(oldUri)
+        const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
+        await this.registerLog(newUri, newData)
+        return newUri
+    }
 }
 
 export async function filterLogEventsFromUriComponents(
@@ -204,6 +216,10 @@ export async function filterLogEventsFromUriComponents(
     if (parameters.startTime && parameters.endTime) {
         cwlParameters.startTime = parameters.startTime
         cwlParameters.endTime = parameters.endTime
+    }
+
+    if (parameters.streamNameOptions) {
+        cwlParameters.logStreamNames = parameters.streamNameOptions
     }
 
     const timeout = new Timeout(300000)
@@ -271,6 +287,7 @@ export type CloudWatchLogsParameters = {
     endTime?: number
     limit?: number
     streamName?: string
+    streamNameOptions?: string[]
 }
 
 export type CloudWatchLogsResponse = {

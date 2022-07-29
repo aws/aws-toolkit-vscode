@@ -54,3 +54,17 @@ export async function highlightDocument(registry: LogStreamRegistry, uri: vscode
         textEditor.setDecorations(HIGHLIGHTER, ranges)
     }
 }
+
+export function getActiveDocumentUri(registry: LogStreamRegistry) {
+    const currentEditor = vscode.window.activeTextEditor
+    if (!currentEditor) {
+        throw new Error('cwl: Failed to identify active editor.')
+    }
+
+    const activeUri = currentEditor.document.uri
+    if (!registry.hasLog(activeUri)) {
+        throw new Error('cwl: Document open has unregistered uri.')
+    }
+
+    return activeUri
+}

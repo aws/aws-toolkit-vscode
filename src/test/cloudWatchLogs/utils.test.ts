@@ -11,24 +11,77 @@ import {
     uriToKey,
     findOccurencesOf,
 } from '../../cloudWatchLogs/cloudWatchLogsUtils'
-import { CloudWatchLogsParameters } from '../../cloudWatchLogs/registry/logStreamRegistry'
+import {
+    CloudWatchLogsParameters,
+    CloudWatchLogsData,
+    CloudWatchLogsResponse,
+} from '../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 
-const goodComponents = {
-    logGroupInfo: {
-        groupName: 'theBeeGees',
-        regionName: 'ap-southeast-2',
-    },
-    parameters: { streamName: 'islandsInTheStream' },
+const newText = 'a little longer now\n'
+
+export async function fakeGetLogEvents(): Promise<CloudWatchLogsResponse> {
+    return {
+        events: [
+            {
+                message: newText,
+            },
+        ],
+    }
 }
 
-const goodUri = createURIFromArgs(goodComponents.logGroupInfo, goodComponents.parameters)
+export async function fakeSearchLogGroup(): Promise<CloudWatchLogsResponse> {
+    return {
+        events: [
+            {
+                message: newText,
+                logStreamName: 'testStreamName',
+            },
+        ],
+    }
+}
+
+export const testComponents = {
+    logGroupInfo: {
+        groupName: 'this-is-a-group',
+        regionName: 'this-is-a-region',
+    },
+    parameters: { streamName: 'this-is-a-stream', filterPattern: 'this is a bad filter!' },
+}
+
+export const testStreamData1: CloudWatchLogsData = {
+    data: [
+        {
+            timestamp: 1,
+            message: 'is the loneliest number\n',
+        },
+        {
+            timestamp: 2,
+            message: 'can be as sad as one\n',
+        },
+        {
+            timestamp: 3,
+            message: '...dog night covered this song\n',
+        },
+        {
+            message: 'does anybody really know what time it is? does anybody really care?\n',
+        },
+    ],
+    parameters: { streamName: 'Registered' },
+    logGroupInfo: {
+        groupName: 'This',
+        regionName: 'Is',
+    },
+    retrieveLogsFunction: fakeGetLogEvents,
+    busy: false,
+}
+const goodUri = createURIFromArgs(testComponents.logGroupInfo, testComponents.parameters)
 
 describe('parseCloudWatchLogsUri', async function () {
     it('converts a valid URI to components', function () {
         const result = parseCloudWatchLogsUri(goodUri)
-        assert.deepStrictEqual(result.logGroupInfo, goodComponents.logGroupInfo)
-        assert.deepStrictEqual(result.parameters, goodComponents.parameters)
+        assert.deepStrictEqual(result.logGroupInfo, testComponents.logGroupInfo)
+        assert.deepStrictEqual(result.parameters, testComponents.parameters)
     })
 
     it('does not convert URIs with an invalid scheme', async function () {
@@ -53,13 +106,13 @@ describe('parseCloudWatchLogsUri', async function () {
 describe('createURIFromArgs', function () {
     it('converts components to a valid URI that can be parsed.', function () {
         const testUri = vscode.Uri.parse(
-            `${CLOUDWATCH_LOGS_SCHEME}:${goodComponents.logGroupInfo.groupName}:${
-                goodComponents.logGroupInfo.regionName
-            }?${encodeURIComponent(JSON.stringify(goodComponents.parameters))}`
+            `${CLOUDWATCH_LOGS_SCHEME}:${testComponents.logGroupInfo.groupName}:${
+                testComponents.logGroupInfo.regionName
+            }?${encodeURIComponent(JSON.stringify(testComponents.parameters))}`
         )
         assert.deepStrictEqual(testUri, goodUri)
-        const testComponents = parseCloudWatchLogsUri(testUri)
-        assert.deepStrictEqual(testComponents, goodComponents)
+        const newTestComponents = parseCloudWatchLogsUri(testUri)
+        assert.deepStrictEqual(testComponents, newTestComponents)
     })
 })
 
@@ -68,7 +121,7 @@ describe('uriToKey', function () {
     before(function () {
         testUri = vscode.Uri.parse(
             `${CLOUDWATCH_LOGS_SCHEME}:g:r
-            ?${encodeURIComponent(JSON.stringify(goodComponents.parameters))}`
+            ?${encodeURIComponent(JSON.stringify(testComponents.parameters))}`
         )
     })
 
@@ -80,8 +133,8 @@ describe('uriToKey', function () {
     it('creates the same key for different order query', function () {
         const param1: CloudWatchLogsParameters = { filterPattern: 'same', startTime: 0 }
         const param2: CloudWatchLogsParameters = { startTime: 0, filterPattern: 'same' }
-        const firstOrder = createURIFromArgs(goodComponents.logGroupInfo, param1)
-        const secondOrder = createURIFromArgs(goodComponents.logGroupInfo, param2)
+        const firstOrder = createURIFromArgs(testComponents.logGroupInfo, param1)
+        const secondOrder = createURIFromArgs(testComponents.logGroupInfo, param2)
 
         assert.notDeepStrictEqual(firstOrder, secondOrder)
         assert.strictEqual(uriToKey(firstOrder), uriToKey(secondOrder))
@@ -101,7 +154,7 @@ describe('uriToKey', function () {
     it('creates unique strings for Uri with different log group info', function () {
         const uriDiffGroup = vscode.Uri.parse(
             `${CLOUDWATCH_LOGS_SCHEME}:g2:r2
-            ?${encodeURIComponent(JSON.stringify(goodComponents.parameters))}`
+            ?${encodeURIComponent(JSON.stringify(testComponents.parameters))}`
         )
 
         assert.notStrictEqual(uriToKey(testUri), uriToKey(uriDiffGroup))
