@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import 'source-map-support/register'
+import '@cspotcode/source-map-support/register'
 import * as path from 'path'
 import * as Mocha from 'mocha'
 import * as glob from 'glob'
