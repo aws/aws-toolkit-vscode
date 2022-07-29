@@ -14,7 +14,7 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createURIFromArgs, isLogStream, parseCloudWatchLogsUri, parseStreamIDFromLine } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri, parseStreamIDFromLine } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -69,15 +69,12 @@ export async function prepareDocument(uri: vscode.Uri, registry: LogStreamRegist
         registry.setTextEditor(uri, textEditor)
 
         // Initial highlighting of the document and then for any addLogEvent calls.
-        if (!isLogStream(uri)) {
-            highlightDocument(registry, uri)
-            vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-                if (event.document.uri.toString() === doc.uri.toString()) {
-                    highlightDocument(registry, uri)
-                }
-            })
-        }
-
+        highlightDocument(registry, uri)
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            if (event.document.uri.toString() === doc.uri.toString()) {
+                highlightDocument(registry, uri)
+            }
+        })
         return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
