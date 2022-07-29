@@ -18,6 +18,7 @@ import { LogStreamRegistry } from './registry/logStreamRegistry'
 import { Commands } from '../shared/vscode/commands2'
 import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
+import { CloudWatchLogsFileSystem } from './cloudWatchLogsFiles'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
@@ -29,6 +30,9 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             new LogStreamDocumentProvider(registry)
         )
     )
+
+    const fs = new CloudWatchLogsFileSystem(registry, 'cwl: unable to load file')
+    vscode.workspace.registerFileSystemProvider(CLOUDWATCH_LOGS_SCHEME, fs)
 
     context.subscriptions.push(
         vscode.workspace.onDidCloseTextDocument(doc => {

@@ -11,7 +11,6 @@ import {
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
-    getLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
@@ -190,11 +189,11 @@ export class JumpToStream implements vscode.DefinitionProvider {
     public constructor(registry: LogStreamRegistry) {
         this.registry = registry
     }
-    async provideDefinition(
+    provideDefinition(
         document: vscode.TextDocument,
         position: vscode.Position,
         token: vscode.CancellationToken
-    ): Promise<vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]>> {
+    ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
         const activeUri = document.uri
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         const curLine = document.lineAt(position.line)
@@ -205,23 +204,9 @@ export class JumpToStream implements vscode.DefinitionProvider {
                 streamName: parseStreamIDFromLine(curLine),
             }
             streamUri = createURIFromArgs(logGroupInfo, parameters)
-
-            if (!this.registry.hasLog(streamUri)) {
-                const initialStreamData: CloudWatchLogsData = {
-                    data: [],
-                    parameters: parameters,
-                    busy: false,
-                    logGroupInfo: logGroupInfo,
-                    retrieveLogsFunction: getLogEventsFromUriComponents,
-                }
-                await this.registry.registerLog(streamUri, initialStreamData)
-                const doc = await vscode.workspace.openTextDocument(streamUri) // calls back into the provider
-                vscode.languages.setTextDocumentLanguage(doc, 'log')
-            }
+            return new vscode.Location(streamUri, new vscode.Position(0, 0))
         } catch (err) {
             throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
         }
-
-        return new vscode.Location(streamUri, new vscode.Position(0, 0))
     }
 }
