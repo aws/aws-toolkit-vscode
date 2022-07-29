@@ -38,6 +38,7 @@
         "onStartupFinished",
         "onDebugResolve:aws-sam",
         "onCommand:aws.login",
+        "onCommand:aws.login2",
         "onCommand:aws.credentials.profile.create",
         "onCommand:aws.credentials.edit",
         "onCommand:aws.logout",
@@ -1752,6 +1753,17 @@
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.login.cn%",
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.login2",
+                "title": "%AWS.command.login2%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.login2.cn%",
                         "category": "%AWS.title.cn%"
                     }
                 }

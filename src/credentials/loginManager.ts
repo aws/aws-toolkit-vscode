@@ -117,6 +117,8 @@ export class LoginManager {
 
     /**
      * Removes Credentials from the Toolkit. Essentially the Toolkit becomes "logged out".
+     *
+     * TODO: for SSO this should do a server-side logout.
      */
     public async logout(force?: boolean): Promise<void> {
         await this.awsContext.setCredentials(undefined, force)
