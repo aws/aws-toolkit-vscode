@@ -7,7 +7,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.impl.event.DocumentEventImpl
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import org.jetbrains.annotations.TestOnly
@@ -60,13 +59,10 @@ abstract class CodeWhispererCodeCoverageTracker(
     }
 
     fun documentChanged(event: DocumentEvent) {
-        // When open a file for the first time, IDE will also emit DocumentEvent for loading with `isWholeTextReplaced = true`
-        // Added this condition to filter out those events
+        // Added this condition to filter out IDE reloading files
         if (event.isWholeTextReplaced) {
             LOG.debug { "event with isWholeTextReplaced flag: $event" }
-            (event as? DocumentEventImpl)?.let {
-                if (it.initialStartOffset == 0 && it.initialOldLength == event.document.textLength) return
-            }
+            if (event.oldTimeStamp == 0L) return
         }
         addAndGetTotalTokens(event.newLength - event.oldLength)
     }
