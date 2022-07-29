@@ -32,6 +32,7 @@ aws_access_key_id = ${ctx.accessKey}
 # control. If your secret key is ever disclosed, immediately use IAM to delete
 # the key pair and create a new one.
 aws_secret_access_key = ${ctx.secretKey}
+
 `.trim()
 
 export interface CredentialsTemplateContext {
