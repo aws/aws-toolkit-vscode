@@ -223,7 +223,7 @@ export async function filterLogEventsFromUriComponents(
     }
 
     const timeout = new Timeout(300000)
-    showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
+    showMessageWithCancel(`Loading data from log group ${logGroupInfo.groupName}`, timeout)
     const responsePromise = client.filterLogEvents(cwlParameters)
     const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
