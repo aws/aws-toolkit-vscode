@@ -22,6 +22,7 @@ describe('defaultCredentialSelectionDataProvider', function () {
 
                 public async pickCredentialProfile(
                     input: MultiStepInputFlowController,
+                    actions: QuickPickItem[],
                     partialState: Partial<CredentialSelectionState>
                 ): Promise<QuickPickItem> {
                     return new Promise<QuickPickItem>(resolve => {
@@ -75,6 +76,7 @@ describe('defaultCredentialSelectionDataProvider', function () {
 
                 public async pickCredentialProfile(
                     input: MultiStepInputFlowController,
+                    actions: QuickPickItem[],
                     partialState: Partial<CredentialSelectionState>
                 ): Promise<QuickPickItem> {
                     throw new Error('Should never get here')
