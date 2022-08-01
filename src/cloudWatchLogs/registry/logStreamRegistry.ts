@@ -185,18 +185,6 @@ export class LogStreamRegistry {
     public hasTextEditor(uri: vscode.Uri): boolean {
         return this.hasLog(uri) && this.getTextEditor(uri) !== undefined
     }
-    /**
-     * Deregisters log with oldUri and registers one with the content of newData.
-     * @param oldUri
-     * @param newData
-     * @returns new Uri associated with new Data
-     */
-    public async registerLogWithNewUri(oldUri: vscode.Uri, newData: CloudWatchLogsData): Promise<vscode.Uri> {
-        this.deregisterLog(oldUri)
-        const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
-        await this.registerLog(newUri, newData)
-        return newUri
-    }
 }
 
 export async function filterLogEventsFromUriComponents(
