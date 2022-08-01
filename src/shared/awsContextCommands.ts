@@ -189,8 +189,7 @@ export class AwsContextCommands {
     }
 
     /**
-     * @description Responsible for getting a profile from the user,
-     * working with them to define one if necessary.
+     * Gets a profile from the user, or runs "Create Credentials" command if there are no profiles.
      *
      * @returns User's selected Profile name, or undefined if none was selected.
      * undefined is also returned if we leave the user in a state where they are

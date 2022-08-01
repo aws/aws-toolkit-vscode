@@ -137,6 +137,21 @@ export function filter<T>(sequence: Iterable<T>, condition: (item: T) => boolean
     return result
 }
 
+/**
+ * Gets the first item matching predicate, or undefined.
+ */
+export async function findAsync<T>(
+    sequence: Iterable<T>,
+    predicate: (item: T) => Promise<boolean>
+): Promise<T | undefined> {
+    for (const item of sequence) {
+        if (await predicate(item)) {
+            return item
+        }
+    }
+    return undefined
+}
+
 export async function* filterAsync<T>(
     sequence: Iterable<T>,
     condition: (item: T) => Promise<boolean>
