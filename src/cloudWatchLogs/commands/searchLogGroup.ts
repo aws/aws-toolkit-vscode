@@ -61,8 +61,13 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     return initialStreamData
 }
 
-export async function prepareDocument(uri: vscode.Uri, registry: LogStreamRegistry): Promise<telemetry.Result> {
+export async function prepareDocument(
+    uri: vscode.Uri,
+    initialLogData: CloudWatchLogsData,
+    registry: LogStreamRegistry
+): Promise<telemetry.Result> {
     try {
+        await registry.registerLog(uri, initialLogData)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         vscode.languages.setTextDocumentLanguage(doc, 'log')
 
@@ -121,9 +126,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
 
     const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
-    await registry.registerLog(uri, initialLogData)
-
-    const result = await prepareDocument(uri, registry)
+    const result = await prepareDocument(uri, initialLogData, registry)
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
