@@ -23,6 +23,8 @@ import com.intellij.openapi.editor.colors.EditorColorsListener
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.event.CaretEvent
 import com.intellij.openapi.editor.event.CaretListener
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.editor.event.SelectionEvent
 import com.intellij.openapi.editor.event.SelectionListener
 import com.intellij.openapi.project.Project
@@ -420,6 +422,16 @@ class CodeWhispererPopupManager {
         }
         editor.selectionModel.addSelectionListener(codewhispererSelectionListener)
         Disposer.register(states) { editor.selectionModel.removeSelectionListener(codewhispererSelectionListener) }
+
+        val codewhispererDocumentListener: DocumentListener = object : DocumentListener {
+            override fun documentChanged(event: DocumentEvent) {
+                if (shouldListenerCancelPopup) {
+                    cancelPopup(states.popup)
+                }
+                super.documentChanged(event)
+            }
+        }
+        editor.document.addDocumentListener(codewhispererDocumentListener, states)
 
         val codewhispererCaretListener: CaretListener = object : CaretListener {
             override fun caretPositionChanged(event: CaretEvent) {
