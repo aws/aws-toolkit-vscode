@@ -220,7 +220,7 @@ class CodeWhispererCodeCoverageTrackerTest {
         fixture.configureByText("/emptyFile.java", "")
         val javaTracker = spy(TestCodePercentageTracker(TOTAL_SECONDS_IN_MINUTE, language = CodewhispererLanguage.Java))
         CodeWhispererCodeCoverageTracker.getInstancesMap()[CodewhispererLanguage.Java] = javaTracker
-        assertThat(javaTracker.percentage).isEqualTo(0)
+        assertThat(javaTracker.percentage).isNull()
     }
 
     @Test
@@ -314,6 +314,14 @@ class CodeWhispererCodeCoverageTrackerTest {
     fun `test flush() won't emit telemetry event when users not enabling telemetry`() {
         AwsSettings.getInstance().isTelemetryEnabled = false
         val pythonTracker = TestCodePercentageTracker(TOTAL_SECONDS_IN_MINUTE, CodewhispererLanguage.Python, AtomicInteger(10), AtomicInteger(20))
+        pythonTracker.forceTrackerFlush()
+        verify(batcher, Times(0)).enqueue(any())
+    }
+
+    @Test
+    fun `test flush() won't emit telemetry when users are not editing the document`() {
+        val pythonTracker = TestCodePercentageTracker(TOTAL_SECONDS_IN_MINUTE, CodewhispererLanguage.Python, AtomicInteger(0), AtomicInteger(0))
+        assertThat(pythonTracker.activeRequestCount()).isEqualTo(1)
         pythonTracker.forceTrackerFlush()
         verify(batcher, Times(0)).enqueue(any())
     }
