@@ -3046,7 +3046,7 @@
                 "scheme": "awsCloudWatchLogs",
                 "formatting": {
                     "label": "${path}",
-                    "separator": "\\"
+                    "separator": "/"
                 }
             },
             {

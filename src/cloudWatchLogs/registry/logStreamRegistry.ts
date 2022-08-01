@@ -267,14 +267,14 @@ export async function getLogEventsFromUriComponents(
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    if (!parameters.streamName) {
+    if (!logGroupInfo.streamName) {
         throw new Error(
             `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
         )
     }
     const response = await client.getLogEvents({
         logGroupName: logGroupInfo.groupName,
-        logStreamName: parameters.streamName,
+        logStreamName: logGroupInfo.streamName,
         nextToken,
         limit: parameters.limit,
     })
@@ -299,6 +299,7 @@ export interface ActiveTab {
 export type CloudWatchLogsGroupInfo = {
     groupName: string
     regionName: string
+    streamName?: string
 }
 
 export type CloudWatchLogsParameters = {
@@ -306,7 +307,6 @@ export type CloudWatchLogsParameters = {
     startTime?: number
     endTime?: number
     limit?: number
-    streamName?: string
     streamNameOptions?: string[]
 }
 

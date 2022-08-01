@@ -26,10 +26,11 @@ describe('LogStreamRegistry', async function () {
                 message: 'short and sweet\n',
             },
         ],
-        parameters: { streamName: 'More' },
+        parameters: {},
         logGroupInfo: {
             groupName: 'Less',
             regionName: 'Is',
+            streamName: 'More',
         },
         retrieveLogsFunction: fakeGetLogEvents,
         busy: false,
@@ -42,10 +43,11 @@ describe('LogStreamRegistry', async function () {
                 message: 'the\nline\rmust\r\nbe\ndrawn\rHERE\nright\nhere\r\nno\nfurther\n',
             },
         ],
-        parameters: { streamName: 'Dude' },
+        parameters: {},
         logGroupInfo: {
             groupName: 'Not',
             regionName: 'Here',
+            streamName: 'Dude',
         },
         retrieveLogsFunction: fakeGetLogEvents,
         busy: false,
@@ -53,10 +55,11 @@ describe('LogStreamRegistry', async function () {
 
     const missingStream: CloudWatchLogsData = {
         data: [],
-        parameters: { streamName: 'PIEEEECCCEEEEEE' },
+        parameters: {},
         logGroupInfo: {
             groupName: 'ANOTHER',
             regionName: 'LINE',
+            streamName: 'PIEEEECCCEEEEEE',
         },
         retrieveLogsFunction: fakeGetLogEvents,
         busy: false,
@@ -64,10 +67,11 @@ describe('LogStreamRegistry', async function () {
 
     const logGroupsStream: CloudWatchLogsData = {
         data: [],
-        parameters: { streamName: 'testStreamName' },
+        parameters: {},
         logGroupInfo: {
             groupName: 'thisIsAGroupName',
             regionName: 'thisIsARegionCode',
+            streamName: 'testStreamName',
         },
         retrieveLogsFunction: fakeSearchLogGroup,
         busy: false,

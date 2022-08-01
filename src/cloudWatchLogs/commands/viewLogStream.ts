@@ -44,11 +44,11 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
     const logGroupInfo: CloudWatchLogsGroupInfo = {
         groupName: logStreamResponse.logGroupName,
         regionName: logStreamResponse.region,
+        streamName: logStreamResponse.logStreamName,
     }
 
     const parameters: CloudWatchLogsParameters = {
         limit: registry.configuration.get('limit', 10000),
-        streamName: logStreamResponse.logStreamName,
     }
 
     const uri = createURIFromArgs(logGroupInfo, parameters)

@@ -49,8 +49,9 @@ export const testComponents = {
     logGroupInfo: {
         groupName: 'this-is-a-group',
         regionName: 'this-is-a-region',
+        streamName: 'this-is-a-stream',
     },
-    parameters: { streamName: 'this-is-a-stream', filterPattern: 'this is a bad filter!' },
+    parameters: { filterPattern: 'this is a bad filter!' },
 }
 
 export const testStreamData1: CloudWatchLogsData = {
@@ -71,10 +72,11 @@ export const testStreamData1: CloudWatchLogsData = {
             message: 'does anybody really know what time it is? does anybody really care?\n',
         },
     ],
-    parameters: { streamName: 'Registered' },
+    parameters: {},
     logGroupInfo: {
         groupName: 'This',
         regionName: 'Is',
+        streamName: 'Registered',
     },
     retrieveLogsFunction: fakeGetLogEvents,
     busy: false,
@@ -110,9 +112,11 @@ describe('parseCloudWatchLogsUri', async function () {
 describe('createURIFromArgs', function () {
     it('converts components to a valid URI that can be parsed.', function () {
         const testUri = vscode.Uri.parse(
-            `${CLOUDWATCH_LOGS_SCHEME}:${testComponents.logGroupInfo.groupName}:${
-                testComponents.logGroupInfo.regionName
-            }?${encodeURIComponent(JSON.stringify(testComponents.parameters))}`
+            `${CLOUDWATCH_LOGS_SCHEME}:${testComponents.logGroupInfo.regionName}:${
+                testComponents.logGroupInfo.groupName
+            }:${testComponents.logGroupInfo.streamName}?${encodeURIComponent(
+                JSON.stringify(testComponents.parameters)
+            )}`
         )
         assert.deepStrictEqual(testUri, goodUri)
         const newTestComponents = parseCloudWatchLogsUri(testUri)

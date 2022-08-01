@@ -62,10 +62,11 @@ describe('LogStreamDocumentProvider', function () {
                 message,
             },
         ],
-        parameters: { streamName: 'stream' },
+        parameters: {},
         logGroupInfo: {
             groupName: 'group',
             regionName: 'region',
+            streamName: 'stream',
         },
         retrieveLogsFunction: testGetLogEvents,
         busy: false,

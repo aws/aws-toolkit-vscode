@@ -210,8 +210,8 @@ export class JumpToStream implements vscode.DefinitionProvider {
             }
             const parameters: CloudWatchLogsParameters = {
                 limit: this.registry.configuration.get('limit', 10000),
-                streamName: streamID,
             }
+            logGroupInfo.streamName = streamID
             streamUri = createURIFromArgs(logGroupInfo, parameters)
             const initialStreamData: CloudWatchLogsData = {
                 data: [],

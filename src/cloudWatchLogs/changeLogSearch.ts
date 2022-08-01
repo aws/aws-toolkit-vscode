@@ -59,10 +59,10 @@ export async function getNewData(
 
             break
     }
-    if (newData.parameters.streamName) {
+    if (newData.logGroupInfo.streamName) {
         newData.retrieveLogsFunction = filterLogEventsFromUriComponents
-        newData.parameters.streamNameOptions = [newData.parameters.streamName]
-        newData.parameters.streamName = undefined
+        newData.parameters.streamNameOptions = [newData.logGroupInfo.streamName]
+        newData.logGroupInfo.streamName = undefined
     }
 
     return newData

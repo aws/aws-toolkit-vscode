@@ -38,9 +38,9 @@ describe('saveCurrentLogStreamContent', async function () {
         const logGroupInfo = {
             groupName: 'g',
             regionName: 'r',
+            streamName: 's',
         }
-        const parameters = { streamName: 's' }
-        const uri = createURIFromArgs(logGroupInfo, parameters)
+        const uri = createURIFromArgs(logGroupInfo, {})
 
         await saveCurrentLogStreamContent(
             uri,
