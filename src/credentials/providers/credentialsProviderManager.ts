@@ -51,7 +51,6 @@ export class CredentialsProviderManager {
             providers = providers.concat(refreshed)
         }
 
-        getLogger().verbose(`available credentials providers: ${providers}`)
         return providers
     }
 
