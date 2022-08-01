@@ -8,11 +8,10 @@ import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
-import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
-import { JumpToStream } from '../commands/searchLogGroup'
 // TODO: Add debug logging statements
 
 /**
@@ -24,10 +23,7 @@ export class LogStreamRegistry {
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
-    ) {
-        const definitionProvider = new JumpToStream(this)
-        vscode.languages.registerDefinitionProvider({ scheme: CLOUDWATCH_LOGS_SCHEME }, definitionProvider)
-    }
+    ) {}
 
     /**
      * Event fired on log content change
@@ -77,6 +73,7 @@ export class LogStreamRegistry {
 
         let output: string = ''
         let lineNumber = 0
+        let newLines = 0
         for (const datum of currData.data) {
             let line: string = datum.message ?? ''
             if (formatting?.timestamps) {
@@ -88,16 +85,20 @@ export class LogStreamRegistry {
                 // log entries containing newlines are indented to the same length as the timestamp.
                 line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
             }
-            if (datum.logStreamName) {
-                this.setStreamIdMap(uri, lineNumber, datum.logStreamName)
-            }
             if (!line.endsWith('\n')) {
                 line = line.concat('\n')
             }
-            lineNumber += 1
+            if (datum.logStreamName) {
+                newLines = (line.match(/\n/g) || []).length
+                let curLine = lineNumber
+                while (curLine < lineNumber + newLines) {
+                    this.setStreamIdMap(uri, curLine, datum.logStreamName)
+                    curLine += 1
+                }
+            }
+            lineNumber += newLines
             output = output.concat(line)
         }
-
         return output
     }
     /**
@@ -171,7 +172,7 @@ export class LogStreamRegistry {
         this.activeLogs.set(uriToKey(uri), {
             data: newData,
             editor: this.getTextEditor(uri),
-            streamIds: new Map<number, string>(),
+            streamIds: this.getStreamIdMap(uri) ?? new Map<number, string>(),
         })
     }
 
