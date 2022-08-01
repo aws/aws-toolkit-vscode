@@ -39,7 +39,7 @@ export async function getNewData(
     switch (param) {
         case 'filterPattern':
             newPattern = await showInputBox({
-                title: isLogStreamUri(oldUri) ? 'Filter Log Stream Results' : 'Log Group Keyword Search',
+                title: isLogStreamUri(oldUri) ? 'Filter Log Stream' : 'Search Log Group',
                 placeholder: oldData.parameters.filterPattern ?? 'Enter Text Here',
             })
             if (newPattern === undefined) {

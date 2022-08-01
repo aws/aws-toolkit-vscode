@@ -59,6 +59,21 @@ export function stripNewLinesAndComments(text: string): string {
 }
 
 /**
+ * Returns string if it is less than n chars long, or truncates the string and appends "…".
+ *
+ * If n is negative, string is truncated at start instead of end.
+ */
+export function truncate(s: string, n: number): string {
+    if (s.length <= Math.abs(n)) {
+        return s
+    }
+    const start = n < 0 ? s.length - Math.abs(n) : 0
+    const end = n < 0 ? s.length : n
+    const truncated = s.substring(start, end)
+    return n < 0 ? '…' + truncated : truncated + '…'
+}
+
+/**
  * Inserts some text into a file.
  * Very slow for large files so don't use it for that purpose.
  *

@@ -25,6 +25,7 @@ import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
+import { truncate } from '../../shared/utilities/textUtilities'
 
 function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
     const logGroupInfo: CloudWatchLogsGroupInfo = {
@@ -144,10 +145,10 @@ async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.
     return logGroupsArray
 }
 
-export function createFilterpatternPrompter() {
+export function createFilterpatternPrompter(logGroupName: string) {
     return createInputBox({
-        title: 'Keyword Search',
-        placeholder: 'Enter text here',
+        title: `Search Log Group ${truncate(logGroupName, -50)}`,
+        placeholder: 'search pattern',
     })
 }
 
@@ -175,7 +176,7 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
         })
 
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
-        this.form.filterPattern.bindPrompter(createFilterpatternPrompter)
+        this.form.filterPattern.bindPrompter(({ submenuResponse }) => createFilterpatternPrompter(submenuResponse!.data))
         this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
     }
 }
