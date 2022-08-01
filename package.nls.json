@@ -76,6 +76,8 @@
     "AWS.command.help": "View Toolkit Documentation",
     "AWS.command.login": "Choose AWS Profile...",
     "AWS.command.login.cn": "Choose Amazon Profile...",
+    "AWS.command.login2": "Connect to AWS",
+    "AWS.command.login2.cn": "Connect to Amazon",
     "AWS.command.logout": "Sign out",
     "AWS.command.createIssueOnGitHub": "Report Toolkit Issue",
     "AWS.command.createNewSamApp": "Create Lambda SAM Application",

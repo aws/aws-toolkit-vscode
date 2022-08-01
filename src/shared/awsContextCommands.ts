@@ -189,8 +189,8 @@ export class AwsContextCommands {
     }
 
     /**
-     * @description Responsible for getting a profile from the user,
-     * working with them to define one if necessary.
+     * Gets a profile from the user, or runs "Create Credentials" command if there are no profiles.
+     *
      * Does not prompt the user if in a CAWS development workspace.
      *
      * @returns User's selected Profile name, or undefined if none was selected.
