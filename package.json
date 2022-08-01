@@ -847,6 +847,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.cwl.changeFilterPattern",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cwl.changeTimeFilter",
+                    "when": "false"
+                },
+                {
                     "command": "aws.ecr.deleteRepository",
                     "when": "false"
                 },
