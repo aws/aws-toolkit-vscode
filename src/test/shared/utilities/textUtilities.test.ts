@@ -4,7 +4,19 @@
  */
 
 import * as assert from 'assert'
-import { getStringHash, removeAnsi } from '../../../shared/utilities/textUtilities'
+import { getStringHash, removeAnsi, truncate } from '../../../shared/utilities/textUtilities'
+
+describe('textUtil', async function () {
+    it('truncate()', async function () {
+        assert.deepStrictEqual(truncate('abc 123', 3), 'abc…')
+        assert.deepStrictEqual(truncate('abc 123', -3), '…123')
+        assert.deepStrictEqual(truncate('abc 123', 1), 'a…')
+        assert.deepStrictEqual(truncate('abc 123', -1), '…3')
+        assert.deepStrictEqual(truncate('abc 123', 0), '…')
+        assert.deepStrictEqual(truncate('abc 123', 99), 'abc 123')
+        assert.deepStrictEqual(truncate('abc 123', -99), 'abc 123')
+    })
+})
 
 describe('removeAnsi', async function () {
     it('removes ansi code from text', async function () {

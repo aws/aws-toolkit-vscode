@@ -61,8 +61,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
         retrieveLogsFunction: getLogEventsFromUriComponents,
     }
 
-    await registry.registerLog(uri, initialStreamData)
-    result = await prepareDocument(uri, registry)
+    result = await prepareDocument(uri, initialStreamData, registry)
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 

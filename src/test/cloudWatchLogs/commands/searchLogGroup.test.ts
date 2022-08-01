@@ -22,7 +22,7 @@ describe('searchLogGroup', async function () {
         let filterPatternPrompter: InputBoxPrompter
 
         before(function () {
-            filterPatternPrompter = createFilterpatternPrompter()
+            filterPatternPrompter = createFilterpatternPrompter('test-loggroup')
             testWizard = createWizardTester(new SearchLogGroupWizard())
             filterPatternInputBox = exposeEmitters(filterPatternPrompter.inputBox, [
                 'onDidAccept',

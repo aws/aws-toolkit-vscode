@@ -5,7 +5,7 @@
 import * as telemetry from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { isLogStreamUri } from './cloudWatchLogsUtils'
+import { createURIFromArgs, isLogStreamUri } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
@@ -39,7 +39,7 @@ export async function getNewData(
     switch (param) {
         case 'filterPattern':
             newPattern = await showInputBox({
-                title: isLogStreamUri(oldUri) ? 'Filter Log Stream Results' : 'Log Group Keyword Search',
+                title: isLogStreamUri(oldUri) ? 'Filter Log Stream' : 'Search Log Group',
                 placeholder: oldData.parameters.filterPattern ?? 'Enter Text Here',
             })
             if (newPattern === undefined) {
@@ -82,9 +82,10 @@ export async function changeLogSearchParams(
         return
     }
 
-    const newUri = await registry.registerLogWithNewUri(oldUri, newData)
+    registry.deregisterLog(oldUri)
+    const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
-    result = await prepareDocument(newUri, registry)
+    result = await prepareDocument(newUri, newData, registry)
 
     console.log(result)
 }

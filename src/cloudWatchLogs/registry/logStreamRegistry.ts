@@ -6,7 +6,7 @@
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, createURIFromArgs } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
@@ -189,18 +189,6 @@ export class LogStreamRegistry {
     public hasTextEditor(uri: vscode.Uri): boolean {
         return this.hasLog(uri) && this.getTextEditor(uri) !== undefined
     }
-    /**
-     * Deregisters log with oldUri and registers one with the content of newData.
-     * @param oldUri
-     * @param newData
-     * @returns new Uri associated with new Data
-     */
-    public async registerLogWithNewUri(oldUri: vscode.Uri, newData: CloudWatchLogsData): Promise<vscode.Uri> {
-        this.deregisterLog(oldUri)
-        const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
-        await this.registerLog(newUri, newData)
-        return newUri
-    }
 }
 
 export async function filterLogEventsFromUriComponents(
@@ -227,7 +215,7 @@ export async function filterLogEventsFromUriComponents(
     }
 
     const timeout = new Timeout(300000)
-    showMessageWithCancel(`Loading log data from group ${logGroupInfo.groupName}`, timeout)
+    showMessageWithCancel(`Loading data from log group ${logGroupInfo.groupName}`, timeout)
     const responsePromise = client.filterLogEvents(cwlParameters)
     const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
