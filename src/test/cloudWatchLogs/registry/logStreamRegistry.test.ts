@@ -9,12 +9,8 @@ import * as vscode from 'vscode'
 import { CloudWatchLogsData, LogStreamRegistry, ActiveTab } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
-import {
-    CloudWatchLogsSettings,
-    createURIFromArgs,
-    parseCloudWatchLogsUri,
-} from '../../../cloudWatchLogs/cloudWatchLogsUtils'
-import { fakeGetLogEvents, fakeSearchLogGroup, testStreamData1 } from '../utils.test'
+import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
+import { fakeGetLogEvents, fakeSearchLogGroup, testStreamData1, testStreamNames } from '../utils.test'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
@@ -150,21 +146,14 @@ describe('LogStreamRegistry', async function () {
             )
         })
 
-        it('adds stream id to searches from searchLogGroup, but not viewLogStream', function () {
-            const viewLogStreamContent = registry.getLogContent(registeredUri)
-            const searchLogGroupContent = registry.getLogContent(searchLogGroupUri)
-
-            assert(viewLogStreamContent)
-            assert(searchLogGroupContent)
-
-            const searchLogGroupStreamName = parseCloudWatchLogsUri(searchLogGroupUri).parameters.streamName
-            const viewLogStreamName = parseCloudWatchLogsUri(registeredUri).parameters.streamName
-
-            assert(searchLogGroupStreamName)
-            assert(viewLogStreamName)
-
-            assert.strictEqual(viewLogStreamContent.indexOf(viewLogStreamName), -1)
-            assert.notDeepStrictEqual(searchLogGroupContent.indexOf(searchLogGroupStreamName), -1)
+        it('registers stream ids to map', function () {
+            registry.getLogContent(searchLogGroupUri) // We run this to create the mappings
+            const streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
+            const expectedMap = new Map<number, string>([
+                [0, testStreamNames[0]],
+                [1, testStreamNames[1]],
+            ])
+            assert.deepStrictEqual(expectedMap, streamIDMap)
         })
     })
 

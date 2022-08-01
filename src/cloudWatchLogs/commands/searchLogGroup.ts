@@ -15,7 +15,7 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createURIFromArgs, parseCloudWatchLogsUri, parseStreamIDFromLine } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -203,9 +203,14 @@ export class JumpToStream implements vscode.DefinitionProvider {
         const curLine = document.lineAt(position.line)
         let streamUri: vscode.Uri
         try {
+            const streamIDMap = this.registry.getStreamIdMap(activeUri)
+            const streamID = streamIDMap?.get(curLine.lineNumber)
+            if (!streamID) {
+                throw new Error(`cwl: No streamID found for stream with uri ${activeUri}`)
+            }
             const parameters: CloudWatchLogsParameters = {
                 limit: this.registry.configuration.get('limit', 10000),
-                streamName: parseStreamIDFromLine(curLine),
+                streamName: streamID,
             }
             streamUri = createURIFromArgs(logGroupInfo, parameters)
             const initialStreamData: CloudWatchLogsData = {

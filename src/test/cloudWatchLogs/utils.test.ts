@@ -29,13 +29,17 @@ export async function fakeGetLogEvents(): Promise<CloudWatchLogsResponse> {
         ],
     }
 }
-
+export const testStreamNames = ['stream0', 'stream1']
 export async function fakeSearchLogGroup(): Promise<CloudWatchLogsResponse> {
     return {
         events: [
             {
                 message: newText,
-                logStreamName: 'testStreamName',
+                logStreamName: testStreamNames[0],
+            },
+            {
+                message: newText,
+                logStreamName: testStreamNames[1],
             },
         ],
     }
