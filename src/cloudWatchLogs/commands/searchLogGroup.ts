@@ -186,11 +186,11 @@ export class JumpToStream implements vscode.DefinitionProvider {
     public constructor(registry: LogStreamRegistry) {
         this.registry = registry
     }
-    provideDefinition(
+    async provideDefinition(
         document: vscode.TextDocument,
         position: vscode.Position,
         token: vscode.CancellationToken
-    ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+    ): Promise<vscode.Definition | vscode.LocationLink[] | undefined> {
         const activeUri = document.uri
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         const curLine = document.lineAt(position.line)
