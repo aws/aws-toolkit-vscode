@@ -6,7 +6,7 @@
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, createURIFromArgs } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
@@ -215,18 +215,6 @@ export class LogStreamRegistry {
 
     public getActiveTab(uri: vscode.Uri): ActiveTab | undefined {
         return this.activeLogs.get(uriToKey(uri))
-    }
-    /**
-     * Deregisters log with oldUri and registers one with the content of newData.
-     * @param oldUri
-     * @param newData
-     * @returns new Uri associated with new Data
-     */
-    public async registerLogWithNewUri(oldUri: vscode.Uri, newData: CloudWatchLogsData): Promise<vscode.Uri> {
-        this.deregisterLog(oldUri)
-        const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
-        await this.registerLog(newUri, newData)
-        return newUri
     }
 }
 
