@@ -11,6 +11,7 @@ import {
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
+    getLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
@@ -207,6 +208,17 @@ export class JumpToStream implements vscode.DefinitionProvider {
                 streamName: parseStreamIDFromLine(curLine),
             }
             streamUri = createURIFromArgs(logGroupInfo, parameters)
+            const initialStreamData: CloudWatchLogsData = {
+                data: [],
+                parameters: parameters,
+                logGroupInfo: logGroupInfo,
+                retrieveLogsFunction: getLogEventsFromUriComponents,
+                busy: false,
+            }
+            await this.registry.registerLog(streamUri, initialStreamData)
+            // Set the document language
+            const doc = await vscode.workspace.openTextDocument(streamUri)
+            vscode.languages.setTextDocumentLanguage(doc, 'log')
             return new vscode.Location(streamUri, new vscode.Position(0, 0))
         } catch (err) {
             throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
