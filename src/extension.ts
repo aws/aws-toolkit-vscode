@@ -139,6 +139,8 @@ export async function activate(context: vscode.ExtensionContext) {
             // No-op command used for decoration-only codelenses.
             vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
             Commands.register('aws.login', () => globals.awsContextCommands.onCommandLogin()),
+            // "Connect to AWS": redundant with "Choose AWS Profile", but kept to avoid confusion.
+            Commands.register('aws.login2', () => globals.awsContextCommands.onCommandLogin()),
             Commands.register('aws.logout', () => globals.awsContextCommands.onCommandLogout()),
             // "Show AWS Commands..."
             Commands.register('aws.listCommands', () =>

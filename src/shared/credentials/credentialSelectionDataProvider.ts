@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { QuickPickItem } from 'vscode'
+import * as vscode from 'vscode'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
 import { CredentialSelectionState } from './credentialSelectionState'
 
@@ -12,8 +12,9 @@ export interface CredentialSelectionDataProvider {
 
     pickCredentialProfile(
         input: MultiStepInputFlowController,
+        actions: vscode.QuickPickItem[],
         state: Partial<CredentialSelectionState>
-    ): Promise<QuickPickItem>
+    ): Promise<vscode.QuickPickItem>
 
     inputProfileName(
         input: MultiStepInputFlowController,

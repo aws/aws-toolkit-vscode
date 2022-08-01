@@ -38,6 +38,7 @@ import { Credentials } from '@aws-sdk/types'
 import { ToolkitError } from '../shared/toolkitError'
 import * as localizedText from '../shared/localizedText'
 import { DefaultStsClient } from '../shared/clients/stsClient'
+import { findAsync } from '../shared/utilities/collectionUtils'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -117,6 +118,8 @@ export class LoginManager {
 
     /**
      * Removes Credentials from the Toolkit. Essentially the Toolkit becomes "logged out".
+     *
+     * TODO: for SSO this should do a server-side logout.
      */
     public async logout(force?: boolean): Promise<void> {
         await this.awsContext.setCredentials(undefined, force)
@@ -215,21 +218,21 @@ export async function loginWithMostRecentCredentials(
     }
 
     // Try to auto-connect the default profile.
-    if (defaultProfile) {
+    if (defaultProfile && defaultProfile !== previousCredentialsId) {
         getLogger().info('autoconnect: trying "%s"', defaultProfile)
         if (await tryConnect(providerMap[defaultProfile], !isCloud9())) {
             return
         }
     }
 
-    // Try to auto-connect up to 3 other profiles (useful for Cloud9, ECS, …).
-    for (let i = 0; i < 4 && i < profileNames.length; i++) {
-        const p = profileNames[i]
-        if (p === defaultName) {
-            continue
-        }
-        getLogger().info('autoconnect: trying "%s"', p)
-        if (await tryConnect(providerMap[p], !isCloud9())) {
+    // Try to auto-connect any other non-default profile (useful for env vars, IMDS, Cloud9, ECS, …).
+    const nonDefault = await findAsync(profileNames, async p => {
+        const provider = await manager.getCredentialsProvider(providerMap[p])
+        return p !== defaultName && !!provider?.canAutoConnect()
+    })
+    if (nonDefault) {
+        getLogger().info('autoconnect: trying "%s"', nonDefault)
+        if (await tryConnect(providerMap[nonDefault], !isCloud9())) {
             return
         }
     }
