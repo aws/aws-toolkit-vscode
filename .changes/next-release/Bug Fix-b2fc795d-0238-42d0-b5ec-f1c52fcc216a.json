@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix a bug that can fail access token validation"
+}
