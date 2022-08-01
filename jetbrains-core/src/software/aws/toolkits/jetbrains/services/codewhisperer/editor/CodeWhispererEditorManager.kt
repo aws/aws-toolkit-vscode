@@ -7,6 +7,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.ui.popup.JBPopup
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
@@ -18,6 +20,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhis
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CaretMovement
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.PAIRED_BRACKETS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.PAIRED_QUOTES
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererMetadata
 import java.time.Instant
 import java.util.Stack
 
@@ -166,13 +169,13 @@ class CodeWhispererEditorManager {
     fun findOverLappingLines(
         editor: Editor,
         recommendationLines: List<String>,
-        isFirstLineFullMatching: Boolean
+        isFirstLineFullMatching: Boolean,
+        popup: JBPopup
     ): Int {
         val text = editor.document.charsSequence
         val caretOffset = editor.caretModel.offset
         val document = editor.document
         val textLines = mutableListOf<Pair<String, Int>>()
-        val metadata = editor.getUserData(CodeWhispererService.KEY_CODEWHISPERER_METADATA)
         val caretLine = document.getLineNumber(caretOffset)
         var currentLineNum = caretLine + 1
         while (isFirstLineFullMatching && currentLineNum < document.lineCount && textLines.size < recommendationLines.size) {
@@ -187,12 +190,18 @@ class CodeWhispererEditorManager {
         }
 
         val numOfLinesMatching = countLinesMatching(recommendationLines, textLines)
-        metadata?.insertEnd =
+
+        val metadata = CodeWhispererMetadata()
+        metadata.insertEnd =
             if (numOfLinesMatching > 0) {
                 textLines[numOfLinesMatching - 1].second
             } else {
                 document.getLineEndOffset(caretLine)
             }
+        editor.putUserData(CodeWhispererService.KEY_CODEWHISPERER_METADATA, metadata)
+        Disposer.register(popup) {
+            editor.putUserData(CodeWhispererService.KEY_CODEWHISPERER_METADATA, null)
+        }
         return numOfLinesMatching
     }
 

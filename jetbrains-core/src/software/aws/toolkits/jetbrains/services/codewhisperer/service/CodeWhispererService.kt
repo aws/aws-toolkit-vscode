@@ -498,8 +498,6 @@ class CodeWhispererService {
         recommendationContext: RecommendationContext,
         popup: JBPopup
     ): InvocationContext {
-        val popupManager = CodeWhispererPopupManager.getInstance()
-
         addPopupChildDisposables(popup, requestContext.editor)
 
         // Creating a disposable for managing all listeners lifecycle attached to the popup.
@@ -509,7 +507,7 @@ class CodeWhispererService {
         // state update.
         val states = InvocationContext(requestContext, responseContext, recommendationContext, popup)
         Disposer.register(popup, states)
-        popupManager.initPopupListener(states)
+        CodeWhispererPopupManager.getInstance().initPopupListener(states)
         return states
     }
 
@@ -523,10 +521,6 @@ class CodeWhispererService {
         CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP = false
         Disposer.register(popup) {
             CodeInsightSettings.getInstance().AUTO_POPUP_COMPLETION_LOOKUP = originalAutoPopupCompletionLookup
-        }
-        editor.putUserData(KEY_CODEWHISPERER_METADATA, CodeWhispererMetadata())
-        Disposer.register(popup) {
-            editor.putUserData(KEY_CODEWHISPERER_METADATA, null)
         }
         Disposer.register(popup) {
             CodeWhispererPopupManager.getInstance().reset()

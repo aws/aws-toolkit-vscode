@@ -39,7 +39,8 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         val overlappingLinesCount = editorManager.findOverLappingLines(
             editor,
             otherLinesOfRemaining,
-            isFirstLineFullMatching
+            isFirstLineFullMatching,
+            states.popup
         )
 
         var otherLinesInlayText = ""
@@ -78,7 +79,8 @@ class CodeWhispererUIChangeListener : CodeWhispererPopupStateChangeListener {
         val overlappingLinesCount = editorManager.findOverLappingLines(
             editor,
             otherLinesOfRemaining,
-            isFirstLineFullMatching
+            isFirstLineFullMatching,
+            states.popup
         )
 
         CodeWhispererPopupManager.getInstance().render(states, sessionContext, overlappingLinesCount)

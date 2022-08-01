@@ -17,8 +17,9 @@ class CodeWhispererScrollListener(private val states: InvocationContext) : Visib
         if (CodeWhispererInvocationStatus.getInstance().isPopupActive() &&
             (oldRect.x != newRect.x || oldRect.y != newRect.y)
         ) {
-            ApplicationManager.getApplication().messageBus.syncPublisher(CodeWhispererPopupManager.CODEWHISPERER_POPUP_STATE_CHANGED)
-                .scrolled(states, CodeWhispererPopupManager.getInstance().sessionContext)
+            ApplicationManager.getApplication().messageBus.syncPublisher(
+                CodeWhispererPopupManager.CODEWHISPERER_POPUP_STATE_CHANGED
+            ).scrolled(states, CodeWhispererPopupManager.getInstance().sessionContext)
         }
     }
 }
