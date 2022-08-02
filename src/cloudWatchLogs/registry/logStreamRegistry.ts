@@ -73,7 +73,6 @@ export class LogStreamRegistry {
 
         let output: string = ''
         let lineNumber = 0
-        let lineBreaks = 0
         for (const datum of currData.data) {
             let line: string = datum.message ?? ''
             if (formatting?.timestamps) {
