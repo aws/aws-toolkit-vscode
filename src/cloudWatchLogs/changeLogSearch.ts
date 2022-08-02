@@ -18,28 +18,31 @@ import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from './timeFi
  * @param oldUri
  * @returns Undefined if cancelled and the newData otherwise.
  */
+
 export async function getNewData(
-    registry: LogStreamRegistry,
     param: 'filterPattern' | 'timeFilter',
-    oldUri: vscode.Uri
+    oldData: CloudWatchLogsData
 ): Promise<CloudWatchLogsData | undefined> {
-    const oldData = registry.getLogData(oldUri)
-    if (!oldData) {
-        throw new Error(`cwl: LogStreamRegistry did not contain ${String(oldUri)}`)
-    }
+    // We must deepcopy the parameters so that we don't change their original value in oldData
     const newData: CloudWatchLogsData = {
         ...oldData,
+        parameters: {
+            filterPattern: oldData.parameters.filterPattern,
+            startTime: oldData.parameters.startTime,
+            endTime: oldData.parameters.endTime,
+        },
         data: [],
         next: undefined,
         previous: undefined,
     }
+
     let newPattern: string | undefined
     let newTimeRange: TimeFilterResponse | undefined
 
     switch (param) {
         case 'filterPattern':
             newPattern = await showInputBox({
-                title: isLogStreamUri(oldUri) ? 'Filter Log Stream' : 'Search Log Group',
+                title: oldData.logGroupInfo.streamName ? 'Filter Log Stream' : 'Search Log Group',
                 placeholder: oldData.parameters.filterPattern ?? 'Enter Text Here',
             })
             if (newPattern === undefined) {
@@ -75,7 +78,11 @@ export async function changeLogSearchParams(
     let result: telemetry.Result = 'Succeeded'
 
     const oldUri = getActiveDocumentUri(registry)
-    const newData = await getNewData(registry, param, oldUri)
+    const oldData = registry.getLogData(oldUri)
+    if (!oldData) {
+        throw new Error(`cwl: Unable to find data for active URI ${oldUri}`)
+    }
+    const newData = await getNewData(param, oldData)
 
     if (!newData) {
         result = 'Cancelled'
@@ -85,6 +92,5 @@ export async function changeLogSearchParams(
     const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
     result = await prepareDocument(newUri, newData, registry)
-
     console.log(result)
 }
