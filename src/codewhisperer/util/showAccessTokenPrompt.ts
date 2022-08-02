@@ -60,7 +60,7 @@ export const showAccessTokenPrompt = async (
     const validateInput = async (): Promise<void> => {
         if (!picker.value.length) {
             displayError(false)
-        } else {
+        } else if (!picker.busy) {
             picker.busy = true
             try {
                 const getAccessTokenPromise = client.getAccessToken({ identityToken: picker.value })
