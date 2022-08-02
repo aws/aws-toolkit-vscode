@@ -75,8 +75,8 @@ export async function changeLogSearchParams(
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
-
     const oldUri = getActiveDocumentUri(registry)
+
     const oldData = registry.getLogData(oldUri)
     if (!oldData) {
         throw new Error(`cwl: Unable to find data for active URI ${oldUri}`)
