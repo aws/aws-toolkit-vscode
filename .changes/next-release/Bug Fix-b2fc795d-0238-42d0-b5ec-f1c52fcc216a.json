@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fix a bug that can fail access token validation"
+	"description": "CodeWhisperer access token validation may sometimes fail"
 }
