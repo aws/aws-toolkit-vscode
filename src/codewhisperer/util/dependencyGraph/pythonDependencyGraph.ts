@@ -196,6 +196,7 @@ export class PythonDependencyGraph extends DependencyGraph {
                 this.copyFileToTmp(vscode.Uri.file(sourceFilePath), truncDirPath)
             })
             const zipFilePath = this.zipDir(truncDirPath, truncDirPath, CodeWhispererConstants.codeScanZipExt)
+            const zipFileSize = statSync(zipFilePath).size
             getLogger().debug(`Complete Python dependency graph.`)
             getLogger().debug(`File count: ${this._pickedSourceFiles.size}`)
             getLogger().debug(`Total size: ${(this._totalSize / 1024).toFixed(2)}kb`)
@@ -207,11 +208,13 @@ export class PythonDependencyGraph extends DependencyGraph {
                     dir: truncDirPath,
                     zip: zipFilePath,
                     size: this._totalSize,
+                    zipSize: zipFileSize,
                 },
                 build: {
                     dir: '',
                     zip: '',
                     size: 0,
+                    zipSize: 0,
                 },
                 lines: this._totalLines,
             }

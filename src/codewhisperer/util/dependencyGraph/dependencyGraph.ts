@@ -17,6 +17,7 @@ export interface Truncation {
     dir: string
     zip: string
     size: number
+    zipSize: number
 }
 
 export interface TruncPaths {
