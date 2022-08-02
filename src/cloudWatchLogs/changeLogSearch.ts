@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as telemetry from '../shared/telemetry/telemetry'
-import * as vscode from 'vscode'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { createURIFromArgs, isLogStreamUri } from './cloudWatchLogsUtils'
+import { createURIFromArgs } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
