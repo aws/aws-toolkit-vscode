@@ -73,7 +73,7 @@ export class LogStreamRegistry {
 
         let output: string = ''
         let lineNumber = 0
-        let newLines = 0
+        let lineBreaks = 0
         for (const datum of currData.data) {
             let line: string = datum.message ?? ''
             if (formatting?.timestamps) {
@@ -85,18 +85,17 @@ export class LogStreamRegistry {
                 // log entries containing newlines are indented to the same length as the timestamp.
                 line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
             }
+
             if (!line.endsWith('\n')) {
                 line = line.concat('\n')
             }
+
+            const lineBreaks = (line.match(/\n/g) || []).length
             if (datum.logStreamName) {
-                newLines = (line.match(/\n/g) || []).length
-                let curLine = lineNumber
-                while (curLine < lineNumber + newLines) {
-                    this.setStreamIdMap(uri, curLine, datum.logStreamName)
-                    curLine += 1
-                }
+                this.setRangeForStreamIdMap(uri, lineNumber, lineNumber + lineBreaks - 1, datum.logStreamName)
             }
-            lineNumber += newLines
+            lineNumber += lineBreaks
+
             output = output.concat(line)
         }
         return output
@@ -204,6 +203,16 @@ export class LogStreamRegistry {
 
     public getStreamIdMap(uri: vscode.Uri): Map<number, string> | undefined {
         return this.activeLogs.get(uriToKey(uri))?.streamIds
+    }
+
+    private setRangeForStreamIdMap(uri: vscode.Uri, lowerBound: number, upperBound: number, streamID: string): void {
+        console.log(lowerBound, upperBound, streamID)
+        // Note: Inclusive of both bounds.
+        let currentLine = lowerBound
+        while (currentLine <= upperBound) {
+            this.setStreamIdMap(uri, currentLine, streamID)
+            currentLine += 1
+        }
     }
 
     public setStreamIdMap(uri: vscode.Uri, lineNum: number, streamID: string): void {

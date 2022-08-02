@@ -157,7 +157,7 @@ describe('LogStreamRegistry', async function () {
                 [0, testStreamNames[0]],
                 [1, testStreamNames[1]],
             ])
-            assert.deepStrictEqual(expectedMap, streamIDMap)
+            assert.deepStrictEqual(streamIDMap, expectedMap)
         })
 
         it('handles newlines within event messages', function () {
