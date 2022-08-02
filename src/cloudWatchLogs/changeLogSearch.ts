@@ -82,10 +82,6 @@ export async function changeLogSearchParams(
         return
     }
 
-    // Cleanup
-    vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-    registry.deregisterLog(oldUri)
-
     const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
     result = await prepareDocument(newUri, newData, registry)

@@ -205,7 +205,6 @@ export class LogStreamRegistry {
     }
 
     private setRangeForStreamIdMap(uri: vscode.Uri, lowerBound: number, upperBound: number, streamID: string): void {
-        console.log(lowerBound, upperBound, streamID)
         // Note: Inclusive of both bounds.
         let currentLine = lowerBound
         while (currentLine <= upperBound) {
