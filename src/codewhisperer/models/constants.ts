@@ -111,7 +111,7 @@ export const CodeWhispererConstants = {
     referenceLogText: (code: string, license: string, repository: string, filePath: string, lineInfo: string) =>
         `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`,
 
-    referenceLogPromptText: `Don\'t want suggestions that include code from other sources? Uncheck this option in 
+    referenceLogPromptText: `Don\'t want suggestions that include code with references? Uncheck this option in 
     <a href="#" onclick="openSettings();return false;">CodeWhisperer Settings</a>`,
     /**
      * Security Scan

@@ -1,3 +1,7 @@
+## 1.46.0 2022-07-25
+
+- **Bug Fix** "Read-only file system" error when deploying or debugging a SAM project #2395
+
 ## 1.45.0 2022-07-07
 
 - **Bug Fix** `Add SAM Debug Configuration` codelenses in source files are now disabled by default. (To enable the codelenses, use the `AWS: Toggle SAM hints in source files` command or the `Enable SAM hints` setting.)

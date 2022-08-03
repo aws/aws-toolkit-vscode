@@ -120,9 +120,8 @@ export async function activate(context: vscode.ExtensionContext) {
         const settings = Settings.instance
 
         await initializeCredentials(context, awsContext, settings)
-
         await activateTelemetry(context, awsContext, settings)
-        await globals.telemetry.start()
+
         await globals.schemaService.start()
         awsFiletypes.activate()
 
@@ -147,18 +146,21 @@ export async function activate(context: vscode.ExtensionContext) {
             // No-op command used for decoration-only codelenses.
             vscode.commands.registerCommand('aws.doNothingCommand', () => {}),
             Commands.register('aws.login', () => globals.awsContextCommands.onCommandLogin()),
+            // "Connect to AWS": redundant with "Choose AWS Profile", but kept to avoid confusion.
+            Commands.register('aws.login2', () => globals.awsContextCommands.onCommandLogin()),
             Commands.register('aws.logout', () => globals.awsContextCommands.onCommandLogout()),
             // "Show AWS Commands..."
             Commands.register('aws.listCommands', () =>
                 vscode.commands.executeCommand('workbench.action.quickOpen', `> ${getIdeProperties().company}:`)
             ),
-            Commands.register('aws.credential.profile.create', async () => {
+            Commands.register('aws.credentials.profile.create', async () => {
                 try {
                     await globals.awsContextCommands.onCommandCreateCredentialsProfile()
                 } finally {
                     telemetry.recordAwsCreateCredentials()
                 }
             }),
+            Commands.register('aws.credentials.edit', () => globals.awsContextCommands.onCommandEditCredentials()),
             // register URLs in extension menu
             Commands.register('aws.help', async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))

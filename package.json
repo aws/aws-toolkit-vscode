@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
-    "version": "1.46.0-SNAPSHOT",
+    "version": "1.47.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -38,7 +38,9 @@
         "onStartupFinished",
         "onDebugResolve:aws-sam",
         "onCommand:aws.login",
-        "onCommand:aws.credential.profile.create",
+        "onCommand:aws.login2",
+        "onCommand:aws.credentials.profile.create",
+        "onCommand:aws.credentials.edit",
         "onCommand:aws.logout",
         "onCommand:aws.createIssueOnGitHub",
         "onCommand:aws.submitFeedback",
@@ -230,6 +232,10 @@
                             "default": false
                         },
                         "fileViewerEdit": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "createCredentialsProfile": {
                             "type": "boolean",
                             "default": false
                         }
@@ -1124,7 +1130,7 @@
                 },
                 {
                     "command": "aws.listCommands",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer && !isCloud9",
                     "group": "1_account@3"
                 },
                 {
@@ -1752,8 +1758,29 @@
                 }
             },
             {
-                "command": "aws.credential.profile.create",
-                "title": "%AWS.command.credential.profile.create%",
+                "command": "aws.login2",
+                "title": "%AWS.command.login2%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.login2.cn%",
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.credentials.profile.create",
+                "title": "%AWS.command.credentials.profile.create%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.credentials.edit",
+                "title": "%AWS.command.credentials.edit%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -3167,7 +3194,8 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.54",
+        "@aws-toolkits/telemetry": "^1.0.59",
+        "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^8.1.0",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",
@@ -3214,7 +3242,6 @@
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "sinon": "^14.0.0",
-        "source-map-support": "^0.5.21",
         "ts-mockito": "^2.5.0",
         "ts-node": "^10.7.0",
         "umd-compat-loader": "^2.1.2",

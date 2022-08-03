@@ -55,11 +55,16 @@ export async function startSecurityScan(
      * Step 0: Initial Code Scan telemetry
      */
     const codeScanStartTime = performance.now()
+    let serviceInvocationStartTime = 0
     const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
         codewhispererLanguage: runtimeLanguageContext.getLanguageContext(editor.document.languageId).language,
-        codewhispererCodeScanPayloadBytes: 0,
+        codewhispererCodeScanSrcPayloadBytes: 0,
+        codewhispererCodeScanSrcZipFileBytes: 0,
         codewhispererCodeScanLines: 0,
         duration: 0,
+        contextTruncationDuration: 0,
+        artifactsUploadDuration: 0,
+        codeScanServiceInvocationsDuration: 0,
         result: 'Succeeded',
         codewhispererCodeScanTotalIssues: 0,
     }
@@ -83,27 +88,35 @@ export async function startSecurityScan(
         if (isCloud9()) {
             securityPanelViewProvider.startNew(projectName)
         }
+        const contextTruncationStartTime = performance.now()
         const truncation = await dependencyGraph.generateTruncationWithTimeout(
             uri,
             CodeWhispererConstants.contextTruncationTimeoutSeconds
         )
+        codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
         getLogger().info(`Complete project context processing.`)
-        codeScanTelemetryEntry.codewhispererCodeScanPayloadBytes = truncation.src.size + truncation.build.size
+        codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = truncation.src.size
+        codeScanTelemetryEntry.codewhispererCodeScanBuildPayloadBytes = truncation.build.size
+        codeScanTelemetryEntry.codewhispererCodeScanSrcZipFileBytes = truncation.src.zipSize
+        codeScanTelemetryEntry.codewhispererCodeScanBuildZipFileBytes = truncation.build.zipSize
         codeScanTelemetryEntry.codewhispererCodeScanLines = truncation.lines
 
         /**
          * Step 2: Get presigned Url, upload and clean up
          */
         let artifactMap
+        const uploadStartTime = performance.now()
         try {
             artifactMap = await getPresignedUrlAndUpload(client, truncation)
         } finally {
             dependencyGraph.removeTmpFiles(truncation)
+            codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
         }
 
         /**
          * Step 3:  Create scan job
          */
+        serviceInvocationStartTime = performance.now()
         const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
         getLogger().debug(`Job id: ${scanJob.jobId}`)
         if (scanJob.status === 'Failed') {
@@ -154,6 +167,7 @@ export async function startSecurityScan(
         codeScanState.running = false
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         codeScanTelemetryEntry.duration = performance.now() - codeScanStartTime
+        codeScanTelemetryEntry.codeScanServiceInvocationsDuration = performance.now() - serviceInvocationStartTime
         telemetry.recordCodewhispererSecurityScan(codeScanTelemetryEntry)
     }
 }

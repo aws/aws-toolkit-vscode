@@ -22,6 +22,8 @@ describe('tech debt', function () {
             semver.lt(minVscode, '1.51.0'),
             'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead'
         )
+
+        assert.ok(semver.lt(minVscode, '1.64.0'), 'remove QuickPickItemKind stub in pickCredentialProfile()')
     })
 
     it('nodejs minimum version', async function () {

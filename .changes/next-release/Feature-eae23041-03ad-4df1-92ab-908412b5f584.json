@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Auto-connect tries a maximum of one non-default profile instead of three"
+}
