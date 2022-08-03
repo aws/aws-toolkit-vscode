@@ -60,6 +60,7 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
 
     public constructor(regionCode: string, client = new DefaultCloudWatchLogsClient(regionCode)) {
         super('CloudWatch Logs', regionCode, client)
+        this.contextValue = 'awsCloudWatchLogParentNode'
     }
 
     protected async getLogGroups(client: DefaultCloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
