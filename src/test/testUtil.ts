@@ -255,12 +255,13 @@ export async function closeAllEditors(): Promise<unknown> {
         return await vscode.commands.executeCommand('openEditors.closeAll')
     }
 
-    // Remove the below code (all of it) when `openEditors.closeAll` is available in all versions
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+    // TODO: Remove the below code (all of it) when `openEditors.closeAll` is available in all versions
 
     // The output channel counts as an editor, but you can't really close that...
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
+            // Race: documents could appear after the call to closeAllEditors(), so retry.
+            await vscode.commands.executeCommand('workbench.action.closeAllEditors')
             const visibleEditors = vscode.window.visibleTextEditors.filter(
                 editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
             )
