@@ -15,7 +15,7 @@ class FakeNode extends AWSTreeNodeBase {
     }
 }
 
-class FakeLoadMore implements LoadMoreNode {
+class FakeLoadMore extends FakeNode implements LoadMoreNode {
     public loadMoreChildren(): Promise<void> {
         return Promise.resolve()
     }

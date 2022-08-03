@@ -35,7 +35,7 @@ import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { isAutomation } from '../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
-import { ToolkitError } from '../shared/toolkitError'
+import { ToolkitError } from '../shared/errors'
 import * as localizedText from '../shared/localizedText'
 import { DefaultStsClient } from '../shared/clients/stsClient'
 import { findAsync } from '../shared/utilities/collectionUtils'

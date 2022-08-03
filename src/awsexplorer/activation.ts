@@ -17,7 +17,6 @@ import { RegionProvider } from '../shared/regions/regionProvider'
 import { recordAwsRefreshExplorer, recordAwsShowRegion, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { Commands } from '../shared/vscode/commands2'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
 import { executeStateMachine } from '../stepFunctions/vue/executeStateMachine/executeStateMachine'
@@ -120,9 +119,7 @@ async function registerAwsExplorerCommands(
         Commands.register('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
         }),
-        Commands.register('aws.loadMoreChildren', async (node: AWSTreeNodeBase & LoadMoreNode) => {
-            await loadMoreChildrenCommand(node, awsExplorer)
-        })
+        loadMoreChildrenCommand.register(awsExplorer)
     )
 
     const developerTools = createLocalExplorerView()
