@@ -14,7 +14,6 @@ import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
-import * as localizedText from '../../shared/localizedText'
 
 export const localize = nls.loadMessageBundle()
 
