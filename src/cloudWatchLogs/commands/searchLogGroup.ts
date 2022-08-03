@@ -202,6 +202,7 @@ export class JumpToStream implements vscode.DefinitionProvider {
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         const curLine = document.lineAt(position.line)
         let streamUri: vscode.Uri
+        console.log('here')
         try {
             const streamIDMap = this.registry.getStreamIdMap(activeUri)
             const streamID = streamIDMap?.get(curLine.lineNumber)

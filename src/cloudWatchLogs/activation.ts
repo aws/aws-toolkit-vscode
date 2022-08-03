@@ -26,7 +26,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
 
     const definitionProvider = new JumpToStream(registry)
     vscode.languages.registerDefinitionProvider(
-        { language: 'log', scheme: CLOUDWATCH_LOGS_SCHEME, pattern: `**` },
+        { language: 'log', scheme: CLOUDWATCH_LOGS_SCHEME, pattern: '.*:.+' },
         definitionProvider
     )
 
