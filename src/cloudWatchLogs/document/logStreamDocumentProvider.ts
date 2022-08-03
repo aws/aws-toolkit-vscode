@@ -46,6 +46,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         position: vscode.Position,
         token: vscode.CancellationToken
     ): Promise<vscode.Definition | vscode.LocationLink[] | undefined> {
+        console.log('provideDefinition')
         const activeUri = document.uri
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         if (logGroupInfo.streamName) {
