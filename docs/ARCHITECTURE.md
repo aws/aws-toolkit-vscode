@@ -84,6 +84,33 @@ Complex programs often require more than just simple functions to act as entry-p
     command.execute('goodbye')
     ```
 
+## Exceptions
+
+Large applications often have a correspondingly large number of failure points. For feature-level logic, these failures are often non-recoverable. The best we can do is show the user that something went wrong and maybe offer guidance on how to fix it.
+
+Because this is such a common pattern, shared error handling logic is defined by `ToolkitError` found [here](../src/shared/errors.ts). This class provides the basic structure for errors throughout the Toolkit.
+
+### Chaining
+
+Exceptions that occur deep in a call stack often do not contain enough context to correctly diagnose the problem. A stack trace is helpful, but only if the reader has access to both the source code and source map.
+
+By adding additional information as the exception bubbles up, we can create a better view of the program state when the problem occured. This is done via `ToolkitError.chain`. The `chain` function serves as a standard way to establish a clear cause-and-effect relationship for errors.
+
+### Handlers
+
+Any code paths exercised via `Commands` will have errors handled by `handleError` in [extensions.ts](../src/extension.ts). A better API for error handling across more than just commands will be added in a future PR.
+
+### Best Practices
+
+Implementations still need to adhere to some basic principles for this to work nicely:
+
+-   Do not catch errors unless something meaningful can be added.
+-   Do not swallow errors unless the functionality is non-critical to the feature.
+-   Do not directly show the user an error message for failed actions. Use `ToolkitError` instead.
+-   Use `chain` when re-throwing errors with additional information.
+-   Use `CancellationError` for explicit workflow cancellations.
+-   Define meaninful error codes when creating new errors.
+
 ## Webviews (Vue framework)
 
 The current implementation uses Vue 3 with Single File Components (SFCs) for modularity. Each webview

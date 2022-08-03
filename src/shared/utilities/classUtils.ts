@@ -5,9 +5,9 @@
 
 // Utility functions for manipulating classes (constructor functions + their prototypes)
 
-type Callback = (...args: any[]) => any
-export type Functions<T> = { [P in keyof T]: T[P] extends Callback ? T[P] : never }
-export type FunctionKeys<T> = { [P in keyof T]: T[P] extends Callback ? P : never }[keyof T]
+type Method<T> = { (this: T, ...args: any[]): unknown }
+export type Functions<T> = { [P in keyof T]: T[P] extends Method<T> ? T[P] : never }
+export type FunctionKeys<T> = { [P in keyof T]: T[P] extends Method<T> ? P : never }[keyof T]
 
 /**
  * Returns all functions found on the target's prototype chain.
@@ -15,13 +15,20 @@ export type FunctionKeys<T> = { [P in keyof T]: T[P] extends Callback ? P : neve
  * Conflicts from functions sharing the same key are resolved by order of appearance, earlier
  * functions given precedence. This is equivalent to how the prototype chain is traversed when
  * evaluating `target[key]`, so long as the property descriptor is not a 'getter' function.
+ *
+ * ## Important
+ * The return type currently shows _all_ functions on the instance interface regardless of
+ * whether or not it exists on the prototype. This is a consequence of lenient structural
+ * typing when indexing class instance types; the `this` type is not directly conferred to
+ * the associated signature.
  */
 export function getFunctions<T>(target: new (...args: any[]) => T): Functions<T> {
     const result = {} as Functions<T>
 
     for (const k of Object.getOwnPropertyNames(target.prototype)) {
-        if (typeof target.prototype[k] === 'function') {
-            result[k as keyof T] = target.prototype[k]
+        const value = Object.getOwnPropertyDescriptor(target.prototype, k)?.value
+        if (typeof value === 'function') {
+            result[k as keyof T] = value
         }
     }
 
