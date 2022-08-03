@@ -335,8 +335,16 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             }),
             Commands.register('aws.codeWhisperer.rejectCodeSuggestion', async e => {
-                if (vscode.window.activeTextEditor)
+                if (vscode.window.activeTextEditor) {
                     await InlineCompletion.instance.rejectRecommendation(vscode.window.activeTextEditor)
+                    if (e === 'up') {
+                        await vscode.commands.executeCommand('cursorUp')
+                    } else if (e === 'down') {
+                        await vscode.commands.executeCommand('cursorDown')
+                    } else if (e !== undefined) {
+                        getLogger().warn(`Unexpected argument for rejectCodeSuggestion ${e}`)
+                    }
+                }
             }),
             /**
              * Recommendation navigation
