@@ -2602,7 +2602,7 @@
                 "command": "aws.cwl.changeTimeFilter",
                 "title": "%AWS.command.cwl.changeTimeFilter%",
                 "category": "%AWS.title%",
-                "icon": "$(filter)",
+                "icon": "$(calendar)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
