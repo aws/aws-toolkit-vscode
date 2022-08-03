@@ -13,12 +13,6 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 // The following functions are used to structure and destructure relevant information to/from a URI.
 // Colons are not valid characters in either the group name or stream name and will be used as separators.
 
-export function parseStreamIDFromLine(line: vscode.TextLine): string {
-    const text = line.text
-    const streamIDTag = text.split('\t')[0]
-    const streamID = streamIDTag.split(':')[1].trim().slice(0, -1)
-    return streamID
-}
 /**
  * This function concatenates the path and query to create a unique (enough) identifier for a URI.
  * @param uri

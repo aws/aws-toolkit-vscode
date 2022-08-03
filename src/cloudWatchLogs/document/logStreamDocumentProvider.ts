@@ -48,13 +48,23 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
     ): Promise<vscode.Definition | vscode.LocationLink[] | undefined> {
         const activeUri = document.uri
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
+        if (logGroupInfo.streamName) {
+            // This means we have a stream file not a log search.
+            return
+        }
         const curLine = document.lineAt(position.line)
         let streamUri: vscode.Uri
         try {
             const streamIDMap = this.registry.getStreamIdMap(activeUri)
-            const streamID = streamIDMap?.get(curLine.lineNumber)
+            if (!streamIDMap || streamIDMap.size === 0) {
+                throw new Error(`cwl: No streamIDMap found for stream with uri ${activeUri}`)
+            }
+            const streamID = streamIDMap.get(curLine.lineNumber)
+
             if (!streamID) {
-                throw new Error(`cwl: No streamID found for stream with uri ${activeUri}`)
+                throw new Error(
+                    `cwl: current line number ${curLine.lineNumber} is unregistered in streamIDMap for ${activeUri}`
+                )
             }
             const parameters: CloudWatchLogsParameters = {
                 limit: this.registry.configuration.get('limit', 10000),
