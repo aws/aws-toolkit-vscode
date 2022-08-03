@@ -122,7 +122,7 @@ async function registerAwsExplorerCommands(
         loadMoreChildrenCommand.register(awsExplorer)
     )
 
-    const developerTools = createLocalExplorerView()
+    const developerTools = createLocalExplorerView(context.extensionContext)
     context.extensionContext.subscriptions.push(developerTools)
 }
 

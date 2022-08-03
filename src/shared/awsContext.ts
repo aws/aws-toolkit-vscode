@@ -20,13 +20,17 @@ export interface AwsContextCredentials {
     readonly defaultRegion?: string
 }
 
-// Carries the current context data on events
+/** AWS Toolkit context change */
 export interface ContextChangeEventsArgs {
+    /** AWS credentials profile name. */
     readonly profileName?: string
+    /** AWS account. */
     readonly accountId?: string
 }
 
-// Represents a credential profile and zero or more regions.
+/**
+ * Represents the current AWS credentials and zero or more regions.
+ */
 export type AwsContext = ClassToInterfaceType<DefaultAwsContext>
 
 export class NoActiveCredentialError extends Error {

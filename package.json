@@ -63,6 +63,15 @@
         "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
+        "onCommand:aws.caws.listCommands",
+        "onCommand:aws.caws.login",
+        "onCommand:aws.caws.logout",
+        "onCommand:aws.caws.openOrg",
+        "onCommand:aws.caws.openProject",
+        "onCommand:aws.caws.openRepo",
+        "onCommand:aws.caws.openWorkspace",
+        "onCommand:aws.caws.cloneRepo",
+        "onCommand:aws.caws.createWorkspace",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -236,6 +245,10 @@
                             "default": false
                         },
                         "createCredentialsProfile": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "remoteConnected": {
                             "type": "boolean",
                             "default": false
                         }
@@ -771,6 +784,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.caws.listCommands",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.caws.openWorkspace",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.caws.createWorkspace",
+                    "when": "!isCloud9"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -1182,6 +1207,31 @@
                     "command": "aws.viewLogs",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
+                },
+                {
+                    "command": "aws.caws.login",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.cloneRepo",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.createWorkspace",
+                    "when": "view == aws.caws && !isCloud9",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.listCommands",
+                    "when": "view == aws.caws && !isCloud9",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.openWorkspace",
+                    "when": "view == aws.caws && !isCloud9",
+                    "group": "1_caws@1"
                 }
             ],
             "explorer/context": [
@@ -1474,7 +1524,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode)/",
                     "group": "2@2"
                 },
                 {
@@ -1781,6 +1831,64 @@
             {
                 "command": "aws.credentials.edit",
                 "title": "%AWS.command.credentials.edit%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.caws.openOrg",
+                "title": "%AWS.command.caws.openOrg%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openProject",
+                "title": "%AWS.command.caws.openProject%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openRepo",
+                "title": "%AWS.command.caws.openRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openWorkspace",
+                "title": "%AWS.command.caws.openWorkspace%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.caws.listCommands",
+                "title": "%AWS.command.caws.listCommands%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.caws.login",
+                "title": "%AWS.command.caws.login%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.logout",
+                "title": "%AWS.command.caws.logout%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.cloneRepo",
+                "title": "%AWS.command.caws.cloneRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.createWorkspace",
+                "title": "%AWS.command.caws.createWorkspace%",
+                "category": "AWS",
+                "enablement": "!isCloud9"
+            },
+            {
+                "command": "aws.credential.profile.create",
+                "title": "%AWS.command.credential.profile.create%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
