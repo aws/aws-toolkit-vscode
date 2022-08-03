@@ -186,7 +186,10 @@ class DeployServerlessApplicationDialog(
                     ).toolTipText(message("serverless.application.deploy.tooltip.createStack"))
 
                     createStackButton.selected.addListener {
-                        refreshTemplateParametersAndTags()
+                        if (it && deployType != DeployType.CREATE) {
+                            deployType = DeployType.CREATE
+                            refreshTemplateParametersAndTags()
+                        }
                     }
 
                     textField(::newStackName)
@@ -211,7 +214,10 @@ class DeployServerlessApplicationDialog(
                     ).toolTipText(message("serverless.application.deploy.tooltip.updateStack"))
 
                     updateStackButton.selected.addListener {
-                        refreshTemplateParametersAndTags()
+                        if (it && deployType != DeployType.UPDATE) {
+                            deployType = DeployType.UPDATE
+                            refreshTemplateParametersAndTags()
+                        }
                     }
 
                     stackSelector()
