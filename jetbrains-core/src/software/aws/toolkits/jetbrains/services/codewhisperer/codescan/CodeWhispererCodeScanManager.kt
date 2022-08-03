@@ -45,7 +45,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.overlaps
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.INACTIVE_TEXT_COLOR
@@ -109,7 +108,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
     private fun launchCodeScanCoroutine() = projectCoroutineScope(project).launch {
         var codeScanStatus: Result = Result.Failed
         val startTime = Instant.now().toEpochMilli()
-        var codeScanResponseContext = CodeScanResponseContext()
+        var codeScanResponseContext = defaultCodeScanResponseContext()
         try {
             val file = FileEditorManager.getInstance(project).selectedEditor?.file
                 ?: noFileOpenError()
@@ -119,11 +118,18 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
                 LOG.debug { "Creating context truncation for file ${file.path}" }
                 val sessionContext = CodeScanSessionContext(project, codeScanSessionConfig)
                 val session = CodeWhispererCodeScanSession(sessionContext)
-                val (issues, responseContext) = session.run()
-                codeScanResponseContext = responseContext
-                renderResponseOnUIThread(issues)
-                codeScanResponseContext = codeScanResponseContext.copy(reason = "Succeeded")
-                codeScanStatus = Result.Succeeded
+                val codeScanResponse = session.run()
+                codeScanResponseContext = codeScanResponse.responseContext
+                when (codeScanResponse) {
+                    is CodeScanResponse.Success -> {
+                        val issues = codeScanResponse.issues
+                        renderResponseOnUIThread(issues)
+                        codeScanStatus = Result.Succeeded
+                    }
+                    is CodeScanResponse.Failure -> {
+                        throw codeScanResponse.failureReason
+                    }
+                }
                 LOG.info { "Security scan completed." }
             }
         } catch (e: Exception) {
@@ -140,7 +146,7 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
         }
     }
 
-    private fun handleException(e: Exception): String? {
+    private fun handleException(e: Exception): String {
         val errorMessage = when (e) {
             is CodeWhispererException -> e.awsErrorDetails().errorMessage() ?: message("codewhisperer.codescan.service_error")
             is CodeWhispererCodeScanException -> e.message

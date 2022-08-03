@@ -51,10 +51,11 @@ internal class PythonCodeScanSessionConfig(
         val srcZip = zipFiles(includedSourceFiles.map { Path.of(it) })
         val payloadContext = PayloadContext(
             CodewhispererLanguage.Python,
-            payloadSize,
             totalLines,
             includedSourceFiles.size,
-            Instant.now().toEpochMilli() - start
+            Instant.now().toEpochMilli() - start,
+            payloadSize,
+            srcZip.length()
         )
 
         return Payload(payloadContext, srcZip)

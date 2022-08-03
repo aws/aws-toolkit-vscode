@@ -29,12 +29,15 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanResponseContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanServiceInvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODE_SCAN_POLLING_INTERVAL_IN_SECONDS
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_BYTES_IN_KB
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_MILLIS_IN_SECOND
 import software.aws.toolkits.jetbrains.utils.assertIsNonDispatchThread
+import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
@@ -63,107 +66,126 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
      *  6. Return the results from the ListCodeScan API.
      */
     suspend fun run(): CodeScanResponse {
-        assertIsNonDispatchThread()
-        val startTime = now()
-        val (payloadContext, sourceZip, buildZip) = withTimeout(Duration.ofSeconds(sessionContext.sessionConfig.createPayloadTimeoutInSeconds())) {
-            runReadAction { sessionContext.sessionConfig.createPayload() }
-        }
-
-        LOG.debug {
-            "Total size of payload in KB: ${payloadContext.payloadSize * 1.0 / TOTAL_BYTES_IN_KB} \n" +
-                "Total number of lines scanned: ${payloadContext.totalLines} \n" +
-                "Total number of files included in payload: ${payloadContext.totalFiles} \n" +
-                "Total time taken for creating payload: ${payloadContext.totalTimeInMilliseconds * 1.0 / TOTAL_MILLIS_IN_SECOND} seconds\n" +
-                "Payload context language: ${payloadContext.language}"
-        }
-
-        // 2 & 3. CreateUploadURL and upload the context.
-        LOG.debug { "Uploading source zip located at ${sourceZip.path} to s3" }
-        val sourceZipUploadResponse = createUploadUrlAndUpload(sourceZip, "SourceCode")
-        LOG.debug {
-            "Successfully uploaded source zip to s3: " +
-                "Upload id: ${sourceZipUploadResponse.uploadId()} " +
-                "Request id: ${sourceZipUploadResponse.responseMetadata().requestId()}"
-        }
-        urlResponse[ArtifactType.SOURCE_CODE] = sourceZipUploadResponse
-        if (buildZip != null) {
-            LOG.debug { "Uploading build zip located at ${buildZip.path} to s3" }
-            val buildZipUploadResponse = createUploadUrlAndUpload(buildZip, "BuiltJars")
-            LOG.debug {
-                "Successfully uploaded build zip to s3: " +
-                    "Upload id: ${buildZipUploadResponse.uploadId()} " +
-                    "Request id: ${buildZipUploadResponse.responseMetadata().requestId()}"
+        var issues: List<CodeWhispererCodeScanIssue> = listOf()
+        var codeScanResponseContext = defaultCodeScanResponseContext()
+        try {
+            assertIsNonDispatchThread()
+            val startTime = now()
+            val (payloadContext, sourceZip, buildZip) = withTimeout(Duration.ofSeconds(sessionContext.sessionConfig.createPayloadTimeoutInSeconds())) {
+                runReadAction { sessionContext.sessionConfig.createPayload() }
             }
-            urlResponse[ArtifactType.BUILT_JARS] = buildZipUploadResponse
-        }
 
-        // 5. Call createCodeScan to start a code scan
-        LOG.debug { "Requesting security scan for the uploaded artifacts, language: ${payloadContext.language}" }
-        val createCodeScanResponse = createCodeScan(payloadContext.language.toString())
-        LOG.debug {
-            "Successfully created security scan with " +
-                "status: ${createCodeScanResponse.status()} " +
-                "for request id: ${createCodeScanResponse.responseMetadata().requestId()}"
-        }
-        var codeScanStatus = createCodeScanResponse.status()
-        if (codeScanStatus == CodeScanStatus.FAILED) {
             LOG.debug {
-                "CodeWhisperer service error occurred. Something went wrong when creating a security scan: $createCodeScanResponse " +
-                    "Status: ${createCodeScanResponse.status()} for request id: ${createCodeScanResponse.responseMetadata().requestId()}"
+                "Total size of source payload in KB: ${payloadContext.srcPayloadSize * 1.0 / TOTAL_BYTES_IN_KB} \n" +
+                    "Total size of build payload in KB: ${(payloadContext.buildPayloadSize ?: 0) * 1.0 / TOTAL_BYTES_IN_KB} \n" +
+                    "Total size of source zip file in KB: ${payloadContext.srcZipFileSize * 1.0 / TOTAL_BYTES_IN_KB} \n" +
+                    "Total size of build zip file in KB: ${(payloadContext.buildZipFileSize ?: 0) * 1.0 / TOTAL_BYTES_IN_KB} \n" +
+                    "Total number of lines scanned: ${payloadContext.totalLines} \n" +
+                    "Total number of files included in payload: ${payloadContext.totalFiles} \n" +
+                    "Total time taken for creating payload: ${payloadContext.totalTimeInMilliseconds * 1.0 / TOTAL_MILLIS_IN_SECOND} seconds\n" +
+                    "Payload context language: ${payloadContext.language}"
             }
-            codeScanFailed()
-        }
-        val jobId = createCodeScanResponse.jobId()
-        LOG.debug { "Job ID for create security scan job: $jobId" }
-        // 6. Keep polling the API GetCodeScan to wait for results for a given timeout period.
-        waitUntil(
-            succeedOn = { codeScanStatus == CodeScanStatus.COMPLETED },
-            maxDuration = Duration.ofSeconds(sessionContext.sessionConfig.overallJobTimeoutInSeconds())
-        ) {
-            val elapsedTime = (now() - startTime) * 1.0 / TOTAL_MILLIS_IN_SECOND
-            LOG.debug { "Waiting for security scan to complete. Elapsed time: $elapsedTime sec." }
-            val getCodeScanResponse = getCodeScan(jobId)
-            codeScanStatus = getCodeScanResponse.status()
+            codeScanResponseContext = codeScanResponseContext.copy(payloadContext = payloadContext)
+
+            // 2 & 3. CreateUploadURL and upload the context.
+            LOG.debug { "Uploading source zip located at ${sourceZip.path} to s3" }
+            val artifactsUploadStartTime = now()
+            val sourceZipUploadResponse = createUploadUrlAndUpload(sourceZip, "SourceCode")
             LOG.debug {
-                "Get security scan status: ${getCodeScanResponse.status()}, " +
-                    "request id: ${getCodeScanResponse.responseMetadata().requestId()}"
+                "Successfully uploaded source zip to s3: " +
+                    "Upload id: ${sourceZipUploadResponse.uploadId()} " +
+                    "Request id: ${sourceZipUploadResponse.responseMetadata().requestId()}"
             }
-            sleep(CODE_SCAN_POLLING_INTERVAL_IN_SECONDS * TOTAL_MILLIS_IN_SECOND)
+            urlResponse[ArtifactType.SOURCE_CODE] = sourceZipUploadResponse
+            if (buildZip != null) {
+                LOG.debug { "Uploading build zip located at ${buildZip.path} to s3" }
+                val buildZipUploadResponse = createUploadUrlAndUpload(buildZip, "BuiltJars")
+                LOG.debug {
+                    "Successfully uploaded build zip to s3: " +
+                        "Upload id: ${buildZipUploadResponse.uploadId()} " +
+                        "Request id: ${buildZipUploadResponse.responseMetadata().requestId()}"
+                }
+                urlResponse[ArtifactType.BUILT_JARS] = buildZipUploadResponse
+            }
+            val artifactsUploadDuration = now() - artifactsUploadStartTime
+            codeScanResponseContext = codeScanResponseContext.copy(
+                serviceInvocationContext = codeScanResponseContext.serviceInvocationContext.copy(artifactsUploadDuration = artifactsUploadDuration)
+            )
+
+            // 4. Call createCodeScan to start a code scan
+            LOG.debug { "Requesting security scan for the uploaded artifacts, language: ${payloadContext.language}" }
+            val serviceInvocationStartTime = now()
+            val createCodeScanResponse = createCodeScan(payloadContext.language.toString())
+            LOG.debug {
+                "Successfully created security scan with " +
+                    "status: ${createCodeScanResponse.status()} " +
+                    "for request id: ${createCodeScanResponse.responseMetadata().requestId()}"
+            }
+            var codeScanStatus = createCodeScanResponse.status()
             if (codeScanStatus == CodeScanStatus.FAILED) {
                 LOG.debug {
-                    "CodeWhisperer service error occurred. Something went wrong fetching results for security scan: $getCodeScanResponse " +
-                        "Status: ${getCodeScanResponse.status()} for request id: ${getCodeScanResponse.responseMetadata().requestId()}"
+                    "CodeWhisperer service error occurred. Something went wrong when creating a security scan: $createCodeScanResponse " +
+                        "Status: ${createCodeScanResponse.status()} for request id: ${createCodeScanResponse.responseMetadata().requestId()}"
                 }
                 codeScanFailed()
             }
-        }
+            val jobId = createCodeScanResponse.jobId()
+            codeScanResponseContext = codeScanResponseContext.copy(codeScanJobId = jobId)
 
-        LOG.debug { "Security scan completed successfully by CodeWhisperer." }
+            LOG.debug { "Job ID for create security scan job: $jobId" }
 
-        // 7. Return the results from the ListCodeScan API.
-        LOG.debug { "Fetching results for the completed security scan" }
-        var listCodeScanFindingsResponse = listCodeScanFindings(jobId)
-        LOG.debug {
-            "Successfully fetched results for security scan with " +
-                "job id: $jobId, request id: ${listCodeScanFindingsResponse.responseMetadata().requestId()}"
-        }
-        val documents = mutableListOf<String>()
-        documents.add(listCodeScanFindingsResponse.codeScanFindings())
-        while (listCodeScanFindingsResponse.nextToken() != null) {
+            // 5. Keep polling the API GetCodeScan to wait for results for a given timeout period.
+            waitUntil(
+                succeedOn = { codeScanStatus == CodeScanStatus.COMPLETED },
+                maxDuration = Duration.ofSeconds(sessionContext.sessionConfig.overallJobTimeoutInSeconds())
+            ) {
+                val elapsedTime = (now() - startTime) * 1.0 / TOTAL_MILLIS_IN_SECOND
+                LOG.debug { "Waiting for security scan to complete. Elapsed time: $elapsedTime sec." }
+                val getCodeScanResponse = getCodeScan(jobId)
+                codeScanStatus = getCodeScanResponse.status()
+                LOG.debug {
+                    "Get security scan status: ${getCodeScanResponse.status()}, " +
+                        "request id: ${getCodeScanResponse.responseMetadata().requestId()}"
+                }
+                sleep(CODE_SCAN_POLLING_INTERVAL_IN_SECONDS * TOTAL_MILLIS_IN_SECOND)
+                if (codeScanStatus == CodeScanStatus.FAILED) {
+                    LOG.debug {
+                        "CodeWhisperer service error occurred. Something went wrong fetching results for security scan: $getCodeScanResponse " +
+                            "Status: ${getCodeScanResponse.status()} for request id: ${getCodeScanResponse.responseMetadata().requestId()}"
+                    }
+                    codeScanFailed()
+                }
+            }
+
+            LOG.debug { "Security scan completed successfully by CodeWhisperer." }
+
+            // 6. Return the results from the ListCodeScan API.
+            LOG.debug { "Fetching results for the completed security scan" }
+            var listCodeScanFindingsResponse = listCodeScanFindings(jobId)
+            LOG.debug {
+                "Successfully fetched results for security scan with " +
+                    "job id: $jobId, request id: ${listCodeScanFindingsResponse.responseMetadata().requestId()}"
+            }
+            val serviceInvocationDuration = now() - serviceInvocationStartTime
+            codeScanResponseContext = codeScanResponseContext.copy(
+                serviceInvocationContext = codeScanResponseContext.serviceInvocationContext.copy(serviceInvocationDuration = serviceInvocationDuration)
+            )
+
+            val documents = mutableListOf<String>()
             documents.add(listCodeScanFindingsResponse.codeScanFindings())
-            listCodeScanFindingsResponse = listCodeScanFindings(jobId)
+            while (listCodeScanFindingsResponse.nextToken() != null) {
+                documents.add(listCodeScanFindingsResponse.codeScanFindings())
+                listCodeScanFindingsResponse = listCodeScanFindings(jobId)
+            }
+            LOG.debug { "Successfully fetched results for the security scan." }
+            LOG.debug { "Rendering response to display security scan results." }
+            issues = mapToCodeScanIssues(documents)
+            codeScanResponseContext = codeScanResponseContext.copy(codeScanTotalIssues = issues.count())
+            codeScanResponseContext = codeScanResponseContext.copy(reason = "Succeeded")
+            return CodeScanResponse.Success(issues, codeScanResponseContext)
+        } catch (e: Exception) {
+            return CodeScanResponse.Failure(issues, codeScanResponseContext, e)
         }
-        LOG.debug { "Successfully fetched results for the security scan." }
-        LOG.debug { "Rendering response to display security scan results." }
-        val issues = mapToCodeScanIssues(documents)
-        val responseContext = CodeScanResponseContext(
-            codeScanJobId = jobId,
-            codewhispererLanguage = payloadContext.language,
-            payloadSizeInBytes = payloadContext.payloadSize,
-            codeScanLines = payloadContext.totalLines,
-            codeScanTotalIssues = issues.size
-        )
-        return CodeScanResponse(issues, responseContext)
     }
 
     /**
@@ -281,10 +303,21 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
     }
 }
 
-internal data class CodeScanResponse(
-    val issues: List<CodeWhispererCodeScanIssue>,
-    val responseContext: CodeScanResponseContext
-)
+internal sealed class CodeScanResponse {
+    abstract val issues: List<CodeWhispererCodeScanIssue>
+    abstract val responseContext: CodeScanResponseContext
+
+    data class Success(
+        override val issues: List<CodeWhispererCodeScanIssue>,
+        override val responseContext: CodeScanResponseContext
+    ) : CodeScanResponse()
+
+    data class Failure(
+        override val issues: List<CodeWhispererCodeScanIssue>,
+        override val responseContext: CodeScanResponseContext,
+        val failureReason: Throwable
+    ) : CodeScanResponse()
+}
 
 internal data class CodeScanRecommendation(
     val filePath: String,
@@ -300,3 +333,9 @@ internal data class CodeScanSessionContext(
     val project: Project,
     val sessionConfig: CodeScanSessionConfig
 )
+
+internal fun defaultPayloadContext() = PayloadContext(CodewhispererLanguage.Unknown, 0, 0, 0, 0, 0)
+
+internal fun defaultServiceInvocationContext() = CodeScanServiceInvocationContext(0, 0)
+
+internal fun defaultCodeScanResponseContext() = CodeScanResponseContext(defaultPayloadContext(), defaultServiceInvocationContext())

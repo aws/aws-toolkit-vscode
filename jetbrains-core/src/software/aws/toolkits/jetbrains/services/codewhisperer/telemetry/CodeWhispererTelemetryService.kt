@@ -110,26 +110,38 @@ class CodeWhispererTelemetryService {
     }
 
     fun sendSecurityScanEvent(codeScanEvent: CodeScanTelemetryEvent, project: Project? = null) {
-        val (jobId, language, payloadSize, codeScanLines, codeScanIssues, reason) = codeScanEvent.codeScanResponseContext
+        val (payloadContext, serviceInvocationContext, codeScanJobId, totalIssues, reason) = codeScanEvent.codeScanResponseContext
 
         LOG.debug {
-            "Recording code security scan event. " +
-                "Security scan job id: $jobId, " +
-                "Language: $language, " +
-                "Payload size: $payloadSize, " +
-                "Total number of lines scanned: $codeScanLines, " +
-                "Total number of security scan issues found: $codeScanIssues " +
-                "Total duration of the security scan job: ${codeScanEvent.duration} " +
-                "Reason: $reason"
+            "Recording code security scan event. \n" +
+                "Security scan job id: $codeScanJobId, \n" +
+                "Total number of security scan issues found: $totalIssues, \n" +
+                "Language: ${payloadContext.language}, \n" +
+                "Uncompressed source payload size in bytes: ${payloadContext.srcPayloadSize}, \n" +
+                "Uncompressed build payload size in bytes: ${payloadContext.buildPayloadSize}, \n" +
+                "Compressed source zip file size in bytes: ${payloadContext.srcZipFileSize}, \n" +
+                "Compressed build zip file size in bytes: ${payloadContext.buildZipFileSize}, \n" +
+                "Total duration of the security scan job in milliseconds: ${codeScanEvent.duration}, \n" +
+                "Context truncation duration in milliseconds: ${payloadContext.totalTimeInMilliseconds}, \n" +
+                "Artifacts upload duration in milliseconds: ${serviceInvocationContext.artifactsUploadDuration}, \n" +
+                "Service invocation duration in milliseconds: ${serviceInvocationContext.serviceInvocationDuration}, \n" +
+                "Total number of lines scanned: ${payloadContext.totalLines}, \n" +
+                "Reason: $reason \n"
         }
         CodewhispererTelemetry.securityScan(
             project = project,
-            codewhispererCodeScanLines = codeScanLines.toInt(),
-            codewhispererCodeScanJobId = jobId,
-            codewhispererCodeScanPayloadBytes = payloadSize.toInt(),
-            codewhispererCodeScanTotalIssues = codeScanIssues,
-            codewhispererLanguage = language,
+            codewhispererCodeScanLines = payloadContext.totalLines.toInt(),
+            codewhispererCodeScanJobId = codeScanJobId,
+            codewhispererCodeScanSrcPayloadBytes = payloadContext.srcPayloadSize.toInt(),
+            codewhispererCodeScanBuildPayloadBytes = payloadContext.buildPayloadSize?.toInt(),
+            codewhispererCodeScanSrcZipFileBytes = payloadContext.srcZipFileSize.toInt(),
+            codewhispererCodeScanBuildZipFileBytes = payloadContext.buildZipFileSize?.toInt(),
+            codewhispererCodeScanTotalIssues = totalIssues,
+            codewhispererLanguage = payloadContext.language,
             duration = codeScanEvent.duration,
+            contextTruncationDuration = payloadContext.totalTimeInMilliseconds.toInt(),
+            artifactsUploadDuration = serviceInvocationContext.artifactsUploadDuration.toInt(),
+            codeScanServiceInvocationsDuration = serviceInvocationContext.serviceInvocationDuration.toInt(),
             reason = reason,
             result = codeScanEvent.result
         )

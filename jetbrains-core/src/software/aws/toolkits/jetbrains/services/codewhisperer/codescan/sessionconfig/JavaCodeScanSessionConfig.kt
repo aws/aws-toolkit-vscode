@@ -58,19 +58,21 @@ internal class JavaCodeScanSessionConfig(
         LOG.debug { "Creating payload. File selected as root for the context truncation: ${selectedFile.path}" }
 
         // Include all the dependencies using BFS
-        val (sourceFiles, buildPaths, payloadSize, totalLines) = includeDependencies()
+        val (sourceFiles, buildPaths, srcPayloadSize, totalLines) = includeDependencies()
 
         // Copy all the included source files to the source zip
         val srcZip = zipFiles(sourceFiles.map { it.toNioPath() })
 
         var noClassFilesFound = true
         val outputPaths = CompilerPaths.getOutputPaths(ModuleManager.getInstance(project).modules)
+        var totalBuildPayloadSize = 0L
         val buildFiles = buildPaths.filterNotNull().mapNotNull { relativePath ->
             val classFile = findClassFile(relativePath, outputPaths)
             if (classFile == null) {
                 LOG.debug { "Cannot find class file for $relativePath" }
             } else {
                 noClassFilesFound = false
+                totalBuildPayloadSize += classFile.toFile().length()
             }
             classFile
         }
@@ -81,10 +83,13 @@ internal class JavaCodeScanSessionConfig(
 
         val payloadContext = PayloadContext(
             CodewhispererLanguage.Java,
-            payloadSize,
             totalLines,
             sourceFiles.size,
-            Instant.now().toEpochMilli() - start
+            Instant.now().toEpochMilli() - start,
+            srcPayloadSize,
+            srcZip.length(),
+            totalBuildPayloadSize,
+            buildZip.length()
         )
         return Payload(payloadContext, srcZip, buildZip)
     }

@@ -65,8 +65,11 @@ data class Payload(
 
 data class PayloadContext(
     val language: CodewhispererLanguage,
-    val payloadSize: Long,
     val totalLines: Long,
     val totalFiles: Int,
-    val totalTimeInMilliseconds: Long
+    val totalTimeInMilliseconds: Long,
+    val srcPayloadSize: Long,
+    val srcZipFileSize: Long,
+    val buildPayloadSize: Long? = null,
+    val buildZipFileSize: Long? = null
 )

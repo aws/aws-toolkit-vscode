@@ -8,10 +8,10 @@ import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.ui.popup.JBPopup
 import software.amazon.awssdk.services.codewhisperer.model.ListRecommendationsResponse
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.PayloadContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.telemetry.CodewhispererAutomatedTriggerType
-import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import software.aws.toolkits.telemetry.Result
 
@@ -78,11 +78,15 @@ data class CodeScanTelemetryEvent(
     val result: Result
 )
 
+data class CodeScanServiceInvocationContext(
+    val artifactsUploadDuration: Long,
+    val serviceInvocationDuration: Long
+)
+
 data class CodeScanResponseContext(
+    val payloadContext: PayloadContext,
+    val serviceInvocationContext: CodeScanServiceInvocationContext,
     val codeScanJobId: String? = null,
-    val codewhispererLanguage: CodewhispererLanguage = CodewhispererLanguage.Unknown,
-    val payloadSizeInBytes: Long = 0L,
-    val codeScanLines: Long = 0L,
     val codeScanTotalIssues: Int = 0,
     val reason: String? = null
 )
