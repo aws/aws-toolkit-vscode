@@ -143,7 +143,7 @@ export class Commands {
             result[mappedKey] = id => this.declare({ id, name }, (instance: T) => v.bind(instance))
         }
 
-        return result as Declarables<T>
+        return result as unknown as Declarables<T>
     }
 
     public dispose(): void {
