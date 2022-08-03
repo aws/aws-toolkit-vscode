@@ -18,6 +18,7 @@ import { LogStreamRegistry } from './registry/logStreamRegistry'
 import { Commands } from '../shared/vscode/commands2'
 import { searchLogGroup } from './commands/searchLogGroup'
 import { changeLogSearchParams } from './changeLogSearch'
+import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
     const settings = new CloudWatchLogsSettings(configuration)
@@ -67,7 +68,11 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
         // Here instead of in ../awsexplorer/activation due to dependence on the registry.
         Commands.register('aws.cwl.viewLogStream', async (node: LogGroupNode) => await viewLogStream(node, registry)),
 
-        Commands.register('aws.cwl.searchLogGroup', async (node: LogGroupNode) => await searchLogGroup(node, registry)),
+        Commands.register(
+            'aws.cwl.searchLogGroup',
+            async (node: LogGroupNode | CloudWatchLogsNode) =>
+                await searchLogGroup(node instanceof LogGroupNode ? node : undefined, registry)
+        ),
 
         Commands.register('aws.cwl.changeFilterPattern', async () => changeLogSearchParams(registry, 'filterPattern')),
 
