@@ -287,7 +287,7 @@ export class InlineCompletion {
                                 curItem,
                                 this.origin[curItem.index].references
                             )
-                            RecommendationHandler.instance.recommendationSuggestionState.set(curItem.index, 'Showed')
+                            RecommendationHandler.instance.setSuggestionState(curItem.index, 'Showed')
                         })
                 }
             })
@@ -431,7 +431,7 @@ export class InlineCompletion {
             this.origin.forEach((item, index) => {
                 if (
                     item.content.startsWith(this.typeAhead) &&
-                    RecommendationHandler.instance.recommendationSuggestionState.get(index) !== 'Filtered'
+                    RecommendationHandler.instance.getSuggestionState(index) !== 'Filtered'
                 ) {
                     this.items.push({
                         content: item.content.substring(this.typeAhead.length),
@@ -441,7 +441,7 @@ export class InlineCompletion {
             })
         } else {
             this.origin.forEach((item, index) => {
-                if (RecommendationHandler.instance.recommendationSuggestionState.get(index) !== 'Filtered') {
+                if (RecommendationHandler.instance.getSuggestionState(index) !== 'Filtered') {
                     this.items.push({
                         content: item.content,
                         index: index,
