@@ -11,7 +11,7 @@ import { ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isNameMangled } from './vscode/env'
 import { once } from './utilities/functionUtils'
-import { UnknownError } from './toolkitError'
+import { UnknownError } from './errors'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 

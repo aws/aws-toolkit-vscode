@@ -16,9 +16,34 @@
             "name": "starterTemplate",
             "type": "string",
             "description": "Starter template chosen during create document"
+        },
+        {
+            "name": "command",
+            "type": "string",
+            "description": "The id of a VS Code command"
+        },
+        {
+            "name": "debounceCount",
+            "type": "int",
+            "description": "Number of times the telemetry event was debounced before emission"
         }
     ],
     "metrics": [
+        {
+            "name": "vscode_executeCommand",
+            "description": "Emitted whenever a registered Toolkit command is executed",
+            "passive": true,
+            "metadata": [
+                { "type": "command" },
+                { "type": "debounceCount" },
+                { "type": "duration" },
+                { "type": "result" },
+                {
+                    "type": "reason",
+                    "required": false
+                }
+            ]
+        },
         {
             "name": "aws_refreshCredentials",
             "description": "Emitted when credentials are automatically refreshed by the AWS SDK",
