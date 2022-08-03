@@ -23,9 +23,10 @@ import { getLogger } from '../../shared/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { createInputBox } from '../../shared/ui/inputPrompter'
+import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { truncate } from '../../shared/utilities/textUtilities'
+import { createBackButton, createCommonButtons, createExitButton, createHelpButton } from '../../shared/ui/buttons'
 
 function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
     const logGroupInfo: CloudWatchLogsGroupInfo = {
@@ -148,11 +149,21 @@ async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.
     return logGroupsArray
 }
 
-export function createFilterpatternPrompter(logGroupName: string) {
-    return createInputBox({
+export function createFilterpatternPrompter(logGroupName: string, isFirst: boolean): InputBoxPrompter {
+    const helpUri =
+        'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html#matching-terms-events'
+    const options = {
         title: `Search Log Group ${truncate(logGroupName, -50)}`,
         placeholder: 'search pattern',
-    })
+        buttons: [createHelpButton(helpUri), createExitButton()],
+    }
+
+    if (!isFirst) {
+        options.buttons = [...options.buttons, createBackButton()]
+    }
+
+    return createInputBox(options)
+    //[createHelpButton(helpUri), createExitButton()]
 }
 
 export function createRegionSubmenu() {
@@ -184,7 +195,7 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
 
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
         this.form.filterPattern.bindPrompter(({ submenuResponse }) =>
-            createFilterpatternPrompter(submenuResponse!.data)
+            createFilterpatternPrompter(submenuResponse!.data, logGroupInfo ? true : false)
         )
         this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
     }

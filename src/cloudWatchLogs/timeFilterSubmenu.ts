@@ -8,6 +8,7 @@ import { InputBoxPrompter } from '../shared/ui/inputPrompter'
 import { ItemLoadTypes, QuickPickPrompter, DataQuickPickItem, createQuickPick } from '../shared/ui/pickerPrompter'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { isValidResponse, StepEstimator } from '../shared/wizards/wizard'
+import { createCommonButtons } from '../shared/ui/buttons'
 
 export function isViewAllEvents(response: TimeFilterResponse) {
     return response.start === response.end
@@ -60,6 +61,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     public createMenuPrompter() {
         const prompter = createQuickPick<number | typeof customRange>(this.recentTimeItems, {
             title: 'Select Time Filter',
+            buttons: createCommonButtons(),
         })
 
         prompter.quickPick.items = [
