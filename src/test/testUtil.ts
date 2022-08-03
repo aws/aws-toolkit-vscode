@@ -243,24 +243,27 @@ export async function assertTextEditorContains(contents: string): Promise<void |
 }
 
 /**
- * Executes the close all editors command and waits for all visible editors to disappear
+ * Executes the "openEditors.closeAll" command and asserts that all visible
+ * editors were closed after waiting.
  */
-export async function closeAllEditors(): Promise<unknown> {
-    if ((await vscode.commands.getCommands()).includes('openEditors.closeAll')) {
+export async function closeAllEditors(): Promise<void> {
+    const hasCloseAll = (await vscode.commands.getCommands()).includes('openEditors.closeAll')
+    // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
+    // `workbench.action.closeAllEditors` is unreliable and should not be used if possible
+    const closeAllCmd = hasCloseAll ? 'openEditors.closeAll' : 'workbench.action.closeAllEditors'
+    if (hasCloseAll) {
         if (isMinimumVersion() && !isReleaseVersion()) {
-            throw Error('openEditors.closeAll is available in min version, remove me!')
+            throw Error(
+                '"openEditors.closeAll" is available in min version, remove use of "workbench.action.closeAllEditors"!'
+            )
         }
-        // Derived by inspecting 'Keyboard Shortcuts' via command `>Preferences: Open Keyboard Shortcuts`
-        // `workbench.action.closeAllEditors` is unreliable and should not be used if possible
-        return await vscode.commands.executeCommand('openEditors.closeAll')
     }
-
-    // Remove the below code (all of it) when `openEditors.closeAll` is available in all versions
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
     // The output channel counts as an editor, but you can't really close that...
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
+            // Race: documents could appear after the call to closeAllEditors(), so retry.
+            await vscode.commands.executeCommand(closeAllCmd)
             const visibleEditors = vscode.window.visibleTextEditors.filter(
                 editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
             )
@@ -276,9 +279,7 @@ export async function closeAllEditors(): Promise<unknown> {
 
     if (!noVisibleEditor) {
         throw new Error(
-            `Editor "${
-                vscode.window.activeTextEditor!.document.fileName
-            }" was still open after executing "closeAllEditors"`
+            `Editor "${vscode.window.activeTextEditor!.document.fileName}" was still open after closeAllEditors()`
         )
     }
 }
