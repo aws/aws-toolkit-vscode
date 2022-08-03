@@ -12,6 +12,7 @@ import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { recordVscodeExecuteCommand } from '../telemetry/telemetry'
+import { DefaultTelemetryService } from '../telemetry/telemetryService'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -313,7 +314,7 @@ const emitTokens: Record<string, number> = {}
 function startRecordCommand(id: string): number {
     const currentTime = Date.now()
     const previousEmit = emitInfo.get(id)
-    const threshold = isAutomation() ? 0 : 60000
+    const threshold = isAutomation() ? 0 : DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
     const token = (emitTokens[id] = (emitTokens[id] ?? 0) + 1)
 
     if (previousEmit?.startTime !== undefined && currentTime - previousEmit.startTime < threshold) {
