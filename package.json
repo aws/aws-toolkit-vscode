@@ -2580,7 +2580,7 @@
                 "command": "aws.saveCurrentLogStreamContent",
                 "title": "%AWS.command.saveCurrentLogStreamContent%",
                 "category": "%AWS.title%",
-                "icon": "$(save-as)",
+                "icon": "$(cloud-download)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
