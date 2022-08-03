@@ -3004,13 +3004,15 @@
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "up",
                 "mac": "up",
-                "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE"
+                "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE",
+                "args": "up"
             },
             {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "down",
                 "mac": "down",
-                "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE"
+                "when": "editorTextFocus && CODEWHISPERER_SERVICE_ACTIVE",
+                "args": "down"
             },
             {
                 "command": "aws.codeWhisperer.acceptCodeSuggestion",
