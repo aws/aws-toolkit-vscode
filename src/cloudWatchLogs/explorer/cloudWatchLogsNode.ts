@@ -17,8 +17,6 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { LogGroupNode } from './logGroupNode'
 
-export const CONTEXT_VALUE_CLOUDWATCH_LOG_PARENT = 'awsCloudWatchLogParentNode'
-
 export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
     protected readonly logGroupNodes: Map<string, LogGroupNode>
     protected abstract readonly placeholderMessage: string
@@ -62,7 +60,7 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
 
     public constructor(regionCode: string, client = new DefaultCloudWatchLogsClient(regionCode)) {
         super('CloudWatch Logs', regionCode, client)
-        this.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG_PARENT
+        this.contextValue = 'awsCloudWatchLogParentNode'
     }
 
     protected async getLogGroups(client: DefaultCloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {

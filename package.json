@@ -1498,12 +1498,12 @@
                 {
                     "command": "aws.cwl.searchLogGroup",
                     "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode || view == aws.explorer && viewItem == awsCloudWatchLogParentNode"
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
                 },
                 {
                     "command": "aws.cwl.searchLogGroup",
                     "group": "inline@1",
-                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode || view == aws.explorer && viewItem == awsCloudWatchLogParentNode"
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
                 },
                 {
                     "command": "aws.apig.copyUrl",
