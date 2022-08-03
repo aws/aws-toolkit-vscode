@@ -127,7 +127,6 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
 
     public validateDate(input: string) {
         const parts = input.split('-')
-        const today = new Date()
 
         if (parts.length !== 2) {
             return 'String must include two dates seperated by `-`'
