@@ -163,7 +163,7 @@ interface InstallScript {
  * @returns Path for the debugger install script, undefined if we already built the binary
  */
 async function makeInstallScript(debuggerPath: string, isWindows: boolean): Promise<InstallScript | undefined> {
-    let script: string = ''
+    let script: string = isWindows ? '' : '#!/bin/sh\n'
     const DELVE_REPO: string = 'github.com/go-delve/delve'
     const scriptExt: string = isWindows ? 'cmd' : 'sh'
     const delvePath: string = path.posix.join(debuggerPath, 'dlv')
