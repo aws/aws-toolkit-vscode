@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
-import { UnknownError } from '../toolkitError'
+import { UnknownError } from '../errors'
 import { Logging } from '../logger/commands'
 import { TreeNode } from './resourceTreeDataProvider'
 import { assign } from '../utilities/collectionUtils'

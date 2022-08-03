@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { UnknownError } from '../toolkitError'
+import { UnknownError } from '../errors'
 
 abstract class Base<T, E> {
     public abstract readonly type: 'ok' | 'err'

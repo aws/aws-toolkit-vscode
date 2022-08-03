@@ -15,7 +15,7 @@ import { ClientRegistration, SsoToken } from '../credentials/sso/model'
 import { SsoAccessTokenProvider } from '../credentials/sso/ssoAccessTokenProvider'
 import { ConnectedCawsClient, createClient, UserDetails } from '../shared/clients/cawsClient'
 import { getLogger } from '../shared/logger'
-import { UnknownError } from '../shared/toolkitError'
+import { UnknownError } from '../shared/errors'
 import { createSecretsCache, KeyedCache, mapCache } from '../shared/utilities/cacheUtils'
 import { assertHasProps, isNonNullable } from '../shared/utilities/tsUtils'
 

@@ -287,7 +287,7 @@ export class CawsCommands {
         }
     }
 
-    public async openWorkspaceSettings() {
+    public async openWorkspaceSettings(): Promise<void> {
         const workspace = await this.withClient(getConnectedWorkspace)
 
         if (!workspace) {

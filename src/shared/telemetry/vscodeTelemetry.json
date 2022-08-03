@@ -18,12 +18,37 @@
             "description": "Starter template chosen during create document"
         },
         {
+            "name": "command",
+            "type": "string",
+            "description": "The id of a VS Code command"
+        },
+        {
+            "name": "debounceCount",
+            "type": "int",
+            "description": "Number of times the telemetry event was debounced before emission"
+        },
+        {
             "name": "cli",
             "type": "string",
             "description": "Installed CLI"
         }
     ],
     "metrics": [
+        {
+            "name": "vscode_executeCommand",
+            "description": "Emitted whenever a registered Toolkit command is executed",
+            "passive": true,
+            "metadata": [
+                { "type": "command" },
+                { "type": "debounceCount" },
+                { "type": "duration" },
+                { "type": "result" },
+                {
+                    "type": "reason",
+                    "required": false
+                }
+            ]
+        },
         {
             "name": "aws_installCli",
             "description": "Called after attempting to install a local copy of a missing CLI",

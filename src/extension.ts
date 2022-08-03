@@ -65,7 +65,9 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
-import { Commands } from './shared/vscode/commands2'
+import { Commands, registerErrorHandler } from './shared/vscode/commands2'
+import { formatError, isUserCancelledError, ToolkitError, UnknownError } from './shared/errors'
+import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 
 let localize: nls.LocalizeFunc
@@ -85,6 +87,11 @@ export async function activate(context: vscode.ExtensionContext) {
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
     globals.outputChannel = toolkitOutputChannel
+
+    registerErrorHandler(async (info, error) => {
+        const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
+        await handleError(error, info.id, defaultMessage)
+    })
 
     try {
         initializeCredentialsProviderManager()
@@ -255,6 +262,27 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         throw error
     }
+}
+
+// This is only being used for errors from commands although there's plenty of other places where it
+// could be used. It needs to be apart of some sort of `core` module that is guaranteed to initialize
+// prior to every other Toolkit component. Logging and telemetry would fit well within this core module.
+async function handleError(error: unknown, topic: string, defaultMessage: string) {
+    if (isUserCancelledError(error)) {
+        getLogger().verbose(`${topic}: user cancelled`)
+        return
+    }
+
+    const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
+    const logMessage = error instanceof ToolkitError ? error.trace : formatError(UnknownError.cast(error))
+    const logId = getLogger().error(`${topic}: ${logMessage}`)
+    const message = error instanceof ToolkitError ? error.message : defaultMessage
+
+    await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
+        if (resp === logsItem) {
+            await Logging.declared.viewLogsAtMessage.execute(logId)
+        }
+    })
 }
 
 export async function deactivate() {
