@@ -34,8 +34,9 @@ class RunCommandDialog(private val project: Project, private val container: Cont
     DialogWrapper(project) {
     private val coroutineScope = projectCoroutineScope(project)
     private val commandList = CollectionComboBoxModel(commandsEnteredPreviously.toMutableList())
-    private var command = ""
-    private var task: String? = null
+
+    var command = ""
+    var task: String? = null
 
     init {
         super.init()

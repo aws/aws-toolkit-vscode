@@ -32,7 +32,6 @@ class CreateIamRoleDialog(
     private val view = CreateRolePanel(project)
 
     var iamRole: Role? = null
-        private set
 
     init {
         title = message("iam.create.role.title")

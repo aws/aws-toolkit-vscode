@@ -125,12 +125,12 @@ internal class PushToEcrDialog(
 ) : DialogWrapper(project, null, false, IdeModalityType.PROJECT) {
     private val coroutineScope = projectCoroutineScope(project)
     private val defaultTag = "latest"
-    private var type = BuildType.LocalImage
-    private var remoteTag = ""
     private val localImageRepoTags = CollectionComboBoxModel<LocalImage>()
 
-    private var localImage: LocalImage? = null
-    private var runConfiguration: DockerRunConfiguration? = null
+    var type = BuildType.LocalImage
+    var remoteTag = ""
+    var localImage: LocalImage? = null
+    var runConfiguration: DockerRunConfiguration? = null
 
     private val remoteRepos = ResourceSelector.builder()
         .resource(EcrResources.LIST_REPOS)
@@ -337,7 +337,7 @@ internal class PushToEcrDialog(
         }
     }
 
-    private enum class BuildType {
+    enum class BuildType {
         LocalImage, Dockerfile
     }
 }

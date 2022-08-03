@@ -39,10 +39,11 @@ class OpenShellInContainerDialog(
     private val connectionSettings: ConnectionSettings
 ) : DialogWrapper(project) {
     private val coroutineScope = projectCoroutineScope(project)
-    private var task: String? = null
     private val shellList = listOf("/bin/bash", "/bin/sh", "/bin/zsh")
     private val shellOption = CollectionComboBoxModel(shellList)
-    private var shell: String = ""
+
+    var task: String? = null
+    var shell: String = ""
 
     init {
         super.init()

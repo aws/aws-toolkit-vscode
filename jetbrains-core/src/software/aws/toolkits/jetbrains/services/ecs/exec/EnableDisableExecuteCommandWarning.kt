@@ -17,8 +17,8 @@ import javax.swing.JComponent
 
 class EnableDisableExecuteCommandWarning(private val project: Project, private val enable: Boolean, private val serviceName: String) : DialogWrapper(project) {
     private val warningIcon = JBLabel(Messages.getWarningIcon())
-    private var dontDisplayWarning = false
-    private var confirmNonProduction = false
+    var dontDisplayWarning = false
+    var confirmNonProduction = false
     private val settings = EcsExecCommandSettings.getInstance()
     private val component by lazy {
         panel {
