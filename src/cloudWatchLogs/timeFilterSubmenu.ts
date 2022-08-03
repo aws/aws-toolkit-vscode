@@ -32,7 +32,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         super()
     }
 
-    private get recentTimeOptions(): ItemLoadTypes<number> {
+    private get recentTimeItems(): ItemLoadTypes<number> {
         const options: DataQuickPickItem<number>[] = []
         options.push({
             label: 'View all events',
@@ -58,7 +58,9 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     }
 
     public createMenuPrompter() {
-        const prompter = createQuickPick<number | typeof customRange>(this.recentTimeOptions)
+        const prompter = createQuickPick<number | typeof customRange>(this.recentTimeItems, {
+            title: 'Select Time Filter',
+        })
 
         prompter.quickPick.items = [
             ...prompter.quickPick.items,

@@ -156,7 +156,7 @@ export function createFilterpatternPrompter(logGroupName: string) {
 }
 
 export function createRegionSubmenu() {
-    return new RegionSubmenu(getLogGroupsFromRegion)
+    return new RegionSubmenu(getLogGroupsFromRegion, { title: 'Select Log Group' }, { title: 'Select Region' })
 }
 
 export interface SearchLogGroupWizardResponse {
@@ -179,7 +179,9 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
         })
 
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
-        this.form.filterPattern.bindPrompter(({ submenuResponse }) => createFilterpatternPrompter(submenuResponse!.data))
+        this.form.filterPattern.bindPrompter(({ submenuResponse }) =>
+            createFilterpatternPrompter(submenuResponse!.data)
+        )
         this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
     }
 }
