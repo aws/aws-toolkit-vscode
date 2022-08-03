@@ -156,7 +156,11 @@ export function createFilterpatternPrompter(logGroupName: string) {
 }
 
 export function createRegionSubmenu() {
-    return new RegionSubmenu(getLogGroupsFromRegion, { title: 'Select Log Group' }, { title: 'Select Region' })
+    return new RegionSubmenu(
+        getLogGroupsFromRegion,
+        { title: 'Select Log Group' },
+        { title: 'Select Region for Log Group' }
+    )
 }
 
 export interface SearchLogGroupWizardResponse {
