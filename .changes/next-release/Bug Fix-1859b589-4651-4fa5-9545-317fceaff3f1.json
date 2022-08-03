@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Delve debugger installation failures for Go Lambdas on MacOS"
+	"description": "Delve debugger installation fails for Go Lambdas on MacOS"
 }
