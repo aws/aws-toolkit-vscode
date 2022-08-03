@@ -4,15 +4,20 @@
  */
 
 import * as vscode from 'vscode'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import {
+    CloudWatchLogsData,
+    CloudWatchLogsParameters,
+    getLogEventsFromUriComponents,
+    LogStreamRegistry,
+} from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
-import { uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
+import { uriToKey, findOccurencesOf, parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
 
 const HIGHLIGHTER = vscode.window.createTextEditorDecorationType({
     backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
 })
 
-export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider {
+export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider, vscode.DefinitionProvider {
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
@@ -34,6 +39,43 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             getLogger().error(`No content found for URI: ${uri}`)
         }
         return content ?? ''
+    }
+
+    async provideDefinition(
+        document: vscode.TextDocument,
+        position: vscode.Position,
+        token: vscode.CancellationToken
+    ): Promise<vscode.Definition | vscode.LocationLink[] | undefined> {
+        const activeUri = document.uri
+        const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
+        const curLine = document.lineAt(position.line)
+        let streamUri: vscode.Uri
+        try {
+            const streamIDMap = this.registry.getStreamIdMap(activeUri)
+            const streamID = streamIDMap?.get(curLine.lineNumber)
+            if (!streamID) {
+                throw new Error(`cwl: No streamID found for stream with uri ${activeUri}`)
+            }
+            const parameters: CloudWatchLogsParameters = {
+                limit: this.registry.configuration.get('limit', 10000),
+            }
+            logGroupInfo.streamName = streamID
+            streamUri = createURIFromArgs(logGroupInfo, parameters)
+            const initialStreamData: CloudWatchLogsData = {
+                data: [],
+                parameters: parameters,
+                logGroupInfo: logGroupInfo,
+                retrieveLogsFunction: getLogEventsFromUriComponents,
+                busy: false,
+            }
+            await this.registry.registerLog(streamUri, initialStreamData)
+            // Set the document language
+            const doc = await vscode.workspace.openTextDocument(streamUri)
+            vscode.languages.setTextDocumentLanguage(doc, 'log')
+            return new vscode.Location(streamUri, new vscode.Position(0, 0))
+        } catch (err) {
+            throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
+        }
     }
 }
 
