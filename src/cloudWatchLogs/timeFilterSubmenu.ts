@@ -150,10 +150,6 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         if (Date.parse(startTime) > Date.parse(endTime)) {
             return 'first date must occur before second date'
         }
-
-        if (Date.parse(endTime) > today.valueOf()) {
-            return 'end date cannot be in the future'
-        }
     }
 
     public setSteps(current: number, total: number): void {
