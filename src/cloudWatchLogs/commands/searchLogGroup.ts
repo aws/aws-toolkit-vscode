@@ -11,7 +11,6 @@ import {
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
-    getLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
