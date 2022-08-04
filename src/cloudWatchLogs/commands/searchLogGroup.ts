@@ -160,7 +160,7 @@ export function createFilterpatternPrompter(logGroupName: string, isFirst: boole
     )
     const placeHolderText = localize(
         'AWS.cwl.searchLogGroup.filterPatternPlaceholder',
-        'search pattern (or empty for all events'
+        'search pattern (or empty for all events)'
     )
     const options = {
         title: titleText,
@@ -178,8 +178,8 @@ export function createFilterpatternPrompter(logGroupName: string, isFirst: boole
 export function createRegionSubmenu() {
     return new RegionSubmenu(
         getLogGroupsFromRegion,
-        { title: 'Select Log Group' },
-        { title: 'Select Region for Log Group' }
+        { title: localize('AWS.cwl.searchLogGroup.logGroupPromptTitle', 'Select Log Group') },
+        { title: localize('AWS.cwl.searchLogGroup.regionPromptTitle', 'Select Region for Log Group') }
     )
 }
 
