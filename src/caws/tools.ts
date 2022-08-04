@@ -157,10 +157,14 @@ async function ensureCawsSshConfig(sshPath: string) {
     }
 
     const connectScript = scriptResult.ok()
-    const proxyCommand = getProxyCommand(iswin, connectScript.fsPath)
-    const section = createSSHConfigSection(proxyCommand)
+    const proxyCommand = await getProxyCommand(iswin, connectScript.fsPath)
+    if (proxyCommand.isErr()) {
+        return proxyCommand
+    }
 
-    const verifyHost = await verifySSHHost({ sshPath, proxyCommand, section })
+    const section = createSSHConfigSection(proxyCommand.unwrap())
+
+    const verifyHost = await verifySSHHost({ sshPath, proxyCommand: proxyCommand.unwrap(), section })
     if (verifyHost.isErr()) {
         return verifyHost
     }
@@ -264,6 +268,16 @@ async function matchSshSection(sshPath: string, sshName: string) {
     return Result.ok(matches?.[0])
 }
 
-function getProxyCommand(iswin: boolean, script: string) {
-    return iswin ? `powershell.exe -ExecutionPolicy Bypass -File "${script}" %h` : `'${script}' '%h'`
+async function getProxyCommand(iswin: boolean, script: string): Promise<Result<string, ToolkitError>> {
+    if (iswin) {
+        // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
+        const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
+        const r = await proc.run()
+        if (r.exitCode !== 0) {
+            return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
+        }
+        return Result.ok(`"${r.stdout}" -ExecutionPolicy Bypass -File "${script}" %h`)
+    } else {
+        return Result.ok(`'${script}' '%h'`)
+    }
 }
