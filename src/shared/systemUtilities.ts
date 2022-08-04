@@ -157,6 +157,7 @@ export class SystemUtilities {
             'ssh', // Try $PATH _before_ falling back to common paths.
             '/usr/bin/ssh',
             'C:/Windows/System32/OpenSSH/ssh.exe',
+            'C:/Program Files/Git/usr/bin/ssh.exe'
         ]
         for (const p of paths) {
             if (!p || ('ssh' !== p && !fs.existsSync(p))) {
