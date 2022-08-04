@@ -25,7 +25,7 @@ import {
     getLogEventsFromUriComponents,
 } from '../registry/logStreamRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
-import { prepareDocument } from './searchLogGroup'
+import { getInitialLogData, prepareDocument } from './searchLogGroup'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -53,13 +53,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
 
     const uri = createURIFromArgs(logGroupInfo, parameters)
 
-    const initialStreamData: CloudWatchLogsData = {
-        data: [],
-        parameters: parameters,
-        busy: false,
-        logGroupInfo: logGroupInfo,
-        retrieveLogsFunction: getLogEventsFromUriComponents,
-    }
+    const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
 
     result = await prepareDocument(uri, initialStreamData, registry)
     telemetry.recordCloudwatchlogsOpenStream({ result })

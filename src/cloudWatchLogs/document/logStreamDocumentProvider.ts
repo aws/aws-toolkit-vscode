@@ -12,6 +12,7 @@ import {
 } from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
 import { uriToKey, findOccurencesOf, parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
+import { getInitialLogData } from '../commands/searchLogGroup'
 
 const HIGHLIGHTER = vscode.window.createTextEditorDecorationType({
     backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
@@ -69,14 +70,8 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
                 limit: this.registry.configuration.get('limit', 10000),
             }
             logGroupInfo.streamName = streamID
+            const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
             const streamUri = createURIFromArgs(logGroupInfo, parameters)
-            const initialStreamData: CloudWatchLogsData = {
-                data: [],
-                parameters: parameters,
-                logGroupInfo: logGroupInfo,
-                retrieveLogsFunction: getLogEventsFromUriComponents,
-                busy: false,
-            }
             await this.registry.registerLog(streamUri, initialStreamData)
             // Set the document language
             const doc = await vscode.workspace.openTextDocument(streamUri)
