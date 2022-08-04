@@ -7,10 +7,12 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as sinon from 'sinon'
 import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { spy } from 'sinon'
 import { closeAllEditors } from '../../test/testUtil'
+import { previewStateMachineCommand } from '../../stepFunctions/activation'
+import { createTestWindow } from '../../test/shared/vscode/window'
 
 const sampleStateMachine = `
 	 {
@@ -107,6 +109,7 @@ describe('visualizeStateMachine', async function () {
 
     afterEach(async function () {
         await fs.remove(tempFolder)
+        sinon.restore()
     })
 
     after(async function () {
@@ -119,7 +122,7 @@ describe('visualizeStateMachine', async function () {
         const fileName = 'mysamplestatemachine.json'
         await openATextEditorWithText(stateMachineFileText, fileName)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
+        const result = await previewStateMachineCommand.execute()
 
         assert.ok(result)
     }).timeout(15000) // Give the first test that calls aws.previewStateMachine a chance to download the visualizer
@@ -128,7 +131,7 @@ describe('visualizeStateMachine', async function () {
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(sampleStateMachine, fileName)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
+        const result = await previewStateMachineCommand.execute()
 
         assert.ok(result)
 
@@ -151,7 +154,7 @@ describe('visualizeStateMachine', async function () {
         const fileName = 'mysamplestatemachine.asl.yaml'
         const textEditor = await openATextEditorWithText(samleStateMachineYaml, fileName)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
+        const result = await previewStateMachineCommand.execute()
 
         assert.ok(result)
 
@@ -175,7 +178,7 @@ describe('visualizeStateMachine', async function () {
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(stateMachineFileText, fileName)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
+        const result = await previewStateMachineCommand.execute()
 
         assert.ok(result)
 
@@ -207,10 +210,13 @@ describe('visualizeStateMachine', async function () {
     it('throws an error if no active text editor is open', async function () {
         // Make sure nothing is open from previous tests.
         await closeAllEditors()
+        assert.strictEqual(vscode.window.activeTextEditor, undefined)
 
-        await assert.rejects(async () => {
-            await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
-        })
+        const testWindow = createTestWindow()
+        sinon.replace(vscode, 'window', testWindow)
+        const errorMessage = testWindow.waitForMessage(/no active text editor/i)
+
+        await Promise.all([previewStateMachineCommand.execute(), errorMessage.then(dialog => dialog.close())])
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async function () {
@@ -218,7 +224,7 @@ describe('visualizeStateMachine', async function () {
         const stateMachineDefinitionFile = 'mystatemachine.json'
         await openATextEditorWithText(stateMachineFileText, stateMachineDefinitionFile)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
+        const result = await previewStateMachineCommand.execute()
         assert.ok(result)
 
         await waitUntilWebviewIsVisible(result)
@@ -231,7 +237,7 @@ describe('visualizeStateMachine', async function () {
 
         const updatedText = 'updated text'
 
-        const postMessageSpy = spy()
+        const postMessageSpy = sinon.spy()
         if (result) {
             // eslint-disable-next-line @typescript-eslint/unbound-method
             result.webview.postMessage = postMessageSpy
