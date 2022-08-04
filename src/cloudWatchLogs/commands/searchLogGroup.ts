@@ -11,7 +11,7 @@ import {
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
-    CloudWatchLogsAction,
+    getInitialLogData,
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
@@ -27,20 +27,6 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { createInputBox } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { truncate } from '../../shared/utilities/textUtilities'
-
-export function getInitialLogData(
-    logGroupInfo: CloudWatchLogsGroupInfo,
-    parameters: CloudWatchLogsParameters,
-    retrieveLogsFunction: CloudWatchLogsAction
-): CloudWatchLogsData {
-    return {
-        data: [],
-        parameters: parameters,
-        logGroupInfo: logGroupInfo,
-        retrieveLogsFunction: retrieveLogsFunction,
-        busy: false,
-    }
-}
 
 function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
     const logGroupInfo: CloudWatchLogsGroupInfo = {

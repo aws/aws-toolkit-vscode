@@ -311,6 +311,20 @@ export async function getLogEventsFromUriComponents(
     }
 }
 
+export function getInitialLogData(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    retrieveLogsFunction: CloudWatchLogsAction
+): CloudWatchLogsData {
+    return {
+        data: [],
+        parameters: parameters,
+        logGroupInfo: logGroupInfo,
+        retrieveLogsFunction: retrieveLogsFunction,
+        busy: false,
+    }
+}
+
 export interface ActiveTab {
     data: CloudWatchLogsData
     editor?: vscode.TextEditor

@@ -8,10 +8,10 @@ import {
     CloudWatchLogsParameters,
     getLogEventsFromUriComponents,
     LogStreamRegistry,
+    getInitialLogData,
 } from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
 import { uriToKey, findOccurencesOf, parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
-import { getInitialLogData } from '../commands/searchLogGroup'
 
 const HIGHLIGHTER = vscode.window.createTextEditorDecorationType({
     backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),

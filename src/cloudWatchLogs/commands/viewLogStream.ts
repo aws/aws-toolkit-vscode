@@ -22,9 +22,10 @@ import {
     CloudWatchLogsParameters,
     LogStreamRegistry,
     getLogEventsFromUriComponents,
+    getInitialLogData,
 } from '../registry/logStreamRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
-import { getInitialLogData, prepareDocument } from './searchLogGroup'
+import { prepareDocument } from './searchLogGroup'
 
 export interface SelectLogStreamResponse {
     region: string
