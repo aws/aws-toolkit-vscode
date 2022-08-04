@@ -109,13 +109,9 @@ export class TelemetryHelper {
         acceptIndex: number,
         recommendationSuggestionState?: Map<number, string>
     ): telemetry.CodewhispererSuggestionState {
-        if (recommendationSuggestionState?.get(i) === 'Empty') {
-            return 'Empty'
-        }
-        if (recommendationSuggestionState?.get(i) === 'Filter') {
-            return 'Filter'
-        } else if (recommendationSuggestionState?.get(i) === 'Discard') {
-            return 'Discard'
+        const state = recommendationSuggestionState?.get(i)
+        if (state && ['Empty', 'Filter', 'Discard'].includes(state)) {
+            return state as telemetry.CodewhispererSuggestionState
         } else if (recommendationSuggestionState !== undefined && recommendationSuggestionState.get(i) !== 'Showed') {
             return 'Unseen'
         }
