@@ -23,7 +23,7 @@ import { getLogger } from '../../shared/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
+import { createInputBox, ExtendedInputBoxOptions, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { truncate } from '../../shared/utilities/textUtilities'
 import { createBackButton, createExitButton, createHelpButton } from '../../shared/ui/buttons'
@@ -153,8 +153,11 @@ export function createFilterpatternPrompter(logGroupName: string, isFirst: boole
     const helpUri =
         'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html#matching-terms-events'
     const options = {
-        title: `Search Log Group ${truncate(logGroupName, -50)}`,
-        placeholder: 'search pattern (or empty for all events)',
+        title: localize('AWS.cwl.searchLogGroup.filterPatternTitle', `Search Log Group ${truncate(logGroupName, -50)}`),
+        placeholder: localize(
+            'AWS.cwl.searchLogGroup.filterPatternPlaceholder',
+            'search pattern (or empty for all events'
+        ),
         buttons: [createHelpButton(helpUri), createExitButton()],
     }
 
@@ -163,7 +166,6 @@ export function createFilterpatternPrompter(logGroupName: string, isFirst: boole
     }
 
     return createInputBox(options)
-    //[createHelpButton(helpUri), createExitButton()]
 }
 
 export function createRegionSubmenu() {
