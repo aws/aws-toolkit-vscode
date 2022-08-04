@@ -91,5 +91,5 @@ export async function changeLogSearchParams(
     const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
     result = await prepareDocument(newUri, newData, registry)
-    console.log(result)
+    // TODO: add telemetry
 }
