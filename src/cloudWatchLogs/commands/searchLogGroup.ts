@@ -26,7 +26,7 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { truncate } from '../../shared/utilities/textUtilities'
-import { createBackButton, createExitButton, createHelpButton } from '../../shared/ui/buttons'
+import { createBackButton, createExitButton, createHelpButton, createPlusButton } from '../../shared/ui/buttons'
 
 function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
     const logGroupInfo: CloudWatchLogsGroupInfo = {
@@ -154,7 +154,7 @@ export function createFilterpatternPrompter(logGroupName: string, isFirst: boole
         'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html#matching-terms-events'
     const options = {
         title: `Search Log Group ${truncate(logGroupName, -50)}`,
-        placeholder: 'search pattern',
+        placeholder: 'search pattern (or empty for all events)',
         buttons: [createHelpButton(helpUri), createExitButton()],
     }
 
