@@ -9,7 +9,9 @@ import { ItemLoadTypes, QuickPickPrompter, DataQuickPickItem, createQuickPick } 
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { isValidResponse, StepEstimator } from '../shared/wizards/wizard'
 import { createCommonButtons } from '../shared/ui/buttons'
-import { localize } from 'vscode-nls'
+import * as nls from 'vscode-nls'
+
+const localize = nls.loadMessageBundle()
 
 export function isViewAllEvents(response: TimeFilterResponse) {
     return response.start === response.end
