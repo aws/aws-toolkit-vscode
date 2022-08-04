@@ -36,7 +36,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         // get latest content and return
         const content = this.registry.getLogContent(uri, { timestamps: true })
         if (!content) {
-            getLogger().error(`No content found for URI: ${uri}`)
+            getLogger().error(`No content found for URI: ${uri.path}`)
         }
         return content ?? ''
     }
@@ -56,7 +56,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         try {
             const streamIDMap = this.registry.getStreamIdMap(activeUri)
             if (!streamIDMap || streamIDMap.size === 0) {
-                throw new Error(`cwl: No streamIDMap found for stream with uri ${activeUri}`)
+                throw new Error(`cwl: No streamIDMap found for stream with uri ${activeUri.path}`)
             }
             const streamID = streamIDMap.get(curLine.lineNumber)
 
