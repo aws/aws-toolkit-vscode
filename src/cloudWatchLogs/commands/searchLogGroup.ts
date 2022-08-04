@@ -26,7 +26,7 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { truncate } from '../../shared/utilities/textUtilities'
-import { createBackButton, createExitButton, createHelpButton, createPlusButton } from '../../shared/ui/buttons'
+import { createBackButton, createExitButton, createHelpButton } from '../../shared/ui/buttons'
 
 function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: LogStreamRegistry): CloudWatchLogsData {
     const logGroupInfo: CloudWatchLogsGroupInfo = {
