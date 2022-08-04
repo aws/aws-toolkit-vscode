@@ -8,25 +8,32 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.fileEditor.TextEditorWithPreview
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.layout.panel
+import com.intellij.util.ResourceUtil
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererException
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.disposableCoroutineScope
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import java.net.URL
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
@@ -100,6 +107,7 @@ class TokenDialog(private val project: Project) : DialogWrapper(project), Dispos
                     ApplicationManager.getApplication().invokeLater {
                         CodeWhispererExplorerActionManager.getInstance().enableCodeWhisperer(project)
                     }
+                    showBetaLandingPage()
                 }
             } catch (e: CodeWhispererException) {
                 LOGGER.debug { e.message.toString() }
@@ -125,6 +133,21 @@ class TokenDialog(private val project: Project) : DialogWrapper(project), Dispos
 
     override fun dispose() {
         super.dispose()
+    }
+
+    private fun showBetaLandingPage() {
+        val url: URL = ResourceUtil.getResource(javaClass.classLoader, "codewhisperer", "WelcomeToCodeWhisperer.md")
+        VfsUtil.findFileByURL(url)?.let { readme ->
+            readme.putUserData(TextEditorWithPreview.DEFAULT_LAYOUT_FOR_FILE, TextEditorWithPreview.Layout.SHOW_PREVIEW)
+
+            val fileEditorManager = FileEditorManager.getInstance(project)
+            ApplicationManager.getApplication().invokeLater {
+                val editor = fileEditorManager.openTextEditor(OpenFileDescriptor(project, readme), true)
+                if (editor == null) {
+                    LOGGER.warn { "Failed to open WelcomeToCodeWhisperer.md" }
+                }
+            }
+        }
     }
 
     companion object {

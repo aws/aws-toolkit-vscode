@@ -25,7 +25,6 @@ class CodeWhispererStartupSettingsListener(private val project: Project) :
         if (value) {
             CodeWhispererSettings.getInstance().toggleIncludeCodeWithReference(true)
             CodeWhispererCodeScanManager.getInstance(project).addCodeScanUI()
-            CodeWhispererBetaLandingPage().runActivity(project)
         } else {
             CodeWhispererCodeScanManager.getInstance(project).removeCodeScanUI()
         }

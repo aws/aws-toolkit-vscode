@@ -200,7 +200,6 @@ with what features/services are supported.
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererBetaLandingPage"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupActivity"/>
 
         <applicationService serviceInterface="software.aws.toolkits.core.clients.SdkClientProvider"
