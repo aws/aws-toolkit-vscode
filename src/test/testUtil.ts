@@ -260,13 +260,16 @@ export async function closeAllEditors(): Promise<void> {
         }
     }
 
-    // The output channel counts as an editor, but you can't really close that...
+    // Output channels are named with the prefix 'extension-output'
+    // Maybe we can close these with a command?
+    const ignorePatterns = [/extension-output/, /tasks/]
+
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
             // Race: documents could appear after the call to closeAllEditors(), so retry.
             await vscode.commands.executeCommand(closeAllCmd)
             const visibleEditors = vscode.window.visibleTextEditors.filter(
-                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
+                editor => !ignorePatterns.find(p => p.test(editor.document.fileName))
             )
 
             return visibleEditors.length === 0
@@ -279,8 +282,8 @@ export async function closeAllEditors(): Promise<void> {
     )
 
     if (!noVisibleEditor) {
-        throw new Error(
-            `Editor "${vscode.window.activeTextEditor!.document.fileName}" was still open after closeAllEditors()`
-        )
+        const editors = vscode.window.visibleTextEditors.map(editor => `\t${editor.document.fileName}`)
+
+        throw new Error(`The following editors were still open after closeAllEditors():\n${editors.join('\n')}`)
     }
 }
