@@ -46,7 +46,6 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         position: vscode.Position,
         token: vscode.CancellationToken
     ): Promise<vscode.Definition | vscode.LocationLink[] | undefined> {
-        console.log('provideDefinition')
         const activeUri = document.uri
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         if (logGroupInfo.streamName) {
@@ -54,7 +53,6 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             return
         }
         const curLine = document.lineAt(position.line)
-        let streamUri: vscode.Uri
         try {
             const streamIDMap = this.registry.getStreamIdMap(activeUri)
             if (!streamIDMap || streamIDMap.size === 0) {
@@ -71,7 +69,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
                 limit: this.registry.configuration.get('limit', 10000),
             }
             logGroupInfo.streamName = streamID
-            streamUri = createURIFromArgs(logGroupInfo, parameters)
+            const streamUri = createURIFromArgs(logGroupInfo, parameters)
             const initialStreamData: CloudWatchLogsData = {
                 data: [],
                 parameters: parameters,
