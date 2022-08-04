@@ -13,10 +13,26 @@ import { saveCdkJson } from './treeTestUtils'
 import { createTestWorkspaceFolder } from '../testUtil'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { mkdirp, writeJSON } from 'fs-extra'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 describe('detectCdkProjects', function () {
     const workspacePaths: string[] = []
     const workspaceFolders: vscode.WorkspaceFolder[] = []
+
+    async function detectCdkProjects_wait(dirs: any) {
+        return (
+            (await waitUntil(
+                async () => {
+                    return await detectCdkProjects(dirs)
+                },
+                {
+                    timeout: 3000,
+                    interval: 250,
+                    truthy: true,
+                }
+            )) ?? []
+        )
+    }
 
     beforeEach(async function () {
         await FakeExtensionContext.getFakeExtContext()
@@ -59,7 +75,7 @@ describe('detectCdkProjects', function () {
     it('detects CDK project when cdk.json exists', async function () {
         const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
         await saveCdkJson(cdkJsonUri.fsPath)
-        const actual = await detectCdkProjects(workspaceFolders)
+        const actual = await detectCdkProjects_wait(workspaceFolders)
 
         assert.ok(actual)
 
@@ -73,7 +89,7 @@ describe('detectCdkProjects', function () {
         const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'directory1', 'directory2', 'cdk.json')
         await mkdirp(path.dirname(cdkJsonUri.fsPath))
         await saveCdkJson(cdkJsonUri.fsPath)
-        const actual = await detectCdkProjects(workspaceFolders)
+        const actual = await detectCdkProjects_wait(workspaceFolders)
         assert.strictEqual(actual[0]?.cdkJsonUri.fsPath, cdkJsonUri.fsPath)
     })
 
@@ -81,7 +97,7 @@ describe('detectCdkProjects', function () {
         const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'node_modules', 'lib', 'cdk.json')
         await mkdirp(path.dirname(cdkJsonPath))
         await saveCdkJson(cdkJsonPath)
-        const actual = await detectCdkProjects(workspaceFolders)
+        const actual = await detectCdkProjects_wait(workspaceFolders)
         assert.strictEqual(actual.length, 0)
     })
 
@@ -92,7 +108,7 @@ describe('detectCdkProjects', function () {
             const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
             await saveCdkJson(cdkJsonUri.fsPath)
 
-            const actual = await detectCdkProjects(workspaceFolders)
+            const actual = await detectCdkProjects_wait(workspaceFolders)
             assert.strictEqual(actual.length, 1)
         } finally {
             workspaceFolders.pop()
@@ -102,7 +118,7 @@ describe('detectCdkProjects', function () {
     it('takes into account `output` from cdk.json to build tree.json path', async function () {
         const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
         await writeJSON(cdkJsonUri.fsPath, { app: 'npx ts-node bin/demo-nov7.ts', output: 'build/cdk.out' })
-        const actual = await detectCdkProjects(workspaceFolders)
+        const actual = await detectCdkProjects_wait(workspaceFolders)
 
         assert.ok(actual)
 
@@ -130,7 +146,7 @@ describe('detectCdkProjects', function () {
 
         await saveCdkJson(projectPath1.fsPath)
         await saveCdkJson(projectPath2.fsPath)
-        const actual = await detectCdkProjects(workspaceFolders)
+        const actual = await detectCdkProjects_wait(workspaceFolders)
         assert.ok(actual)
         assert.strictEqual(actual.length, 2)
 

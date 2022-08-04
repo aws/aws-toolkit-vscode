@@ -16,6 +16,7 @@ import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/cl
 import { getLogger, Logger } from '../../shared/logger'
 import { recordStepfunctionsDownloadStateMachineDefinition, Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
+import { previewStateMachineCommand } from '../activation'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -38,7 +39,7 @@ export async function downloadStateMachineDefinition(params: {
             })
 
             const textEditor = await vscode.window.showTextDocument(doc)
-            await vscode.commands.executeCommand('aws.previewStateMachine', textEditor)
+            await previewStateMachineCommand.execute(textEditor)
         } else {
             const wsPath = vscode.workspace.workspaceFolders
                 ? vscode.workspace.workspaceFolders[0].uri.fsPath
