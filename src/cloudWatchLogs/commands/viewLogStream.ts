@@ -18,7 +18,6 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import {
-    CloudWatchLogsData,
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     LogStreamRegistry,
