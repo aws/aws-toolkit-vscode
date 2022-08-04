@@ -25,11 +25,7 @@ export async function getNewData(
     // We must deepcopy the parameters so that we don't change their original value in oldData
     const newData: CloudWatchLogsData = {
         ...oldData,
-        parameters: {
-            filterPattern: oldData.parameters.filterPattern,
-            startTime: oldData.parameters.startTime,
-            endTime: oldData.parameters.endTime,
-        },
+        parameters: ...oldData.parameters,
         data: [],
         next: undefined,
         previous: undefined,
