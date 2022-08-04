@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { SsmDocumentNode } from '../../../ssmDocument/explorer/ssmDocumentNode'
 import { DocumentTypeNode } from '../../../ssmDocument/explorer/documentTypeNode'
-import { DEFAULT_TEST_REGION_CODE } from '../../utilities/fakeAwsContext'
+import { DEFAULT_TEST_REGION_CODE } from '../../shared/regions/testUtil'
 
 describe('SsmDocumentNode', function () {
     it('always has 1 node: Automation Documents, if any child exists', async function () {

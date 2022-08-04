@@ -7,12 +7,12 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { AwsContext } from '../shared/awsContext'
 import * as localizedText from '../shared/localizedText'
 import { createQuickPick, promptUser } from '../shared/ui/picker'
 import { AwsExplorer } from './awsExplorer'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { PromptSettings } from '../shared/settings'
+import { RegionProvider } from '../shared/regions/regionProvider'
 
 class RegionMissingUI {
     public static readonly add: string = localizedText.yes
@@ -25,18 +25,18 @@ class RegionMissingUI {
 
 export async function checkExplorerForDefaultRegion(
     profileName: string,
-    awsContext: AwsContext,
+    regionProvider: RegionProvider,
     awsExplorer: AwsExplorer
 ): Promise<void> {
-    const profileRegion = awsContext.getCredentialDefaultRegion()
+    const profileRegion = regionProvider.defaultRegionId
 
-    const explorerRegions = new Set(await awsContext.getExplorerRegions())
+    const explorerRegions = new Set(regionProvider.getExplorerRegions())
     if (explorerRegions.has(profileRegion)) {
         return
     }
 
     if (isCloud9()) {
-        await awsContext.addExplorerRegion(profileRegion)
+        await regionProvider.updateExplorerRegions([...explorerRegions, profileRegion])
         awsExplorer.refresh()
         return
     }
@@ -80,7 +80,7 @@ export async function checkExplorerForDefaultRegion(
     const response = r[0].label
 
     if (response === RegionMissingUI.add) {
-        await awsContext.addExplorerRegion(profileRegion)
+        await regionProvider.updateExplorerRegions([...explorerRegions, profileRegion])
         awsExplorer.refresh()
     } else if (response === RegionMissingUI.alwaysIgnore) {
         PromptSettings.instance.disablePrompt('regionAddAutomatically')
