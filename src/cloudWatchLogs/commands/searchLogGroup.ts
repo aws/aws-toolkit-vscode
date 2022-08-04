@@ -90,6 +90,11 @@ export async function prepareDocument(
                 highlightDocument(registry, uri)
             }
         })
+        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
+            if (document === doc) {
+                registry.clearStreamIdMap(doc.uri)
+            }
+        })
         return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {

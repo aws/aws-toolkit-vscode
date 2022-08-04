@@ -214,9 +214,24 @@ export class LogStreamRegistry {
     private setStreamIdMap(uri: vscode.Uri, lineNum: number, streamID: string): void {
         const ActiveTab = this.getActiveTab(uri)
         if (!ActiveTab) {
-            throw new Error(`cwl: Cannot set streamID for unregistered uri ${uri}`)
+            throw new Error(`cwl: Cannot set streamID for unregistered uri ${uri.path}`)
         }
         ActiveTab.streamIds.set(lineNum, streamID)
+    }
+
+    public clearStreamIdMap(uri: vscode.Uri): void {
+        const currentActiveTab = this.getActiveTab(uri)
+        if (!currentActiveTab) {
+            throw new Error(`cwl: Cannot clear streamIdMap for ununregistered uri ${uri.path}`)
+        }
+        this.setActiveTab(uri, {
+            ...currentActiveTab,
+            streamIds: new Map<number, string>(),
+        })
+    }
+
+    private setActiveTab(uri: vscode.Uri, newActiveTab: ActiveTab): void {
+        this.activeLogs.set(uriToKey(uri), newActiveTab)
     }
 
     public getActiveTab(uri: vscode.Uri): ActiveTab | undefined {
