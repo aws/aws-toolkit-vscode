@@ -156,7 +156,8 @@ export function createFilterpatternPrompter(logGroupName: string, isFirst: boole
         'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html#matching-terms-events'
     const titleText = localize(
         'AWS.cwl.searchLogGroup.filterPatternTitle',
-        `Search Log Group ${truncate(logGroupName, -50)}`
+        `Search Log Group {0}`,
+        truncate(logGroupName, -50)
     )
     const placeHolderText = localize(
         'AWS.cwl.searchLogGroup.filterPatternPlaceholder',
