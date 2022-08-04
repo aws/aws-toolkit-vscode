@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
-import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
+import { AwsContext } from '../../shared/awsContext'
 import globals from '../../shared/extensionGlobals'
 
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
@@ -73,7 +73,7 @@ export async function deploySamApplication(
     try {
         const credentials = await awsContext.getCredentials()
         if (!credentials) {
-            throw new NoActiveCredentialError()
+            throw new Error('No AWS profile selected')
         }
 
         throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())

@@ -14,7 +14,7 @@ import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilit
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals from '../extensionGlobals'
-import { DEFAULT_PARTITION } from '../regions/regionUtilities'
+import { DEFAULT_PARTITION } from '../regions/regionProvider'
 
 export const DEFAULT_MAX_KEYS = 300
 export const DEFAULT_DELIMITER = '/'

@@ -24,7 +24,8 @@ import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
 import { createTestWorkspaceFolder } from './testUtil'
-import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
+import { FakeAwsContext } from './utilities/fakeAwsContext'
+import { createTestRegionProvider } from './shared/regions/testUtil'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -111,7 +112,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                 validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
             } as SamCliContext
         }
-        const regionProvider = new FakeRegionProvider()
+        const regionProvider = createTestRegionProvider({ globalState: ctx.globalState, awsContext })
         const outputChannel = new MockOutputChannel()
         const invokeOutputChannel = new MockOutputChannel()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
