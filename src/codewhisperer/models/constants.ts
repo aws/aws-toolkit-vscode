@@ -118,6 +118,7 @@ export const CodeWhispererConstants = {
      */
     codeScanJavaPayloadSizeLimitBytes: Math.pow(2, 20), // 1 MB
     codeScanPythonPayloadSizeLimitBytes: 200 * Math.pow(2, 10), // 200 KB
+    codeScanJavascriptPayloadSizeLimitBytes: 200 * Math.pow(2, 10), // 200 KB
     codeScanTruncDirPrefix: 'codewhisperer_scan',
     codeScanZipExt: '.zip',
     contextTruncationTimeoutSeconds: 10,
