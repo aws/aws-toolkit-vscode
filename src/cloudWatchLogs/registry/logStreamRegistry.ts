@@ -212,11 +212,11 @@ export class LogStreamRegistry {
     }
 
     private setStreamIdMap(uri: vscode.Uri, lineNum: number, streamID: string): void {
-        const ActiveTab = this.getActiveTab(uri)
-        if (!ActiveTab) {
+        const activeTab = this.getActiveTab(uri)
+        if (!activeTab) {
             throw new Error(`cwl: Cannot set streamID for unregistered uri ${uri.path}`)
         }
-        ActiveTab.streamIds.set(lineNum, streamID)
+        activeTab.streamIds.set(lineNum, streamID)
     }
 
     public clearStreamIdMap(uri: vscode.Uri): void {
