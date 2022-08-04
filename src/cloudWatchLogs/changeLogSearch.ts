@@ -2,7 +2,6 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as telemetry from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
 import { createURIFromArgs } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
@@ -25,7 +24,7 @@ export async function getNewData(
     // We must deepcopy the parameters so that we don't change their original value in oldData
     const newData: CloudWatchLogsData = {
         ...oldData,
-        parameters: ...oldData.parameters,
+        parameters: { ...oldData.parameters },
         data: [],
         next: undefined,
         previous: undefined,
@@ -70,7 +69,7 @@ export async function changeLogSearchParams(
     registry: LogStreamRegistry,
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
-    let result: telemetry.Result = 'Succeeded'
+    //let result: telemetry.Result = 'Succeeded'
     const oldUri = getActiveDocumentUri(registry)
 
     const oldData = registry.getLogData(oldUri)
@@ -80,12 +79,13 @@ export async function changeLogSearchParams(
     const newData = await getNewData(param, oldData)
 
     if (!newData) {
-        result = 'Cancelled'
+        //result = 'Cancelled'
         return
     }
 
     const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
-    result = await prepareDocument(newUri, newData, registry)
+    //result = await prepareDocument(newUri, newData, registry)
+    await prepareDocument(newUri, newData, registry)
     // TODO: add telemetry
 }
