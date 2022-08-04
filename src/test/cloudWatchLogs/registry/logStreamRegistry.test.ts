@@ -11,6 +11,7 @@ import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { fakeGetLogEvents, fakeSearchLogGroup, testStreamData1, testStreamNames } from '../utils.test'
+import { clearStreamIdMapOnDocumentClose } from '../../../cloudWatchLogs/commands/searchLogGroup'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
@@ -150,8 +151,10 @@ describe('LogStreamRegistry', async function () {
             )
         })
 
-        it('registers stream ids to map', function () {
+        it('registers stream ids to map and clears it on document close', async function () {
             registry.getLogContent(searchLogGroupUri) // We run this to create the mappings
+            const doc = await vscode.workspace.openTextDocument(searchLogGroupUri)
+            clearStreamIdMapOnDocumentClose(registry, doc)
             const streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
             const expectedMap = new Map<number, string>([
                 [0, testStreamNames[0]],

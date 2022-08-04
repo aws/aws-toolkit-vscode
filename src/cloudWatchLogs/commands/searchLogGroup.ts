@@ -70,6 +70,14 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     return initialStreamData
 }
 
+export function clearStreamIdMapOnDocumentClose(registry: LogStreamRegistry, doc: vscode.TextDocument): void {
+    vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
+        if (document === doc) {
+            registry.clearStreamIdMap(doc.uri)
+        }
+    })
+}
+
 export async function prepareDocument(
     uri: vscode.Uri,
     initialLogData: CloudWatchLogsData,
@@ -90,11 +98,7 @@ export async function prepareDocument(
                 highlightDocument(registry, uri)
             }
         })
-        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-            if (document === doc) {
-                registry.clearStreamIdMap(doc.uri)
-            }
-        })
+        clearStreamIdMapOnDocumentClose(registry, doc)
         return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
