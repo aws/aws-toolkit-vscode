@@ -13,7 +13,6 @@ import * as vscode from 'vscode'
 import { samDeployDocUrl } from '../../shared/constants'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
-import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -351,10 +350,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async promptUserForRegion(step: number, initialRegionCode?: string): Promise<string | undefined> {
-        const partitionRegions = getRegionsForActiveCredentials(
-            this.extContext.awsContext,
-            this.extContext.regionProvider
-        )
+        const partitionRegions = this.extContext.regionProvider.getRegions()
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {

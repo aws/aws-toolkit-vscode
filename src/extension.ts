@@ -17,7 +17,6 @@ import { SharedCredentialsProviderFactory } from './credentials/providers/shared
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
-import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
@@ -33,7 +32,7 @@ import {
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import { RegionProvider } from './shared/regions/regionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
@@ -98,10 +97,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const endpointsProvider = makeEndpointsProvider()
 
-        const awsContext = new DefaultAwsContext(context)
+        const awsContext = new DefaultAwsContext()
         globals.awsContext = awsContext
-        const awsContextTrees = new AwsContextTreeCollection()
-        const regionProvider = new DefaultRegionProvider(endpointsProvider)
+        const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
         const loginManager = new LoginManager(globals.awsContext, credentialsStore)
 
@@ -114,7 +112,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         globals.regionProvider = regionProvider
-        globals.awsContextCommands = new AwsContextCommands(awsContext, awsContextTrees, regionProvider, loginManager)
+        globals.awsContextCommands = new AwsContextCommands(regionProvider, loginManager)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
@@ -198,7 +196,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateAwsExplorer({
             context: extContext,
-            awsContextTrees,
             regionProvider,
             toolkitOutputChannel,
             remoteInvokeOutputChannel,
@@ -309,28 +306,6 @@ function makeEndpointsProvider(): EndpointsProvider {
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
 
     const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
-    // Start the load without waiting. It raises events as fetchers retrieve data.
-    provider.load().catch((err: Error) => {
-        getLogger().error('Failure while loading Endpoints Manifest: %O', err)
-
-        vscode.window.showErrorMessage(
-            `${localize(
-                'AWS.error.endpoint.load.failure',
-                'The {0} Toolkit was unable to load endpoints data.',
-                getIdeProperties().company
-            )} ${
-                isCloud9()
-                    ? localize(
-                          'AWS.error.impactedFunctionalityReset.cloud9',
-                          'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
-                      )
-                    : localize(
-                          'AWS.error.impactedFunctionalityReset.vscode',
-                          'Toolkit functionality may be impacted until VS Code is restarted.'
-                      )
-            }`
-        )
-    })
 
     return provider
 }
