@@ -274,7 +274,7 @@ async function getProxyCommand(iswin: boolean, script: string): Promise<Result<s
         const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
         const r = await proc.run()
         if (r.exitCode !== 0) {
-            return Result.err(new ToolkitError(r.error?.message ?? 'failed to get absolute path for powershell'))
+            return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
         }
         return Result.ok(`"${r.stdout}" -ExecutionPolicy Bypass -File "${script}" %h`)
     } else {
