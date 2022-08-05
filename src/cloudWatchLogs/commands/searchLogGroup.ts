@@ -107,7 +107,7 @@ export async function prepareDocument(
 export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogStreamRegistry): Promise<void> {
     let response: SearchLogGroupWizardResponse | undefined
     let result: telemetry.Result
-    let source: telemetry.CwlLogSearchSource
+    let source: 'explorer' | 'command'
 
     if (node) {
         source = 'explorer'
@@ -126,7 +126,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
 
     if (!response) {
         result = 'Cancelled'
-        telemetry.recordCloudwatchlogsOpenLogSearch({ result: result, cwlLogSearchSource: source })
+        telemetry.recordCloudwatchlogsOpen({ result: result, cloudWatchResourceType: 'logGroup', source: source })
         return
     }
 
@@ -135,7 +135,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
     const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
     result = await prepareDocument(uri, initialLogData, registry)
-    telemetry.recordCloudwatchlogsOpenLogSearch({ result: result, cwlLogSearchSource: source })
+    telemetry.recordCloudwatchlogsOpen({ result: result, cloudWatchResourceType: 'logGroup', source: source })
 }
 
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
