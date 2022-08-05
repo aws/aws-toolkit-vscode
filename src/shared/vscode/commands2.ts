@@ -11,8 +11,8 @@ import { getLogger, NullLogger } from '../logger/logger'
 import { LoginManager } from '../../credentials/loginManager'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { recordVscodeExecuteCommand } from '../telemetry/telemetry'
 import { DefaultTelemetryService } from '../telemetry/telemetryService'
+import { Metric, MetricName } from '../telemetry/metric'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -134,13 +134,15 @@ export class Commands {
      * ```
      */
     public from<T>(target: new (...args: any[]) => T): Declarables<T> {
-        const result = {} as Record<string, (id: string) => DeclaredCommand>
+        type Id = Parameters<Declare<T, Callback>>[0]
+        const result = {} as Record<string, Declare<T, Callback>>
 
         for (const [k, v] of Object.entries<Callback>(getFunctions(target))) {
             const mappedKey = `declare${toTitleCase(k)}`
             const name = !isNameMangled() ? `${target.name}.${k}` : undefined
+            const mapInfo = (id: Id) => (typeof id === 'string' ? { id, name } : { name, ...id })
 
-            result[mappedKey] = id => this.declare({ id, name }, (instance: T) => v.bind(instance))
+            result[mappedKey] = id => this.declare(mapInfo(id), (instance: T) => v.bind(instance))
         }
 
         return result as unknown as Declarables<T>
@@ -188,7 +190,7 @@ export class Commands {
 }
 
 interface Declare<T, F extends Callback> {
-    (id: string): DeclaredCommand<F, [target: T]>
+    (id: string | Omit<CommandInfo<F>, 'args' | 'label'>): DeclaredCommand<F, [target: T]>
 }
 
 type Declarables<T> = {
@@ -303,6 +305,18 @@ interface CommandInfo<T extends Callback> {
     readonly logging?: boolean
     /** Does the command require credentials? (default: false) */
     readonly autoconnect?: boolean
+
+    /**
+     * The telemetry metric associated with this command.
+     *
+     * Metadata can be added during execution like so:
+     * ```ts
+     * Metric.get('aws_foo').record('exampleMetadata', 'bar')
+     * ```
+     *
+     * Any metadata is sent with the metric on completion.
+     */
+    readonly telemetryName?: MetricName
 }
 
 // This debouncing is a temporary safe-guard to mitigate the risk of instrumenting all
@@ -326,7 +340,7 @@ function startRecordCommand(id: string): number {
     return token
 }
 
-function endRecordCommand(id: string, token: number, err?: unknown) {
+function endRecordCommand(id: string, token: number, name?: MetricName, err?: unknown) {
     const data = emitInfo.get(id)
     const currentTime = Date.now()
 
@@ -337,20 +351,30 @@ function endRecordCommand(id: string, token: number, err?: unknown) {
 
     emitInfo.set(id, { ...data, debounceCounter: 0 })
 
-    recordVscodeExecuteCommand({
-        command: id,
-        debounceCount: data.debounceCounter,
-        result: getTelemetryResult(err),
-        reason: getTelemetryReason(err),
-        duration: currentTime - data.startTime,
-    })
+    const metric = name ? (Metric.get(name) as Metric) : new Metric('vscode_executeCommand')
+
+    metric.record('command', id)
+    metric.record('result', getTelemetryResult(err))
+    metric.record('reason', getTelemetryReason(err))
+    metric.record('debounceCount', data.debounceCounter)
+    metric.record('duration', currentTime - data.startTime)
+    metric.record('passive', name === undefined)
+
+    metric.submit()
 }
 
-async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | undefined> {
+async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | void> {
     const { args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
     const telemetryToken = startRecordCommand(info.id)
+
+    // XXX: currently have to do this to enter with the correct asychronous context
+    // realistically much of the logic in `startRecordCommand` and `endRecordCommand`
+    // can be placed inside `Metric`, avoiding the need for this weird line
+    if (info.telemetryName) {
+        Metric.get(info.telemetryName)
+    }
 
     logger.debug(`command: running ${label}${withArgs}`)
 
@@ -360,11 +384,11 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
         }
 
         const result = await fn(...args)
-        logging && endRecordCommand(info.id, telemetryToken)
+        logging && endRecordCommand(info.id, telemetryToken, info.telemetryName)
 
         return result
     } catch (error) {
-        logging && endRecordCommand(info.id, telemetryToken, error)
+        logging && endRecordCommand(info.id, telemetryToken, info.telemetryName, error)
 
         if (errorHandler !== undefined) {
             await errorHandler(info, error)

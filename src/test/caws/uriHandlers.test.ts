@@ -10,7 +10,7 @@ import { register } from '../../caws/uriHandlers'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { ConnectedCawsClient } from '../../shared/clients/cawsClient'
-import { anything, instance, mock, reset, when } from 'ts-mockito'
+import { anything, mock, reset, when } from 'ts-mockito'
 import { createTestWindow, TestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
 import { DevelopmentWorkspaceId } from '../../caws/model'
@@ -45,10 +45,12 @@ describe('CAWS handlers', function () {
     beforeEach(function () {
         handler = new UriHandler((testWindow = createTestWindow()))
         register(handler, {
-            bindClient:
-                command =>
-                async (...args) =>
-                    command(instance(client), ...args),
+            openWorkspace: {
+                execute: async () => undefined,
+            } as any,
+            cloneRepo: {
+                execute: async () => undefined,
+            } as any,
         })
         commandStub = sinon.stub(vscode.commands, 'executeCommand')
     })

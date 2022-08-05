@@ -83,7 +83,7 @@ export default defineComponent({
             const alias = this.details.alias
             const branch = this.details.repositories[0]?.branchName
 
-            return alias ? `${branch} (${alias})` : branch
+            return branch ? `${alias} (${branch})` : alias
         },
         canRestart() {
             return (this.needsRestart || this.devfileStatus === 'CHANGED') && this.details.status === 'RUNNING'

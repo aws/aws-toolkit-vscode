@@ -293,7 +293,7 @@ export class CawsAuthenticationProvider implements AuthenticationProvider<string
             return stored
         }
 
-        const resp = await client.createAccessToken({ name: 'aws-toolkits-vscode-token', expires: undefined })
+        const resp = await client.createAccessToken({ name: 'aws-toolkits-vscode-token' })
         await this.storage.storePat(client.identity.id, resp.secret)
 
         return resp.secret

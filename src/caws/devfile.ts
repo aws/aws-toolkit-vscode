@@ -12,13 +12,13 @@ import { DevelopmentWorkspaceClient } from '../shared/clients/developmentWorkspa
 import { DevfileRegistry, DEVFILE_GLOB_PATTERN } from '../shared/fs/devfileRegistry'
 import { getLogger } from '../shared/logger'
 import { Commands } from '../shared/vscode/commands2'
-import { showViewLogsMessage } from '../shared/utilities/messages'
 import { checkUnsavedChanges } from '../shared/utilities/workspaceUtils'
+import { ToolkitError } from '../shared/errors'
 
 async function updateDevfile(uri: vscode.Uri): Promise<void> {
     const client = new DevelopmentWorkspaceClient()
     if (!client.isCawsWorkspace()) {
-        return void getLogger().debug(`devfile: not currently in a development workspace`)
+        throw new Error('Cannot update devfile while outside a development workspace')
     }
 
     // XXX: hard-coded `projects` path, waiting for CAWS to provide an environment variable
@@ -29,25 +29,26 @@ async function updateDevfile(uri: vscode.Uri): Promise<void> {
     await vscode.window.withProgress({ title, location: vscode.ProgressLocation.Notification }, async () => {
         if (checkUnsavedChanges()) {
             // TODO: show confirmation prompt instead
-            vscode.window.showErrorMessage('Cannot stop current workspace with unsaved changes')
             throw new Error('Cannot stop workspace with unsaved changes')
         }
 
         try {
             await client.startDevfile({ location })
         } catch (err) {
-            if (!(err instanceof Error)) {
-                throw new TypeError(`Received unknown error: ${JSON.stringify(err ?? 'null')}`)
-            }
-
-            getLogger().error('Failed to restart workspace: %O', err)
-            showViewLogsMessage(`Failed to restart workspace: ${err.message}`)
+            throw ToolkitError.chain(err, 'Failed to update devfile')
         }
     })
     // if we get here, no restart happened :(
+    // TODO: accurate telemetry is hard to capture here
 }
 
-export const updateDevfileCommand = Commands.register('aws.caws.updateDevfile', updateDevfile)
+export const updateDevfileCommand = Commands.register(
+    {
+        id: 'aws.caws.updateDevfile',
+        telemetryName: 'caws_updateDevfile',
+    },
+    updateDevfile
+)
 
 type Workspace = Pick<typeof vscode.workspace, 'onDidSaveTextDocument'>
 

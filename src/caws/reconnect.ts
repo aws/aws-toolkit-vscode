@@ -11,16 +11,17 @@ import { getLogger } from '../shared/logger'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { WorkspaceSettings } from './commands'
 import {
+    cawsConnectCommand,
     CAWS_RECONNECT_KEY,
     createClientFactory,
     DevelopmentWorkspaceId,
     DevelopmentWorkspaceMemento,
-    openDevelopmentWorkspace,
 } from './model'
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { CawsAuthenticationProvider } from './auth'
 import { getCawsWorkspaceArn } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
+import { Metric } from '../shared/telemetry/metric'
 
 const localize = nls.loadMessageBundle()
 
@@ -216,7 +217,6 @@ function isExpired(previousConnectionTime: number): boolean {
  * When a workspace fails, remove it from the memento so we no longer watch it in the future
  * @param memento The memento instance from vscode
  * @param workspaceId the id of the workspace to fail
- * @param workspaceDetails the details of the failing workspace
  */
 function failWorkspace(memento: vscode.Memento, workspaceId: string) {
     const curr = memento.get<Record<string, DevelopmentWorkspaceMemento>>(CAWS_RECONNECT_KEY, {})
@@ -225,7 +225,7 @@ function failWorkspace(memento: vscode.Memento, workspaceId: string) {
 }
 
 async function openReconnectedWorkspace(
-    cawsClient: ConnectedCawsClient,
+    client: ConnectedCawsClient,
     id: string,
     workspace: DevelopmentWorkspaceMemento,
     closeRootInstance: boolean
@@ -236,11 +236,13 @@ async function openReconnectedWorkspace(
         project: { name: workspace.projectName },
     }
 
-    await openDevelopmentWorkspace(cawsClient, identifier, workspace.previousOpenWorkspace)
+    Metric.get('caws_connect').record('source', 'Reconnect')
+    await cawsConnectCommand.execute(client, identifier, workspace.previousOpenWorkspace)
 
     // When we only have 1 workspace to watch we might as well close the local vscode instance
     if (closeRootInstance) {
-        vscode.commands.executeCommand('workbench.action.closeWindow')
+        // A brief delay ensures that metrics are saved from the connect command
+        sleep(5000).then(() => vscode.commands.executeCommand('workbench.action.closeWindow'))
     }
 }
 

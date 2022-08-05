@@ -26,6 +26,7 @@ import { ChildProcess } from '../shared/utilities/childProcess'
 import { ensureDependencies, HOST_NAME_PREFIX } from './tools'
 import { isCawsVSCode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
+import { Commands } from '../shared/vscode/commands2'
 
 export type DevelopmentWorkspaceId = Pick<DevelopmentWorkspace, 'id' | 'org' | 'project'>
 
@@ -224,6 +225,21 @@ export async function openDevelopmentWorkspace(
     const { SessionProcess, vscPath } = await prepareWorkpaceConnection(client, workspace, { topic: 'connect' })
     await startVscodeRemote(SessionProcess, getHostNameFromEnv(workspace), targetPath, vscPath)
 }
+
+// The "caws_connect" metric should really be splt into two parts:
+// 1. the setup/launch from the local machine
+// 2. toolkit initialization on the remote
+//
+// Recording metrics like this is a lot more involved so for now we'll
+// assume that if the first step succeeds, the user probably succeeded
+// in connecting to the workspace
+export const cawsConnectCommand = Commands.register(
+    {
+        id: '_aws.caws.connect',
+        telemetryName: 'caws_connect',
+    },
+    openDevelopmentWorkspace
+)
 
 export async function cloneToWorkspace(
     client: ConnectedCawsClient,

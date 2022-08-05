@@ -5,14 +5,9 @@
 
 import globals from '../shared/extensionGlobals'
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import * as vscode from 'vscode'
-import { showViewLogsMessage } from '../shared/utilities/messages'
 import { LoginWizard } from './wizards/login'
 import { selectCawsResource } from './wizards/selectResource'
-import { getLogger } from '../shared/logger'
 import { openCawsUrl } from './utils'
 import { CawsAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
@@ -27,31 +22,30 @@ import {
 import { showConfigureWorkspace } from './vue/configure/backend'
 import { CreateDevelopmentWorkspaceRequest } from '../../types/clientcodeaws'
 import { showCreateWorkspace } from './vue/create/backend'
+import { Metric } from '../shared/telemetry/metric'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../shared/errors'
 
-type LoginResult = 'Succeeded' | 'Cancelled' | 'Failed'
-
-export async function login(authProvider: CawsAuthenticationProvider, client: CawsClient): Promise<LoginResult> {
-    // TODO: add telemetry
+async function login(authProvider: CawsAuthenticationProvider, client: CawsClient) {
     const wizard = new LoginWizard(authProvider)
     const lastSession = authProvider.getActiveSession()
     const response = await wizard.run()
 
     if (!response) {
-        return 'Cancelled'
+        throw new CancellationError('user')
     }
 
     try {
         const { accountDetails, accessDetails } = response.session
-        await client.setCredentials(accessDetails, accountDetails.metadata)
+        const connectedClient = await client.setCredentials(accessDetails, accountDetails.metadata)
 
         if (lastSession && response.session.id !== lastSession.id) {
             authProvider.deleteSession(lastSession)
         }
 
-        return 'Succeeded'
+        return connectedClient
     } catch (err) {
-        getLogger().error('REMOVED.codes: failed to login: %O', err)
-        return 'Failed'
+        throw ToolkitError.chain(err, 'Failed to connect to REMOVED.codes', { code: 'NotConnected' })
     }
 }
 
@@ -65,14 +59,11 @@ export async function logout(authProvider: CawsAuthenticationProvider): Promise<
 
 /** "List REMOVED.codes Commands" command. */
 export async function listCommands(): Promise<void> {
-    // TODO: add telemetry
     vscode.commands.executeCommand('workbench.action.quickOpen', '> REMOVED.codes')
 }
 
 /** "Clone REMOVED.codes Repository" command. */
 export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Uri): Promise<void> {
-    // TODO: add telemetry
-
     async function getPat() {
         // FIXME: make it easier to go from auth -> client so we don't need to do this
         const auth = CawsAuthenticationProvider.fromContext(globals.context)
@@ -82,7 +73,7 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
     if (!url) {
         const r = await selectCawsResource(client, 'repo')
         if (!r) {
-            return
+            throw new CancellationError('user')
         }
         const resource = { name: r.name, project: r.project.name, org: r.org.name }
         const uri = toCawsGitUri(client.identity.name, await getPat(), resource)
@@ -105,30 +96,13 @@ export async function cloneCawsRepo(client: ConnectedCawsClient, url?: vscode.Ur
  * - "Open REMOVED.codes Repository"
  */
 export async function openCawsResource(client: ConnectedCawsClient, kind: CawsResource['type']): Promise<void> {
-    // TODO: add telemetry
     const resource = await selectCawsResource(client, kind)
 
     if (!resource) {
-        return
+        throw new CancellationError('user')
     }
 
-    if (resource.type !== 'developmentWorkspace') {
-        openCawsUrl(resource)
-        return
-    }
-
-    try {
-        await openDevelopmentWorkspace(client, resource)
-    } catch (err) {
-        showViewLogsMessage(
-            localize(
-                'AWS.command.caws.createWorkspace.failed',
-                'Failed to start REMOVED.codes development workspace "{0}": {1}',
-                resource.id,
-                (err as Error).message
-            )
-        )
-    }
+    openCawsUrl(resource)
 }
 
 export async function stopWorkspace(client: ConnectedCawsClient, workspace: DevelopmentWorkspaceId): Promise<void> {
@@ -173,17 +147,7 @@ function createClientInjector(
         const client = await clientFactory()
 
         if (!client.connected) {
-            const result = await login(authProvider, client)
-
-            if (result === 'Succeeded' && client.connected) {
-                return command(client, ...args)
-            }
-
-            if (result === 'Failed') {
-                globals.window.showErrorMessage('Not connected to REMOVED.codes')
-            }
-
-            return
+            return command(await login(authProvider, client), ...args)
         }
 
         return command(client, ...args)
@@ -243,8 +207,8 @@ export class CawsCommands {
         return this.withClient(cloneCawsRepo, ...args)
     }
 
-    public createWorkspace() {
-        return this.withClient(showCreateWorkspace.bind(undefined, globals.context))
+    public createWorkspace(): Promise<void> {
+        return this.withClient(showCreateWorkspace, globals.context, CawsCommands.declared)
     }
 
     public openResource(...args: WithClient<typeof openCawsResource>) {
@@ -260,6 +224,9 @@ export class CawsCommands {
     }
 
     public updateWorkspace(...args: WithClient<typeof updateWorkspace>) {
+        const metric = Metric.get('caws_updateWorkspaceSettings')
+        metric.record('caws_updateWorkspaceLocationType', 'remote')
+
         return this.withClient(updateWorkspace, ...args)
     }
 
@@ -279,12 +246,19 @@ export class CawsCommands {
         await vscode.window.showTextDocument(uri)
     }
 
-    public openWorkspace(workspace?: DevelopmentWorkspaceId) {
-        if (workspace) {
-            return this.withClient(openDevelopmentWorkspace, workspace)
-        } else {
-            return this.openResource('developmentWorkspace')
+    public async openWorkspace(id?: DevelopmentWorkspaceId, targetPath?: string): Promise<void> {
+        const workspace = id ?? (await this.selectWorkspace())
+
+        // TODO(sijaden): add named timestamp markers for granular duration info
+        //
+        // right now this command may prompt the user if they came from the explorer or command palette
+        // need to be careful of mapping explosion so this granular data would either need
+        // to be flattened or we restrict the names to a pre-determined set
+        if (id === undefined) {
+            Metric.get('caws_connect').record('source', 'CommandPalette')
         }
+
+        return this.withClient(openDevelopmentWorkspace, workspace, targetPath)
     }
 
     public async openWorkspaceSettings(): Promise<void> {
@@ -295,6 +269,16 @@ export class CawsCommands {
         }
 
         return showConfigureWorkspace(globals.context, workspace, CawsCommands.declared)
+    }
+
+    private async selectWorkspace(): Promise<DevelopmentWorkspaceId> {
+        const workspace = await this.withClient(selectCawsResource, 'developmentWorkspace' as const)
+
+        if (!workspace) {
+            throw new CancellationError('user')
+        }
+
+        return workspace
     }
 
     public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
@@ -308,17 +292,29 @@ export class CawsCommands {
         login: Commands.from(this).declareLogin('aws.caws.login'),
         logout: Commands.from(this).declareLogout('aws.caws.logout'),
         openResource: Commands.from(this).declareOpenResource('aws.caws.openResource'),
-        cloneRepo: Commands.from(this).declareCloneRepository('aws.caws.cloneRepo'),
         listCommands: Commands.from(this).declareListCommands('aws.caws.listCommands'),
-        createWorkspace: Commands.from(this).declareCreateWorkspace('aws.caws.createWorkspace'),
         openOrganization: Commands.from(this).declareOpenOrganization('aws.caws.openOrg'),
         openProject: Commands.from(this).declareOpenProject('aws.caws.openProject'),
         openRepository: Commands.from(this).declareOpenRepository('aws.caws.openRepo'),
-        openWorkspace: Commands.from(this).declareOpenWorkspace('aws.caws.openWorkspace'),
         stopWorkspace: Commands.from(this).declareStopWorkspace('aws.caws.stopWorkspace'),
         deleteWorkspace: Commands.from(this).declareDeleteWorkspace('aws.caws.deleteWorkspace'),
-        updateWorkspace: Commands.from(this).declareUpdateWorkspace('aws.caws.updateWorkspace'),
-        openDevfile: Commands.from(this).declareOpenDevfile('aws.caws.openDevfile'),
         openWorkspaceSettings: Commands.from(this).declareOpenWorkspaceSettings('aws.caws.openWorkspaceSettings'),
+        openDevfile: Commands.from(this).declareOpenDevfile('aws.caws.openDevfile'),
+        cloneRepo: Commands.from(this).declareCloneRepository({
+            id: 'aws.caws.cloneRepo',
+            telemetryName: 'caws_localClone',
+        }),
+        createWorkspace: Commands.from(this).declareCreateWorkspace({
+            id: 'aws.caws.createWorkspace',
+            telemetryName: 'caws_createWorkspace',
+        }),
+        updateWorkspace: Commands.from(this).declareUpdateWorkspace({
+            id: 'aws.caws.updateWorkspace',
+            telemetryName: 'caws_updateWorkspaceSettings',
+        }),
+        openWorkspace: Commands.from(this).declareOpenWorkspace({
+            id: 'aws.caws.openWorkspace',
+            telemetryName: 'caws_connect',
+        }),
     } as const
 }

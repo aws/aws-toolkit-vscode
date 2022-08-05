@@ -22,7 +22,7 @@ import { fileExists, readFileAsString } from '../shared/filesystemUtilities'
 import { ToolkitError, UnknownError } from '../shared/errors'
 import { getLogger } from '../shared/logger'
 import { getIdeProperties } from '../shared/extensionUtilities'
-import { showConfirmationMessage, showViewLogsMessage } from '../shared/utilities/messages'
+import { showConfirmationMessage } from '../shared/utilities/messages'
 import { getSshConfigPath } from '../shared/extensions/ssh'
 
 interface DependencyPaths {
@@ -44,7 +44,12 @@ export async function ensureDependencies(
     if (!isExtensionInstalled('ms-vscode-remote.remote-ssh')) {
         showInstallExtensionMsg('ms-vscode-remote.remote-ssh', 'Remote SSH', 'Connecting to workspace', window)
 
-        return Result.err(new Error('Remote SSH extension not installed'))
+        return Result.err(
+            new ToolkitError('Remote SSH extension not installed', {
+                cancelled: true,
+                code: 'MissingExtension',
+            })
+        )
     }
 
     const tools = await ensureTools()
@@ -65,9 +70,12 @@ export async function ensureDependencies(
             }
         })
 
-        showViewLogsMessage(msg, window)
-
-        return Result.err(new Error(`Required tools not found: ${missing}`))
+        return Result.err(
+            new ToolkitError(msg, {
+                code: 'MissingTools',
+                details: { missing },
+            })
+        )
     }
 
     const config = await ensureCawsSshConfig(tools.ok().ssh)
@@ -105,7 +113,7 @@ export async function ensureConnectScript(context = globals.context): Promise<Re
     } catch (e) {
         const message = localize('AWS.caws.error.copyScript', 'Failed to update connect script')
 
-        return Result.err(new ToolkitError(message, { cause: UnknownError.cast(e) }))
+        return Result.err(ToolkitError.chain(e, message, { code: 'ConnectScriptUpdateFailed' }))
     }
 }
 
@@ -224,7 +232,7 @@ async function verifySSHHost({
                 }
             })
 
-            return Result.err(new ToolkitError(oldConfig))
+            return Result.err(new ToolkitError(oldConfig, { code: 'OldConfig' }))
         }
 
         const confirmTitle = localize(
@@ -250,7 +258,7 @@ async function verifySSHHost({
                 sshConfigPath
             )
 
-            return Result.err(new ToolkitError(message, { cause: UnknownError.cast(e) }))
+            return Result.err(ToolkitError.chain(e, message, { code: 'ConfigWriteFailed' }))
         }
     }
 

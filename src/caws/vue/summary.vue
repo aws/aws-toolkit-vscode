@@ -16,7 +16,8 @@
                     {{ summary.alias ? 'Edit Alias' : 'Add Alias' }}
                 </button>
             </div>
-            <div id="branch" style="grid-area: branch">
+            <!--TODO: render something here if branch is missing-->
+            <div id="branch" style="grid-area: branch" v-if="!!branchName">
                 <span class="label-context soft">Branch</span>
                 <b class="mb-8" style="display: block">{{ branchName }}</b>
                 <button class="button-theme-secondary" @click="openBranch">

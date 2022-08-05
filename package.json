@@ -1887,16 +1887,6 @@
                 "enablement": "!isCloud9"
             },
             {
-                "command": "aws.credential.profile.create",
-                "title": "%AWS.command.credential.profile.create%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.logout",
                 "title": "%AWS.command.logout%",
                 "category": "%AWS.title%",

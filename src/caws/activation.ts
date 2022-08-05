@@ -32,7 +32,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     ctx.extensionContext.subscriptions.push(
         initStatusbar(authProvider),
-        uriHandlers.register(ctx.uriHandler, commands),
+        uriHandlers.register(ctx.uriHandler, CawsCommands.declared),
         ...Object.values(CawsCommands.declared).map(c => c.register(commands))
     )
 

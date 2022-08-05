@@ -221,7 +221,7 @@ class CawsClientInternal {
      * @param userId       CAWS account id
      * @returns
      */
-    public async setCredentials(bearerToken: string, id?: string | UserDetails) {
+    public async setCredentials(bearerToken: string, id?: string | UserDetails): Promise<ConnectedCawsClient> {
         this.bearerToken = bearerToken
         this.sdkClient = await createCawsClient(bearerToken, this.regionCode, this.endpoint)
 
@@ -230,6 +230,8 @@ class CawsClientInternal {
         } else {
             this.userDetails = id
         }
+
+        return this as ConnectedCawsClient
     }
 
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
@@ -385,7 +387,7 @@ class CawsClientInternal {
      */
     public listWorkspaces(proj: CawsProject): AsyncCollection<DevelopmentWorkspace[]> {
         const initRequest = { organizationName: proj.org.name, projectName: proj.name }
-        const requester = async (request: caws.ListDevelopmentWorkspaceRequest) =>
+        const requester = async (request: caws.ListDevelopmentWorkspaceRequestMigration) =>
             this.call(this.sdkClient.listDevelopmentWorkspaceMigration(request), true, {
                 organizationName: proj.org.name,
                 projectName: proj.name,

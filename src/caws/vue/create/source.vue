@@ -5,13 +5,13 @@
             <span class="ml-8 option-label" style="padding: 0px">Select a REMOVED.codes Repository</span>
         </label>
 
-        <label class="mode-container" :data-disabled="model.type !== 'clone'">
-            <input class="radio" type="radio" name="mode" id="from-clone" v-model="model.type" value="clone" />
+        <label class="mode-container" :data-disabled="model.type !== 'unlinked'">
+            <input class="radio" type="radio" name="mode" id="from-unlinked" v-model="model.type" value="unlinked" />
             <span class="ml-8 option-label" style="padding: 0px">Provide a Repository URL</span>
         </label>
 
-        <label class="mode-container" :data-disabled="model.type !== 'empty'">
-            <input class="radio" type="radio" name="mode" id="from-empty" v-model="model.type" value="empty" />
+        <label class="mode-container" :data-disabled="model.type !== 'none'">
+            <input class="radio" type="radio" name="mode" id="from-none" v-model="model.type" value="none" />
             <span class="ml-8 option-label" style="padding: 0px">Create an Empty Workspace</span>
         </label>
     </div>
@@ -37,7 +37,7 @@
             </select>
         </span>
     </div>
-    <div v-else-if="model.type === 'clone'">
+    <div v-else-if="model.type === 'unlinked'">
         <label class="options-label soft mb-2" style="display: block" for="repository-url">Repository URL</label>
         <input id="repository-url" class="mb-8" type="text" v-model="model.repositoryUrl" />
 
@@ -69,10 +69,10 @@ export function isValidSource(source: SourceModel): source is SourceResponse {
 
     if (source.type === 'linked') {
         return !!source.selectedProject && !!source.selectedBranch
-    } else if (source.type === 'clone') {
+    } else if (source.type === 'unlinked') {
         return !!source.repositoryUrl
     } else {
-        return source.type === 'empty'
+        return source.type === 'none'
     }
 }
 
@@ -135,7 +135,7 @@ export default defineComponent({
             return this.branches[this.model.selectedProject.name]
         },
         urlError() {
-            if (this.model.type !== 'clone') {
+            if (this.model.type !== 'unlinked') {
                 return
             }
 

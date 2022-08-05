@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { WorkspaceSettings } from '../../commands'
+import { CawsCommands, WorkspaceSettings } from '../../commands'
 import { VueWebview } from '../../../webviews/main'
 import { Prompter } from '../../../shared/ui/prompter'
 import { isValidResponse } from '../../../shared/wizards/wizard'
@@ -19,10 +19,11 @@ import {
     getAllInstanceDescriptions,
 } from '../../wizards/workspaceSettings'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
-import { CawsBranch, CawsProject, ConnectedCawsClient } from '../../../shared/clients/cawsClient'
-import { cloneToWorkspace, DevelopmentWorkspaceId, openDevelopmentWorkspace } from '../../model'
+import { CawsBranch, CawsProject, ConnectedCawsClient, DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
+import { cloneToWorkspace } from '../../model'
 import { selectCawsResource } from '../../wizards/selectResource'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { Metric } from '../../../shared/telemetry/metric'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -31,12 +32,12 @@ interface LinkedResponse {
 }
 
 interface CloneResponse {
-    readonly type: 'clone'
+    readonly type: 'unlinked'
     readonly repositoryUrl: string
 }
 
 interface EmptyResponse {
-    readonly type: 'empty'
+    readonly type: 'none'
 }
 
 export type SourceResponse = LinkedResponse | CloneResponse | EmptyResponse
@@ -45,12 +46,17 @@ export class CawsCreateWebview extends VueWebview {
     public readonly id = 'createCaws'
     public readonly source = 'src/caws/vue/create/index.js'
 
-    public constructor(private readonly client: ConnectedCawsClient) {
+    public constructor(
+        private readonly client: ConnectedCawsClient,
+        private readonly commands: typeof CawsCommands.declared,
+        private readonly onComplete: (workspace?: DevelopmentWorkspace) => void
+    ) {
         super()
     }
 
     public close() {
         this.dispose()
+        this.onComplete()
     }
 
     public async getProjects() {
@@ -112,18 +118,22 @@ export class CawsCreateWebview extends VueWebview {
     }
 
     public async submit(settings: WorkspaceSettings, source: SourceResponse) {
-        const workspace: DevelopmentWorkspaceId = await (() => {
+        const workspace: DevelopmentWorkspace = await (() => {
             switch (source.type) {
-                case 'empty':
+                case 'none':
                     return this.createEmptyWorkpace(settings, source)
                 case 'linked':
                     return this.createLinkedWorkspace(settings, source)
-                case 'clone':
+                case 'unlinked':
                     return this.cloneRepository(settings, source)
             }
         })()
 
-        return openDevelopmentWorkspace(this.client, workspace)
+        Metric.get('caws_createWorkspace').record('caws_createWorkspaceRepoType', source.type)
+        Metric.get('caws_connect').record('source', 'Webview')
+
+        this.onComplete(workspace)
+        this.commands.openWorkspace.execute(workspace)
     }
 
     private async createEmptyWorkpace(settings: WorkspaceSettings, source: EmptyResponse) {
@@ -152,6 +162,8 @@ export class CawsCreateWebview extends VueWebview {
                 },
             ],
             ...settings,
+            // XXX: Workspaces now require an alias. Need to change UX so we don't do this.
+            alias: settings.alias ?? 'Workspace',
         })
     }
 
@@ -207,13 +219,30 @@ export class CawsCreateWebview extends VueWebview {
     }
 }
 
+// TODO(sijaden): de-dupe this basic init pattern for webviews
+// the logic here is mainly to preserve the same panel in case the
+// user re-runs a command, which is fairly common
 const Panel = VueWebview.compilePanel(CawsCreateWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
+let submitPromise: Promise<void> | undefined
 
-export async function showCreateWorkspace(ctx: vscode.ExtensionContext, client: ConnectedCawsClient): Promise<void> {
-    activePanel ??= new Panel(ctx, client)
-    const webview = await activePanel.show({
+export async function showCreateWorkspace(
+    client: ConnectedCawsClient,
+    ctx: vscode.ExtensionContext,
+    commands: typeof CawsCommands.declared
+): Promise<void> {
+    submitPromise ??= new Promise<void>((resolve, reject) => {
+        activePanel ??= new Panel(ctx, client, commands, workspace => {
+            if (workspace === undefined) {
+                reject(new CancellationError('user'))
+            } else {
+                resolve()
+            }
+        })
+    })
+
+    const webview = await activePanel!.show({
         title: localize('AWS.view.createWorkspace.title', 'Create a REMOVED.codes Workspace'),
         viewColumn: vscode.ViewColumn.Active,
     })
@@ -224,7 +253,10 @@ export async function showCreateWorkspace(ctx: vscode.ExtensionContext, client: 
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined
                 subscriptions = undefined
+                submitPromise = undefined
             }),
         ]
     }
+
+    return submitPromise
 }
