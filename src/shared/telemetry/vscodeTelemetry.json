@@ -1,6 +1,12 @@
 {
     "types": [
         {
+            "name": "cwlLogSearchSource",
+            "type": "string",
+            "allowedValues": ["explorer", "command"],
+            "description": "The entrypoints used to execute a log search"
+        },
+        {
             "name": "documentFormat",
             "type": "string",
             "allowedValues": ["JSON, YAML"],
@@ -29,6 +35,15 @@
         }
     ],
     "metrics": [
+        {
+            "name": "cloudwatchlogs_openLogSearch",
+            "description": "Open a CloudWatch Logs group search result in the window. Source indicates that it was opened from a different entrypoint (command Palette / explorer). ServiceType indicates that it was opened from a different service (like directly from an ECS container)",
+            "metadata": [
+                { "type": "result" },
+                { "type": "cwlLogSearchSource" },
+                { "type": "serviceType", "required": false }
+            ]
+        },
         {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",

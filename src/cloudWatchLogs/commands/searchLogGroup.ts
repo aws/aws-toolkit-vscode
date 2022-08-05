@@ -106,8 +106,11 @@ export async function prepareDocument(
 
 export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogStreamRegistry): Promise<void> {
     let response: SearchLogGroupWizardResponse | undefined
+    let result: telemetry.Result
+    let source: telemetry.CwlLogSearchSource
 
     if (node) {
+        source = 'explorer'
         if (!node.logGroup.logGroupName) {
             throw new Error('CWL: Log Group node does not have a name.')
         }
@@ -117,11 +120,13 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
             regionName: node.regionCode,
         }).run()
     } else {
+        source = 'command'
         response = await new SearchLogGroupWizard().run()
     }
 
     if (!response) {
-        telemetry.recordCloudwatchlogsOpenStream({ result: 'Cancelled' })
+        result = 'Cancelled'
+        telemetry.recordCloudwatchlogsOpenLogSearch({ result: result, cwlLogSearchSource: source })
         return
     }
 
@@ -129,7 +134,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
 
     const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
-    const result = await prepareDocument(uri, initialLogData, registry)
+    result = await prepareDocument(uri, initialLogData, registry)
     telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
