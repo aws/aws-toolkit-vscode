@@ -35,7 +35,7 @@ export class LogStreamRegistry {
         })
 
         vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-            this.cleanUpDocument(document.uri)
+            this.disposeRegistryData(document.uri)
         })
     }
 
