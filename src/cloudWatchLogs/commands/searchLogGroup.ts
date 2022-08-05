@@ -38,6 +38,14 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     let parameters: CloudWatchLogsParameters
     const limitParam = registry.configuration.get('limit', 10000)
 
+    if (response.filterPattern !== '') {
+        telemetry.recordCloudwatchlogsFilter({
+            result: 'Succeeded',
+            cloudWatchResourceType: 'logGroup',
+            filterBy: 'prefix',
+        })
+    }
+
     if (response.timeRange.start === response.timeRange.end) {
         // this means no time filter.
         parameters = {
@@ -51,6 +59,11 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
             startTime: response.timeRange.start,
             endTime: response.timeRange.end,
         }
+        telemetry.recordCloudwatchlogsFilter({
+            result: 'Succeeded',
+            cloudWatchResourceType: 'logGroup',
+            filterBy: 'time',
+        })
     }
 
     const initialStreamData: CloudWatchLogsData = {

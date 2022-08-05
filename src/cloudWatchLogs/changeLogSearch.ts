@@ -46,7 +46,11 @@ export async function getNewData(
                 return
             }
             newData.parameters.filterPattern = newPattern
-
+            telemetry.recordCloudwatchlogsFilter({
+                result: 'Succeeded',
+                cloudWatchResourceType: 'logGroup',
+                filterBy: 'prefix',
+            })
             break
 
         case 'timeFilter':
@@ -56,7 +60,11 @@ export async function getNewData(
             }
             newData.parameters.startTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.start
             newData.parameters.endTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.end
-
+            telemetry.recordCloudwatchlogsFilter({
+                result: 'Succeeded',
+                cloudWatchResourceType: 'logGroup',
+                filterBy: 'time',
+            })
             break
     }
     if (newData.parameters.streamName) {
@@ -86,6 +94,10 @@ export async function changeLogSearchParams(
     const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
     result = await prepareDocument(newUri, newData, registry)
-
-    console.log(result)
+    const typeOfResource = newData.parameters.streamNameOptions ? 'logStream' : 'logGroup'
+    telemetry.recordCloudwatchlogsOpen({
+        result: result,
+        cloudWatchResourceType: typeOfResource,
+        source: 'escapeHatch',
+    })
 }

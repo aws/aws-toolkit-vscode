@@ -77,7 +77,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
         result = 'Cancelled'
     }
 
-    telemetry.recordCloudwatchlogsOpenStream({ result })
+    telemetry.recordCloudwatchlogsOpen({ result: result, cloudWatchResourceType: 'logStream', source: 'explorer' })
 }
 
 export interface SelectLogStreamWizardContext {
