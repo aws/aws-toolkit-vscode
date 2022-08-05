@@ -65,7 +65,7 @@ export class LogStreamRegistry {
             }
         })
 
-        vscode.workspace.onDidCloseTextDocument(this.cleanUpDocument)
+        vscode.workspace.onDidCloseTextDocument(() => this.cleanUpDocument)
     }
 
     /**
