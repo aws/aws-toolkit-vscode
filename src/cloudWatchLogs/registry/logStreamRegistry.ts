@@ -6,7 +6,13 @@
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
+import {
+    CloudWatchLogsSettings,
+    parseCloudWatchLogsUri,
+    uriToKey,
+    findOccurencesOf,
+    isLogStreamUri,
+} from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
@@ -25,7 +31,9 @@ export class LogStreamRegistry {
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
-    ) {}
+    ) {
+        this.registerLogHandlers()
+    }
 
     /**
      * Event fired on log content change
@@ -44,27 +52,26 @@ export class LogStreamRegistry {
         parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
             this.setLogData(uri, initialStreamData)
-            this.registerLogHandlers(uri)
             await this.updateLog(uri, 'tail')
         }
     }
 
-    public getOnCloseFuncForUri(uri: vscode.Uri): (document: vscode.TextDocument) => void {
-        return (document: vscode.TextDocument) => {
-            if (document.uri.toString() === uri.toString()) {
-                this.clearStreamIdMap(uri)
-            }
+    public cleanUpDocument(document: vscode.TextDocument): void {
+        console.log(this.hasLog(document.uri), !isLogStreamUri(document.uri))
+        if (this.hasLog(document.uri) && !isLogStreamUri(document.uri)) {
+            this.clearStreamIdMap(document.uri)
         }
     }
 
-    private registerLogHandlers(uri: vscode.Uri): void {
+    private registerLogHandlers(): void {
         vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-            if (event.document.uri.toString() === uri.toString()) {
-                this.highlightDocument(uri)
+            const eventUri = event.document.uri
+            if (this.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
+                this.highlightDocument(eventUri)
             }
         })
 
-        vscode.workspace.onDidCloseTextDocument(this.getOnCloseFuncForUri(uri))
+        vscode.workspace.onDidCloseTextDocument(this.cleanUpDocument)
     }
 
     /**

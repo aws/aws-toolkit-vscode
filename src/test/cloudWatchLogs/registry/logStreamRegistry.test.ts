@@ -71,7 +71,6 @@ describe('LogStreamRegistry', async function () {
         logGroupInfo: {
             groupName: 'thisIsAGroupName',
             regionName: 'thisIsARegionCode',
-            streamName: 'testStreamName',
         },
         retrieveLogsFunction: fakeSearchLogGroup,
         busy: false,
@@ -159,10 +158,7 @@ describe('LogStreamRegistry', async function () {
                 [1, testStreamNames[1]],
             ])
             assert.deepStrictEqual(streamIDMap, expectedMap)
-            const cleanUpFunc = registry.getOnCloseFuncForUri(searchLogGroupUri)
-
-            // Clean up Function clears the streamIDMap
-            cleanUpFunc(doc)
+            registry.cleanUpDocument(doc)
             streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
             assert.deepStrictEqual(streamIDMap, new Map<number, string>())
         })
