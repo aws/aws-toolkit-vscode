@@ -65,6 +65,34 @@ object CodeWhispererTestUtil {
         .responseMetadata(metadata)
         .sdkHttpResponse(sdkHttpResponse)
         .build() as ListRecommendationsResponse
+    val emptyListResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
+        .recommendations(listOf())
+        .nextToken("")
+        .responseMetadata(metadata)
+        .sdkHttpResponse(sdkHttpResponse)
+        .build() as ListRecommendationsResponse
+    val listOfEmptyRecommendationResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
+        .recommendations(
+            generateMockRecommendationDetail(""),
+            generateMockRecommendationDetail(""),
+            generateMockRecommendationDetail(""),
+        )
+        .nextToken("")
+        .responseMetadata(metadata)
+        .sdkHttpResponse(sdkHttpResponse)
+        .build() as ListRecommendationsResponse
+    val listOfMixedEmptyAndNonEmptyRecommendationResponse: ListRecommendationsResponse = ListRecommendationsResponse.builder()
+        .recommendations(
+            generateMockRecommendationDetail(""),
+            generateMockRecommendationDetail("test recommendation 3"),
+            generateMockRecommendationDetail(""),
+            generateMockRecommendationDetail("test recommendation 4"),
+            generateMockRecommendationDetail("test recommendation 5")
+        )
+        .nextToken("")
+        .responseMetadata(metadata)
+        .sdkHttpResponse(sdkHttpResponse)
+        .build() as ListRecommendationsResponse
 
     const val pythonFileName = "test.py"
     const val javaFileName = "test.java"

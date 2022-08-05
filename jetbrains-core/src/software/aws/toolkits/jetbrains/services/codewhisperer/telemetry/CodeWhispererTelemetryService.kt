@@ -75,7 +75,7 @@ class CodeWhispererTelemetryService {
         )
     }
 
-    private fun sendUserDecisionEvent(
+    fun sendUserDecisionEvent(
         requestId: String,
         requestContext: RequestContext,
         responseContext: ResponseContext,
@@ -185,7 +185,8 @@ class CodeWhispererTelemetryService {
                 sessionContext.seen.contains(index),
                 hasUserAccepted,
                 isDiscarded,
-                detail.hasReferences()
+                detail.hasReferences(),
+                detail.content().isEmpty()
             )
             sendUserDecisionEvent(requestId, requestContext, responseContext, detail, index, suggestionState, detailContexts.size)
         }
@@ -197,9 +198,12 @@ class CodeWhispererTelemetryService {
         hasSeen: Boolean,
         hasUserAccepted: Boolean,
         isDiscarded: Boolean,
-        hasReference: Boolean
+        hasReference: Boolean,
+        isEmpty: Boolean
     ): CodewhispererSuggestionState =
-        if (!CodeWhispererSettings.getInstance().isIncludeCodeWithReference() && hasReference) {
+        if (isEmpty) {
+            CodewhispererSuggestionState.Empty
+        } else if (!CodeWhispererSettings.getInstance().isIncludeCodeWithReference() && hasReference) {
             CodewhispererSuggestionState.Filter
         } else if (isDiscarded) {
             CodewhispererSuggestionState.Discard

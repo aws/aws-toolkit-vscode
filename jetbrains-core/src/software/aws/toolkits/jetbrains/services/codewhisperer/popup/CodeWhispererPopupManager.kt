@@ -570,6 +570,7 @@ class CodeWhispererPopupManager {
 
     private fun isValidRecommendation(detailContext: DetailContext, userInput: String, typeahead: String): Boolean {
         if (detailContext.isDiscarded) return false
+        if (detailContext.recommendation.content().isEmpty()) return false
         val indexOfFirstNonWhiteSpace = typeahead.indexOfFirst { !it.isWhitespace() }
         if (indexOfFirstNonWhiteSpace == -1) return true
 
