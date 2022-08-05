@@ -5,7 +5,7 @@
 import * as telemetry from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { createURIFromArgs, isLogStreamUri } from './cloudWatchLogsUtils'
+import { createURIFromArgs, isLogStreamUri, telemetryFilterSuccess } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
@@ -46,11 +46,6 @@ export async function getNewData(
                 return
             }
             newData.parameters.filterPattern = newPattern
-            telemetry.recordCloudwatchlogsFilter({
-                result: 'Succeeded',
-                cloudWatchResourceType: 'logGroup',
-                filterBy: 'prefix',
-            })
             break
 
         case 'timeFilter':
@@ -60,13 +55,11 @@ export async function getNewData(
             }
             newData.parameters.startTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.start
             newData.parameters.endTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.end
-            telemetry.recordCloudwatchlogsFilter({
-                result: 'Succeeded',
-                cloudWatchResourceType: 'logGroup',
-                filterBy: 'time',
-            })
             break
     }
+
+    telemetryFilterSuccess(newData)
+
     if (newData.parameters.streamName) {
         newData.retrieveLogsFunction = filterLogEventsFromUriComponents
         newData.parameters.streamNameOptions = [newData.parameters.streamName]

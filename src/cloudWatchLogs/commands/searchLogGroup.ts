@@ -15,7 +15,7 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createURIFromArgs, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri, telemetryFilterSuccess } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -38,14 +38,6 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     let parameters: CloudWatchLogsParameters
     const limitParam = registry.configuration.get('limit', 10000)
 
-    if (response.filterPattern !== '') {
-        telemetry.recordCloudwatchlogsFilter({
-            result: 'Succeeded',
-            cloudWatchResourceType: 'logGroup',
-            filterBy: 'prefix',
-        })
-    }
-
     if (response.timeRange.start === response.timeRange.end) {
         // this means no time filter.
         parameters = {
@@ -59,11 +51,6 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
             startTime: response.timeRange.start,
             endTime: response.timeRange.end,
         }
-        telemetry.recordCloudwatchlogsFilter({
-            result: 'Succeeded',
-            cloudWatchResourceType: 'logGroup',
-            filterBy: 'time',
-        })
     }
 
     const initialStreamData: CloudWatchLogsData = {
@@ -73,6 +60,8 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
         logGroupInfo: logGroupInfo,
         retrieveLogsFunction: filterLogEventsFromUriComponents,
     }
+
+    telemetryFilterSuccess(initialStreamData)
 
     return initialStreamData
 }

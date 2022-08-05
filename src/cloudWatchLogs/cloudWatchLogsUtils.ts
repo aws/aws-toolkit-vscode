@@ -2,16 +2,25 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as telemetry from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
-import { CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
+import { CloudWatchLogsData, CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
 import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
 // The following functions are used to structure and destructure relevant information to/from a URI.
 // Colons are not valid characters in either the group name or stream name and will be used as separators.
+
+export function telemetryFilterSuccess(logData: CloudWatchLogsData): void {
+    telemetry.recordCloudwatchlogsFilter({
+        result: 'Succeeded',
+        cloudWatchResourceType: 'logGroup',
+        hasTimeFilter: logData.parameters.startTime ? true : false,
+        hasTextFilter: logData.parameters.filterPattern && logData.parameters.filterPattern !== '' ? true : false,
+    })
+}
 
 /**
  * This function concatenates the path and query to create a unique (enough) identifier for a URI.
