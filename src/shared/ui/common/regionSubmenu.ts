@@ -27,7 +27,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         private readonly itemsProvider: (region: string) => ItemLoadTypes<T>,
         private readonly dataOptions?: ExtendedQuickPickOptions<T>,
         private readonly regionOptions?: ExtendedQuickPickOptions<T>,
-        private currentRegion = globals.awsContext.guessDefaultRegion()
+        private currentRegion = globals.regionProvider.guessDefaultRegion()
     ) {
         super()
     }
