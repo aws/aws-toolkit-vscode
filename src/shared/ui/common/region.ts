@@ -11,7 +11,6 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { getLogger } from '../../logger/logger'
 import { Region } from '../../regions/endpoints'
-import { getRegionsForActiveCredentials } from '../../regions/regionUtilities'
 import { createCommonButtons, PrompterButtons } from '../buttons'
 import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
 
@@ -24,11 +23,11 @@ interface RegionPrompterOptions {
 }
 
 export function createRegionPrompter(
-    regions = getRegionsForActiveCredentials(globals.awsContext, globals.regionProvider),
+    regions = globals.regionProvider.getRegions(),
     options: RegionPrompterOptions = {}
 ): QuickPickPrompter<Region> {
     const lastRegionKey = 'lastSelectedRegion'
-    const defaultRegion = options.defaultRegion ?? globals.awsContext.getCredentialDefaultRegion()
+    const defaultRegion = options.defaultRegion ?? globals.regionProvider.defaultRegionId
     const filteredRegions = regions.filter(
         r => !options.serviceFilter || globals.regionProvider.isServiceInRegion(options.serviceFilter, r.id)
     )
@@ -44,7 +43,7 @@ export function createRegionPrompter(
     const defaultRegionItem = items.find(item => item.detail === defaultRegion)
 
     if (defaultRegionItem !== undefined) {
-        defaultRegionItem.description = localize('AWS.generic.defaultRegion', '(default region)')
+        defaultRegionItem.description = localize('AWS.generic.recentlyUsed', '(recently used)')
     }
 
     const prompter = createQuickPick(items, {

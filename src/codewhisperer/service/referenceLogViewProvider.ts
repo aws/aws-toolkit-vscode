@@ -72,7 +72,6 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                 editor.document.positionAt(
                     TelemetryHelper.instance.cursorOffset + reference.recommendationContentSpan.end - 1
                 ).line + 1
-            const license = `<a href=${LicenseUtil.getLicenseHtml(reference.licenseName)}>${reference.licenseName}</a>`
             let lineInfo = ``
             if (firstCharLineNumber === lastCharLineNumber) {
                 lineInfo = `(line at ${firstCharLineNumber})`
@@ -82,7 +81,14 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             if (text != ``) {
                 text += `And `
             }
-            const repository = reference.repository != undefined ? reference.repository : 'unknown'
+
+            let license = `<a href=${LicenseUtil.getLicenseHtml(reference.licenseName)}>${reference.licenseName}</a>`
+            let repository = reference.repository?.length ? reference.repository : 'unknown'
+            if (reference.url?.length) {
+                repository = `<a href=${reference.url}>${reference.repository}</a>`
+                license = reference.licenseName || 'unknown'
+            }
+
             text +=
                 CodeWhispererConstants.referenceLogText(
                     `<br><code>${code}</code><br>`,

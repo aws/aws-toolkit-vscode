@@ -8,8 +8,6 @@ import { LoginManager } from '../credentials/loginManager'
 import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
-import { AwsContext } from '../shared/awsContext'
-import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import globals from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
@@ -17,7 +15,6 @@ import { RegionProvider } from '../shared/regions/regionProvider'
 import { recordAwsRefreshExplorer, recordAwsShowRegion, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { Commands } from '../shared/vscode/commands2'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
 import { executeStateMachine } from '../stepFunctions/vue/executeStateMachine/executeStateMachine'
@@ -34,7 +31,6 @@ import { createLocalExplorerView } from './localExplorer'
  */
 export async function activate(args: {
     context: ExtContext
-    awsContextTrees: AwsContextTreeCollection
     regionProvider: RegionProvider
     toolkitOutputChannel: vscode.OutputChannel
     remoteInvokeOutputChannel: vscode.OutputChannel
@@ -57,9 +53,22 @@ export async function activate(args: {
         })
     )
 
-    args.awsContextTrees.addTree(awsExplorer)
+    recordVscodeActiveRegions({ value: args.regionProvider.getExplorerRegions().length })
 
-    updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.context.awsContext, globals.context)
+    args.context.extensionContext.subscriptions.push(
+        args.context.awsContext.onDidChangeContext(async credentialsChangedEvent => {
+            getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
+            awsExplorer.refresh()
+
+            if (credentialsChangedEvent.profileName) {
+                await checkExplorerForDefaultRegion(
+                    credentialsChangedEvent.profileName,
+                    args.regionProvider,
+                    awsExplorer
+                )
+            }
+        })
+    )
 }
 
 async function registerAwsExplorerCommands(
@@ -120,28 +129,9 @@ async function registerAwsExplorerCommands(
         Commands.register('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
         }),
-        Commands.register('aws.loadMoreChildren', async (node: AWSTreeNodeBase & LoadMoreNode) => {
-            await loadMoreChildrenCommand(node, awsExplorer)
-        })
+        loadMoreChildrenCommand.register(awsExplorer)
     )
 
     const developerTools = createLocalExplorerView()
     context.extensionContext.subscriptions.push(developerTools)
-}
-
-function updateAwsExplorerWhenAwsContextCredentialsChange(
-    awsExplorer: AwsExplorer,
-    awsContext: AwsContext,
-    extensionContext: vscode.ExtensionContext
-) {
-    extensionContext.subscriptions.push(
-        awsContext.onDidChangeContext(async credentialsChangedEvent => {
-            getLogger().verbose(`Credentials changed (${credentialsChangedEvent.profileName}), updating AWS Explorer`)
-            awsExplorer.refresh()
-
-            if (credentialsChangedEvent.profileName) {
-                await checkExplorerForDefaultRegion(credentialsChangedEvent.profileName, awsContext, awsExplorer)
-            }
-        })
-    )
 }

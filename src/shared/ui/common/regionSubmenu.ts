@@ -25,7 +25,8 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
 
     public constructor(
         private readonly itemsProvider: (region: string) => ItemLoadTypes<T>,
-        private readonly options?: ExtendedQuickPickOptions<T>,
+        private readonly dataOptions?: ExtendedQuickPickOptions<T>,
+        private readonly regionOptions?: ExtendedQuickPickOptions<T>,
         private currentRegion = globals.awsContext.guessDefaultRegion()
     ) {
         super()
@@ -34,14 +35,14 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
     private createMenuPrompter() {
         const prompter = createQuickPick<T | typeof switchRegion>(
             this.itemsProvider(this.currentRegion),
-            this.options as ExtendedQuickPickOptions<T | typeof switchRegion>
+            this.dataOptions as ExtendedQuickPickOptions<T | typeof switchRegion>
         )
 
         prompter.quickPick.items = [
             {
                 label: 'Switch region',
                 data: switchRegion,
-                detail: `Showing groups for ${this.currentRegion}`,
+                detail: `Showing options for ${this.currentRegion}`,
             },
             ...prompter.quickPick.items,
         ]
@@ -73,7 +74,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                 case 'region': {
                     const prompter = (this.activePrompter = createRegionPrompter(undefined, {
                         defaultRegion: this.currentRegion,
-                        title: 'Select region for log group',
+                        ...this.regionOptions,
                     }))
 
                     const resp = await prompter.prompt()

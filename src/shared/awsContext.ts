@@ -5,14 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
-import { regionSettingKey } from './constants'
 import { getLogger } from '../shared/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { CredentialsShim } from '../credentials/loginManager'
-import { AWSTreeNodeBase } from './treeview/nodes/awsTreeNodeBase'
-import globals from '../shared/extensionGlobals'
-import { Region } from './regions/endpoints'
-
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
     readonly credentialsId: string
@@ -29,10 +24,6 @@ export interface ContextChangeEventsArgs {
 // Represents a credential profile and zero or more regions.
 export type AwsContext = ClassToInterfaceType<DefaultAwsContext>
 
-export class NoActiveCredentialError extends Error {
-    public message = 'No AWS profile selected'
-}
-
 const logged = new Set<string>()
 const DEFAULT_REGION = 'us-east-1'
 
@@ -46,45 +37,11 @@ export class DefaultAwsContext implements AwsContext {
     private shim?: CredentialsShim
     public lastTouchedRegion?: string
 
-    // the collection of regions the user has expressed an interest in working with in
-    // the current workspace
-    private readonly explorerRegions: string[]
-
     private currentCredentials: AwsContextCredentials | undefined
 
-    public constructor(private context: vscode.ExtensionContext) {
+    public constructor() {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
         this.onDidChangeContext = this._onDidChangeContext.event
-
-        const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
-        this.explorerRegions = persistedRegions || []
-    }
-    /**
-     * @param node node on current command.
-     * @returns heuristic for default region based on
-     * last touched region in explorer, wizard response, and node passed in.
-     */
-    public guessDefaultRegion(node?: AWSTreeNodeBase): string {
-        if (node?.regionCode) {
-            return node.regionCode
-        } else if (this.explorerRegions.length === 1) {
-            return this.explorerRegions[0]
-        } else if (this.lastTouchedRegion) {
-            return this.lastTouchedRegion
-        } else {
-            const lastWizardResponse = globals.context.globalState.get<Region>('lastSelectedRegion')
-            if (lastWizardResponse && lastWizardResponse.id) {
-                return lastWizardResponse.id
-            } else {
-                return this.getCredentialDefaultRegion()
-            }
-        }
-    }
-
-    public setLastTouchedRegion(region: string | undefined) {
-        if (region) {
-            this.lastTouchedRegion = region
-        }
     }
 
     public get credentialsShim(): CredentialsShim | undefined {
@@ -143,42 +100,6 @@ export class DefaultAwsContext implements AwsContext {
         }
 
         return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
-    }
-
-    public async getExplorerRegions(): Promise<string[]> {
-        // (1a63f2a5fe05) "async to potentially support other ways of obtaining regions, e.g. from EC2 IMDS."
-        return this.explorerRegions
-    }
-
-    /**
-     * Adds a region(s) into the "preferred set", persisted as a comma-separated string.
-     *
-     * @param regions List of region ids (like `["us-west-2"]`)
-     */
-    public async addExplorerRegion(...regions: string[]): Promise<void> {
-        regions.forEach(r => {
-            const index = this.explorerRegions.findIndex(regionToProcess => regionToProcess === r)
-            if (index === -1) {
-                this.explorerRegions.push(r)
-            }
-        })
-        await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-    }
-
-    /**
-     * Removes a region(s) from the user's "preferred set".
-     *
-     * @param regions List of region ids (like `["us-west-2"]`)
-     */
-    public async removeExplorerRegion(...regions: string[]): Promise<void> {
-        regions.forEach(r => {
-            const index = this.explorerRegions.findIndex(explorerRegion => explorerRegion === r)
-            if (index >= 0) {
-                this.explorerRegions.splice(index, 1)
-            }
-        })
-
-        await this.context.globalState.update(regionSettingKey, this.explorerRegions)
     }
 
     private emitEvent() {

@@ -17,7 +17,6 @@ import {
     CredentialType,
     recordAwsRefreshCredentials,
     recordAwsValidateCredentials,
-    recordVscodeActiveRegions,
     Result,
 } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
@@ -35,7 +34,7 @@ import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider
 import { showViewLogsMessage } from '../shared/utilities/messages'
 import { isAutomation } from '../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
-import { ToolkitError } from '../shared/toolkitError'
+import { ToolkitError } from '../shared/errors'
 import * as localizedText from '../shared/localizedText'
 import { DefaultStsClient } from '../shared/clients/stsClient'
 import { findAsync } from '../shared/utilities/collectionUtils'
@@ -76,7 +75,6 @@ export class LoginManager {
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
-            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
             this.awsContext.credentialsShim = createCredentialsShim(this.store, args.providerId, credentials)
             await this.awsContext.setCredentials({

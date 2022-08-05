@@ -8,6 +8,10 @@ import { InputBoxPrompter } from '../shared/ui/inputPrompter'
 import { ItemLoadTypes, QuickPickPrompter, DataQuickPickItem, createQuickPick } from '../shared/ui/pickerPrompter'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { isValidResponse, StepEstimator } from '../shared/wizards/wizard'
+import { createCommonButtons } from '../shared/ui/buttons'
+import * as nls from 'vscode-nls'
+
+const localize = nls.loadMessageBundle()
 
 export function isViewAllEvents(response: TimeFilterResponse) {
     return response.start === response.end
@@ -32,7 +36,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         super()
     }
 
-    private get recentTimeOptions(): ItemLoadTypes<number> {
+    private get recentTimeItems(): ItemLoadTypes<number> {
         const options: DataQuickPickItem<number>[] = []
         options.push({
             label: 'View all events',
@@ -58,7 +62,10 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     }
 
     public createMenuPrompter() {
-        const prompter = createQuickPick<number | typeof customRange>(this.recentTimeOptions)
+        const prompter = createQuickPick<number | typeof customRange>(this.recentTimeItems, {
+            title: 'Select Time Filter',
+            buttons: createCommonButtons(),
+        })
 
         prompter.quickPick.items = [
             ...prompter.quickPick.items,
@@ -123,32 +130,27 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
 
     public validateDate(input: string) {
         const parts = input.split('-')
-        const today = new Date()
 
         if (parts.length !== 2) {
-            return 'String must include two dates seperated by `-`'
+            return localize('AWS.cwl.validateDate.notTwoDates', 'String must include two dates seperated by `-`')
         }
         const [startTime, endTime] = parts
 
         if (!Date.parse(startTime)) {
-            return 'starting time format is invalid, use YYYY/MM/DD'
+            return localize('AWS.cwl.validateDate.startTimeInvalid', 'starting time format is invalid, use YYYY/MM/DD')
         }
         if (!Date.parse(endTime)) {
-            return 'ending time format is valid, use YYYY/MM/DD'
+            return localize('AWS.cwl.validateDate.endTimeInvalid', 'ending time format is valid, use YYYY/MM/DD')
         }
         const regEx = /^\d{4}\/\d{2}\/\d{2}$/
         if (!startTime.match(regEx) || !endTime.match(regEx)) {
-            return 'enter date in format YYYY/MM/DD-YYYY/MM/DD'
+            return localize('AWS.cwl.validateDate.dateFormat', 'enter date in format YYYY/MM/DD-YYYY/MM/DD')
         }
         if (startTime === endTime) {
-            return 'must enter two different dates for valid range'
+            return localize('AWS.cwl.validateDate.sameDateError', 'must enter two different dates for valid range')
         }
         if (Date.parse(startTime) > Date.parse(endTime)) {
-            return 'first date must occur before second date'
-        }
-
-        if (Date.parse(endTime) > today.valueOf()) {
-            return 'end date cannot be in the future'
+            return localize('AWS.cwl.validateDate.startBeforeEndDate', 'first date must occur before second date')
         }
     }
 

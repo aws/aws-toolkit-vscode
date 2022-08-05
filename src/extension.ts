@@ -16,7 +16,6 @@ import { SharedCredentialsProviderFactory } from './credentials/providers/shared
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
-import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/awsContext'
@@ -32,7 +31,7 @@ import {
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import { RegionProvider } from './shared/regions/regionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
@@ -64,7 +63,9 @@ import globals, { initialize } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
-import { Commands } from './shared/vscode/commands2'
+import { Commands, registerErrorHandler } from './shared/vscode/commands2'
+import { formatError, isUserCancelledError, ToolkitError, UnknownError } from './shared/errors'
+import { Logging } from './shared/logger/commands'
 
 let localize: nls.LocalizeFunc
 
@@ -84,15 +85,19 @@ export async function activate(context: vscode.ExtensionContext) {
     )
     globals.outputChannel = toolkitOutputChannel
 
+    registerErrorHandler(async (info, error) => {
+        const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
+        await handleError(error, info.id, defaultMessage)
+    })
+
     try {
         initializeCredentialsProviderManager()
 
         const endpointsProvider = makeEndpointsProvider()
 
-        const awsContext = new DefaultAwsContext(context)
+        const awsContext = new DefaultAwsContext()
         globals.awsContext = awsContext
-        const awsContextTrees = new AwsContextTreeCollection()
-        const regionProvider = new DefaultRegionProvider(endpointsProvider)
+        const regionProvider = RegionProvider.fromEndpointsProvider(endpointsProvider)
         const credentialsStore = new CredentialsStore()
         const loginManager = new LoginManager(awsContext, credentialsStore)
 
@@ -105,7 +110,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         globals.regionProvider = regionProvider
-        globals.awsContextCommands = new AwsContextCommands(awsContext, awsContextTrees, regionProvider, loginManager)
+        globals.awsContextCommands = new AwsContextCommands(regionProvider, loginManager)
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         globals.schemaService = new SchemaService(context)
         globals.resourceManager = new AwsResourceManager(context)
@@ -183,7 +188,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateAwsExplorer({
             context: extContext,
-            awsContextTrees,
             regionProvider,
             toolkitOutputChannel,
             remoteInvokeOutputChannel,
@@ -249,6 +253,27 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 }
 
+// This is only being used for errors from commands although there's plenty of other places where it
+// could be used. It needs to be apart of some sort of `core` module that is guaranteed to initialize
+// prior to every other Toolkit component. Logging and telemetry would fit well within this core module.
+async function handleError(error: unknown, topic: string, defaultMessage: string) {
+    if (isUserCancelledError(error)) {
+        getLogger().verbose(`${topic}: user cancelled`)
+        return
+    }
+
+    const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
+    const logMessage = error instanceof ToolkitError ? error.trace : formatError(UnknownError.cast(error))
+    const logId = getLogger().error(`${topic}: ${logMessage}`)
+    const message = error instanceof ToolkitError ? error.message : defaultMessage
+
+    await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
+        if (resp === logsItem) {
+            await Logging.declared.viewLogsAtMessage.execute(logId)
+        }
+    })
+}
+
 export async function deactivate() {
     await codewhispererShutdown()
     await globals.telemetry.shutdown()
@@ -273,28 +298,6 @@ function makeEndpointsProvider(): EndpointsProvider {
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
 
     const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
-    // Start the load without waiting. It raises events as fetchers retrieve data.
-    provider.load().catch((err: Error) => {
-        getLogger().error('Failure while loading Endpoints Manifest: %O', err)
-
-        vscode.window.showErrorMessage(
-            `${localize(
-                'AWS.error.endpoint.load.failure',
-                'The {0} Toolkit was unable to load endpoints data.',
-                getIdeProperties().company
-            )} ${
-                isCloud9()
-                    ? localize(
-                          'AWS.error.impactedFunctionalityReset.cloud9',
-                          'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
-                      )
-                    : localize(
-                          'AWS.error.impactedFunctionalityReset.vscode',
-                          'Toolkit functionality may be impacted until VS Code is restarted.'
-                      )
-            }`
-        )
-    })
 
     return provider
 }

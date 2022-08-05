@@ -9,7 +9,7 @@ import { extensionVersion } from '../../shared/vscode/env'
 import { RecommendationsList, DefaultCodeWhispererClient, Recommendation } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import { CodeWhispererConstants } from '../models/constants'
-import { ConfigurationEntry, vsCodeState } from '../models/model'
+import { ConfigurationEntry } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { TelemetryHelper } from '../util/telemetryHelper'
@@ -33,7 +33,7 @@ export class RecommendationHandler {
     private nextToken: string
     public errorCode: string
     public recommendations: Recommendation[]
-    public recommendationSuggestionState: Map<number, string>
+    private recommendationSuggestionState: Map<number, string>
     public startPos: vscode.Position
     private cancellationToken: vscode.CancellationTokenSource
     public errorMessagePrompt: string
@@ -65,6 +65,14 @@ export class RecommendationHandler {
             this.recommendations.length > 0 &&
             this.recommendations.filter(option => option.content.length > 0).length > 0
         )
+    }
+
+    setSuggestionState(index: number, value: string) {
+        this.recommendationSuggestionState.set(index, value)
+    }
+
+    getSuggestionState(index: number): string | undefined {
+        return this.recommendationSuggestionState.get(index)
     }
 
     async getServerResponse(
@@ -238,12 +246,10 @@ export class RecommendationHandler {
                     reason: reason ? reason.substring(0, 200) : undefined,
                 })
             }
-            recommendation = recommendation.filter(r => r.content.length > 0)
-
             if (config.isIncludeSuggestionsWithCodeReferencesEnabled === false) {
                 recommendation.forEach((r, index) => {
                     if (r.references !== undefined && r.references.length) {
-                        this.recommendationSuggestionState.set(index + this.recommendations.length, 'Filtered')
+                        this.setSuggestionState(index + this.recommendations.length, 'Filtered')
                     }
                 })
                 if (!pagination && recommendation.length === 0 && this.recommendationSuggestionState.size > 0) {
@@ -252,7 +258,27 @@ export class RecommendationHandler {
             }
         }
         if (recommendation.length > 0) {
+            const typedPrefix = editor.document
+                .getText(new vscode.Range(this.startPos, editor.selection.active))
+                .replace('\r\n', '\n')
+            // mark suggestions that does not match typeahead when arrival as Discard
+            // these suggestions can be marked as Showed if typeahead can be removed with new inline API
+            recommendation.forEach((r, i) => {
+                if (
+                    !r.content.startsWith(typedPrefix) &&
+                    this.getSuggestionState(i + this.recommendations.length) === undefined
+                ) {
+                    this.setSuggestionState(i + this.recommendations.length, 'Discard')
+                }
+            })
             this.recommendations = isCloud9() ? recommendation : this.recommendations.concat(recommendation)
+        } else {
+            TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
+                requestId,
+                sessionId,
+                page,
+                editor?.document.languageId
+            )
         }
         this.requestId = requestId
         this.sessionId = sessionId
@@ -287,12 +313,6 @@ export class RecommendationHandler {
         this.errorMessagePrompt = ''
     }
     reportUserDecisionOfCurrentRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
-        TelemetryHelper.instance.updatePrefixMatchArray(
-            this.recommendations,
-            this.startPos,
-            !vsCodeState.isIntelliSenseActive,
-            editor
-        )
         TelemetryHelper.instance.recordUserDecisionTelemetry(
             this.requestId,
             this.sessionId,
