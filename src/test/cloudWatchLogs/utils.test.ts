@@ -5,18 +5,14 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import {
-    createURIFromArgs,
-    parseCloudWatchLogsUri,
-    uriToKey,
-    findOccurencesOf,
-} from '../../cloudWatchLogs/cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri, uriToKey } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
     CloudWatchLogsParameters,
     CloudWatchLogsData,
     CloudWatchLogsResponse,
 } from '../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
+import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 
 const newText = 'a little longer now\n'
 
