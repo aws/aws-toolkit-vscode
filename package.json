@@ -3045,7 +3045,7 @@
         ],
         "resourceLabelFormatters": [
             {
-                "scheme": "awsCloudWatchLogs",
+                "scheme": "aws-cwl",
                 "formatting": {
                     "label": "${path}",
                     "separator": "\\"
