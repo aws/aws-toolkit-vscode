@@ -194,8 +194,7 @@ export class SearchLogGroupWizard extends Wizard<SearchLogGroupWizardResponse> {
 
         this.form.submenuResponse.bindPrompter(createRegionSubmenu)
         this.form.filterPattern.bindPrompter(({ submenuResponse }) =>
-            createFilterpatternPrompter(submenuResponse!.data)
-
+            createFilterpatternPrompter(submenuResponse!.data, logGroupInfo ? true : false)
         )
         this.form.timeRange.bindPrompter(() => new TimeFilterSubmenu())
     }
