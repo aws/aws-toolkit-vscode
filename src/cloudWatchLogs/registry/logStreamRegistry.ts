@@ -6,7 +6,7 @@
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, highlightDocument } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
@@ -19,7 +19,9 @@ import { showMessageWithCancel } from '../../shared/utilities/messages'
  */
 export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
-
+    private readonly searchHighlight = vscode.window.createTextEditorDecorationType({
+        backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
+    })
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
@@ -58,7 +60,7 @@ export class LogStreamRegistry {
     private registerLogHandlers(uri: vscode.Uri): void {
         vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
             if (event.document.uri.toString() === uri.toString()) {
-                highlightDocument(this, uri)
+                this.highlightDocument(uri)
             }
         })
 
@@ -256,6 +258,24 @@ export class LogStreamRegistry {
 
     public getActiveTab(uri: vscode.Uri): ActiveTab | undefined {
         return this.activeLogs.get(uriToKey(uri))
+    }
+
+    public async highlightDocument(uri: vscode.Uri): Promise<void> {
+        const textEditor = this.getTextEditor(uri)
+        const logData = this.getLogData(uri)
+
+        if (!logData) {
+            throw new Error(`Missing log data in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+        }
+
+        if (!textEditor) {
+            throw new Error(`Missing textEditor in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+        }
+
+        if (logData.parameters.filterPattern) {
+            const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
+            textEditor.setDecorations(this.searchHighlight, ranges)
+        }
     }
 }
 

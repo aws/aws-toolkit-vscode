@@ -120,26 +120,4 @@ export function findOccurencesOf(document: vscode.TextDocument, keyword: string)
     return ranges
 }
 
-const searchHighlight = vscode.window.createTextEditorDecorationType({
-    backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
-})
-
-export async function highlightDocument(registry: LogStreamRegistry, uri: vscode.Uri): Promise<void> {
-    const textEditor = registry.getTextEditor(uri)
-    const logData = registry.getLogData(uri)
-
-    if (!logData) {
-        throw new Error(`Missing log data in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
-    }
-
-    if (!textEditor) {
-        throw new Error(`Missing textEditor in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
-    }
-
-    if (logData.parameters.filterPattern) {
-        const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
-        textEditor.setDecorations(searchHighlight, ranges)
-    }
-}
-
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}

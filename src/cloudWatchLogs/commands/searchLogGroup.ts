@@ -16,7 +16,7 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createURIFromArgs, parseCloudWatchLogsUri, highlightDocument } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../shared/logger'
@@ -72,7 +72,7 @@ export async function prepareDocument(
         registry.setTextEditor(uri, textEditor)
 
         // Initial highlighting of the document and then for any addLogEvent calls.
-        highlightDocument(registry, uri)
+        registry.highlightDocument(uri)
         return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {
