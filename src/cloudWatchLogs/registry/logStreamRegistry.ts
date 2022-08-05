@@ -27,7 +27,16 @@ export class LogStreamRegistry {
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
     ) {
-        this.registerLogHandlers()
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            const eventUri = event.document.uri
+            if (this.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
+                this.highlightDocument(eventUri)
+            }
+        })
+
+        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
+            this.cleanUpDocument(document)
+        })
     }
 
     /**
@@ -55,17 +64,6 @@ export class LogStreamRegistry {
         if (this.hasLog(document.uri) && !isLogStreamUri(document.uri)) {
             this.clearStreamIdMap(document.uri)
         }
-    }
-
-    private registerLogHandlers(): void {
-        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-            const eventUri = event.document.uri
-            if (this.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
-                this.highlightDocument(eventUri)
-            }
-        })
-
-        vscode.workspace.onDidCloseTextDocument(() => this.cleanUpDocument)
     }
 
     /**
