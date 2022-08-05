@@ -265,11 +265,11 @@ export class LogStreamRegistry {
         const logData = this.getLogData(uri)
 
         if (!logData) {
-            throw new Error(`Missing log data in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+            throw new Error(`cwl: Unable to highlight. Missing log data in registry for uri key: ${uriToKey(uri)}.`)
         }
 
         if (!textEditor) {
-            throw new Error(`Missing textEditor in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+            throw new Error(`cwl: Unable to highlight. Missing textEditor in registry for uri key: ${uriToKey(uri)}.`)
         }
 
         if (logData.parameters.filterPattern) {

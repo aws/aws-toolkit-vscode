@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
-import { CloudWatchLogsGroupInfo, LogStreamRegistry } from './registry/logStreamRegistry'
+import { CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
 import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
