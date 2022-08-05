@@ -12,6 +12,7 @@ import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { highlightDocument } from '../document/logStreamDocumentProvider'
 // TODO: Add debug logging statements
 
 /**
@@ -35,15 +36,30 @@ export class LogStreamRegistry {
     /**
      * Adds an entry to the registry for the given URI.
      * @param uri Document URI
-     * @param getLogEventsFromUriComponentsFn Override for testing purposes.
+     * @param initialStreamData Initial Data to populate the registry ActiveTab Data.
      */
     public async registerLog(uri: vscode.Uri, initialStreamData: CloudWatchLogsData): Promise<void> {
         // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
         parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
             this.setLogData(uri, initialStreamData)
+            this.registerLogHandlers(uri)
             await this.updateLog(uri, 'tail')
         }
+    }
+
+    private registerLogHandlers(uri: vscode.Uri): void {
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            if (event.document.uri.toString() === uri.toString()) {
+                highlightDocument(this, uri)
+            }
+        })
+
+        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
+            if (document.uri === uri) {
+                this.clearStreamIdMap(uri)
+            }
+        })
     }
 
     /**
