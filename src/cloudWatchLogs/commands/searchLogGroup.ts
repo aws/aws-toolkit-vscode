@@ -135,7 +135,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
     const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
     result = await prepareDocument(uri, initialLogData, registry)
-    telemetry.recordCloudwatchlogsOpenStream({ result })
+    telemetry.recordCloudwatchlogsOpenLogSearch({ result: result, cwlLogSearchSource: source })
 }
 
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
