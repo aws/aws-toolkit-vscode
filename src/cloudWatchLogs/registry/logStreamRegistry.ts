@@ -48,6 +48,14 @@ export class LogStreamRegistry {
         }
     }
 
+    public getOnCloseFuncForUri(uri: vscode.Uri): (document: vscode.TextDocument) => void {
+        return (document: vscode.TextDocument) => {
+            if (document.uri.toString() === uri.toString()) {
+                this.clearStreamIdMap(uri)
+            }
+        }
+    }
+
     private registerLogHandlers(uri: vscode.Uri): void {
         vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
             if (event.document.uri.toString() === uri.toString()) {
@@ -55,11 +63,7 @@ export class LogStreamRegistry {
             }
         })
 
-        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-            if (document.uri === uri) {
-                this.clearStreamIdMap(uri)
-            }
-        })
+        vscode.workspace.onDidCloseTextDocument(this.getOnCloseFuncForUri(uri))
     }
 
     /**
@@ -236,6 +240,7 @@ export class LogStreamRegistry {
     }
 
     public clearStreamIdMap(uri: vscode.Uri): void {
+        console.log(uri)
         const currentActiveTab = this.getActiveTab(uri)
         if (!currentActiveTab) {
             throw new Error(`cwl: Cannot clear streamIdMap for ununregistered uri ${uri.path}`)

@@ -11,7 +11,6 @@ import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
 import { CloudWatchLogsSettings, createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { fakeGetLogEvents, fakeSearchLogGroup, testStreamData1, testStreamNames } from '../utils.test'
-import { clearStreamIdMapOnDocumentClose } from '../../../cloudWatchLogs/commands/searchLogGroup'
 
 describe('LogStreamRegistry', async function () {
     let registry: LogStreamRegistry
@@ -154,13 +153,18 @@ describe('LogStreamRegistry', async function () {
         it('registers stream ids to map and clears it on document close', async function () {
             registry.getLogContent(searchLogGroupUri) // We run this to create the mappings
             const doc = await vscode.workspace.openTextDocument(searchLogGroupUri)
-            clearStreamIdMapOnDocumentClose(registry, doc)
-            const streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
+            let streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
             const expectedMap = new Map<number, string>([
                 [0, testStreamNames[0]],
                 [1, testStreamNames[1]],
             ])
             assert.deepStrictEqual(streamIDMap, expectedMap)
+            const cleanUpFunc = registry.getOnCloseFuncForUri(searchLogGroupUri)
+
+            // Clean up Function clears the streamIDMap
+            cleanUpFunc(doc)
+            streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
+            assert.deepStrictEqual(streamIDMap, new Map<number, string>())
         })
 
         it('handles newlines within event messages', function () {
