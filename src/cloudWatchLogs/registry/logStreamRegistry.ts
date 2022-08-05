@@ -60,7 +60,8 @@ export class LogStreamRegistry {
         }
     }
 
-    public cleanUpDocument(document: vscode.TextDocument): void {
+    /** Disposes registry structures associated with the given document. Does not dispose the document itself. */
+    public disposeRegistryData(document: vscode.TextDocument): void {
         if (this.hasLog(document.uri) && !isLogStreamUri(document.uri)) {
             this.clearStreamIdMap(document.uri)
         }
