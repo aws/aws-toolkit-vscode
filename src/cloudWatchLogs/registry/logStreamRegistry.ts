@@ -57,7 +57,6 @@ export class LogStreamRegistry {
     }
 
     public cleanUpDocument(document: vscode.TextDocument): void {
-        console.log(this.hasLog(document.uri), !isLogStreamUri(document.uri))
         if (this.hasLog(document.uri) && !isLogStreamUri(document.uri)) {
             this.clearStreamIdMap(document.uri)
         }
