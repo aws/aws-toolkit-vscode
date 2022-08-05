@@ -32,7 +32,7 @@ describe('regionSubmenu', function () {
                 data: groupName,
             }))
         }
-        submenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, 'us-west-1')
+        submenuPrompter = new RegionSubmenu(fakeGroupProvider, {}, {}, 'us-west-1')
     })
 
     it('allow users to swap regions via escape hatch', async function () {
