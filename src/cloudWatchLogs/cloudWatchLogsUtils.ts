@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
-import { CloudWatchLogsGroupInfo } from './registry/logStreamRegistry'
+import { CloudWatchLogsGroupInfo, LogStreamRegistry } from './registry/logStreamRegistry'
 import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
@@ -118,6 +118,28 @@ export function findOccurencesOf(document: vscode.TextDocument, keyword: string)
         lineNum += 1
     }
     return ranges
+}
+
+const HIGHLIGHTER = vscode.window.createTextEditorDecorationType({
+    backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
+})
+
+export async function highlightDocument(registry: LogStreamRegistry, uri: vscode.Uri): Promise<void> {
+    const textEditor = registry.getTextEditor(uri)
+    const logData = registry.getLogData(uri)
+
+    if (!logData) {
+        throw new Error(`Missing log data in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+    }
+
+    if (!textEditor) {
+        throw new Error(`Missing textEditor in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
+    }
+
+    if (logData.parameters.filterPattern) {
+        const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
+        textEditor.setDecorations(HIGHLIGHTER, ranges)
+    }
 }
 
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}
