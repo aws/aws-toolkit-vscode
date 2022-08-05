@@ -120,7 +120,7 @@ export function findOccurencesOf(document: vscode.TextDocument, keyword: string)
     return ranges
 }
 
-const HIGHLIGHTER = vscode.window.createTextEditorDecorationType({
+const searchHighlight = vscode.window.createTextEditorDecorationType({
     backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
 })
 
@@ -138,7 +138,7 @@ export async function highlightDocument(registry: LogStreamRegistry, uri: vscode
 
     if (logData.parameters.filterPattern) {
         const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
-        textEditor.setDecorations(HIGHLIGHTER, ranges)
+        textEditor.setDecorations(searchHighlight, ranges)
     }
 }
 
