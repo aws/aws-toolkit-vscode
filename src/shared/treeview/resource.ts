@@ -24,7 +24,6 @@ export interface ResourceProvider<T extends Resource = Resource> {
 
 export class ResourceTreeNode<T extends Resource> implements TreeNode<T> {
     public readonly id = this.resource.id
-    public readonly treeItem = this.createTreeItem()
 
     public constructor(
         public readonly resource: T,
@@ -40,7 +39,7 @@ export class ResourceTreeNode<T extends Resource> implements TreeNode<T> {
         return this.children?.listResources() ?? []
     }
 
-    private createTreeItem(): vscode.TreeItem {
+    public getTreeItem(): vscode.TreeItem {
         const collapsed =
             this.children !== undefined
                 ? vscode.TreeItemCollapsibleState.Collapsed
