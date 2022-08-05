@@ -6,13 +6,18 @@
 import * as assert from 'assert'
 import { RegionNode } from '../../awsexplorer/regionNode'
 import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
-import { DEFAULT_TEST_REGION_CODE, DEFAULT_TEST_REGION_NAME, FakeRegionProvider } from '../utilities/fakeAwsContext'
+import {
+    createTestRegionProvider,
+    DEFAULT_TEST_REGION_CODE,
+    DEFAULT_TEST_REGION_NAME,
+} from '../shared/regions/testUtil'
 
 describe('RegionNode', function () {
     let testNode: RegionNode
 
     beforeEach(function () {
-        testNode = new RegionNode({ id: regionCode, name: regionName }, new FakeRegionProvider())
+        const regionProvider = createTestRegionProvider()
+        testNode = new RegionNode({ id: regionCode, name: regionName }, regionProvider)
     })
 
     const regionCode = DEFAULT_TEST_REGION_CODE
@@ -29,8 +34,7 @@ describe('RegionNode', function () {
     })
 
     it('does not have child nodes for services not available in a region', async function () {
-        const regionProvider = new FakeRegionProvider()
-        regionProvider.servicesNotInRegion.push('schemas')
+        const regionProvider = createTestRegionProvider()
         const regionNode = new RegionNode({ id: regionCode, name: regionName }, regionProvider)
 
         const childNodes = await regionNode.getChildren()

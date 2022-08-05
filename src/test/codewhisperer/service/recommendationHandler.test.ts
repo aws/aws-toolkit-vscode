@@ -66,7 +66,7 @@ describe('recommendationHandler', function () {
                 false
             )
             const actual = RecommendationHandler.instance.recommendations
-            const expected: RecommendationsList = [{ content: "print('Hello World!')" }]
+            const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
         })
 
@@ -128,7 +128,6 @@ describe('recommendationHandler', function () {
                 codewhispererAutomatedTriggerType: 'Enter',
                 codewhispererCompletionType: 'Line',
                 result: 'Succeeded',
-                duration: 0.0,
                 codewhispererLineNumber: 1,
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',

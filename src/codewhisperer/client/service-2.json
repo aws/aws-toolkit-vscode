@@ -410,13 +410,14 @@
         "GetAccessTokenRequestIdentityTokenString": {
             "type": "string",
             "max": 1024,
-            "min": 0
+            "min": 0,
+            "sensitive": true
         },
         "GetAccessTokenResponse": {
             "type": "structure",
             "members": {
                 "accessToken": {
-                    "shape": "String"
+                    "shape": "SensitiveString"
                 }
             }
         },
@@ -593,6 +594,9 @@
                 "repository": {
                     "shape": "ReferenceRepositoryString"
                 },
+                "url": {
+                    "shape": "ReferenceUrlString"
+                },
                 "recommendationContentSpan": {
                     "shape": "Span"
                 }
@@ -604,6 +608,11 @@
             "min": 1
         },
         "ReferenceRepositoryString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "ReferenceUrlString": {
             "type": "string",
             "max": 1024,
             "min": 1
@@ -626,6 +635,10 @@
             },
             "documentation": "<p>This exception is thrown when describing a resource that does not exist.</p>",
             "exception": true
+        },
+        "SensitiveString": {
+            "type": "string",
+            "sensitive": true
         },
         "Span": {
             "type": "structure",

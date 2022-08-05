@@ -21,6 +21,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
 import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
+import { ToolkitError } from '../shared/errors'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -37,6 +38,31 @@ export async function activate(
     initializeCodeLens(extensionContext)
 }
 
+/*
+ * TODO: Determine behaviour when command is run against bad input, or
+ * non-json files. Determine if we want to limit the command to only a
+ * specifc subset of file types ( .json only, custom .states extension, etc...)
+ * Ensure tests are written for this use case as well.
+ */
+export const previewStateMachineCommand = Commands.declare(
+    'aws.previewStateMachine',
+    (globalState: vscode.Memento, manager: AslVisualizationManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
+        try {
+            arg ??= vscode.window.activeTextEditor
+            const input = arg instanceof vscode.Uri ? arg : arg?.document
+
+            if (!input) {
+                throw new ToolkitError('No active text editor or document found')
+            }
+
+            return await manager.visualizeStateMachine(globalState, input)
+        } finally {
+            // TODO: Consider making the metric reflect the success/failure of the above call
+            telemetry.recordStepfunctionsPreviewstatemachine()
+        }
+    }
+)
+
 async function registerStepFunctionCommands(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
@@ -46,27 +72,7 @@ async function registerStepFunctionCommands(
     const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
 
     extensionContext.subscriptions.push(
-        /*
-         * TODO: Determine behaviour when command is run against bad input, or
-         * non-json files. Determine if we want to limit the command to only a
-         * specifc subset of file types ( .json only, custom .states extension, etc...)
-         * Ensure tests are written for this use case as well.
-         */
-        Commands.register('aws.previewStateMachine', async (arg?: vscode.TextEditor | vscode.Uri) => {
-            try {
-                arg ??= vscode.window.activeTextEditor
-                const input = arg instanceof vscode.Uri ? arg : arg?.document
-
-                if (!input) {
-                    throw new TypeError(`Received "undefined", expected TextEditor or Uri`)
-                }
-
-                return await visualizationManager.visualizeStateMachine(extensionContext.globalState, input)
-            } finally {
-                // TODO: Consider making the metric reflect the success/failure of the above call
-                telemetry.recordStepfunctionsPreviewstatemachine()
-            }
-        }),
+        previewStateMachineCommand.register(extensionContext.globalState, visualizationManager),
         renderCdkStateMachineGraph.register(extensionContext.globalState, cdkVisualizationManager),
         Commands.register('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
@@ -108,11 +114,9 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
         public async provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
             const topOfDocument = new vscode.Range(0, 0, 0, 0)
 
-            const renderCommand: vscode.Command = {
-                command: 'aws.previewStateMachine',
+            const renderCodeLens = previewStateMachineCommand.build().asCodeLens(topOfDocument, {
                 title: localize('AWS.stepFunctions.render', 'Render graph'),
-            }
-            const renderCodeLens = new vscode.CodeLens(topOfDocument, renderCommand)
+            })
 
             if (ASL_FORMATS.includes(document.languageId)) {
                 const publishCommand: vscode.Command = {

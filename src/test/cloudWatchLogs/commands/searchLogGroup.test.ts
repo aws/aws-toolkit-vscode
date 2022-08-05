@@ -22,7 +22,7 @@ describe('searchLogGroup', async function () {
         let filterPatternPrompter: InputBoxPrompter
 
         before(function () {
-            filterPatternPrompter = createFilterpatternPrompter('test-loggroup')
+            filterPatternPrompter = createFilterpatternPrompter('test-loggroup', false)
             testWizard = createWizardTester(new SearchLogGroupWizard())
             filterPatternInputBox = exposeEmitters(filterPatternPrompter.inputBox, [
                 'onDidAccept',
@@ -99,12 +99,12 @@ describe('searchLogGroup', async function () {
                 assert(testTimeRangeMenu.validateDate('10/02/2001-08/05/2001')) // Invalid format of dates
                 assert(testTimeRangeMenu.validateDate('2000/10/01-2000/10/01')) // Same date
                 assert(testTimeRangeMenu.validateDate('2000/10/02-2000/10/01')) // second date occuring earlier
-                assert(testTimeRangeMenu.validateDate('2000/12/01-2099/10/03')) // second date can't be in the future
 
                 // A few valid dates
                 assert(!testTimeRangeMenu.validateDate('2000/10/01-2000/10/03'))
                 assert(!testTimeRangeMenu.validateDate('2000/12/01-2001/10/03'))
                 assert(!testTimeRangeMenu.validateDate('2022/01/01-2022/05/03'))
+                assert(!testTimeRangeMenu.validateDate('2000/12/01-2099/10/03')) // second date now can be in the future
             })
         })
     })

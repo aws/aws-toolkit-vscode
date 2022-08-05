@@ -17,7 +17,7 @@ export function getCompletionItems(document: vscode.TextDocument, position: vsco
     const completionItems: vscode.CompletionItem[] = []
     RecommendationHandler.instance.recommendations.forEach((recommendation, index) => {
         completionItems.push(getCompletionItem(document, position, recommendation, index))
-        RecommendationHandler.instance.recommendationSuggestionState.set(index, 'Showed')
+        RecommendationHandler.instance.setSuggestionState(index, 'Showed')
     })
     return completionItems
 }
