@@ -158,7 +158,7 @@ describe('LogStreamRegistry', async function () {
                 [1, testStreamNames[1]],
             ])
             assert.deepStrictEqual(streamIDMap, expectedMap)
-            registry.cleanUpDocument(doc)
+            registry.cleanUpDocument(doc.uri)
             streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
             assert.deepStrictEqual(streamIDMap, new Map<number, string>())
         })

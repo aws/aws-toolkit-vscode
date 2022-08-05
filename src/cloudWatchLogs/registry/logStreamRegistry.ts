@@ -35,7 +35,7 @@ export class LogStreamRegistry {
         })
 
         vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-            this.cleanUpDocument(document)
+            this.cleanUpDocument(document.uri)
         })
     }
 
@@ -60,9 +60,9 @@ export class LogStreamRegistry {
         }
     }
 
-    public cleanUpDocument(document: vscode.TextDocument): void {
-        if (this.hasLog(document.uri) && !isLogStreamUri(document.uri)) {
-            this.clearStreamIdMap(document.uri)
+    public cleanUpDocument(uri: vscode.Uri): void {
+        if (this.hasLog(uri) && !isLogStreamUri(uri)) {
+            this.clearStreamIdMap(uri)
         }
     }
 
