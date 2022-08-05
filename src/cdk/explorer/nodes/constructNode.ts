@@ -13,13 +13,10 @@ import { generatePropertyNodes } from './propertyNode'
 
 export class ConstructNode implements TreeNode {
     public readonly id = this.construct.id
-    public readonly treeItem: vscode.TreeItem
     private readonly type = treeInspector.getTypeAttributeOrDefault(this.construct, '')
     private readonly properties = treeInspector.getProperties(this.construct)
 
-    public constructor(private readonly location: CdkAppLocation, private readonly construct: ConstructTreeEntity) {
-        this.treeItem = this.createTreeItem()
-    }
+    public constructor(private readonly location: CdkAppLocation, private readonly construct: ConstructTreeEntity) {}
 
     public get resource() {
         return {
@@ -36,7 +33,7 @@ export class ConstructNode implements TreeNode {
         return [...propertyNodes, ...constructNodes]
     }
 
-    private createTreeItem() {
+    public getTreeItem() {
         const collapsibleState =
             this.construct.children || this.construct.attributes
                 ? vscode.TreeItemCollapsibleState.Collapsed
