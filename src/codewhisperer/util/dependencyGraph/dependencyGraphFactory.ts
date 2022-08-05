@@ -12,7 +12,6 @@ const languageMap = {
     java: JavaDependencyGraph,
     python: PythonDependencyGraph,
     javascript: JavascriptDependencyGraph,
-    typescript: JavascriptDependencyGraph,
 } as const
 
 type LanguageMap = typeof languageMap
@@ -29,8 +28,6 @@ export class DependencyGraphFactory {
                 return new languageMap['python'](CodeWhispererConstants.python)
             case CodeWhispererConstants.javascript:
                 return new languageMap['javascript'](CodeWhispererConstants.javascript)
-            case CodeWhispererConstants.typescript:
-                return new languageMap['typescript'](CodeWhispererConstants.typescript)
             default:
                 return undefined
         }
