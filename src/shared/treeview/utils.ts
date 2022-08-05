@@ -107,7 +107,10 @@ export class TreeShim extends AWSTreeNodeBase {
             this.refresh()
         })
 
-        this.node.onDidChangeTreeItem?.(() => this.updateTreeItem())
+        this.node.onDidChangeTreeItem?.(async () => {
+            const { didRefresh } = await this.updateTreeItem()
+            !didRefresh && this.refresh()
+        })
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -120,9 +123,16 @@ export class TreeShim extends AWSTreeNodeBase {
         return (this.children = children.map(n => new TreeShim(n)))
     }
 
-    private async updateTreeItem() {
-        const item = await this.node.getTreeItem()
+    private async updateTreeItem(): Promise<{ readonly didRefresh: boolean }> {
+        const item = this.node.getTreeItem()
+        if (item instanceof Promise) {
+            assign(await item, this)
+            this.refresh()
+
+            return { didRefresh: true }
+        }
+
         assign(item, this)
-        this.refresh()
+        return { didRefresh: false }
     }
 }
