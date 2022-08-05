@@ -21,11 +21,9 @@ import { getIcon } from '../../../shared/icons'
 export class AppNode implements TreeNode {
     public readonly id = this.location.cdkJsonUri.toString()
     public readonly resource = this.location
-    public readonly treeItem: vscode.TreeItem
+    public readonly label = vscode.workspace.asRelativePath(vscode.Uri.joinPath(this.location.cdkJsonUri, '..'))
 
-    public constructor(private readonly location: CdkAppLocation) {
-        this.treeItem = this.createTreeItem()
-    }
+    public constructor(private readonly location: CdkAppLocation) {}
 
     public async getChildren(): Promise<(ConstructNode | TreeNode)[]> {
         const constructs = []
@@ -59,9 +57,8 @@ export class AppNode implements TreeNode {
         }
     }
 
-    private createTreeItem() {
-        const label = vscode.workspace.asRelativePath(vscode.Uri.joinPath(this.location.cdkJsonUri, '..'))
-        const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.Collapsed)
+    public getTreeItem() {
+        const item = new vscode.TreeItem(this.label, vscode.TreeItemCollapsibleState.Collapsed)
 
         item.contextValue = 'awsCdkAppNode'
         item.iconPath = getIcon('aws-cdk-logo')
