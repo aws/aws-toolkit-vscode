@@ -24,12 +24,12 @@ describe('ConstructNode', function () {
     }
 
     it('initializes label, tooltip, and icon', async function () {
-        const testNode = generateTestNode(label)
+        const testNode = generateTestNode(label).getTreeItem()
 
-        assert.strictEqual(testNode.treeItem.label, label)
-        assert.strictEqual(testNode.treeItem.tooltip, constructTreePath)
-        assert.strictEqual(testNode.treeItem.iconPath, getIcon('aws-cdk-logo'))
-        assert.strictEqual(testNode.treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
+        assert.strictEqual(testNode.label, label)
+        assert.strictEqual(testNode.tooltip, constructTreePath)
+        assert.strictEqual(testNode.iconPath, getIcon('aws-cdk-logo'))
+        assert.strictEqual(testNode.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
     })
 
     it('returns a uri with a fragment pointing to the resource', async () => {
@@ -44,9 +44,9 @@ describe('ConstructNode', function () {
         const testNode = new ConstructNode(location, {
             ...treeUtils.generateConstructTreeEntity('', constructTreePath),
             attributes: treeUtils.generateAttributes(),
-        })
+        }).getTreeItem()
 
-        assert.strictEqual(testNode.treeItem.iconPath, getIcon('aws-cloudformation-stack'))
+        assert.strictEqual(testNode.iconPath, getIcon('aws-cloudformation-stack'))
     })
 
     it('returns no child nodes if construct does not have any', async function () {
@@ -66,7 +66,7 @@ describe('ConstructNode', function () {
 
         const childNodes = testNode.getChildren()
         assert.strictEqual(childNodes.length, 1)
-        assert.strictEqual(childNodes[0].treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
+        assert.strictEqual((await childNodes[0].getTreeItem()).collapsibleState, vscode.TreeItemCollapsibleState.None)
     })
 
     it('child node is collapsed if construct has child with attributes', async function () {
@@ -83,7 +83,10 @@ describe('ConstructNode', function () {
 
         const childNodes = testNode.getChildren()
         assert.strictEqual(childNodes.length, 1, 'Expected child node with attributes to be collapsed')
-        assert.strictEqual(childNodes[0].treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
+        assert.strictEqual(
+            (await childNodes[0].getTreeItem()).collapsibleState,
+            vscode.TreeItemCollapsibleState.Collapsed
+        )
     })
 
     it('returns child node of PropertyNode when construct has props', async function () {

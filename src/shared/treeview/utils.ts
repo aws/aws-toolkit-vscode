@@ -77,7 +77,7 @@ export function createPlaceholderItem(message: string): TreeNode {
     return {
         id: 'placeholder',
         resource: message,
-        treeItem: new vscode.TreeItem(message, vscode.TreeItemCollapsibleState.None),
+        getTreeItem: () => new vscode.TreeItem(message, vscode.TreeItemCollapsibleState.None),
     }
 }
 
@@ -96,16 +96,43 @@ export function unboxTreeNode<T>(node: TreeNode, predicate: (resource: unknown) 
  * would be passed in as-is.
  */
 export class TreeShim extends AWSTreeNodeBase {
-    public constructor(public readonly node: TreeNode) {
-        super(node.treeItem.label ?? '[No label]')
-        assign(node.treeItem, this)
+    private children?: AWSTreeNodeBase[]
 
-        this.node.onDidChangeChildren?.(() => this.refresh())
+    public constructor(public readonly node: TreeNode) {
+        super('Loading...')
+        this.updateTreeItem()
+
+        this.node.onDidChangeChildren?.(() => {
+            this.children = undefined
+            this.refresh()
+        })
+
+        this.node.onDidChangeTreeItem?.(async () => {
+            const { didRefresh } = await this.updateTreeItem()
+            !didRefresh && this.refresh()
+        })
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
+        if (this.children) {
+            return this.children
+        }
+
         const children = (await this.node.getChildren?.()) ?? []
 
-        return children.map(n => new TreeShim(n))
+        return (this.children = children.map(n => new TreeShim(n)))
+    }
+
+    private async updateTreeItem(): Promise<{ readonly didRefresh: boolean }> {
+        const item = this.node.getTreeItem()
+        if (item instanceof Promise) {
+            assign(await item, this)
+            this.refresh()
+
+            return { didRefresh: true }
+        }
+
+        assign(item, this)
+        return { didRefresh: false }
     }
 }
