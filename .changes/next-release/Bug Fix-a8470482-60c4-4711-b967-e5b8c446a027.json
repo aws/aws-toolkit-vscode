@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeWhisperer: when pressing up or down does not move cursor when suggestion is active"
-}
