@@ -293,12 +293,13 @@
     "GetAccessTokenRequestIdentityTokenString":{
       "type":"string",
       "max":1024,
-      "min":0
+      "min":0,
+      "sensitive": true
     },
     "GetAccessTokenResponse":{
       "type":"structure",
       "members":{
-        "accessToken":{"shape":"String"}
+        "accessToken":{"shape":"SensitiveString"}
       }
     },
     "GetCodeScanRequest":{
@@ -433,6 +434,7 @@
       "members":{
         "licenseName":{"shape":"ReferenceLicenseNameString"},
         "repository":{"shape":"ReferenceRepositoryString"},
+        "url": {"shape":"ReferenceUrlString"},
         "recommendationContentSpan":{"shape":"Span"}
       }
     },
@@ -445,6 +447,11 @@
       "type":"string",
       "max":1024,
       "min":1
+    },
+    "ReferenceUrlString": {
+        "type": "string",
+        "max": 1024,
+        "min": 1
     },
     "References":{
       "type":"list",
@@ -459,6 +466,10 @@
         "message":{"shape":"String"}
       },
       "exception":true
+    },
+    "SensitiveString":{
+        "type": "string",
+        "sensitive": true
     },
     "Span":{
       "type":"structure",
