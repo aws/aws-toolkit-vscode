@@ -26,10 +26,10 @@ object CodeWhispererTestUtil {
         Pair("Apache-2.0", "testRepo2"),
         Pair("BSD-4-Clause", "testRepo3")
     )
-    private val metadata: DefaultAwsResponseMetadata = DefaultAwsResponseMetadata.create(
+    val metadata: DefaultAwsResponseMetadata = DefaultAwsResponseMetadata.create(
         mapOf(AWS_REQUEST_ID to testRequestId)
     )
-    private val sdkHttpResponse = SdkHttpResponse.builder().headers(
+    val sdkHttpResponse = SdkHttpResponse.builder().headers(
         mapOf(CodeWhispererService.KET_SESSION_ID to listOf(testSessionId))
     ).build()
     private val errorDetail = AwsErrorDetails.builder()
@@ -100,21 +100,37 @@ object CodeWhispererTestUtil {
     const val javaTestContext = "public class Test {\n    public static void main\n}"
 
     internal fun generateMockRecommendationDetail(content: String): Recommendation {
-        val pair = testReferenceInfoPair[Random.nextInt(testReferenceInfoPair.size)]
-        return Recommendation.builder()
-            .content(content)
+        val referenceInfo = getReferenceInfo()
+        return Recommendation.builder().content(content)
             .references(
-                Reference.builder()
-                    .licenseName(pair.first)
-                    .repository(pair.second)
-                    .recommendationContentSpan(
-                        Span.builder()
-                            .start(0)
-                            .end(content.length)
-                            .build()
-                    )
-                    .build()
+                generateMockReferences(referenceInfo.first, referenceInfo.second, 0, content.length)
             )
             .build()
     }
+
+    internal fun getReferenceInfo() = testReferenceInfoPair[Random.nextInt(testReferenceInfoPair.size)]
+
+    internal fun generateMockRecommendationDetail(
+        content: String,
+        licenseName: String,
+        repository: String,
+        start: Int,
+        end: Int
+    ): Recommendation =
+        Recommendation.builder()
+            .content(content)
+            .references(generateMockReferences(licenseName, repository, start, end))
+            .build()
+
+    private fun generateMockReferences(licenseName: String, repository: String, start: Int, end: Int) =
+        Reference.builder()
+            .licenseName(licenseName)
+            .repository(repository)
+            .recommendationContentSpan(
+                Span.builder()
+                    .start(start)
+                    .end(end)
+                    .build()
+            )
+            .build()
 }

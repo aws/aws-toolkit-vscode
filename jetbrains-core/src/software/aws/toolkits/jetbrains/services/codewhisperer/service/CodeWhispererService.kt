@@ -451,9 +451,12 @@ class CodeWhispererService {
         // If contentSpans in reference are not consistent with content(recommendations),
         // remove the incorrect references.
         val validatedRecommendations = response.recommendations().map {
-            val validReference = it.hasReferences() && it.references().isNotEmpty() &&
-                it.content().length == it.references().last().recommendationContentSpan().end()
-            if (validReference) {
+            val validReferences = it.hasReferences() && it.references().isNotEmpty() &&
+                it.references().none { reference ->
+                    val span = reference.recommendationContentSpan()
+                    span.start() > span.end() || span.start() < 0 || span.end() > it.content().length
+                }
+            if (validReferences) {
                 it
             } else {
                 it.toBuilder().references(DefaultSdkAutoConstructList.getInstance()).build()
