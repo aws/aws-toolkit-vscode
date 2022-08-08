@@ -5,7 +5,7 @@
 import * as telemetry from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { createURIFromArgs, isLogStreamUri, telemetryFilterSuccess } from './cloudWatchLogsUtils'
+import { createURIFromArgs, isLogStreamUri, telemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
@@ -66,7 +66,7 @@ export async function getNewData(
         resourceType = 'logStream'
     }
 
-    telemetryFilterSuccess(newData, resourceType)
+    telemetryFilter(newData, resourceType)
 
     return newData
 }

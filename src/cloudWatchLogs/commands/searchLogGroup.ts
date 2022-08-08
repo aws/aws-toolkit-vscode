@@ -15,7 +15,7 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createURIFromArgs, parseCloudWatchLogsUri, telemetryFilterSuccess } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri, telemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -61,7 +61,9 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
         retrieveLogsFunction: filterLogEventsFromUriComponents,
     }
 
-    telemetryFilterSuccess(initialStreamData, 'logGroup')
+    if (initialStreamData.parameters.startTime || initialStreamData.parameters.filterPattern) {
+        telemetryFilter(initialStreamData, 'logGroup')
+    }
 
     return initialStreamData
 }
