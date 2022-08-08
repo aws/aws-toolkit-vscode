@@ -54,6 +54,7 @@ export class LogStreamRegistry {
         if (this.hasLog(uri) && !isLogStreamUri(uri)) {
             this.clearStreamIdMap(uri)
         }
+        this.activeLogs.delete(uriToKey(uri))
     }
 
     /**
@@ -150,14 +151,6 @@ export class LogStreamRegistry {
         })
 
         this._onDidChange.fire(uri)
-    }
-
-    /**
-     * Deletes a stream from the registry.
-     * @param uri Document URI
-     */
-    public deregisterLog(uri: vscode.Uri): void {
-        this.activeLogs.delete(uriToKey(uri))
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
