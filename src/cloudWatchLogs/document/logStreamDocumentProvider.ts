@@ -58,7 +58,6 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             const streamID = streamIDMap.get(curLine.lineNumber)
 
             if (!streamID) {
-                telemetry.recordCloudwatchlogsJumpToStream({ result: 'Failed' })
                 throw new Error(
                     `cwl: current line number ${curLine.lineNumber} is unregistered in streamIDMap for ${activeUri}`
                 )
