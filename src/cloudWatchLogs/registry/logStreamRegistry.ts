@@ -333,12 +333,15 @@ export async function getLogEventsFromUriComponents(
             `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
         )
     }
-    const response = await client.getLogEvents({
+    const timeout = new Timeout(300000)
+    showMessageWithCancel(`Loading data from log stream ${logGroupInfo.streamName}`, timeout)
+    const responsePromise = client.getLogEvents({
         logGroupName: logGroupInfo.groupName,
         logStreamName: logGroupInfo.streamName,
         nextToken,
         limit: parameters.limit,
     })
+    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
     if (!response) {
         throw new Error('cwl:`getLogEvents` did not return anything.')
