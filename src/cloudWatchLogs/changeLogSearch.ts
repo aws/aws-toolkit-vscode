@@ -2,10 +2,8 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as telemetry from '../shared/telemetry/telemetry'
-import * as vscode from 'vscode'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { createURIFromArgs, isLogStreamUri } from './cloudWatchLogsUtils'
+import { createURIFromArgs } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
@@ -18,28 +16,27 @@ import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from './timeFi
  * @param oldUri
  * @returns Undefined if cancelled and the newData otherwise.
  */
+
 export async function getNewData(
-    registry: LogStreamRegistry,
     param: 'filterPattern' | 'timeFilter',
-    oldUri: vscode.Uri
+    oldData: CloudWatchLogsData
 ): Promise<CloudWatchLogsData | undefined> {
-    const oldData = registry.getLogData(oldUri)
-    if (!oldData) {
-        throw new Error(`cwl: LogStreamRegistry did not contain ${String(oldUri)}`)
-    }
+    // We must deepcopy the parameters so that we don't change their original value in oldData
     const newData: CloudWatchLogsData = {
         ...oldData,
+        parameters: { ...oldData.parameters },
         data: [],
         next: undefined,
         previous: undefined,
     }
+
     let newPattern: string | undefined
     let newTimeRange: TimeFilterResponse | undefined
 
     switch (param) {
         case 'filterPattern':
             newPattern = await showInputBox({
-                title: isLogStreamUri(oldUri) ? 'Filter Log Stream' : 'Search Log Group',
+                title: oldData.logGroupInfo.streamName ? 'Filter Log Stream' : 'Search Log Group',
                 placeholder: oldData.parameters.filterPattern ?? 'Enter Text Here',
             })
             if (newPattern === undefined) {
@@ -59,10 +56,10 @@ export async function getNewData(
 
             break
     }
-    if (newData.parameters.streamName) {
+    if (newData.logGroupInfo.streamName) {
         newData.retrieveLogsFunction = filterLogEventsFromUriComponents
-        newData.parameters.streamNameOptions = [newData.parameters.streamName]
-        newData.parameters.streamName = undefined
+        newData.parameters.streamNameOptions = [newData.logGroupInfo.streamName]
+        newData.logGroupInfo.streamName = undefined
     }
 
     return newData
@@ -72,20 +69,23 @@ export async function changeLogSearchParams(
     registry: LogStreamRegistry,
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
-    let result: telemetry.Result = 'Succeeded'
-
+    //let result: telemetry.Result = 'Succeeded'
     const oldUri = getActiveDocumentUri(registry)
-    const newData = await getNewData(registry, param, oldUri)
+
+    const oldData = registry.getLogData(oldUri)
+    if (!oldData) {
+        throw new Error(`cwl: Unable to find data for active URI ${oldUri}`)
+    }
+    const newData = await getNewData(param, oldData)
 
     if (!newData) {
-        result = 'Cancelled'
+        //result = 'Cancelled'
         return
     }
 
-    registry.deregisterLog(oldUri)
     const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
-    result = await prepareDocument(newUri, newData, registry)
-
-    console.log(result)
+    //result = await prepareDocument(newUri, newData, registry)
+    await prepareDocument(newUri, newData, registry)
+    // TODO: add telemetry
 }

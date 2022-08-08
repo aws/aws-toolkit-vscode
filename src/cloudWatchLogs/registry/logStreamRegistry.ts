@@ -6,12 +6,13 @@
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, isLogStreamUri } from '../cloudWatchLogsUtils'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { findOccurencesOf } from '../../shared/utilities/textDocumentUtilities'
 // TODO: Add debug logging statements
 
 /**
@@ -19,11 +20,24 @@ import { showMessageWithCancel } from '../../shared/utilities/messages'
  */
 export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
-
+    private readonly searchHighlight = vscode.window.createTextEditorDecorationType({
+        backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
+    })
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
-    ) {}
+    ) {
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            const eventUri = event.document.uri
+            if (this.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
+                this.highlightDocument(eventUri)
+            }
+        })
+
+        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
+            this.disposeRegistryData(document.uri)
+        })
+    }
 
     /**
      * Event fired on log content change
@@ -35,7 +49,7 @@ export class LogStreamRegistry {
     /**
      * Adds an entry to the registry for the given URI.
      * @param uri Document URI
-     * @param getLogEventsFromUriComponentsFn Override for testing purposes.
+     * @param initialStreamData Initial Data to populate the registry ActiveTab Data.
      */
     public async registerLog(uri: vscode.Uri, initialStreamData: CloudWatchLogsData): Promise<void> {
         // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
@@ -43,6 +57,13 @@ export class LogStreamRegistry {
         if (!this.hasLog(uri)) {
             this.setLogData(uri, initialStreamData)
             await this.updateLog(uri, 'tail')
+        }
+    }
+
+    /** Disposes registry structures associated with the given document. Does not dispose the document itself. */
+    public disposeRegistryData(uri: vscode.Uri): void {
+        if (this.hasLog(uri) && !isLogStreamUri(uri)) {
+            this.clearStreamIdMap(uri)
         }
     }
 
@@ -72,6 +93,7 @@ export class LogStreamRegistry {
         }
 
         let output: string = ''
+        let lineNumber = 0
         for (const datum of currData.data) {
             let line: string = datum.message ?? ''
             if (formatting?.timestamps) {
@@ -83,16 +105,19 @@ export class LogStreamRegistry {
                 // log entries containing newlines are indented to the same length as the timestamp.
                 line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
             }
-            if (datum.logStreamName && !currData.parameters.streamNameOptions) {
-                const logStream = `[streamID: ${datum.logStreamName}]`
-                line = logStream.concat('\t', line)
-            }
+
             if (!line.endsWith('\n')) {
                 line = line.concat('\n')
             }
+
+            const lineBreaks = (line.match(/\n/g) || []).length
+            if (datum.logStreamName) {
+                this.setRangeForStreamIdMap(uri, lineNumber, lineNumber + lineBreaks - 1, datum.logStreamName)
+            }
+            lineNumber += lineBreaks
+
             output = output.concat(line)
         }
-
         return output
     }
     /**
@@ -163,7 +188,11 @@ export class LogStreamRegistry {
     }
 
     public setLogData(uri: vscode.Uri, newData: CloudWatchLogsData): void {
-        this.activeLogs.set(uriToKey(uri), { data: newData, editor: this.getTextEditor(uri) })
+        this.activeLogs.set(uriToKey(uri), {
+            data: newData,
+            editor: this.getTextEditor(uri),
+            streamIds: this.getStreamIdMap(uri) ?? new Map<number, string>(),
+        })
     }
 
     public getLogData(uri: vscode.Uri): CloudWatchLogsData | undefined {
@@ -172,10 +201,16 @@ export class LogStreamRegistry {
 
     public setTextEditor(uri: vscode.Uri, textEditor: vscode.TextEditor): void {
         const oldData = this.getLogData(uri)
+        const streamIds = this.getStreamIdMap(uri)
         if (!oldData) {
-            throw new Error(`Unable to assign textEditor to activeLog entry ${uriToKey(uri)} with no log data.`)
+            throw new Error(`cwl: Unable to assign textEditor to activeLog entry ${uriToKey(uri)} with no log data.`)
         }
-        this.activeLogs.set(uriToKey(uri), { data: oldData, editor: textEditor })
+        if (!streamIds) {
+            throw new Error(
+                `cwl: Unable to assign textEditor to activeLog entry ${uriToKey(uri)} with no streamIDs map.`
+            )
+        }
+        this.activeLogs.set(uriToKey(uri), { data: oldData, editor: textEditor, streamIds: streamIds })
     }
 
     public getTextEditor(uri: vscode.Uri): vscode.TextEditor | undefined {
@@ -184,6 +219,63 @@ export class LogStreamRegistry {
 
     public hasTextEditor(uri: vscode.Uri): boolean {
         return this.hasLog(uri) && this.getTextEditor(uri) !== undefined
+    }
+
+    public getStreamIdMap(uri: vscode.Uri): Map<number, string> | undefined {
+        return this.activeLogs.get(uriToKey(uri))?.streamIds
+    }
+
+    private setRangeForStreamIdMap(uri: vscode.Uri, lowerBound: number, upperBound: number, streamID: string): void {
+        // Note: Inclusive of both bounds.
+        for (let currentLine = lowerBound; currentLine <= upperBound; currentLine++) {
+            this.setStreamIdMap(uri, currentLine, streamID)
+        }
+    }
+
+    private setStreamIdMap(uri: vscode.Uri, lineNum: number, streamID: string): void {
+        const activeTab = this.getActiveTab(uri)
+        if (!activeTab) {
+            throw new Error(`cwl: Cannot set streamID for unregistered uri ${uri.path}`)
+        }
+        activeTab.streamIds.set(lineNum, streamID)
+    }
+
+    public clearStreamIdMap(uri: vscode.Uri): void {
+        console.log(uri)
+        const currentActiveTab = this.getActiveTab(uri)
+        if (!currentActiveTab) {
+            throw new Error(`cwl: Cannot clear streamIdMap for ununregistered uri ${uri.path}`)
+        }
+        this.setActiveTab(uri, {
+            ...currentActiveTab,
+            streamIds: new Map<number, string>(),
+        })
+    }
+
+    private setActiveTab(uri: vscode.Uri, newActiveTab: ActiveTab): void {
+        this.activeLogs.set(uriToKey(uri), newActiveTab)
+    }
+
+    public getActiveTab(uri: vscode.Uri): ActiveTab | undefined {
+        return this.activeLogs.get(uriToKey(uri))
+    }
+
+    public async highlightDocument(uri: vscode.Uri): Promise<void> {
+        const textEditor = this.getTextEditor(uri)
+        const logData = this.getLogData(uri)
+
+        if (!logData) {
+            throw new Error(`cwl: Unable to highlight. Missing log data in registry for uri key: ${uriToKey(uri)}.`)
+        }
+
+        if (!textEditor) {
+            throw new Error(`cwl: Unable to highlight. Missing textEditor in registry for uri key: ${uriToKey(uri)}.`)
+        }
+
+        if (logData.parameters.filterPattern) {
+            const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
+            textEditor.setDecorations(this.searchHighlight, ranges)
+        }
     }
 }
 
@@ -236,14 +328,14 @@ export async function getLogEventsFromUriComponents(
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    if (!parameters.streamName) {
+    if (!logGroupInfo.streamName) {
         throw new Error(
             `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
         )
     }
     const response = await client.getLogEvents({
         logGroupName: logGroupInfo.groupName,
-        logStreamName: parameters.streamName,
+        logStreamName: logGroupInfo.streamName,
         nextToken,
         limit: parameters.limit,
     })
@@ -259,14 +351,30 @@ export async function getLogEventsFromUriComponents(
     }
 }
 
+export function getInitialLogData(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters,
+    retrieveLogsFunction: CloudWatchLogsAction
+): CloudWatchLogsData {
+    return {
+        data: [],
+        parameters: parameters,
+        logGroupInfo: logGroupInfo,
+        retrieveLogsFunction: retrieveLogsFunction,
+        busy: false,
+    }
+}
+
 export interface ActiveTab {
     data: CloudWatchLogsData
     editor?: vscode.TextEditor
+    streamIds: Map<number, string>
 }
 
 export type CloudWatchLogsGroupInfo = {
     groupName: string
     regionName: string
+    streamName?: string
 }
 
 export type CloudWatchLogsParameters = {
@@ -274,7 +382,6 @@ export type CloudWatchLogsParameters = {
     startTime?: number
     endTime?: number
     limit?: number
-    streamName?: string
     streamNameOptions?: string[]
 }
 

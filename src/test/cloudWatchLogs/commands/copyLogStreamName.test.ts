@@ -21,15 +21,15 @@ describe('copyLogStreamName', async function () {
         const logGroupInfo = {
             groupName: 'group',
             regionName: 'region',
+            streamName: 'stream',
         }
-        const parameters = { streamName: 'stream' }
-        const uri = createURIFromArgs(logGroupInfo, parameters)
+        const uri = createURIFromArgs(logGroupInfo, {})
 
         await copyLogStreamName(uri)
 
-        assert.strictEqual(await vscode.env.clipboard.readText(), parameters.streamName)
+        assert.strictEqual(await vscode.env.clipboard.readText(), logGroupInfo.streamName)
         await copyLogStreamName(vscode.Uri.parse(`notCloudWatch:hahahaha`))
 
-        assert.strictEqual(await vscode.env.clipboard.readText(), parameters.streamName)
+        assert.strictEqual(await vscode.env.clipboard.readText(), logGroupInfo.streamName)
     })
 })

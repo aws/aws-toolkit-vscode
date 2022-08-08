@@ -3048,7 +3048,7 @@
                 "scheme": "aws-cwl",
                 "formatting": {
                     "label": "${path}",
-                    "separator": "\\"
+                    "separator": "/"
                 }
             },
             {
