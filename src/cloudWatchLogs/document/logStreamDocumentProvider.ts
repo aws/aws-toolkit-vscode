@@ -78,6 +78,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             return new vscode.Location(streamUri, new vscode.Position(0, 0))
         } catch (err) {
             telemetry.recordCloudwatchlogsJumpToStream({ result: 'Failed' })
+
             throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
         }
     }

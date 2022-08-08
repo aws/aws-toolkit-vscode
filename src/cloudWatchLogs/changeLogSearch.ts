@@ -100,6 +100,7 @@ export async function changeLogSearchParams(
                     ? true
                     : false,
         })
+
         return
     }
 
