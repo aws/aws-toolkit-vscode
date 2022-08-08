@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { Settings } from '../shared/settings'
-import { CloudWatchLogsSettings } from './cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, isLogStreamUri } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogStreamName } from './commands/copyLogStreamName'
 import { saveCurrentLogStreamContent } from './commands/saveCurrentLogStreamContent'
@@ -41,6 +41,15 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             if (doc.isClosed && doc.uri.scheme === CLOUDWATCH_LOGS_SCHEME) {
                 registry.disposeRegistryData(doc.uri)
                 registry.deregisterLog(doc.uri)
+            }
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            const eventUri = event.document.uri
+            if (registry.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
+                registry.highlightDocument(eventUri)
             }
         })
     )

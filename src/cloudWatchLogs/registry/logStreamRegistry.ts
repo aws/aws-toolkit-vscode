@@ -26,14 +26,7 @@ export class LogStreamRegistry {
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
-    ) {
-        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-            const eventUri = event.document.uri
-            if (this.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
-                this.highlightDocument(eventUri)
-            }
-        })
-    }
+    ) {}
 
     /**
      * Event fired on log content change
