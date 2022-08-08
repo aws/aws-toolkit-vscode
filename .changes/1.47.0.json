@@ -1,0 +1,46 @@
+{
+	"date": "2022-08-06",
+	"version": "1.47.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Delve debugger installation fails for Go Lambdas on MacOS"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "restored `Connect to AWS` command (alias to the `Choose AWS Profile` command)"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: when pressing up or down does not move cursor when suggestion is active"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer access token validation may sometimes fail"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "\"Connect to AWS\" does not handle missing credentials file"
+		},
+		{
+			"type": "Feature",
+			"description": "basic syntax highlighting for ~/.aws/credentials and ~/.aws/config files"
+		},
+		{
+			"type": "Feature",
+			"description": "`Choose AWS Profile` quickpick now includes an `Edit Credentials` action"
+		},
+		{
+			"type": "Feature",
+			"description": "Add `Edit Credentials` command which opens all known credential files"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: References include a link to the source repository if possible."
+		},
+		{
+			"type": "Feature",
+			"description": "Auto-connect tries a maximum of one non-default profile instead of three"
+		}
+	]
+}
