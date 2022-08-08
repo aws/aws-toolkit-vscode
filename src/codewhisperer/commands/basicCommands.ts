@@ -158,7 +158,7 @@ export const showSecurityScan = Commands.declare(
                     startSecurityScanWithProgress(securityPanelViewProvider, editor, client, context.extensionContext)
                 }
             } else {
-                vscode.window.showInformationMessage('Please open a valid file you want to scan to proceed.')
+                vscode.window.showInformationMessage('Open a valid file to scan.')
             }
         }
 )
