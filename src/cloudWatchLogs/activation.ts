@@ -42,6 +42,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                 registry.disposeRegistryData(doc.uri)
             }
         }),
+        // Do highlight on text-changed event because we don't control when text is populated by vscode, also for "load more" codelens.
         vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
             const eventUri = event.document.uri
             if (registry.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
