@@ -247,6 +247,12 @@ export class CawsCommands {
     }
 
     public async openWorkspace(id?: DevelopmentWorkspaceId, targetPath?: string): Promise<void> {
+        if (vscode.env.remoteName === 'ssh-remote') {
+            throw new ToolkitError('Cannot open workspace when connected to a remote environment', {
+                code: 'ConnectedToRemote',
+            })
+        }
+
         const workspace = id ?? (await this.selectWorkspace())
 
         // TODO(sijaden): add named timestamp markers for granular duration info
