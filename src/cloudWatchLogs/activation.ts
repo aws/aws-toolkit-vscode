@@ -39,6 +39,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
     context.subscriptions.push(
         vscode.workspace.onDidCloseTextDocument(doc => {
             if (doc.isClosed && doc.uri.scheme === CLOUDWATCH_LOGS_SCHEME) {
+                registry.disposeRegistryData(doc.uri)
                 registry.deregisterLog(doc.uri)
             }
         })

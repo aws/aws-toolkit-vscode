@@ -33,10 +33,6 @@ export class LogStreamRegistry {
                 this.highlightDocument(eventUri)
             }
         })
-
-        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-            this.disposeRegistryData(document.uri)
-        })
     }
 
     /**
