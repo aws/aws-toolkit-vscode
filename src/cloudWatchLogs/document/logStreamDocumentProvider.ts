@@ -50,7 +50,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         if (logGroupInfo.streamName) {
             // This means we have a stream file not a log search.
-            // telemetry.recordCloudwatchlogsJumpToStream({result: 'Failed'}) Should I output telemetry here?
+            // TODO: Should there be any telemetry output here?
             return
         }
         const curLine = document.lineAt(position.line)
@@ -73,10 +73,11 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             logGroupInfo.streamName = streamID
             const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
             const streamUri = createURIFromArgs(logGroupInfo, parameters)
+
             await this.registry.registerLog(streamUri, initialStreamData)
-            // Set the document language
             const doc = await vscode.workspace.openTextDocument(streamUri)
             vscode.languages.setTextDocumentLanguage(doc, 'log')
+
             telemetry.recordCloudwatchlogsJumpToStream({ result: 'Succeeded' })
             return new vscode.Location(streamUri, new vscode.Position(0, 0))
         } catch (err) {
