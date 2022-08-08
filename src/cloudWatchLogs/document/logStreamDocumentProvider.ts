@@ -11,7 +11,7 @@ import {
     getInitialLogData,
 } from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
-import { parseCloudWatchLogsUri, createURIFromArgs, isLogStreamUri } from '../cloudWatchLogsUtils'
+import { parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
 
 export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider, vscode.DefinitionProvider {
     // Expose an event to signal changes of _virtual_ documents
@@ -32,10 +32,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         // get latest content and return
         const content = this.registry.getLogContent(uri, { timestamps: true })
         if (!content) {
-            const logMessage = isLogStreamUri(uri)
-                ? `No content found for URI: ${uri.path}`
-                : `No content found for log search of URI: ${uri.path}`
-            getLogger().error(logMessage)
+            getLogger().error(`No content found for URI: ${uri.path}`)
         }
         return content ?? ''
     }
