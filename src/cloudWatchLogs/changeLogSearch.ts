@@ -4,7 +4,7 @@
  */
 import * as telemetry from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { createURIFromArgs, isLogStreamUri, telemetryFilter } from './cloudWatchLogsUtils'
+import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
@@ -64,7 +64,7 @@ export async function getNewData(
         resourceType = 'logStream'
     }
 
-    telemetryFilter(newData, resourceType, 'escapeHatch')
+    recordTelemetryFilter(newData, resourceType, 'escapeHatch')
 
     return newData
 }
@@ -79,7 +79,7 @@ export async function changeLogSearchParams(
     if (!oldData) {
         telemetry.recordCloudwatchlogsFilter({
             result: 'Failed',
-            source: 'escapeHatch',
+            source: 'Editor',
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
             hasTimeFilter: param === 'timeFilter',
             hasTextFilter: param === 'filterPattern',
@@ -91,14 +91,12 @@ export async function changeLogSearchParams(
     if (!newData) {
         telemetry.recordCloudwatchlogsFilter({
             result: 'Cancelled',
-            source: 'escapeHatch',
+            source: 'Editor',
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
-            hasTimeFilter: oldData.parameters.startTime || param === 'timeFilter' ? true : false,
+            hasTimeFilter: oldData.parameters.startTime !== undefined || param === 'timeFilter',
             hasTextFilter:
-                (oldData.parameters.filterPattern && oldData.parameters.filterPattern !== '') ||
-                param === 'filterPattern'
-                    ? true
-                    : false,
+                (oldData.parameters.filterPattern !== undefined && oldData.parameters.filterPattern !== '') ||
+                param === 'filterPattern',
         })
 
         return
@@ -111,6 +109,6 @@ export async function changeLogSearchParams(
     telemetry.recordCloudwatchlogsOpen({
         result: result,
         cloudWatchResourceType: typeOfResource,
-        source: 'escapeHatch',
+        source: 'Editor',
     })
 }

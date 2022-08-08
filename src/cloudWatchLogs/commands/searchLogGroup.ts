@@ -16,7 +16,7 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createURIFromArgs, parseCloudWatchLogsUri, telemetryFilter } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../shared/logger'
@@ -56,7 +56,7 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     const initialStreamData = getInitialLogData(logGroupInfo, parameters, filterLogEventsFromUriComponents)
 
     if (initialStreamData.parameters.startTime || initialStreamData.parameters.filterPattern) {
-        telemetryFilter(initialStreamData, 'logGroup', 'originalSearch')
+        recordTelemetryFilter(initialStreamData, 'logGroup', 'OriginalSearch')
     }
 
     return initialStreamData
@@ -100,10 +100,10 @@ export async function prepareDocument(
 export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogStreamRegistry): Promise<void> {
     let response: SearchLogGroupWizardResponse | undefined
     let result: telemetry.Result
-    let source: 'explorer' | 'command'
+    let source: 'Explorer' | 'Command'
 
     if (node) {
-        source = 'explorer'
+        source = 'Explorer'
         if (!node.logGroup.logGroupName) {
             throw new Error('CWL: Log Group node does not have a name.')
         }
@@ -113,7 +113,7 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
             regionName: node.regionCode,
         }).run()
     } else {
-        source = 'command'
+        source = 'Command'
         response = await new SearchLogGroupWizard().run()
     }
 
