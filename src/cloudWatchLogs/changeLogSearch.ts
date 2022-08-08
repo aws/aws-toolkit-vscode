@@ -4,7 +4,7 @@
  */
 import * as telemetry from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { createURIFromArgs, telemetryFilter } from './cloudWatchLogsUtils'
+import { createURIFromArgs, isLogStreamUri, telemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
@@ -64,7 +64,7 @@ export async function getNewData(
         resourceType = 'logStream'
     }
 
-    telemetryFilter(newData, resourceType)
+    telemetryFilter(newData, resourceType, 'escapeHatch')
 
     return newData
 }
@@ -78,12 +78,27 @@ export async function changeLogSearchParams(
 
     const oldData = registry.getLogData(oldUri)
     if (!oldData) {
+        telemetry.recordCloudwatchlogsFilter({
+            result: 'Failed',
+            source: 'escapeHatch',
+            cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
+        })
         throw new Error(`cwl: Unable to find data for active URI ${oldUri}`)
     }
     const newData = await getNewData(param, oldData)
 
     if (!newData) {
-        //result = 'Cancelled'
+        telemetry.recordCloudwatchlogsFilter({
+            result: 'Cancelled',
+            source: 'escapeHatch',
+            cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
+            hasTimeFilter: oldData.parameters.startTime || param === 'timeFilter' ? true : false,
+            hasTextFilter:
+                (oldData.parameters.filterPattern && oldData.parameters.filterPattern !== '') ||
+                param === 'filterPattern'
+                    ? true
+                    : false,
+        })
         return
     }
 
