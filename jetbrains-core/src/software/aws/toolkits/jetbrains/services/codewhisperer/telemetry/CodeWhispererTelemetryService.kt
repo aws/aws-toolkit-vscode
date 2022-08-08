@@ -11,8 +11,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.codewhisperer.model.Recommendation
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.toCodeWhispererLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
-import software.aws.toolkits.jetbrains.services.codewhisperer.model.ProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
@@ -218,14 +218,6 @@ class CodeWhispererTelemetryService {
         } else {
             CodewhispererSuggestionState.Reject
         }
-}
-
-fun ProgrammingLanguage.toCodeWhispererLanguage() = when (languageName) {
-    CodewhispererLanguage.Python.toString() -> CodewhispererLanguage.Python
-    CodewhispererLanguage.Java.toString() -> CodewhispererLanguage.Java
-    CodewhispererLanguage.Javascript.toString() -> CodewhispererLanguage.Javascript
-    "plain_text" -> CodewhispererLanguage.Plaintext
-    else -> CodewhispererLanguage.Unknown
 }
 
 fun isTelemetryEnabled(): Boolean = AwsSettings.getInstance().isTelemetryEnabled

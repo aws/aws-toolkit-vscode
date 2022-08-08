@@ -32,6 +32,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.time.withTimeout
 import kotlinx.coroutines.withContext
+import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererException
 import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.core.utils.debug
@@ -345,6 +346,12 @@ internal class CodeWhispererCodeScanManager(val project: Project) {
             }
             codeScanResultsPanel.updateAndDisplayScanResults(codeScanTreeModel)
         }
+    }
+
+    @TestOnly
+    suspend fun testRenderResponseOnUIThread(issues: List<CodeWhispererCodeScanIssue>) {
+        assert(ApplicationManager.getApplication().isUnitTestMode)
+        renderResponseOnUIThread(issues)
     }
 
     companion object {

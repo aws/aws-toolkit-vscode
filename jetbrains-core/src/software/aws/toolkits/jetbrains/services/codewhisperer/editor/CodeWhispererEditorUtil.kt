@@ -10,6 +10,7 @@ import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.ui.popup.AbstractPopup
 import software.amazon.awssdk.utils.StringUtils.lowerCase
@@ -19,6 +20,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextI
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.ProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.LEFT_CONTEXT_ON_CURRENT_LINE
+import software.aws.toolkits.telemetry.CodewhispererLanguage
 import java.awt.Point
 import kotlin.math.max
 import kotlin.math.min
@@ -30,10 +32,26 @@ object CodeWhispererEditorUtil {
     fun getFileContextInfo(editor: Editor, psiFile: PsiFile): FileContextInfo {
         val caretContext = extractCaretContext(editor)
         val fileName = getFileName(psiFile)
-        val programmingLanguage = ProgrammingLanguage(psiFile.toProgrammingLanguage())
+        val programmingLanguage = psiFile.programmingLanguage
         return FileContextInfo(caretContext, fileName, programmingLanguage)
     }
-    fun PsiFile.toProgrammingLanguage() = lowerCase(this.fileType.name)
+
+    fun ProgrammingLanguage.toCodeWhispererLanguage() = when (languageName) {
+        CodewhispererLanguage.Python.toString() -> CodewhispererLanguage.Python
+        CodewhispererLanguage.Java.toString() -> CodewhispererLanguage.Java
+        CodewhispererLanguage.Javascript.toString() -> CodewhispererLanguage.Javascript
+        "plain_text" -> CodewhispererLanguage.Plaintext
+        else -> CodewhispererLanguage.Unknown
+    }
+
+    val PsiFile.programmingLanguage: ProgrammingLanguage
+        get() = ProgrammingLanguage(lowerCase(this.fileType.name))
+
+    val PsiFile.codeWhispererLanguage: CodewhispererLanguage
+        get() = this.programmingLanguage.toCodeWhispererLanguage()
+
+    val VirtualFile.codeWhispererLanguage: CodewhispererLanguage
+        get() = ProgrammingLanguage(fileType.name.lowercase()).toCodeWhispererLanguage()
 
     private fun extractCaretContext(editor: Editor): CaretContext {
         val document = editor.document

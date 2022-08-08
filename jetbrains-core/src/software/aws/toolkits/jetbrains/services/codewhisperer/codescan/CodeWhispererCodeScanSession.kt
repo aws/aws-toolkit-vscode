@@ -48,7 +48,7 @@ import java.time.Instant
 import java.util.Base64
 import java.util.UUID
 
-internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScanSessionContext) {
+internal class CodeWhispererCodeScanSession(val sessionContext: CodeScanSessionContext) {
     private val clientToken: UUID = UUID.randomUUID()
     private val urlResponse = mutableMapOf<ArtifactType, CreateUploadUrlResponse>()
     private val codewhispererClient: CodeWhispererClient = CodeWhispererClientManager.getInstance().getClient()
@@ -147,7 +147,7 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
                     "Get security scan status: ${getCodeScanResponse.status()}, " +
                         "request id: ${getCodeScanResponse.responseMetadata().requestId()}"
                 }
-                sleep(CODE_SCAN_POLLING_INTERVAL_IN_SECONDS * TOTAL_MILLIS_IN_SECOND)
+                sleepThread()
                 if (codeScanStatus == CodeScanStatus.FAILED) {
                     LOG.debug {
                         "CodeWhisperer service error occurred. Something went wrong fetching results for security scan: $getCodeScanResponse " +
@@ -178,6 +178,7 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
                 listCodeScanFindingsResponse = listCodeScanFindings(jobId)
             }
             LOG.debug { "Successfully fetched results for the security scan." }
+            LOG.debug { "Code scan findings: ${listCodeScanFindingsResponse.codeScanFindings()}" }
             LOG.debug { "Rendering response to display security scan results." }
             issues = mapToCodeScanIssues(documents)
             codeScanResponseContext = codeScanResponseContext.copy(codeScanTotalIssues = issues.count())
@@ -191,7 +192,7 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
     /**
      * Creates an upload URL and uplaods the zip file to the presigned URL
      */
-    private fun createUploadUrlAndUpload(zipFile: File, artifactType: String): CreateUploadUrlResponse = try {
+    fun createUploadUrlAndUpload(zipFile: File, artifactType: String): CreateUploadUrlResponse = try {
         val fileMd5: String = Base64.getEncoder().encodeToString(DigestUtils.md5(FileInputStream(zipFile)))
         LOG.debug { "Fetching presigned URL for uploading $artifactType." }
         val createUploadUrlResponse = createUploadUrl(fileMd5, artifactType)
@@ -205,13 +206,13 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
         throw e
     }
 
-    private fun createUploadUrl(md5Content: String, artifactType: String): CreateUploadUrlResponse = codewhispererClient.createUploadUrl {
+    fun createUploadUrl(md5Content: String, artifactType: String): CreateUploadUrlResponse = codewhispererClient.createUploadUrl {
         it.contentMd5(md5Content)
         it.artifactType(artifactType)
     }
 
     @Throws(IOException::class)
-    private fun uploadArtifactTOS3(url: String, fileToUpload: File, md5: String) {
+    fun uploadArtifactTOS3(url: String, fileToUpload: File, md5: String) {
         HttpRequests.put(url, "application/zip").userAgent(AwsClientManager.userAgent).tuner {
             it.setRequestProperty(CONTENT_MD5, md5)
             it.setRequestProperty(SERVER_SIDE_ENCRYPTION, AES256)
@@ -222,7 +223,7 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
         }
     }
 
-    private fun createCodeScan(language: String): CreateCodeScanResponse {
+    fun createCodeScan(language: String): CreateCodeScanResponse {
         val artifactsMap = mapOf(
             ArtifactType.SOURCE_CODE to urlResponse[ArtifactType.SOURCE_CODE]?.uploadId(),
             ArtifactType.BUILT_JARS to urlResponse[ArtifactType.BUILT_JARS]?.uploadId()
@@ -240,14 +241,14 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
         }
     }
 
-    private fun getCodeScan(jobId: String): GetCodeScanResponse = try {
+    fun getCodeScan(jobId: String): GetCodeScanResponse = try {
         codewhispererClient.getCodeScan { it.jobId(jobId) }
     } catch (e: Exception) {
         LOG.debug { "Getting security scan failed: ${e.message}" }
         throw e
     }
 
-    private fun listCodeScanFindings(jobId: String): ListCodeScanFindingsResponse = try {
+    fun listCodeScanFindings(jobId: String): ListCodeScanFindingsResponse = try {
         codewhispererClient.listCodeScanFindings {
             it.jobId(jobId)
             it.codeScanFindingsSchema(CodeScanFindingsSchema.CODESCAN_FINDINGS_1_0)
@@ -257,15 +258,21 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
         throw e
     }
 
-    private fun mapToCodeScanIssues(recommendations: List<String>): List<CodeWhispererCodeScanIssue> {
+    fun mapToCodeScanIssues(recommendations: List<String>): List<CodeWhispererCodeScanIssue> {
         val scanRecommendations: List<CodeScanRecommendation> = recommendations.map {
             val value: List<CodeScanRecommendation> = MAPPER.readValue(it)
             value
         }.flatten()
+        LOG.debug { "Total code scan issues returned from service: ${scanRecommendations.size}" }
         return scanRecommendations.mapNotNull {
-            val file = LocalFileSystem.getInstance().findFileByIoFile(
-                Path.of(File.separator, it.filePath).toFile()
-            )
+            val file = try {
+                LocalFileSystem.getInstance().findFileByIoFile(
+                    Path.of(it.filePath).toFile()
+                )
+            } catch (e: Exception) {
+                LOG.debug { "Cannot find file at location ${it.filePath}" }
+                null
+            }
             when (file?.isDirectory) {
                 false -> {
                     runReadAction {
@@ -293,13 +300,18 @@ internal class CodeWhispererCodeScanSession(private val sessionContext: CodeScan
             }
         }
     }
+
+    fun sleepThread() {
+        sleep(CODE_SCAN_POLLING_INTERVAL_IN_SECONDS * TOTAL_MILLIS_IN_SECOND)
+    }
+
     companion object {
         private val LOG = getLogger<CodeWhispererCodeScanSession>()
         private val MAPPER = jacksonObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        private const val AES256 = "AES256"
-        private const val CONTENT_MD5 = "Content-MD5"
-        private const val SERVER_SIDE_ENCRYPTION = "x-amz-server-side-encryption"
+        const val AES256 = "AES256"
+        const val CONTENT_MD5 = "Content-MD5"
+        const val SERVER_SIDE_ENCRYPTION = "x-amz-server-side-encryption"
     }
 }
 

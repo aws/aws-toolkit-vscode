@@ -7,7 +7,6 @@ import com.intellij.openapi.compiler.CompilerPaths
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VfsUtil
@@ -23,7 +22,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.JAVA_PAYLOAD_LIMIT_IN_BYTES
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererLanguage
-import java.io.File
 import java.io.IOException
 import java.lang.IndexOutOfBoundsException
 import java.nio.file.Files
@@ -33,15 +31,14 @@ import java.time.Instant
 internal class JavaCodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project
-) : CodeScanSessionConfig() {
+) : CodeScanSessionConfig(selectedFile, project) {
 
-    private val projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
     private val packageRegex = Regex("package\\s+([\\w.]+)\\s*;")
     private val importRegex = Regex("import\\s+([\\w.]+[*]?)\\s*;")
     private val buildExt = ".class"
-    private val sourceExt = ".java"
+    override val sourceExt = ".java"
 
-    private data class JavaImportsInfo(val imports: List<String>, val packagePath: String)
+    data class JavaImportsInfo(val imports: List<String>, val packagePath: String)
 
     override fun overallJobTimeoutInSeconds(): Long = JAVA_CODE_SCAN_TIMEOUT_IN_SECONDS
 
@@ -58,15 +55,15 @@ internal class JavaCodeScanSessionConfig(
         LOG.debug { "Creating payload. File selected as root for the context truncation: ${selectedFile.path}" }
 
         // Include all the dependencies using BFS
-        val (sourceFiles, buildPaths, srcPayloadSize, totalLines) = includeDependencies()
+        val (sourceFiles, srcPayloadSize, totalLines, buildPaths) = includeDependencies()
 
         // Copy all the included source files to the source zip
-        val srcZip = zipFiles(sourceFiles.map { it.toNioPath() })
+        val srcZip = zipFiles(sourceFiles.mapNotNull { getPath(it) })
 
         var noClassFilesFound = true
         val outputPaths = CompilerPaths.getOutputPaths(ModuleManager.getInstance(project).modules)
         var totalBuildPayloadSize = 0L
-        val buildFiles = buildPaths.filterNotNull().mapNotNull { relativePath ->
+        val buildFiles = buildPaths.mapNotNull { relativePath ->
             val classFile = findClassFile(relativePath, outputPaths)
             if (classFile == null) {
                 LOG.debug { "Cannot find class file for $relativePath" }
@@ -76,6 +73,7 @@ internal class JavaCodeScanSessionConfig(
             }
             classFile
         }
+        LOG.debug { "Total build files sent in payload: ${buildFiles.size}" }
         if (noClassFilesFound) cannotFindBuildArtifacts()
 
         // Copy all the corresponding build files to the build zip
@@ -96,13 +94,13 @@ internal class JavaCodeScanSessionConfig(
 
     private fun findClassFile(relativePath: String, outputPaths: Array<String>): Path? {
         outputPaths.forEach { outputPath ->
-            val classFile = Path.of(outputPath, relativePath)
-            if (classFile.exists()) return classFile
+            val classFile = getPath(outputPath, relativePath)
+            if (classFile?.exists() == true) return classFile
         }
         return null
     }
 
-    private fun getJavaImportsInfo(file: VirtualFile): JavaImportsInfo {
+    fun parseImports(file: VirtualFile): JavaImportsInfo {
         val imports = mutableSetOf<String>()
         val inputStream = file.inputStream
         var packagePath = ""
@@ -112,11 +110,11 @@ internal class JavaCodeScanSessionConfig(
                     val importMatcher = importRegex.toPattern().matcher(line)
                     val packageMatcher = packageRegex.toPattern().matcher(line)
                     if (importMatcher.find()) {
-                        val import = importMatcher.group(1).replace('.', File.separatorChar)
+                        val import = importMatcher.group(1).replace('.', FILE_SEPARATOR)
                         imports.add(import)
                     }
                     if (packageMatcher.find()) {
-                        packagePath = packageMatcher.group(1).replace('.', File.separatorChar)
+                        packagePath = packageMatcher.group(1).replace('.', FILE_SEPARATOR)
                     }
                 }
             }
@@ -144,7 +142,7 @@ internal class JavaCodeScanSessionConfig(
         } + buildExt
     }
 
-    private fun getSourceFilesUnderProjectRoot(): List<VirtualFile> {
+    override fun getSourceFilesUnderProjectRoot(selectedFile: VirtualFile): List<VirtualFile> {
         val files = mutableListOf<VirtualFile>()
         val sourceRoots = ProjectRootManager.getInstance(project).getModuleSourceRoots(setOf(JavaSourceRootType.SOURCE))
         files.add(selectedFile)
@@ -158,14 +156,12 @@ internal class JavaCodeScanSessionConfig(
         return files
     }
 
-    private data class PayloadMetadata(val sourceFiles: Set<VirtualFile>, val buildPaths: Set<String?>, val payloadSize: Long, val totalLines: Long)
-
-    private fun includeDependencies(): PayloadMetadata {
+    override fun includeDependencies(): PayloadMetadata {
         val sourceFiles = mutableSetOf<VirtualFile>()
         val buildPaths = mutableSetOf<String?>()
         var currentTotalFileSize = 0L
         var currentTotalLines = 0L
-        val files = getSourceFilesUnderProjectRoot()
+        val files = getSourceFilesUnderProjectRoot(selectedFile)
         val queue = ArrayDeque<VirtualFile>()
 
         files.forEach { file ->
@@ -173,6 +169,10 @@ internal class JavaCodeScanSessionConfig(
 
             // BFS
             while (queue.isNotEmpty()) {
+                if (currentTotalFileSize.equals(getPayloadLimitInBytes())) {
+                    return PayloadMetadata(sourceFiles.map { it.path }.toSet(), currentTotalFileSize, currentTotalLines, buildPaths.filterNotNull().toSet())
+                }
+
                 val currentFile = queue.removeFirst()
                 if (!currentFile.path.startsWith(projectRoot.path)) {
                     LOG.error { "Invalid workspace: Current file ${currentFile.path} is not under the project root ${projectRoot.path}" }
@@ -182,19 +182,15 @@ internal class JavaCodeScanSessionConfig(
 
                 val currentFileSize = currentFile.length
 
-                // Ignore file greater than the payload size.
-                if (currentFileSize > getPayloadLimitInBytes()) continue
-
-                if (currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize) {
-                    return PayloadMetadata(sourceFiles, buildPaths, currentTotalFileSize, currentTotalLines)
-                }
+                // Ignore file if including it exceeds the payload limit.
+                if (currentTotalFileSize > getPayloadLimitInBytes() - currentFileSize) continue
 
                 currentTotalFileSize += currentFileSize
                 currentTotalLines += Files.lines(currentFile.toNioPath()).count()
                 sourceFiles.add(currentFile)
 
                 // Get all imports from the file
-                val importsInfo = getJavaImportsInfo(currentFile)
+                val importsInfo = parseImports(currentFile)
                 importsInfo.imports.forEach { importPath ->
                     val importedFiles = getSourceFilesForImport(currentFile, importPath)
                     importedFiles.forEach { importedFile ->
@@ -205,7 +201,7 @@ internal class JavaCodeScanSessionConfig(
             }
         }
 
-        return PayloadMetadata(sourceFiles, buildPaths, currentTotalFileSize, currentTotalLines)
+        return PayloadMetadata(sourceFiles.map { it.path }.toSet(), currentTotalFileSize, currentTotalLines, buildPaths.filterNotNull().toSet())
     }
 
     private fun getImportedFile(currentFile: VirtualFile, importPath: String): VirtualFile? {
@@ -218,8 +214,8 @@ internal class JavaCodeScanSessionConfig(
 
         // First try searching the module containing the current file
         ModuleUtil.findModuleForFile(currentFile, project)?.rootManager?.getSourceRoots(JavaSourceRootType.SOURCE)?.forEach { srcRoot ->
-            val path = Path.of(srcRoot.path, resolvedImportPath)
-            path.toFile().toVirtualFile()?.let {
+            val path = getPath(srcRoot.path, resolvedImportPath)
+            path?.toFile()?.toVirtualFile()?.let {
                 return it
             }
         }
@@ -227,8 +223,8 @@ internal class JavaCodeScanSessionConfig(
         // Fallback to all other java source roots.
         val projectSourceRoots = ProjectRootManager.getInstance(project).contentSourceRoots
         projectSourceRoots.forEach { srcRoot ->
-            val path = Path.of(srcRoot.path, resolvedImportPath)
-            path.toFile().toVirtualFile()?.let {
+            val path = getPath(srcRoot.path, resolvedImportPath)
+            path?.toFile()?.toVirtualFile()?.let {
                 return it
             }
         }

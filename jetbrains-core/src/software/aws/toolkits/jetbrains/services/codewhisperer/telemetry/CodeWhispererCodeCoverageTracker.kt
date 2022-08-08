@@ -12,6 +12,7 @@ import com.intellij.util.AlarmFactory
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.toCodeWhispererLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager
