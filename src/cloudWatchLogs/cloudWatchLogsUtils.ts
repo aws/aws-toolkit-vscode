@@ -21,7 +21,7 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 export function recordTelemetryFilter(
     logData: CloudWatchLogsData,
     resourceType: telemetry.CloudWatchResourceType,
-    source: 'EscapeHatch' | 'OriginalSearch'
+    source: 'Editor' | 'OriginalSearch'
 ): void {
     if (logData.parameters.startTime || logData.parameters.filterPattern) {
         telemetry.recordCloudwatchlogsFilter({

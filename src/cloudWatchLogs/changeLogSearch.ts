@@ -64,7 +64,7 @@ export async function getNewData(
         resourceType = 'logStream'
     }
 
-    recordTelemetryFilter(newData, resourceType, 'escapeHatch')
+    recordTelemetryFilter(newData, resourceType, 'Editor')
 
     return newData
 }
