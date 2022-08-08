@@ -2,7 +2,7 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as telemetry from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import {
     CloudWatchLogsParameters,
@@ -45,10 +45,12 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         position: vscode.Position,
         token: vscode.CancellationToken
     ): Promise<vscode.Definition | vscode.LocationLink[] | undefined> {
+        let result: telemetry.Result
         const activeUri = document.uri
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         if (logGroupInfo.streamName) {
             // This means we have a stream file not a log search.
+            // telemetry.recordCloudwatchlogsJumpToStream({result: 'Failed'}) Should I output telemetry here?
             return
         }
         const curLine = document.lineAt(position.line)
@@ -60,6 +62,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             const streamID = streamIDMap.get(curLine.lineNumber)
 
             if (!streamID) {
+                telemetry.recordCloudwatchlogsJumpToStream({ result: 'Failed' })
                 throw new Error(
                     `cwl: current line number ${curLine.lineNumber} is unregistered in streamIDMap for ${activeUri}`
                 )
@@ -74,8 +77,10 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             // Set the document language
             const doc = await vscode.workspace.openTextDocument(streamUri)
             vscode.languages.setTextDocumentLanguage(doc, 'log')
+            telemetry.recordCloudwatchlogsJumpToStream({ result: 'Succeeded' })
             return new vscode.Location(streamUri, new vscode.Position(0, 0))
         } catch (err) {
+            telemetry.recordCloudwatchlogsJumpToStream({ result: 'Failed' })
             throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
         }
     }

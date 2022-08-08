@@ -41,6 +41,11 @@
             ]
         },
         {
+            "name": "cloudwatchlogs_jumpToStream",
+            "description": "Jumps to a cloudwatchlogs stream from a log group search",
+            "metadata": [{ "type": "result" }]
+        },
+        {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",
             "passive": true,
