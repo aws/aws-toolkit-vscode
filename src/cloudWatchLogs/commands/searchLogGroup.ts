@@ -12,12 +12,12 @@ import {
     LogStreamRegistry,
     filterLogEventsFromUriComponents,
     CloudWatchLogsParameters,
+    getInitialLogData,
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createURIFromArgs, parseCloudWatchLogsUri, telemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { highlightDocument } from '../document/logStreamDocumentProvider'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../shared/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
@@ -53,13 +53,7 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
         }
     }
 
-    const initialStreamData: CloudWatchLogsData = {
-        data: [],
-        parameters: parameters,
-        busy: false,
-        logGroupInfo: logGroupInfo,
-        retrieveLogsFunction: filterLogEventsFromUriComponents,
-    }
+    const initialStreamData = getInitialLogData(logGroupInfo, parameters, filterLogEventsFromUriComponents)
 
     if (initialStreamData.parameters.startTime || initialStreamData.parameters.filterPattern) {
         telemetryFilter(initialStreamData, 'logGroup')
@@ -82,12 +76,7 @@ export async function prepareDocument(
         registry.setTextEditor(uri, textEditor)
 
         // Initial highlighting of the document and then for any addLogEvent calls.
-        highlightDocument(registry, uri)
-        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-            if (event.document.uri.toString() === doc.uri.toString()) {
-                highlightDocument(registry, uri)
-            }
-        })
+        registry.highlightDocument(uri)
         return 'Succeeded'
     } catch (err) {
         if (CancellationError.isUserCancelled(err)) {

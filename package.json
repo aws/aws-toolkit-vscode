@@ -832,11 +832,11 @@
                 },
                 {
                     "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs"
+                    "when": "resourceScheme == aws-cwl"
                 },
                 {
                     "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs"
+                    "when": "resourceScheme == aws-cwl"
                 },
                 {
                     "command": "aws.s3.editFile",
@@ -1079,17 +1079,17 @@
                 },
                 {
                     "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "when": "resourceScheme == aws-cwl",
                     "group": "navigation"
                 },
                 {
                     "command": "aws.cwl.changeFilterPattern",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "when": "resourceScheme == aws-cwl",
                     "group": "navigation"
                 },
                 {
                     "command": "aws.cwl.changeTimeFilter",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "when": "resourceScheme == aws-cwl",
                     "group": "navigation"
                 },
                 {
@@ -1121,7 +1121,7 @@
             "editor/title/context": [
                 {
                     "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "when": "resourceScheme == aws-cwl",
                     "group": "1_cutcopypaste@1"
                 }
             ],
@@ -3048,7 +3048,7 @@
                 "scheme": "aws-cwl",
                 "formatting": {
                     "label": "${path}",
-                    "separator": "\\"
+                    "separator": "/"
                 }
             },
             {

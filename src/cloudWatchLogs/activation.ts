@@ -24,11 +24,16 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
     const settings = new CloudWatchLogsSettings(configuration)
     const registry = new LogStreamRegistry(settings)
 
+    const documentProvider = new LogStreamDocumentProvider(registry)
+
+    vscode.languages.registerDefinitionProvider(
+        // TODO: figure out how to only show "Jump to definition" for documents from searches
+        { language: 'log', scheme: CLOUDWATCH_LOGS_SCHEME },
+        documentProvider
+    )
+
     context.subscriptions.push(
-        vscode.workspace.registerTextDocumentContentProvider(
-            CLOUDWATCH_LOGS_SCHEME,
-            new LogStreamDocumentProvider(registry)
-        )
+        vscode.workspace.registerTextDocumentContentProvider(CLOUDWATCH_LOGS_SCHEME, documentProvider)
     )
 
     context.subscriptions.push(

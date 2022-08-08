@@ -24,7 +24,6 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { Cloud9AccessState } from '../models/model'
 export class CodeWhispererNode implements RootNode {
     public readonly id = 'codewhisperer'
-    public readonly treeItem = this.createTreeItem()
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeChildren = this.onDidChangeChildrenEmitter.event
@@ -45,7 +44,7 @@ export class CodeWhispererNode implements RootNode {
         })
     }
 
-    private createTreeItem() {
+    public getTreeItem() {
         const item = new vscode.TreeItem('CodeWhisperer (Preview)')
         item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
         item.contextValue = 'awsCodeWhispererNode'

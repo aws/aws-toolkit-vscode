@@ -37,9 +37,9 @@ export function telemetryFilter(logData: CloudWatchLogsData, resourceType: telem
 export function uriToKey(uri: vscode.Uri): string {
     if (uri.query) {
         try {
-            const { filterPattern, startTime, endTime, limit, streamName, streamNameOptions } =
+            const { filterPattern, startTime, endTime, limit, streamNameOptions } =
                 parseCloudWatchLogsUri(uri).parameters
-            const parts = [uri.path, filterPattern, startTime, endTime, limit, streamName, streamNameOptions]
+            const parts = [uri.path, filterPattern, startTime, endTime, limit, streamNameOptions]
             return parts.map(p => p ?? '').join(':')
         } catch {
             throw new Error(
@@ -64,11 +64,17 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
         throw new Error(`URI ${uri} is not parseable for CloudWatch Logs`)
     }
 
+    const logGroupInfo: CloudWatchLogsGroupInfo = {
+        regionName: parts[0],
+        groupName: parts[1],
+    }
+
+    if (parts.length === 3) {
+        logGroupInfo.streamName = parts[2]
+    }
+
     return {
-        logGroupInfo: {
-            groupName: parts[0],
-            regionName: parts[1],
-        },
+        logGroupInfo,
         parameters: JSON.parse(uri.query),
     }
 }
@@ -78,8 +84,8 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
  * @returns
  */
 export function isLogStreamUri(uri: vscode.Uri): boolean {
-    const params = parseCloudWatchLogsUri(uri).parameters
-    return params.streamName !== undefined
+    const logGroupInfo = parseCloudWatchLogsUri(uri).logGroupInfo
+    return logGroupInfo.streamName !== undefined
 }
 
 /**
@@ -92,41 +98,11 @@ export function createURIFromArgs(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters
 ): vscode.Uri {
-    let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${logGroupInfo.groupName}:${logGroupInfo.regionName}`
+    let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${logGroupInfo.regionName}:${logGroupInfo.groupName}`
+    uriStr += logGroupInfo.streamName ? `:${logGroupInfo.streamName}` : ''
 
     uriStr += `?${encodeURIComponent(JSON.stringify(parameters))}`
     return vscode.Uri.parse(uriStr)
-}
-
-/**
- * Finds occurences of text in the document.
- * @param document
- * @param keyword
- * @returns Ranges where pattern occurrs in document.
- */
-export function findOccurencesOf(document: vscode.TextDocument, keyword: string): vscode.Range[] {
-    const ranges: vscode.Range[] = []
-    let lineNum = 0
-
-    keyword = keyword.toLowerCase()
-
-    while (lineNum < document.lineCount) {
-        const currentLine = document.lineAt(lineNum)
-        const currentLineText = currentLine.text.toLowerCase()
-        let indexOccurrence = currentLineText.indexOf(keyword, 0)
-
-        while (indexOccurrence >= 0) {
-            ranges.push(
-                new vscode.Range(
-                    new vscode.Position(lineNum, indexOccurrence),
-                    new vscode.Position(lineNum, indexOccurrence + keyword.length)
-                )
-            )
-            indexOccurrence = currentLineText.indexOf(keyword, indexOccurrence + 1)
-        }
-        lineNum += 1
-    }
-    return ranges
 }
 
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}

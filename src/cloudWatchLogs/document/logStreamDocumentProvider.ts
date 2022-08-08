@@ -4,15 +4,16 @@
  */
 
 import * as vscode from 'vscode'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import {
+    CloudWatchLogsParameters,
+    getLogEventsFromUriComponents,
+    LogStreamRegistry,
+    getInitialLogData,
+} from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
-import { uriToKey, findOccurencesOf } from '../cloudWatchLogsUtils'
+import { parseCloudWatchLogsUri, createURIFromArgs } from '../cloudWatchLogsUtils'
 
-const HIGHLIGHTER = vscode.window.createTextEditorDecorationType({
-    backgroundColor: new vscode.ThemeColor('list.focusHighlightForeground'),
-})
-
-export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider {
+export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider, vscode.DefinitionProvider {
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
@@ -31,27 +32,49 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         // get latest content and return
         const content = this.registry.getLogContent(uri, { timestamps: true })
         if (!content) {
-            getLogger().error(`No content found for URI: ${uri}`)
+            getLogger().error(`No content found for URI: ${uri.path}`)
         }
         return content ?? ''
     }
-}
 
-export async function highlightDocument(registry: LogStreamRegistry, uri: vscode.Uri): Promise<void> {
-    const textEditor = registry.getTextEditor(uri)
-    const logData = registry.getLogData(uri)
+    async provideDefinition(
+        document: vscode.TextDocument,
+        position: vscode.Position,
+        token: vscode.CancellationToken
+    ): Promise<vscode.Definition | vscode.LocationLink[] | undefined> {
+        const activeUri = document.uri
+        const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
+        if (logGroupInfo.streamName) {
+            // This means we have a stream file not a log search.
+            return
+        }
+        const curLine = document.lineAt(position.line)
+        try {
+            const streamIDMap = this.registry.getStreamIdMap(activeUri)
+            if (!streamIDMap || streamIDMap.size === 0) {
+                throw new Error(`cwl: No streamIDMap found for stream with uri ${activeUri.path}`)
+            }
+            const streamID = streamIDMap.get(curLine.lineNumber)
 
-    if (!logData) {
-        throw new Error(`Missing log data in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
-    }
-
-    if (!textEditor) {
-        throw new Error(`Missing textEditor in registry for uri key: ${uriToKey(uri)}. Unable to highlight`)
-    }
-
-    if (logData.parameters.filterPattern) {
-        const ranges = findOccurencesOf(textEditor.document, logData.parameters.filterPattern)
-        textEditor.setDecorations(HIGHLIGHTER, ranges)
+            if (!streamID) {
+                throw new Error(
+                    `cwl: current line number ${curLine.lineNumber} is unregistered in streamIDMap for ${activeUri}`
+                )
+            }
+            const parameters: CloudWatchLogsParameters = {
+                limit: this.registry.configuration.get('limit', 10000),
+            }
+            logGroupInfo.streamName = streamID
+            const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
+            const streamUri = createURIFromArgs(logGroupInfo, parameters)
+            await this.registry.registerLog(streamUri, initialStreamData)
+            // Set the document language
+            const doc = await vscode.workspace.openTextDocument(streamUri)
+            vscode.languages.setTextDocumentLanguage(doc, 'log')
+            return new vscode.Location(streamUri, new vscode.Position(0, 0))
+        } catch (err) {
+            throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
+        }
     }
 }
 
