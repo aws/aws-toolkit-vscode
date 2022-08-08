@@ -151,7 +151,7 @@ export class SystemUtilities {
             return SystemUtilities.sshPath
         }
 
-        const sshSettingPath = Settings.instance.get('remote.ssh.path', String, '')
+        const sshSettingPath = Settings.instance.get('remote.SSH.path', String, '')
         const paths = [
             sshSettingPath,
             'ssh', // Try $PATH _before_ falling back to common paths.
