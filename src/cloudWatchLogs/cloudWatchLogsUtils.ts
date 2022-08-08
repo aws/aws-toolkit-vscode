@@ -18,10 +18,15 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
  * @param logData
  * @param resourceType
  */
-export function telemetryFilter(logData: CloudWatchLogsData, resourceType: telemetry.CloudWatchResourceType): void {
+export function telemetryFilter(
+    logData: CloudWatchLogsData,
+    resourceType: telemetry.CloudWatchResourceType,
+    source: 'escapeHatch' | 'originalSearch'
+): void {
     if (logData.parameters.startTime || logData.parameters.filterPattern) {
         telemetry.recordCloudwatchlogsFilter({
             result: 'Succeeded',
+            source: source,
             cloudWatchResourceType: resourceType,
             hasTimeFilter: logData.parameters.startTime ? true : false,
             hasTextFilter: logData.parameters.filterPattern && logData.parameters.filterPattern !== '' ? true : false,

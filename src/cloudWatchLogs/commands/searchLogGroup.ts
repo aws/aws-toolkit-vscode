@@ -56,7 +56,7 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     const initialStreamData = getInitialLogData(logGroupInfo, parameters, filterLogEventsFromUriComponents)
 
     if (initialStreamData.parameters.startTime || initialStreamData.parameters.filterPattern) {
-        telemetryFilter(initialStreamData, 'logGroup')
+        telemetryFilter(initialStreamData, 'logGroup', 'originalSearch')
     }
 
     return initialStreamData
