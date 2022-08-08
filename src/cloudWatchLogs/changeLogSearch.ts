@@ -82,6 +82,8 @@ export async function changeLogSearchParams(
             result: 'Failed',
             source: 'escapeHatch',
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
+            hasTimeFilter: param === 'timeFilter',
+            hasTextFilter: param === 'filterPattern',
         })
         throw new Error(`cwl: Unable to find data for active URI ${oldUri}`)
     }
