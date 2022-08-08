@@ -61,7 +61,7 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
         retrieveLogsFunction: filterLogEventsFromUriComponents,
     }
 
-    telemetryFilterSuccess(initialStreamData)
+    telemetryFilterSuccess(initialStreamData, 'logGroup')
 
     return initialStreamData
 }

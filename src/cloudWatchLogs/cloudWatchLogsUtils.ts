@@ -13,10 +13,13 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 // The following functions are used to structure and destructure relevant information to/from a URI.
 // Colons are not valid characters in either the group name or stream name and will be used as separators.
 
-export function telemetryFilterSuccess(logData: CloudWatchLogsData): void {
+export function telemetryFilterSuccess(
+    logData: CloudWatchLogsData,
+    resourceType: telemetry.CloudWatchResourceType
+): void {
     telemetry.recordCloudwatchlogsFilter({
         result: 'Succeeded',
-        cloudWatchResourceType: 'logGroup',
+        cloudWatchResourceType: resourceType,
         hasTimeFilter: logData.parameters.startTime ? true : false,
         hasTextFilter: logData.parameters.filterPattern && logData.parameters.filterPattern !== '' ? true : false,
     })

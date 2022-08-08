@@ -57,14 +57,16 @@ export async function getNewData(
             newData.parameters.endTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.end
             break
     }
-
-    telemetryFilterSuccess(newData)
+    let resourceType: telemetry.CloudWatchResourceType = 'logGroup'
 
     if (newData.parameters.streamName) {
         newData.retrieveLogsFunction = filterLogEventsFromUriComponents
         newData.parameters.streamNameOptions = [newData.parameters.streamName]
         newData.parameters.streamName = undefined
+        resourceType = 'logStream'
     }
+
+    telemetryFilterSuccess(newData, resourceType)
 
     return newData
 }
