@@ -42,10 +42,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                 registry.disposeRegistryData(doc.uri)
                 registry.deregisterLog(doc.uri)
             }
-        })
-    )
-
-    context.subscriptions.push(
+        }),
         vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
             const eventUri = event.document.uri
             if (registry.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
