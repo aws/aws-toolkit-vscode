@@ -73,7 +73,6 @@ export async function changeLogSearchParams(
     registry: LogStreamRegistry,
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
-    let result: telemetry.Result = 'Succeeded'
     const oldUri = getActiveDocumentUri(registry)
 
     const oldData = registry.getLogData(oldUri)
@@ -106,7 +105,7 @@ export async function changeLogSearchParams(
 
     const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
-    result = await prepareDocument(newUri, newData, registry)
+    const result = await prepareDocument(newUri, newData, registry)
     const typeOfResource = newData.parameters.streamNameOptions ? 'logStream' : 'logGroup'
     telemetry.recordCloudwatchlogsOpen({
         result: result,
