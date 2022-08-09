@@ -95,9 +95,10 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
         while (true) {
             switch (this.currentState) {
                 case 'recent-range': {
-                    this.steps && this.defaultPrompter.setSteps(this.steps[0], this.steps[1])
+                    const prompter = this.createMenuPrompter()
+                    this.steps && prompter.setSteps(this.steps[0], this.steps[1])
 
-                    const resp = await this.defaultPrompter.prompt()
+                    const resp = await prompter.prompt()
                     if (resp === customRange) {
                         this.switchState('custom-range')
                     } else if (isValidResponse(resp)) {
@@ -119,7 +120,6 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                         return { start: startTime.valueOf(), end: endTime.valueOf() }
                     }
 
-                    this.defaultPrompter = this.createMenuPrompter() //reload the defaultPrompter
                     this.switchState('recent-range')
 
                     break
