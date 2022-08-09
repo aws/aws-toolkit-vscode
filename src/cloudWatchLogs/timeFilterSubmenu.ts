@@ -88,6 +88,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
             title: 'Enter custom date range',
             placeholder: 'YYYY/MM/DD-YYYY/MM/DD',
             validateInput: input => this.validateDate(input),
+            buttons: createCommonButtons(),
         })
     }
 
