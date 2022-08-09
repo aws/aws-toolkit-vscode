@@ -159,6 +159,8 @@ describe('LogStreamRegistry', async function () {
             ])
             assert.deepStrictEqual(streamIDMap, expectedMap)
             registry.disposeRegistryData(doc.uri)
+            // We want to re-register log here otherwise this returns undefined.
+            registry.setLogData(searchLogGroupUri, logGroupsStream)
             streamIDMap = registry.getStreamIdMap(searchLogGroupUri)
             assert.deepStrictEqual(streamIDMap, new Map<number, string>())
         })
@@ -227,16 +229,16 @@ describe('LogStreamRegistry', async function () {
         })
     })
 
-    describe('deregisterLog', function () {
+    describe('disposeRegistryData', function () {
         it('deletes a log', function () {
             assert.strictEqual(registry.hasLog(registeredUri), true)
-            registry.deregisterLog(registeredUri)
+            registry.disposeRegistryData(registeredUri)
             assert.strictEqual(registry.hasLog(registeredUri), false)
         })
 
         it('does not error if the log does not exist in the registry', function () {
             assert.strictEqual(registry.hasLog(missingRegisteredUri), false)
-            registry.deregisterLog(missingRegisteredUri)
+            registry.disposeRegistryData(missingRegisteredUri)
             assert.strictEqual(registry.hasLog(missingRegisteredUri), false)
         })
     })

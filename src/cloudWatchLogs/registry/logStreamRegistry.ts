@@ -26,18 +26,7 @@ export class LogStreamRegistry {
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
-    ) {
-        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-            const eventUri = event.document.uri
-            if (this.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
-                this.highlightDocument(eventUri)
-            }
-        })
-
-        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-            this.disposeRegistryData(document.uri)
-        })
-    }
+    ) {}
 
     /**
      * Event fired on log content change
@@ -65,6 +54,7 @@ export class LogStreamRegistry {
         if (this.hasLog(uri) && !isLogStreamUri(uri)) {
             this.clearStreamIdMap(uri)
         }
+        this.activeLogs.delete(uriToKey(uri))
     }
 
     /**
@@ -161,14 +151,6 @@ export class LogStreamRegistry {
         })
 
         this._onDidChange.fire(uri)
-    }
-
-    /**
-     * Deletes a stream from the registry.
-     * @param uri Document URI
-     */
-    public deregisterLog(uri: vscode.Uri): void {
-        this.activeLogs.delete(uriToKey(uri))
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
@@ -333,12 +315,17 @@ export async function getLogEventsFromUriComponents(
             `Log Stream name not specified for log group ${logGroupInfo.groupName} on region ${logGroupInfo.regionName}`
         )
     }
-    const response = await client.getLogEvents({
+    const cwlParameters = {
         logGroupName: logGroupInfo.groupName,
         logStreamName: logGroupInfo.streamName,
         nextToken,
         limit: parameters.limit,
-    })
+    }
+
+    const timeout = new Timeout(300000)
+    showMessageWithCancel(`Loading data from log stream ${logGroupInfo.streamName}`, timeout)
+    const responsePromise = client.getLogEvents(cwlParameters)
+    const response = await waitTimeout(responsePromise, timeout, { allowUndefined: false })
 
     if (!response) {
         throw new Error('cwl:`getLogEvents` did not return anything.')
