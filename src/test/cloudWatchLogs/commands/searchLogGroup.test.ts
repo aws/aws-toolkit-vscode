@@ -71,7 +71,7 @@ describe('searchLogGroup', async function () {
             let customTimeRangePrompter: InputBoxPrompter
 
             before(function () {
-                customTimeRangePrompter = testTimeRangeMenu.customPrompter
+                customTimeRangePrompter = testTimeRangeMenu.createDateBox()
                 testDateBox = exposeEmitters(customTimeRangePrompter.inputBox, [
                     'onDidAccept',
                     'onDidChangeValue',
@@ -84,7 +84,6 @@ describe('searchLogGroup', async function () {
                     testDateBox.value = value
                     testDateBox.fireOnDidAccept()
                 }
-                customTimeRangePrompter = testTimeRangeMenu.customPrompter
 
                 const validInput = '2000/10/06-2001/11/08'
                 const result = customTimeRangePrompter.prompt()
