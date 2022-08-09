@@ -73,10 +73,18 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             const doc = await vscode.workspace.openTextDocument(streamUri)
             vscode.languages.setTextDocumentLanguage(doc, 'log')
 
-            telemetry.recordCloudwatchlogsJumpToStream({ result: 'Succeeded' })
+            telemetry.recordCloudwatchlogsOpen({
+                result: 'Succeeded',
+                cloudWatchResourceType: 'logStream',
+                source: 'GoTo',
+            })
             return new vscode.Location(streamUri, new vscode.Position(0, 0))
         } catch (err) {
-            telemetry.recordCloudwatchlogsJumpToStream({ result: 'Failed' })
+            telemetry.recordCloudwatchlogsOpen({
+                result: 'Failed',
+                cloudWatchResourceType: 'logStream',
+                source: 'GoTo',
+            })
 
             throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
         }
