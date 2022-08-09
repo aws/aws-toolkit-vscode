@@ -93,7 +93,7 @@ export async function changeLogSearchParams(
             result: 'Cancelled',
             source: 'Editor',
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
-            hasTimeFilter: oldData.parameters.startTime !== undefined || param === 'timeFilter',
+            hasTimeFilter: !!(oldData.parameters.startTime || param === 'timeFilter'),
             hasTextFilter:
                 (oldData.parameters.filterPattern !== undefined && oldData.parameters.filterPattern !== '') ||
                 param === 'filterPattern',
