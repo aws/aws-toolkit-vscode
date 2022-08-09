@@ -23,15 +23,13 @@ export function recordTelemetryFilter(
     resourceType: telemetry.CloudWatchResourceType,
     source: 'Editor' | 'OriginalSearch'
 ): void {
-    if (logData.parameters.startTime || logData.parameters.filterPattern) {
-        telemetry.recordCloudwatchlogsFilter({
-            result: 'Succeeded',
-            source: source,
-            cloudWatchResourceType: resourceType,
-            hasTimeFilter: logData.parameters.startTime ? true : false,
-            hasTextFilter: logData.parameters.filterPattern && logData.parameters.filterPattern !== '' ? true : false,
-        })
-    }
+    telemetry.recordCloudwatchlogsFilter({
+        result: 'Succeeded',
+        source: source,
+        cloudWatchResourceType: resourceType,
+        hasTimeFilter: logData.parameters.startTime ? true : false,
+        hasTextFilter: logData.parameters.filterPattern && logData.parameters.filterPattern !== '' ? true : false,
+    })
 }
 
 /**
