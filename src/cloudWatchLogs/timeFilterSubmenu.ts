@@ -30,7 +30,6 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
     private currentState: 'custom-range' | 'recent-range' = 'recent-range'
     private steps?: [current: number, total: number]
     public defaultPrompter: QuickPickPrompter<typeof customRange | number> = this.createMenuPrompter()
-    public customPrompter: InputBoxPrompter = this.createDateBox()
 
     public constructor() {
         super()
@@ -113,7 +112,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                     break
                 }
                 case 'custom-range': {
-                    const resp = await this.customPrompter.prompt()
+                    const resp = await this.createDateBox().prompt()
                     if (isValidResponse(resp)) {
                         const [startTime, endTime] = this.parseDate(resp)
 
