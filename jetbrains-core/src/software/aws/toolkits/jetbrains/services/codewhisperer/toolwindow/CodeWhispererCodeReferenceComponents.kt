@@ -64,17 +64,32 @@ class CodeWhispererCodeReferenceComponents(private val project: Project) {
         BrowserUtil.browse(CodeWhispererLicenseInfoManager.getInstance().getLicenseLink(licenseName))
     }.asCodeReferencePanelFont()
 
+    private fun repoNameLink(repo: String, url: String) = ActionLink(repo) {
+        BrowserUtil.browse(url)
+    }.asCodeReferencePanelFont()
+
     private fun acceptRecommendationSuffixText(repo: String, path: String?, line: String) = JLabel().apply {
         val choice = if (path != null) 1 else 0
-        text = message("codewhisperer.toolwindow.entry.suffix", repo, path ?: "", choice, line)
+        text = message("codewhisperer.toolwindow.entry.suffix", path ?: "", choice, line)
     }.asCodeReferencePanelFont()
 
     fun codeReferenceRecordPanel(ref: Reference, relativePath: String?, lineNums: String) = JPanel(GridBagLayout()).apply {
         background = EditorColorsManager.getInstance().globalScheme.defaultBackground
         border = BorderFactory.createEmptyBorder(5, 0, 0, 0)
         add(acceptRecommendationPrefixText, inlineLabelConstraints)
-        add(licenseNameLink(ref.licenseName()), inlineLabelConstraints)
-        add(JLabel(" ").asCodeReferencePanelFont(), inlineLabelConstraints)
+
+        // if url to source package/repo is missing, the UX remains the same as we have for now
+        // if url to source package/repo is present, the url pointing to the source will be present and remove the hyperlink to SPDX
+        if (ref.url().isNullOrEmpty()) {
+            add(licenseNameLink(ref.licenseName()), inlineLabelConstraints)
+            add(JLabel(" from ").asCodeReferencePanelFont(), inlineLabelConstraints)
+            add(JLabel(ref.repository()), inlineLabelConstraints)
+        } else {
+            add(JLabel(ref.licenseName()), inlineLabelConstraints)
+            add(JLabel(" from ").asCodeReferencePanelFont(), inlineLabelConstraints)
+            add(repoNameLink(ref.repository(), ref.url()), inlineLabelConstraints)
+        }
+
         add(acceptRecommendationSuffixText(ref.repository(), relativePath, lineNums), inlineLabelConstraints)
         addHorizontalGlue()
     }
