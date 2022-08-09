@@ -64,7 +64,7 @@ export async function getNewData(
         resourceType = 'logStream'
     }
 
-    recordTelemetryFilter(newData, resourceType, 'Editor')
+    recordTelemetryFilter(newData, resourceType, 'EditorButton')
 
     return newData
 }

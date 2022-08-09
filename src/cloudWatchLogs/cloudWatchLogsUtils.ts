@@ -21,7 +21,7 @@ import { CloudWatchLogsParameters } from './registry/logStreamRegistry'
 export function recordTelemetryFilter(
     logData: CloudWatchLogsData,
     resourceType: telemetry.CloudWatchResourceType,
-    source: 'Editor' | 'OriginalSearch'
+    source: 'EditorButton' | 'Command'
 ): void {
     telemetry.recordCloudwatchlogsFilter({
         result: 'Succeeded',
