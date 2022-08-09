@@ -26,18 +26,7 @@ export class LogStreamRegistry {
     public constructor(
         public readonly configuration: CloudWatchLogsSettings,
         private readonly activeLogs: Map<string, ActiveTab> = new Map<string, ActiveTab>()
-    ) {
-        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-            const eventUri = event.document.uri
-            if (this.hasLog(eventUri) && !isLogStreamUri(eventUri)) {
-                this.highlightDocument(eventUri)
-            }
-        })
-
-        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
-            this.disposeRegistryData(document.uri)
-        })
-    }
+    ) {}
 
     /**
      * Event fired on log content change
@@ -65,6 +54,7 @@ export class LogStreamRegistry {
         if (this.hasLog(uri) && !isLogStreamUri(uri)) {
             this.clearStreamIdMap(uri)
         }
+        this.activeLogs.delete(uriToKey(uri))
     }
 
     /**
@@ -161,14 +151,6 @@ export class LogStreamRegistry {
         })
 
         this._onDidChange.fire(uri)
-    }
-
-    /**
-     * Deletes a stream from the registry.
-     * @param uri Document URI
-     */
-    public deregisterLog(uri: vscode.Uri): void {
-        this.activeLogs.delete(uriToKey(uri))
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {

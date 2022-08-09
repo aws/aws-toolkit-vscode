@@ -44,7 +44,7 @@ describe('changeLogSearch', async function () {
 
     it('unregisters old log and registers a new one', async function () {
         assert.deepStrictEqual(testRegistry.hasLog(oldUri), true)
-        testRegistry.deregisterLog(oldUri)
+        testRegistry.disposeRegistryData(oldUri)
         const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
         await testRegistry.registerLog(newUri, newData)
         assert.deepStrictEqual(testRegistry.hasLog(oldUri), false)
