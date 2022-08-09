@@ -46,7 +46,6 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
         const logGroupInfo = parseCloudWatchLogsUri(activeUri).logGroupInfo
         if (logGroupInfo.streamName) {
             // This means we have a stream file not a log search.
-            // TODO: Should there be any telemetry output here?
             return
         }
         const curLine = document.lineAt(position.line)
