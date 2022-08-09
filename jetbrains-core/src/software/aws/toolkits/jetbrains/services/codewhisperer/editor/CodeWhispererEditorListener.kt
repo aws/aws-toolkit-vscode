@@ -23,7 +23,10 @@ class CodeWhispererEditorListener : EditorFactoryListener {
                     CodeWhispererInvocationStatus.getInstance().documentChanged()
                     editor.project?.let { project ->
                         PsiDocumentManager.getInstance(project).getPsiFile(editor.document)?.codeWhispererLanguage ?. let { language ->
-                            CodeWhispererCodeCoverageTracker.getInstance(language).documentChanged(event)
+                            CodeWhispererCodeCoverageTracker.getInstance(language).apply {
+                                activateTrackerIfNotActive()
+                                documentChanged(event)
+                            }
                         }
                     }
                 }
