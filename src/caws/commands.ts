@@ -216,7 +216,9 @@ export class CawsCommands {
     }
 
     public stopWorkspace(...args: WithClient<typeof stopWorkspace>) {
-        return this.withClient(stopWorkspace, ...args)
+        return this.withClient(stopWorkspace, ...args).then(() => {
+            vscode.commands.executeCommand('workbench.action.remote.close')
+        })
     }
 
     public deleteWorkspace(...args: WithClient<typeof deleteWorkspace>) {
