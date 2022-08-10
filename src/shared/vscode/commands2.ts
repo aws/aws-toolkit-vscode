@@ -285,12 +285,15 @@ class CommandResource<T extends Callback = Callback, U extends any[] = any[]> {
     private buildTreeNode(id: string, args: unknown[]) {
         return (content: PartialTreeItem) => {
             const treeItem = new vscode.TreeItem(content.label, vscode.TreeItemCollapsibleState.None)
-            treeItem.command = { command: id, arguments: args, title: content.label }
+            Object.assign(treeItem, {
+                ...content,
+                command: { command: id, arguments: args, title: content.label },
+            })
 
             return {
                 id: `${id}-${(this.idCounter += 1)}`,
-                treeItem: Object.assign(treeItem, content),
                 resource: this,
+                getTreeItem: () => treeItem,
             }
         }
     }

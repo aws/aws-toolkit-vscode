@@ -31,11 +31,11 @@ describe('AppNode', function () {
     })
 
     it('initializes label, tooltip, and icon', async function () {
-        const testNode = getTestNode()
+        const testNode = getTestNode().getTreeItem()
 
-        assert.strictEqual(testNode.treeItem.label, path.relative(workspaceFolderPath, path.dirname(cdkJsonPath)))
-        assert.strictEqual(testNode.treeItem.tooltip, vscode.Uri.file(cdkJsonPath).path)
-        assert.strictEqual(testNode.treeItem.iconPath, getIcon('aws-cdk-logo'))
+        assert.strictEqual(testNode.label, path.relative(workspaceFolderPath, path.dirname(cdkJsonPath)))
+        assert.strictEqual(testNode.tooltip, vscode.Uri.file(cdkJsonPath).path)
+        assert.strictEqual(testNode.iconPath, getIcon('aws-cdk-logo'))
     })
 
     it('returns placeholder node when app contains no stacks', async function () {
@@ -48,7 +48,7 @@ describe('AppNode', function () {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, 1)
-        assert.ok(childNodes[0].treeItem.label?.includes('No stacks'))
+        assert.ok((await childNodes[0].getTreeItem()).label?.includes('No stacks'))
     })
 
     it('returns construct node when app has stacks', async function () {
@@ -71,7 +71,7 @@ describe('AppNode', function () {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, 1)
-        assert.ok(childNodes[0].treeItem.label?.includes('Unable to load construct tree'))
+        assert.ok((await childNodes[0].getTreeItem()).label?.includes('Unable to load construct tree'))
     })
 
     function getTestNode(): appNode.AppNode {

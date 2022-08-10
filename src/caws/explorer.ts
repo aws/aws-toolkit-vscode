@@ -67,11 +67,7 @@ export class AuthNode implements RootNode {
 
     public constructor(public readonly resource: CawsAuthenticationProvider) {}
 
-    public get treeItem() {
-        return this.createTreeItem()
-    }
-
-    private createTreeItem() {
+    public getTreeItem() {
         const session = this.resource.getActiveSession()
 
         if (session !== undefined) {
@@ -86,7 +82,7 @@ export class AuthNode implements RootNode {
             iconPath: getIcon('vscode-account'),
         })
 
-        return loginNode.treeItem
+        return loginNode.getTreeItem()
     }
 }
 
@@ -111,10 +107,6 @@ export class CawsRootNode implements RootNode {
         })
     }
 
-    public get treeItem() {
-        return this.createTreeItem()
-    }
-
     public canShow(): boolean {
         return !!this.authProvider.getActiveSession()
     }
@@ -129,7 +121,7 @@ export class CawsRootNode implements RootNode {
         return getRemoteCommands(this.workspace.summary, devfileLocation)
     }
 
-    private createTreeItem() {
+    public getTreeItem() {
         const item = new vscode.TreeItem('REMOVED.codes', vscode.TreeItemCollapsibleState.Collapsed)
 
         if (this.workspace !== undefined) {
