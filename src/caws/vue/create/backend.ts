@@ -24,6 +24,9 @@ import { cloneToWorkspace } from '../../model'
 import { selectCawsResource } from '../../wizards/selectResource'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { Metric } from '../../../shared/telemetry/metric'
+import { GitExtension } from '../../../shared/extensions/git'
+import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../../../shared/extensions/ssh'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -91,6 +94,37 @@ export class CawsCreateWebview extends VueWebview {
 
     public async showLogsMessage(title: string): Promise<string | undefined> {
         return showViewLogsMessage(title)
+    }
+
+    public async validateRepositoryUrl(url: string): Promise<string | undefined> {
+        const gitPath = GitExtension.instance?.gitPath
+        if (!gitPath) {
+            return localize(
+                'aws.caws.create.noGit',
+                'No `git` executable found. Verify that the Git extension is enabled.'
+            )
+        }
+
+        const uri = toStictUri(url)
+        const spawnOptions =
+            uri.scheme === 'ssh' ? { env: { [SSH_AGENT_SOCKET_VARIABLE]: await startSshAgent() } } : undefined
+
+        const command = new ChildProcess(gitPath, ['ls-remote', '--', url, 'HEAD'])
+        const { exitCode } = await command.run({ spawnOptions, rejectOnError: true })
+
+        if (exitCode !== 0) {
+            if (uri.scheme === 'ssh') {
+                return localize(
+                    'aws.caws.create.gitFailedSsh',
+                    'Invalid URL. Check that the repository exists and you have added an SSH key to your agent.'
+                )
+            } else {
+                return localize(
+                    'aws.caws.create.gitFailed',
+                    'Invalid URL. Check that the repository exists and you have access to it.'
+                )
+            }
+        }
     }
 
     public async editSetting(settings: WorkspaceSettings, key: keyof WorkspaceSettings): Promise<WorkspaceSettings> {
@@ -168,9 +202,7 @@ export class CawsCreateWebview extends VueWebview {
     }
 
     private async cloneRepository(settings: WorkspaceSettings, source: CloneResponse) {
-        const isSchemeless = /^[\w]+@/.test(source.repositoryUrl)
-        const withScheme = isSchemeless ? `ssh://${source.repositoryUrl}` : source.repositoryUrl
-        const repoUri = vscode.Uri.parse(withScheme, true)
+        const repoUri = toStictUri(source.repositoryUrl)
         const repoName = repoUri.path
             .split('/')
             .pop()
@@ -217,6 +249,13 @@ export class CawsCreateWebview extends VueWebview {
             })
         )
     }
+}
+
+function toStictUri(url: string): vscode.Uri {
+    const isSchemeless = /^[\w]+@/.test(url)
+    const withScheme = isSchemeless ? `ssh://${url}` : url
+
+    return vscode.Uri.parse(withScheme, true)
 }
 
 // TODO(sijaden): de-dupe this basic init pattern for webviews

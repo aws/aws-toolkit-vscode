@@ -92,6 +92,7 @@ export default defineComponent({
             branches: {} as Record<string, CawsBranch[]>,
             loadingProjects: false,
             loadingBranches: {} as Record<string, boolean>,
+            urlValidationTimer: undefined as number | undefined,
         }
     },
     async created() {
@@ -112,8 +113,23 @@ export default defineComponent({
             }
         },
         'model.repositoryUrl'(url?: string) {
-            this.modelValue.error = this.urlError
-            this.update()
+            clearTimeout(this.urlValidationTimer)
+            this.urlValidationTimer = undefined
+
+            if (url && !this.urlError) {
+                this.urlValidationTimer = setTimeout(async () => {
+                    try {
+                        this.modelValue.error = await client.validateRepositoryUrl(url)
+                    } catch (err) {
+                        this.modelValue.error = (err as Error).message
+                    }
+
+                    this.update()
+                }, 100)
+            } else {
+                this.modelValue.error = this.urlError
+                this.update()
+            }
         },
     },
     computed: {
