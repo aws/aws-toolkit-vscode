@@ -27,6 +27,7 @@ import { Metric } from '../../../shared/telemetry/metric'
 import { GitExtension } from '../../../shared/extensions/git'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { SSH_AGENT_SOCKET_VARIABLE, startSshAgent } from '../../../shared/extensions/ssh'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 
 interface LinkedResponse {
     readonly type: 'linked'
@@ -283,7 +284,7 @@ export async function showCreateWorkspace(
 
     const webview = await activePanel!.show({
         title: localize('AWS.view.createWorkspace.title', 'Create a REMOVED.codes Workspace'),
-        viewColumn: vscode.ViewColumn.Active,
+        viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
     })
 
     if (!subscriptions) {

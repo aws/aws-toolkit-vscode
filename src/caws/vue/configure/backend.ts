@@ -24,6 +24,7 @@ import { updateDevfileCommand } from '../../devfile'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { isLongReconnect, removeReconnectionInformation, saveReconnectionInformation } from '../../reconnect'
 import { DevelopmentWorkspace } from '../../../shared/clients/cawsClient'
+import { isCloud9 } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -147,7 +148,7 @@ export async function showConfigureWorkspace(
     activePanel ??= new Panel(ctx, workspace, commands)
     const webview = await activePanel.show({
         title: localize('AWS.view.configureWorkspace.title', 'Workspace Settings'),
-        viewColumn: vscode.ViewColumn.Active,
+        viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
     })
 
     if (!subscriptions) {
