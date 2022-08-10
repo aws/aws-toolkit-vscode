@@ -1,3 +1,16 @@
+## 1.47.0 2022-08-06
+
+- **Bug Fix** Delve debugger installation fails for Go Lambdas on MacOS
+- **Bug Fix** restored `Connect to AWS` command (alias to the `Choose AWS Profile` command)
+- **Bug Fix** CodeWhisperer: when pressing up or down does not move cursor when suggestion is active
+- **Bug Fix** CodeWhisperer access token validation may sometimes fail
+- **Bug Fix** "Connect to AWS" does not handle missing credentials file
+- **Feature** basic syntax highlighting for ~/.aws/credentials and ~/.aws/config files
+- **Feature** `Choose AWS Profile` quickpick now includes an `Edit Credentials` action
+- **Feature** Add `Edit Credentials` command which opens all known credential files
+- **Feature** CodeWhisperer: References include a link to the source repository if possible.
+- **Feature** Auto-connect tries a maximum of one non-default profile instead of three
+
 ## 1.46.0 2022-07-25
 
 - **Bug Fix** "Read-only file system" error when deploying or debugging a SAM project #2395

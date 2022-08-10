@@ -5,10 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as telemetry from '../shared/telemetry/telemetry'
-import { cdkNode } from '../cdk/explorer/rootNode'
+import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { once } from '../shared/utilities/functionUtils'
-import { AppNode } from '../cdk/explorer/nodes/appNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { initNodes } from '../caws/explorer'
 import { codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
@@ -54,7 +53,7 @@ export function createLocalExplorerView(ctx: vscode.ExtensionContext): vscode.Tr
     // Legacy CDK metric, remove this when we add something generic
     const recordExpandCdkOnce = once(telemetry.recordCdkAppExpanded)
     view.onDidExpandElement(e => {
-        if (e.element.resource instanceof AppNode) {
+        if (e.element.resource instanceof CdkRootNode) {
             recordExpandCdkOnce()
         }
     })

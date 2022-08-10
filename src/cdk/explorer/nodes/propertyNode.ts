@@ -14,11 +14,8 @@ import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 export class PropertyNode implements TreeNode {
     public readonly id = this.key
     public readonly resource = this.value
-    public readonly treeItem: vscode.TreeItem
 
-    public constructor(private readonly key: string, private readonly value: unknown) {
-        this.treeItem = this.createTreeItem()
-    }
+    public constructor(private readonly key: string, private readonly value: unknown) {}
 
     public async getChildren(): Promise<TreeNode[]> {
         if (this.value instanceof Array || this.value instanceof Object) {
@@ -28,7 +25,7 @@ export class PropertyNode implements TreeNode {
         }
     }
 
-    private createTreeItem() {
+    public getTreeItem() {
         const item = new vscode.TreeItem(`${this.key}: ${this.value}`)
 
         item.contextValue = 'awsCdkPropertyNode'
