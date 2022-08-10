@@ -16,7 +16,7 @@ import {
 } from '../registry/logStreamRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { Wizard } from '../../shared/wizards/wizard'
-import { createURIFromArgs, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../shared/logger'
@@ -54,6 +54,10 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     }
 
     const initialStreamData = getInitialLogData(logGroupInfo, parameters, filterLogEventsFromUriComponents)
+
+    if (initialStreamData.parameters.startTime || initialStreamData.parameters.filterPattern) {
+        recordTelemetryFilter(initialStreamData, 'logGroup', 'Command')
+    }
 
     return initialStreamData
 }
@@ -95,8 +99,11 @@ export async function prepareDocument(
 
 export async function searchLogGroup(node: LogGroupNode | undefined, registry: LogStreamRegistry): Promise<void> {
     let response: SearchLogGroupWizardResponse | undefined
+    let result: telemetry.Result
+    let source: 'Explorer' | 'Command'
 
     if (node) {
+        source = 'Explorer'
         if (!node.logGroup.logGroupName) {
             throw new Error('CWL: Log Group node does not have a name.')
         }
@@ -106,11 +113,13 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
             regionName: node.regionCode,
         }).run()
     } else {
+        source = 'Command'
         response = await new SearchLogGroupWizard().run()
     }
 
     if (!response) {
-        telemetry.recordCloudwatchlogsOpenStream({ result: 'Cancelled' })
+        result = 'Cancelled'
+        telemetry.recordCloudwatchlogsOpen({ result: result, cloudWatchResourceType: 'logGroup', source: source })
         return
     }
 
@@ -118,8 +127,8 @@ export async function searchLogGroup(node: LogGroupNode | undefined, registry: L
 
     const uri = createURIFromArgs(initialLogData.logGroupInfo, initialLogData.parameters)
 
-    const result = await prepareDocument(uri, initialLogData, registry)
-    telemetry.recordCloudwatchlogsOpenStream({ result })
+    result = await prepareDocument(uri, initialLogData, registry)
+    telemetry.recordCloudwatchlogsOpen({ result: result, cloudWatchResourceType: 'logGroup', source: source })
 }
 
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {

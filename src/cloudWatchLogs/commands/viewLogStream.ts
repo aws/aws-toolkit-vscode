@@ -37,7 +37,11 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (!logStreamResponse) {
-        telemetry.recordCloudwatchlogsOpenStream({ result: 'Cancelled' })
+        telemetry.recordCloudwatchlogsOpen({
+            result: 'Cancelled',
+            cloudWatchResourceType: 'logStream',
+            source: 'explorer',
+        })
         return
     }
 
@@ -56,7 +60,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
     const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
 
     result = await prepareDocument(uri, initialStreamData, registry)
-    telemetry.recordCloudwatchlogsOpenStream({ result })
+    telemetry.recordCloudwatchlogsOpen({ result: result, cloudWatchResourceType: 'logStream', source: 'explorer' })
 }
 
 export interface SelectLogStreamWizardContext {

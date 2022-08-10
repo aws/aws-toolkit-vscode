@@ -2,7 +2,7 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as telemetry from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import {
     CloudWatchLogsParameters,
@@ -67,12 +67,24 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
             logGroupInfo.streamName = streamID
             const initialStreamData = getInitialLogData(logGroupInfo, parameters, getLogEventsFromUriComponents)
             const streamUri = createURIFromArgs(logGroupInfo, parameters)
+
             await this.registry.registerLog(streamUri, initialStreamData)
-            // Set the document language
             const doc = await vscode.workspace.openTextDocument(streamUri)
             vscode.languages.setTextDocumentLanguage(doc, 'log')
+
+            telemetry.recordCloudwatchlogsOpen({
+                result: 'Succeeded',
+                cloudWatchResourceType: 'logStream',
+                source: 'GoTo',
+            })
             return new vscode.Location(streamUri, new vscode.Position(0, 0))
         } catch (err) {
+            telemetry.recordCloudwatchlogsOpen({
+                result: 'Failed',
+                cloudWatchResourceType: 'logStream',
+                source: 'GoTo',
+            })
+
             throw new Error(`cwl: Error determining definition for content in ${document.fileName}`)
         }
     }

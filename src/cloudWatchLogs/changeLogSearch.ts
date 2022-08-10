@@ -2,8 +2,9 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as telemetry from '../shared/telemetry/telemetry'
 import { showInputBox } from '../shared/ui/inputPrompter'
-import { createURIFromArgs } from './cloudWatchLogsUtils'
+import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './cloudWatchLogsUtils'
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logStreamDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUriComponents, LogStreamRegistry } from './registry/logStreamRegistry'
@@ -43,7 +44,6 @@ export async function getNewData(
                 return
             }
             newData.parameters.filterPattern = newPattern
-
             break
 
         case 'timeFilter':
@@ -53,14 +53,18 @@ export async function getNewData(
             }
             newData.parameters.startTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.start
             newData.parameters.endTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.end
-
             break
     }
+    let resourceType: telemetry.CloudWatchResourceType = 'logGroup'
+
     if (newData.logGroupInfo.streamName) {
         newData.retrieveLogsFunction = filterLogEventsFromUriComponents
         newData.parameters.streamNameOptions = [newData.logGroupInfo.streamName]
         newData.logGroupInfo.streamName = undefined
+        resourceType = 'logStream'
     }
+
+    recordTelemetryFilter(newData, resourceType, 'EditorButton')
 
     return newData
 }
@@ -69,23 +73,42 @@ export async function changeLogSearchParams(
     registry: LogStreamRegistry,
     param: 'filterPattern' | 'timeFilter'
 ): Promise<void> {
-    //let result: telemetry.Result = 'Succeeded'
     const oldUri = getActiveDocumentUri(registry)
 
     const oldData = registry.getLogData(oldUri)
     if (!oldData) {
+        telemetry.recordCloudwatchlogsFilter({
+            result: 'Failed',
+            source: 'Editor',
+            cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
+            hasTimeFilter: param === 'timeFilter',
+            hasTextFilter: param === 'filterPattern',
+        })
         throw new Error(`cwl: Unable to find data for active URI ${oldUri}`)
     }
     const newData = await getNewData(param, oldData)
 
     if (!newData) {
-        //result = 'Cancelled'
+        telemetry.recordCloudwatchlogsFilter({
+            result: 'Cancelled',
+            source: 'Editor',
+            cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
+            hasTimeFilter: !!(oldData.parameters.startTime || param === 'timeFilter'),
+            hasTextFilter:
+                (oldData.parameters.filterPattern !== undefined && oldData.parameters.filterPattern !== '') ||
+                param === 'filterPattern',
+        })
+
         return
     }
 
     const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
 
-    //result = await prepareDocument(newUri, newData, registry)
-    await prepareDocument(newUri, newData, registry)
-    // TODO: add telemetry
+    const result = await prepareDocument(newUri, newData, registry)
+    const typeOfResource = newData.parameters.streamNameOptions ? 'logStream' : 'logGroup'
+    telemetry.recordCloudwatchlogsOpen({
+        result: result,
+        cloudWatchResourceType: typeOfResource,
+        source: 'Editor',
+    })
 }

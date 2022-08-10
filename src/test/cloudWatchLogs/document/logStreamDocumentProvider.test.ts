@@ -17,6 +17,7 @@ import {
 } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { Settings } from '../../../shared/settings'
 import { LogStreamCodeLensProvider } from '../../../cloudWatchLogs/document/logStreamCodeLensProvider'
+import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 
 function testGetLogEvents(
     logGroupInfo: CloudWatchLogsGroupInfo,
@@ -97,7 +98,8 @@ describe('LogStreamDocumentProvider', function () {
             provider.provideTextDocumentContent(getLogsUri),
             `                             \t${message}\n`
         )
-        assert.strictEqual(provider.provideTextDocumentContent(vscode.Uri.parse('has:Not')), '')
+        const emptyUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:has:Not`)
+        assert.strictEqual(provider.provideTextDocumentContent(emptyUri), '')
     })
 
     it("Give backward codelense if viewing log stream and doesn't if not", async function () {
