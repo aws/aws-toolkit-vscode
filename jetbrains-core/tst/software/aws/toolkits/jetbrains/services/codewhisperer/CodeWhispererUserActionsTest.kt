@@ -13,13 +13,18 @@ import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_SELECT_WORD_AT
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TEXT_END_WITH_SELECTION
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TEXT_START_WITH_SELECTION
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.testFramework.runInEdtAndWait
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.timeout
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 
 class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
 
@@ -84,6 +89,30 @@ class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
             runInEdtAndWait {
                 verify(popupManagerSpy, timeout(5000)).cancelPopup(any())
             }
+        }
+    }
+
+    @Test
+    fun `test hitting enter after non-whitespace characters should trigger CodeWhisperer`() {
+        testHittingEnterAfterWhitespaceCharsShouldTriggerCodeWhisperer(pythonTestLeftContext, 1)
+    }
+
+    @Test
+    fun `test hitting enter after whitespace characters should trigger CodeWhisperer`() {
+        testHittingEnterAfterWhitespaceCharsShouldTriggerCodeWhisperer("$pythonTestLeftContext ", 1)
+        testHittingEnterAfterWhitespaceCharsShouldTriggerCodeWhisperer("$pythonTestLeftContext\t", 2)
+        testHittingEnterAfterWhitespaceCharsShouldTriggerCodeWhisperer("$pythonTestLeftContext\n", 3)
+    }
+
+    private fun testHittingEnterAfterWhitespaceCharsShouldTriggerCodeWhisperer(prompt: String, times: Int) {
+        CodeWhispererExplorerActionManager.getInstance().setAutoEnabled(true)
+        setPrompt(pythonFileName, prompt)
+        projectRule.fixture.type('\n')
+        val popupCaptor = argumentCaptor<JBPopup>()
+        verify(popupManagerSpy, timeout(5000).atLeast(times))
+            .showPopup(any(), any(), any(), any(), any(), popupCaptor.capture(), any(), any())
+        runInEdtAndWait {
+            popupManagerSpy.closePopup(popupCaptor.lastValue)
         }
     }
 }

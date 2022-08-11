@@ -122,7 +122,7 @@ open class CodeWhispererTestBase {
         editorManager = CodeWhispererEditorManager.getInstance()
         settingsManager = CodeWhispererSettings.getInstance()
 
-        projectRule.fixture.configureByText(pythonFileName, pythonTestLeftContext)
+        setPrompt(pythonFileName, pythonTestLeftContext)
 
         originalExplorerActionState = stateManager.state
         originalSettings = settingsManager.state
@@ -139,10 +139,6 @@ open class CodeWhispererTestBase {
                 value[CodeWhispererConfigurationType.IsIncludeCodeWithReference] = true
             }
         )
-
-        runInEdtAndWait {
-            projectRule.fixture.editor.caretModel.primaryCaret.moveToOffset(projectRule.fixture.editor.document.textLength)
-        }
     }
 
     @After
@@ -180,5 +176,12 @@ open class CodeWhispererTestBase {
         val actual = popupManagerSpy.popupComponents.recommendationInfoLabel.text
         val expected = message("codewhisperer.popup.recommendation_info", selected, total, POPUP_DIM_HEX)
         assertThat(actual).isEqualTo(expected)
+    }
+
+    fun setPrompt(filename: String, prompt: String) {
+        projectRule.fixture.configureByText(filename, prompt)
+        runInEdtAndWait {
+            projectRule.fixture.editor.caretModel.primaryCaret.moveToOffset(projectRule.fixture.editor.document.textLength)
+        }
     }
 }
