@@ -1,0 +1,14 @@
+{
+  "date" : "2022-08-11",
+  "version" : "1.49",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix IllegalCallableAccessException thrown in several UI panels (#3228)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix to stop showing CodeWhisperer's welcome page every time on project start"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for IDEs based on the 2021.2 platform"
+  } ]
+}

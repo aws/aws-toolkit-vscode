@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix IllegalCallableAccessException thrown in several UI panels (#3228)"
-}

@@ -1,3 +1,8 @@
+# _1.49_ (2022-08-11)
+- **(Bug Fix)** Fix IllegalCallableAccessException thrown in several UI panels ([#3228](https://github.com/aws/aws-toolkit-jetbrains/issues/3228))
+- **(Bug Fix)** Fix to stop showing CodeWhisperer's welcome page every time on project start
+- **(Deprecation)** An upcoming release will remove support for IDEs based on the 2021.2 platform
+
 # _1.48_ (2022-07-26)
 - **(Bug Fix)** Fix to display appropriate error messaging for filtering Cloudwatch Streams using search patterns failures
 

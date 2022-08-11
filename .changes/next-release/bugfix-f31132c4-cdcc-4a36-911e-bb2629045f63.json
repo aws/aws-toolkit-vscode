@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix to stop showing CodeWhisperer's welcome page every time on project start"
-}
