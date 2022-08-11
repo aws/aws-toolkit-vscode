@@ -244,7 +244,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         runtime = LambdaRuntime.fromValue(runtime)!!,
         mockCredentialsId = mockCredentialsId,
         input = input,
-        expectedOutput = input.toUpperCase()
+        expectedOutput = input.uppercase()
     )
 
     @Test
@@ -255,7 +255,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         runtime = LambdaRuntime.fromValue(runtime)!!,
         mockCredentialsId = mockCredentialsId,
         input = input,
-        expectedOutput = input.toUpperCase(),
+        expectedOutput = input.uppercase(),
         addBreakpoint = { projectRule.addBreakpoint() }
     )
 }

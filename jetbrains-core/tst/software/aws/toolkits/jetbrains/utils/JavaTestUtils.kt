@@ -133,7 +133,6 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String
 
     val importSpecBuilder = ImportSpecBuilder(project, GradleConstants.SYSTEM_ID)
         .callback(refreshCallback)
-        .forceWhenUptodate()
         .use(ProgressExecutionMode.MODAL_SYNC)
 
     ExternalSystemUtil.refreshProjects(importSpecBuilder)

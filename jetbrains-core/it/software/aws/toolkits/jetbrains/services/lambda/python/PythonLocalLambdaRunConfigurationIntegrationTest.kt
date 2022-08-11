@@ -345,7 +345,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         runtime = LambdaRuntime.fromValue(runtime)!!,
         mockCredentialsId = mockId,
         input = input,
-        expectedOutput = input.toUpperCase()
+        expectedOutput = input.uppercase()
     )
 
     @Test
@@ -356,7 +356,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         runtime = LambdaRuntime.fromValue(runtime)!!,
         mockCredentialsId = mockId,
         input = input,
-        expectedOutput = input.toUpperCase(),
+        expectedOutput = input.uppercase(),
         addBreakpoint = { projectRule.addBreakpoint() }
     )
 

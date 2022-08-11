@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
+import com.intellij.openapi.util.SystemInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -121,7 +122,7 @@ class DiskCacheTest {
         )
 
         val clientRegistration = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
-        if (isUnix()) {
+        if (SystemInfo.isUnix) {
             assertThat(Files.getPosixFilePermissions(clientRegistration)).containsOnly(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ)
         }
         assertThat(clientRegistration.readText())
@@ -268,7 +269,7 @@ class DiskCacheTest {
         )
 
         val accessTokenCache = cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json")
-        if (isUnix()) {
+        if (SystemInfo.isUnix) {
             assertThat(Files.getPosixFilePermissions(accessTokenCache)).containsOnly(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ)
         }
 
@@ -307,6 +308,4 @@ class DiskCacheTest {
         assertThat(sut.loadAccessToken(ssoUrl)).isNull()
         assertThat(cacheFile).doesNotExist()
     }
-
-    private fun isUnix() = !System.getProperty("os.name").toLowerCase().startsWith("windows")
 }

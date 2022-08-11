@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ProjectRule
 import org.junit.rules.ExternalResource
@@ -69,8 +69,7 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
     override fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) {}
 
     companion object {
-        fun getInstance(project: Project): MockAwsConnectionManager =
-            ServiceManager.getService(project, AwsConnectionManager::class.java) as MockAwsConnectionManager
+        fun getInstance(project: Project): MockAwsConnectionManager = project.service<AwsConnectionManager>() as MockAwsConnectionManager
     }
 
     class ProjectAccountSettingsManagerRule private constructor(projectSupplier: () -> Project) : ExternalResource() {

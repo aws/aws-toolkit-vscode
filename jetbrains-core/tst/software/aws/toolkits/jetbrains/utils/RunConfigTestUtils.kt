@@ -230,7 +230,7 @@ fun samImageRunDebugTest(
     runtime: LambdaRuntime,
     mockCredentialsId: String,
     input: String,
-    expectedOutput: String? = input.toUpperCase(),
+    expectedOutput: String? = input.uppercase(),
     addBreakpoint: (() -> Unit)? = null
 ) {
     assumeImageSupport()

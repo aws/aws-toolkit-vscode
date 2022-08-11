@@ -271,7 +271,7 @@ class GoLambdaHandlerResolverTest {
 
     @Test
     fun `Find psi invalid two arguments first is not context`() {
-        val handlerElement = projectRule.fixture.addGoLambdaHandler(
+        projectRule.fixture.addGoLambdaHandler(
             handlerName = "handler",
             fileContent = """
             package main

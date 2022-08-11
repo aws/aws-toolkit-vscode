@@ -142,7 +142,7 @@ class CreateConfigurationActionTest {
             )
         )
         assertThat(registry.newDataSources).singleElement().satisfies {
-            assertThat(it.username).isLowerCase().isEqualTo(username.toLowerCase())
+            assertThat(it.username).isLowerCase().isEqualTo(username.lowercase())
             assertThat(it.driverClass).contains("postgres")
             assertThat(it.url).contains(JDBC_POSTGRES)
         }
@@ -161,7 +161,7 @@ class CreateConfigurationActionTest {
             )
         )
         assertThat(registry.newDataSources).singleElement().satisfies {
-            assertThat(it.username).isLowerCase().isEqualTo(username.toLowerCase())
+            assertThat(it.username).isLowerCase().isEqualTo(username.lowercase())
             assertThat(it.driverClass).contains("postgres")
             assertThat(it.url).contains(JDBC_POSTGRES)
         }

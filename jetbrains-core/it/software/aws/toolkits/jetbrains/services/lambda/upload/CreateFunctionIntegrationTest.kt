@@ -161,7 +161,7 @@ class CreateFunctionIntegrationTest {
         assumeImageSupport()
         val (dockerfile, _) = readProject("samProjects/image/java8/maven", "Dockerfile", projectRule)
         val ecrRepo = ecrClient.createRepository {
-            it.repositoryName(RuleUtils.randomName().toLowerCase())
+            it.repositoryName(RuleUtils.randomName().lowercase())
         }.repository()
 
         val repository = Repository(ecrRepo.repositoryName(), ecrRepo.repositoryArn(), ecrRepo.repositoryUri())

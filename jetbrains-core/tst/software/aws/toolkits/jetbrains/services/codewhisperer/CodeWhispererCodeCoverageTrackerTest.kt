@@ -222,7 +222,7 @@ class CodeWhispererCodeCoverageTrackerTest {
     }
 
     @Test
-    fun `test 0 token will return 0%`() {
+    fun `test 0 token will return 0 percent`() {
         val javaTracker = spy(TestCodePercentageTracker(TOTAL_SECONDS_IN_MINUTE, language = CodewhispererLanguage.Java))
         CodeWhispererCodeCoverageTracker.getInstancesMap()[CodewhispererLanguage.Java] = javaTracker
         assertThat(javaTracker.percentage).isNull()

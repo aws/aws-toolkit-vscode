@@ -18,7 +18,7 @@ class S3TemporaryBucketRule(private val s3ClientSupplier: () -> S3Client) : Exte
      * Creates a temporary bucket with the optional prefix (or calling class if prefix is omitted)
      */
     fun createBucket(prefix: String = RuleUtils.prefixFromCallingClass()): String {
-        val bucketName: String = RuleUtils.randomName(prefix).toLowerCase()
+        val bucketName: String = RuleUtils.randomName(prefix).lowercase()
         val client = s3ClientSupplier()
 
         client.createBucket { it.bucket(bucketName) }

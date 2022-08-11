@@ -18,6 +18,7 @@ import java.nio.file.Path
 
 fun createMockFileChooser(disposable: Disposable, vararg files: Path) {
     val dialog = object : FileChooserDialog {
+        @Deprecated("needs to be implemented, but interface doesn't provide default impl")
         override fun choose(toSelect: VirtualFile?, project: Project?): Array<VirtualFile> = toSelect?.let {
             choose(project, it)
         } ?: choose(project)

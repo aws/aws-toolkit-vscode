@@ -48,7 +48,7 @@ abstract class PostgresBase(engine: Set<String>, additionalInfo: String? = null)
      * In postgres this is case sensitive as lower case. If you add a db user for
      * IAM role "Admin", it is inserted to the db as "admin"
      */
-    override fun iamUsername(username: String) = username.toLowerCase()
+    override fun iamUsername(username: String) = username.lowercase()
 }
 
 object MySql : MySqlBase(setOf("mysql")) {

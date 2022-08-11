@@ -18,7 +18,7 @@ class EcrTemporaryRepositoryRule(private val ecrClientSupplier: () -> EcrClient)
      * Creates a temporary repository with the optional prefix (or calling class if prefix is omitted)
      */
     fun createRepository(prefix: String = RuleUtils.prefixFromCallingClass()): Repository {
-        val repositoryName: String = RuleUtils.randomName(prefix).toLowerCase()
+        val repositoryName: String = RuleUtils.randomName(prefix).lowercase()
         val client = ecrClientSupplier()
 
         // note there is no waiter for this

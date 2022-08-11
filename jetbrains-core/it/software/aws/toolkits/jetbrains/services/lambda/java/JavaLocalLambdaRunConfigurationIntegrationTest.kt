@@ -222,7 +222,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
         runtime = runtime,
         mockCredentialsId = mockId,
         input = input,
-        expectedOutput = input.toUpperCase()
+        expectedOutput = input.uppercase()
     )
 
     @Test
@@ -233,7 +233,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
         runtime = runtime,
         mockCredentialsId = mockId,
         input = input,
-        expectedOutput = input.toUpperCase(),
+        expectedOutput = input.uppercase(),
         addBreakpoint = { projectRule.addBreakpoint() }
     )
 }
